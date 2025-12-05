@@ -1,0 +1,62 @@
+schema {
+  query: Query
+}
+
+type Query {
+  MediaListCollection(userName: String, type: MediaType): MediaListCollection
+  Page(perPage: Int): Page
+}
+
+type MediaListCollection {
+  lists: [MediaListGroup]
+}
+
+type MediaListGroup {
+  name: String
+  entries: [MediaList]
+}
+
+type MediaList {
+  id: Int
+  media: Media
+  status: MediaListStatus
+  progress: Int
+}
+
+type Media {
+  id: Int
+  title: MediaTitle
+  coverImage: MediaCoverImage
+  episodes: Int
+}
+
+type MediaTitle {
+  userPreferred: String
+}
+
+type MediaCoverImage {
+  extraLarge: String
+}
+
+enum MediaType {
+  ANIME
+  MANGA
+}
+
+enum MediaListStatus {
+  CURRENT
+  PLANNING
+  COMPLETED
+  DROPPED
+  PAUSED
+  REPEATING
+}
+
+type Page {
+  media(sort: [MediaSort], type: MediaType): [Media]
+}
+
+enum MediaSort {
+  TRENDING_DESC
+  POPULARITY_DESC
+}

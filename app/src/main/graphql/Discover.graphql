@@ -1,0 +1,13 @@
+query GetMediaBySort($sort: [MediaSort], $perPage: Int) {
+  Page(perPage: $perPage) {
+    media(sort: $sort, type: ANIME) {
+      id
+      title {
+        userPreferred
+      }
+      coverImage {
+        extraLarge
+      }
+    }
+  }
+}

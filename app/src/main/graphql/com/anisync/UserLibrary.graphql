@@ -1,0 +1,22 @@
+query GetUserLibrary($username: String!, $type: MediaType!) {
+  MediaListCollection(userName: $username, type: $type) {
+    lists {
+      name
+      entries {
+        id
+        media {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            extraLarge
+          }
+          episodes
+        }
+        status
+        progress
+      }
+    }
+  }
+}

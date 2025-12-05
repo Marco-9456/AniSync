@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.anisync.android.app-mergeDebugResources-55:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-3\\cd788ff4ada5acfbb2e6c3fd44b389fc\\transformed\\core-1.12.0\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                }
+            ]
+        }
+    ]
+}
