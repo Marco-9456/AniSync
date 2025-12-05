@@ -13,6 +13,11 @@ type Query {
 
 type Mutation {
   SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int): MediaList
+  DeleteMediaListEntry(id: Int): Deleted
+}
+
+type Deleted {
+  deleted: Boolean
 }
 
 type MediaListCollection {
@@ -45,6 +50,20 @@ type Media {
   studios(isMain: Boolean): StudioConnection
   startDate: FuzzyDate
   mediaListEntry: MediaList
+  format: MediaFormat
+}
+
+enum MediaFormat {
+  TV
+  TV_SHORT
+  MOVIE
+  SPECIAL
+  OVA
+  ONA
+  MUSIC
+  MANGA
+  NOVEL
+  ONE_SHOT
 }
 
 type MediaTitle {
@@ -73,15 +92,17 @@ enum MediaListStatus {
 }
 
 type Page {
-  media(sort: [MediaSort], type: MediaType, search: String): [Media]
+  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus): [Media]
 }
 
 enum MediaSort {
   TRENDING_DESC
   POPULARITY_DESC
+  START_DATE_DESC
 }
 
 type User {
+  id: Int
   name: String
   avatar: UserAvatar
   bannerImage: String
@@ -95,11 +116,18 @@ type UserAvatar {
 
 type UserStatisticTypes {
   anime: UserAnimeStatistics
+  manga: UserMangaStatistics
 }
 
 type UserAnimeStatistics {
   count: Int
   minutesWatched: Int
+  meanScore: Float
+}
+
+type UserMangaStatistics {
+  count: Int
+  chaptersRead: Int
   meanScore: Float
 }
 

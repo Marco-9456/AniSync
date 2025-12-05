@@ -30,6 +30,7 @@ class ProfileRepositoryImpl @Inject constructor(
         val user = response.data?.User ?: return null
 
         val stats = user.statistics?.anime
+        val mangaStats = user.statistics?.manga
         val minutesWatched = stats?.minutesWatched ?: 0
         val daysWatched = minutesWatched / 1440f
 
@@ -46,11 +47,14 @@ class ProfileRepositoryImpl @Inject constructor(
         } ?: emptyList()
 
         return UserProfile(
+            id = user.id ?: 0,
             name = user.name ?: "Unknown",
             avatarUrl = user.avatar?.large,
             bannerUrl = user.bannerImage,
             animeCount = stats?.count ?: 0,
             daysWatched = daysWatched,
+            mangaCount = mangaStats?.count ?: 0,
+            chaptersRead = mangaStats?.chaptersRead ?: 0,
             meanScore = stats?.meanScore?.toFloat() ?: 0f,
             favoriteAnime = favorites
         )

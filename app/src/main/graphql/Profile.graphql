@@ -1,6 +1,7 @@
 query GetUserProfile($name: String) {
   User(name: $name) {
     name
+    id
     avatar {
       large
     }
@@ -9,6 +10,11 @@ query GetUserProfile($name: String) {
       anime {
         count
         minutesWatched
+        meanScore
+      }
+      manga {
+        count
+        chaptersRead
         meanScore
       }
     }

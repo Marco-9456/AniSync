@@ -13,6 +13,7 @@ query GetMediaDetails($id: Int) {
     averageScore
     episodes
     status
+    format
     genres
     studios(isMain: true) {
       nodes {

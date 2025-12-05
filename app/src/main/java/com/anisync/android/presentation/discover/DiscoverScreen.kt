@@ -1,59 +1,120 @@
 package com.anisync.android.presentation.discover
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.components.SegmentedControl
+import com.anisync.android.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
+    onSearchClick: () -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedMediaType by remember { mutableStateOf("Anime") }
+    var searchExpanded by remember { mutableStateOf(false) }
 
-    when (val state = uiState) {
-        is DiscoverUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CreamBackground)
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Title
+        Text(
+            text = "Discover",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = TextDark
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // M3 SearchBar - triggers navigation on expand
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { isTraversalGroup = true }
+        ) {
+            SearchBar(
+                modifier = Modifier.fillMaxWidth(),
+                query = "",
+                onQueryChange = {},
+                onSearch = {},
+                active = false,
+                onActiveChange = { 
+                    onSearchClick()
+                },
+                placeholder = { Text("Search Anime & Manga...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                colors = SearchBarDefaults.colors(
+                    containerColor = BeigeYellow
+                )
+            ) {
+                // Empty content - we navigate away instead
             }
         }
-        is DiscoverUiState.Success -> {
-            DiscoverContent(
-                trending = state.trending,
-                popular = state.popular,
-                onMediaClick = onMediaClick
-            )
-        }
-        is DiscoverUiState.Error -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Segmented Control
+        SegmentedControl(
+            options = listOf("Anime", "Manga"),
+            selectedOption = selectedMediaType,
+            onOptionSelected = { selectedMediaType = it }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        when (val state = uiState) {
+            is DiscoverUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = OliveDrab)
+                }
+            }
+            is DiscoverUiState.Success -> {
+                DiscoverContent(
+                    trending = state.trending,
+                    popular = state.popular,
+                    upcoming = state.upcoming,
+                    onMediaClick = onMediaClick
+                )
+            }
+            is DiscoverUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = "Error: ${state.message}", color = Color.Red)
+                }
             }
         }
     }
@@ -63,56 +124,163 @@ fun DiscoverScreen(
 fun DiscoverContent(
     trending: List<LibraryEntry>,
     popular: List<LibraryEntry>,
+    upcoming: List<LibraryEntry>,
     onMediaClick: (Int) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        modifier = Modifier.fillMaxSize()
+        verticalArrangement = Arrangement.spacedBy(32.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
     ) {
+        // Trending Section
         item {
-            SectionHeader(title = "Trending Now")
-            MediaCarousel(
-                items = trending,
-                onMediaClick = onMediaClick
+            SectionHeader(
+                title = "Trending Now",
+                icon = Icons.AutoMirrored.Filled.TrendingUp
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                itemsIndexed(trending) { index, item ->
+                    DiscoverItemCard(
+                        item = item,
+                        rank = index + 1,
+                        onClick = { onMediaClick(item.mediaId) }
+                    )
+                }
+            }
         }
 
+        // Popular Section
         item {
-            SectionHeader(title = "All Time Popular")
-            MediaCarousel(
-                items = popular,
-                onMediaClick = onMediaClick
+            SectionHeader(
+                title = "All-Time Popular",
+                icon = Icons.Default.FavoriteBorder
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                itemsIndexed(popular) { index, item ->
+                    DiscoverItemCard(
+                        item = item,
+                        rank = index + 1,
+                        onClick = { onMediaClick(item.mediaId) }
+                    )
+                }
+            }
+        }
+
+        // Upcoming Section
+        item {
+            SectionHeader(
+                title = "Upcoming",
+                icon = Icons.Default.CalendarMonth
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                itemsIndexed(upcoming) { index, item ->
+                    DiscoverItemCard(
+                        item = item,
+                        rank = index + 1,
+                        onClick = { onMediaClick(item.mediaId) }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-    )
+fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = OliveDrab,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = TextDark
+        )
+    }
 }
 
 @Composable
-fun MediaCarousel(
-    items: List<LibraryEntry>,
-    onMediaClick: (Int) -> Unit
+fun DiscoverItemCard(
+    item: LibraryEntry,
+    rank: Int,
+    onClick: () -> Unit
 ) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    Column(
+        modifier = Modifier
+            .width(110.dp)
+            .clickable { onClick() }
     ) {
-        items(items) { item ->
-            com.anisync.android.presentation.components.MediaCard(
-                imageUrl = item.coverUrl,
-                title = item.title,
-                onClick = { onMediaClick(item.mediaId) }
+        Box(
+            modifier = Modifier
+                .height(160.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+        ) {
+            AsyncImage(
+                model = item.coverUrl,
+                contentDescription = item.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
+            
+            // Rank Badge
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .background(OliveDrab, RoundedCornerShape(bottomEnd = 8.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "#$rank",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+            
+            // Rating Badge
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(4.dp)
+                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = "★ 8.5",
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = item.title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextDark,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
+

@@ -53,12 +53,13 @@ public object GetUserProfileQuery_ResponseAdapter {
   }
 
   public object User : Adapter<GetUserProfileQuery.User> {
-    public val RESPONSE_NAMES: List<String> = listOf("name", "avatar", "bannerImage", "statistics",
-        "favourites")
+    public val RESPONSE_NAMES: List<String> = listOf("name", "id", "avatar", "bannerImage",
+        "statistics", "favourites")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         GetUserProfileQuery.User {
       var _name: String? = null
+      var _id: Int? = null
       var _avatar: GetUserProfileQuery.Avatar? = null
       var _bannerImage: String? = null
       var _statistics: GetUserProfileQuery.Statistics? = null
@@ -67,16 +68,18 @@ public object GetUserProfileQuery_ResponseAdapter {
       while(true) {
         when (reader.selectName(RESPONSE_NAMES)) {
           0 -> _name = NullableStringAdapter.fromJson(reader, customScalarAdapters)
-          1 -> _avatar = Avatar.obj().nullable().fromJson(reader, customScalarAdapters)
-          2 -> _bannerImage = NullableStringAdapter.fromJson(reader, customScalarAdapters)
-          3 -> _statistics = Statistics.obj().nullable().fromJson(reader, customScalarAdapters)
-          4 -> _favourites = Favourites.obj().nullable().fromJson(reader, customScalarAdapters)
+          1 -> _id = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          2 -> _avatar = Avatar.obj().nullable().fromJson(reader, customScalarAdapters)
+          3 -> _bannerImage = NullableStringAdapter.fromJson(reader, customScalarAdapters)
+          4 -> _statistics = Statistics.obj().nullable().fromJson(reader, customScalarAdapters)
+          5 -> _favourites = Favourites.obj().nullable().fromJson(reader, customScalarAdapters)
           else -> break
         }
       }
 
       return GetUserProfileQuery.User(
         name = _name,
+        id = _id,
         avatar = _avatar,
         bannerImage = _bannerImage,
         statistics = _statistics,
@@ -91,6 +94,9 @@ public object GetUserProfileQuery_ResponseAdapter {
     ): Unit {
       writer.name("name")
       NullableStringAdapter.toJson(writer, customScalarAdapters, value.name)
+
+      writer.name("id")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.id)
 
       writer.name("avatar")
       Avatar.obj().nullable().toJson(writer, customScalarAdapters, value.avatar)
@@ -136,21 +142,24 @@ public object GetUserProfileQuery_ResponseAdapter {
   }
 
   public object Statistics : Adapter<GetUserProfileQuery.Statistics> {
-    public val RESPONSE_NAMES: List<String> = listOf("anime")
+    public val RESPONSE_NAMES: List<String> = listOf("anime", "manga")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         GetUserProfileQuery.Statistics {
       var _anime: GetUserProfileQuery.Anime? = null
+      var _manga: GetUserProfileQuery.Manga? = null
 
       while(true) {
         when (reader.selectName(RESPONSE_NAMES)) {
           0 -> _anime = Anime.obj().nullable().fromJson(reader, customScalarAdapters)
+          1 -> _manga = Manga.obj().nullable().fromJson(reader, customScalarAdapters)
           else -> break
         }
       }
 
       return GetUserProfileQuery.Statistics(
-        anime = _anime
+        anime = _anime,
+        manga = _manga
       )
     }
 
@@ -161,6 +170,9 @@ public object GetUserProfileQuery_ResponseAdapter {
     ): Unit {
       writer.name("anime")
       Anime.obj().nullable().toJson(writer, customScalarAdapters, value.anime)
+
+      writer.name("manga")
+      Manga.obj().nullable().toJson(writer, customScalarAdapters, value.manga)
     }
   }
 
@@ -199,6 +211,47 @@ public object GetUserProfileQuery_ResponseAdapter {
 
       writer.name("minutesWatched")
       NullableIntAdapter.toJson(writer, customScalarAdapters, value.minutesWatched)
+
+      writer.name("meanScore")
+      NullableDoubleAdapter.toJson(writer, customScalarAdapters, value.meanScore)
+    }
+  }
+
+  public object Manga : Adapter<GetUserProfileQuery.Manga> {
+    public val RESPONSE_NAMES: List<String> = listOf("count", "chaptersRead", "meanScore")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetUserProfileQuery.Manga {
+      var _count: Int? = null
+      var _chaptersRead: Int? = null
+      var _meanScore: Double? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _count = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          1 -> _chaptersRead = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          2 -> _meanScore = NullableDoubleAdapter.fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetUserProfileQuery.Manga(
+        count = _count,
+        chaptersRead = _chaptersRead,
+        meanScore = _meanScore
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetUserProfileQuery.Manga,
+    ): Unit {
+      writer.name("count")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.count)
+
+      writer.name("chaptersRead")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.chaptersRead)
 
       writer.name("meanScore")
       NullableDoubleAdapter.toJson(writer, customScalarAdapters, value.meanScore)

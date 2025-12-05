@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.GetPopularAnimeUseCase
 import com.anisync.android.domain.GetTrendingAnimeUseCase
+import com.anisync.android.domain.GetUpcomingAnimeUseCase
 import com.anisync.android.domain.LibraryEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -18,7 +19,8 @@ sealed interface DiscoverUiState {
     data object Loading : DiscoverUiState
     data class Success(
         val trending: List<LibraryEntry>,
-        val popular: List<LibraryEntry>
+        val popular: List<LibraryEntry>,
+        val upcoming: List<LibraryEntry>
     ) : DiscoverUiState
     data class Error(val message: String) : DiscoverUiState
 }
@@ -26,7 +28,8 @@ sealed interface DiscoverUiState {
 @HiltViewModel
 class DiscoverViewModel @Inject constructor(
     private val getTrendingAnimeUseCase: GetTrendingAnimeUseCase,
-    private val getPopularAnimeUseCase: GetPopularAnimeUseCase
+    private val getPopularAnimeUseCase: GetPopularAnimeUseCase,
+    private val getUpcomingAnimeUseCase: GetUpcomingAnimeUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DiscoverUiState>(DiscoverUiState.Loading)
@@ -40,15 +43,21 @@ class DiscoverViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { DiscoverUiState.Loading }
             try {
-                // Fetch both lists in parallel
+                // Fetch all lists in parallel
                 val trendingDeferred = async { getTrendingAnimeUseCase() }
                 val popularDeferred = async { getPopularAnimeUseCase() }
+                val upcomingDeferred = async { getUpcomingAnimeUseCase() }
 
                 val trending = trendingDeferred.await()
                 val popular = popularDeferred.await()
+                val upcoming = upcomingDeferred.await()
 
                 _uiState.update {
-                    DiscoverUiState.Success(trending = trending, popular = popular)
+                    DiscoverUiState.Success(
+                        trending = trending,
+                        popular = popular,
+                        upcoming = upcoming
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update { DiscoverUiState.Error(e.message ?: "Unknown error") }
@@ -56,3 +65,4 @@ class DiscoverViewModel @Inject constructor(
         }
     }
 }
+

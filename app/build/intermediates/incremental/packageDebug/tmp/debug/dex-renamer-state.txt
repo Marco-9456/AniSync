@@ -1,4 +1,4 @@
-#Fri Dec 05 14:25:16 CET 2025
+#Fri Dec 05 18:04:20 CET 2025
 base.0=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.10=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\4\\classes.dex
@@ -6,6 +6,7 @@ base.11=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\in
 base.12=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\8\\classes.dex
 base.13=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\9\\classes.dex
 base.14=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
+base.15=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes3.dex
 base.2=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\10\\classes.dex
 base.3=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\12\\classes.dex
 base.4=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\13\\classes.dex
@@ -21,6 +22,7 @@ path.11=7/classes.dex
 path.12=8/classes.dex
 path.13=9/classes.dex
 path.14=classes2.dex
+path.15=classes3.dex
 path.2=10/classes.dex
 path.3=12/classes.dex
 path.4=13/classes.dex
@@ -36,6 +38,7 @@ renamed.11=classes12.dex
 renamed.12=classes13.dex
 renamed.13=classes14.dex
 renamed.14=classes15.dex
+renamed.15=classes16.dex
 renamed.2=classes3.dex
 renamed.3=classes4.dex
 renamed.4=classes5.dex

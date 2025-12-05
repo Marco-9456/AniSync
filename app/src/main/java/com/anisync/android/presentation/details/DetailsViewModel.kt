@@ -34,13 +34,17 @@ class DetailsViewModel @Inject constructor(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
-    private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"])
+    private var currentMediaId: Int? = null
 
-    init {
+    /* removed init block */
+
+    fun loadMedia(id: Int) {
+        currentMediaId = id
         loadDetails()
     }
 
     private fun loadDetails() {
+        val mediaId = currentMediaId ?: return
         viewModelScope.launch {
             _uiState.update { DetailsUiState.Loading }
             try {
@@ -60,13 +64,32 @@ class DetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
+                val mediaId = currentMediaId ?: return@launch
                 val success = detailsRepository.updateMediaListEntry(mediaId, status, progress)
                 if (success) {
-                    // Reload details to get updated list entry
                     loadDetails()
                 }
             } catch (e: Exception) {
-                // Handle error silently or show toast
+                // Handle error
+            } finally {
+                _isSaving.value = false
+            }
+        }
+    }
+
+    fun deleteMediaListEntry() {
+        viewModelScope.launch {
+            val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
+            val listEntryId = details.listEntryId ?: return@launch
+
+            _isSaving.value = true
+            try {
+                val success = detailsRepository.deleteMediaListEntry(listEntryId)
+                if (success) {
+                    loadDetails()
+                }
+            } catch (e: Exception) {
+                // Handle error
             } finally {
                 _isSaving.value = false
             }

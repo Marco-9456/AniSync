@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.anisync.android.app-mergeDebugResources-56:/values-fr-rCA/values-fr-rCA.xml",
+            "outputFile": "com.anisync.android.app-mergeDebugResources-57:/values-fr-rCA/values-fr-rCA.xml",
             "map": [
                 {
                     "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\05303181ae8ee794d5639ddb9901a511\\transformed\\core-1.12.0\\res\\values-fr-rCA\\values-fr-rCA.xml",

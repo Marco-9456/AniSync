@@ -6,8 +6,10 @@
 package com.anisync.android.adapter
 
 import com.anisync.android.GetMediaDetailsQuery
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaStatus
+import com.anisync.android.type.adapter.MediaFormat_ResponseAdapter
 import com.anisync.android.type.adapter.MediaListStatus_ResponseAdapter
 import com.anisync.android.type.adapter.MediaStatus_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
@@ -58,8 +60,8 @@ public object GetMediaDetailsQuery_ResponseAdapter {
 
   public object Media : Adapter<GetMediaDetailsQuery.Media> {
     public val RESPONSE_NAMES: List<String> = listOf("id", "title", "coverImage", "bannerImage",
-        "description", "averageScore", "episodes", "status", "genres", "studios", "startDate",
-        "mediaListEntry")
+        "description", "averageScore", "episodes", "status", "format", "genres", "studios",
+        "startDate", "mediaListEntry")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         GetMediaDetailsQuery.Media {
@@ -71,6 +73,7 @@ public object GetMediaDetailsQuery_ResponseAdapter {
       var _averageScore: Int? = null
       var _episodes: Int? = null
       var _status: MediaStatus? = null
+      var _format: MediaFormat? = null
       var _genres: List<String?>? = null
       var _studios: GetMediaDetailsQuery.Studios? = null
       var _startDate: GetMediaDetailsQuery.StartDate? = null
@@ -87,11 +90,13 @@ public object GetMediaDetailsQuery_ResponseAdapter {
           6 -> _episodes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
           7 -> _status = MediaStatus_ResponseAdapter.nullable().fromJson(reader,
               customScalarAdapters)
-          8 -> _genres = NullableStringAdapter.list().nullable().fromJson(reader,
+          8 -> _format = MediaFormat_ResponseAdapter.nullable().fromJson(reader,
               customScalarAdapters)
-          9 -> _studios = Studios.obj().nullable().fromJson(reader, customScalarAdapters)
-          10 -> _startDate = StartDate.obj().nullable().fromJson(reader, customScalarAdapters)
-          11 -> _mediaListEntry = MediaListEntry.obj().nullable().fromJson(reader,
+          9 -> _genres = NullableStringAdapter.list().nullable().fromJson(reader,
+              customScalarAdapters)
+          10 -> _studios = Studios.obj().nullable().fromJson(reader, customScalarAdapters)
+          11 -> _startDate = StartDate.obj().nullable().fromJson(reader, customScalarAdapters)
+          12 -> _mediaListEntry = MediaListEntry.obj().nullable().fromJson(reader,
               customScalarAdapters)
           else -> break
         }
@@ -106,6 +111,7 @@ public object GetMediaDetailsQuery_ResponseAdapter {
         averageScore = _averageScore,
         episodes = _episodes,
         status = _status,
+        format = _format,
         genres = _genres,
         studios = _studios,
         startDate = _startDate,
@@ -141,6 +147,9 @@ public object GetMediaDetailsQuery_ResponseAdapter {
 
       writer.name("status")
       MediaStatus_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.status)
+
+      writer.name("format")
+      MediaFormat_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.format)
 
       writer.name("genres")
       NullableStringAdapter.list().nullable().toJson(writer, customScalarAdapters, value.genres)

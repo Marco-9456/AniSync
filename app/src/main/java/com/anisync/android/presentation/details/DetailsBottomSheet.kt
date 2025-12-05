@@ -1,0 +1,602 @@
+package com.anisync.android.presentation.details
+
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.QuestionMark
+import com.anisync.android.domain.LibraryStatus
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.anisync.android.domain.MediaDetails
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailsBottomSheet(
+    mediaId: Int,
+    onDismiss: () -> Unit,
+    sheetState: SheetState,
+    viewModel: DetailsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
+
+    LaunchedEffect(mediaId) {
+        viewModel.loadMedia(mediaId)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            // Custom Handle
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .width(48.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color.LightGray.copy(alpha = 0.6f))
+            )
+        },
+        windowInsets = WindowInsets(0)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+        ) {
+            when (val state = uiState) {
+                is DetailsUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is DetailsUiState.Success -> {
+                    DetailsSheetContent(
+                        details = state.details,
+                        onStatusSelected = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
+                        onRemove = { viewModel.deleteMediaListEntry() }
+                    )
+                }
+                is DetailsUiState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Error: ${state.message}",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DetailsSheetContent(
+    details: MediaDetails,
+    onStatusSelected: (LibraryStatus, Int) -> Unit,
+    onRemove: () -> Unit
+) {
+    val scrollState = rememberScrollState()
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Overview", "Characters", "Related")
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+        ) {
+            // Header Section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            ) {
+                // Cover Image
+                AsyncImage(
+                    model = details.coverUrl,
+                    contentDescription = "Cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(150.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .shadow(8.dp, RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Metadata
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Badges
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Format Badge
+                        // Using 'format' property from MediaDetails, checking for nullness
+                        details.format?.let { fmt ->
+                            Badge(
+                                text = if (fmt == "TV") "TV" else fmt,
+                                backgroundColor = Color(0xFF6A5A17),
+                                contentColor = Color.White
+                            )
+                        }
+
+                        // Score Badge
+                        details.score?.let { score ->
+                            Badge(
+                                text = "$score%",
+                                icon = Icons.Default.Star,
+                                backgroundColor = Color(0xFFFFD700),
+                                contentColor = Color.Black
+                            )
+                        }
+                    }
+
+                    // Title
+                    Text(
+                        text = details.title,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 24.sp
+                        ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    // Studio • Year
+                    val studioYear = listOfNotNull(
+                        details.studio,
+                        details.year?.toString()
+                    ).joinToString(" • ")
+                    
+                    Text(
+                        text = studioYear,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Tabs
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = Color.Transparent,
+                divider = { HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f)) },
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        height = 3.dp,
+                        color = Color(0xFF8B7E28)
+                    )
+                }
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium
+                                ),
+                                color = if (selectedTabIndex == index) Color.Black else Color.Gray
+                            )
+                        }
+                    )
+                }
+            }
+
+            // Tab Content
+            when (selectedTabIndex) {
+                0 -> OverviewTab(details)
+                1 -> { /* Characters Placeholder */ }
+                2 -> { /* Related Placeholder */ }
+            }
+            
+            Spacer(modifier = Modifier.height(100.dp))
+        }
+
+        // FAB Menu
+        FabMenu(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp),
+            isInList = details.listEntryId != null,
+            currentStatus = details.listStatus,
+            onStatusSelected = { status ->
+                // Default progress to 0 if adding, or keep existing?
+                // For simplicity, passing current progress or 0
+                val progress = details.listProgress ?: 0
+                onStatusSelected(status, progress)
+            },
+            onRemove = onRemove
+        )
+    }
+}
+
+@Composable
+fun FabMenu(
+    modifier: Modifier = Modifier,
+    isInList: Boolean,
+    currentStatus: LibraryStatus?,
+    onStatusSelected: (LibraryStatus) -> Unit,
+    onRemove: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val options = listOf(
+        LibraryStatus.CURRENT to "Watching",
+        LibraryStatus.PLANNING to "Planning",
+        LibraryStatus.COMPLETED to "Completed",
+        LibraryStatus.DROPPED to "Dropped",
+        LibraryStatus.PAUSED to "Paused"
+    )
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        androidx.compose.animation.AnimatedVisibility(
+            visible = expanded,
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 },
+            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 }
+        ) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Status Options
+                options.forEach { (status, label) ->
+                    FabMenuItem(
+                        text = label,
+                        icon = getStatusIcon(status),
+                        selected = status == currentStatus,
+                        onClick = {
+                            onStatusSelected(status)
+                            expanded = false
+                        }
+                    )
+                }
+
+                // Remove Option (only if in list)
+                if (isInList) {
+                    FabMenuItem(
+                        text = "Remove",
+                        icon = Icons.Default.Delete,
+                        selected = false,
+                        color = MaterialTheme.colorScheme.error,
+                        onClick = {
+                            onRemove()
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { expanded = !expanded },
+            containerColor = Color(0xFFFFD700),
+            contentColor = Color.Black,
+            modifier = Modifier.size(56.dp)
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.Close 
+                              else if (isInList) Icons.Default.Edit 
+                              else Icons.Default.Add,
+                contentDescription = if (expanded) "Close" else "Manage",
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun FabMenuItem(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    color: Color = Color.White,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        // Label
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black.copy(alpha = 0.7f))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                color = Color.White
+            )
+        }
+
+        // Mini FAB
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(if (selected) Color(0xFFFFD700) else color)
+                .border(
+                    width = 1.dp,
+                    color = if (selected) Color(0xFFFFD700) else Color.LightGray,
+                    shape = androidx.compose.foundation.shape.CircleShape
+                )
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) Color.Black else Color.Black, // Icon color
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+fun getStatusIcon(status: LibraryStatus): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (status) {
+        LibraryStatus.CURRENT -> Icons.Default.PlayArrow
+        LibraryStatus.PLANNING -> Icons.Default.Event
+        LibraryStatus.COMPLETED -> Icons.Default.Check
+        LibraryStatus.DROPPED -> Icons.Default.Delete // Or remove circle
+        LibraryStatus.PAUSED -> Icons.Default.Pause
+        LibraryStatus.REPEATING -> Icons.Default.Repeat
+        else -> Icons.Default.QuestionMark
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun OverviewTab(details: MediaDetails) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        // Synopsis Header
+        Text(
+            text = "SYNOPSIS",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            ),
+            color = Color(0xFF8B7E28),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Synopsis Text
+        ExpandableText(
+            text = details.description,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        // Info Header
+        Text(
+            text = "INFO",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            ),
+            color = Color(0xFF8B7E28),
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        // Info Cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            InfoCard(
+                label = "EPISODES",
+                value = "${details.episodes ?: "?"} eps",
+                modifier = Modifier.weight(1f),
+                backgroundColor = Color(0xFFEEE8C5)
+            )
+            InfoCard(
+                label = "FORMAT",
+                value = details.format ?: "Unknown", // Safe access using format property
+                modifier = Modifier.weight(1f),
+                backgroundColor = Color(0xFFC5E8D0)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Genres
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            details.genres.forEach { genre ->
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Transparent)
+                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = genre,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.DarkGray
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(backgroundColor)
+            .padding(16.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray.copy(alpha = 0.8f)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+fun Badge(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    backgroundColor: Color,
+    contentColor: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(backgroundColor)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(12.dp).padding(end = 2.dp)
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = contentColor
+        )
+    }
+}
+
+@Composable
+fun ExpandableText(text: String, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    Column(modifier = modifier) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray),
+            maxLines = if (expanded) Int.MAX_VALUE else 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.animateContentSize()
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Row(
+            modifier = Modifier
+                .clickable { expanded = !expanded }
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+             Text(
+                text = if (expanded) "Read Less" else "Read More",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF8B7E28)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                 tint = Color(0xFF8B7E28),
+                 modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}

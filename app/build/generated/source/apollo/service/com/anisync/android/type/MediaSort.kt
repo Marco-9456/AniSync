@@ -14,6 +14,7 @@ public enum class MediaSort(
 ) {
   TRENDING_DESC("TRENDING_DESC"),
   POPULARITY_DESC("POPULARITY_DESC"),
+  START_DATE_DESC("START_DATE_DESC"),
   /**
    * Auto generated constant for unknown enum values
    */
@@ -21,7 +22,8 @@ public enum class MediaSort(
   ;
 
   public companion object {
-    public val type: EnumType = EnumType("MediaSort", listOf("TRENDING_DESC", "POPULARITY_DESC"))
+    public val type: EnumType = EnumType("MediaSort", listOf("TRENDING_DESC", "POPULARITY_DESC",
+        "START_DATE_DESC"))
 
     public fun safeValueOf(rawValue: String): MediaSort = values().find { it.rawValue == rawValue }
         ?: UNKNOWN__
@@ -31,6 +33,7 @@ public enum class MediaSort(
      */
     public fun knownValues(): Array<MediaSort> = arrayOf(
       TRENDING_DESC,
-      POPULARITY_DESC)
+      POPULARITY_DESC,
+      START_DATE_DESC)
   }
 }

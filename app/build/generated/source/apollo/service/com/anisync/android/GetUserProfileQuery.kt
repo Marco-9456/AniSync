@@ -52,6 +52,7 @@ public data class GetUserProfileQuery(
 
   public data class User(
     public val name: String?,
+    public val id: Int?,
     public val avatar: Avatar?,
     public val bannerImage: String?,
     public val statistics: Statistics?,
@@ -64,11 +65,18 @@ public data class GetUserProfileQuery(
 
   public data class Statistics(
     public val anime: Anime?,
+    public val manga: Manga?,
   )
 
   public data class Anime(
     public val count: Int?,
     public val minutesWatched: Int?,
+    public val meanScore: Double?,
+  )
+
+  public data class Manga(
+    public val count: Int?,
+    public val chaptersRead: Int?,
     public val meanScore: Double?,
   )
 
@@ -96,7 +104,7 @@ public data class GetUserProfileQuery(
 
   public companion object {
     public const val OPERATION_ID: String =
-        "b26ae581dcd5ab39493a015622c5e5689824ddf2c95e5e519c6318cb5d53bdd5"
+        "f26748c062c732d54457a60d63a5f421cec09466bc8440512ffcfbacd966dbd0"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
@@ -105,6 +113,7 @@ public data class GetUserProfileQuery(
      * query GetUserProfile($name: String) {
      *   User(name: $name) {
      *     name
+     *     id
      *     avatar {
      *       large
      *     }
@@ -113,6 +122,11 @@ public data class GetUserProfileQuery(
      *       anime {
      *         count
      *         minutesWatched
+     *         meanScore
+     *       }
+     *       manga {
+     *         count
+     *         chaptersRead
      *         meanScore
      *       }
      *     }
@@ -134,7 +148,7 @@ public data class GetUserProfileQuery(
      */
     public val OPERATION_DOCUMENT: String
       get() =
-          "query GetUserProfile(${'$'}name: String) { User(name: ${'$'}name) { name avatar { large } bannerImage statistics { anime { count minutesWatched meanScore } } favourites { anime { nodes { id title { userPreferred } coverImage { large } } } } } }"
+          "query GetUserProfile(${'$'}name: String) { User(name: ${'$'}name) { name id avatar { large } bannerImage statistics { anime { count minutesWatched meanScore } manga { count chaptersRead meanScore } } favourites { anime { nodes { id title { userPreferred } coverImage { large } } } } } }"
 
     public const val OPERATION_NAME: String = "GetUserProfile"
   }

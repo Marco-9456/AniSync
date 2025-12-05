@@ -11,6 +11,7 @@ import com.anisync.android.type.GraphQLInt
 import com.anisync.android.type.GraphQLString
 import com.anisync.android.type.Media
 import com.anisync.android.type.MediaCoverImage
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaList
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaStatus
@@ -121,6 +122,10 @@ public object GetMediaDetailsQuerySelections {
         CompiledField.Builder(
           name = "status",
           type = MediaStatus.type
+        ).build(),
+        CompiledField.Builder(
+          name = "format",
+          type = MediaFormat.type
         ).build(),
         CompiledField.Builder(
           name = "genres",

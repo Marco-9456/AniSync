@@ -8,6 +8,7 @@ package com.anisync.android
 import com.anisync.android.adapter.GetMediaDetailsQuery_ResponseAdapter
 import com.anisync.android.adapter.GetMediaDetailsQuery_VariablesAdapter
 import com.anisync.android.selections.GetMediaDetailsQuerySelections
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaStatus
 import com.apollographql.apollo3.annotations.ApolloAdaptableWith
@@ -61,6 +62,7 @@ public data class GetMediaDetailsQuery(
     public val averageScore: Int?,
     public val episodes: Int?,
     public val status: MediaStatus?,
+    public val format: MediaFormat?,
     public val genres: List<String?>?,
     public val studios: Studios?,
     public val startDate: StartDate?,
@@ -97,7 +99,7 @@ public data class GetMediaDetailsQuery(
 
   public companion object {
     public const val OPERATION_ID: String =
-        "138086bcc9989715bd2adf3aedbf06a82de33178a96ff561a4ca2fab5023f86f"
+        "609464c5bbf7b8160f4ad2d7aa0b5246e2d71d05f7538bb4888d0a0648ed2904"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
@@ -118,6 +120,7 @@ public data class GetMediaDetailsQuery(
      *     averageScore
      *     episodes
      *     status
+     *     format
      *     genres
      *     studios(isMain: true) {
      *       nodes {
@@ -138,7 +141,7 @@ public data class GetMediaDetailsQuery(
      */
     public val OPERATION_DOCUMENT: String
       get() =
-          "query GetMediaDetails(${'$'}id: Int) { Media(id: ${'$'}id) { id title { romaji english } coverImage { extraLarge } bannerImage description(asHtml: true) averageScore episodes status genres studios(isMain: true) { nodes { name } } startDate { year } mediaListEntry { id status progress score } } }"
+          "query GetMediaDetails(${'$'}id: Int) { Media(id: ${'$'}id) { id title { romaji english } coverImage { extraLarge } bannerImage description(asHtml: true) averageScore episodes status format genres studios(isMain: true) { nodes { name } } startDate { year } mediaListEntry { id status progress score } } }"
 
     public const val OPERATION_NAME: String = "GetMediaDetails"
   }

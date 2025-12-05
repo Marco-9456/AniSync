@@ -11,3 +11,17 @@ query GetMediaBySort($sort: [MediaSort], $perPage: Int) {
     }
   }
 }
+
+query GetUpcomingMedia($perPage: Int, $status: MediaStatus) {
+  Page(perPage: $perPage) {
+    media(status: $status, type: ANIME, sort: [POPULARITY_DESC]) {
+      id
+      title {
+        userPreferred
+      }
+      coverImage {
+        extraLarge
+      }
+    }
+  }
+}

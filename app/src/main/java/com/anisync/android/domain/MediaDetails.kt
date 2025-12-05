@@ -9,6 +9,7 @@ data class MediaDetails(
     val score: Int?,
     val episodes: Int?,
     val status: String,
+    val format: String?,
     val genres: List<String>,
     val studio: String?,
     val year: Int?,

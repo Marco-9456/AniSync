@@ -12,6 +12,7 @@ import com.anisync.android.presentation.library.LibraryScreen
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
+    onMediaClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -24,41 +25,33 @@ fun AniSyncNavHost(
         }
         composable(Screen.Library.route) {
             LibraryScreen(
-                onMediaClick = { mediaId ->
-                    navController.navigate(Screen.Details.createRoute(mediaId))
-                }
+                onMediaClick = onMediaClick
             )
         }
         composable(Screen.Discover.route) {
             com.anisync.android.presentation.discover.DiscoverScreen(
-                onMediaClick = { mediaId ->
-                    navController.navigate(Screen.Details.createRoute(mediaId))
+                onMediaClick = onMediaClick,
+                onSearchClick = {
+                    navController.navigate(Screen.Search.route)
                 }
             )
         }
         composable(Screen.Profile.route) {
             com.anisync.android.presentation.profile.ProfileScreen(
-                onMediaClick = { mediaId ->
-                    navController.navigate(Screen.Details.createRoute(mediaId))
-                },
+                onMediaClick = onMediaClick,
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onLogoutClick = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
-            )
-        }
-        composable(
-            route = Screen.Details.route,
-            arguments = listOf(androidx.navigation.navArgument("mediaId") { type = androidx.navigation.NavType.IntType })
-        ) {
-            com.anisync.android.presentation.details.DetailsScreen(
-                onBackClick = { navController.popBackStack() }
             )
         }
         composable(Screen.Search.route) {
             com.anisync.android.presentation.search.SearchScreen(
-                onMediaClick = { mediaId ->
-                    navController.navigate(Screen.Details.createRoute(mediaId))
-                }
+                onMediaClick = onMediaClick
             )
         }
         composable(Screen.Settings.route) {

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.anisync.android.app-mergeDebugResources-56:/values-lt/values-lt.xml",
+            "outputFile": "com.anisync.android.app-mergeDebugResources-57:/values-lt/values-lt.xml",
             "map": [
                 {
                     "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\39125fbdc7d8c088aee16778c6608a75\\transformed\\foundation-release\\res\\values-lt\\values-lt.xml",

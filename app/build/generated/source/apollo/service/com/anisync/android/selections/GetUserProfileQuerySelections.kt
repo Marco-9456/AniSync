@@ -16,6 +16,7 @@ import com.anisync.android.type.MediaTitle
 import com.anisync.android.type.User
 import com.anisync.android.type.UserAnimeStatistics
 import com.anisync.android.type.UserAvatar
+import com.anisync.android.type.UserMangaStatistics
 import com.anisync.android.type.UserStatisticTypes
 import com.apollographql.apollo3.api.CompiledArgument
 import com.apollographql.apollo3.api.CompiledField
@@ -47,11 +48,31 @@ public object GetUserProfileQuerySelections {
         ).build()
       )
 
+  private val __manga: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "count",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "chaptersRead",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "meanScore",
+          type = GraphQLFloat.type
+        ).build()
+      )
+
   private val __statistics: List<CompiledSelection> = listOf(
         CompiledField.Builder(
           name = "anime",
           type = UserAnimeStatistics.type
         ).selections(__anime)
+        .build(),
+        CompiledField.Builder(
+          name = "manga",
+          type = UserMangaStatistics.type
+        ).selections(__manga)
         .build()
       )
 
@@ -106,6 +127,10 @@ public object GetUserProfileQuerySelections {
         CompiledField.Builder(
           name = "name",
           type = GraphQLString.type
+        ).build(),
+        CompiledField.Builder(
+          name = "id",
+          type = GraphQLInt.type
         ).build(),
         CompiledField.Builder(
           name = "avatar",

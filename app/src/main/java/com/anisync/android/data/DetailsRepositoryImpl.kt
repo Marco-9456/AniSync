@@ -43,6 +43,7 @@ class DetailsRepositoryImpl @Inject constructor(
             score = media.averageScore,
             episodes = media.episodes,
             status = media.status?.name ?: "UNKNOWN",
+            format = media.format?.name,
             genres = media.genres?.filterNotNull() ?: emptyList(),
             studio = media.studios?.nodes?.firstOrNull()?.name,
             year = media.startDate?.year,
@@ -72,5 +73,15 @@ class DetailsRepositoryImpl @Inject constructor(
         ).execute()
 
         return response.data?.SaveMediaListEntry != null && !response.hasErrors()
+    }
+
+    override suspend fun deleteMediaListEntry(listEntryId: Int): Boolean {
+         val response = apolloClient.mutation(
+            com.anisync.android.DeleteMediaListEntryMutation(
+                id = Optional.present(listEntryId)
+            )
+        ).execute()
+
+        return response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()
     }
 }
