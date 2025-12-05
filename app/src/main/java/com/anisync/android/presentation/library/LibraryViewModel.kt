@@ -26,7 +26,7 @@ class LibraryViewModel @Inject constructor(
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
-        loadLibrary("greg") // Hardcoded for now
+        loadLibrary("") // Empty string = use authenticated Viewer
     }
 
     fun loadLibrary(username: String) {

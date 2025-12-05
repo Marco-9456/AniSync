@@ -43,7 +43,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8" // Matching Kotlin 1.9.22
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
         resources {
@@ -76,6 +76,9 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+
+    // Security Crypto for encrypted prefs
+    implementation(libs.security.crypto)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

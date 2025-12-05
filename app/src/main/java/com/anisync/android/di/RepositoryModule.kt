@@ -2,8 +2,14 @@ package com.anisync.android.di
 
 import com.anisync.android.data.DiscoverRepositoryImpl
 import com.anisync.android.data.LibraryRepositoryImpl
+import com.anisync.android.data.ProfileRepositoryImpl
+import com.anisync.android.data.DetailsRepositoryImpl
+import com.anisync.android.data.SearchRepositoryImpl
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryRepository
+import com.anisync.android.domain.ProfileRepository
+import com.anisync.android.domain.DetailsRepository
+import com.anisync.android.domain.SearchRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -22,4 +28,19 @@ abstract class RepositoryModule {
     abstract fun bindDiscoverRepository(
         impl: DiscoverRepositoryImpl
     ): DiscoverRepository
+
+    @Binds
+    abstract fun bindProfileRepository(
+        impl: ProfileRepositoryImpl
+    ): ProfileRepository
+
+    @Binds
+    abstract fun bindDetailsRepository(
+        impl: DetailsRepositoryImpl
+    ): DetailsRepository
+
+    @Binds
+    abstract fun bindSearchRepository(
+        impl: SearchRepositoryImpl
+    ): SearchRepository
 }

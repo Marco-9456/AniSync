@@ -2,8 +2,12 @@ package com.anisync.android;
 
 import com.anisync.android.di.ApolloModule;
 import com.anisync.android.di.RepositoryModule;
+import com.anisync.android.presentation.details.DetailsViewModel_HiltModules;
 import com.anisync.android.presentation.discover.DiscoverViewModel_HiltModules;
 import com.anisync.android.presentation.library.LibraryViewModel_HiltModules;
+import com.anisync.android.presentation.profile.ProfileViewModel_HiltModules;
+import com.anisync.android.presentation.search.SearchViewModel_HiltModules;
+import com.anisync.android.presentation.settings.SettingsViewModel_HiltModules;
 import dagger.Binds;
 import dagger.Component;
 import dagger.Module;
@@ -158,10 +162,14 @@ public final class AniSyncApplication_HiltComponents {
       modules = {
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class,
+          DetailsViewModel_HiltModules.KeyModule.class,
           DiscoverViewModel_HiltModules.KeyModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
           HiltWrapper_SavedStateHandleModule.class,
-          LibraryViewModel_HiltModules.KeyModule.class
+          LibraryViewModel_HiltModules.KeyModule.class,
+          ProfileViewModel_HiltModules.KeyModule.class,
+          SearchViewModel_HiltModules.KeyModule.class,
+          SettingsViewModel_HiltModules.KeyModule.class
       }
   )
   @ActivityRetainedScoped
@@ -197,9 +205,13 @@ public final class AniSyncApplication_HiltComponents {
 
   @Subcomponent(
       modules = {
+          DetailsViewModel_HiltModules.BindsModule.class,
           DiscoverViewModel_HiltModules.BindsModule.class,
           HiltWrapper_HiltViewModelFactory_ViewModelModule.class,
-          LibraryViewModel_HiltModules.BindsModule.class
+          LibraryViewModel_HiltModules.BindsModule.class,
+          ProfileViewModel_HiltModules.BindsModule.class,
+          SearchViewModel_HiltModules.BindsModule.class,
+          SettingsViewModel_HiltModules.BindsModule.class
       }
   )
   @ViewModelScoped

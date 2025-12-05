@@ -1,6 +1,8 @@
 package com.anisync.android.presentation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -19,12 +21,14 @@ import com.anisync.android.presentation.navigation.Screen
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-    val items = listOf(Screen.Library, Screen.Discover)
+    val items = listOf(Screen.Library, Screen.Discover, Screen.Profile)
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         bottomBar = {
             NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
                 items.forEach { screen ->
@@ -42,6 +46,19 @@ fun MainScreen() {
                             }
                         }
                     )
+                }
+            }
+        },
+        floatingActionButton = {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = currentRoute == Screen.Discover.route,
+                enter = androidx.compose.animation.scaleIn(),
+                exit = androidx.compose.animation.scaleOut()
+            ) {
+                androidx.compose.material3.FloatingActionButton(
+                    onClick = { navController.navigate(Screen.Search.route) }
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = "Search")
                 }
             }
         }

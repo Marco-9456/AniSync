@@ -1,0 +1,29 @@
+query GetUserProfile($name: String) {
+  User(name: $name) {
+    name
+    avatar {
+      large
+    }
+    bannerImage
+    statistics {
+      anime {
+        count
+        minutesWatched
+        meanScore
+      }
+    }
+    favourites {
+      anime {
+        nodes {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            large
+          }
+        }
+      }
+    }
+  }
+}

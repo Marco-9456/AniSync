@@ -1,12 +1,15 @@
 package com.anisync.android.presentation.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -36,6 +39,7 @@ import com.anisync.android.domain.LibraryStatus
 
 @Composable
 fun LibraryScreen(
+    onMediaClick: (Int) -> Unit,
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -77,7 +81,10 @@ fun LibraryScreen(
                             else -> true
                         }
                     }
-                    LibraryGrid(entries = filteredEntries)
+                    LibraryGrid(
+                        entries = filteredEntries,
+                        onMediaClick = onMediaClick
+                    )
                 }
                 is LibraryUiState.Error -> {
                     Column(
@@ -94,7 +101,10 @@ fun LibraryScreen(
 }
 
 @Composable
-fun LibraryGrid(entries: List<LibraryEntry>) {
+fun LibraryGrid(
+    entries: List<LibraryEntry>,
+    onMediaClick: (Int) -> Unit
+) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 120.dp),
         contentPadding = PaddingValues(8.dp),
@@ -102,42 +112,34 @@ fun LibraryGrid(entries: List<LibraryEntry>) {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(entries, key = { it.id }) { entry ->
-            LibraryItemCard(entry)
+            LibraryItemCard(
+                entry = entry,
+                onClick = { onMediaClick(entry.mediaId) }
+            )
         }
     }
 }
 
 @Composable
-fun LibraryItemCard(entry: LibraryEntry) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth().height(200.dp)
-    ) {
-        Column {
-            AsyncImage(
-                model = entry.coverUrl,
-                contentDescription = entry.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.7f)
-            )
-            Column(
-                modifier = Modifier
-                    .weight(0.3f)
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = entry.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "${entry.progress}/${entry.totalEpisodes ?: "?"}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
+fun LibraryItemCard(
+    entry: LibraryEntry,
+    onClick: () -> Unit
+) {
+    Box {
+        com.anisync.android.presentation.components.MediaCard(
+            imageUrl = entry.coverUrl,
+            title = entry.title,
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().height(200.dp)
+        )
+        Text(
+            text = "${entry.progress}/${entry.totalEpisodes ?: "?"}",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f))
+                .padding(4.dp)
+                .clip(MaterialTheme.shapes.small)
+        )
     }
 }

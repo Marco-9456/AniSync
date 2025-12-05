@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetUserLibraryQuery
+import com.anisync.android.GetViewerQuery
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
@@ -14,10 +15,17 @@ class LibraryRepositoryImpl @Inject constructor(
 ) : LibraryRepository {
 
     override suspend fun getLibrary(username: String): List<LibraryEntry> {
-        val response = apolloClient.query(GetUserLibraryQuery(username = username, type = MediaType.ANIME)).execute()
+        // If no username provided, try to get current authenticated user
+        val actualUsername = if (username.isBlank()) {
+            val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
+            viewerResponse.data?.Viewer?.name ?: return emptyList()
+        } else {
+            username
+        }
+        
+        val response = apolloClient.query(GetUserLibraryQuery(username = actualUsername, type = MediaType.ANIME)).execute()
         
         if (response.hasErrors()) {
-            // In a real app, parse errors. For now, empty or throw.
             return emptyList()
         }
 

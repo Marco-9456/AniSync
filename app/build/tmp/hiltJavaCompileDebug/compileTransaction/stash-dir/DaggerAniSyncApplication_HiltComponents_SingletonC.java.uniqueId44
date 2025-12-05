@@ -6,11 +6,30 @@ import android.view.View;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
+import com.anisync.android.data.AuthRepository;
+import com.anisync.android.data.DetailsRepositoryImpl;
+import com.anisync.android.data.DiscoverRepositoryImpl;
 import com.anisync.android.data.LibraryRepositoryImpl;
+import com.anisync.android.data.ProfileRepositoryImpl;
+import com.anisync.android.data.SearchRepositoryImpl;
 import com.anisync.android.di.ApolloModule_ProvideApolloClientFactory;
+import com.anisync.android.di.AuthorizationInterceptor;
 import com.anisync.android.domain.GetLibraryUseCase;
+import com.anisync.android.domain.GetMediaDetailsUseCase;
+import com.anisync.android.domain.GetPopularAnimeUseCase;
+import com.anisync.android.domain.GetProfileUseCase;
+import com.anisync.android.domain.GetTrendingAnimeUseCase;
+import com.anisync.android.domain.SearchMediaUseCase;
+import com.anisync.android.presentation.details.DetailsViewModel;
+import com.anisync.android.presentation.details.DetailsViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.discover.DiscoverViewModel;
+import com.anisync.android.presentation.discover.DiscoverViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.anisync.android.presentation.library.LibraryViewModel;
 import com.anisync.android.presentation.library.LibraryViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.profile.ProfileViewModel;
+import com.anisync.android.presentation.profile.ProfileViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.search.SearchViewModel;
+import com.anisync.android.presentation.search.SearchViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.apollographql.apollo3.ApolloClient;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
@@ -26,10 +45,13 @@ import dagger.hilt.android.internal.lifecycle.DefaultViewModelFactories_Internal
 import dagger.hilt.android.internal.managers.ActivityRetainedComponentManager_LifecycleModule_ProvideActivityRetainedLifecycleFactory;
 import dagger.hilt.android.internal.managers.SavedStateHandleHolder;
 import dagger.hilt.android.internal.modules.ApplicationContextModule;
+import dagger.hilt.android.internal.modules.ApplicationContextModule_ProvideContextFactory;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.DoubleCheck;
+import dagger.internal.MapBuilder;
 import dagger.internal.Preconditions;
 import dagger.internal.Provider;
+import dagger.internal.SetBuilder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -54,25 +76,20 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
     return new Builder();
   }
 
-  public static AniSyncApplication_HiltComponents.SingletonC create() {
-    return new Builder().build();
-  }
-
   public static final class Builder {
+    private ApplicationContextModule applicationContextModule;
+
     private Builder() {
     }
 
-    /**
-     * @deprecated This module is declared, but an instance is not used in the component. This method is a no-op. For more, see https://dagger.dev/unused-modules.
-     */
-    @Deprecated
     public Builder applicationContextModule(ApplicationContextModule applicationContextModule) {
-      Preconditions.checkNotNull(applicationContextModule);
+      this.applicationContextModule = Preconditions.checkNotNull(applicationContextModule);
       return this;
     }
 
     public AniSyncApplication_HiltComponents.SingletonC build() {
-      return new SingletonCImpl();
+      Preconditions.checkBuilderRequirement(applicationContextModule, ApplicationContextModule.class);
+      return new SingletonCImpl(applicationContextModule);
     }
   }
 
@@ -362,6 +379,7 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     @Override
     public void injectMainActivity(MainActivity arg0) {
+      injectMainActivity2(arg0);
     }
 
     @Override
@@ -371,7 +389,7 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     @Override
     public Set<String> getViewModelKeys() {
-      return Collections.<String>singleton(LibraryViewModel_HiltModules_KeyModule_ProvideFactory.provide());
+      return SetBuilder.<String>newSetBuilder(5).add(DetailsViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(DiscoverViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(LibraryViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(ProfileViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(SearchViewModel_HiltModules_KeyModule_ProvideFactory.provide()).build();
     }
 
     @Override
@@ -388,40 +406,79 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
     public ViewComponentBuilder viewComponentBuilder() {
       return new ViewCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl);
     }
+
+    private MainActivity injectMainActivity2(MainActivity instance) {
+      MainActivity_MembersInjector.injectAuthRepository(instance, singletonCImpl.authRepositoryProvider.get());
+      return instance;
+    }
   }
 
   private static final class ViewModelCImpl extends AniSyncApplication_HiltComponents.ViewModelC {
+    private final SavedStateHandle savedStateHandle;
+
     private final SingletonCImpl singletonCImpl;
 
     private final ActivityRetainedCImpl activityRetainedCImpl;
 
     private final ViewModelCImpl viewModelCImpl = this;
 
+    private Provider<DetailsViewModel> detailsViewModelProvider;
+
+    private Provider<DiscoverViewModel> discoverViewModelProvider;
+
     private Provider<LibraryViewModel> libraryViewModelProvider;
+
+    private Provider<ProfileViewModel> profileViewModelProvider;
+
+    private Provider<SearchViewModel> searchViewModelProvider;
 
     private ViewModelCImpl(SingletonCImpl singletonCImpl,
         ActivityRetainedCImpl activityRetainedCImpl, SavedStateHandle savedStateHandleParam,
         ViewModelLifecycle viewModelLifecycleParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
-
+      this.savedStateHandle = savedStateHandleParam;
       initialize(savedStateHandleParam, viewModelLifecycleParam);
 
+    }
+
+    private GetMediaDetailsUseCase getMediaDetailsUseCase() {
+      return new GetMediaDetailsUseCase(singletonCImpl.detailsRepositoryImpl());
+    }
+
+    private GetTrendingAnimeUseCase getTrendingAnimeUseCase() {
+      return new GetTrendingAnimeUseCase(singletonCImpl.discoverRepositoryImpl());
+    }
+
+    private GetPopularAnimeUseCase getPopularAnimeUseCase() {
+      return new GetPopularAnimeUseCase(singletonCImpl.discoverRepositoryImpl());
     }
 
     private GetLibraryUseCase getLibraryUseCase() {
       return new GetLibraryUseCase(singletonCImpl.libraryRepositoryImpl());
     }
 
+    private GetProfileUseCase getProfileUseCase() {
+      return new GetProfileUseCase(singletonCImpl.profileRepositoryImpl());
+    }
+
+    private SearchMediaUseCase searchMediaUseCase() {
+      return new SearchMediaUseCase(singletonCImpl.searchRepositoryImpl());
+    }
+
     @SuppressWarnings("unchecked")
     private void initialize(final SavedStateHandle savedStateHandleParam,
         final ViewModelLifecycle viewModelLifecycleParam) {
-      this.libraryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.detailsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.discoverViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
+      this.libraryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
+      this.profileViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
+      this.searchViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
     }
 
     @Override
     public Map<String, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return Collections.<String, javax.inject.Provider<ViewModel>>singletonMap("com.anisync.android.presentation.library.LibraryViewModel", ((Provider) libraryViewModelProvider));
+      return MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(5).put("com.anisync.android.presentation.details.DetailsViewModel", ((Provider) detailsViewModelProvider)).put("com.anisync.android.presentation.discover.DiscoverViewModel", ((Provider) discoverViewModelProvider)).put("com.anisync.android.presentation.library.LibraryViewModel", ((Provider) libraryViewModelProvider)).put("com.anisync.android.presentation.profile.ProfileViewModel", ((Provider) profileViewModelProvider)).put("com.anisync.android.presentation.search.SearchViewModel", ((Provider) searchViewModelProvider)).build();
     }
 
     @Override
@@ -450,8 +507,20 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.anisync.android.presentation.library.LibraryViewModel 
+          case 0: // com.anisync.android.presentation.details.DetailsViewModel 
+          return (T) new DetailsViewModel(viewModelCImpl.getMediaDetailsUseCase(), singletonCImpl.detailsRepositoryImpl(), viewModelCImpl.savedStateHandle);
+
+          case 1: // com.anisync.android.presentation.discover.DiscoverViewModel 
+          return (T) new DiscoverViewModel(viewModelCImpl.getTrendingAnimeUseCase(), viewModelCImpl.getPopularAnimeUseCase());
+
+          case 2: // com.anisync.android.presentation.library.LibraryViewModel 
           return (T) new LibraryViewModel(viewModelCImpl.getLibraryUseCase());
+
+          case 3: // com.anisync.android.presentation.profile.ProfileViewModel 
+          return (T) new ProfileViewModel(viewModelCImpl.getProfileUseCase());
+
+          case 4: // com.anisync.android.presentation.search.SearchViewModel 
+          return (T) new SearchViewModel(viewModelCImpl.searchMediaUseCase());
 
           default: throw new AssertionError(id);
         }
@@ -529,27 +598,52 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
   }
 
   private static final class SingletonCImpl extends AniSyncApplication_HiltComponents.SingletonC {
+    private final ApplicationContextModule applicationContextModule;
+
     private final SingletonCImpl singletonCImpl = this;
+
+    private Provider<AuthRepository> authRepositoryProvider;
 
     private Provider<ApolloClient> provideApolloClientProvider;
 
-    private SingletonCImpl() {
+    private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
+      this.applicationContextModule = applicationContextModuleParam;
+      initialize(applicationContextModuleParam);
 
-      initialize();
+    }
 
+    private AuthorizationInterceptor authorizationInterceptor() {
+      return new AuthorizationInterceptor(authRepositoryProvider.get());
+    }
+
+    private DetailsRepositoryImpl detailsRepositoryImpl() {
+      return new DetailsRepositoryImpl(provideApolloClientProvider.get());
+    }
+
+    private DiscoverRepositoryImpl discoverRepositoryImpl() {
+      return new DiscoverRepositoryImpl(provideApolloClientProvider.get());
     }
 
     private LibraryRepositoryImpl libraryRepositoryImpl() {
       return new LibraryRepositoryImpl(provideApolloClientProvider.get());
     }
 
+    private ProfileRepositoryImpl profileRepositoryImpl() {
+      return new ProfileRepositoryImpl(provideApolloClientProvider.get());
+    }
+
+    private SearchRepositoryImpl searchRepositoryImpl() {
+      return new SearchRepositoryImpl(provideApolloClientProvider.get());
+    }
+
     @SuppressWarnings("unchecked")
-    private void initialize() {
-      this.provideApolloClientProvider = DoubleCheck.provider(new SwitchingProvider<ApolloClient>(singletonCImpl, 0));
+    private void initialize(final ApplicationContextModule applicationContextModuleParam) {
+      this.authRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<AuthRepository>(singletonCImpl, 0));
+      this.provideApolloClientProvider = DoubleCheck.provider(new SwitchingProvider<ApolloClient>(singletonCImpl, 1));
     }
 
     @Override
-    public void injectAniSyncApplication(AniSyncApplication arg0) {
+    public void injectAniSyncApplication(AniSyncApplication aniSyncApplication) {
     }
 
     @Override
@@ -581,8 +675,11 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.apollographql.apollo3.ApolloClient 
-          return (T) ApolloModule_ProvideApolloClientFactory.provideApolloClient();
+          case 0: // com.anisync.android.data.AuthRepository 
+          return (T) new AuthRepository(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 1: // com.apollographql.apollo3.ApolloClient 
+          return (T) ApolloModule_ProvideApolloClientFactory.provideApolloClient(singletonCImpl.authorizationInterceptor());
 
           default: throw new AssertionError(id);
         }

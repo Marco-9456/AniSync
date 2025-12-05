@@ -13,10 +13,12 @@ object ApolloModule {
 
     @Provides
     @Singleton
-    fun provideApolloClient(): ApolloClient {
+    fun provideApolloClient(
+        authorizationInterceptor: AuthorizationInterceptor
+    ): ApolloClient {
         return ApolloClient.Builder()
             .serverUrl("https://graphql.anilist.co")
-            // Optional: Add logging or auth headers here later
+            .addHttpInterceptor(authorizationInterceptor)
             .build()
     }
 }

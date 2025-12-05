@@ -33,6 +33,7 @@ import com.anisync.android.domain.LibraryEntry
 
 @Composable
 fun DiscoverScreen(
+    onMediaClick: (Int) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -46,7 +47,8 @@ fun DiscoverScreen(
         is DiscoverUiState.Success -> {
             DiscoverContent(
                 trending = state.trending,
-                popular = state.popular
+                popular = state.popular,
+                onMediaClick = onMediaClick
             )
         }
         is DiscoverUiState.Error -> {
@@ -60,7 +62,8 @@ fun DiscoverScreen(
 @Composable
 fun DiscoverContent(
     trending: List<LibraryEntry>,
-    popular: List<LibraryEntry>
+    popular: List<LibraryEntry>,
+    onMediaClick: (Int) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(vertical = 16.dp),
@@ -69,12 +72,18 @@ fun DiscoverContent(
     ) {
         item {
             SectionHeader(title = "Trending Now")
-            MediaCarousel(items = trending)
+            MediaCarousel(
+                items = trending,
+                onMediaClick = onMediaClick
+            )
         }
 
         item {
             SectionHeader(title = "All Time Popular")
-            MediaCarousel(items = popular)
+            MediaCarousel(
+                items = popular,
+                onMediaClick = onMediaClick
+            )
         }
     }
 }
@@ -90,46 +99,20 @@ fun SectionHeader(title: String) {
 }
 
 @Composable
-fun MediaCarousel(items: List<LibraryEntry>) {
+fun MediaCarousel(
+    items: List<LibraryEntry>,
+    onMediaClick: (Int) -> Unit
+) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(items) { item ->
-            MediaCard(item = item)
-        }
-    }
-}
-
-@Composable
-fun MediaCard(item: LibraryEntry) {
-    Card(
-        modifier = Modifier
-            .width(130.dp)
-            .height(220.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column {
-            AsyncImage(
-                model = item.coverUrl,
-                contentDescription = item.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.75f)
+            com.anisync.android.presentation.components.MediaCard(
+                imageUrl = item.coverUrl,
+                title = item.title,
+                onClick = { onMediaClick(item.mediaId) }
             )
-            Column(
-                modifier = Modifier
-                    .weight(0.25f)
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
         }
     }
 }

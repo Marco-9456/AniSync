@@ -1,0 +1,15 @@
+query SearchMedia($search: String, $page: Int, $perPage: Int) {
+  Page(page: $page, perPage: $perPage) {
+    media(search: $search, sort: POPULARITY_DESC, type: ANIME) {
+      id
+      title {
+        userPreferred
+      }
+      coverImage {
+        extraLarge
+      }
+      status
+      averageScore
+    }
+  }
+}

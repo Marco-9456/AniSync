@@ -1,10 +1,18 @@
 schema {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
   MediaListCollection(userName: String, type: MediaType): MediaListCollection
-  Page(perPage: Int): Page
+  Page(page: Int, perPage: Int): Page
+  User(name: String): User
+  Media(id: Int): Media
+  Viewer: User
+}
+
+type Mutation {
+  SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int): MediaList
 }
 
 type MediaListCollection {
@@ -21,6 +29,7 @@ type MediaList {
   media: Media
   status: MediaListStatus
   progress: Int
+  score: Float
 }
 
 type Media {
@@ -28,14 +37,25 @@ type Media {
   title: MediaTitle
   coverImage: MediaCoverImage
   episodes: Int
+  bannerImage: String
+  description(asHtml: Boolean): String
+  averageScore: Int
+  status: MediaStatus
+  genres: [String]
+  studios(isMain: Boolean): StudioConnection
+  startDate: FuzzyDate
+  mediaListEntry: MediaList
 }
 
 type MediaTitle {
   userPreferred: String
+  romaji: String
+  english: String
 }
 
 type MediaCoverImage {
   extraLarge: String
+  large: String
 }
 
 enum MediaType {
@@ -53,10 +73,62 @@ enum MediaListStatus {
 }
 
 type Page {
-  media(sort: [MediaSort], type: MediaType): [Media]
+  media(sort: [MediaSort], type: MediaType, search: String): [Media]
 }
 
 enum MediaSort {
   TRENDING_DESC
   POPULARITY_DESC
+}
+
+type User {
+  name: String
+  avatar: UserAvatar
+  bannerImage: String
+  statistics: UserStatisticTypes
+  favourites: Favourites
+}
+
+type UserAvatar {
+  large: String
+}
+
+type UserStatisticTypes {
+  anime: UserAnimeStatistics
+}
+
+type UserAnimeStatistics {
+  count: Int
+  minutesWatched: Int
+  meanScore: Float
+}
+
+type Favourites {
+  anime: MediaConnection
+}
+
+type MediaConnection {
+  nodes: [Media]
+}
+
+enum MediaStatus {
+  FINISHED
+  RELEASING
+  NOT_YET_RELEASED
+  CANCELLED
+  HIATUS
+}
+
+type StudioConnection {
+  nodes: [Studio]
+}
+
+type Studio {
+  name: String
+}
+
+type FuzzyDate {
+  year: Int
+  month: Int
+  day: Int
 }

@@ -14,6 +14,7 @@ navigation-compose = "2.7.7"
 apollo = "3.8.2"
 ksp = "1.9.22-1.0.17"
 coil = "2.6.0"
+security-crypto = "1.1.0-alpha06"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -36,6 +37,7 @@ google-hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compi
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
 apollo-runtime = { group = "com.apollographql.apollo3", name = "apollo-runtime", version.ref = "apollo" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

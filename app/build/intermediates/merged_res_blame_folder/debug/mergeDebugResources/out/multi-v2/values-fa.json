@@ -1,27 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.anisync.android.app-mergeDebugResources-55:/values-fa/values-fa.xml",
+            "outputFile": "com.anisync.android.app-mergeDebugResources-56:/values-fa/values-fa.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\0eab1f78e137a43207770aadba8c67a1\\transformed\\core-1.12.0\\res\\values-fa\\values-fa.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,154,256,355,455,556,662,779",
-                        "endColumns": "98,101,98,99,100,105,116,100",
-                        "endOffsets": "149,251,350,450,551,657,774,875"
-                    },
-                    "to": {
-                        "startLines": "2,3,4,5,6,7,8,79",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,204,306,405,505,606,712,8034",
-                        "endColumns": "98,101,98,99,100,105,116,100",
-                        "endOffsets": "199,301,400,500,601,707,824,8130"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\8609fddb257c5987841577442156a291\\transformed\\ui-release\\res\\values-fa\\values-fa.xml",
+                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\8f1f78065a0c2d53e9e12a15415e6bd2\\transformed\\ui-release\\res\\values-fa\\values-fa.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -38,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\ee4fb7b88f6ea8c9298f1f2592748ac0\\transformed\\material3-release\\res\\values-fa\\values-fa.xml",
+                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\39a4cee001d65f6d59a98bedb8418c9b\\transformed\\material3-release\\res\\values-fa\\values-fa.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -55,7 +38,24 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\5aabff9ba83f1bfe79421b94cf398a0d\\transformed\\foundation-release\\res\\values-fa\\values-fa.xml",
+                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\05303181ae8ee794d5639ddb9901a511\\transformed\\core-1.12.0\\res\\values-fa\\values-fa.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,154,256,355,455,556,662,779",
+                        "endColumns": "98,101,98,99,100,105,116,100",
+                        "endOffsets": "149,251,350,450,551,657,774,875"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,79",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,204,306,405,505,606,712,8034",
+                        "endColumns": "98,101,98,99,100,105,116,100",
+                        "endOffsets": "199,301,400,500,601,707,824,8130"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\Mohammed.Aldakhil\\.gradle\\caches\\transforms-4\\39125fbdc7d8c088aee16778c6608a75\\transformed\\foundation-release\\res\\values-fa\\values-fa.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
