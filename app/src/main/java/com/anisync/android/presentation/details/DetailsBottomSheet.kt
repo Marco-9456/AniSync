@@ -58,11 +58,8 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.Dp
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -248,9 +245,9 @@ fun DetailsSheetContent(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = Color.Transparent,
                 divider = { HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f)) },
-                indicator = { tabPositions ->
+                indicator = {
                      TabRowDefaults.PrimaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        modifier = Modifier.tabIndicatorOffset(selectedTabIndex, matchContentSize = true),
                         width = Dp.Unspecified,
                         color = Color(0xFF8B7E28)
                     )

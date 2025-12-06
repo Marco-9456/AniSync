@@ -49,3 +49,6 @@ captures/
 
 # Windows
 Thumbs.db
+
+# Environment variables
+.env
