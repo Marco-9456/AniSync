@@ -83,6 +83,7 @@ int drawable ic_call_decline 0x7f060005
 int drawable ic_call_decline_low 0x7f060006
 int drawable ic_launcher_background 0x7f060007
 int drawable ic_launcher_foreground 0x7f060008
+int drawable ic_launcher_monochrome 0x7f060016
 int drawable notification_action_background 0x7f060009
 int drawable notification_bg 0x7f06000a
 int drawable notification_bg_low 0x7f06000b
