@@ -3,10 +3,10 @@ package com.anisync.android.presentation.profile;
 import com.anisync.android.domain.GetProfileUseCase;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -19,12 +19,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class ProfileViewModel_Factory implements Factory<ProfileViewModel> {
   private final Provider<GetProfileUseCase> getProfileUseCaseProvider;
 
-  public ProfileViewModel_Factory(Provider<GetProfileUseCase> getProfileUseCaseProvider) {
+  private ProfileViewModel_Factory(Provider<GetProfileUseCase> getProfileUseCaseProvider) {
     this.getProfileUseCaseProvider = getProfileUseCaseProvider;
   }
 

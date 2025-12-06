@@ -3,10 +3,10 @@ package com.anisync.android.di;
 import com.anisync.android.data.AuthRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -19,12 +19,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class AuthorizationInterceptor_Factory implements Factory<AuthorizationInterceptor> {
   private final Provider<AuthRepository> authRepositoryProvider;
 
-  public AuthorizationInterceptor_Factory(Provider<AuthRepository> authRepositoryProvider) {
+  private AuthorizationInterceptor_Factory(Provider<AuthRepository> authRepositoryProvider) {
     this.authRepositoryProvider = authRepositoryProvider;
   }
 

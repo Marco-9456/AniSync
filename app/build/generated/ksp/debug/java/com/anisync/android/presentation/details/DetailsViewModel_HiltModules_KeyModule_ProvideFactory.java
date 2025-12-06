@@ -2,7 +2,6 @@ package com.anisync.android.presentation.details;
 
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
-import dagger.internal.Preconditions;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
@@ -18,11 +17,14 @@ import javax.annotation.processing.Generated;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
-public final class DetailsViewModel_HiltModules_KeyModule_ProvideFactory implements Factory<String> {
+public final class DetailsViewModel_HiltModules_KeyModule_ProvideFactory implements Factory<Boolean> {
   @Override
-  public String get() {
+  public Boolean get() {
     return provide();
   }
 
@@ -30,11 +32,11 @@ public final class DetailsViewModel_HiltModules_KeyModule_ProvideFactory impleme
     return InstanceHolder.INSTANCE;
   }
 
-  public static String provide() {
-    return Preconditions.checkNotNullFromProvides(DetailsViewModel_HiltModules.KeyModule.provide());
+  public static boolean provide() {
+    return DetailsViewModel_HiltModules.KeyModule.provide();
   }
 
   private static final class InstanceHolder {
-    private static final DetailsViewModel_HiltModules_KeyModule_ProvideFactory INSTANCE = new DetailsViewModel_HiltModules_KeyModule_ProvideFactory();
+    static final DetailsViewModel_HiltModules_KeyModule_ProvideFactory INSTANCE = new DetailsViewModel_HiltModules_KeyModule_ProvideFactory();
   }
 }

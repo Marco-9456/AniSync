@@ -1,4 +1,4 @@
-#Sat Dec 06 13:59:15 CET 2025
+#Sat Dec 06 14:42:55 CET 2025
 base.0=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.10=C\:\\Users\\Mohammed.Aldakhil\\Desktop\\Android\\AniSync\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\4\\classes.dex

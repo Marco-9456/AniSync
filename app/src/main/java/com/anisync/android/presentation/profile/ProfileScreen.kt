@@ -207,7 +207,7 @@ fun ProfileContent(
                     )
                 }
 
-                Divider(color = Color.Black.copy(alpha = 0.05f))
+                HorizontalDivider(color = Color.Black.copy(alpha = 0.05f))
 
                 // Settings
                 Row(

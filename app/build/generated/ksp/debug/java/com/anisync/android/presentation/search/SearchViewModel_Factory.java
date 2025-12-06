@@ -3,10 +3,10 @@ package com.anisync.android.presentation.search;
 import com.anisync.android.domain.SearchRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -19,12 +19,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class SearchViewModel_Factory implements Factory<SearchViewModel> {
   private final Provider<SearchRepository> searchRepositoryProvider;
 
-  public SearchViewModel_Factory(Provider<SearchRepository> searchRepositoryProvider) {
+  private SearchViewModel_Factory(Provider<SearchRepository> searchRepositoryProvider) {
     this.searchRepositoryProvider = searchRepositoryProvider;
   }
 

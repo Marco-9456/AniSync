@@ -17,17 +17,29 @@ import com.anisync.android.di.AuthorizationInterceptor;
 import com.anisync.android.domain.GetMediaDetailsUseCase;
 import com.anisync.android.domain.GetProfileUseCase;
 import com.anisync.android.presentation.details.DetailsViewModel;
-import com.anisync.android.presentation.details.DetailsViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.details.DetailsViewModel_HiltModules;
+import com.anisync.android.presentation.details.DetailsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.anisync.android.presentation.details.DetailsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.anisync.android.presentation.discover.DiscoverViewModel;
-import com.anisync.android.presentation.discover.DiscoverViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.discover.DiscoverViewModel_HiltModules;
+import com.anisync.android.presentation.discover.DiscoverViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.anisync.android.presentation.discover.DiscoverViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.anisync.android.presentation.library.LibraryViewModel;
-import com.anisync.android.presentation.library.LibraryViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.library.LibraryViewModel_HiltModules;
+import com.anisync.android.presentation.library.LibraryViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.anisync.android.presentation.library.LibraryViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.anisync.android.presentation.profile.ProfileViewModel;
-import com.anisync.android.presentation.profile.ProfileViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.profile.ProfileViewModel_HiltModules;
+import com.anisync.android.presentation.profile.ProfileViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.anisync.android.presentation.profile.ProfileViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.anisync.android.presentation.search.SearchViewModel;
-import com.anisync.android.presentation.search.SearchViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.search.SearchViewModel_HiltModules;
+import com.anisync.android.presentation.search.SearchViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.anisync.android.presentation.search.SearchViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.anisync.android.presentation.settings.SettingsViewModel;
-import com.anisync.android.presentation.settings.SettingsViewModel_HiltModules_KeyModule_ProvideFactory;
+import com.anisync.android.presentation.settings.SettingsViewModel_HiltModules;
+import com.anisync.android.presentation.settings.SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.anisync.android.presentation.settings.SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.apollographql.apollo3.ApolloClient;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
@@ -46,10 +58,10 @@ import dagger.hilt.android.internal.modules.ApplicationContextModule;
 import dagger.hilt.android.internal.modules.ApplicationContextModule_ProvideContextFactory;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.DoubleCheck;
+import dagger.internal.LazyClassKeyMap;
 import dagger.internal.MapBuilder;
 import dagger.internal.Preconditions;
 import dagger.internal.Provider;
-import dagger.internal.SetBuilder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +76,10 @@ import javax.annotation.processing.Generated;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
   private DaggerAniSyncApplication_HiltComponents_SingletonC() {
@@ -299,7 +314,7 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final ViewWithFragmentCImpl viewWithFragmentCImpl = this;
 
-    private ViewWithFragmentCImpl(SingletonCImpl singletonCImpl,
+    ViewWithFragmentCImpl(SingletonCImpl singletonCImpl,
         ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
         FragmentCImpl fragmentCImpl, View viewParam) {
       this.singletonCImpl = singletonCImpl;
@@ -320,9 +335,8 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final FragmentCImpl fragmentCImpl = this;
 
-    private FragmentCImpl(SingletonCImpl singletonCImpl,
-        ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
-        Fragment fragmentParam) {
+    FragmentCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        ActivityCImpl activityCImpl, Fragment fragmentParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
       this.activityCImpl = activityCImpl;
@@ -350,7 +364,7 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final ViewCImpl viewCImpl = this;
 
-    private ViewCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+    ViewCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
         ActivityCImpl activityCImpl, View viewParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
@@ -367,8 +381,8 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final ActivityCImpl activityCImpl = this;
 
-    private ActivityCImpl(SingletonCImpl singletonCImpl,
-        ActivityRetainedCImpl activityRetainedCImpl, Activity activityParam) {
+    ActivityCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        Activity activityParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
 
@@ -386,8 +400,8 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
     }
 
     @Override
-    public Set<String> getViewModelKeys() {
-      return SetBuilder.<String>newSetBuilder(6).add(DetailsViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(DiscoverViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(LibraryViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(ProfileViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(SearchViewModel_HiltModules_KeyModule_ProvideFactory.provide()).add(SettingsViewModel_HiltModules_KeyModule_ProvideFactory.provide()).build();
+    public Map<Class<?>, Boolean> getViewModelKeys() {
+      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(6).put(DetailsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, DetailsViewModel_HiltModules.KeyModule.provide()).put(DiscoverViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, DiscoverViewModel_HiltModules.KeyModule.provide()).put(LibraryViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, LibraryViewModel_HiltModules.KeyModule.provide()).put(ProfileViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ProfileViewModel_HiltModules.KeyModule.provide()).put(SearchViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SearchViewModel_HiltModules.KeyModule.provide()).put(SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SettingsViewModel_HiltModules.KeyModule.provide()).build());
     }
 
     @Override
@@ -420,21 +434,20 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final ViewModelCImpl viewModelCImpl = this;
 
-    private Provider<DetailsViewModel> detailsViewModelProvider;
+    Provider<DetailsViewModel> detailsViewModelProvider;
 
-    private Provider<DiscoverViewModel> discoverViewModelProvider;
+    Provider<DiscoverViewModel> discoverViewModelProvider;
 
-    private Provider<LibraryViewModel> libraryViewModelProvider;
+    Provider<LibraryViewModel> libraryViewModelProvider;
 
-    private Provider<ProfileViewModel> profileViewModelProvider;
+    Provider<ProfileViewModel> profileViewModelProvider;
 
-    private Provider<SearchViewModel> searchViewModelProvider;
+    Provider<SearchViewModel> searchViewModelProvider;
 
-    private Provider<SettingsViewModel> settingsViewModelProvider;
+    Provider<SettingsViewModel> settingsViewModelProvider;
 
-    private ViewModelCImpl(SingletonCImpl singletonCImpl,
-        ActivityRetainedCImpl activityRetainedCImpl, SavedStateHandle savedStateHandleParam,
-        ViewModelLifecycle viewModelLifecycleParam) {
+    ViewModelCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        SavedStateHandle savedStateHandleParam, ViewModelLifecycle viewModelLifecycleParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
       this.savedStateHandle = savedStateHandleParam;
@@ -442,11 +455,11 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     }
 
-    private GetMediaDetailsUseCase getMediaDetailsUseCase() {
+    GetMediaDetailsUseCase getMediaDetailsUseCase() {
       return new GetMediaDetailsUseCase(singletonCImpl.detailsRepositoryImpl());
     }
 
-    private GetProfileUseCase getProfileUseCase() {
+    GetProfileUseCase getProfileUseCase() {
       return new GetProfileUseCase(singletonCImpl.profileRepositoryImpl());
     }
 
@@ -462,13 +475,13 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
     }
 
     @Override
-    public Map<String, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(6).put("com.anisync.android.presentation.details.DetailsViewModel", ((Provider) detailsViewModelProvider)).put("com.anisync.android.presentation.discover.DiscoverViewModel", ((Provider) discoverViewModelProvider)).put("com.anisync.android.presentation.library.LibraryViewModel", ((Provider) libraryViewModelProvider)).put("com.anisync.android.presentation.profile.ProfileViewModel", ((Provider) profileViewModelProvider)).put("com.anisync.android.presentation.search.SearchViewModel", ((Provider) searchViewModelProvider)).put("com.anisync.android.presentation.settings.SettingsViewModel", ((Provider) settingsViewModelProvider)).build();
+    public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(6).put(DetailsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (detailsViewModelProvider))).put(DiscoverViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (discoverViewModelProvider))).put(LibraryViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (libraryViewModelProvider))).put(ProfileViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (profileViewModelProvider))).put(SearchViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (searchViewModelProvider))).put(SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (settingsViewModelProvider))).build());
     }
 
     @Override
-    public Map<String, Object> getHiltViewModelAssistedMap() {
-      return Collections.<String, Object>emptyMap();
+    public Map<Class<?>, Object> getHiltViewModelAssistedMap() {
+      return Collections.<Class<?>, Object>emptyMap();
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -488,26 +501,26 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
         this.id = id;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
+      @SuppressWarnings("unchecked")
       public T get() {
         switch (id) {
-          case 0: // com.anisync.android.presentation.details.DetailsViewModel 
+          case 0: // com.anisync.android.presentation.details.DetailsViewModel
           return (T) new DetailsViewModel(viewModelCImpl.getMediaDetailsUseCase(), singletonCImpl.detailsRepositoryImpl(), viewModelCImpl.savedStateHandle);
 
-          case 1: // com.anisync.android.presentation.discover.DiscoverViewModel 
+          case 1: // com.anisync.android.presentation.discover.DiscoverViewModel
           return (T) new DiscoverViewModel(singletonCImpl.discoverRepositoryImpl());
 
-          case 2: // com.anisync.android.presentation.library.LibraryViewModel 
+          case 2: // com.anisync.android.presentation.library.LibraryViewModel
           return (T) new LibraryViewModel(singletonCImpl.libraryRepositoryImpl());
 
-          case 3: // com.anisync.android.presentation.profile.ProfileViewModel 
+          case 3: // com.anisync.android.presentation.profile.ProfileViewModel
           return (T) new ProfileViewModel(viewModelCImpl.getProfileUseCase());
 
-          case 4: // com.anisync.android.presentation.search.SearchViewModel 
+          case 4: // com.anisync.android.presentation.search.SearchViewModel
           return (T) new SearchViewModel(singletonCImpl.searchRepositoryImpl());
 
-          case 5: // com.anisync.android.presentation.settings.SettingsViewModel 
+          case 5: // com.anisync.android.presentation.settings.SettingsViewModel
           return (T) new SettingsViewModel(singletonCImpl.authRepositoryProvider.get());
 
           default: throw new AssertionError(id);
@@ -521,9 +534,9 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final ActivityRetainedCImpl activityRetainedCImpl = this;
 
-    private Provider<ActivityRetainedLifecycle> provideActivityRetainedLifecycleProvider;
+    Provider<ActivityRetainedLifecycle> provideActivityRetainedLifecycleProvider;
 
-    private ActivityRetainedCImpl(SingletonCImpl singletonCImpl,
+    ActivityRetainedCImpl(SingletonCImpl singletonCImpl,
         SavedStateHandleHolder savedStateHandleHolderParam) {
       this.singletonCImpl = singletonCImpl;
 
@@ -560,11 +573,11 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
         this.id = id;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
+      @SuppressWarnings("unchecked")
       public T get() {
         switch (id) {
-          case 0: // dagger.hilt.android.ActivityRetainedLifecycle 
+          case 0: // dagger.hilt.android.ActivityRetainedLifecycle
           return (T) ActivityRetainedComponentManager_LifecycleModule_ProvideActivityRetainedLifecycleFactory.provideActivityRetainedLifecycle();
 
           default: throw new AssertionError(id);
@@ -578,7 +591,7 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final ServiceCImpl serviceCImpl = this;
 
-    private ServiceCImpl(SingletonCImpl singletonCImpl, Service serviceParam) {
+    ServiceCImpl(SingletonCImpl singletonCImpl, Service serviceParam) {
       this.singletonCImpl = singletonCImpl;
 
 
@@ -590,37 +603,37 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
 
     private final SingletonCImpl singletonCImpl = this;
 
-    private Provider<AuthRepository> authRepositoryProvider;
+    Provider<AuthRepository> authRepositoryProvider;
 
-    private Provider<ApolloClient> provideApolloClientProvider;
+    Provider<ApolloClient> provideApolloClientProvider;
 
-    private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
+    SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
 
     }
 
-    private AuthorizationInterceptor authorizationInterceptor() {
+    AuthorizationInterceptor authorizationInterceptor() {
       return new AuthorizationInterceptor(authRepositoryProvider.get());
     }
 
-    private DetailsRepositoryImpl detailsRepositoryImpl() {
+    DetailsRepositoryImpl detailsRepositoryImpl() {
       return new DetailsRepositoryImpl(provideApolloClientProvider.get());
     }
 
-    private DiscoverRepositoryImpl discoverRepositoryImpl() {
+    DiscoverRepositoryImpl discoverRepositoryImpl() {
       return new DiscoverRepositoryImpl(provideApolloClientProvider.get());
     }
 
-    private LibraryRepositoryImpl libraryRepositoryImpl() {
+    LibraryRepositoryImpl libraryRepositoryImpl() {
       return new LibraryRepositoryImpl(provideApolloClientProvider.get());
     }
 
-    private ProfileRepositoryImpl profileRepositoryImpl() {
+    ProfileRepositoryImpl profileRepositoryImpl() {
       return new ProfileRepositoryImpl(provideApolloClientProvider.get());
     }
 
-    private SearchRepositoryImpl searchRepositoryImpl() {
+    SearchRepositoryImpl searchRepositoryImpl() {
       return new SearchRepositoryImpl(provideApolloClientProvider.get());
     }
 
@@ -631,7 +644,7 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
     }
 
     @Override
-    public void injectAniSyncApplication(AniSyncApplication aniSyncApplication) {
+    public void injectAniSyncApplication(AniSyncApplication arg0) {
     }
 
     @Override
@@ -659,14 +672,14 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
         this.id = id;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
+      @SuppressWarnings("unchecked")
       public T get() {
         switch (id) {
-          case 0: // com.anisync.android.data.AuthRepository 
+          case 0: // com.anisync.android.data.AuthRepository
           return (T) new AuthRepository(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 1: // com.apollographql.apollo3.ApolloClient 
+          case 1: // com.apollographql.apollo3.ApolloClient
           return (T) ApolloModule_ProvideApolloClientFactory.provideApolloClient(singletonCImpl.authorizationInterceptor());
 
           default: throw new AssertionError(id);

@@ -42,7 +42,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.QuestionMark
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.RelatedMedia
@@ -54,10 +54,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -115,7 +118,7 @@ fun DetailsBottomSheet(
                     .background(Color.LightGray.copy(alpha = 0.6f))
             )
         },
-        windowInsets = WindowInsets(0)
+        contentWindowInsets = { WindowInsets(0) }
     ) {
         Box(
             modifier = Modifier
@@ -148,6 +151,7 @@ fun DetailsBottomSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsSheetContent(
     details: MediaDetails,
@@ -240,14 +244,14 @@ fun DetailsSheetContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Tabs
-            TabRow(
+            PrimaryTabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = Color.Transparent,
                 divider = { HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f)) },
                 indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
+                     TabRowDefaults.PrimaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        height = 3.dp,
+                        width = Dp.Unspecified,
                         color = Color(0xFF8B7E28)
                     )
                 }
@@ -559,7 +563,7 @@ fun FabMenuItem(
 
 fun getStatusIcon(status: LibraryStatus, isManga: Boolean = false): androidx.compose.ui.graphics.vector.ImageVector {
     return when (status) {
-        LibraryStatus.CURRENT -> if (isManga) Icons.Default.MenuBook else Icons.Default.PlayArrow
+        LibraryStatus.CURRENT -> if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.PlayArrow
         LibraryStatus.PLANNING -> Icons.Default.Event
         LibraryStatus.COMPLETED -> Icons.Default.Check
         LibraryStatus.DROPPED -> Icons.Default.Delete // Or remove circle

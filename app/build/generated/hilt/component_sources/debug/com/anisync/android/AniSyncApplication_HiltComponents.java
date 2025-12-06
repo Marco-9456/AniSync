@@ -38,7 +38,7 @@ import dagger.hilt.android.internal.managers.FragmentComponentManager;
 import dagger.hilt.android.internal.managers.HiltWrapper_ActivityRetainedComponentManager_ActivityRetainedComponentBuilderEntryPoint;
 import dagger.hilt.android.internal.managers.HiltWrapper_ActivityRetainedComponentManager_ActivityRetainedLifecycleEntryPoint;
 import dagger.hilt.android.internal.managers.HiltWrapper_ActivityRetainedComponentManager_LifecycleModule;
-import dagger.hilt.android.internal.managers.HiltWrapper_SavedStateHandleModule;
+import dagger.hilt.android.internal.managers.HiltWrapper_ActivitySavedStateHandleModule;
 import dagger.hilt.android.internal.managers.ServiceComponentManager;
 import dagger.hilt.android.internal.managers.ViewComponentManager;
 import dagger.hilt.android.internal.modules.ApplicationContextModule;
@@ -141,6 +141,7 @@ public final class AniSyncApplication_HiltComponents {
       }
   )
   @Singleton
+  @jakarta.inject.Singleton
   public abstract static class SingletonC implements AniSyncApplication_GeneratedInjector,
       FragmentGetContextFix.FragmentGetContextFixEntryPoint,
       HiltWrapper_ActivityRetainedComponentManager_ActivityRetainedComponentBuilderEntryPoint,
@@ -165,7 +166,7 @@ public final class AniSyncApplication_HiltComponents {
           DetailsViewModel_HiltModules.KeyModule.class,
           DiscoverViewModel_HiltModules.KeyModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
-          HiltWrapper_SavedStateHandleModule.class,
+          HiltWrapper_ActivitySavedStateHandleModule.class,
           LibraryViewModel_HiltModules.KeyModule.class,
           ProfileViewModel_HiltModules.KeyModule.class,
           SearchViewModel_HiltModules.KeyModule.class,

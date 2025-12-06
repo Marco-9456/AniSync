@@ -2,10 +2,10 @@ package com.anisync.android.domain;
 
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -18,12 +18,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class GetPopularAnimeUseCase_Factory implements Factory<GetPopularAnimeUseCase> {
   private final Provider<DiscoverRepository> repositoryProvider;
 
-  public GetPopularAnimeUseCase_Factory(Provider<DiscoverRepository> repositoryProvider) {
+  private GetPopularAnimeUseCase_Factory(Provider<DiscoverRepository> repositoryProvider) {
     this.repositoryProvider = repositoryProvider;
   }
 

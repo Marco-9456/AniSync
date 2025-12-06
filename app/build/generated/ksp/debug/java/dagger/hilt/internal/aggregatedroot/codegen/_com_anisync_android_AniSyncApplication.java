@@ -13,8 +13,10 @@ import javax.annotation.processing.Generated;
     originatingRoot = "com.anisync.android.AniSyncApplication",
     originatingRootPackage = "com.anisync.android",
     rootAnnotation = HiltAndroidApp.class,
+    rootComponentPackage = "dagger.hilt.components",
     rootSimpleNames = "AniSyncApplication",
-    originatingRootSimpleNames = "AniSyncApplication"
+    originatingRootSimpleNames = "AniSyncApplication",
+    rootComponentSimpleNames = "SingletonComponent"
 )
 @Generated("dagger.hilt.processor.internal.root.AggregatedRootGenerator")
 public class _com_anisync_android_AniSyncApplication {

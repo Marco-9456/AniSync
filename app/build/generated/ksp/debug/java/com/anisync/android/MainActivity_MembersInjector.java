@@ -4,9 +4,9 @@ import com.anisync.android.data.AuthRepository;
 import dagger.MembersInjector;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.InjectedFieldSignature;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @QualifierMetadata
 @DaggerGenerated
@@ -18,23 +18,26 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class MainActivity_MembersInjector implements MembersInjector<MainActivity> {
   private final Provider<AuthRepository> authRepositoryProvider;
 
-  public MainActivity_MembersInjector(Provider<AuthRepository> authRepositoryProvider) {
+  private MainActivity_MembersInjector(Provider<AuthRepository> authRepositoryProvider) {
     this.authRepositoryProvider = authRepositoryProvider;
-  }
-
-  public static MembersInjector<MainActivity> create(
-      Provider<AuthRepository> authRepositoryProvider) {
-    return new MainActivity_MembersInjector(authRepositoryProvider);
   }
 
   @Override
   public void injectMembers(MainActivity instance) {
     injectAuthRepository(instance, authRepositoryProvider.get());
+  }
+
+  public static MembersInjector<MainActivity> create(
+      Provider<AuthRepository> authRepositoryProvider) {
+    return new MainActivity_MembersInjector(authRepositoryProvider);
   }
 
   @InjectedFieldSignature("com.anisync.android.MainActivity.authRepository")

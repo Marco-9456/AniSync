@@ -2,10 +2,10 @@ package com.anisync.android.domain;
 
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -18,12 +18,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class GetProfileUseCase_Factory implements Factory<GetProfileUseCase> {
   private final Provider<ProfileRepository> repositoryProvider;
 
-  public GetProfileUseCase_Factory(Provider<ProfileRepository> repositoryProvider) {
+  private GetProfileUseCase_Factory(Provider<ProfileRepository> repositoryProvider) {
     this.repositoryProvider = repositoryProvider;
   }
 

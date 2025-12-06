@@ -3,10 +3,10 @@ package com.anisync.android.presentation.library;
 import com.anisync.android.domain.LibraryRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -19,12 +19,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class LibraryViewModel_Factory implements Factory<LibraryViewModel> {
   private final Provider<LibraryRepository> libraryRepositoryProvider;
 
-  public LibraryViewModel_Factory(Provider<LibraryRepository> libraryRepositoryProvider) {
+  private LibraryViewModel_Factory(Provider<LibraryRepository> libraryRepositoryProvider) {
     this.libraryRepositoryProvider = libraryRepositoryProvider;
   }
 

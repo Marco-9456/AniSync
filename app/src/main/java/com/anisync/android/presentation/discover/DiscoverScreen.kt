@@ -69,16 +69,22 @@ fun DiscoverScreen(
                 .semantics { isTraversalGroup = true }
         ) {
             SearchBar(
-                modifier = Modifier.fillMaxWidth(),
-                query = "",
-                onQueryChange = {},
-                onSearch = {},
-                active = false,
-                onActiveChange = { 
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        query = "",
+                        onQueryChange = {},
+                        onSearch = {},
+                        expanded = false,
+                        onExpandedChange = { onSearchClick() },
+                        placeholder = { Text("Search Anime & Manga...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    )
+                },
+                expanded = false,
+                onExpandedChange = { 
                     onSearchClick()
                 },
-                placeholder = { Text("Search Anime & Manga...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                modifier = Modifier.fillMaxWidth(),
                 colors = SearchBarDefaults.colors(
                     containerColor = BeigeYellow
                 )

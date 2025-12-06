@@ -3,10 +3,10 @@ package com.anisync.android.presentation.discover;
 import com.anisync.android.domain.DiscoverRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -19,12 +19,15 @@ import javax.inject.Provider;
     "unchecked",
     "rawtypes",
     "KotlinInternal",
-    "KotlinInternalInJava"
+    "KotlinInternalInJava",
+    "cast",
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class DiscoverViewModel_Factory implements Factory<DiscoverViewModel> {
   private final Provider<DiscoverRepository> discoverRepositoryProvider;
 
-  public DiscoverViewModel_Factory(Provider<DiscoverRepository> discoverRepositoryProvider) {
+  private DiscoverViewModel_Factory(Provider<DiscoverRepository> discoverRepositoryProvider) {
     this.discoverRepositoryProvider = discoverRepositoryProvider;
   }
 
