@@ -9,6 +9,7 @@ import com.anisync.android.adapter.GetMediaBySortQuery_ResponseAdapter
 import com.anisync.android.adapter.GetMediaBySortQuery_VariablesAdapter
 import com.anisync.android.selections.GetMediaBySortQuerySelections
 import com.anisync.android.type.MediaSort
+import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.annotations.ApolloAdaptableWith
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CompiledField
@@ -24,6 +25,7 @@ import kotlin.collections.List
 
 public data class GetMediaBySortQuery(
   public val sort: Optional<List<MediaSort?>?> = Optional.Absent,
+  public val type: Optional<MediaType?> = Optional.Absent,
   public val perPage: Optional<Int?> = Optional.Absent,
 ) : Query<GetMediaBySortQuery.Data> {
   public override fun id(): String = OPERATION_ID
@@ -59,6 +61,10 @@ public data class GetMediaBySortQuery(
     public val id: Int?,
     public val title: Title?,
     public val coverImage: CoverImage?,
+    public val episodes: Int?,
+    public val chapters: Int?,
+    public val volumes: Int?,
+    public val type: MediaType?,
   )
 
   public data class Title(
@@ -71,15 +77,15 @@ public data class GetMediaBySortQuery(
 
   public companion object {
     public const val OPERATION_ID: String =
-        "e1fbb68583f440d51c85ab3bff1f3dfb15e423e3a40bfc5014158126e1e20c7f"
+        "2ce296208c46490f7b6e2e266de1b9100813671123c125ccced45f9a49f0db3d"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
      * The un-minimized version is:
      *
-     * query GetMediaBySort($sort: \[MediaSort\], $perPage: Int) {
+     * query GetMediaBySort($sort: \[MediaSort\], $type: MediaType, $perPage: Int) {
      *   Page(perPage: $perPage) {
-     *     media(sort: $sort, type: ANIME) {
+     *     media(sort: $sort, type: $type) {
      *       id
      *       title {
      *         userPreferred
@@ -87,13 +93,17 @@ public data class GetMediaBySortQuery(
      *       coverImage {
      *         extraLarge
      *       }
+     *       episodes
+     *       chapters
+     *       volumes
+     *       type
      *     }
      *   }
      * }
      */
     public val OPERATION_DOCUMENT: String
       get() =
-          "query GetMediaBySort(${'$'}sort: [MediaSort], ${'$'}perPage: Int) { Page(perPage: ${'$'}perPage) { media(sort: ${'$'}sort, type: ANIME) { id title { userPreferred } coverImage { extraLarge } } } }"
+          "query GetMediaBySort(${'$'}sort: [MediaSort], ${'$'}type: MediaType, ${'$'}perPage: Int) { Page(perPage: ${'$'}perPage) { media(sort: ${'$'}sort, type: ${'$'}type) { id title { userPreferred } coverImage { extraLarge } episodes chapters volumes type } } }"
 
     public const val OPERATION_NAME: String = "GetMediaBySort"
   }

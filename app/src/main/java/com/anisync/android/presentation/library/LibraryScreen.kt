@@ -31,7 +31,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.shimmerEffect
+import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.*
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LibraryScreen(
@@ -39,12 +42,26 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var isGridView by remember { mutableStateOf(false) } // Default to List view as per screenshots flow usually starts with List? Or implied toggle.
-    var selectedMediaType by remember { mutableStateOf("Anime") } // "Anime", "Manga"
-    var selectedStatus by remember { mutableStateOf(LibraryStatus.CURRENT) } // Mapping "Watching" to CURRENT
+    val mediaType by viewModel.mediaType.collectAsState()
+    
+    var isGridView by remember { mutableStateOf(false) }
+    var selectedStatus by remember { mutableStateOf(LibraryStatus.CURRENT) }
+    
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(key1 = true) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is LibraryEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
 
     Scaffold(
-        containerColor = CreamBackground
+        containerColor = CreamBackground,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -54,8 +71,8 @@ fun LibraryScreen(
         ) {
             // Header Section
             LibraryHeader(
-                selectedMediaType = selectedMediaType,
-                onMediaTypeChange = { selectedMediaType = it },
+                selectedMediaType = mediaType,
+                onMediaTypeChange = viewModel::onMediaTypeChange,
                 selectedStatus = selectedStatus,
                 onStatusChange = { selectedStatus = it },
                 isGridView = isGridView,
@@ -65,15 +82,12 @@ fun LibraryScreen(
             // Content Section
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = OliveDrab)
-                    }
+                   LibraryLoadingShimmer(isGridView)
                 }
                 is LibraryUiState.Success -> {
                     // Filter Logic
                     val filteredEntries = state.entries.filter { entry ->
                         entry.status == selectedStatus
-                        // Note: Media Type filtering would go here if entry had type
                     }
 
                     if (isGridView) {
@@ -86,7 +100,9 @@ fun LibraryScreen(
                             items(filteredEntries, key = { it.id }) { entry ->
                                 LibraryGridCard(
                                     entry = entry,
-                                    onClick = { onMediaClick(entry.mediaId) }
+                                    onClick = { onMediaClick(entry.mediaId) },
+                                    onIncrement = { viewModel.incrementProgress(entry.mediaId) },
+                                    onDecrement = { viewModel.decrementProgress(entry.mediaId) }
                                 )
                             }
                         }
@@ -98,7 +114,9 @@ fun LibraryScreen(
                             items(filteredEntries, key = { it.id }) { entry ->
                                 LibraryListCard(
                                     entry = entry,
-                                    onClick = { onMediaClick(entry.mediaId) }
+                                    onClick = { onMediaClick(entry.mediaId) },
+                                    onIncrement = { viewModel.incrementProgress(entry.mediaId) },
+                                    onDecrement = { viewModel.decrementProgress(entry.mediaId) }
                                 )
                             }
                         }
@@ -116,8 +134,8 @@ fun LibraryScreen(
 
 @Composable
 fun LibraryHeader(
-    selectedMediaType: String,
-    onMediaTypeChange: (String) -> Unit,
+    selectedMediaType: MediaType,
+    onMediaTypeChange: (MediaType) -> Unit,
     selectedStatus: LibraryStatus,
     onStatusChange: (LibraryStatus) -> Unit,
     isGridView: Boolean,
@@ -142,8 +160,10 @@ fun LibraryHeader(
         // Segmented Control (Anime/Manga)
         com.anisync.android.presentation.components.SegmentedControl(
             options = listOf("Anime", "Manga"),
-            selectedOption = selectedMediaType,
-            onOptionSelected = onMediaTypeChange
+            selectedOption = if (selectedMediaType == MediaType.ANIME) "Anime" else "Manga",
+            onOptionSelected = { 
+                onMediaTypeChange(if (it == "Anime") MediaType.ANIME else MediaType.MANGA) 
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -157,7 +177,6 @@ fun LibraryHeader(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Mapping typical statuses. Adjust based on LibraryStatus enum
                 val statuses = listOf(
                     "Watching" to LibraryStatus.CURRENT,
                     "Paused" to LibraryStatus.PAUSED,
@@ -168,6 +187,8 @@ fun LibraryHeader(
                 
                 items(statuses) { (label, status) ->
                     val isSelected = selectedStatus == status
+                    val displayLabel = if (selectedMediaType == MediaType.MANGA && label == "Watching") "Reading" else label
+                    
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
@@ -181,7 +202,7 @@ fun LibraryHeader(
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = label,
+                            text = displayLabel,
                             color = TextDark,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -209,18 +230,61 @@ fun LibraryHeader(
 }
 
 @Composable
+fun LibraryLoadingShimmer(isGridView: Boolean) {
+    if (isGridView) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 160.dp),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(6) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(260.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .shimmerEffect()
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+             items(6) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .shimmerEffect()
+                )
+             }
+        }
+    }
+}
+
+@Composable
 fun LibraryListCard(
     entry: LibraryEntry,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
 ) {
+    val isManga = entry.type == MediaType.MANGA
+    val total = if (isManga) entry.totalChapters else entry.totalEpisodes
+    val unitLabel = if (isManga) "Ch." else "Ep."
+    val progressLabel = if (isManga) "READING" else "AIRING" // Simplified, ideally check status
+
     Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(140.dp),
         colors = CardDefaults.cardColors(containerColor = SurfacePinkWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Flat style as per ref? checking shadow... ref shows shadow.
-        // Actually ref shows separate card look. Let's add slight elevation or border.
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             // Cover Image
@@ -235,9 +299,6 @@ fun LibraryListCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-                // Assuming logic for "Behind" badge if we had data for it. 
-                // Hardcoding a generic badge for visual fidelity if needed or skipping if no data.
-                // Keeping clean for now.
             }
 
             // Content
@@ -255,10 +316,9 @@ fun LibraryListCard(
                 )
                 
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                    // Badge: AIRING (Mock logic or if entry has status)
                     if (entry.status == LibraryStatus.CURRENT) {
                          Text(
-                            text = "AIRING", // Placeholder logic
+                            text = progressLabel, 
                             style = MaterialTheme.typography.labelSmall,
                             color = TextDark,
                             modifier = Modifier
@@ -269,7 +329,7 @@ fun LibraryListCard(
                     }
                     
                     Text(
-                        text = "EP ${entry.progress + 1} • 2d", // Mock metadata
+                        text = "$unitLabel ${entry.progress + 1}", 
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
@@ -289,14 +349,14 @@ fun LibraryListCard(
                         ) {
                             Text("Progress", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                             Text(
-                                "${entry.progress} / ${entry.totalEpisodes ?: "?"}",
+                                "${entry.progress} / ${total ?: "?"}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.Gray
                             )
                         }
                         LinearProgressIndicator(
                             progress = { 
-                                if ((entry.totalEpisodes ?: 0) > 0) entry.progress.toFloat() / entry.totalEpisodes!! else 0f 
+                                if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f 
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -320,7 +380,7 @@ fun LibraryListCard(
                         .weight(1f)
                         .fillMaxWidth()
                         .background(PastelPink)
-                        .clickable { /* TODO: Decrement */ },
+                        .clickable { onDecrement() },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("-", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextDark)
@@ -329,12 +389,8 @@ fun LibraryListCard(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .background(PastelGreen) // Ref said Plus is Yellow background? 
-                        // Prompt said: Right: Vertical action strip with "Minus" (Pink) and "Plus" (Yellow background) buttons.
-                        // Wait, user Prompt said: "Plus (+): #B9E4C9 (Pastel Green)." in Color Palette section.
-                        // But earlier said "Plus (Yellow background)" in Task 3.
-                        // I will trust the "Crucial Design Specifications" section which said "Plus (+): #B9E4C9 (Pastel Green)".
-                        .clickable { /* TODO: Increment */ },
+                        .background(PastelGreen)
+                        .clickable { onIncrement() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Increase", tint = TextDark)
@@ -347,8 +403,14 @@ fun LibraryListCard(
 @Composable
 fun LibraryGridCard(
     entry: LibraryEntry,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
 ) {
+    val isManga = entry.type == MediaType.MANGA
+    val total = if (isManga) entry.totalChapters else entry.totalEpisodes
+    val progressLabel = if (isManga) "READING" else "AIRING"
+
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -370,7 +432,6 @@ fun LibraryGridCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-                // Badge overlay if needed
             }
 
             // Content
@@ -390,7 +451,7 @@ fun LibraryGridCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                  Text(
-                    text = "AIRING", // Mock/Placeholder
+                    text = progressLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = TextDark,
                     modifier = Modifier
@@ -402,7 +463,7 @@ fun LibraryGridCard(
 
                 LinearProgressIndicator(
                     progress = { 
-                        if ((entry.totalEpisodes ?: 0) > 0) entry.progress.toFloat() / entry.totalEpisodes!! else 0f 
+                        if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f 
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -424,7 +485,7 @@ fun LibraryGridCard(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(PastelPink)
-                        .clickable { /* Decrement */ },
+                        .clickable { onDecrement() },
                     contentAlignment = Alignment.Center
                 ) {
                      Text("-", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextDark)
@@ -434,7 +495,7 @@ fun LibraryGridCard(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(PastelGreen)
-                        .clickable { /* Increment */ },
+                        .clickable { onIncrement() },
                     contentAlignment = Alignment.Center
                 ) {
                      Icon(Icons.Default.Add, contentDescription = "Increase", tint = TextDark)
@@ -443,4 +504,3 @@ fun LibraryGridCard(
         }
     }
 }
-

@@ -3,12 +3,14 @@ package com.anisync.android.presentation.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.SearchMediaUseCase
+import com.anisync.android.domain.SearchRepository
+import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -26,33 +28,36 @@ sealed interface SearchUiState {
     data object Empty : SearchUiState
 }
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val searchMediaUseCase: SearchMediaUseCase
+    private val searchRepository: SearchRepository
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
+    
+    private val _mediaType = MutableStateFlow(MediaType.ANIME)
+    val mediaType: StateFlow<MediaType> = _mediaType.asStateFlow()
 
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
-        _query
+        combine(_query, _mediaType) { query, type -> query to type }
             .debounce(500L)
             .distinctUntilChanged()
-            .filter { it.isNotBlank() }
+            .filter { (query, _) -> query.isNotBlank() }
             .onEach {
                 _uiState.value = SearchUiState.Loading
             }
-            .flatMapLatest { query ->
+            .flatMapLatest { (query, type) ->
                 kotlinx.coroutines.flow.flow {
                     try {
-                        val results = searchMediaUseCase(query)
+                        val results = searchRepository.searchMedia(query, type)
                         emit(results)
                     } catch (e: Exception) {
-                        emit(emptyList()) // Ideally handle error properly, simplified for flow
+                        emit(emptyList()) 
                         _uiState.update { SearchUiState.Error(e.message ?: "Unknown error") }
                     }
                 }
@@ -75,6 +80,10 @@ class SearchViewModel @Inject constructor(
 
     fun onQueryChanged(newQuery: String) {
         _query.value = newQuery
+    }
+    
+    fun onMediaTypeChange(type: MediaType) {
+        _mediaType.value = type
     }
     
     fun clearQuery() {

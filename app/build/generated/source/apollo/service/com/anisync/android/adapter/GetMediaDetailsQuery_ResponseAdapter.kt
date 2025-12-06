@@ -6,12 +6,18 @@
 package com.anisync.android.adapter
 
 import com.anisync.android.GetMediaDetailsQuery
+import com.anisync.android.type.CharacterRole
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaListStatus
+import com.anisync.android.type.MediaRelation
 import com.anisync.android.type.MediaStatus
+import com.anisync.android.type.MediaType
+import com.anisync.android.type.adapter.CharacterRole_ResponseAdapter
 import com.anisync.android.type.adapter.MediaFormat_ResponseAdapter
 import com.anisync.android.type.adapter.MediaListStatus_ResponseAdapter
+import com.anisync.android.type.adapter.MediaRelation_ResponseAdapter
 import com.anisync.android.type.adapter.MediaStatus_ResponseAdapter
+import com.anisync.android.type.adapter.MediaType_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CustomScalarAdapters
 import com.apollographql.apollo3.api.NullableDoubleAdapter
@@ -60,8 +66,8 @@ public object GetMediaDetailsQuery_ResponseAdapter {
 
   public object Media : Adapter<GetMediaDetailsQuery.Media> {
     public val RESPONSE_NAMES: List<String> = listOf("id", "title", "coverImage", "bannerImage",
-        "description", "averageScore", "episodes", "status", "format", "genres", "studios",
-        "startDate", "mediaListEntry")
+        "description", "averageScore", "episodes", "chapters", "volumes", "type", "status",
+        "format", "genres", "studios", "startDate", "mediaListEntry", "characters", "relations")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         GetMediaDetailsQuery.Media {
@@ -72,12 +78,17 @@ public object GetMediaDetailsQuery_ResponseAdapter {
       var _description: String? = null
       var _averageScore: Int? = null
       var _episodes: Int? = null
+      var _chapters: Int? = null
+      var _volumes: Int? = null
+      var _type: MediaType? = null
       var _status: MediaStatus? = null
       var _format: MediaFormat? = null
       var _genres: List<String?>? = null
       var _studios: GetMediaDetailsQuery.Studios? = null
       var _startDate: GetMediaDetailsQuery.StartDate? = null
       var _mediaListEntry: GetMediaDetailsQuery.MediaListEntry? = null
+      var _characters: GetMediaDetailsQuery.Characters? = null
+      var _relations: GetMediaDetailsQuery.Relations? = null
 
       while(true) {
         when (reader.selectName(RESPONSE_NAMES)) {
@@ -88,16 +99,21 @@ public object GetMediaDetailsQuery_ResponseAdapter {
           4 -> _description = NullableStringAdapter.fromJson(reader, customScalarAdapters)
           5 -> _averageScore = NullableIntAdapter.fromJson(reader, customScalarAdapters)
           6 -> _episodes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
-          7 -> _status = MediaStatus_ResponseAdapter.nullable().fromJson(reader,
+          7 -> _chapters = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          8 -> _volumes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          9 -> _type = MediaType_ResponseAdapter.nullable().fromJson(reader, customScalarAdapters)
+          10 -> _status = MediaStatus_ResponseAdapter.nullable().fromJson(reader,
               customScalarAdapters)
-          8 -> _format = MediaFormat_ResponseAdapter.nullable().fromJson(reader,
+          11 -> _format = MediaFormat_ResponseAdapter.nullable().fromJson(reader,
               customScalarAdapters)
-          9 -> _genres = NullableStringAdapter.list().nullable().fromJson(reader,
+          12 -> _genres = NullableStringAdapter.list().nullable().fromJson(reader,
               customScalarAdapters)
-          10 -> _studios = Studios.obj().nullable().fromJson(reader, customScalarAdapters)
-          11 -> _startDate = StartDate.obj().nullable().fromJson(reader, customScalarAdapters)
-          12 -> _mediaListEntry = MediaListEntry.obj().nullable().fromJson(reader,
+          13 -> _studios = Studios.obj().nullable().fromJson(reader, customScalarAdapters)
+          14 -> _startDate = StartDate.obj().nullable().fromJson(reader, customScalarAdapters)
+          15 -> _mediaListEntry = MediaListEntry.obj().nullable().fromJson(reader,
               customScalarAdapters)
+          16 -> _characters = Characters.obj().nullable().fromJson(reader, customScalarAdapters)
+          17 -> _relations = Relations.obj().nullable().fromJson(reader, customScalarAdapters)
           else -> break
         }
       }
@@ -110,12 +126,17 @@ public object GetMediaDetailsQuery_ResponseAdapter {
         description = _description,
         averageScore = _averageScore,
         episodes = _episodes,
+        chapters = _chapters,
+        volumes = _volumes,
+        type = _type,
         status = _status,
         format = _format,
         genres = _genres,
         studios = _studios,
         startDate = _startDate,
-        mediaListEntry = _mediaListEntry
+        mediaListEntry = _mediaListEntry,
+        characters = _characters,
+        relations = _relations
       )
     }
 
@@ -145,6 +166,15 @@ public object GetMediaDetailsQuery_ResponseAdapter {
       writer.name("episodes")
       NullableIntAdapter.toJson(writer, customScalarAdapters, value.episodes)
 
+      writer.name("chapters")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.chapters)
+
+      writer.name("volumes")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.volumes)
+
+      writer.name("type")
+      MediaType_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.type)
+
       writer.name("status")
       MediaStatus_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.status)
 
@@ -162,6 +192,12 @@ public object GetMediaDetailsQuery_ResponseAdapter {
 
       writer.name("mediaListEntry")
       MediaListEntry.obj().nullable().toJson(writer, customScalarAdapters, value.mediaListEntry)
+
+      writer.name("characters")
+      Characters.obj().nullable().toJson(writer, customScalarAdapters, value.characters)
+
+      writer.name("relations")
+      Relations.obj().nullable().toJson(writer, customScalarAdapters, value.relations)
     }
   }
 
@@ -362,6 +398,352 @@ public object GetMediaDetailsQuery_ResponseAdapter {
 
       writer.name("score")
       NullableDoubleAdapter.toJson(writer, customScalarAdapters, value.score)
+    }
+  }
+
+  public object Characters : Adapter<GetMediaDetailsQuery.Characters> {
+    public val RESPONSE_NAMES: List<String> = listOf("edges")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Characters {
+      var _edges: List<GetMediaDetailsQuery.Edge?>? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _edges = Edge.obj().nullable().list().nullable().fromJson(reader,
+              customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Characters(
+        edges = _edges
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Characters,
+    ): Unit {
+      writer.name("edges")
+      Edge.obj().nullable().list().nullable().toJson(writer, customScalarAdapters, value.edges)
+    }
+  }
+
+  public object Edge : Adapter<GetMediaDetailsQuery.Edge> {
+    public val RESPONSE_NAMES: List<String> = listOf("role", "node")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Edge {
+      var _role: CharacterRole? = null
+      var _node: GetMediaDetailsQuery.Node1? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _role = CharacterRole_ResponseAdapter.nullable().fromJson(reader,
+              customScalarAdapters)
+          1 -> _node = Node1.obj().nullable().fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Edge(
+        role = _role,
+        node = _node
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Edge,
+    ): Unit {
+      writer.name("role")
+      CharacterRole_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.role)
+
+      writer.name("node")
+      Node1.obj().nullable().toJson(writer, customScalarAdapters, value.node)
+    }
+  }
+
+  public object Node1 : Adapter<GetMediaDetailsQuery.Node1> {
+    public val RESPONSE_NAMES: List<String> = listOf("id", "name", "image")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Node1 {
+      var _id: Int? = null
+      var _name: GetMediaDetailsQuery.Name? = null
+      var _image: GetMediaDetailsQuery.Image? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _id = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          1 -> _name = Name.obj().nullable().fromJson(reader, customScalarAdapters)
+          2 -> _image = Image.obj().nullable().fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Node1(
+        id = _id,
+        name = _name,
+        image = _image
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Node1,
+    ): Unit {
+      writer.name("id")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.id)
+
+      writer.name("name")
+      Name.obj().nullable().toJson(writer, customScalarAdapters, value.name)
+
+      writer.name("image")
+      Image.obj().nullable().toJson(writer, customScalarAdapters, value.image)
+    }
+  }
+
+  public object Name : Adapter<GetMediaDetailsQuery.Name> {
+    public val RESPONSE_NAMES: List<String> = listOf("userPreferred")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Name {
+      var _userPreferred: String? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _userPreferred = NullableStringAdapter.fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Name(
+        userPreferred = _userPreferred
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Name,
+    ): Unit {
+      writer.name("userPreferred")
+      NullableStringAdapter.toJson(writer, customScalarAdapters, value.userPreferred)
+    }
+  }
+
+  public object Image : Adapter<GetMediaDetailsQuery.Image> {
+    public val RESPONSE_NAMES: List<String> = listOf("large")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Image {
+      var _large: String? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _large = NullableStringAdapter.fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Image(
+        large = _large
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Image,
+    ): Unit {
+      writer.name("large")
+      NullableStringAdapter.toJson(writer, customScalarAdapters, value.large)
+    }
+  }
+
+  public object Relations : Adapter<GetMediaDetailsQuery.Relations> {
+    public val RESPONSE_NAMES: List<String> = listOf("edges")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Relations {
+      var _edges: List<GetMediaDetailsQuery.Edge1?>? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _edges = Edge1.obj().nullable().list().nullable().fromJson(reader,
+              customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Relations(
+        edges = _edges
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Relations,
+    ): Unit {
+      writer.name("edges")
+      Edge1.obj().nullable().list().nullable().toJson(writer, customScalarAdapters, value.edges)
+    }
+  }
+
+  public object Edge1 : Adapter<GetMediaDetailsQuery.Edge1> {
+    public val RESPONSE_NAMES: List<String> = listOf("relationType", "node")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Edge1 {
+      var _relationType: MediaRelation? = null
+      var _node: GetMediaDetailsQuery.Node2? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _relationType = MediaRelation_ResponseAdapter.nullable().fromJson(reader,
+              customScalarAdapters)
+          1 -> _node = Node2.obj().nullable().fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Edge1(
+        relationType = _relationType,
+        node = _node
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Edge1,
+    ): Unit {
+      writer.name("relationType")
+      MediaRelation_ResponseAdapter.nullable().toJson(writer, customScalarAdapters,
+          value.relationType)
+
+      writer.name("node")
+      Node2.obj().nullable().toJson(writer, customScalarAdapters, value.node)
+    }
+  }
+
+  public object Node2 : Adapter<GetMediaDetailsQuery.Node2> {
+    public val RESPONSE_NAMES: List<String> = listOf("id", "title", "format", "status",
+        "coverImage")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Node2 {
+      var _id: Int? = null
+      var _title: GetMediaDetailsQuery.Title1? = null
+      var _format: MediaFormat? = null
+      var _status: MediaStatus? = null
+      var _coverImage: GetMediaDetailsQuery.CoverImage1? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _id = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          1 -> _title = Title1.obj().nullable().fromJson(reader, customScalarAdapters)
+          2 -> _format = MediaFormat_ResponseAdapter.nullable().fromJson(reader,
+              customScalarAdapters)
+          3 -> _status = MediaStatus_ResponseAdapter.nullable().fromJson(reader,
+              customScalarAdapters)
+          4 -> _coverImage = CoverImage1.obj().nullable().fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Node2(
+        id = _id,
+        title = _title,
+        format = _format,
+        status = _status,
+        coverImage = _coverImage
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Node2,
+    ): Unit {
+      writer.name("id")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.id)
+
+      writer.name("title")
+      Title1.obj().nullable().toJson(writer, customScalarAdapters, value.title)
+
+      writer.name("format")
+      MediaFormat_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.format)
+
+      writer.name("status")
+      MediaStatus_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.status)
+
+      writer.name("coverImage")
+      CoverImage1.obj().nullable().toJson(writer, customScalarAdapters, value.coverImage)
+    }
+  }
+
+  public object Title1 : Adapter<GetMediaDetailsQuery.Title1> {
+    public val RESPONSE_NAMES: List<String> = listOf("userPreferred")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.Title1 {
+      var _userPreferred: String? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _userPreferred = NullableStringAdapter.fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.Title1(
+        userPreferred = _userPreferred
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.Title1,
+    ): Unit {
+      writer.name("userPreferred")
+      NullableStringAdapter.toJson(writer, customScalarAdapters, value.userPreferred)
+    }
+  }
+
+  public object CoverImage1 : Adapter<GetMediaDetailsQuery.CoverImage1> {
+    public val RESPONSE_NAMES: List<String> = listOf("large")
+
+    public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
+        GetMediaDetailsQuery.CoverImage1 {
+      var _large: String? = null
+
+      while(true) {
+        when (reader.selectName(RESPONSE_NAMES)) {
+          0 -> _large = NullableStringAdapter.fromJson(reader, customScalarAdapters)
+          else -> break
+        }
+      }
+
+      return GetMediaDetailsQuery.CoverImage1(
+        large = _large
+      )
+    }
+
+    public override fun toJson(
+      writer: JsonWriter,
+      customScalarAdapters: CustomScalarAdapters,
+      `value`: GetMediaDetailsQuery.CoverImage1,
+    ): Unit {
+      writer.name("large")
+      NullableStringAdapter.toJson(writer, customScalarAdapters, value.large)
     }
   }
 }

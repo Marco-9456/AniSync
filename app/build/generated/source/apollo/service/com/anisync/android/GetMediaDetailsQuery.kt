@@ -8,9 +8,12 @@ package com.anisync.android
 import com.anisync.android.adapter.GetMediaDetailsQuery_ResponseAdapter
 import com.anisync.android.adapter.GetMediaDetailsQuery_VariablesAdapter
 import com.anisync.android.selections.GetMediaDetailsQuerySelections
+import com.anisync.android.type.CharacterRole
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaListStatus
+import com.anisync.android.type.MediaRelation
 import com.anisync.android.type.MediaStatus
+import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.annotations.ApolloAdaptableWith
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CompiledField
@@ -61,12 +64,17 @@ public data class GetMediaDetailsQuery(
     public val description: String?,
     public val averageScore: Int?,
     public val episodes: Int?,
+    public val chapters: Int?,
+    public val volumes: Int?,
+    public val type: MediaType?,
     public val status: MediaStatus?,
     public val format: MediaFormat?,
     public val genres: List<String?>?,
     public val studios: Studios?,
     public val startDate: StartDate?,
     public val mediaListEntry: MediaListEntry?,
+    public val characters: Characters?,
+    public val relations: Relations?,
   )
 
   public data class Title(
@@ -97,9 +105,57 @@ public data class GetMediaDetailsQuery(
     public val score: Double?,
   )
 
+  public data class Characters(
+    public val edges: List<Edge?>?,
+  )
+
+  public data class Edge(
+    public val role: CharacterRole?,
+    public val node: Node1?,
+  )
+
+  public data class Node1(
+    public val id: Int?,
+    public val name: Name?,
+    public val image: Image?,
+  )
+
+  public data class Name(
+    public val userPreferred: String?,
+  )
+
+  public data class Image(
+    public val large: String?,
+  )
+
+  public data class Relations(
+    public val edges: List<Edge1?>?,
+  )
+
+  public data class Edge1(
+    public val relationType: MediaRelation?,
+    public val node: Node2?,
+  )
+
+  public data class Node2(
+    public val id: Int?,
+    public val title: Title1?,
+    public val format: MediaFormat?,
+    public val status: MediaStatus?,
+    public val coverImage: CoverImage1?,
+  )
+
+  public data class Title1(
+    public val userPreferred: String?,
+  )
+
+  public data class CoverImage1(
+    public val large: String?,
+  )
+
   public companion object {
     public const val OPERATION_ID: String =
-        "609464c5bbf7b8160f4ad2d7aa0b5246e2d71d05f7538bb4888d0a0648ed2904"
+        "0062d76948b64f8c1b67209817dae8761aca4205ae7742bafa9e1e6e678e30dd"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
@@ -119,6 +175,9 @@ public data class GetMediaDetailsQuery(
      *     description(asHtml: true)
      *     averageScore
      *     episodes
+     *     chapters
+     *     volumes
+     *     type
      *     status
      *     format
      *     genres
@@ -136,12 +195,42 @@ public data class GetMediaDetailsQuery(
      *       progress
      *       score
      *     }
+     *     characters(sort: \[ROLE,RELEVANCE\], perPage: 6) {
+     *       edges {
+     *         role
+     *         node {
+     *           id
+     *           name {
+     *             userPreferred
+     *           }
+     *           image {
+     *             large
+     *           }
+     *         }
+     *       }
+     *     }
+     *     relations {
+     *       edges {
+     *         relationType
+     *         node {
+     *           id
+     *           title {
+     *             userPreferred
+     *           }
+     *           format
+     *           status
+     *           coverImage {
+     *             large
+     *           }
+     *         }
+     *       }
+     *     }
      *   }
      * }
      */
     public val OPERATION_DOCUMENT: String
       get() =
-          "query GetMediaDetails(${'$'}id: Int) { Media(id: ${'$'}id) { id title { romaji english } coverImage { extraLarge } bannerImage description(asHtml: true) averageScore episodes status format genres studios(isMain: true) { nodes { name } } startDate { year } mediaListEntry { id status progress score } } }"
+          "query GetMediaDetails(${'$'}id: Int) { Media(id: ${'$'}id) { id title { romaji english } coverImage { extraLarge } bannerImage description(asHtml: true) averageScore episodes chapters volumes type status format genres studios(isMain: true) { nodes { name } } startDate { year } mediaListEntry { id status progress score } characters(sort: [ROLE,RELEVANCE], perPage: 6) { edges { role node { id name { userPreferred } image { large } } } } relations { edges { relationType node { id title { userPreferred } format status coverImage { large } } } } } }"
 
     public const val OPERATION_NAME: String = "GetMediaDetails"
   }

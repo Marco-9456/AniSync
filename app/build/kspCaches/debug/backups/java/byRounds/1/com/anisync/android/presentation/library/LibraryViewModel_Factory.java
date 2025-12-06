@@ -1,6 +1,6 @@
 package com.anisync.android.presentation.library;
 
-import com.anisync.android.domain.GetLibraryUseCase;
+import com.anisync.android.domain.LibraryRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
 import dagger.internal.QualifierMetadata;
@@ -22,23 +22,23 @@ import javax.inject.Provider;
     "KotlinInternalInJava"
 })
 public final class LibraryViewModel_Factory implements Factory<LibraryViewModel> {
-  private final Provider<GetLibraryUseCase> getLibraryUseCaseProvider;
+  private final Provider<LibraryRepository> libraryRepositoryProvider;
 
-  public LibraryViewModel_Factory(Provider<GetLibraryUseCase> getLibraryUseCaseProvider) {
-    this.getLibraryUseCaseProvider = getLibraryUseCaseProvider;
+  public LibraryViewModel_Factory(Provider<LibraryRepository> libraryRepositoryProvider) {
+    this.libraryRepositoryProvider = libraryRepositoryProvider;
   }
 
   @Override
   public LibraryViewModel get() {
-    return newInstance(getLibraryUseCaseProvider.get());
+    return newInstance(libraryRepositoryProvider.get());
   }
 
   public static LibraryViewModel_Factory create(
-      Provider<GetLibraryUseCase> getLibraryUseCaseProvider) {
-    return new LibraryViewModel_Factory(getLibraryUseCaseProvider);
+      Provider<LibraryRepository> libraryRepositoryProvider) {
+    return new LibraryViewModel_Factory(libraryRepositoryProvider);
   }
 
-  public static LibraryViewModel newInstance(GetLibraryUseCase getLibraryUseCase) {
-    return new LibraryViewModel(getLibraryUseCase);
+  public static LibraryViewModel newInstance(LibraryRepository libraryRepository) {
+    return new LibraryViewModel(libraryRepository);
   }
 }

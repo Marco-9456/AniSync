@@ -42,6 +42,9 @@ type Media {
   title: MediaTitle
   coverImage: MediaCoverImage
   episodes: Int
+  chapters: Int
+  volumes: Int
+  type: MediaType
   bannerImage: String
   description(asHtml: Boolean): String
   averageScore: Int
@@ -51,6 +54,63 @@ type Media {
   startDate: FuzzyDate
   mediaListEntry: MediaList
   format: MediaFormat
+  characters(sort: [CharacterSort], perPage: Int): CharacterConnection
+  relations: MediaConnection
+}
+
+enum CharacterSort {
+  ROLE
+  RELEVANCE
+}
+
+type CharacterConnection {
+  edges: [CharacterEdge]
+}
+
+type CharacterEdge {
+  role: CharacterRole
+  node: Character
+}
+
+enum CharacterRole {
+  MAIN
+  SUPPORTING
+  BACKGROUND
+}
+
+type Character {
+  id: Int
+  name: CharacterName
+  image: CharacterImage
+}
+
+type CharacterName {
+  userPreferred: String
+}
+
+type CharacterImage {
+  large: String
+}
+
+type MediaEdge {
+  relationType: MediaRelation
+  node: Media
+}
+
+enum MediaRelation {
+  ADAPTATION
+  PREQUEL
+  SEQUEL
+  PARENT
+  SIDE_STORY
+  CHARACTER
+  SUMMARY
+  ALTERNATIVE
+  SPIN_OFF
+  OTHER
+  SOURCE
+  COMPILATION
+  CONTAINS
 }
 
 enum MediaFormat {
@@ -137,6 +197,7 @@ type Favourites {
 
 type MediaConnection {
   nodes: [Media]
+  edges: [MediaEdge]
 }
 
 enum MediaStatus {

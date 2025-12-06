@@ -14,6 +14,7 @@ import com.anisync.android.type.MediaListCollection
 import com.anisync.android.type.MediaListGroup
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaTitle
+import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.api.CompiledArgument
 import com.apollographql.apollo3.api.CompiledField
 import com.apollographql.apollo3.api.CompiledSelection
@@ -54,6 +55,18 @@ public object GetUserLibraryQuerySelections {
         CompiledField.Builder(
           name = "episodes",
           type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "chapters",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "volumes",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "type",
+          type = MediaType.type
         ).build()
       )
 

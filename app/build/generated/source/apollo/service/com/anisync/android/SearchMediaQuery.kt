@@ -9,6 +9,7 @@ import com.anisync.android.adapter.SearchMediaQuery_ResponseAdapter
 import com.anisync.android.adapter.SearchMediaQuery_VariablesAdapter
 import com.anisync.android.selections.SearchMediaQuerySelections
 import com.anisync.android.type.MediaStatus
+import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.annotations.ApolloAdaptableWith
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CompiledField
@@ -24,6 +25,7 @@ import kotlin.collections.List
 
 public data class SearchMediaQuery(
   public val search: Optional<String?> = Optional.Absent,
+  public val type: Optional<MediaType?> = Optional.Absent,
   public val page: Optional<Int?> = Optional.Absent,
   public val perPage: Optional<Int?> = Optional.Absent,
 ) : Query<SearchMediaQuery.Data> {
@@ -62,6 +64,10 @@ public data class SearchMediaQuery(
     public val coverImage: CoverImage?,
     public val status: MediaStatus?,
     public val averageScore: Int?,
+    public val episodes: Int?,
+    public val chapters: Int?,
+    public val volumes: Int?,
+    public val type: MediaType?,
   )
 
   public data class Title(
@@ -74,15 +80,15 @@ public data class SearchMediaQuery(
 
   public companion object {
     public const val OPERATION_ID: String =
-        "3db7bc4003bcc3234aa81ae4995513e68127d22490206bfbdec6c46a1a99cb9b"
+        "706dba9eb925dc69de590f3a7fdbba7dd1c4205dc4d9f35667956e5f8ef1b8b7"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
      * The un-minimized version is:
      *
-     * query SearchMedia($search: String, $page: Int, $perPage: Int) {
+     * query SearchMedia($search: String, $type: MediaType, $page: Int, $perPage: Int) {
      *   Page(page: $page, perPage: $perPage) {
-     *     media(search: $search, sort: POPULARITY_DESC, type: ANIME) {
+     *     media(search: $search, sort: POPULARITY_DESC, type: $type) {
      *       id
      *       title {
      *         userPreferred
@@ -92,13 +98,17 @@ public data class SearchMediaQuery(
      *       }
      *       status
      *       averageScore
+     *       episodes
+     *       chapters
+     *       volumes
+     *       type
      *     }
      *   }
      * }
      */
     public val OPERATION_DOCUMENT: String
       get() =
-          "query SearchMedia(${'$'}search: String, ${'$'}page: Int, ${'$'}perPage: Int) { Page(page: ${'$'}page, perPage: ${'$'}perPage) { media(search: ${'$'}search, sort: POPULARITY_DESC, type: ANIME) { id title { userPreferred } coverImage { extraLarge } status averageScore } } }"
+          "query SearchMedia(${'$'}search: String, ${'$'}type: MediaType, ${'$'}page: Int, ${'$'}perPage: Int) { Page(page: ${'$'}page, perPage: ${'$'}perPage) { media(search: ${'$'}search, sort: POPULARITY_DESC, type: ${'$'}type) { id title { userPreferred } coverImage { extraLarge } status averageScore episodes chapters volumes type } } }"
 
     public const val OPERATION_NAME: String = "SearchMedia"
   }

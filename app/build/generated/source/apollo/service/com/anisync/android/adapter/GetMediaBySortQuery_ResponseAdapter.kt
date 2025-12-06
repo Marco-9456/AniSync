@@ -6,6 +6,8 @@
 package com.anisync.android.adapter
 
 import com.anisync.android.GetMediaBySortQuery
+import com.anisync.android.type.MediaType
+import com.anisync.android.type.adapter.MediaType_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CustomScalarAdapters
 import com.apollographql.apollo3.api.NullableIntAdapter
@@ -81,19 +83,28 @@ public object GetMediaBySortQuery_ResponseAdapter {
   }
 
   public object Medium : Adapter<GetMediaBySortQuery.Medium> {
-    public val RESPONSE_NAMES: List<String> = listOf("id", "title", "coverImage")
+    public val RESPONSE_NAMES: List<String> = listOf("id", "title", "coverImage", "episodes",
+        "chapters", "volumes", "type")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         GetMediaBySortQuery.Medium {
       var _id: Int? = null
       var _title: GetMediaBySortQuery.Title? = null
       var _coverImage: GetMediaBySortQuery.CoverImage? = null
+      var _episodes: Int? = null
+      var _chapters: Int? = null
+      var _volumes: Int? = null
+      var _type: MediaType? = null
 
       while(true) {
         when (reader.selectName(RESPONSE_NAMES)) {
           0 -> _id = NullableIntAdapter.fromJson(reader, customScalarAdapters)
           1 -> _title = Title.obj().nullable().fromJson(reader, customScalarAdapters)
           2 -> _coverImage = CoverImage.obj().nullable().fromJson(reader, customScalarAdapters)
+          3 -> _episodes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          4 -> _chapters = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          5 -> _volumes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          6 -> _type = MediaType_ResponseAdapter.nullable().fromJson(reader, customScalarAdapters)
           else -> break
         }
       }
@@ -101,7 +112,11 @@ public object GetMediaBySortQuery_ResponseAdapter {
       return GetMediaBySortQuery.Medium(
         id = _id,
         title = _title,
-        coverImage = _coverImage
+        coverImage = _coverImage,
+        episodes = _episodes,
+        chapters = _chapters,
+        volumes = _volumes,
+        type = _type
       )
     }
 
@@ -118,6 +133,18 @@ public object GetMediaBySortQuery_ResponseAdapter {
 
       writer.name("coverImage")
       CoverImage.obj().nullable().toJson(writer, customScalarAdapters, value.coverImage)
+
+      writer.name("episodes")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.episodes)
+
+      writer.name("chapters")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.chapters)
+
+      writer.name("volumes")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.volumes)
+
+      writer.name("type")
+      MediaType_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.type)
     }
   }
 

@@ -14,13 +14,8 @@ import com.anisync.android.data.ProfileRepositoryImpl;
 import com.anisync.android.data.SearchRepositoryImpl;
 import com.anisync.android.di.ApolloModule_ProvideApolloClientFactory;
 import com.anisync.android.di.AuthorizationInterceptor;
-import com.anisync.android.domain.GetLibraryUseCase;
 import com.anisync.android.domain.GetMediaDetailsUseCase;
-import com.anisync.android.domain.GetPopularAnimeUseCase;
 import com.anisync.android.domain.GetProfileUseCase;
-import com.anisync.android.domain.GetTrendingAnimeUseCase;
-import com.anisync.android.domain.GetUpcomingAnimeUseCase;
-import com.anisync.android.domain.SearchMediaUseCase;
 import com.anisync.android.presentation.details.DetailsViewModel;
 import com.anisync.android.presentation.details.DetailsViewModel_HiltModules_KeyModule_ProvideFactory;
 import com.anisync.android.presentation.discover.DiscoverViewModel;
@@ -451,28 +446,8 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
       return new GetMediaDetailsUseCase(singletonCImpl.detailsRepositoryImpl());
     }
 
-    private GetTrendingAnimeUseCase getTrendingAnimeUseCase() {
-      return new GetTrendingAnimeUseCase(singletonCImpl.discoverRepositoryImpl());
-    }
-
-    private GetPopularAnimeUseCase getPopularAnimeUseCase() {
-      return new GetPopularAnimeUseCase(singletonCImpl.discoverRepositoryImpl());
-    }
-
-    private GetUpcomingAnimeUseCase getUpcomingAnimeUseCase() {
-      return new GetUpcomingAnimeUseCase(singletonCImpl.discoverRepositoryImpl());
-    }
-
-    private GetLibraryUseCase getLibraryUseCase() {
-      return new GetLibraryUseCase(singletonCImpl.libraryRepositoryImpl());
-    }
-
     private GetProfileUseCase getProfileUseCase() {
       return new GetProfileUseCase(singletonCImpl.profileRepositoryImpl());
-    }
-
-    private SearchMediaUseCase searchMediaUseCase() {
-      return new SearchMediaUseCase(singletonCImpl.searchRepositoryImpl());
     }
 
     @SuppressWarnings("unchecked")
@@ -521,16 +496,16 @@ public final class DaggerAniSyncApplication_HiltComponents_SingletonC {
           return (T) new DetailsViewModel(viewModelCImpl.getMediaDetailsUseCase(), singletonCImpl.detailsRepositoryImpl(), viewModelCImpl.savedStateHandle);
 
           case 1: // com.anisync.android.presentation.discover.DiscoverViewModel 
-          return (T) new DiscoverViewModel(viewModelCImpl.getTrendingAnimeUseCase(), viewModelCImpl.getPopularAnimeUseCase(), viewModelCImpl.getUpcomingAnimeUseCase());
+          return (T) new DiscoverViewModel(singletonCImpl.discoverRepositoryImpl());
 
           case 2: // com.anisync.android.presentation.library.LibraryViewModel 
-          return (T) new LibraryViewModel(viewModelCImpl.getLibraryUseCase());
+          return (T) new LibraryViewModel(singletonCImpl.libraryRepositoryImpl());
 
           case 3: // com.anisync.android.presentation.profile.ProfileViewModel 
           return (T) new ProfileViewModel(viewModelCImpl.getProfileUseCase());
 
           case 4: // com.anisync.android.presentation.search.SearchViewModel 
-          return (T) new SearchViewModel(viewModelCImpl.searchMediaUseCase());
+          return (T) new SearchViewModel(singletonCImpl.searchRepositoryImpl());
 
           case 5: // com.anisync.android.presentation.settings.SettingsViewModel 
           return (T) new SettingsViewModel(singletonCImpl.authRepositoryProvider.get());

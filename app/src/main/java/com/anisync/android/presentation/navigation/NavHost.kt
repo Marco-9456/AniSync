@@ -1,13 +1,14 @@
 package com.anisync.android.presentation.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.Text
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.anisync.android.presentation.library.LibraryScreen
 
 @Composable
 fun AniSyncNavHost(
@@ -20,15 +21,33 @@ fun AniSyncNavHost(
         startDestination = Screen.Library.route,
         modifier = modifier
     ) {
-        composable(Screen.Login.route) {
+        composable(
+            route = Screen.Login.route,
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) {
             com.anisync.android.presentation.login.LoginScreen()
         }
-        composable(Screen.Library.route) {
-            LibraryScreen(
+        composable(
+            route = Screen.Library.route,
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) {
+            com.anisync.android.presentation.library.LibraryScreen(
                 onMediaClick = onMediaClick
             )
         }
-        composable(Screen.Discover.route) {
+        composable(
+            route = Screen.Discover.route,
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) {
             com.anisync.android.presentation.discover.DiscoverScreen(
                 onMediaClick = onMediaClick,
                 onSearchClick = {
@@ -36,7 +55,13 @@ fun AniSyncNavHost(
                 }
             )
         }
-        composable(Screen.Profile.route) {
+        composable(
+            route = Screen.Profile.route,
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) {
             com.anisync.android.presentation.profile.ProfileScreen(
                 onMediaClick = onMediaClick,
                 onSettingsClick = {
@@ -49,16 +74,27 @@ fun AniSyncNavHost(
                 }
             )
         }
-        composable(Screen.Search.route) {
+        composable(
+            route = Screen.Search.route,
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) {
             com.anisync.android.presentation.search.SearchScreen(
                 onMediaClick = onMediaClick
             )
         }
-        composable(Screen.Settings.route) {
+        composable(
+            route = Screen.Settings.route,
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) {
             com.anisync.android.presentation.settings.SettingsScreen(
                 onBackClick = { navController.popBackStack() },
                 onLogoutComplete = {
-                    // Clear back stack and navigate to Login
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }

@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anisync.android.presentation.components.MediaCard
+import com.anisync.android.presentation.components.SegmentedControl
+import com.anisync.android.type.MediaType
 
 @Composable
 fun SearchScreen(
@@ -35,6 +39,7 @@ fun SearchScreen(
 ) {
     val query by viewModel.query.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val mediaType by viewModel.mediaType.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -54,6 +59,17 @@ fun SearchScreen(
                 }
             },
             singleLine = true
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Filter
+        SegmentedControl(
+            options = listOf("Anime", "Manga"),
+            selectedOption = if (mediaType == MediaType.ANIME) "Anime" else "Manga",
+            onOptionSelected = { 
+                viewModel.onMediaTypeChange(if (it == "Anime") MediaType.ANIME else MediaType.MANGA)
+            }
         )
 
         // Content Area

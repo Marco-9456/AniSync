@@ -1,8 +1,6 @@
 package com.anisync.android.presentation.discover;
 
-import com.anisync.android.domain.GetPopularAnimeUseCase;
-import com.anisync.android.domain.GetTrendingAnimeUseCase;
-import com.anisync.android.domain.GetUpcomingAnimeUseCase;
+import com.anisync.android.domain.DiscoverRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
 import dagger.internal.QualifierMetadata;
@@ -24,36 +22,23 @@ import javax.inject.Provider;
     "KotlinInternalInJava"
 })
 public final class DiscoverViewModel_Factory implements Factory<DiscoverViewModel> {
-  private final Provider<GetTrendingAnimeUseCase> getTrendingAnimeUseCaseProvider;
+  private final Provider<DiscoverRepository> discoverRepositoryProvider;
 
-  private final Provider<GetPopularAnimeUseCase> getPopularAnimeUseCaseProvider;
-
-  private final Provider<GetUpcomingAnimeUseCase> getUpcomingAnimeUseCaseProvider;
-
-  public DiscoverViewModel_Factory(
-      Provider<GetTrendingAnimeUseCase> getTrendingAnimeUseCaseProvider,
-      Provider<GetPopularAnimeUseCase> getPopularAnimeUseCaseProvider,
-      Provider<GetUpcomingAnimeUseCase> getUpcomingAnimeUseCaseProvider) {
-    this.getTrendingAnimeUseCaseProvider = getTrendingAnimeUseCaseProvider;
-    this.getPopularAnimeUseCaseProvider = getPopularAnimeUseCaseProvider;
-    this.getUpcomingAnimeUseCaseProvider = getUpcomingAnimeUseCaseProvider;
+  public DiscoverViewModel_Factory(Provider<DiscoverRepository> discoverRepositoryProvider) {
+    this.discoverRepositoryProvider = discoverRepositoryProvider;
   }
 
   @Override
   public DiscoverViewModel get() {
-    return newInstance(getTrendingAnimeUseCaseProvider.get(), getPopularAnimeUseCaseProvider.get(), getUpcomingAnimeUseCaseProvider.get());
+    return newInstance(discoverRepositoryProvider.get());
   }
 
   public static DiscoverViewModel_Factory create(
-      Provider<GetTrendingAnimeUseCase> getTrendingAnimeUseCaseProvider,
-      Provider<GetPopularAnimeUseCase> getPopularAnimeUseCaseProvider,
-      Provider<GetUpcomingAnimeUseCase> getUpcomingAnimeUseCaseProvider) {
-    return new DiscoverViewModel_Factory(getTrendingAnimeUseCaseProvider, getPopularAnimeUseCaseProvider, getUpcomingAnimeUseCaseProvider);
+      Provider<DiscoverRepository> discoverRepositoryProvider) {
+    return new DiscoverViewModel_Factory(discoverRepositoryProvider);
   }
 
-  public static DiscoverViewModel newInstance(GetTrendingAnimeUseCase getTrendingAnimeUseCase,
-      GetPopularAnimeUseCase getPopularAnimeUseCase,
-      GetUpcomingAnimeUseCase getUpcomingAnimeUseCase) {
-    return new DiscoverViewModel(getTrendingAnimeUseCase, getPopularAnimeUseCase, getUpcomingAnimeUseCase);
+  public static DiscoverViewModel newInstance(DiscoverRepository discoverRepository) {
+    return new DiscoverViewModel(discoverRepository);
   }
 }

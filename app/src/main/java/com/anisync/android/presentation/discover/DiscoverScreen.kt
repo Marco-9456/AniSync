@@ -23,13 +23,14 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.SegmentedControl
+import com.anisync.android.presentation.util.shimmerEffect
+import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +41,7 @@ fun DiscoverScreen(
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedMediaType by remember { mutableStateOf("Anime") }
+    val mediaType by viewModel.mediaType.collectAsState()
     var searchExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -91,17 +92,17 @@ fun DiscoverScreen(
         // Segmented Control
         SegmentedControl(
             options = listOf("Anime", "Manga"),
-            selectedOption = selectedMediaType,
-            onOptionSelected = { selectedMediaType = it }
+            selectedOption = if (mediaType == MediaType.ANIME) "Anime" else "Manga",
+            onOptionSelected = { 
+                viewModel.onMediaTypeChange(if (it == "Anime") MediaType.ANIME else MediaType.MANGA)
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         when (val state = uiState) {
             is DiscoverUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = OliveDrab)
-                }
+                DiscoverLoadingShimmer()
             }
             is DiscoverUiState.Success -> {
                 DiscoverContent(
@@ -114,6 +115,54 @@ fun DiscoverScreen(
             is DiscoverUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(text = "Error: ${state.message}", color = Color.Red)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DiscoverLoadingShimmer() {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(32.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
+    ) {
+        // Mock sections
+        items(3) {
+            Column {
+                // Header shimmer
+                Box(
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(28.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // Row shimmer
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(4) {
+                        Column(modifier = Modifier.width(110.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .height(160.dp)
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .shimmerEffect()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(16.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .shimmerEffect()
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -283,4 +332,3 @@ fun DiscoverItemCard(
         )
     }
 }
-

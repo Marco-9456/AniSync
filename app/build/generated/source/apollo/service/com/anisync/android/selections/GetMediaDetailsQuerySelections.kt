@@ -5,17 +5,27 @@
 //
 package com.anisync.android.selections
 
+import com.anisync.android.type.Character
+import com.anisync.android.type.CharacterConnection
+import com.anisync.android.type.CharacterEdge
+import com.anisync.android.type.CharacterImage
+import com.anisync.android.type.CharacterName
+import com.anisync.android.type.CharacterRole
 import com.anisync.android.type.FuzzyDate
 import com.anisync.android.type.GraphQLFloat
 import com.anisync.android.type.GraphQLInt
 import com.anisync.android.type.GraphQLString
 import com.anisync.android.type.Media
+import com.anisync.android.type.MediaConnection
 import com.anisync.android.type.MediaCoverImage
+import com.anisync.android.type.MediaEdge
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaList
 import com.anisync.android.type.MediaListStatus
+import com.anisync.android.type.MediaRelation
 import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaTitle
+import com.anisync.android.type.MediaType
 import com.anisync.android.type.Studio
 import com.anisync.android.type.StudioConnection
 import com.apollographql.apollo3.api.CompiledArgument
@@ -85,6 +95,116 @@ public object GetMediaDetailsQuerySelections {
         ).build()
       )
 
+  private val __name1: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "userPreferred",
+          type = GraphQLString.type
+        ).build()
+      )
+
+  private val __image: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "large",
+          type = GraphQLString.type
+        ).build()
+      )
+
+  private val __node: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "id",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "name",
+          type = CharacterName.type
+        ).selections(__name1)
+        .build(),
+        CompiledField.Builder(
+          name = "image",
+          type = CharacterImage.type
+        ).selections(__image)
+        .build()
+      )
+
+  private val __edges: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "role",
+          type = CharacterRole.type
+        ).build(),
+        CompiledField.Builder(
+          name = "node",
+          type = Character.type
+        ).selections(__node)
+        .build()
+      )
+
+  private val __characters: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "edges",
+          type = CharacterEdge.type.list()
+        ).selections(__edges)
+        .build()
+      )
+
+  private val __title1: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "userPreferred",
+          type = GraphQLString.type
+        ).build()
+      )
+
+  private val __coverImage1: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "large",
+          type = GraphQLString.type
+        ).build()
+      )
+
+  private val __node1: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "id",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "title",
+          type = MediaTitle.type
+        ).selections(__title1)
+        .build(),
+        CompiledField.Builder(
+          name = "format",
+          type = MediaFormat.type
+        ).build(),
+        CompiledField.Builder(
+          name = "status",
+          type = MediaStatus.type
+        ).build(),
+        CompiledField.Builder(
+          name = "coverImage",
+          type = MediaCoverImage.type
+        ).selections(__coverImage1)
+        .build()
+      )
+
+  private val __edges1: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "relationType",
+          type = MediaRelation.type
+        ).build(),
+        CompiledField.Builder(
+          name = "node",
+          type = Media.type
+        ).selections(__node1)
+        .build()
+      )
+
+  private val __relations: List<CompiledSelection> = listOf(
+        CompiledField.Builder(
+          name = "edges",
+          type = MediaEdge.type.list()
+        ).selections(__edges1)
+        .build()
+      )
+
   private val __Media: List<CompiledSelection> = listOf(
         CompiledField.Builder(
           name = "id",
@@ -120,6 +240,18 @@ public object GetMediaDetailsQuerySelections {
           type = GraphQLInt.type
         ).build(),
         CompiledField.Builder(
+          name = "chapters",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "volumes",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "type",
+          type = MediaType.type
+        ).build(),
+        CompiledField.Builder(
           name = "status",
           type = MediaStatus.type
         ).build(),
@@ -148,6 +280,23 @@ public object GetMediaDetailsQuerySelections {
           name = "mediaListEntry",
           type = MediaList.type
         ).selections(__mediaListEntry)
+        .build(),
+        CompiledField.Builder(
+          name = "characters",
+          type = CharacterConnection.type
+        ).arguments(listOf(
+          CompiledArgument.Builder("perPage", 6).build(),
+          CompiledArgument.Builder("sort", listOf(
+            "ROLE",
+            "RELEVANCE"
+          )).build()
+        ))
+        .selections(__characters)
+        .build(),
+        CompiledField.Builder(
+          name = "relations",
+          type = MediaConnection.type
+        ).selections(__relations)
         .build()
       )
 

@@ -10,6 +10,7 @@ import com.anisync.android.type.GraphQLString
 import com.anisync.android.type.Media
 import com.anisync.android.type.MediaCoverImage
 import com.anisync.android.type.MediaTitle
+import com.anisync.android.type.MediaType
 import com.anisync.android.type.Page
 import com.apollographql.apollo3.api.CompiledArgument
 import com.apollographql.apollo3.api.CompiledField
@@ -47,7 +48,23 @@ public object GetMediaBySortQuerySelections {
           name = "coverImage",
           type = MediaCoverImage.type
         ).selections(__coverImage)
-        .build()
+        .build(),
+        CompiledField.Builder(
+          name = "episodes",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "chapters",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "volumes",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "type",
+          type = MediaType.type
+        ).build()
       )
 
   private val __Page: List<CompiledSelection> = listOf(
@@ -56,7 +73,7 @@ public object GetMediaBySortQuerySelections {
           type = Media.type.list()
         ).arguments(listOf(
           CompiledArgument.Builder("sort", CompiledVariable("sort")).build(),
-          CompiledArgument.Builder("type", "ANIME").build()
+          CompiledArgument.Builder("type", CompiledVariable("type")).build()
         ))
         .selections(__media)
         .build()

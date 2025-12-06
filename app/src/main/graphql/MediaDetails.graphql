@@ -12,6 +12,9 @@ query GetMediaDetails($id: Int) {
     description(asHtml: true)
     averageScore
     episodes
+    chapters
+    volumes
+    type
     status
     format
     genres
@@ -28,6 +31,36 @@ query GetMediaDetails($id: Int) {
       status
       progress
       score
+    }
+    characters(sort: [ROLE, RELEVANCE], perPage: 6) {
+      edges {
+        role
+        node {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+        }
+      }
+    }
+    relations {
+      edges {
+        relationType
+        node {
+          id
+          title {
+            userPreferred
+          }
+          format
+          status
+          coverImage {
+            large
+          }
+        }
+      }
     }
   }
 }

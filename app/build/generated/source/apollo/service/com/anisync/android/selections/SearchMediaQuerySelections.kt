@@ -11,6 +11,7 @@ import com.anisync.android.type.Media
 import com.anisync.android.type.MediaCoverImage
 import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaTitle
+import com.anisync.android.type.MediaType
 import com.anisync.android.type.Page
 import com.apollographql.apollo3.api.CompiledArgument
 import com.apollographql.apollo3.api.CompiledField
@@ -56,6 +57,22 @@ public object SearchMediaQuerySelections {
         CompiledField.Builder(
           name = "averageScore",
           type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "episodes",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "chapters",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "volumes",
+          type = GraphQLInt.type
+        ).build(),
+        CompiledField.Builder(
+          name = "type",
+          type = MediaType.type
         ).build()
       )
 
@@ -66,7 +83,7 @@ public object SearchMediaQuerySelections {
         ).arguments(listOf(
           CompiledArgument.Builder("search", CompiledVariable("search")).build(),
           CompiledArgument.Builder("sort", "POPULARITY_DESC").build(),
-          CompiledArgument.Builder("type", "ANIME").build()
+          CompiledArgument.Builder("type", CompiledVariable("type")).build()
         ))
         .selections(__media)
         .build()

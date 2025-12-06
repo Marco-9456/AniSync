@@ -1,6 +1,6 @@
-query SearchMedia($search: String, $page: Int, $perPage: Int) {
+query SearchMedia($search: String, $type: MediaType, $page: Int, $perPage: Int) {
   Page(page: $page, perPage: $perPage) {
-    media(search: $search, sort: POPULARITY_DESC, type: ANIME) {
+    media(search: $search, sort: POPULARITY_DESC, type: $type) {
       id
       title {
         userPreferred
@@ -10,6 +10,10 @@ query SearchMedia($search: String, $page: Int, $perPage: Int) {
       }
       status
       averageScore
+      episodes
+      chapters
+      volumes
+      type
     }
   }
 }

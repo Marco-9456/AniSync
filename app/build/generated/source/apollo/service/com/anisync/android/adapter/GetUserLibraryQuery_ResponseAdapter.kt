@@ -7,7 +7,9 @@ package com.anisync.android.adapter
 
 import com.anisync.android.GetUserLibraryQuery
 import com.anisync.android.type.MediaListStatus
+import com.anisync.android.type.MediaType
 import com.anisync.android.type.adapter.MediaListStatus_ResponseAdapter
+import com.anisync.android.type.adapter.MediaType_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CustomScalarAdapters
 import com.apollographql.apollo3.api.NullableIntAdapter
@@ -170,7 +172,7 @@ public object GetUserLibraryQuery_ResponseAdapter {
 
   public object Media : Adapter<GetUserLibraryQuery.Media> {
     public val RESPONSE_NAMES: kotlin.collections.List<String> = listOf("id", "title", "coverImage",
-        "episodes")
+        "episodes", "chapters", "volumes", "type")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         GetUserLibraryQuery.Media {
@@ -178,6 +180,9 @@ public object GetUserLibraryQuery_ResponseAdapter {
       var _title: GetUserLibraryQuery.Title? = null
       var _coverImage: GetUserLibraryQuery.CoverImage? = null
       var _episodes: Int? = null
+      var _chapters: Int? = null
+      var _volumes: Int? = null
+      var _type: MediaType? = null
 
       while(true) {
         when (reader.selectName(RESPONSE_NAMES)) {
@@ -185,6 +190,9 @@ public object GetUserLibraryQuery_ResponseAdapter {
           1 -> _title = Title.obj().nullable().fromJson(reader, customScalarAdapters)
           2 -> _coverImage = CoverImage.obj().nullable().fromJson(reader, customScalarAdapters)
           3 -> _episodes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          4 -> _chapters = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          5 -> _volumes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          6 -> _type = MediaType_ResponseAdapter.nullable().fromJson(reader, customScalarAdapters)
           else -> break
         }
       }
@@ -193,7 +201,10 @@ public object GetUserLibraryQuery_ResponseAdapter {
         id = _id,
         title = _title,
         coverImage = _coverImage,
-        episodes = _episodes
+        episodes = _episodes,
+        chapters = _chapters,
+        volumes = _volumes,
+        type = _type
       )
     }
 
@@ -213,6 +224,15 @@ public object GetUserLibraryQuery_ResponseAdapter {
 
       writer.name("episodes")
       NullableIntAdapter.toJson(writer, customScalarAdapters, value.episodes)
+
+      writer.name("chapters")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.chapters)
+
+      writer.name("volumes")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.volumes)
+
+      writer.name("type")
+      MediaType_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.type)
     }
   }
 

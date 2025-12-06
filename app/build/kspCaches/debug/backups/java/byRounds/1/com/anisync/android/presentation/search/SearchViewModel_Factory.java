@@ -1,6 +1,6 @@
 package com.anisync.android.presentation.search;
 
-import com.anisync.android.domain.SearchMediaUseCase;
+import com.anisync.android.domain.SearchRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
 import dagger.internal.QualifierMetadata;
@@ -22,23 +22,23 @@ import javax.inject.Provider;
     "KotlinInternalInJava"
 })
 public final class SearchViewModel_Factory implements Factory<SearchViewModel> {
-  private final Provider<SearchMediaUseCase> searchMediaUseCaseProvider;
+  private final Provider<SearchRepository> searchRepositoryProvider;
 
-  public SearchViewModel_Factory(Provider<SearchMediaUseCase> searchMediaUseCaseProvider) {
-    this.searchMediaUseCaseProvider = searchMediaUseCaseProvider;
+  public SearchViewModel_Factory(Provider<SearchRepository> searchRepositoryProvider) {
+    this.searchRepositoryProvider = searchRepositoryProvider;
   }
 
   @Override
   public SearchViewModel get() {
-    return newInstance(searchMediaUseCaseProvider.get());
+    return newInstance(searchRepositoryProvider.get());
   }
 
   public static SearchViewModel_Factory create(
-      Provider<SearchMediaUseCase> searchMediaUseCaseProvider) {
-    return new SearchViewModel_Factory(searchMediaUseCaseProvider);
+      Provider<SearchRepository> searchRepositoryProvider) {
+    return new SearchViewModel_Factory(searchRepositoryProvider);
   }
 
-  public static SearchViewModel newInstance(SearchMediaUseCase searchMediaUseCase) {
-    return new SearchViewModel(searchMediaUseCase);
+  public static SearchViewModel newInstance(SearchRepository searchRepository) {
+    return new SearchViewModel(searchRepository);
   }
 }

@@ -42,6 +42,9 @@ class ProfileRepositoryImpl @Inject constructor(
                 coverUrl = media.coverImage?.large,
                 progress = 0,
                 totalEpisodes = null,
+                totalChapters = null,
+                totalVolumes = null,
+                type = null,
                 status = LibraryStatus.UNKNOWN
             )
         } ?: emptyList()

@@ -6,6 +6,7 @@
 package com.anisync.android.adapter
 
 import com.anisync.android.SearchMediaQuery
+import com.anisync.android.type.adapter.MediaType_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CustomScalarAdapters
 import com.apollographql.apollo3.api.NullableIntAdapter
@@ -13,6 +14,7 @@ import com.apollographql.apollo3.api.NullableStringAdapter
 import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.api.json.JsonReader
 import com.apollographql.apollo3.api.json.JsonWriter
+import com.apollographql.apollo3.api.nullable
 import com.apollographql.apollo3.api.present
 import kotlin.IllegalStateException
 import kotlin.Unit
@@ -29,6 +31,11 @@ public object SearchMediaQuery_VariablesAdapter : Adapter<SearchMediaQuery> {
     if (value.search is Optional.Present) {
       writer.name("search")
       NullableStringAdapter.present().toJson(writer, customScalarAdapters, value.search)
+    }
+    if (value.type is Optional.Present) {
+      writer.name("type")
+      MediaType_ResponseAdapter.nullable().present().toJson(writer, customScalarAdapters,
+          value.type)
     }
     if (value.page is Optional.Present) {
       writer.name("page")

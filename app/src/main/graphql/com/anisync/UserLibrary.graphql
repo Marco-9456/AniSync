@@ -13,6 +13,9 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
             extraLarge
           }
           episodes
+          chapters
+          volumes
+          type
         }
         status
         progress

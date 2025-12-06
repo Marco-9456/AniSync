@@ -71,6 +71,9 @@ public data class GetUserLibraryQuery(
     public val title: Title?,
     public val coverImage: CoverImage?,
     public val episodes: Int?,
+    public val chapters: Int?,
+    public val volumes: Int?,
+    public val type: MediaType?,
   )
 
   public data class Title(
@@ -83,7 +86,7 @@ public data class GetUserLibraryQuery(
 
   public companion object {
     public const val OPERATION_ID: String =
-        "e569a9df575453ee25cecca0f0e66dd6a764f2f2113f1d082856ce61b081c74f"
+        "16789d37ba9445aa993a6d68c7de4319619d19db64528739ec25c7e8e7b3285d"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
@@ -104,6 +107,9 @@ public data class GetUserLibraryQuery(
      *             extraLarge
      *           }
      *           episodes
+     *           chapters
+     *           volumes
+     *           type
      *         }
      *         status
      *         progress
@@ -114,7 +120,7 @@ public data class GetUserLibraryQuery(
      */
     public val OPERATION_DOCUMENT: String
       get() =
-          "query GetUserLibrary(${'$'}username: String!, ${'$'}type: MediaType!) { MediaListCollection(userName: ${'$'}username, type: ${'$'}type) { lists { name entries { id media { id title { userPreferred } coverImage { extraLarge } episodes } status progress } } } }"
+          "query GetUserLibrary(${'$'}username: String!, ${'$'}type: MediaType!) { MediaListCollection(userName: ${'$'}username, type: ${'$'}type) { lists { name entries { id media { id title { userPreferred } coverImage { extraLarge } episodes chapters volumes type } status progress } } } }"
 
     public const val OPERATION_NAME: String = "GetUserLibrary"
   }

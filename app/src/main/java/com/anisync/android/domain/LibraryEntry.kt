@@ -1,5 +1,7 @@
 package com.anisync.android.domain
 
+import com.anisync.android.type.MediaType
+
 enum class LibraryStatus {
     CURRENT,
     PLANNING,
@@ -17,5 +19,8 @@ data class LibraryEntry(
     val coverUrl: String?,
     val progress: Int,
     val totalEpisodes: Int?,
+    val totalChapters: Int?,
+    val totalVolumes: Int?,
+    val type: MediaType?,
     val status: LibraryStatus
 )

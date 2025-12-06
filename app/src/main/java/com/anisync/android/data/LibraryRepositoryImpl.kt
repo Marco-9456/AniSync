@@ -14,7 +14,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient
 ) : LibraryRepository {
 
-    override suspend fun getLibrary(username: String): List<LibraryEntry> {
+    override suspend fun getLibrary(username: String, type: MediaType): List<LibraryEntry> {
         // If no username provided, try to get current authenticated user
         val actualUsername = if (username.isBlank()) {
             val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
@@ -23,7 +23,7 @@ class LibraryRepositoryImpl @Inject constructor(
             username
         }
         
-        val response = apolloClient.query(GetUserLibraryQuery(username = actualUsername, type = MediaType.ANIME)).execute()
+        val response = apolloClient.query(GetUserLibraryQuery(username = actualUsername, type = type)).execute()
         
         if (response.hasErrors()) {
             return emptyList()
@@ -54,9 +54,23 @@ class LibraryRepositoryImpl @Inject constructor(
                     coverUrl = media?.coverImage?.extraLarge,
                     progress = entry.progress ?: 0,
                     totalEpisodes = media?.episodes,
+                    totalChapters = media?.chapters,
+                    totalVolumes = media?.volumes,
+                    type = media?.type,
                     status = status
                 )
             } ?: emptyList()
         }
+    }
+
+    override suspend fun updateProgress(mediaId: Int, progress: Int): Boolean {
+        val response = apolloClient.mutation(
+            com.anisync.android.SaveMediaListEntryMutation(
+                mediaId = com.apollographql.apollo3.api.Optional.present(mediaId),
+                progress = com.apollographql.apollo3.api.Optional.present(progress)
+            )
+        ).execute()
+
+        return response.data?.SaveMediaListEntry != null && !response.hasErrors()
     }
 }

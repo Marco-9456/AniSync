@@ -1,6 +1,6 @@
-query GetMediaBySort($sort: [MediaSort], $perPage: Int) {
+query GetMediaBySort($sort: [MediaSort], $type: MediaType, $perPage: Int) {
   Page(perPage: $perPage) {
-    media(sort: $sort, type: ANIME) {
+    media(sort: $sort, type: $type) {
       id
       title {
         userPreferred
@@ -8,13 +8,17 @@ query GetMediaBySort($sort: [MediaSort], $perPage: Int) {
       coverImage {
         extraLarge
       }
+      episodes
+      chapters
+      volumes
+      type
     }
   }
 }
 
-query GetUpcomingMedia($perPage: Int, $status: MediaStatus) {
+query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
   Page(perPage: $perPage) {
-    media(status: $status, type: ANIME, sort: [POPULARITY_DESC]) {
+    media(status: $status, type: $type, sort: [POPULARITY_DESC]) {
       id
       title {
         userPreferred
@@ -22,6 +26,10 @@ query GetUpcomingMedia($perPage: Int, $status: MediaStatus) {
       coverImage {
         extraLarge
       }
+      episodes
+      chapters
+      volumes
+      type
     }
   }
 }

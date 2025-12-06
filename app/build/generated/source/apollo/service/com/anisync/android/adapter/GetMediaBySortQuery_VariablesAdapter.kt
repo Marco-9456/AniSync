@@ -7,6 +7,7 @@ package com.anisync.android.adapter
 
 import com.anisync.android.GetMediaBySortQuery
 import com.anisync.android.type.adapter.MediaSort_ResponseAdapter
+import com.anisync.android.type.adapter.MediaType_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CustomScalarAdapters
 import com.apollographql.apollo3.api.NullableIntAdapter
@@ -32,6 +33,11 @@ public object GetMediaBySortQuery_VariablesAdapter : Adapter<GetMediaBySortQuery
       writer.name("sort")
       MediaSort_ResponseAdapter.nullable().list().nullable().present().toJson(writer,
           customScalarAdapters, value.sort)
+    }
+    if (value.type is Optional.Present) {
+      writer.name("type")
+      MediaType_ResponseAdapter.nullable().present().toJson(writer, customScalarAdapters,
+          value.type)
     }
     if (value.perPage is Optional.Present) {
       writer.name("perPage")

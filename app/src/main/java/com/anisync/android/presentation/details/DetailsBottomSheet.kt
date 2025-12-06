@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,7 +22,10 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,7 +42,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.material.icons.filled.MenuBook
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.CharacterInfo
+import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.type.MediaType
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -66,12 +75,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.ui.theme.PastelGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,6 +157,7 @@ fun DetailsSheetContent(
     val scrollState = rememberScrollState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Overview", "Characters", "Related")
+    val isManga = details.type == MediaType.MANGA
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -181,7 +193,6 @@ fun DetailsSheetContent(
                     // Badges
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         // Format Badge
-                        // Using 'format' property from MediaDetails, checking for nullness
                         details.format?.let { fmt ->
                             Badge(
                                 text = if (fmt == "TV") "TV" else fmt,
@@ -261,8 +272,8 @@ fun DetailsSheetContent(
             // Tab Content
             when (selectedTabIndex) {
                 0 -> OverviewTab(details)
-                1 -> { /* Characters Placeholder */ }
-                2 -> { /* Related Placeholder */ }
+                1 -> CharactersTab(details.characters)
+                2 -> RelatedTab(details.relations)
             }
             
             Spacer(modifier = Modifier.height(100.dp))
@@ -275,9 +286,8 @@ fun DetailsSheetContent(
                 .padding(24.dp),
             isInList = details.listEntryId != null,
             currentStatus = details.listStatus,
+            isManga = isManga,
             onStatusSelected = { status ->
-                // Default progress to 0 if adding, or keep existing?
-                // For simplicity, passing current progress or 0
                 val progress = details.listProgress ?: 0
                 onStatusSelected(status, progress)
             },
@@ -287,18 +297,138 @@ fun DetailsSheetContent(
 }
 
 @Composable
+fun CharactersTab(characters: List<CharacterInfo>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        if (characters.isEmpty()) {
+            Text(
+                text = "No characters available.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(characters) { character ->
+                    CharacterCard(character)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CharacterCard(character: CharacterInfo) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
+        AsyncImage(
+            model = character.imageUrl,
+            contentDescription = character.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(70.dp)
+                .clip(CircleShape)
+                .background(Color.LightGray)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = character.name,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = character.role,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray
+        )
+    }
+}
+
+@Composable
+fun RelatedTab(relations: List<RelatedMedia>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        if (relations.isEmpty()) {
+            Text(
+                text = "No related media available.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(relations) { related ->
+                    RelatedMediaCard(related)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RelatedMediaCard(related: RelatedMedia) {
+    Column(
+        modifier = Modifier.width(100.dp)
+    ) {
+        AsyncImage(
+            model = related.coverUrl,
+            contentDescription = related.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .height(140.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.LightGray)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = related.relationType.replace("_", " "),
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF8B7E28),
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = related.title,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
 fun FabMenu(
     modifier: Modifier = Modifier,
     isInList: Boolean,
     currentStatus: LibraryStatus?,
+    isManga: Boolean,
     onStatusSelected: (LibraryStatus) -> Unit,
     onRemove: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
+    // Conditional labels based on media type
     val options = listOf(
-        LibraryStatus.CURRENT to "Watching",
-        LibraryStatus.PLANNING to "Planning",
+        LibraryStatus.CURRENT to if (isManga) "Reading" else "Watching",
+        LibraryStatus.PLANNING to if (isManga) "Plan to Read" else "Plan to Watch",
         LibraryStatus.COMPLETED to "Completed",
         LibraryStatus.DROPPED to "Dropped",
         LibraryStatus.PAUSED to "Paused"
@@ -322,7 +452,7 @@ fun FabMenu(
                 options.forEach { (status, label) ->
                     FabMenuItem(
                         text = label,
-                        icon = getStatusIcon(status),
+                        icon = getStatusIcon(status, isManga),
                         selected = status == currentStatus,
                         onClick = {
                             onStatusSelected(status)
@@ -347,19 +477,32 @@ fun FabMenu(
             }
         }
 
+        // Animated FAB
+        val fabColor by animateColorAsState(
+            targetValue = if (expanded) Color.LightGray 
+                          else if (isInList) Color(0xFFFFD700) 
+                          else PastelGreen,
+            label = "fabColor"
+        )
+
         FloatingActionButton(
             onClick = { expanded = !expanded },
-            containerColor = Color(0xFFFFD700),
+            containerColor = fabColor,
             contentColor = Color.Black,
             modifier = Modifier.size(56.dp)
         ) {
-            Icon(
-                imageVector = if (expanded) Icons.Default.Close 
+            AnimatedContent(
+                targetState = if (expanded) Icons.Default.Close 
                               else if (isInList) Icons.Default.Edit 
                               else Icons.Default.Add,
-                contentDescription = if (expanded) "Close" else "Manage",
-                modifier = Modifier.size(24.dp)
-            )
+                label = "fabIcon"
+            ) { targetIcon ->
+                Icon(
+                    imageVector = targetIcon,
+                    contentDescription = if (expanded) "Close" else "Manage",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
@@ -414,9 +557,9 @@ fun FabMenuItem(
     }
 }
 
-fun getStatusIcon(status: LibraryStatus): androidx.compose.ui.graphics.vector.ImageVector {
+fun getStatusIcon(status: LibraryStatus, isManga: Boolean = false): androidx.compose.ui.graphics.vector.ImageVector {
     return when (status) {
-        LibraryStatus.CURRENT -> Icons.Default.PlayArrow
+        LibraryStatus.CURRENT -> if (isManga) Icons.Default.MenuBook else Icons.Default.PlayArrow
         LibraryStatus.PLANNING -> Icons.Default.Event
         LibraryStatus.COMPLETED -> Icons.Default.Check
         LibraryStatus.DROPPED -> Icons.Default.Delete // Or remove circle
@@ -429,6 +572,8 @@ fun getStatusIcon(status: LibraryStatus): androidx.compose.ui.graphics.vector.Im
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OverviewTab(details: MediaDetails) {
+    val isManga = details.type == MediaType.MANGA
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -462,20 +607,29 @@ fun OverviewTab(details: MediaDetails) {
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // Info Cards
+        // Info Cards - Conditional based on type
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            InfoCard(
-                label = "EPISODES",
-                value = "${details.episodes ?: "?"} eps",
-                modifier = Modifier.weight(1f),
-                backgroundColor = Color(0xFFEEE8C5)
-            )
+            if (isManga) {
+                InfoCard(
+                    label = "CHAPTERS",
+                    value = "${details.chapters ?: "?"} ch",
+                    modifier = Modifier.weight(1f),
+                    backgroundColor = Color(0xFFEEE8C5)
+                )
+            } else {
+                InfoCard(
+                    label = "EPISODES",
+                    value = "${details.episodes ?: "?"} eps",
+                    modifier = Modifier.weight(1f),
+                    backgroundColor = Color(0xFFEEE8C5)
+                )
+            }
             InfoCard(
                 label = "FORMAT",
-                value = details.format ?: "Unknown", // Safe access using format property
+                value = details.format ?: "Unknown",
                 modifier = Modifier.weight(1f),
                 backgroundColor = Color(0xFFC5E8D0)
             )

@@ -7,7 +7,9 @@ package com.anisync.android.adapter
 
 import com.anisync.android.SearchMediaQuery
 import com.anisync.android.type.MediaStatus
+import com.anisync.android.type.MediaType
 import com.anisync.android.type.adapter.MediaStatus_ResponseAdapter
+import com.anisync.android.type.adapter.MediaType_ResponseAdapter
 import com.apollographql.apollo3.api.Adapter
 import com.apollographql.apollo3.api.CustomScalarAdapters
 import com.apollographql.apollo3.api.NullableIntAdapter
@@ -84,7 +86,7 @@ public object SearchMediaQuery_ResponseAdapter {
 
   public object Medium : Adapter<SearchMediaQuery.Medium> {
     public val RESPONSE_NAMES: List<String> = listOf("id", "title", "coverImage", "status",
-        "averageScore")
+        "averageScore", "episodes", "chapters", "volumes", "type")
 
     public override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters):
         SearchMediaQuery.Medium {
@@ -93,6 +95,10 @@ public object SearchMediaQuery_ResponseAdapter {
       var _coverImage: SearchMediaQuery.CoverImage? = null
       var _status: MediaStatus? = null
       var _averageScore: Int? = null
+      var _episodes: Int? = null
+      var _chapters: Int? = null
+      var _volumes: Int? = null
+      var _type: MediaType? = null
 
       while(true) {
         when (reader.selectName(RESPONSE_NAMES)) {
@@ -102,6 +108,10 @@ public object SearchMediaQuery_ResponseAdapter {
           3 -> _status = MediaStatus_ResponseAdapter.nullable().fromJson(reader,
               customScalarAdapters)
           4 -> _averageScore = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          5 -> _episodes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          6 -> _chapters = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          7 -> _volumes = NullableIntAdapter.fromJson(reader, customScalarAdapters)
+          8 -> _type = MediaType_ResponseAdapter.nullable().fromJson(reader, customScalarAdapters)
           else -> break
         }
       }
@@ -111,7 +121,11 @@ public object SearchMediaQuery_ResponseAdapter {
         title = _title,
         coverImage = _coverImage,
         status = _status,
-        averageScore = _averageScore
+        averageScore = _averageScore,
+        episodes = _episodes,
+        chapters = _chapters,
+        volumes = _volumes,
+        type = _type
       )
     }
 
@@ -134,6 +148,18 @@ public object SearchMediaQuery_ResponseAdapter {
 
       writer.name("averageScore")
       NullableIntAdapter.toJson(writer, customScalarAdapters, value.averageScore)
+
+      writer.name("episodes")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.episodes)
+
+      writer.name("chapters")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.chapters)
+
+      writer.name("volumes")
+      NullableIntAdapter.toJson(writer, customScalarAdapters, value.volumes)
+
+      writer.name("type")
+      MediaType_ResponseAdapter.nullable().toJson(writer, customScalarAdapters, value.type)
     }
   }
 

@@ -1,7 +1,9 @@
 package com.anisync.android.domain
 
+import com.anisync.android.type.MediaType
+
 interface DiscoverRepository {
-    suspend fun getTrendingAnime(): List<LibraryEntry>
-    suspend fun getPopularAnime(): List<LibraryEntry>
-    suspend fun getUpcomingAnime(): List<LibraryEntry>
+    suspend fun getTrending(type: MediaType): List<LibraryEntry>
+    suspend fun getPopular(type: MediaType): List<LibraryEntry>
+    suspend fun getUpcoming(type: MediaType): List<LibraryEntry>
 }
