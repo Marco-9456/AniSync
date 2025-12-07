@@ -36,7 +36,7 @@ fun LoginScreen() {
                 .weight(1f)
                 .fillMaxWidth()
                 .background(
-                    color = AiringYellow, // Bright Yellow #FDE047
+                    color = MaterialTheme.colorScheme.primaryContainer, // Bright Yellow #FDE047
                     shape = RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp)
                 )
                 .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp)),
@@ -70,7 +70,7 @@ fun LoginScreen() {
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(CreamBackground), // Cream #FAF6F1
+                .background(MaterialTheme.colorScheme.background), // Cream #FAF6F1
             contentAlignment = Alignment.Center
         ) {
             Card(
@@ -79,7 +79,7 @@ fun LoginScreen() {
                     .fillMaxWidth()
                     .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp), ambientColor = Color.LightGray, spotColor = Color.Gray),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfacePinkWhite), // #FFF5F4
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), // #FFF5F4
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Handled by modifier shadow for custom look
             ) {
                 Column(
@@ -91,7 +91,7 @@ fun LoginScreen() {
                         text = "Account Access",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextDark
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -105,7 +105,7 @@ fun LoginScreen() {
                             .fillMaxWidth()
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = OliveDrab, // #6B703C
+                            containerColor = MaterialTheme.colorScheme.primary, // #6B703C
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(25.dp) // Fully rounded

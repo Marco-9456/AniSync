@@ -15,9 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.anisync.android.ui.theme.BeigeYellow
-import com.anisync.android.ui.theme.OliveDrab
-import com.anisync.android.ui.theme.TextDark
+import com.anisync.android.ui.theme.*
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun SegmentedControl(
@@ -33,7 +32,7 @@ fun SegmentedControl(
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(BeigeYellow.copy(alpha = 0.5f))
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
             .padding(4.dp)
     ) {
         val width = maxWidth
@@ -51,7 +50,7 @@ fun SegmentedControl(
                 .width(optionWidth)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(24.dp))
-                .background(OliveDrab)
+                .background(MaterialTheme.colorScheme.primary)
                 .zIndex(0f)
         )
 
@@ -70,7 +69,7 @@ fun SegmentedControl(
                 ) {
                     Text(
                         text = option,
-                        color = if (isSelected) Color.White else TextDark.copy(alpha = 0.6f),
+                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center
                     )

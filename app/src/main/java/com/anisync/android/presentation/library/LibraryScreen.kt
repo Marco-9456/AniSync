@@ -88,7 +88,7 @@ fun LibraryScreen(
     }
 
     Scaffold(
-        containerColor = CreamBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LibraryHeader(
@@ -105,7 +105,7 @@ fun LibraryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(CreamBackground)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
@@ -197,7 +197,7 @@ fun LibraryHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(CreamBackground)
+            .background(MaterialTheme.colorScheme.background)
             .padding(bottom = 8.dp)
             .shadow(
                 elevation = 1.dp,
@@ -218,7 +218,7 @@ fun LibraryHeader(
                     text = "My Library",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.ExtraBold,
-                        color = TextDark,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 28.sp,
                         letterSpacing = (-0.5).sp
                     )
@@ -227,8 +227,8 @@ fun LibraryHeader(
                 IconButton(
                     onClick = onViewToggle,
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = BeigeYellow,
-                        contentColor = OliveDrab
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     AnimatedContent(
@@ -288,10 +288,10 @@ fun LibraryHeader(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = OliveDrab,
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = Color.White,
-                        containerColor = SurfacePinkWhite,
-                        labelColor = TextDark
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        labelColor = MaterialTheme.colorScheme.onSurface
                     ),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
@@ -376,11 +376,11 @@ fun VerticalControlStrip(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(PastelGreen.copy(alpha = 0.4f))
+                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f))
                 .clickable { onIncrement() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Inc", tint = TextDark.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.Add, contentDescription = "Inc", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
         }
 
         // Divider
@@ -391,11 +391,11 @@ fun VerticalControlStrip(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(PastelPink.copy(alpha = 0.4f))
+                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
                 .clickable { onDecrement() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Remove, contentDescription = "Dec", tint = TextDark.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.Remove, contentDescription = "Dec", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -414,11 +414,11 @@ fun HorizontalControlStrip(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(PastelPink.copy(alpha = 0.4f))
+                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
                 .clickable { onDecrement() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Remove, contentDescription = "Dec", tint = TextDark.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.Remove, contentDescription = "Dec", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
         }
 
         // Divider
@@ -429,11 +429,11 @@ fun HorizontalControlStrip(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(PastelGreen.copy(alpha = 0.4f))
+                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f))
                 .clickable { onIncrement() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Inc", tint = TextDark.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.Add, contentDescription = "Inc", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -492,7 +492,7 @@ fun LibraryListCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 20.sp,
                     textAlign = TextAlign.Start
                 )
@@ -520,7 +520,7 @@ fun LibraryListCard(
                             if (diff > 0) {
                                 BadgeLabel(
                                     text = "$diff ${if (isManga) "Ch" else "Ep"} Behind",
-                                    containerColor = BehindRed,
+                                    containerColor = MaterialTheme.colorScheme.error,
                                     contentColor = Color.White
                                 )
                             }
@@ -530,7 +530,7 @@ fun LibraryListCard(
                         if (entry.nextAiringEpisode != null && entry.timeUntilAiring != null) {
                             BadgeLabel(
                                 text = "Ep ${entry.nextAiringEpisode} in ${formatTimeUntilAiring(entry.timeUntilAiring)}",
-                                containerColor = OliveDrab,
+                                containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = Color.White
                             )
                         }
@@ -546,8 +546,8 @@ fun LibraryListCard(
                         .fillMaxWidth(0.9f) // Slight inset
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = OliveDrab,
-                    trackColor = BeigeYellow.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                 )
             }
 
@@ -619,7 +619,7 @@ fun LibraryGridCard(
                         if (diff > 0) {
                             BadgeLabel(
                                 text = "$diff ${if (isManga) "Ch" else "Ep"} Behind",
-                                containerColor = BehindRed,
+                                containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = Color.White
                             )
                         }
@@ -629,7 +629,7 @@ fun LibraryGridCard(
                     if (entry.status == LibraryStatus.CURRENT && entry.nextAiringEpisode != null && entry.timeUntilAiring != null) {
                         BadgeLabel(
                             text = "Ep ${entry.nextAiringEpisode} in ${formatTimeUntilAiring(entry.timeUntilAiring)}",
-                            containerColor = OliveDrab,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
                         )
                     }
@@ -655,7 +655,7 @@ fun LibraryGridCard(
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = TextDark,
+                        color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 18.sp,
                         textAlign = TextAlign.Start // Left Aligned
                     )
@@ -677,7 +677,7 @@ fun LibraryGridCard(
                             Text(
                                 text = "${entry.progress} / ${total ?: "?"}",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = OliveDrab,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.ExtraBold
                             )
                         }
@@ -688,8 +688,8 @@ fun LibraryGridCard(
                                 .fillMaxWidth()
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = OliveDrab,
-                            trackColor = BeigeYellow.copy(alpha = 0.5f),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                         )
                     }
                 }

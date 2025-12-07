@@ -14,7 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
-import com.anisync.android.ui.theme.AniSyncTheme
+import com.anisync.android.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         handleAuthRedirect(intent)
         
         setContent {
-            AniSyncTheme {
+            AppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

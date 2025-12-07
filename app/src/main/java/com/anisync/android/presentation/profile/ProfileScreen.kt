@@ -44,12 +44,12 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBackground)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         when (val state = uiState) {
             is ProfileUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = OliveDrab)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
             is ProfileUiState.Error -> {
@@ -83,7 +83,7 @@ fun ProfileContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
-                .background(BeigeYellow) // Fallback color
+                .background(MaterialTheme.colorScheme.secondaryContainer) // Fallback color
         )
 
         // 2. Scrollable Content
@@ -120,7 +120,7 @@ fun ProfileContent(
                     text = profile.name,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Black,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 28.sp
                 )
                 Text(
@@ -166,7 +166,7 @@ fun ProfileContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(SurfacePinkWhite)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                 ) {
                     // Notifications
                 var notificationsEnabled by remember { mutableStateOf(true) }
@@ -181,7 +181,7 @@ fun ProfileContent(
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = null,
-                            tint = OliveDrab,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(Color.White, CircleShape)
@@ -192,7 +192,7 @@ fun ProfileContent(
                             text = "Notifications",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TextDark
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Switch(
@@ -200,7 +200,7 @@ fun ProfileContent(
                         onCheckedChange = { notificationsEnabled = it },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = OliveDrab,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
                             uncheckedThumbColor = Color.White,
                             uncheckedTrackColor = Color.LightGray
                         )
@@ -222,7 +222,7 @@ fun ProfileContent(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = null,
-                            tint = OliveDrab, // Brown/Olive
+                            tint = MaterialTheme.colorScheme.primary, // Brown/Olive
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(Color.White, CircleShape) // Using White bg for icon circle
@@ -233,7 +233,7 @@ fun ProfileContent(
                             text = "Settings",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TextDark
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     // No chevron in screenshot, but usually implies navigation. 
@@ -246,7 +246,7 @@ fun ProfileContent(
             // Log Out Button
             Button(
                 onClick = onLogoutClick,
-                colors = ButtonDefaults.buttonColors(containerColor = PastelPink),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -255,7 +255,7 @@ fun ProfileContent(
             ) {
                 Text(
                     text = "Log Out",
-                    color = BehindRed, // Darker red/brown for text
+                    color = MaterialTheme.colorScheme.error, // Darker red/brown for text
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -292,7 +292,7 @@ fun StatCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = TextDark,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -300,7 +300,7 @@ fun StatCard(
                     text = label,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
             
@@ -309,14 +309,14 @@ fun StatCard(
                     text = value,
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Black,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-1).sp
                 )
                 Text(
                     text = subLabel,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = TextDark.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
         }

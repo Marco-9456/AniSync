@@ -36,11 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import com.anisync.android.presentation.details.DetailsBottomSheet
 import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Screen
-import com.anisync.android.ui.theme.BeigeYellow
-import com.anisync.android.ui.theme.CreamBackground
-import com.anisync.android.ui.theme.OliveDrab
-import com.anisync.android.ui.theme.SurfacePinkWhite
-import com.anisync.android.ui.theme.TextDark
+
 
 /**
  * Helper class to define navigation items with selected/unselected icon states
@@ -90,10 +86,10 @@ fun MainScreen() {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
-        containerColor = CreamBackground, // Match app background theme
+        containerColor = MaterialTheme.colorScheme.background, // Match app background theme
         bottomBar = {
             NavigationBar(
-                containerColor = SurfacePinkWhite, // Warm card-like surface
+                containerColor = MaterialTheme.colorScheme.surfaceContainer, // Warm card-like surface
                 tonalElevation = 0.dp // Flat style, color provides separation
             ) {
                 navItems.forEach { item ->
@@ -101,7 +97,7 @@ fun MainScreen() {
 
                     // Animate icon color for polish
                     val iconColor by animateColorAsState(
-                        targetValue = if (isSelected) OliveDrab else TextDark.copy(alpha = 0.6f),
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         animationSpec = tween(300),
                         label = "IconColor"
                     )
@@ -133,11 +129,11 @@ fun MainScreen() {
                             }
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = OliveDrab,
-                            selectedTextColor = OliveDrab,
-                            indicatorColor = BeigeYellow, // Pill shape color
-                            unselectedIconColor = TextDark.copy(alpha = 0.6f),
-                            unselectedTextColor = TextDark.copy(alpha = 0.6f)
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.secondaryContainer, // Pill shape color
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     )
                 }

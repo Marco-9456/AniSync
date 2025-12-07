@@ -62,10 +62,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.SegmentedControl
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
-import com.anisync.android.ui.theme.BeigeYellow
-import com.anisync.android.ui.theme.CreamBackground
-import com.anisync.android.ui.theme.OliveDrab
-import com.anisync.android.ui.theme.TextDark
+import com.anisync.android.ui.theme.*
 import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +83,7 @@ fun DiscoverScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CreamBackground)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Search Bar (Docked at top)
         Box(
@@ -128,7 +125,7 @@ fun DiscoverScreen(
                 expanded = isSearchActive,
                 onExpandedChange = viewModel::onSearchActiveChange,
                 colors = SearchBarDefaults.colors(
-                    containerColor = BeigeYellow
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             ) {
                 // Search Results
@@ -229,7 +226,7 @@ fun DiscoverContent(
                     text = "Trending Now",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -348,7 +345,7 @@ fun HeroCarousel(
             modifier = Modifier.fillMaxWidth()
         ) {
             repeat(items.size) { iteration ->
-                val color = if (pagerState.currentPage == iteration) OliveDrab else Color.LightGray
+                val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else Color.LightGray
                 Box(
                     modifier = Modifier
                         .padding(4.dp)
@@ -376,7 +373,7 @@ fun MediaSection(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = OliveDrab,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -384,7 +381,7 @@ fun MediaSection(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextDark
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -434,7 +431,7 @@ fun DiscoverItemCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .background(
-                            color = if (rank <= 3) OliveDrab else Color.Black.copy(alpha = 0.6f),
+                            color = if (rank <= 3) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.6f),
                             shape = RoundedCornerShape(bottomEnd = 12.dp)
                         )
                         .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -479,7 +476,7 @@ fun DiscoverItemCard(
         Text(
             text = item.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextDark,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             fontWeight = FontWeight.SemiBold

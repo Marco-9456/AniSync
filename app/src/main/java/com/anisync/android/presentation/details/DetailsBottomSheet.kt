@@ -82,7 +82,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.MediaDetails
-import com.anisync.android.ui.theme.PastelGreen
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -482,7 +482,7 @@ fun FabMenu(
         val fabColor by animateColorAsState(
             targetValue = if (expanded) Color.LightGray 
                           else if (isInList) Color(0xFFFFD700) 
-                          else PastelGreen,
+                          else MaterialTheme.colorScheme.tertiaryContainer,
             label = "fabColor"
         )
 
