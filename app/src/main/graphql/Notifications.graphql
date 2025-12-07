@@ -1,0 +1,62 @@
+query GetNotifications($page: Int = 1, $perPage: Int = 20) {
+  Page(page: $page, perPage: $perPage) {
+    notifications(resetNotificationCount: true) {
+      ... on AiringNotification {
+        id
+        type
+        episode
+        contexts
+        createdAt
+        media {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            large
+          }
+          type
+        }
+      }
+      ... on FollowingNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+      ... on ActivityLikeNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+      ... on ActivityReplyNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+    }
+  }
+}

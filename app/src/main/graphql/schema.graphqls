@@ -231,3 +231,98 @@ type AiringSchedule {
   mediaId: Int
   media: Media
 }
+
+union NotificationUnion = AiringNotification | FollowingNotification | ActivityLikeNotification | ActivityReplyNotification
+
+type AiringNotification {
+  id: Int
+  type: NotificationType
+  contexts: [String]
+  createdAt: Int
+  episode: Int
+  media: Media
+}
+
+type FollowingNotification {
+  id: Int
+  type: NotificationType
+  context: String
+  createdAt: Int
+  user: User
+}
+
+type ActivityLikeNotification {
+  id: Int
+  type: NotificationType
+  context: String
+  createdAt: Int
+  user: User
+  activity: ActivityUnion
+}
+
+type ActivityReplyNotification {
+  id: Int
+  type: NotificationType
+  context: String
+  createdAt: Int
+  user: User
+  activity: ActivityUnion
+}
+
+union ActivityUnion = TextActivity | ListActivity | MessageActivity
+
+type TextActivity {
+  id: Int
+  userId: Int
+  type: ActivityType
+  replyCount: Int
+  text: String
+  user: User
+}
+
+type ListActivity {
+  id: Int
+  userId: Int
+  type: ActivityType
+  status: String
+  progress: String
+  media: Media
+  user: User
+}
+
+type MessageActivity {
+  id: Int
+  recipientId: Int
+  type: ActivityType
+  message: String
+  user: User
+}
+
+enum ActivityType {
+  TEXT
+  ANIME_LIST
+  MANGA_LIST
+  MESSAGE
+  MEDIA_LIST
+}
+
+enum NotificationType {
+  ACTIVITY_MESSAGE
+  ACTIVITY_REPLY
+  FOLLOWING
+  ACTIVITY_MENTION
+  THREAD_COMMENT_MENTION
+  THREAD_SUBSCRIBED
+  RELATED_MEDIA_ADDITION
+  MEDIA_DATA_CHANGE
+  MEDIA_MERGE
+  MEDIA_DELETION
+  AIRING
+  ACTIVITY_LIKE
+  THREAD_COMMENT_LIKE
+  ACTIVITY_REPLY_LIKE
+}
+
+extend type Page {
+  notifications(type: NotificationType, resetNotificationCount: Boolean, typeIn: [NotificationType]): [NotificationUnion]
+}

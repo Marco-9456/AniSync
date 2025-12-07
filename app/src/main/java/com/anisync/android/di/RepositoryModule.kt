@@ -43,4 +43,9 @@ abstract class RepositoryModule {
     abstract fun bindSearchRepository(
         impl: SearchRepositoryImpl
     ): SearchRepository
+
+    @Binds
+    abstract fun bindNotificationRepository(
+        impl: com.anisync.android.data.NotificationRepositoryImpl
+    ): com.anisync.android.domain.NotificationRepository
 }

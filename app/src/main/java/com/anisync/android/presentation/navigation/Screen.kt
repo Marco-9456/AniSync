@@ -15,5 +15,6 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
         fun createRoute(mediaId: Int) = "details/$mediaId"
     }
     data object Search : Screen("search", "Search", Icons.Default.Search)
-    data object Settings : Screen("settings", "Settings", Icons.Default.Person)
+
+
 }

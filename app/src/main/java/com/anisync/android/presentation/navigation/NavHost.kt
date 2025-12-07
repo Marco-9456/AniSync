@@ -64,9 +64,6 @@ fun AniSyncNavHost(
         ) {
             com.anisync.android.presentation.profile.ProfileScreen(
                 onMediaClick = onMediaClick,
-                onSettingsClick = {
-                    navController.navigate(Screen.Settings.route)
-                },
                 onLogoutClick = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
@@ -83,22 +80,6 @@ fun AniSyncNavHost(
         ) {
             com.anisync.android.presentation.search.SearchScreen(
                 onMediaClick = onMediaClick
-            )
-        }
-        composable(
-            route = Screen.Settings.route,
-            enterTransition = { slideInHorizontally { it } + fadeIn() },
-            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
-            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
-            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
-        ) {
-            com.anisync.android.presentation.settings.SettingsScreen(
-                onBackClick = { navController.popBackStack() },
-                onLogoutComplete = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
             )
         }
     }
