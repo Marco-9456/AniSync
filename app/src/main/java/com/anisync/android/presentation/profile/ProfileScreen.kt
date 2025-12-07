@@ -147,8 +147,7 @@ fun BentoProfileLayout(
         // --- Header (Spans full width) ---
         item(span = StaggeredGridItemSpan.FullLine) {
             ProfileHeaderBento(
-                profile = profile,
-                modifier = Modifier.cascadingEntrance(index = 0)
+                profile = profile
             )
         }
 
@@ -161,8 +160,7 @@ fun BentoProfileLayout(
                 unit = "Days",
                 icon = Icons.Default.AccessTime,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                onColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.cascadingEntrance(index = 1)
+                onColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
 
@@ -171,8 +169,7 @@ fun BentoProfileLayout(
             ScoreCardRadial(
                 score = profile.meanScore,
                 color = MaterialTheme.colorScheme.tertiaryContainer,
-                onColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.cascadingEntrance(index = 2)
+                onColor = MaterialTheme.colorScheme.onTertiaryContainer
             )
         }
 
@@ -182,8 +179,7 @@ fun BentoProfileLayout(
                 label = "Anime Completed",
                 value = profile.animeCount.toString(),
                 icon = Icons.Default.PlayCircle,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.cascadingEntrance(index = 3)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         }
 
@@ -193,8 +189,7 @@ fun BentoProfileLayout(
                 label = "Chapters Read",
                 value = profile.chaptersRead.toString(),
                 icon = Icons.AutoMirrored.Filled.MenuBook,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.cascadingEntrance(index = 4)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         }
 
@@ -203,8 +198,7 @@ fun BentoProfileLayout(
             item(span = StaggeredGridItemSpan.FullLine) {
                 FavoritesSection(
                     favorites = profile.favoriteAnime,
-                    onMediaClick = onMediaClick,
-                    modifier = Modifier.cascadingEntrance(index = 5)
+                    onMediaClick = onMediaClick
                 )
             }
         }
@@ -213,8 +207,7 @@ fun BentoProfileLayout(
         item(span = StaggeredGridItemSpan.FullLine) {
             ControlCenterSection(
                 viewModel = viewModel,
-                onLogoutClick = onLogoutClick,
-                modifier = Modifier.cascadingEntrance(index = 6)
+                onLogoutClick = onLogoutClick
             )
         }
 
@@ -225,30 +218,8 @@ fun BentoProfileLayout(
 }
 
 // -----------------------------------------------------------------------------
-// POLISHED COMPONENTS
+// COMPONENTS
 // -----------------------------------------------------------------------------
-
-/**
- * Custom modifier for staggered entrance animations
- */
-fun Modifier.cascadingEntrance(index: Int): Modifier = composed {
-    val alphaAnim = remember { Animatable(0f) }
-    val slideAnim = remember { Animatable(50f) }
-
-    LaunchedEffect(Unit) {
-        delay(index * 75L) // Stagger delay
-        alphaAnim.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
-    }
-    LaunchedEffect(Unit) {
-        delay(index * 75L)
-        slideAnim.animateTo(0f, animationSpec = tween(600, easing = FastOutSlowInEasing))
-    }
-
-    this.graphicsLayer {
-        alpha = alphaAnim.value
-        translationY = slideAnim.value
-    }
-}
 
 @Composable
 fun ProfileHeaderBento(
@@ -256,9 +227,9 @@ fun ProfileHeaderBento(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(32.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = modifier.fillMaxWidth().height(240.dp)
+        shape = RoundedCornerShape(28.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = modifier.fillMaxWidth().height(220.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -268,7 +239,7 @@ fun ProfileHeaderBento(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Enhanced Gradient for text readability
+            // Standard gradient overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -276,10 +247,9 @@ fun ProfileHeaderBento(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.8f)
-                            ),
-                            startY = 100f
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.9f)
+                            )
                         )
                     )
             )
@@ -287,15 +257,15 @@ fun ProfileHeaderBento(
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(24.dp),
+                    .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(84.dp)
+                        .size(80.dp)
                         .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(3.dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(2.dp)
                 ) {
                     AsyncImage(
                         model = profile.avatarUrl,
@@ -313,22 +283,21 @@ fun ProfileHeaderBento(
                     Text(
                         text = profile.name,
                         style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-0.5).sp
+                            fontWeight = FontWeight.Bold
                         ),
                         color = Color.White
                     )
 
                     Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(50),
-                        modifier = Modifier.padding(top = 6.dp)
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Text(
                             text = "ID: ${profile.id}",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
                 }
@@ -349,29 +318,28 @@ fun StatCardLarge(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = color),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         modifier = modifier.fillMaxWidth().aspectRatio(1f)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp).fillMaxSize(),
+            modifier = Modifier.padding(16.dp).fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(onColor.copy(alpha = 0.15f)),
+                    .background(onColor.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = onColor, modifier = Modifier.size(24.dp))
+                Icon(icon, null, tint = onColor)
             }
 
             Column {
                 Text(
                     text = value,
                     style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.Black,
-                        fontSize = 32.sp
+                        fontWeight = FontWeight.Black
                     ),
                     color = onColor
                 )
@@ -394,7 +362,7 @@ fun ScoreCardRadial(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = color),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         modifier = modifier.fillMaxWidth().aspectRatio(1f)
     ) {
         Box(
@@ -404,48 +372,39 @@ fun ScoreCardRadial(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = score.toInt().toString(),
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.Black,
-                        fontSize = 36.sp
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Black
                     ),
                     color = onColor
                 )
                 Text(
                     text = "MEAN SCORE",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 9.sp),
-                    color = onColor.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 8.sp),
+                    color = onColor.copy(alpha = 0.7f)
                 )
             }
 
-            // Animated Gradient Arc
+            // Simple Radial Progress
             val animProgress = remember { Animatable(0f) }
-            val primaryColor = MaterialTheme.colorScheme.primary
 
             LaunchedEffect(score) {
-                delay(300)
-                animProgress.animateTo(score / 100f, animationSpec = tween(1500, easing = FastOutSlowInEasing))
+                animProgress.animateTo(score / 100f, animationSpec = tween(1500, easing = LinearEasing))
             }
 
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth = 10.dp.toPx()
+                val strokeWidth = 8.dp.toPx()
                 val radius = size.minDimension / 2 - strokeWidth
 
                 // Track
                 drawCircle(
-                    color = onColor.copy(alpha = 0.1f),
+                    color = onColor.copy(alpha = 0.2f),
                     radius = radius,
                     style = Stroke(width = strokeWidth)
                 )
 
-                // Gradient Progress
+                // Progress
                 drawArc(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            primaryColor.copy(alpha = 0.6f),
-                            primaryColor,
-                            onColor
-                        )
-                    ),
+                    color = onColor,
                     startAngle = -90f,
                     sweepAngle = 360 * animProgress.value,
                     useCenter = false,
@@ -468,22 +427,22 @@ fun StatCardSmall(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = RoundedCornerShape(24.dp),
-        modifier = modifier.fillMaxWidth().height(110.dp)
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier.fillMaxWidth().height(100.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -493,7 +452,7 @@ fun StatCardSmall(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -508,18 +467,18 @@ fun FavoritesSection(
     Column(modifier = modifier.padding(top = 12.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
+            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         ) {
-            Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107))
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "Top Favorites",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold)
+                text = "Favorites",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         }
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             items(favorites) { entry ->
@@ -536,11 +495,11 @@ fun FavoriteFilmStripItem(
 ) {
     Card(
         onClick = { onClick(entry.mediaId) },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
-            .width(130.dp)
-            .height(190.dp)
-            .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color.Black.copy(0.2f)),
+            .width(120.dp)
+            .height(180.dp)
+            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -556,8 +515,8 @@ fun FavoriteFilmStripItem(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)),
-                            startY = 250f
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            startY = 200f
                         )
                     )
             )
@@ -569,7 +528,7 @@ fun FavoriteFilmStripItem(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(12.dp)
+                    .padding(10.dp)
             )
         }
     }
@@ -610,16 +569,16 @@ fun ControlCenterSection(
         )
     }
 
-    Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "Control Center",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-            modifier = Modifier.padding(start = 8.dp)
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
 
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column {
