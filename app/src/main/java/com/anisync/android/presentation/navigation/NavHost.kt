@@ -7,17 +7,20 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.anisync.android.presentation.details.DetailsScreen
 
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (Int) -> Unit, // This triggers the navigation
     modifier: Modifier = Modifier
 ) {
     NavHost(
-        navController = navController, 
+        navController = navController,
         startDestination = Screen.Library.route,
         modifier = modifier
     ) {
@@ -80,6 +83,23 @@ fun AniSyncNavHost(
         ) {
             com.anisync.android.presentation.search.SearchScreen(
                 onMediaClick = onMediaClick
+            )
+        }
+
+        // Add the Details Screen route
+        composable(
+            route = Screen.Details.route,
+            arguments = listOf(navArgument("mediaId") { type = NavType.IntType }),
+            enterTransition = { slideInHorizontally { it } + fadeIn() },
+            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+        ) { backStackEntry ->
+            val mediaId = backStackEntry.arguments?.getInt("mediaId") ?: return@composable
+
+            DetailsScreen(
+                mediaId = mediaId,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

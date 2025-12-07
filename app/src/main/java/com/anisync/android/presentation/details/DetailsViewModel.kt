@@ -34,17 +34,27 @@ class DetailsViewModel @Inject constructor(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
-    private var currentMediaId: Int? = null
+    // Get the ID directly from the navigation route "details/{mediaId}"
+    private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
+        "Media ID is required for DetailsViewModel"
+    }
 
-    /* removed init block */
+    init {
+        loadDetails()
+    }
 
+    // Kept for compatibility with DetailsScreen's LaunchedEffect.
+    // Since we load in init, this acts as a safeguard or refresh mechanism.
     fun loadMedia(id: Int) {
-        currentMediaId = id
+        // If the ID matches what we already have and we are not in an error state,
+        // we can skip reloading to avoid double-fetching.
+        if (id == mediaId && _uiState.value !is DetailsUiState.Error) {
+            return
+        }
         loadDetails()
     }
 
     private fun loadDetails() {
-        val mediaId = currentMediaId ?: return
         viewModelScope.launch {
             _uiState.update { DetailsUiState.Loading }
             try {
@@ -64,13 +74,12 @@ class DetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                val mediaId = currentMediaId ?: return@launch
                 val success = detailsRepository.updateMediaListEntry(mediaId, status, progress)
                 if (success) {
                     loadDetails()
                 }
             } catch (e: Exception) {
-                // Handle error
+                // Ideally emit a one-time event for error (e.g., Snackbar)
             } finally {
                 _isSaving.value = false
             }
@@ -79,7 +88,7 @@ class DetailsViewModel @Inject constructor(
 
     fun deleteMediaListEntry() {
         viewModelScope.launch {
-            val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
+            val details = (_uiState.value as? DetailsUiState.Success)?.details ?: return@launch
             val listEntryId = details.listEntryId ?: return@launch
 
             _isSaving.value = true
