@@ -25,7 +25,7 @@ class SearchRepositoryImpl @Inject constructor(
 
         return response.data?.Page?.media?.filterNotNull()?.map { media ->
             LibraryEntry(
-                id = 0, // Not a library entry, so ID is 0
+                id = 0,
                 mediaId = media.id ?: 0,
                 title = media.title?.userPreferred ?: "Unknown",
                 coverUrl = media.coverImage?.extraLarge,
@@ -34,7 +34,8 @@ class SearchRepositoryImpl @Inject constructor(
                 totalChapters = media.chapters,
                 totalVolumes = media.volumes,
                 type = media.type,
-                status = LibraryStatus.UNKNOWN
+                status = LibraryStatus.UNKNOWN,
+                mediaStatus = media.status?.name
             )
         } ?: emptyList()
     }

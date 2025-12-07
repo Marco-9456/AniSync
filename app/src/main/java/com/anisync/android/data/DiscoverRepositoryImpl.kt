@@ -31,7 +31,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 status = Optional.present(com.anisync.android.type.MediaStatus.NOT_YET_RELEASED)
             )
         ).execute()
-        
+
         return response.data?.Page?.media?.filterNotNull()?.map { media ->
             LibraryEntry(
                 id = 0,
@@ -43,7 +43,8 @@ class DiscoverRepositoryImpl @Inject constructor(
                 totalChapters = media.chapters,
                 totalVolumes = media.volumes,
                 type = media.type,
-                status = LibraryStatus.UNKNOWN
+                status = LibraryStatus.UNKNOWN,
+                mediaStatus = "UPCOMING"
             )
         } ?: emptyList()
     }
@@ -51,15 +52,15 @@ class DiscoverRepositoryImpl @Inject constructor(
     private suspend fun fetchMedia(sort: List<MediaSort>, type: MediaType): List<LibraryEntry> {
         val response = apolloClient.query(
             GetMediaBySortQuery(
-                sort = Optional.present(sort), 
+                sort = Optional.present(sort),
                 type = Optional.present(type),
                 perPage = Optional.present(10)
             )
         ).execute()
-        
+
         return response.data?.Page?.media?.filterNotNull()?.map { media ->
             LibraryEntry(
-                id = 0, // No user library entry ID
+                id = 0,
                 mediaId = media.id ?: 0,
                 title = media.title?.userPreferred ?: "Unknown",
                 coverUrl = media.coverImage?.extraLarge,
@@ -68,7 +69,8 @@ class DiscoverRepositoryImpl @Inject constructor(
                 totalChapters = media.chapters,
                 totalVolumes = media.volumes,
                 type = media.type,
-                status = LibraryStatus.UNKNOWN
+                status = LibraryStatus.UNKNOWN,
+                mediaStatus = null // Status not fetched in this specific query currently
             )
         } ?: emptyList()
     }

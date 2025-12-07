@@ -24,5 +24,6 @@ data class LibraryEntry(
     val type: MediaType?,
     val status: LibraryStatus,
     val nextAiringEpisode: Int? = null,
-    val timeUntilAiring: Int? = null
+    val timeUntilAiring: Int? = null,
+    val mediaStatus: String? = null
 )

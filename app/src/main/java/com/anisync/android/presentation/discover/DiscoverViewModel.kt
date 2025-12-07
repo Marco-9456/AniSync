@@ -7,6 +7,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +44,7 @@ class DiscoverViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    // Search State
+    // --- Search State ---
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -52,6 +53,9 @@ class DiscoverViewModel @Inject constructor(
 
     private val _searchResults = MutableStateFlow<List<LibraryEntry>>(emptyList())
     val searchResults: StateFlow<List<LibraryEntry>> = _searchResults.asStateFlow()
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
 
     init {
         loadDiscoveryData()
@@ -62,7 +66,10 @@ class DiscoverViewModel @Inject constructor(
         if (_mediaType.value != type) {
             _mediaType.value = type
             loadDiscoveryData()
-            // Also re-trigger search if active? For now, standard discovery reload.
+            // If searching, re-trigger search with new type
+            if (_searchQuery.value.isNotEmpty()) {
+                onSearch(_searchQuery.value)
+            }
         }
     }
 
@@ -70,40 +77,49 @@ class DiscoverViewModel @Inject constructor(
         loadDiscoveryData(isRefresh = true)
     }
 
-    // Search Actions
+    // --- Search Logic ---
+
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
+        if (query.isEmpty()) {
+            _searchResults.value = emptyList()
+        }
     }
 
     fun onSearchActiveChange(active: Boolean) {
         _isSearchActive.value = active
         if (!active) {
-            // Optional: Clear query or keep it? Material guidelines usually keep it until cleared manually.
-            // But if closing means "cancel", maybe not. Let's keep it simple.
+            // Optional: clear query when closing search?
+            // Material guidelines suggest keeping it, but for a fresher feel we can clear focus
         }
     }
 
     fun onSearch(query: String) {
-        // Trigger search explicitly if needed, but we use reactive flow below
         _searchQuery.value = query
-        // Usually we might want to close the active state or show full results page,
-        // but for this "embedded" search, we might just keep showing results in the expanded sheet.
+        // Search flow below will pick this up
     }
 
-    @OptIn(kotlinx.coroutines.FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(FlowPreview::class)
     private fun observeSearchQuery() {
         viewModelScope.launch {
             _searchQuery
-                .debounce(500L)
+                .debounce(300L) // Fast debounce for responsive feel
                 .distinctUntilChanged()
-                .filter { it.isNotBlank() }
                 .collect { query ->
+                    if (query.isBlank()) {
+                        _searchResults.value = emptyList()
+                        _isSearching.value = false
+                        return@collect
+                    }
+
+                    _isSearching.value = true
                     try {
                         val results = searchRepository.searchMedia(query, _mediaType.value)
                         _searchResults.value = results
                     } catch (e: Exception) {
-                        // Handle error or just show empty
                         _searchResults.value = emptyList()
+                    } finally {
+                        _isSearching.value = false
                     }
                 }
         }
@@ -114,12 +130,12 @@ class DiscoverViewModel @Inject constructor(
         viewModelScope.launch {
             if (isRefresh) {
                 _isRefreshing.value = true
-            } else {
+            } else if (_uiState.value !is DiscoverUiState.Success) {
                 _uiState.update { DiscoverUiState.Loading }
             }
 
             try {
-                // Fetch all lists in parallel
+                // Parallel fetching
                 val trendingDeferred = async { discoverRepository.getTrending(currentType) }
                 val popularDeferred = async { discoverRepository.getPopular(currentType) }
                 val upcomingDeferred = async { discoverRepository.getUpcoming(currentType) }
