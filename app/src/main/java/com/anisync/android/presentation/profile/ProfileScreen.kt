@@ -1,41 +1,49 @@
 package com.anisync.android.presentation.profile
 
-import androidx.compose.animation.core.animateFloatAsState
+import android.Manifest
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,13 +53,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,21 +68,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
+import kotlinx.coroutines.delay
 
 @Composable
 fun ProfileScreen(
@@ -85,7 +102,6 @@ fun ProfileScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Box(
             modifier = Modifier
@@ -99,39 +115,14 @@ fun ProfileScreen(
                     }
                 }
                 is ProfileUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.GraphicEq,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = state.message,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Button(
-                                onClick = { /* Retry logic */ },
-                                modifier = Modifier.padding(top = 16.dp)
-                            ) {
-                                Text("Retry")
-                            }
-                        }
-                    }
+                    ErrorState(message = state.message, onRetry = { /* Retry logic */ })
                 }
                 is ProfileUiState.Success -> {
-                    ProfileDashboard(
+                    BentoProfileLayout(
                         profile = state.profile,
+                        viewModel = viewModel,
                         onMediaClick = onMediaClick,
-                        onLogoutClick = {
-                            viewModel.logout {
-                                onLogoutClick()
-                            }
-                        },
-                        viewModel = viewModel
+                        onLogoutClick = onLogoutClick
                     )
                 }
             }
@@ -140,307 +131,204 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileDashboard(
+fun BentoProfileLayout(
     profile: UserProfile,
+    viewModel: ProfileViewModel,
     onMediaClick: (Int) -> Unit,
-    onLogoutClick: () -> Unit,
-    viewModel: ProfileViewModel
+    onLogoutClick: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(2),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalItemSpacing = 12.dp,
+        modifier = Modifier.fillMaxSize()
     ) {
-        // 1. Header
-        ProfileHeader(profile)
+        // --- Header (Spans full width) ---
+        item(span = StaggeredGridItemSpan.FullLine) {
+            ProfileHeaderBento(
+                profile = profile,
+                modifier = Modifier.cascadingEntrance(index = 0)
+            )
+        }
 
-        // 2. Stats Grid
-        PaddingWrapper {
-            Column {
-                Text(
-                    text = "Overview",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp, top = 24.dp) // Added top padding to fix overlap
+        // --- Stats ---
+        // Time Watched
+        item(span = StaggeredGridItemSpan.SingleLane) {
+            StatCardLarge(
+                title = "Time Watched",
+                value = String.format("%.1f", profile.daysWatched),
+                unit = "Days",
+                icon = Icons.Default.AccessTime,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                onColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.cascadingEntrance(index = 1)
+            )
+        }
+
+        // Score
+        item(span = StaggeredGridItemSpan.SingleLane) {
+            ScoreCardRadial(
+                score = profile.meanScore,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                onColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.cascadingEntrance(index = 2)
+            )
+        }
+
+        // Anime Count
+        item(span = StaggeredGridItemSpan.SingleLane) {
+            StatCardSmall(
+                label = "Anime Completed",
+                value = profile.animeCount.toString(),
+                icon = Icons.Default.PlayCircle,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.cascadingEntrance(index = 3)
+            )
+        }
+
+        // Manga Count
+        item(span = StaggeredGridItemSpan.SingleLane) {
+            StatCardSmall(
+                label = "Chapters Read",
+                value = profile.chaptersRead.toString(),
+                icon = Icons.AutoMirrored.Filled.MenuBook,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.cascadingEntrance(index = 4)
+            )
+        }
+
+        // --- Favorites ---
+        if (profile.favoriteAnime.isNotEmpty()) {
+            item(span = StaggeredGridItemSpan.FullLine) {
+                FavoritesSection(
+                    favorites = profile.favoriteAnime,
+                    onMediaClick = onMediaClick,
+                    modifier = Modifier.cascadingEntrance(index = 5)
                 )
-
-                Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                    // Left Column (Score + Manga)
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Score
-                        MeanScoreCard(score = profile.meanScore)
-
-                        // Manga Progress
-                        ModernStatCard(
-                            title = "Manga Read",
-                            value = "${profile.chaptersRead}",
-                            unit = "Chapters",
-                            icon = Icons.AutoMirrored.Filled.MenuBook,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    // Right Column (Time + Library)
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Time Watched
-                        ModernStatCard(
-                            title = "Time Watched",
-                            value = String.format("%.1f", profile.daysWatched),
-                            unit = "Days",
-                            icon = Icons.Outlined.Timer,
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-
-                        // Library Breakdown
-                        LibraryStatsCard(
-                            animeCount = profile.animeCount,
-                            mangaCount = profile.mangaCount
-                        )
-                    }
-                }
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        // --- Settings (Control Center) ---
+        item(span = StaggeredGridItemSpan.FullLine) {
+            ControlCenterSection(
+                viewModel = viewModel,
+                onLogoutClick = onLogoutClick,
+                modifier = Modifier.cascadingEntrance(index = 6)
+            )
+        }
 
-        // 3. Favorites
-        if (profile.favoriteAnime.isNotEmpty()) {
-            Column {
-                PaddingWrapper {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = null,
-                            tint = Color(0xFFE91E63),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Favorites",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(profile.favoriteAnime) { entry ->
-                        FavoriteItem(entry, onClick = { onMediaClick(entry.mediaId) })
-                    }
-                }
-            }
+        item(span = StaggeredGridItemSpan.FullLine) {
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
 
-        // 4. Menu
-        PaddingWrapper {
-            Text(
-                text = "Account",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
-                
-                // Permission Launcher
-                val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-                ) { isGranted ->
-                    if (isGranted) viewModel.toggleNotifications(true)
-                }
+// -----------------------------------------------------------------------------
+// POLISHED COMPONENTS
+// -----------------------------------------------------------------------------
 
-                // Dialog state
-                var showSettingsDialog by remember { mutableStateOf(false) }
+/**
+ * Custom modifier for staggered entrance animations
+ */
+fun Modifier.cascadingEntrance(index: Int): Modifier = composed {
+    val alphaAnim = remember { Animatable(0f) }
+    val slideAnim = remember { Animatable(50f) }
 
-                if (showSettingsDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showSettingsDialog = false },
-                        title = { Text("Enable Notifications") },
-                        text = { Text("Notifications are disabled for this app. Please enable them in system settings to receive updates.") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                    }
-                                    context.startActivity(intent)
-                                    showSettingsDialog = false
-                                }
-                            ) {
-                                Text("Open Settings")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showSettingsDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
-                    )
-                }
+    LaunchedEffect(Unit) {
+        delay(index * 75L) // Stagger delay
+        alphaAnim.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
+    }
+    LaunchedEffect(Unit) {
+        delay(index * 75L)
+        slideAnim.animateTo(0f, animationSpec = tween(600, easing = FastOutSlowInEasing))
+    }
 
-                MenuTile(
-                    icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    subtitle = if (isNotificationsEnabled) "Enabled" else "Disabled",
-                    onClick = {
-                        val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                        
-                        if (!isNotificationsEnabled) {
-                            if (!areNotificationsEnabled) {
-                                showSettingsDialog = true
-                            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                viewModel.toggleNotifications(true)
-                            }
-                        } else {
-                            viewModel.toggleNotifications(false)
-                        }
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = isNotificationsEnabled,
-                            onCheckedChange = { checked ->
-                                if (checked) {
-                                    val areNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                                    if (!areNotificationsEnabled) {
-                                         showSettingsDialog = true
-                                    } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                    } else {
-                                        viewModel.toggleNotifications(true)
-                                    }
-                                } else {
-                                    viewModel.toggleNotifications(false)
-                                }
-                            }
-                        )
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = onLogoutClick,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Log Out", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        Spacer(modifier = Modifier.navigationBarsPadding().height(24.dp))
+    this.graphicsLayer {
+        alpha = alphaAnim.value
+        translationY = slideAnim.value
     }
 }
 
 @Composable
-fun ProfileHeader(profile: UserProfile) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(320.dp)
+fun ProfileHeaderBento(
+    profile: UserProfile,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(32.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = modifier.fillMaxWidth().height(240.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(260.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
                 model = profile.bannerUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+
+            // Enhanced Gradient for text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.3f),
                                 Color.Transparent,
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                MaterialTheme.colorScheme.background
-                            )
+                                Color.Black.copy(alpha = 0.2f),
+                                Color.Black.copy(alpha = 0.8f)
+                            ),
+                            startY = 100f
                         )
                     )
             )
-        }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(horizontal = 24.dp)
-        ) {
             Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box {
+                Box(
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .padding(3.dp)
+                ) {
                     AsyncImage(
                         model = profile.avatarUrl,
                         contentDescription = "Avatar",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(110.dp)
+                            .fillMaxSize()
                             .clip(CircleShape)
-                            .border(4.dp, MaterialTheme.colorScheme.background, CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(26.dp)
-                            .align(Alignment.BottomEnd)
-                            .offset(x = (-4).dp, y = (-4).dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF4CAF50))
-                            .border(3.dp, MaterialTheme.colorScheme.background, CircleShape)
                     )
                 }
-                Column(modifier = Modifier.padding(bottom = 16.dp)) {
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
                     Text(
                         text = profile.name,
                         style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.ExtraBold,
                             letterSpacing = (-0.5).sp
                         ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = Color.White
                     )
+
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.padding(top = 6.dp)
                     ) {
                         Text(
-                            text = "ID: #${profile.id}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            fontWeight = FontWeight.Bold
+                            text = "ID: ${profile.id}",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -450,245 +338,405 @@ fun ProfileHeader(profile: UserProfile) {
 }
 
 @Composable
-fun ModernStatCard(
+fun StatCardLarge(
     title: String,
     value: String,
     unit: String,
     icon: ImageVector,
+    color: Color,
+    onColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = color),
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier.fillMaxWidth().aspectRatio(1f)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp).fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(onColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = onColor, modifier = Modifier.size(24.dp))
+            }
+
+            Column {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 32.sp
+                    ),
+                    color = onColor
+                )
+                Text(
+                    text = "$unit $title",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = onColor.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ScoreCardRadial(
+    score: Float,
+    color: Color,
+    onColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = color),
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier.fillMaxWidth().aspectRatio(1f)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = score.toInt().toString(),
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 36.sp
+                    ),
+                    color = onColor
+                )
+                Text(
+                    text = "MEAN SCORE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, fontSize = 9.sp),
+                    color = onColor.copy(alpha = 0.6f)
+                )
+            }
+
+            // Animated Gradient Arc
+            val animProgress = remember { Animatable(0f) }
+            val primaryColor = MaterialTheme.colorScheme.primary
+
+            LaunchedEffect(score) {
+                delay(300)
+                animProgress.animateTo(score / 100f, animationSpec = tween(1500, easing = FastOutSlowInEasing))
+            }
+
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val strokeWidth = 10.dp.toPx()
+                val radius = size.minDimension / 2 - strokeWidth
+
+                // Track
+                drawCircle(
+                    color = onColor.copy(alpha = 0.1f),
+                    radius = radius,
+                    style = Stroke(width = strokeWidth)
+                )
+
+                // Gradient Progress
+                drawArc(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = 0.6f),
+                            primaryColor,
+                            onColor
+                        )
+                    ),
+                    startAngle = -90f,
+                    sweepAngle = 360 * animProgress.value,
+                    useCenter = false,
+                    topLeft = Offset(center.x - radius, center.y - radius),
+                    size = Size(radius * 2, radius * 2),
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StatCardSmall(
+    label: String,
+    value: String,
+    icon: ImageVector,
     containerColor: Color,
-    contentColor: Color
+    modifier: Modifier = Modifier
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().height(110.dp)
     ) {
-        Box(modifier = Modifier.height(130.dp)) {
-            // Watermark Icon
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = contentColor.copy(alpha = 0.1f),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(90.dp)
-                    .offset(x = 20.dp, y = 20.dp)
-                    .rotate(-15f)
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
             )
-
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.TopStart)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = contentColor.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = contentColor
-                )
-                Text(
-                    text = unit,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
-            }
         }
     }
 }
 
 @Composable
-fun LibraryStatsCard(animeCount: Int, mangaCount: Int) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Tv,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "$animeCount Anime",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.1f))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "$mangaCount Manga",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun MeanScoreCard(score: Float) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = score / 100f,
-        animationSpec = tween(1000),
-        label = "Score"
-    )
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Mean Score",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.size(64.dp),
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.1f),
-                    strokeWidth = 6.dp,
-                )
-                CircularProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier.size(64.dp),
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    strokeWidth = 6.dp,
-                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-                Text(
-                    text = "${score.toInt()}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-    }
-}
-
-@Composable
-fun PaddingWrapper(content: @Composable () -> Unit) {
-    Box(modifier = Modifier.padding(horizontal = 24.dp)) { content() }
-}
-
-@Composable
-fun FavoriteItem(entry: LibraryEntry, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(110.dp)
-            .clickable { onClick() }
-    ) {
-        AsyncImage(
-            model = entry.coverUrl,
-            contentDescription = entry.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(160.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .shadow(4.dp, RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = entry.title,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
-}
-
-@Composable
-fun MenuTile(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    trailingContent: @Composable (() -> Unit)? = null
+fun FavoritesSection(
+    favorites: List<LibraryEntry>,
+    onMediaClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Column(modifier = modifier.padding(top = 12.dp)) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
         ) {
+            Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Top Favorites",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold)
+            )
+        }
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp)
+        ) {
+            items(favorites) { entry ->
+                FavoriteFilmStripItem(entry, onMediaClick)
+            }
+        }
+    }
+}
+
+@Composable
+fun FavoriteFilmStripItem(
+    entry: LibraryEntry,
+    onClick: (Int) -> Unit
+) {
+    Card(
+        onClick = { onClick(entry.mediaId) },
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .width(130.dp)
+            .height(190.dp)
+            .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color.Black.copy(0.2f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AsyncImage(
+                model = entry.coverUrl,
+                contentDescription = entry.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Title Gradient
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp)
-                )
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)),
+                            startY = 250f
+                        )
+                    )
+            )
+            Text(
+                text = entry.title,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun ControlCenterSection(
+    viewModel: ProfileViewModel,
+    onLogoutClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) viewModel.toggleNotifications(true)
+    }
+
+    var showSettingsDialog by remember { mutableStateOf(false) }
+
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text("Enable Notifications") },
+            text = { Text("Please enable notifications in system settings.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    }
+                    context.startActivity(intent)
+                    showSettingsDialog = false
+                }) { Text("Settings") }
+            },
+            dismissButton = { TextButton(onClick = { showSettingsDialog = false }) { Text("Cancel") } }
+        )
+    }
+
+    Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = "Control Center",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            modifier = Modifier.padding(start = 8.dp)
+        )
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                // Notification Row
+                Row(
+                    modifier = Modifier
+                        .clickable {
+                            // Toggle Logic (same as before)
+                            if (!isNotificationsEnabled) {
+                                val areEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+                                if (!areEnabled) {
+                                    showSettingsDialog = true
+                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    viewModel.toggleNotifications(true)
+                                }
+                            } else {
+                                viewModel.toggleNotifications(false)
+                            }
+                        }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = if (isNotificationsEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = CircleShape,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = if (isNotificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                    contentDescription = null,
+                                    tint = if (isNotificationsEnabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text("Notifications", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                if (isNotificationsEnabled) "On" else "Off",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isNotificationsEnabled,
+                        onCheckedChange = null, // Handled by Row click
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Logout Row
+                Row(
+                    modifier = Modifier
+                        .clickable { viewModel.logout { onLogoutClick() } }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = CircleShape,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Logout,
+                                null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        "Log Out",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (trailingContent != null) {
-                trailingContent()
-            } else {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-            }
+        }
+    }
+}
+
+@Composable
+fun ErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Default.Timeline,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.error
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(text = "Oops!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(text = message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onRetry) {
+            Text("Retry")
         }
     }
 }
