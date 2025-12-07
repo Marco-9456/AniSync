@@ -57,7 +57,9 @@ class LibraryRepositoryImpl @Inject constructor(
                     totalChapters = media?.chapters,
                     totalVolumes = media?.volumes,
                     type = media?.type,
-                    status = status
+                    status = status,
+                    nextAiringEpisode = media?.nextAiringEpisode?.episode,
+                    timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring
                 )
             } ?: emptyList()
         }

@@ -16,6 +16,10 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
           chapters
           volumes
           type
+          nextAiringEpisode {
+            episode
+            timeUntilAiring
+          }
         }
         status
         progress

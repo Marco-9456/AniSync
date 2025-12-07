@@ -56,6 +56,7 @@ type Media {
   format: MediaFormat
   characters(sort: [CharacterSort], perPage: Int): CharacterConnection
   relations: MediaConnection
+  nextAiringEpisode: AiringSchedule
 }
 
 enum CharacterSort {
@@ -220,4 +221,13 @@ type FuzzyDate {
   year: Int
   month: Int
   day: Int
+}
+
+type AiringSchedule {
+  id: Int
+  airingAt: Int
+  timeUntilAiring: Int
+  episode: Int
+  mediaId: Int
+  media: Media
 }

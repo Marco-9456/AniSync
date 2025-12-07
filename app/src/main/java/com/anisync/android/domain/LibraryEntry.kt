@@ -22,5 +22,7 @@ data class LibraryEntry(
     val totalChapters: Int?,
     val totalVolumes: Int?,
     val type: MediaType?,
-    val status: LibraryStatus
+    val status: LibraryStatus,
+    val nextAiringEpisode: Int? = null,
+    val timeUntilAiring: Int? = null
 )
