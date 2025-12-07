@@ -1,16 +1,18 @@
 package com.anisync.android.presentation.details
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,59 +21,62 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.QuestionMark
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.domain.CharacterInfo
-import com.anisync.android.domain.RelatedMedia
-import com.anisync.android.type.MediaType
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.ui.unit.Dp
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -81,8 +86,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.anisync.android.domain.CharacterInfo
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
-
+import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.type.MediaType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,8 +101,8 @@ fun DetailsBottomSheet(
     viewModel: DetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isSaving by viewModel.isSaving.collectAsState()
 
+    // Load data when mediaId changes
     LaunchedEffect(mediaId) {
         viewModel.loadMedia(mediaId)
     }
@@ -104,19 +112,10 @@ fun DetailsBottomSheet(
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = {
-            // Custom Handle
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 16.dp)
-                    .width(48.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(Color.LightGray.copy(alpha = 0.6f))
-            )
-        },
-        contentWindowInsets = { WindowInsets(0) }
+        contentWindowInsets = { WindowInsets(0) }, // Handle insets manually for full edge-to-edge feel
+        dragHandle = null // Custom drag handle in HeaderSection
     ) {
+        // Main Content Container
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -129,17 +128,18 @@ fun DetailsBottomSheet(
                     }
                 }
                 is DetailsUiState.Success -> {
-                    DetailsSheetContent(
+                    DetailsContent(
                         details = state.details,
-                        onStatusSelected = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
+                        onStatusUpdate = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
                         onRemove = { viewModel.deleteMediaListEntry() }
                     )
                 }
                 is DetailsUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Error: ${state.message}",
-                            color = MaterialTheme.colorScheme.error
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }
@@ -148,184 +148,437 @@ fun DetailsBottomSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailsSheetContent(
+fun DetailsContent(
     details: MediaDetails,
-    onStatusSelected: (LibraryStatus, Int) -> Unit,
+    onStatusUpdate: (LibraryStatus, Int) -> Unit,
     onRemove: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Overview", "Characters", "Related")
-    val isManga = details.type == MediaType.MANGA
+    val listState = rememberLazyListState()
+    val isExpanded by remember {
+        derivedStateOf { listState.firstVisibleItemIndex == 0 }
+    }
+
+    var showStatusPicker by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp) // Extra space for FAB
         ) {
-            // Header Section
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-            ) {
-                // Cover Image
-                AsyncImage(
-                    model = details.coverUrl,
-                    contentDescription = "Cover",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(150.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .shadow(8.dp, RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+            // 1. Immersive Header
+            item {
+                HeaderSection(details)
+            }
 
-                Spacer(modifier = Modifier.width(16.dp))
+            // 2. Metadata & Synopsis
+            item {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    // Title & Badges
+                    Text(
+                        text = details.title,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                // Metadata
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Badges
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Format Badge
-                        details.format?.let { fmt ->
-                            Badge(
-                                text = if (fmt == "TV") "TV" else fmt,
-                                backgroundColor = Color(0xFF6A5A17),
-                                contentColor = Color.White
-                            )
-                        }
+                    Spacer(modifier = Modifier.height(12.dp))
 
+                    // Info Row
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         // Score Badge
                         details.score?.let { score ->
-                            Badge(
-                                text = "$score%",
-                                icon = Icons.Default.Star,
-                                backgroundColor = Color(0xFFFFD700),
-                                contentColor = Color.Black
+                            ScoreBadge(score)
+                        }
+
+                        // Format Badge
+                        details.format?.let { format ->
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = if (format == "TV") "TV Series" else format.replace("_", " "),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Year
+                        Text(
+                            text = details.year?.toString() ?: "",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (details.studio != null) {
+                            Text(
+                                text = "•",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            Text(
+                                text = details.studio,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.widthIn(max = 120.dp)
                             )
                         }
                     }
 
-                    // Title
-                    Text(
-                        text = details.title,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 24.sp
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Studio • Year
-                    val studioYear = listOfNotNull(
-                        details.studio,
-                        details.year?.toString()
-                    ).joinToString(" • ")
-                    
-                    Text(
-                        text = studioYear,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
+                    // Stats Grid
+                    StatsGrid(details)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Genres
+                    GenreFlow(details.genres)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Description
+                    ExpandableSynopsis(details.description)
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Tabs
-            PrimaryTabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = Color.Transparent,
-                divider = { HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f)) },
-                indicator = {
-                     TabRowDefaults.PrimaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(selectedTabIndex, matchContentSize = true),
-                        width = Dp.Unspecified,
-                        color = Color(0xFF8B7E28)
-                    )
-                }
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium
-                                ),
-                                color = if (selectedTabIndex == index) Color.Black else Color.Gray
-                            )
+            // 3. Characters Section
+            item {
+                if (details.characters.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    SectionTitle(title = "Cast", modifier = Modifier.padding(horizontal = 24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(details.characters) { character ->
+                            CharacterItem(character)
                         }
-                    )
+                    }
                 }
             }
 
-            // Tab Content
-            when (selectedTabIndex) {
-                0 -> OverviewTab(details)
-                1 -> CharactersTab(details.characters)
-                2 -> RelatedTab(details.relations)
+            // 4. Relations Section
+            item {
+                if (details.relations.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    SectionTitle(title = "Related", modifier = Modifier.padding(horizontal = 24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(details.relations) { relation ->
+                            RelationItem(relation)
+                        }
+                    }
+                }
             }
-            
-            Spacer(modifier = Modifier.height(100.dp))
         }
 
-        // FAB Menu
-        FabMenu(
+        // FAB (Primary Action)
+        val fabIcon = if (details.listEntryId != null) Icons.Default.Edit else Icons.Default.Add
+        val fabText = if (details.listEntryId != null) {
+            getStatusLabel(details.listStatus ?: LibraryStatus.UNKNOWN, details.type == MediaType.MANGA)
+        } else {
+            "Add to Library"
+        }
+        val fabContainerColor = if (details.listEntryId != null) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+        val fabContentColor = if (details.listEntryId != null) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onPrimary
+        }
+
+        ExtendedFloatingActionButton(
+            text = { Text(text = fabText) },
+            icon = { Icon(imageVector = fabIcon, contentDescription = null) },
+            onClick = { showStatusPicker = true },
+            expanded = isExpanded,
+            containerColor = fabContainerColor,
+            contentColor = fabContentColor,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            isInList = details.listEntryId != null,
+                .padding(24.dp)
+        )
+    }
+
+    if (showStatusPicker) {
+        StatusPickerDialog(
             currentStatus = details.listStatus,
-            isManga = isManga,
+            isManga = details.type == MediaType.MANGA,
             onStatusSelected = { status ->
                 val progress = details.listProgress ?: 0
-                onStatusSelected(status, progress)
+                onStatusUpdate(status, progress)
+                showStatusPicker = false
             },
-            onRemove = onRemove
+            onRemove = {
+                onRemove()
+                showStatusPicker = false
+            },
+            onDismiss = { showStatusPicker = false }
         )
     }
 }
 
 @Composable
-fun CharactersTab(characters: List<CharacterInfo>) {
-    Column(
+fun HeaderSection(details: MediaDetails) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .height(280.dp)
     ) {
-        if (characters.isEmpty()) {
-            Text(
-                text = "No characters available.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+        // Banner Backdrop
+        AsyncImage(
+            model = details.bannerUrl ?: details.coverUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+
+        // Gradient Fade
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.2f),
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
+        )
+
+        // Cover Image (Overlapping)
+        AsyncImage(
+            model = details.coverUrl,
+            contentDescription = "Cover",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 24.dp)
+                .offset(y = (-20).dp) // Pull up
+                .width(110.dp)
+                .height(160.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .border(4.dp, MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+
+        // Drag Handle Visual (Subtle line at top center)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 12.dp)
+                .width(32.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(Color.White.copy(alpha = 0.8f))
+        )
+    }
+}
+
+@Composable
+fun ScoreBadge(score: Int) {
+    // Colors inspired by AniList
+    val color = when {
+        score >= 75 -> Color(0xFF4CAF50) // Green
+        score >= 60 -> Color(0xFFFFC107) // Amber
+        else -> Color(0xFFF44336) // Red
+    }
+
+    Surface(
+        color = color,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(12.dp)
             )
-        } else {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(characters) { character ->
-                    CharacterCard(character)
-                }
-            }
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "$score%",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color.White
+            )
         }
     }
 }
 
 @Composable
-fun CharacterCard(character: CharacterInfo) {
+fun StatsGrid(details: MediaDetails) {
+    val isManga = details.type == MediaType.MANGA
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp))
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        StatItem(
+            label = if (isManga) "Chapters" else "Episodes",
+            value = if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}"
+        )
+        VerticalDivider(modifier = Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        StatItem(
+            label = "Status",
+            value = details.status.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
+        )
+        VerticalDivider(modifier = Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        StatItem(
+            label = "Source",
+            value = "Original" // Placeholder as API query didn't request source
+        )
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun GenreFlow(genres: List<String>) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        genres.forEach { genre ->
+            AssistChip(
+                onClick = {},
+                label = { Text(genre, style = MaterialTheme.typography.labelMedium) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    labelColor = MaterialTheme.colorScheme.onSurface
+                ),
+                border = null,
+                shape = CircleShape
+            )
+        }
+    }
+}
+
+@Composable
+fun ExpandableSynopsis(text: String) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple()
+            ) { expanded = !expanded }
+            .padding(16.dp)
+            .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessLow))
+    ) {
+        Text(
+            text = "SYNOPSIS",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Box {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                maxLines = if (expanded) Int.MAX_VALUE else 4,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 22.sp
+            )
+
+            // Subtle Gradient overlay for collapsed state
+            if (!expanded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(30.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.surfaceContainerLowest
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (expanded) "Show less" else "Read more",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+            Icon(
+                imageVector = if(expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun CharacterItem(character: CharacterInfo) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(80.dp)
@@ -335,423 +588,191 @@ fun CharacterCard(character: CharacterInfo) {
             contentDescription = character.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(70.dp)
+                .size(72.dp)
                 .clip(CircleShape)
-                .background(Color.LightGray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = character.name,
             style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
             text = character.role,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
-fun RelatedTab(relations: List<RelatedMedia>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-    ) {
-        if (relations.isEmpty()) {
-            Text(
-                text = "No related media available.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-        } else {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(relations) { related ->
-                    RelatedMediaCard(related)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RelatedMediaCard(related: RelatedMedia) {
-    Column(
-        modifier = Modifier.width(100.dp)
-    ) {
+fun RelationItem(relation: RelatedMedia) {
+    Column(modifier = Modifier.width(100.dp)) {
         AsyncImage(
-            model = related.coverUrl,
-            contentDescription = related.title,
+            model = relation.coverUrl,
+            contentDescription = relation.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .height(140.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.LightGray)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = related.relationType.replace("_", " "),
+            text = relation.relationType.replace("_", " "),
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF8B7E28),
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = related.title,
+            text = relation.title,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            fontWeight = FontWeight.Medium
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
-fun FabMenu(
-    modifier: Modifier = Modifier,
-    isInList: Boolean,
+fun SectionTitle(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun StatusPickerDialog(
     currentStatus: LibraryStatus?,
     isManga: Boolean,
     onStatusSelected: (LibraryStatus) -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onDismiss: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    // Conditional labels based on media type
-    val options = listOf(
-        LibraryStatus.CURRENT to if (isManga) "Reading" else "Watching",
-        LibraryStatus.PLANNING to if (isManga) "Plan to Read" else "Plan to Watch",
-        LibraryStatus.COMPLETED to "Completed",
-        LibraryStatus.DROPPED to "Dropped",
-        LibraryStatus.PAUSED to "Paused"
-    )
-
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        androidx.compose.animation.AnimatedVisibility(
-            visible = expanded,
-            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 },
-            exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 }
-        ) {
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Status Options
-                options.forEach { (status, label) ->
-                    FabMenuItem(
-                        text = label,
-                        icon = getStatusIcon(status, isManga),
-                        selected = status == currentStatus,
-                        onClick = {
-                            onStatusSelected(status)
-                            expanded = false
-                        }
-                    )
-                }
-
-                // Remove Option (only if in list)
-                if (isInList) {
-                    FabMenuItem(
-                        text = "Remove",
-                        icon = Icons.Default.Delete,
-                        selected = false,
-                        color = MaterialTheme.colorScheme.error,
-                        onClick = {
-                            onRemove()
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-
-        // Animated FAB
-        val fabColor by animateColorAsState(
-            targetValue = if (expanded) Color.LightGray 
-                          else if (isInList) Color(0xFFFFD700) 
-                          else MaterialTheme.colorScheme.tertiaryContainer,
-            label = "fabColor"
-        )
-
-        FloatingActionButton(
-            onClick = { expanded = !expanded },
-            containerColor = fabColor,
-            contentColor = Color.Black,
-            modifier = Modifier.size(56.dp)
-        ) {
-            AnimatedContent(
-                targetState = if (expanded) Icons.Default.Close 
-                              else if (isInList) Icons.Default.Edit 
-                              else Icons.Default.Add,
-                label = "fabIcon"
-            ) { targetIcon ->
-                Icon(
-                    imageVector = targetIcon,
-                    contentDescription = if (expanded) "Close" else "Manage",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun FabMenuItem(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    selected: Boolean,
-    color: Color = Color.White,
-    onClick: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.clickable(onClick = onClick)
-    ) {
-        // Label
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black.copy(alpha = 0.7f))
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-        ) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
             Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                text = "Update Status",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
             )
-        }
-
-        // Mini FAB
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(androidx.compose.foundation.shape.CircleShape)
-                .background(if (selected) Color(0xFFFFD700) else color)
-                .border(
-                    width = 1.dp,
-                    color = if (selected) Color(0xFFFFD700) else Color.LightGray,
-                    shape = androidx.compose.foundation.shape.CircleShape
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                val statuses = listOf(
+                    LibraryStatus.CURRENT,
+                    LibraryStatus.PLANNING,
+                    LibraryStatus.COMPLETED,
+                    LibraryStatus.PAUSED,
+                    LibraryStatus.DROPPED
                 )
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (selected) Color.Black else Color.Black, // Icon color
-                modifier = Modifier.size(20.dp)
-            )
-        }
+
+                // Grid-like layout for statuses
+                statuses.chunked(2).forEach { rowStatuses ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowStatuses.forEach { status ->
+                            val isSelected = status == currentStatus
+                            val label = getStatusLabel(status, isManga)
+                            val icon = getStatusIcon(status, isManga)
+
+                            Card(
+                                onClick = { onStatusSelected(status) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(70.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                border = if (isSelected)
+                                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                                else
+                                    null
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                        if (rowStatuses.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+
+                if (currentStatus != null) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    OutlinedButton(
+                        onClick = onRemove,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Remove from Library")
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(24.dp)
+    )
+}
+
+fun getStatusLabel(status: LibraryStatus, isManga: Boolean): String {
+    return when (status) {
+        LibraryStatus.CURRENT -> if (isManga) "Reading" else "Watching"
+        LibraryStatus.PLANNING -> "Planning"
+        LibraryStatus.COMPLETED -> "Completed"
+        LibraryStatus.DROPPED -> "Dropped"
+        LibraryStatus.PAUSED -> "Paused"
+        LibraryStatus.REPEATING -> "Rewatching"
+        else -> "Unknown"
     }
 }
 
-fun getStatusIcon(status: LibraryStatus, isManga: Boolean = false): androidx.compose.ui.graphics.vector.ImageVector {
+fun getStatusIcon(status: LibraryStatus, isManga: Boolean): androidx.compose.ui.graphics.vector.ImageVector {
     return when (status) {
         LibraryStatus.CURRENT -> if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.PlayArrow
         LibraryStatus.PLANNING -> Icons.Default.Event
         LibraryStatus.COMPLETED -> Icons.Default.Check
-        LibraryStatus.DROPPED -> Icons.Default.Delete // Or remove circle
+        LibraryStatus.DROPPED -> Icons.Default.Delete
         LibraryStatus.PAUSED -> Icons.Default.Pause
         LibraryStatus.REPEATING -> Icons.Default.Repeat
-        else -> Icons.Default.QuestionMark
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun OverviewTab(details: MediaDetails) {
-    val isManga = details.type == MediaType.MANGA
-    
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-    ) {
-        // Synopsis Header
-        Text(
-            text = "SYNOPSIS",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            ),
-            color = Color(0xFF8B7E28),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        // Synopsis Text
-        ExpandableText(
-            text = details.description,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        // Info Header
-        Text(
-            text = "INFO",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            ),
-            color = Color(0xFF8B7E28),
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        // Info Cards - Conditional based on type
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            if (isManga) {
-                InfoCard(
-                    label = "CHAPTERS",
-                    value = "${details.chapters ?: "?"} ch",
-                    modifier = Modifier.weight(1f),
-                    backgroundColor = Color(0xFFEEE8C5)
-                )
-            } else {
-                InfoCard(
-                    label = "EPISODES",
-                    value = "${details.episodes ?: "?"} eps",
-                    modifier = Modifier.weight(1f),
-                    backgroundColor = Color(0xFFEEE8C5)
-                )
-            }
-            InfoCard(
-                label = "FORMAT",
-                value = details.format ?: "Unknown",
-                modifier = Modifier.weight(1f),
-                backgroundColor = Color(0xFFC5E8D0)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Genres
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            details.genres.forEach { genre ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.Transparent)
-                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = genre,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.DarkGray
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun InfoCard(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(backgroundColor)
-            .padding(16.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray.copy(alpha = 0.8f)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color.Black
-        )
-    }
-}
-
-@Composable
-fun Badge(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    backgroundColor: Color,
-    contentColor: Color
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(backgroundColor)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(12.dp).padding(end = 2.dp)
-            )
-        }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = contentColor
-        )
-    }
-}
-
-@Composable
-fun ExpandableText(text: String, modifier: Modifier = Modifier) {
-    var expanded by remember { mutableStateOf(false) }
-    
-    Column(modifier = modifier) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(color = Color.DarkGray),
-            maxLines = if (expanded) Int.MAX_VALUE else 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.animateContentSize()
-        )
-        
-        Spacer(modifier = Modifier.height(4.dp))
-        
-        Row(
-            modifier = Modifier
-                .clickable { expanded = !expanded }
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-             Text(
-                text = if (expanded) "Read Less" else "Read More",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color(0xFF8B7E28)
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                 tint = Color(0xFF8B7E28),
-                 modifier = Modifier.size(16.dp)
-            )
-        }
+        else -> Icons.Default.Add
     }
 }

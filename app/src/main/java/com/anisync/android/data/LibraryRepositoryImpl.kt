@@ -5,8 +5,8 @@ import com.anisync.android.GetViewerQuery
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.type.MediaType
 import com.anisync.android.type.MediaListStatus
+import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.ApolloClient
 import javax.inject.Inject
 

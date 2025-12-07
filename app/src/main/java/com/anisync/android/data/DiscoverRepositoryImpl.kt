@@ -8,9 +8,8 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaSort
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.ApolloClient
-import javax.inject.Inject
-
 import com.apollographql.apollo3.api.Optional
+import javax.inject.Inject
 
 class DiscoverRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient

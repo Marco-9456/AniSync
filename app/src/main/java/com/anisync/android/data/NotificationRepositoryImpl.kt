@@ -8,7 +8,6 @@ import com.anisync.android.domain.FollowingNotification
 import com.anisync.android.domain.Media
 import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationRepository
-import com.anisync.android.domain.UnknownNotification
 import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo3.ApolloClient

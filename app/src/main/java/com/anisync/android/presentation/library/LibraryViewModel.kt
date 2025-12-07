@@ -2,7 +2,6 @@ package com.anisync.android.presentation.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anisync.android.domain.GetLibraryUseCase
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.type.MediaType

@@ -10,7 +10,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.NotificationRepository
-import com.anisync.android.type.NotificationType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
