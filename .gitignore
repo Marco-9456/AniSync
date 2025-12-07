@@ -52,3 +52,6 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# Dex Metadata
+*.dm
