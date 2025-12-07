@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,22 +29,28 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ViewList
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -52,21 +59,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,11 +89,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.SegmentedControl
-import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
@@ -89,31 +102,21 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
 
-    // UI View State
+    // --- State Management ---
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // View Toggle (Grid vs List)
     var isGridView by remember { mutableStateOf(true) }
+
+    // Filter State
     var selectedStatus by remember { mutableStateOf(LibraryStatus.CURRENT) }
 
-    // Scroll States
-    val gridState = rememberLazyGridState()
-    val listState = rememberLazyListState()
-
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Scroll to top when filter or view mode changes
-    LaunchedEffect(selectedStatus, mediaType, isGridView) {
-        if (isGridView) {
-            gridState.scrollToItem(0)
-        } else {
-            listState.scrollToItem(0)
-        }
-    }
-
-    LaunchedEffect(key1 = true) {
+    // Listen for VM events (Snackbars)
+    LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is LibraryEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
-                }
+                is LibraryEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
             }
         }
     }
@@ -122,57 +125,162 @@ fun LibraryScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            LibraryHeader(
-                selectedMediaType = mediaType,
-                onMediaTypeChange = viewModel::onMediaTypeChange,
-                selectedStatus = selectedStatus,
-                onStatusChange = { selectedStatus = it },
-                isGridView = isGridView,
-                onViewToggle = { isGridView = !isGridView }
-            )
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(top = 16.dp)
+            ) {
+                // Header: Title + Toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Library",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    // View Toggle Button (Circle shape like screenshot)
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                        modifier = Modifier.size(40.dp),
+                        onClick = { isGridView = !isGridView }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isGridView) Icons.Default.GridView else Icons.Default.ViewList,
+                                contentDescription = "Toggle View",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Tabs: Anime / Manga
+                val selectedTabIndex = if (mediaType == MediaType.ANIME) 0 else 1
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    divider = { Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)) },
+                    indicator = { tabPositions ->
+                        if (selectedTabIndex < tabPositions.size) {
+                            TabRowDefaults.Indicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                                height = 3.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                ) {
+                    Tab(
+                        selected = mediaType == MediaType.ANIME,
+                        onClick = { viewModel.onMediaTypeChange(MediaType.ANIME) },
+                        text = { Text("Anime", fontWeight = FontWeight.SemiBold) }
+                    )
+                    Tab(
+                        selected = mediaType == MediaType.MANGA,
+                        onClick = { viewModel.onMediaTypeChange(MediaType.MANGA) },
+                        text = { Text("Manga", fontWeight = FontWeight.SemiBold) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Status Filter Chips
+                val statuses = listOf(
+                    LibraryStatus.CURRENT,
+                    LibraryStatus.PAUSED,
+                    LibraryStatus.COMPLETED,
+                    LibraryStatus.PLANNING,
+                    LibraryStatus.DROPPED
+                )
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(statuses) { status ->
+                        val isSelected = selectedStatus == status
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedStatus = status },
+                            label = { Text(getStatusLabel(status, mediaType)) },
+                            leadingIcon = if (isSelected) {
+                                { Icon(Icons.Default.Done, null, modifier = Modifier.size(16.dp)) }
+                            } else null,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                selectedBorderColor = Color.Transparent
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.background)
         ) {
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
-                    LibraryLoadingShimmer(isGridView)
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is LibraryUiState.Error -> {
+                    ErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.loadLibrary() }
+                    )
                 }
                 is LibraryUiState.Success -> {
-                    val filteredEntries = remember(state.entries, selectedStatus) {
+                    val entries = remember(state.entries, selectedStatus) {
                         state.entries.filter { it.status == selectedStatus }
                     }
 
-                    if (filteredEntries.isEmpty()) {
-                        LibraryEmptyState(
-                            message = "No ${mediaType.name.lowercase()} found in ${getStatusLabel(selectedStatus, mediaType)}",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                    if (entries.isEmpty()) {
+                        EmptyLibraryTabState(selectedStatus, mediaType)
                     } else {
                         AnimatedContent(
                             targetState = isGridView,
-                            label = "ViewTransition",
                             transitionSpec = {
                                 fadeIn(animationSpec = tween(300)) togetherWith
                                         fadeOut(animationSpec = tween(300))
-                            }
-                        ) { grid ->
-                            if (grid) {
+                            },
+                            label = "ViewMode"
+                        ) { isGrid ->
+                            if (isGrid) {
                                 LazyVerticalGrid(
-                                    state = gridState,
                                     columns = GridCells.Adaptive(minSize = 160.dp),
-                                    contentPadding = PaddingValues(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                    contentPadding = PaddingValues(20.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(filteredEntries, key = { it.id }) { entry ->
-                                        LibraryGridCard(
+                                    items(entries, key = { it.id }) { entry ->
+                                        NewGridCard(
                                             entry = entry,
+                                            mediaType = mediaType,
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
                                             onDecrement = { viewModel.decrementProgress(entry.mediaId) }
@@ -181,14 +289,14 @@ fun LibraryScreen(
                                 }
                             } else {
                                 LazyColumn(
-                                    state = listState,
-                                    contentPadding = PaddingValues(16.dp),
+                                    contentPadding = PaddingValues(20.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(filteredEntries, key = { it.id }) { entry ->
-                                        LibraryListCard(
+                                    items(entries, key = { it.id }) { entry ->
+                                        NewListCard(
                                             entry = entry,
+                                            mediaType = mediaType,
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
                                             onDecrement = { viewModel.decrementProgress(entry.mediaId) }
@@ -199,594 +307,457 @@ fun LibraryScreen(
                         }
                     }
                 }
-                is LibraryUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Inbox, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                            Button(onClick = { viewModel.loadLibrary() }, modifier = Modifier.padding(top = 16.dp)) {
-                                Text("Retry")
-                            }
-                        }
-                    }
-                }
             }
         }
     }
 }
 
+// -----------------------------------------------------------------------------
+// GRID CARD IMPLEMENTATION
+// -----------------------------------------------------------------------------
+
 @Composable
-fun LibraryHeader(
-    selectedMediaType: MediaType,
-    onMediaTypeChange: (MediaType) -> Unit,
-    selectedStatus: LibraryStatus,
-    onStatusChange: (LibraryStatus) -> Unit,
-    isGridView: Boolean,
-    onViewToggle: () -> Unit
+fun NewGridCard(
+    entry: LibraryEntry,
+    mediaType: MediaType,
+    onClick: () -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
 ) {
-    Column(
+    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    val isManga = mediaType == MediaType.MANGA
+    val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = progressPercent,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "Progress"
+    )
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(bottom = 8.dp)
-            .shadow(
-                elevation = 1.dp,
-                shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-                spotColor = Color.LightGray.copy(0.2f)
-            )
+            .height(340.dp) // Adjusted height for buttons
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            // Title & View Toggle Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Image Section with Title Overlay
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
-                Text(
-                    text = "My Library",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 28.sp,
-                        letterSpacing = (-0.5).sp
-                    )
+                AsyncImage(
+                    model = entry.coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
 
-                IconButton(
-                    onClick = onViewToggle,
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
+                // Gradient Overlay for Title Visibility
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                startY = 200f
+                            )
+                        )
+                )
+
+                // Title
+                Text(
+                    text = entry.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp)
+                )
+            }
+
+            // Info Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                // Badges & Time
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    AnimatedContent(
-                        targetState = isGridView,
-                        label = "IconAnim",
-                        transitionSpec = {
-                            fadeIn(animationSpec = tween(200)) togetherWith
-                                    fadeOut(animationSpec = tween(200))
+                    val nextAiring = entry.nextAiringEpisode
+                    val latest = if (nextAiring != null) nextAiring - 1 else total
+
+                    if (entry.status == LibraryStatus.CURRENT) {
+                        if (latest != null && entry.progress < latest) {
+                            StatusBadge(
+                                text = "${latest - entry.progress} EP BEHIND",
+                                containerColor = Color(0xFFB3261E), // Red error color
+                                contentColor = Color.White
+                            )
+                        } else {
+                            StatusBadge(
+                                text = "UP TO DATE",
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
-                    ) { isGrid ->
-                        Icon(
-                            imageVector = if (isGrid) Icons.Default.ViewList else Icons.Default.GridView,
-                            contentDescription = "Toggle View"
+                    }
+
+                    // Time String
+                    if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
+                        Text(
+                            text = "Ep ${entry.nextAiringEpisode} in ${formatTimeShort(entry.timeUntilAiring)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Progress Bar & Text
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LinearProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    )
+
+                    Text(
+                        text = "${entry.progress} / ${total ?: "?"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Buttons Section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Minus Button
+                Surface(
+                    onClick = onDecrement,
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp))
+                    }
+                }
 
-            // Segmented Control (Anime/Manga)
-            SegmentedControl(
-                options = listOf("Anime", "Manga"),
-                selectedOption = if (selectedMediaType == MediaType.ANIME) "Anime" else "Manga",
-                onOptionSelected = {
-                    onMediaTypeChange(if (it == "Anime") MediaType.ANIME else MediaType.MANGA)
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        // Filter Chips
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val statuses = listOf(
-                "Watching" to LibraryStatus.CURRENT,
-                "Paused" to LibraryStatus.PAUSED,
-                "Completed" to LibraryStatus.COMPLETED,
-                "Planning" to LibraryStatus.PLANNING,
-                "Dropped" to LibraryStatus.DROPPED
-            )
-
-            items(statuses) { (label, status) ->
-                val isSelected = selectedStatus == status
-                val displayLabel = if (selectedMediaType == MediaType.MANGA && label == "Watching") "Reading" else label
-
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onStatusChange(status) },
-                    label = {
-                        Text(
-                            text = displayLabel,
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.White,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = FilterChipDefaults.filterChipBorder(
-                        enabled = true,
-                        selected = isSelected,
-                        borderColor = Color.Transparent,
-                        selectedBorderColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(50)
-                )
+                // Plus Button
+                Surface(
+                    onClick = onIncrement,
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                    }
+                }
             }
         }
     }
 }
 
+// -----------------------------------------------------------------------------
+// LIST CARD IMPLEMENTATION
+// -----------------------------------------------------------------------------
+
 @Composable
-fun LibraryEmptyState(
-    message: String,
-    modifier: Modifier = Modifier
+fun NewListCard(
+    entry: LibraryEntry,
+    mediaType: MediaType,
+    onClick: () -> Unit,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit
 ) {
+    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = progressPercent,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "Progress"
+    )
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Image
+            AsyncImage(
+                model = entry.coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(80.dp)
+                    .fillMaxHeight()
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+
+            // Info Content
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 12.dp)
+                    .padding(end = 8.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = entry.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val nextAiring = entry.nextAiringEpisode
+                        val latest = if (nextAiring != null) nextAiring - 1 else total
+
+                        if (entry.status == LibraryStatus.CURRENT) {
+                            if (latest != null && entry.progress < latest) {
+                                StatusBadge(
+                                    text = "${latest - entry.progress} EP BEHIND",
+                                    containerColor = Color(0xFFF2B8B5), // Light Red
+                                    contentColor = Color(0xFF601410)  // Dark Red
+                                )
+                            } else {
+                                StatusBadge(
+                                    text = "UP TO DATE",
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+
+                        if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
+                            Text(
+                                text = "Ep ${entry.nextAiringEpisode} in ${formatTimeShort(entry.timeUntilAiring)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                // Progress
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LinearProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+
+                    Text(
+                        text = "${entry.progress} / ${total ?: "?"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            // Buttons Column
+            Column(
+                modifier = Modifier
+                    .width(48.dp)
+                    .fillMaxHeight()
+                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Plus Button
+                Surface(
+                    onClick = onIncrement,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                    }
+                }
+
+                // Minus Button
+                Surface(
+                    onClick = onDecrement,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// HELPERS
+// -----------------------------------------------------------------------------
+
+@Composable
+fun StatusBadge(
+    text: String,
+    containerColor: Color,
+    contentColor: Color
+) {
+    Surface(
+        color = containerColor,
+        shape = RoundedCornerShape(4.dp),
+        modifier = Modifier.height(18.dp), // Fixed small height
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                fontSize = 9.sp,
+                color = contentColor
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyLibraryTabState(status: LibraryStatus, type: MediaType) {
+    val icon = when(status) {
+        LibraryStatus.CURRENT -> if (type == MediaType.ANIME) Icons.Default.PlayArrow else Icons.Default.MenuBook
+        LibraryStatus.PLANNING -> Icons.Default.Check
+        LibraryStatus.COMPLETED -> Icons.Default.Check
+        else -> Icons.Default.Inbox
+    }
+
+    val message = when(status) {
+        LibraryStatus.CURRENT -> "You're not ${if(type == MediaType.ANIME) "watching" else "reading"} anything right now."
+        LibraryStatus.PLANNING -> "Your plan list is empty."
+        LibraryStatus.COMPLETED -> "No completed entries yet."
+        else -> "Nothing to show here."
+    }
+
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Inbox,
-            contentDescription = null,
-            tint = Color.LightGray,
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier.size(80.dp)
-        )
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
-fun LibraryLoadingShimmer(isGridView: Boolean) {
-    val shimmerMod = Modifier
-        .clip(RoundedCornerShape(12.dp))
-        .shimmerEffect()
-
-    if (isGridView) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(6) {
-                Box(modifier = Modifier.fillMaxWidth().height(320.dp).then(shimmerMod))
-            }
-        }
-    } else {
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(6) {
-                Box(modifier = Modifier.fillMaxWidth().height(140.dp).then(shimmerMod))
-            }
-        }
-    }
-}
-
-// --- SHARED COMPONENT ---
-@Composable
-fun VerticalControlStrip(
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
-        modifier = modifier.fillMaxHeight().width(48.dp)
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        // Increment
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f))
-                .clickable { onIncrement() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Inc", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-        }
-
-        // Divider
-        HorizontalDivider(color = Color.White, thickness = 1.dp)
-
-        // Decrement
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
-                .clickable { onDecrement() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Remove, contentDescription = "Dec", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+        Text(text = "Oops!", style = MaterialTheme.typography.headlineMedium)
+        Text(text = message, color = MaterialTheme.colorScheme.error)
+        Spacer(modifier = Modifier.height(16.dp))
+        IconButton(onClick = onRetry) {
+            Icon(Icons.Default.Add, null)
         }
     }
 }
 
-@Composable
-fun HorizontalControlStrip(
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth().height(40.dp)
-    ) {
-        // Decrement
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
-                .clickable { onDecrement() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Remove, contentDescription = "Dec", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-        }
-
-        // Divider
-        VerticalDivider(color = Color.White, thickness = 1.dp)
-
-        // Increment
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f))
-                .clickable { onIncrement() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Inc", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-        }
-    }
-}
-
-@Composable
-fun LibraryListCard(
-    entry: LibraryEntry,
-    onClick: () -> Unit,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit
-) {
-    val isManga = entry.type == MediaType.MANGA
-    val total = if (isManga) entry.totalChapters else entry.totalEpisodes
-    val unitLabel = if (isManga) "Ch." else "Ep."
-
-    // Animated Progress
-    val animatedProgress by animateFloatAsState(
-        targetValue = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f,
-        label = "ProgressAnimation",
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
-    )
-
-
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(140.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            // Left: Cover Image + Status Badge area (Updated)
-            Box(
-                modifier = Modifier
-                    .width(100.dp)
-                    .fillMaxHeight()
-            ) {
-                AsyncImage(
-                    model = entry.coverUrl,
-                    contentDescription = entry.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Middle: Content
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(12.dp)
-            ) {
-                Text(
-                    text = entry.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = 20.sp,
-                    textAlign = TextAlign.Start
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Progress Text
-                Text(
-                    text = "$unitLabel ${entry.progress} / ${total ?: "?"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                // Labels (Behind / Next Airing) - Only for Current Status
-                if (entry.status == LibraryStatus.CURRENT) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        // Behind Label
-                         val nextAiring = entry.nextAiringEpisode
-                        val latestAvailable = if (nextAiring != null) nextAiring - 1 else total
-
-                        if (latestAvailable != null && latestAvailable > entry.progress) {
-                            val diff = latestAvailable - entry.progress
-                            if (diff > 0) {
-                                BadgeLabel(
-                                    text = "$diff ${if (isManga) "Ch" else "Ep"} Behind",
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = Color.White
-                                )
-                            }
-                        }
-
-                        // Next Airing Label
-                        if (entry.nextAiringEpisode != null && entry.timeUntilAiring != null) {
-                            BadgeLabel(
-                                text = "Ep ${entry.nextAiringEpisode} in ${formatTimeUntilAiring(entry.timeUntilAiring)}",
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = Color.White
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Progress Bar
-                LinearProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f) // Slight inset
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                )
-            }
-
-            // Right: Control Strip
-            VerticalControlStrip(
-                onIncrement = onIncrement,
-                onDecrement = onDecrement
-            )
-        }
-    }
-}
-
-@Composable
-fun LibraryGridCard(
-    entry: LibraryEntry,
-    onClick: () -> Unit,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit
-) {
-    val isManga = entry.type == MediaType.MANGA
-    val total = if (isManga) entry.totalChapters else entry.totalEpisodes
-
-    // Animated Progress
-    val animatedProgress by animateFloatAsState(
-        targetValue = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f,
-        label = "ProgressAnimation",
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
-    )
-
-    val statusLabel = getMediaStatusLabel(entry, isManga)
-    val badgeColor = getStatusBadgeColor(entry)
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(320.dp), // Increased height for footer
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Top: Image Area
-            Box(
-                modifier = Modifier
-                    .weight(0.55f) // 55% height
-                    .fillMaxWidth()
-            ) {
-                AsyncImage(
-                    model = entry.coverUrl,
-                    contentDescription = entry.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Overlays
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    // Behind Label
-                    val nextAiring = entry.nextAiringEpisode
-                    val latestAvailable = if (nextAiring != null) nextAiring - 1 else total
-
-                    if (entry.status == LibraryStatus.CURRENT && latestAvailable != null && latestAvailable > entry.progress) {
-                        val diff = latestAvailable - entry.progress
-                        if (diff > 0) {
-                            BadgeLabel(
-                                text = "$diff ${if (isManga) "Ch" else "Ep"} Behind",
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = Color.White
-                            )
-                        }
-                    }
-
-                    // Next Airing Label
-                    if (entry.status == LibraryStatus.CURRENT && entry.nextAiringEpisode != null && entry.timeUntilAiring != null) {
-                        BadgeLabel(
-                            text = "Ep ${entry.nextAiringEpisode} in ${formatTimeUntilAiring(entry.timeUntilAiring)}",
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
-                        )
-                    }
-                }
-            }
-
-            // Middle: Info Area
-            Column(
-                modifier = Modifier
-                    .weight(0.45f) // 45% height
-                    .fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Title
-                    Text(
-                        text = entry.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        lineHeight = 18.sp,
-                        textAlign = TextAlign.Start // Left Aligned
-                    )
-
-                    // Progress Section
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Text(
-                                text = "PROGRESS",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Gray,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${entry.progress} / ${total ?: "?"}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                        )
-                    }
-                }
-
-                // Bottom: Control Strip
-                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
-                HorizontalControlStrip(
-                    onIncrement = onIncrement,
-                    onDecrement = onDecrement
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun BadgeLabel(
-    text: String,
-    containerColor: Color,
-    contentColor: Color
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(containerColor.copy(alpha = 0.9f))
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = contentColor,
-            fontWeight = FontWeight.Bold,
-            fontSize = 10.sp
-        )
-    }
-}
-
-private fun formatTimeUntilAiring(seconds: Int): String {
+fun formatTimeShort(seconds: Int): String {
     val days = seconds / 86400
+    if (days > 0) return "${days}d"
     val hours = (seconds % 86400) / 3600
+    if (hours > 0) return "${hours}h"
     val minutes = (seconds % 3600) / 60
-
-    return when {
-        days > 0 -> "${days}d ${hours}h"
-        hours > 0 -> "${hours}h ${minutes}m"
-        else -> "${minutes}m"
-    }
+    return "${minutes}m"
 }
 
-private fun getStatusLabel(status: LibraryStatus, type: MediaType): String {
+fun getStatusLabel(status: LibraryStatus, type: MediaType): String {
     return when(status) {
         LibraryStatus.CURRENT -> if (type == MediaType.MANGA) "Reading" else "Watching"
         LibraryStatus.PLANNING -> "Planning"
         LibraryStatus.COMPLETED -> "Completed"
-        LibraryStatus.DROPPED -> "Dropped"
         LibraryStatus.PAUSED -> "Paused"
+        LibraryStatus.DROPPED -> "Dropped"
         LibraryStatus.REPEATING -> "Repeating"
         LibraryStatus.UNKNOWN -> "Unknown"
     }
-}
-
-// Deprecated: Status badge logic moved to individual card overlays
-private fun getMediaStatusLabel(entry: LibraryEntry, isManga: Boolean): String {
-     return "" 
-}
-
-private fun getStatusBadgeColor(entry: LibraryEntry): Color {
-    return Color.Transparent
 }
