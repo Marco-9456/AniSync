@@ -128,34 +128,39 @@ fun DiscoverScreen(
                     .padding(horizontal = if (isSearchActive) 0.dp else 16.dp)
                     .padding(top = if (isSearchActive) 0.dp else statusBarHeight + 8.dp)
             ) {
-                @Suppress("DEPRECATION")
                 SearchBar(
-                    query = searchQuery,
-                    onQueryChange = viewModel::onSearchQueryChange,
-                    onSearch = {
-                        viewModel.onSearch(it)
-                        keyboardController?.hide()
+                    inputField = {
+                        SearchBarDefaults.InputField(
+                            query = searchQuery,
+                            onQueryChange = viewModel::onSearchQueryChange,
+                            onSearch = {
+                                viewModel.onSearch(it)
+                                keyboardController?.hide()
+                            },
+                            expanded = isSearchActive,
+                            onExpandedChange = viewModel::onSearchActiveChange,
+                            placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
+                            leadingIcon = {
+                                if (isSearchActive) {
+                                    IconButton(onClick = { viewModel.onSearchActiveChange(false) }) {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                    }
+                                } else {
+                                    Icon(Icons.Default.Search, contentDescription = "Search")
+                                }
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    }
+                                }
+                            }
+                        )
                     },
-                    active = isSearchActive,
-                    onActiveChange = viewModel::onSearchActiveChange,
+                    expanded = isSearchActive,
+                    onExpandedChange = viewModel::onSearchActiveChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
-                    leadingIcon = {
-                        if (isSearchActive) {
-                            IconButton(onClick = { viewModel.onSearchActiveChange(false) }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
-                        } else {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
-                            }
-                        }
-                    },
                     colors = SearchBarDefaults.colors(
                         containerColor = if (isSearchActive) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceContainerHigh,
                         dividerColor = if (isSearchActive) MaterialTheme.colorScheme.outlineVariant else Color.Transparent
