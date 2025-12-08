@@ -1,8 +1,13 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -63,6 +68,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -95,6 +102,14 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.type.MediaType
 
+/**
+ * Material 3 Standard Motion Easing (Emphasized)
+ * Reference: https://m3.material.io/styles/motion/easing-and-duration/tokens-specs
+ */
+private val EmphasizedEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
+private const val AnimationDurationShort = 400
+private const val AnimationDurationLong = 600
+
 @Composable
 fun DetailsScreen(
     mediaId: Int,
@@ -109,7 +124,7 @@ fun DetailsScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0) // Full screen edge-to-edge
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -119,7 +134,9 @@ fun DetailsScreen(
             when (val state = uiState) {
                 is DetailsUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                        )
                     }
                 }
                 is DetailsUiState.Success -> {
@@ -131,20 +148,43 @@ fun DetailsScreen(
                     )
                 }
                 is DetailsUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Error: ${state.message}",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            OutlinedButton(onClick = onBackClick) {
-                                Text("Go Back")
-                            }
-                        }
-                    }
+                    ErrorStateContent(message = state.message, onBackClick = onBackClick)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete, // Or an error icon
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Something went wrong",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            OutlinedButton(onClick = onBackClick) {
+                Text("Go Back")
             }
         }
     }
@@ -158,6 +198,7 @@ fun DetailsPageContent(
     onRemove: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    // Using 0 as a threshold is strict, let's give it a little buffer or just check index
     val isExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
     var showStatusPicker by remember { mutableStateOf(false) }
 
@@ -165,7 +206,7 @@ fun DetailsPageContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
         ) {
             item {
                 PageHeaderSection(details, onBackClick)
@@ -173,66 +214,22 @@ fun DetailsPageContent(
 
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    // Title
-                    Text(
-                        text = details.title,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-0.5).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Info Row
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        details.score?.let { ScoreBadge(it) }
-
-                        details.format?.let { format ->
-                            Surface(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = if (format == "TV") "TV Series" else format.replace("_", " "),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Text(
-                            text = details.year?.toString() ?: "",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        if (details.studio != null) {
-                            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
-                            Text(
-                                text = details.studio,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.widthIn(max = 120.dp)
-                            )
-                        }
-                    }
+                    // Title Group
+                    TitleSection(details)
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    StatsGrid(details)
+
+                    // Stats
+                    StatsCard(details)
+
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    // Genres
                     GenreFlow(details.genres)
+
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    // Synopsis
                     ExpandableSynopsis(details.description)
                 }
             }
@@ -266,7 +263,7 @@ fun DetailsPageContent(
             }
         }
 
-        // FAB
+        // Animated FAB
         val fabIcon = if (details.listEntryId != null) Icons.Default.Edit else Icons.Default.Add
         val fabText = if (details.listEntryId != null) {
             getStatusLabel(details.listStatus ?: LibraryStatus.UNKNOWN, details.type == MediaType.MANGA)
@@ -274,13 +271,21 @@ fun DetailsPageContent(
             "Add to Library"
         }
 
+        // Using AnimatedVisibility for a smoother entrance/exit of text if strictly needed,
+        // but ExtendedFloatingActionButton handles text expansion internally.
         ExtendedFloatingActionButton(
             text = { Text(text = fabText) },
             icon = { Icon(imageVector = fabIcon, contentDescription = null) },
             onClick = { showStatusPicker = true },
             expanded = isExpanded,
-            containerColor = if (details.listEntryId != null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary,
-            contentColor = if (details.listEntryId != null) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary,
+            containerColor = if (details.listEntryId != null)
+                MaterialTheme.colorScheme.secondaryContainer
+            else
+                MaterialTheme.colorScheme.primaryContainer,
+            contentColor = if (details.listEntryId != null)
+                MaterialTheme.colorScheme.onSecondaryContainer
+            else
+                MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
@@ -307,130 +312,260 @@ fun DetailsPageContent(
 }
 
 @Composable
+fun TitleSection(details: MediaDetails) {
+    Column {
+        Text(
+            text = details.title,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+            ),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            details.score?.let { ScoreBadge(it) }
+
+            details.format?.let { format ->
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = if (format == "TV") "TV Series" else format.replace("_", " "),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = details.year?.toString() ?: "",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (details.studio != null) {
+                Text(
+                    "•",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                Text(
+                    text = details.studio,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 120.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun PageHeaderSection(details: MediaDetails, onBackClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .height(320.dp) // Slightly taller for better proportions
     ) {
-        // Banner
+        // Banner Image
         AsyncImage(
             model = details.bannerUrl ?: details.coverUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(240.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
-        // Gradient
+        // Gradient Scrim (Top for status bar/back button visibility)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(100.dp)
+                .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.3f),
+                            Color.Black.copy(alpha = 0.6f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        // Gradient Scrim (Bottom to blend into background)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp) // Taller fade for smoother transition
+                .align(Alignment.TopCenter) // Align to top box but offset
+                .offset(y = 120.dp) // Start where the banner ends
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
                             Color.Transparent,
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.background
+                        ),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY
+                    )
+                )
+        )
+        // Hard cut gradient overlay at the bottom of the banner image itself
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .align(Alignment.TopCenter)
+                .offset(y = 140.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
                             MaterialTheme.colorScheme.background
                         )
                     )
                 )
         )
 
+
         // Back Button
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
-                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, start = 16.dp)
-                .clip(CircleShape),
-            colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Black.copy(alpha = 0.3f))
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, start = 8.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(28.dp) // Slightly larger touch target visual
             )
         }
 
-        // Cover Image
-        AsyncImage(
-            model = details.coverUrl,
-            contentDescription = "Cover",
-            contentScale = ContentScale.Crop,
+        // Cover Image (Poster)
+        Card(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 24.dp)
-                .offset(y = (-20).dp)
-                .width(120.dp)
-                .height(180.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(4.dp, MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
+                .width(130.dp)
+                .height(190.dp),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            AsyncImage(
+                model = details.coverUrl,
+                contentDescription = "Cover",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
-// --- Reused components from the previous implementation ---
-// I'm duplicating them here to ensure DetailsScreen.kt is self-contained as requested.
-
 @Composable
 fun ScoreBadge(score: Int) {
-    val color = when {
-        score >= 75 -> Color(0xFF4CAF50)
-        score >= 60 -> Color(0xFFFFC107)
-        else -> Color(0xFFF44336)
+    // Semantic colors based on score
+    val (containerColor, contentColor) = when {
+        score >= 75 -> Color(0xFFE6F4EA) to Color(0xFF1E8E3E) // Light Green / Dark Green
+        score >= 60 -> Color(0xFFFFF7E0) to Color(0xFFF9A825) // Light Yellow / Dark Yellow
+        else -> Color(0xFFFCE8E6) to Color(0xFFC62828) // Light Red / Dark Red
     }
-    Surface(color = color, shape = RoundedCornerShape(8.dp)) {
+
+    Surface(
+        color = containerColor,
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, contentColor.copy(alpha = 0.2f))
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
-            Icon(Icons.Default.Star, null, tint = Color.White, modifier = Modifier.size(12.dp))
+            Icon(
+                Icons.Default.Star,
+                null,
+                tint = contentColor,
+                modifier = Modifier.size(14.dp)
+            )
             Spacer(Modifier.width(4.dp))
-            Text("$score%", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
+            Text(
+                "$score%",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = contentColor
+            )
         }
     }
 }
 
 @Composable
-fun StatsGrid(details: MediaDetails) {
+fun StatsCard(details: MediaDetails) {
     val isManga = details.type == MediaType.MANGA
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp))
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        StatItem(if (isManga) "Chapters" else "Episodes", if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}")
-        VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-        StatItem("Status", details.status.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
-        VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-        StatItem("Source", "Original")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatItem(if (isManga) "Chapters" else "Episodes", if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}")
+            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            StatItem("Status", details.status.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
+            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            StatItem("Source", "Original") // Replace with actual source if available in MediaDetails
+        }
     }
 }
 
 @Composable
 fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GenreFlow(genres: List<String>) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         genres.forEach { genre ->
-            AssistChip(
+            SuggestionChip(
                 onClick = {},
                 label = { Text(genre, style = MaterialTheme.typography.labelMedium) },
-                colors = AssistChipDefaults.assistChipColors(
+                colors = SuggestionChipDefaults.suggestionChipColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     labelColor = MaterialTheme.colorScheme.onSurface
                 ),
@@ -444,61 +579,103 @@ fun GenreFlow(genres: List<String>) {
 @Composable
 fun ExpandableSynopsis(text: String) {
     var expanded by remember { mutableStateOf(false) }
-    Column(
+
+    // Using Surface for better elevation handling
+    Surface(
+        onClick = { expanded = !expanded },
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = ripple()) { expanded = !expanded }
-            .padding(16.dp)
-            .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessLow))
-    ) {
-        Text("SYNOPSIS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
-        Spacer(Modifier.height(8.dp))
-        Box {
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                maxLines = if (expanded) Int.MAX_VALUE else 4,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 22.sp
+            .animateContentSize(
+                animationSpec = tween(
+                    durationMillis = AnimationDurationShort,
+                    easing = EmphasizedEasing
+                )
             )
-            if (!expanded) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(Brush.verticalGradient(colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surfaceContainerLowest)))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "SYNOPSIS",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 1.sp
+            )
+            Spacer(Modifier.height(8.dp))
+
+            // Text Content with crossfade effect
+            Box {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    maxLines = if (expanded) Int.MAX_VALUE else 4,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (expanded) "Show less" else "Read more", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            Icon(if(expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+
+            Spacer(Modifier.height(12.dp))
+
+            // Interaction hint
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (expanded) "Show less" else "Read more",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = if(expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
 fun SectionTitle(title: String, modifier: Modifier = Modifier) {
-    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = modifier)
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier
+    )
 }
 
 @Composable
 fun CharacterItem(character: CharacterInfo) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(80.dp)) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
         AsyncImage(
             model = character.imageUrl,
             contentDescription = character.name,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
         )
         Spacer(Modifier.height(8.dp))
-        Text(character.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(character.role, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(
+            text = character.name,
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = character.role,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -509,11 +686,25 @@ fun RelationItem(relation: RelatedMedia) {
             model = relation.coverUrl,
             contentDescription = relation.title,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.height(140.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier = Modifier
+                .height(140.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(Modifier.height(8.dp))
-        Text(relation.relationType.replace("_", " "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-        Text(relation.title, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+            text = relation.relationType.replace("_", " "),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = relation.title,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -527,32 +718,47 @@ fun StatusPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Update Status", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+        title = {
+            Text(
+                "Update Status",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                val statuses = listOf(LibraryStatus.CURRENT, LibraryStatus.PLANNING, LibraryStatus.COMPLETED, LibraryStatus.PAUSED, LibraryStatus.DROPPED)
+                val statuses = listOf(
+                    LibraryStatus.CURRENT,
+                    LibraryStatus.PLANNING,
+                    LibraryStatus.COMPLETED,
+                    LibraryStatus.PAUSED,
+                    LibraryStatus.DROPPED
+                )
                 statuses.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         row.forEach { status ->
                             val isSelected = status == currentStatus
-                            Card(
+                            StatusOptionCard(
+                                status = status,
+                                isManga = isManga,
+                                isSelected = isSelected,
                                 onClick = { onStatusSelected(status) },
-                                modifier = Modifier.weight(1f).height(70.dp),
-                                colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh),
-                                border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null
-                            ) {
-                                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(getStatusIcon(status, isManga), null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text(getStatusLabel(status, isManga), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
-                                }
-                            }
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                         if (row.size == 1) Spacer(Modifier.weight(1f))
                     }
                 }
                 if (currentStatus != null) {
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    OutlinedButton(onClick = onRemove, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
+                    OutlinedButton(
+                        onClick = onRemove,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
                         Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Remove from Library")
@@ -561,10 +767,59 @@ fun StatusPickerDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(24.dp)
     )
+}
+
+@Composable
+fun StatusOptionCard(
+    status: LibraryStatus,
+    isManga: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(70.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceContainerHigh
+        ),
+        border = if (isSelected)
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+        else null
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                getStatusIcon(status, isManga),
+                null,
+                tint = if (isSelected)
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                getStatusLabel(status, isManga),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                else
+                    MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
 }
 
 fun getStatusLabel(status: LibraryStatus, isManga: Boolean): String {
