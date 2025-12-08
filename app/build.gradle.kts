@@ -9,33 +9,58 @@ plugins {
 
 android {
     namespace = "com.anisync.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.anisync.android"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Base app name (can be overridden per build type)
+        resValue("string", "app_name", "AniSync")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Release-specific config
+            buildConfigField("Boolean", "IS_DEBUG_BUILD", "false")
         }
         debug {
             applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            isDebuggable = true
+            // Distinct app name for debug builds (side-by-side installation)
+            resValue("string", "app_name", "AniSync Debug")
+            // Debug-specific config
+            buildConfigField("Boolean", "IS_DEBUG_BUILD", "true")
         }
     }
+
+    // Custom APK naming: AniSync-v1.0.0-release.apk
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val appName = "AniSync"
+            val versionName = variant.versionName
+            val buildType = variant.buildType.name
+            output.outputFileName = "${appName}-v${versionName}-${buildType}.apk"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -46,6 +71,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -74,6 +100,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 
     // Apollo GraphQL
     implementation(libs.apollo.runtime)

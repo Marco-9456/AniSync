@@ -78,7 +78,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.shimmerEffect
@@ -128,6 +128,7 @@ fun DiscoverScreen(
                     .padding(horizontal = if (isSearchActive) 0.dp else 16.dp)
                     .padding(top = if (isSearchActive) 0.dp else statusBarHeight + 8.dp)
             ) {
+                @Suppress("DEPRECATION")
                 SearchBar(
                     query = searchQuery,
                     onQueryChange = viewModel::onSearchQueryChange,

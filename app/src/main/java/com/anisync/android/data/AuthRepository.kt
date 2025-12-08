@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.anisync.android.data
 
 import android.content.Context
