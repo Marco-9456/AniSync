@@ -2,6 +2,9 @@ package com.anisync.android.data
 
 import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetViewerQuery
+import com.anisync.android.data.local.dao.UserProfileDao
+import com.anisync.android.data.local.toDomain
+import com.anisync.android.data.local.toEntity
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
@@ -10,13 +13,27 @@ import com.anisync.android.domain.UserProfile
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class ProfileRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val userProfileDao: UserProfileDao
 ) : ProfileRepository {
 
-    override suspend fun getProfile(username: String): Result<UserProfile> {
+    /**
+     * Observe profile from local cache.
+     */
+    override fun observeProfile(): Flow<UserProfile?> {
+        return userProfileDao.observe()
+            .map { entity -> entity?.toDomain() }
+    }
+
+    /**
+     * Fetch from network and update cache.
+     */
+    override suspend fun refreshProfile(username: String): Result<Unit> {
         return try {
             // If no username provided, get current authenticated user
             val actualUsername = if (username.isBlank()) {
@@ -66,8 +83,11 @@ class ProfileRepositoryImpl @Inject constructor(
                 meanScore = stats?.meanScore?.toFloat() ?: 0f,
                 favoriteAnime = favorites
             )
+
+            // Update cache
+            userProfileDao.insert(profile.toEntity())
             
-            Result.Success(profile)
+            Result.Success(Unit)
         } catch (e: ApolloException) {
             Result.Error("Network error: ${e.message}", e)
         } catch (e: Exception) {

@@ -1,7 +1,25 @@
 package com.anisync.android.domain
 
+import kotlinx.coroutines.flow.Flow
+
 interface DetailsRepository {
-    suspend fun getMediaDetails(id: Int): Result<MediaDetails>
+    /**
+     * Observe media details from local cache (reactive).
+     */
+    fun observeMediaDetails(id: Int): Flow<MediaDetails?>
+
+    /**
+     * Fetch fresh media details from network and update cache.
+     */
+    suspend fun refreshMediaDetails(id: Int): Result<Unit>
+
+    /**
+     * Update media list entry (status, progress).
+     */
     suspend fun updateMediaListEntry(mediaId: Int, status: LibraryStatus, progress: Int): Result<Unit>
-    suspend fun deleteMediaListEntry(listEntryId: Int): Result<Unit>
+
+    /**
+     * Delete media list entry.
+     */
+    suspend fun deleteMediaListEntry(entryId: Int): Result<Unit>
 }

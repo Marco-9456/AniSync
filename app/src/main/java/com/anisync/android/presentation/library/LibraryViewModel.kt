@@ -7,12 +7,19 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,44 +33,65 @@ sealed interface LibraryEvent {
     data class ShowSnackbar(val message: String) : LibraryEvent
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
-    val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
-    
     // MediaType State (Default: Anime)
     private val _mediaType = MutableStateFlow(MediaType.ANIME)
     val mediaType: StateFlow<MediaType> = _mediaType.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _events = MutableSharedFlow<LibraryEvent>()
     val events: SharedFlow<LibraryEvent> = _events.asSharedFlow()
 
+    /**
+     * Observe library from Room via Flow.
+     * Automatically switches when mediaType changes.
+     */
+    val uiState: StateFlow<LibraryUiState> = _mediaType
+        .flatMapLatest { type ->
+            libraryRepository.getLibrary("", type)
+                .map<List<LibraryEntry>, LibraryUiState> { entries ->
+                    LibraryUiState.Success(entries)
+                }
+                .onStart { emit(LibraryUiState.Loading) }
+        }
+        .catch { e -> emit(LibraryUiState.Error(e.message ?: "Unknown error")) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = LibraryUiState.Loading
+        )
+
     init {
-        loadLibrary()
+        // Trigger initial refresh from network
+        refresh()
     }
 
-    fun loadLibrary() {
+    fun refresh() {
         viewModelScope.launch {
-            _uiState.value = LibraryUiState.Loading
-            
-            when (val result = libraryRepository.getLibrary("", _mediaType.value)) {
+            _isRefreshing.value = true
+            when (val result = libraryRepository.refreshLibrary("", _mediaType.value)) {
                 is Result.Success -> {
-                    _uiState.value = LibraryUiState.Success(result.data)
+                    // DB updated, Flow emits automatically
                 }
                 is Result.Error -> {
-                    _uiState.value = LibraryUiState.Error(result.message)
+                    _events.emit(LibraryEvent.ShowSnackbar(result.message))
                 }
             }
+            _isRefreshing.value = false
         }
     }
     
     fun onMediaTypeChange(type: MediaType) {
         if (_mediaType.value != type) {
             _mediaType.value = type
-            loadLibrary()
+            refresh() // Refresh from network for new type
         }
     }
 
@@ -76,28 +104,17 @@ class LibraryViewModel @Inject constructor(
     }
 
     private fun updateProgress(mediaId: Int, delta: Int) {
-        val currentState = _uiState.value
+        val currentState = uiState.value
         if (currentState is LibraryUiState.Success) {
-            val oldList = currentState.entries
-            val entryIndex = oldList.indexOfFirst { it.mediaId == mediaId }
-            if (entryIndex == -1) return
-
-            val entry = oldList[entryIndex]
+            val entry = currentState.entries.find { it.mediaId == mediaId } ?: return
             val newProgress = (entry.progress + delta).coerceAtLeast(0)
-
-            // Optimistic Update
-            val newList = oldList.toMutableList()
-            newList[entryIndex] = entry.copy(progress = newProgress)
-            _uiState.value = LibraryUiState.Success(newList)
 
             viewModelScope.launch {
                 when (val result = libraryRepository.updateProgress(mediaId, newProgress)) {
                     is Result.Success -> {
-                        // Update succeeded, keep optimistic state
+                        // Local DB updated, Flow emits automatically
                     }
                     is Result.Error -> {
-                        // Revert to old state
-                        _uiState.value = LibraryUiState.Success(oldList)
                         _events.emit(LibraryEvent.ShowSnackbar(result.message))
                     }
                 }

@@ -1,6 +1,7 @@
 package com.anisync.android.domain
 
 import com.anisync.android.type.MediaType
+import kotlinx.serialization.Serializable
 
 enum class LibraryStatus {
     CURRENT,
@@ -12,6 +13,7 @@ enum class LibraryStatus {
     UNKNOWN
 }
 
+@Serializable
 data class LibraryEntry(
     val id: Int,
     val mediaId: Int,

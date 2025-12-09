@@ -1,6 +1,7 @@
 package com.anisync.android.domain
 
 import com.anisync.android.type.MediaType
+import kotlinx.serialization.Serializable
 
 data class MediaDetails(
     val id: Int,
@@ -28,6 +29,7 @@ data class MediaDetails(
     val relations: List<RelatedMedia>
 )
 
+@Serializable
 data class CharacterInfo(
     val id: Int,
     val name: String,
@@ -35,6 +37,7 @@ data class CharacterInfo(
     val role: String
 )
 
+@Serializable
 data class RelatedMedia(
     val id: Int,
     val title: String,

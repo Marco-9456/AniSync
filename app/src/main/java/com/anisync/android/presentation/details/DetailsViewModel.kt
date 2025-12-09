@@ -10,9 +10,13 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -29,9 +33,6 @@ class DetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<DetailsUiState>(DetailsUiState.Loading)
-    val uiState: StateFlow<DetailsUiState> = _uiState.asStateFlow()
-
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
@@ -40,33 +41,47 @@ class DetailsViewModel @Inject constructor(
         "Media ID is required for DetailsViewModel"
     }
 
-    init {
-        loadDetails()
-    }
-
-    // Kept for compatibility with DetailsScreen's LaunchedEffect.
-    // Since we load in init, this acts as a safeguard or refresh mechanism.
-    fun loadMedia(id: Int) {
-        // If the ID matches what we already have and we are not in an error state,
-        // we can skip reloading to avoid double-fetching.
-        if (id == mediaId && _uiState.value !is DetailsUiState.Error) {
-            return
-        }
-        loadDetails()
-    }
-
-    private fun loadDetails() {
-        viewModelScope.launch {
-            _uiState.update { DetailsUiState.Loading }
-            
-            when (val result = getMediaDetailsUseCase(mediaId)) {
-                is Result.Success -> {
-                    _uiState.update { DetailsUiState.Success(result.data) }
-                }
-                is Result.Error -> {
-                    _uiState.update { DetailsUiState.Error(result.message) }
-                }
+    /**
+     * Observe media details from local cache via Flow.
+     */
+    val uiState: StateFlow<DetailsUiState> = getMediaDetailsUseCase(mediaId)
+        .map<MediaDetails?, DetailsUiState> { details ->
+            if (details != null) {
+                DetailsUiState.Success(details)
+            } else {
+                // No cached data yet, still loading
+                DetailsUiState.Loading
             }
+        }
+        .onStart { emit(DetailsUiState.Loading) }
+        .catch { e -> emit(DetailsUiState.Error(e.message ?: "Unknown error")) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = DetailsUiState.Loading
+        )
+
+    init {
+        // Trigger network refresh to get fresh data
+        refresh()
+    }
+
+    /**
+     * Refresh from network (called on init and can be called for pull-to-refresh).
+     */
+    fun refresh() {
+        viewModelScope.launch {
+            detailsRepository.refreshMediaDetails(mediaId)
+            // Result errors could be handled with a snackbar if needed
+        }
+    }
+
+    // Kept for compatibility with DetailsScreen's LaunchedEffect
+    fun loadMedia(id: Int) {
+        // Since we use stateIn with mediaId from constructor, 
+        // this is mostly a no-op but can trigger a refresh
+        if (id == mediaId) {
+            refresh()
         }
     }
 
@@ -75,7 +90,9 @@ class DetailsViewModel @Inject constructor(
             _isSaving.value = true
             
             when (val result = detailsRepository.updateMediaListEntry(mediaId, status, progress)) {
-                is Result.Success -> loadDetails()
+                is Result.Success -> {
+                    // Cache updated, Flow emits automatically
+                }
                 is Result.Error -> {
                     // Could emit a one-time event for error (e.g., Snackbar)
                 }
@@ -87,13 +104,16 @@ class DetailsViewModel @Inject constructor(
 
     fun deleteMediaListEntry() {
         viewModelScope.launch {
-            val details = (_uiState.value as? DetailsUiState.Success)?.details ?: return@launch
+            val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
             val listEntryId = details.listEntryId ?: return@launch
 
             _isSaving.value = true
             
             when (val result = detailsRepository.deleteMediaListEntry(listEntryId)) {
-                is Result.Success -> loadDetails()
+                is Result.Success -> {
+                    // Refresh to update the UI
+                    refresh()
+                }
                 is Result.Error -> {
                     // Could handle error
                 }

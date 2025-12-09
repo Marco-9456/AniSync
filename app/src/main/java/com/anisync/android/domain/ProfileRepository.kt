@@ -1,5 +1,15 @@
 package com.anisync.android.domain
 
+import kotlinx.coroutines.flow.Flow
+
 interface ProfileRepository {
-    suspend fun getProfile(username: String): Result<UserProfile>
+    /**
+     * Observe user profile from local cache (reactive).
+     */
+    fun observeProfile(): Flow<UserProfile?>
+
+    /**
+     * Fetch fresh profile from network and update cache.
+     */
+    suspend fun refreshProfile(username: String): Result<Unit>
 }

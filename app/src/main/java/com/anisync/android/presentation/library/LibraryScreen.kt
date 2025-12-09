@@ -241,7 +241,7 @@ fun LibraryScreen(
                 is LibraryUiState.Error -> {
                     ErrorState(
                         message = state.message,
-                        onRetry = { viewModel.loadLibrary() }
+                        onRetry = { viewModel.refresh() }
                     )
                 }
                 is LibraryUiState.Success -> {

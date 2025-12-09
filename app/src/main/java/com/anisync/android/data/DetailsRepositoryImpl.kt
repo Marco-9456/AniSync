@@ -1,7 +1,11 @@
 package com.anisync.android.data
 
+import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
+import com.anisync.android.data.local.dao.MediaDetailsDao
+import com.anisync.android.data.local.toDomain
+import com.anisync.android.data.local.toEntity
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryStatus
@@ -9,17 +13,30 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.type.MediaListStatus
-import com.anisync.android.util.stripHtml
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class DetailsRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val mediaDetailsDao: MediaDetailsDao
 ) : DetailsRepository {
 
-    override suspend fun getMediaDetails(id: Int): Result<MediaDetails> {
+    /**
+     * Observe media details from local cache.
+     */
+    override fun observeMediaDetails(id: Int): Flow<MediaDetails?> {
+        return mediaDetailsDao.observeById(id)
+            .map { entity -> entity?.toDomain() }
+    }
+
+    /**
+     * Fetch from network and update local cache.
+     */
+    override suspend fun refreshMediaDetails(id: Int): Result<Unit> {
         return try {
             val response = apolloClient.query(
                 GetMediaDetailsQuery(id = Optional.present(id))
@@ -27,10 +44,8 @@ class DetailsRepositoryImpl @Inject constructor(
 
             val media = response.data?.Media
                 ?: return Result.Error("Media not found")
-                
-            val listEntry = media.mediaListEntry
 
-            // Map API status to domain status
+            val listEntry = media.mediaListEntry
             val listStatus = when (listEntry?.status) {
                 MediaListStatus.CURRENT -> LibraryStatus.CURRENT
                 MediaListStatus.PLANNING -> LibraryStatus.PLANNING
@@ -40,35 +55,37 @@ class DetailsRepositoryImpl @Inject constructor(
                 MediaListStatus.REPEATING -> LibraryStatus.REPEATING
                 else -> null
             }
-            
-            // Map characters
+
             val characters = media.characters?.edges?.filterNotNull()?.map { edge ->
                 CharacterInfo(
                     id = edge.node?.id ?: 0,
                     name = edge.node?.name?.userPreferred ?: "Unknown",
                     imageUrl = edge.node?.image?.large,
-                    role = edge.role?.name ?: "SUPPORTING"
-                )
-            } ?: emptyList()
-            
-            // Map relations
-            val relations = media.relations?.edges?.filterNotNull()?.map { edge ->
-                RelatedMedia(
-                    id = edge.node?.id ?: 0,
-                    title = edge.node?.title?.userPreferred ?: "Unknown",
-                    coverUrl = edge.node?.coverImage?.large,
-                    format = edge.node?.format?.name,
-                    status = edge.node?.status?.name,
-                    relationType = edge.relationType?.name ?: "OTHER"
+                    role = edge.role?.name ?: "UNKNOWN"
                 )
             } ?: emptyList()
 
+            val relations = media.relations?.edges?.filterNotNull()?.map { edge ->
+                val node = edge.node
+                RelatedMedia(
+                    id = node?.id ?: 0,
+                    title = node?.title?.userPreferred ?: "Unknown",
+                    coverUrl = node?.coverImage?.large,
+                    format = node?.format?.name,
+                    status = node?.status?.name,
+                    relationType = edge.relationType?.name ?: "UNKNOWN"
+                )
+            } ?: emptyList()
+
+            // Use english title if available, otherwise romaji
+            val title = media.title?.english ?: media.title?.romaji ?: "Unknown"
+
             val details = MediaDetails(
                 id = media.id ?: 0,
-                title = media.title?.english ?: media.title?.romaji ?: "Unknown Title",
+                title = title,
                 coverUrl = media.coverImage?.extraLarge,
                 bannerUrl = media.bannerImage,
-                description = media.description?.stripHtml() ?: "No description available.",
+                description = media.description?.stripHtml() ?: "",
                 score = media.averageScore,
                 episodes = media.episodes,
                 chapters = media.chapters,
@@ -85,8 +102,11 @@ class DetailsRepositoryImpl @Inject constructor(
                 characters = characters,
                 relations = relations
             )
+
+            // Update cache
+            mediaDetailsDao.insert(details.toEntity())
             
-            Result.Success(details)
+            Result.Success(Unit)
         } catch (e: ApolloException) {
             Result.Error("Network error: ${e.message}", e)
         } catch (e: Exception) {
@@ -94,7 +114,11 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateMediaListEntry(mediaId: Int, status: LibraryStatus, progress: Int): Result<Unit> {
+    override suspend fun updateMediaListEntry(
+        mediaId: Int,
+        status: LibraryStatus,
+        progress: Int
+    ): Result<Unit> {
         return try {
             val apiStatus = when (status) {
                 LibraryStatus.CURRENT -> MediaListStatus.CURRENT
@@ -103,7 +127,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 LibraryStatus.DROPPED -> MediaListStatus.DROPPED
                 LibraryStatus.PAUSED -> MediaListStatus.PAUSED
                 LibraryStatus.REPEATING -> MediaListStatus.REPEATING
-                LibraryStatus.UNKNOWN -> MediaListStatus.PLANNING
+                LibraryStatus.UNKNOWN -> MediaListStatus.CURRENT
             }
 
             val response = apolloClient.mutation(
@@ -115,9 +139,11 @@ class DetailsRepositoryImpl @Inject constructor(
             ).execute()
 
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
+                // Refresh cache to get updated list entry
+                refreshMediaDetails(mediaId)
                 Result.Success(Unit)
             } else {
-                val errorMessage = response.errors?.firstOrNull()?.message ?: "Failed to update entry"
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Update failed"
                 Result.Error(errorMessage)
             }
         } catch (e: ApolloException) {
@@ -127,18 +153,16 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteMediaListEntry(listEntryId: Int): Result<Unit> {
+    override suspend fun deleteMediaListEntry(entryId: Int): Result<Unit> {
         return try {
             val response = apolloClient.mutation(
-                com.anisync.android.DeleteMediaListEntryMutation(
-                    id = Optional.present(listEntryId)
-                )
+                DeleteMediaListEntryMutation(id = Optional.present(entryId))
             ).execute()
 
             if (response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()) {
                 Result.Success(Unit)
             } else {
-                val errorMessage = response.errors?.firstOrNull()?.message ?: "Failed to delete entry"
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"
                 Result.Error(errorMessage)
             }
         } catch (e: ApolloException) {
@@ -146,5 +170,15 @@ class DetailsRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.Error("Unexpected error: ${e.message}", e)
         }
+    }
+
+    private fun String.stripHtml(): String {
+        return this.replace(Regex("<[^>]*>"), "")
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .trim()
     }
 }

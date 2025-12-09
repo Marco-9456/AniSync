@@ -2,6 +2,9 @@ package com.anisync.android.data
 
 import com.anisync.android.GetUserLibraryQuery
 import com.anisync.android.GetViewerQuery
+import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.data.local.toDomain
+import com.anisync.android.data.local.toEntity
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
@@ -9,16 +12,33 @@ import com.anisync.android.domain.Result
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.ApolloClient
+import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class LibraryRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val libraryDao: LibraryDao
 ) : LibraryRepository {
 
-    override suspend fun getLibrary(username: String, type: MediaType): Result<List<LibraryEntry>> {
+    /**
+     * Observe library from local Room database (SSOT).
+     * UI updates automatically when cache changes.
+     */
+    override fun getLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>> {
+        return libraryDao.observeByType(type)
+            .map { entities -> entities.map { it.toDomain() } }
+    }
+
+    /**
+     * Fetch from network and update local cache.
+     * The Flow from getLibrary() will emit automatically.
+     */
+    override suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit> {
         return try {
-            // If no username provided, try to get current authenticated user
+            // Resolve username
             val actualUsername = if (username.isBlank()) {
                 val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
                 viewerResponse.data?.Viewer?.name
@@ -27,7 +47,9 @@ class LibraryRepositoryImpl @Inject constructor(
                 username
             }
             
-            val response = apolloClient.query(GetUserLibraryQuery(username = actualUsername, type = type)).execute()
+            val response = apolloClient.query(
+                GetUserLibraryQuery(username = actualUsername, type = type)
+            ).execute()
             
             if (response.hasErrors()) {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Unknown error"
@@ -36,12 +58,11 @@ class LibraryRepositoryImpl @Inject constructor(
 
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
 
-            // Flatten lists
+            // Map to domain then to entity
             val entries = lists.filterNotNull().flatMap { group ->
                 group.entries?.filterNotNull()?.map { entry ->
                     val media = entry.media
                     
-                    // Map API Status to Domain Status
                     val status = when (entry.status) {
                         MediaListStatus.CURRENT -> LibraryStatus.CURRENT
                         MediaListStatus.PLANNING -> LibraryStatus.PLANNING
@@ -53,7 +74,7 @@ class LibraryRepositoryImpl @Inject constructor(
                     }
 
                     LibraryEntry(
-                        id = entry.id ?: 0, // MediaList ID
+                        id = entry.id ?: 0,
                         mediaId = media?.id ?: 0,
                         title = media?.title?.userPreferred ?: "Unknown Title",
                         coverUrl = media?.coverImage?.extraLarge,
@@ -69,7 +90,10 @@ class LibraryRepositoryImpl @Inject constructor(
                 } ?: emptyList()
             }
             
-            Result.Success(entries)
+            // Atomic update to prevent UI flicker
+            libraryDao.replaceByType(type, entries.map { it.toEntity(type) })
+            
+            Result.Success(Unit)
         } catch (e: ApolloException) {
             Result.Error("Network error: ${e.message}", e)
         } catch (e: Exception) {
@@ -77,23 +101,31 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Optimistic local update + network sync.
+     */
     override suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit> {
+        // 1. Update local immediately (UI sees change via Flow)
+        libraryDao.updateProgress(mediaId, progress)
+
+        // 2. Try sync to network
         return try {
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMediaListEntryMutation(
-                    mediaId = com.apollographql.apollo3.api.Optional.present(mediaId),
-                    progress = com.apollographql.apollo3.api.Optional.present(progress)
+                    mediaId = Optional.present(mediaId),
+                    progress = Optional.present(progress)
                 )
             ).execute()
 
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
                 Result.Success(Unit)
             } else {
-                val errorMessage = response.errors?.firstOrNull()?.message ?: "Failed to update progress"
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Sync failed"
                 Result.Error(errorMessage)
             }
         } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
+            // Local updated, network failed
+            Result.Error("Offline: Saved locally", e)
         } catch (e: Exception) {
             Result.Error("Unexpected error: ${e.message}", e)
         }

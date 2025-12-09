@@ -1,8 +1,24 @@
 package com.anisync.android.domain
 
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.flow.Flow
 
 interface LibraryRepository {
-    suspend fun getLibrary(username: String, type: MediaType = MediaType.ANIME): Result<List<LibraryEntry>>
+    /**
+     * Observe library entries from local cache (SSOT).
+     * Emits new list whenever data changes.
+     */
+    fun getLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>>
+
+    /**
+     * Trigger a network refresh. 
+     * Fetches from API and updates local cache.
+     * Returns Result to indicate success/failure for UI feedback.
+     */
+    suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit>
+
+    /**
+     * Update progress locally (optimistic) and sync to network.
+     */
     suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit>
 }
