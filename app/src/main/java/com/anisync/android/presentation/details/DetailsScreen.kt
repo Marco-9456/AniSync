@@ -114,6 +114,7 @@ private const val AnimationDurationLong = 600
 fun DetailsScreen(
     mediaId: Int,
     onBackClick: () -> Unit,
+    onRelationClick: (Int) -> Unit = {},
     viewModel: DetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -143,6 +144,7 @@ fun DetailsScreen(
                     DetailsPageContent(
                         details = state.details,
                         onBackClick = onBackClick,
+                        onRelationClick = onRelationClick,
                         onStatusUpdate = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
                         onRemove = { viewModel.deleteMediaListEntry() }
                     )
@@ -194,6 +196,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
 fun DetailsPageContent(
     details: MediaDetails,
     onBackClick: () -> Unit,
+    onRelationClick: (Int) -> Unit,
     onStatusUpdate: (LibraryStatus, Int) -> Unit,
     onRemove: () -> Unit
 ) {
@@ -257,7 +260,12 @@ fun DetailsPageContent(
                         contentPadding = PaddingValues(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(details.relations) { RelationItem(it) }
+                        items(details.relations) { relation -> 
+                            RelationItem(
+                                relation = relation,
+                                onClick = { onRelationClick(relation.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -680,8 +688,16 @@ fun CharacterItem(character: CharacterInfo) {
 }
 
 @Composable
-fun RelationItem(relation: RelatedMedia) {
-    Column(modifier = Modifier.width(100.dp)) {
+fun RelationItem(
+    relation: RelatedMedia,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(100.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+    ) {
         AsyncImage(
             model = relation.coverUrl,
             contentDescription = relation.title,

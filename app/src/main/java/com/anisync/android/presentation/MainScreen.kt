@@ -29,19 +29,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.presentation.navigation.AniSyncNavHost
-import com.anisync.android.presentation.navigation.Screen
+import com.anisync.android.presentation.navigation.Details
+import com.anisync.android.presentation.navigation.Discover
+import com.anisync.android.presentation.navigation.Library
+import com.anisync.android.presentation.navigation.Profile
+import kotlin.reflect.KClass
 
 /**
  * Helper class to define navigation items with selected/unselected icon states
  */
-private data class BottomNavItem(
+private data class BottomNavItem<T : Any>(
     val title: String,
-    val route: String,
+    val route: T,
+    val routeClass: KClass<T>,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 )
@@ -55,19 +60,22 @@ fun MainScreen() {
         listOf(
             BottomNavItem(
                 title = "Library",
-                route = Screen.Library.route,
+                route = Library,
+                routeClass = Library::class,
                 selectedIcon = Icons.Filled.VideoLibrary,
                 unselectedIcon = Icons.Outlined.VideoLibrary
             ),
             BottomNavItem(
                 title = "Discover",
-                route = Screen.Discover.route,
+                route = Discover,
+                routeClass = Discover::class,
                 selectedIcon = Icons.Filled.Explore,
                 unselectedIcon = Icons.Outlined.Explore
             ),
             BottomNavItem(
                 title = "Profile",
-                route = Screen.Profile.route,
+                route = Profile,
+                routeClass = Profile::class,
                 selectedIcon = Icons.Filled.Person,
                 unselectedIcon = Icons.Outlined.Person
             )
@@ -77,11 +85,14 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Determine if bottom bar should be visible
+    // Determine if bottom bar should be visible (show for main tabs only)
     val isBottomBarVisible by remember(currentDestination) {
         derivedStateOf {
-            val route = currentDestination?.route
-            navItems.any { it.route == route }
+            currentDestination?.let { dest ->
+                dest.hasRoute<Library>() ||
+                dest.hasRoute<Discover>() ||
+                dest.hasRoute<Profile>()
+            } ?: false
         }
     }
 
@@ -98,7 +109,7 @@ fun MainScreen() {
                     tonalElevation = 0.dp
                 ) {
                     navItems.forEach { item ->
-                        val isSelected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+                        val isSelected = currentDestination?.hasRoute(item.routeClass) == true
 
                         val iconColor by animateColorAsState(
                             targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -148,7 +159,7 @@ fun MainScreen() {
         AniSyncNavHost(
             navController = navController,
             onMediaClick = { mediaId ->
-                navController.navigate(Screen.Details.createRoute(mediaId))
+                navController.navigate(Details(mediaId))
             },
             modifier = Modifier.padding(innerPadding)
         )

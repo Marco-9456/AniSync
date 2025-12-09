@@ -7,10 +7,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.anisync.android.presentation.details.DetailsScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.library.LibraryScreen
@@ -25,11 +24,10 @@ fun AniSyncNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Library.route,
+        startDestination = Library,
         modifier = modifier
     ) {
-        composable(
-            route = Screen.Login.route,
+        composable<Login>(
             enterTransition = { slideInHorizontally { it } + fadeIn() },
             exitTransition = { slideOutHorizontally { -it } + fadeOut() },
             popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
@@ -37,8 +35,7 @@ fun AniSyncNavHost(
         ) {
             LoginScreen()
         }
-        composable(
-            route = Screen.Library.route,
+        composable<Library>(
             enterTransition = { slideInHorizontally { it } + fadeIn() },
             exitTransition = { slideOutHorizontally { -it } + fadeOut() },
             popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
@@ -48,8 +45,7 @@ fun AniSyncNavHost(
                 onMediaClick = onMediaClick
             )
         }
-        composable(
-            route = Screen.Discover.route,
+        composable<Discover>(
             enterTransition = { slideInHorizontally { it } + fadeIn() },
             exitTransition = { slideOutHorizontally { -it } + fadeOut() },
             popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
@@ -60,8 +56,7 @@ fun AniSyncNavHost(
                 onSearchClick = { /* No-op: Search is handled internally now */ }
             )
         }
-        composable(
-            route = Screen.Profile.route,
+        composable<Profile>(
             enterTransition = { slideInHorizontally { it } + fadeIn() },
             exitTransition = { slideOutHorizontally { -it } + fadeOut() },
             popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
@@ -70,26 +65,27 @@ fun AniSyncNavHost(
             ProfileScreen(
                 onMediaClick = onMediaClick,
                 onLogoutClick = {
-                    navController.navigate(Screen.Login.route) {
+                    navController.navigate(Login) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(
-            route = Screen.Details.route,
-            arguments = listOf(navArgument("mediaId") { type = NavType.IntType }),
+        composable<Details>(
             enterTransition = { slideInHorizontally { it } + fadeIn() },
             exitTransition = { slideOutHorizontally { -it } + fadeOut() },
             popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
             popExitTransition = { slideOutHorizontally { it } + fadeOut() }
         ) { backStackEntry ->
-            val mediaId = backStackEntry.arguments?.getInt("mediaId") ?: return@composable
+            val details: Details = backStackEntry.toRoute()
 
             DetailsScreen(
-                mediaId = mediaId,
-                onBackClick = { navController.popBackStack() }
+                mediaId = details.mediaId,
+                onBackClick = { navController.popBackStack() },
+                onRelationClick = { relationMediaId ->
+                    navController.navigate(Details(relationMediaId))
+                }
             )
         }
     }
