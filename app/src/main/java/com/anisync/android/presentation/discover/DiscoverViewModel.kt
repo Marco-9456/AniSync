@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,7 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -88,10 +88,6 @@ class DiscoverViewModel @Inject constructor(
 
     fun onSearchActiveChange(active: Boolean) {
         _isSearchActive.value = active
-        if (!active) {
-            // Optional: clear query when closing search?
-            // Material guidelines suggest keeping it, but for a fresher feel we can clear focus
-        }
     }
 
     fun onSearch(query: String) {
@@ -103,7 +99,7 @@ class DiscoverViewModel @Inject constructor(
     private fun observeSearchQuery() {
         viewModelScope.launch {
             _searchQuery
-                .debounce(300L) // Fast debounce for responsive feel
+                .debounce(300L)
                 .distinctUntilChanged()
                 .collect { query ->
                     if (query.isBlank()) {
@@ -113,14 +109,13 @@ class DiscoverViewModel @Inject constructor(
                     }
 
                     _isSearching.value = true
-                    try {
-                        val results = searchRepository.searchMedia(query, _mediaType.value)
-                        _searchResults.value = results
-                    } catch (e: Exception) {
-                        _searchResults.value = emptyList()
-                    } finally {
-                        _isSearching.value = false
+                    
+                    when (val result = searchRepository.searchMedia(query, _mediaType.value)) {
+                        is Result.Success -> _searchResults.value = result.data
+                        is Result.Error -> _searchResults.value = emptyList()
                     }
+                    
+                    _isSearching.value = false
                 }
         }
     }
@@ -134,28 +129,38 @@ class DiscoverViewModel @Inject constructor(
                 _uiState.update { DiscoverUiState.Loading }
             }
 
-            try {
-                // Parallel fetching
-                val trendingDeferred = async { discoverRepository.getTrending(currentType) }
-                val popularDeferred = async { discoverRepository.getPopular(currentType) }
-                val upcomingDeferred = async { discoverRepository.getUpcoming(currentType) }
+            // Parallel fetching
+            val trendingDeferred = async { discoverRepository.getTrending(currentType) }
+            val popularDeferred = async { discoverRepository.getPopular(currentType) }
+            val upcomingDeferred = async { discoverRepository.getUpcoming(currentType) }
 
-                val trending = trendingDeferred.await()
-                val popular = popularDeferred.await()
-                val upcoming = upcomingDeferred.await()
+            val trendingResult = trendingDeferred.await()
+            val popularResult = popularDeferred.await()
+            val upcomingResult = upcomingDeferred.await()
 
+            // Check if all succeeded
+            if (trendingResult is Result.Success && 
+                popularResult is Result.Success && 
+                upcomingResult is Result.Success) {
                 _uiState.update {
                     DiscoverUiState.Success(
-                        trending = trending,
-                        popular = popular,
-                        upcoming = upcoming
+                        trending = trendingResult.data,
+                        popular = popularResult.data,
+                        upcoming = upcomingResult.data
                     )
                 }
-            } catch (e: Exception) {
-                _uiState.update { DiscoverUiState.Error(e.message ?: "Unknown error") }
-            } finally {
-                _isRefreshing.value = false
+            } else {
+                // Get first error message
+                val errorMessage = when {
+                    trendingResult is Result.Error -> trendingResult.message
+                    popularResult is Result.Error -> popularResult.message
+                    upcomingResult is Result.Error -> upcomingResult.message
+                    else -> "Unknown error"
+                }
+                _uiState.update { DiscoverUiState.Error(errorMessage) }
             }
+            
+            _isRefreshing.value = false
         }
     }
 }

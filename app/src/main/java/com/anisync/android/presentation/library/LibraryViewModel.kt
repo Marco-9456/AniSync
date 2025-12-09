@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
+import com.anisync.android.domain.Result
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -47,12 +48,14 @@ class LibraryViewModel @Inject constructor(
     fun loadLibrary() {
         viewModelScope.launch {
             _uiState.value = LibraryUiState.Loading
-            try {
-                // Pass empty username to get authenticated user's library
-                val entries = libraryRepository.getLibrary("", _mediaType.value)
-                _uiState.value = LibraryUiState.Success(entries)
-            } catch (e: Exception) {
-                _uiState.value = LibraryUiState.Error(e.message ?: "Unknown Error")
+            
+            when (val result = libraryRepository.getLibrary("", _mediaType.value)) {
+                is Result.Success -> {
+                    _uiState.value = LibraryUiState.Success(result.data)
+                }
+                is Result.Error -> {
+                    _uiState.value = LibraryUiState.Error(result.message)
+                }
             }
         }
     }
@@ -88,17 +91,15 @@ class LibraryViewModel @Inject constructor(
             _uiState.value = LibraryUiState.Success(newList)
 
             viewModelScope.launch {
-                try {
-                    val success = libraryRepository.updateProgress(mediaId, newProgress)
-                    if (!success) {
-                        // Revert
-                        _uiState.value = LibraryUiState.Success(oldList)
-                        _events.emit(LibraryEvent.ShowSnackbar("Failed to update progress"))
+                when (val result = libraryRepository.updateProgress(mediaId, newProgress)) {
+                    is Result.Success -> {
+                        // Update succeeded, keep optimistic state
                     }
-                } catch (e: Exception) {
-                    // Revert
-                    _uiState.value = LibraryUiState.Success(oldList)
-                    _events.emit(LibraryEvent.ShowSnackbar(e.message ?: "Unknown Error"))
+                    is Result.Error -> {
+                        // Revert to old state
+                        _uiState.value = LibraryUiState.Success(oldList)
+                        _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                    }
                 }
             }
         }

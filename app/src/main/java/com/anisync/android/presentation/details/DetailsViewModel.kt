@@ -7,6 +7,7 @@ import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,15 +58,14 @@ class DetailsViewModel @Inject constructor(
     private fun loadDetails() {
         viewModelScope.launch {
             _uiState.update { DetailsUiState.Loading }
-            try {
-                val details = getMediaDetailsUseCase(mediaId)
-                if (details != null) {
-                    _uiState.update { DetailsUiState.Success(details) }
-                } else {
-                    _uiState.update { DetailsUiState.Error("Media not found") }
+            
+            when (val result = getMediaDetailsUseCase(mediaId)) {
+                is Result.Success -> {
+                    _uiState.update { DetailsUiState.Success(result.data) }
                 }
-            } catch (e: Exception) {
-                _uiState.update { DetailsUiState.Error(e.message ?: "Unknown error") }
+                is Result.Error -> {
+                    _uiState.update { DetailsUiState.Error(result.message) }
+                }
             }
         }
     }
@@ -73,16 +73,15 @@ class DetailsViewModel @Inject constructor(
     fun saveMediaListEntry(status: LibraryStatus, progress: Int) {
         viewModelScope.launch {
             _isSaving.value = true
-            try {
-                val success = detailsRepository.updateMediaListEntry(mediaId, status, progress)
-                if (success) {
-                    loadDetails()
+            
+            when (val result = detailsRepository.updateMediaListEntry(mediaId, status, progress)) {
+                is Result.Success -> loadDetails()
+                is Result.Error -> {
+                    // Could emit a one-time event for error (e.g., Snackbar)
                 }
-            } catch (e: Exception) {
-                // Ideally emit a one-time event for error (e.g., Snackbar)
-            } finally {
-                _isSaving.value = false
             }
+            
+            _isSaving.value = false
         }
     }
 
@@ -92,16 +91,15 @@ class DetailsViewModel @Inject constructor(
             val listEntryId = details.listEntryId ?: return@launch
 
             _isSaving.value = true
-            try {
-                val success = detailsRepository.deleteMediaListEntry(listEntryId)
-                if (success) {
-                    loadDetails()
+            
+            when (val result = detailsRepository.deleteMediaListEntry(listEntryId)) {
+                is Result.Success -> loadDetails()
+                is Result.Error -> {
+                    // Could handle error
                 }
-            } catch (e: Exception) {
-                // Handle error
-            } finally {
-                _isSaving.value = false
             }
+            
+            _isSaving.value = false
         }
     }
 }

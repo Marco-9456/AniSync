@@ -224,9 +224,10 @@ fun DiscoverScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 100.dp)
                     ) {
-                        // Spacer for floating Search Bar
+                        // Spacer for floating Search Bar (includes status bar height for edge-to-edge)
                         item {
-                            Spacer(modifier = Modifier.height(100.dp))
+                            val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                            Spacer(modifier = Modifier.height(statusBarPadding + 80.dp))
                         }
 
                         when (val state = uiState) {

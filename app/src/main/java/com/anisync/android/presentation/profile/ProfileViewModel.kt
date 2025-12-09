@@ -7,6 +7,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -75,15 +76,14 @@ class ProfileViewModel @Inject constructor(
     private fun loadProfile(username: String) {
         viewModelScope.launch {
             _uiState.update { ProfileUiState.Loading }
-            try {
-                val profile = getProfileUseCase(username)
-                if (profile != null) {
-                    _uiState.update { ProfileUiState.Success(profile) }
-                } else {
-                    _uiState.update { ProfileUiState.Error("User not found") }
+            
+            when (val result = getProfileUseCase(username)) {
+                is Result.Success -> {
+                    _uiState.update { ProfileUiState.Success(result.data) }
                 }
-            } catch (e: Exception) {
-                _uiState.update { ProfileUiState.Error(e.message ?: "Unknown error") }
+                is Result.Error -> {
+                    _uiState.update { ProfileUiState.Error(result.message) }
+                }
             }
         }
     }

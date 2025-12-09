@@ -6,7 +6,7 @@ import javax.inject.Inject
 class GetPopularAnimeUseCase @Inject constructor(
     private val repository: DiscoverRepository
 ) {
-    suspend operator fun invoke(): List<LibraryEntry> {
+    suspend operator fun invoke(): Result<List<LibraryEntry>> {
         return repository.getPopular(MediaType.ANIME)
     }
 }
