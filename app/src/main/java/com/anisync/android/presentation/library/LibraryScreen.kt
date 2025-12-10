@@ -50,6 +50,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -67,6 +68,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,7 +85,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -176,9 +177,13 @@ fun LibraryScreen(
 
                             DropdownMenu(
                                 expanded = showSortMenu,
-                                onDismissRequest = { showSortMenu = false }
+                                onDismissRequest = { showSortMenu = false },
+                                // Apply Material3 expressive menu defaults
+                                shape = MenuDefaults.shape,
+                                containerColor = MenuDefaults.containerColor
                             ) {
                                 LibrarySort.entries.forEach { sort ->
+                                    val isSelected = sortOption == sort
                                     DropdownMenuItem(
                                         text = {
                                             Text(
@@ -186,22 +191,29 @@ fun LibraryScreen(
                                                     LibrarySort.TITLE -> "Title (A-Z)"
                                                     LibrarySort.PROGRESS -> "Progress (Most)"
                                                     LibrarySort.AIRING_SOON -> "Airing Soon"
-                                                }
+                                                },
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                             )
                                         },
                                         onClick = {
                                             viewModel.onSortChange(sort)
                                             showSortMenu = false
                                         },
-                                        leadingIcon = if (sortOption == sort) {
+                                        // M3 guideline: use trailingIcon for selection indicator
+                                        trailingIcon = if (isSelected) {
                                             {
                                                 Icon(
                                                     imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
+                                                    contentDescription = "Selected",
                                                     tint = MaterialTheme.colorScheme.primary
                                                 )
                                             }
-                                        } else null
+                                        } else null,
+                                        // Highlight selected item with subtle background
+                                        colors = MenuDefaults.itemColors(
+                                            textColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
                                     )
                                 }
                             }
