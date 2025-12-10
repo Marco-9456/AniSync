@@ -47,7 +47,8 @@ class DiscoverRepositoryImpl @Inject constructor(
                     totalVolumes = media.volumes,
                     type = media.type,
                     status = LibraryStatus.UNKNOWN,
-                    mediaStatus = "UPCOMING"
+                    mediaStatus = "UPCOMING",
+                    averageScore = media.averageScore
                 )
             } ?: emptyList()
             
@@ -81,7 +82,8 @@ class DiscoverRepositoryImpl @Inject constructor(
                     totalVolumes = media.volumes,
                     type = media.type,
                     status = LibraryStatus.UNKNOWN,
-                    mediaStatus = null
+                    mediaStatus = null,
+                    averageScore = media.averageScore
                 )
             } ?: emptyList()
             

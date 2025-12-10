@@ -53,8 +53,7 @@ fun AniSyncNavHost(
             popExitTransition = { slideOutHorizontally { it } + fadeOut() }
         ) {
             DiscoverScreen(
-                onMediaClick = onMediaClick,
-                onSearchClick = { /* No-op: Search is handled internally now */ }
+                onMediaClick = onMediaClick
             )
         }
         composable<Profile>(

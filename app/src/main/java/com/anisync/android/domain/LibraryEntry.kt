@@ -27,5 +27,6 @@ data class LibraryEntry(
     val status: LibraryStatus,
     val nextAiringEpisode: Int? = null,
     val timeUntilAiring: Int? = null,
-    val mediaStatus: String? = null
+    val mediaStatus: String? = null,
+    val averageScore: Int? = null
 )

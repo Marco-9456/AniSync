@@ -85,7 +85,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
-    onSearchClick: () -> Unit, // Kept for interface compatibility
     viewModel: DiscoverViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -130,7 +129,7 @@ fun DiscoverScreen(
                 },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { 
+                        IconButton(onClick = {
                             textFieldState.edit { replace(0, length, "") }
                         }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear")
@@ -264,8 +263,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
                                 items = state.popular,
-                                onItemClick = onMediaClick,
-                                isRanked = true
+                                onItemClick = onMediaClick
                             )
                         }
 
@@ -279,8 +277,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
                                 items = state.upcoming,
-                                onItemClick = onMediaClick,
-                                isRanked = false
+                                onItemClick = onMediaClick
                             )
                         }
                     }
@@ -349,6 +346,7 @@ private fun SectionHeader(title: String, icon: ImageVector, color: Color) {
     }
 }
 
+// --- CAROUSEL (UNTOUCHED) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CinematicHeroCarousel(items: List<LibraryEntry>, onItemClick: (Int) -> Unit) {
@@ -361,11 +359,9 @@ private fun CinematicHeroCarousel(items: List<LibraryEntry>, onItemClick: (Int) 
             .fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 48.dp),
         itemSpacing = 24.dp,
-        // Use singleAdvanceFlingBehavior for hero carousel - snaps one item at a time
         flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState)
     ) { itemIndex ->
         val item = items[itemIndex]
-        // maskClip with MaterialTheme.shapes for consistent theming per M3 guidelines
         HeroCard(
             item = item,
             onClick = { onItemClick(item.mediaId) },
@@ -379,7 +375,6 @@ private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier
     Card(
         onClick = onClick,
         modifier = modifier.height(380.dp),
-        // Use MaterialTheme.shapes.extraLarge for consistency with maskClip
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
@@ -446,55 +441,115 @@ private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier
     }
 }
 
+// --- REDESIGNED MEDIA CARD ---
+
+/**
+ * A specialized Media Card strictly following the provided redesign image.
+ * Structure:
+ * - Top: Image Thumbnail
+ * - Bottom: Content Area (Title + Type + Rating Pill)
+ */
 @Composable
-private fun HorizontalMediaList(items: List<LibraryEntry>, onItemClick: (Int) -> Unit, isRanked: Boolean) {
+private fun MediaCard(
+    item: LibraryEntry,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer, // Matches the white/light background of the design
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = modifier.width(150.dp)
+    ) {
+        Column {
+            // Image Container
+            AsyncImage(
+                model = item.coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.7f) // Standard poster ratio
+            )
+
+            // Content Container
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                // Title (Bold, Black)
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Bottom Row: Type and Rating Pill
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Type (e.g., "TV") - Secondary Color
+                    Text(
+                        text = item.type?.name ?: "TV",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Rating Pill (e.g., "8.8" with Star) - Only show if score is available
+                    item.averageScore?.let { score ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest, // Light grey/purple tint
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFC107), // Amber/Gold Star
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                // Convert from 0-100 scale to 0-10 scale for display
+                                Text(
+                                    text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HorizontalMediaList(items: List<LibraryEntry>, onItemClick: (Int) -> Unit) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        itemsIndexed(items) { index, item ->
-            Column(modifier = Modifier.width(140.dp).clickable { onItemClick(item.mediaId) }) {
-                Box(
-                    modifier = Modifier.aspectRatio(0.7f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    AsyncImage(
-                        model = item.coverUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    if (isRanked) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .background(
-                                    if (index < 3) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.6f),
-                                    RoundedCornerShape(bottomEnd = 12.dp)
-                                )
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Text(text = "#${index + 1}", color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                val status = formatStatus(item.mediaStatus)
-                if (status != null) {
-                    Text(
-                        text = status,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        itemsIndexed(items) { _, item ->
+            MediaCard(
+                item = item,
+                onClick = { onItemClick(item.mediaId) }
+            )
         }
     }
 }
