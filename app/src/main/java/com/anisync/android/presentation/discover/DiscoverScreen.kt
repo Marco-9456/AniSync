@@ -4,9 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -33,8 +30,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.carousel.CarouselDefaults
+import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,7 +66,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -83,7 +80,6 @@ import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
-import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -389,31 +385,27 @@ private fun SectionHeader(title: String, icon: ImageVector, color: Color) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CinematicHeroCarousel(items: List<LibraryEntry>, onItemClick: (Int) -> Unit) {
-    val pagerState = rememberPagerState(pageCount = { items.size })
+    val carouselState = rememberCarouselState { items.size }
 
-    HorizontalPager(
-        state = pagerState,
+    HorizontalCenteredHeroCarousel(
+        state = carouselState,
+        modifier = Modifier
+            .height(380.dp)
+            .fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 48.dp),
-        pageSpacing = 24.dp,
-        modifier = Modifier.height(380.dp).fillMaxWidth()
-    ) { page ->
-        val item = items[page]
-        val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-        val scale by animateFloatAsState(
-            targetValue = if (pageOffset.absoluteValue < 0.5f) 1f else 0.92f,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
-            label = "Scale"
-        )
-
+        itemSpacing = 24.dp,
+        // Use singleAdvanceFlingBehavior for hero carousel - snaps one item at a time
+        flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState)
+    ) { itemIndex ->
+        val item = items[itemIndex]
+        // maskClip with MaterialTheme.shapes for consistent theming per M3 guidelines
         HeroCard(
             item = item,
             onClick = { onItemClick(item.mediaId) },
-            modifier = Modifier.graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
+            modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
         )
     }
 }
@@ -422,9 +414,10 @@ private fun CinematicHeroCarousel(items: List<LibraryEntry>, onItemClick: (Int) 
 private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxSize(),
-        shape = RoundedCornerShape(28.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        modifier = modifier.height(380.dp),
+        // Use MaterialTheme.shapes.extraLarge for consistency with maskClip
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
