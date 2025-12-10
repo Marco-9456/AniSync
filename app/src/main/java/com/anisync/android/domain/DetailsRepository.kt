@@ -20,6 +20,8 @@ interface DetailsRepository {
 
     /**
      * Delete media list entry.
+     * @param entryId The list entry ID to delete from the API
+     * @param mediaId The media ID to remove from local library cache
      */
-    suspend fun deleteMediaListEntry(entryId: Int): Result<Unit>
+    suspend fun deleteMediaListEntry(entryId: Int, mediaId: Int): Result<Unit>
 }

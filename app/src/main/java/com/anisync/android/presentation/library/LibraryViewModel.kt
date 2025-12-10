@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -33,6 +34,12 @@ sealed interface LibraryEvent {
     data class ShowSnackbar(val message: String) : LibraryEvent
 }
 
+enum class LibrarySort {
+    TITLE,
+    PROGRESS,
+    AIRING_SOON
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
@@ -43,6 +50,10 @@ class LibraryViewModel @Inject constructor(
     private val _mediaType = MutableStateFlow(MediaType.ANIME)
     val mediaType: StateFlow<MediaType> = _mediaType.asStateFlow()
 
+    // Sort Option State (Default: Title)
+    private val _sortOption = MutableStateFlow(LibrarySort.TITLE)
+    val sortOption: StateFlow<LibrarySort> = _sortOption.asStateFlow()
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
@@ -51,16 +62,27 @@ class LibraryViewModel @Inject constructor(
 
     /**
      * Observe library from Room via Flow.
-     * Automatically switches when mediaType changes.
+     * Automatically switches when mediaType changes and re-sorts when sortOption changes.
      */
     val uiState: StateFlow<LibraryUiState> = _mediaType
         .flatMapLatest { type ->
             libraryRepository.getLibrary("", type)
-                .map<List<LibraryEntry>, LibraryUiState> { entries ->
-                    LibraryUiState.Success(entries)
-                }
-                .onStart { emit(LibraryUiState.Loading) }
         }
+        .combine(_sortOption) { entries, sort ->
+            val sortedEntries = when (sort) {
+                LibrarySort.TITLE -> entries.sortedBy { it.title.lowercase() }
+                LibrarySort.PROGRESS -> entries.sortedWith(
+                    compareByDescending<LibraryEntry> { it.progress }
+                        .thenBy { it.title.lowercase() }
+                )
+                LibrarySort.AIRING_SOON -> entries.sortedWith(
+                    compareBy<LibraryEntry, Int?>(nullsLast()) { it.timeUntilAiring }
+                        .thenBy { it.title.lowercase() }
+                )
+            }
+            LibraryUiState.Success(sortedEntries) as LibraryUiState
+        }
+        .onStart { emit(LibraryUiState.Loading) }
         .catch { e -> emit(LibraryUiState.Error(e.message ?: "Unknown error")) }
         .stateIn(
             scope = viewModelScope,
@@ -95,6 +117,10 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun onSortChange(sort: LibrarySort) {
+        _sortOption.value = sort
+    }
+
     fun incrementProgress(mediaId: Int) {
         updateProgress(mediaId, 1)
     }
@@ -122,3 +148,4 @@ class LibraryViewModel @Inject constructor(
         }
     }
 }
+

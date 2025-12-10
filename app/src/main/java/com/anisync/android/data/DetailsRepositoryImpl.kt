@@ -3,6 +3,7 @@ package com.anisync.android.data
 import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
+import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
@@ -22,7 +23,8 @@ import javax.inject.Inject
 
 class DetailsRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
-    private val mediaDetailsDao: MediaDetailsDao
+    private val mediaDetailsDao: MediaDetailsDao,
+    private val libraryDao: LibraryDao
 ) : DetailsRepository {
 
     /**
@@ -141,6 +143,8 @@ class DetailsRepositoryImpl @Inject constructor(
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
                 // Refresh cache to get updated list entry
                 refreshMediaDetails(mediaId)
+                // Also update the library cache so LibraryScreen reflects the change immediately
+                libraryDao.updateStatusAndProgress(mediaId, status, progress)
                 Result.Success(Unit)
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Update failed"
@@ -153,13 +157,15 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteMediaListEntry(entryId: Int): Result<Unit> {
+    override suspend fun deleteMediaListEntry(entryId: Int, mediaId: Int): Result<Unit> {
         return try {
             val response = apolloClient.mutation(
                 DeleteMediaListEntryMutation(id = Optional.present(entryId))
             ).execute()
 
             if (response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()) {
+                // Remove from library cache so LibraryScreen reflects the deletion immediately
+                libraryDao.deleteByMediaId(mediaId)
                 Result.Success(Unit)
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"

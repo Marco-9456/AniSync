@@ -42,11 +42,14 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -101,6 +104,7 @@ fun LibraryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
+    val sortOption by viewModel.sortOption.collectAsState()
 
     // --- State Management ---
     val snackbarHostState = remember { SnackbarHostState() }
@@ -108,6 +112,9 @@ fun LibraryScreen(
 
     // View Toggle (Grid vs List)
     var isGridView by remember { mutableStateOf(true) }
+
+    // Sort Dropdown State
+    var showSortMenu by remember { mutableStateOf(false) }
 
     // Filter State
     var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
@@ -145,20 +152,76 @@ fun LibraryScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
 
-                    // View Toggle Button (Circle shape like screenshot)
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.size(40.dp),
-                        onClick = { isGridView = !isGridView }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
-                                contentDescription = "Toggle View",
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
+                        // Sort Button with Dropdown
+                        Box {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                modifier = Modifier.size(40.dp),
+                                onClick = { showSortMenu = true }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                                        contentDescription = "Sort",
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false }
+                            ) {
+                                LibrarySort.entries.forEach { sort ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = when (sort) {
+                                                    LibrarySort.TITLE -> "Title (A-Z)"
+                                                    LibrarySort.PROGRESS -> "Progress (Most)"
+                                                    LibrarySort.AIRING_SOON -> "Airing Soon"
+                                                }
+                                            )
+                                        },
+                                        onClick = {
+                                            viewModel.onSortChange(sort)
+                                            showSortMenu = false
+                                        },
+                                        leadingIcon = if (sortOption == sort) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        } else null
+                                    )
+                                }
+                            }
+                        }
+
+                        // View Toggle Button (Circle shape like screenshot)
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                            modifier = Modifier.size(40.dp),
+                            onClick = { isGridView = !isGridView }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
+                                    contentDescription = "Toggle View",
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }

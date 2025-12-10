@@ -109,7 +109,7 @@ class DetailsViewModel @Inject constructor(
 
             _isSaving.value = true
             
-            when (val result = detailsRepository.deleteMediaListEntry(listEntryId)) {
+            when (val result = detailsRepository.deleteMediaListEntry(listEntryId, mediaId)) {
                 is Result.Success -> {
                     // Refresh to update the UI
                     refresh()

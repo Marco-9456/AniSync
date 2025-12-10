@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.anisync.android.data.local.entity.LibraryEntryEntity
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.Flow
 
@@ -55,4 +56,18 @@ interface LibraryDao {
         deleteByType(type)
         insertAll(entries)
     }
+
+    /**
+     * Update status and progress for a specific media entry.
+     * Used when status is changed from DetailsScreen.
+     */
+    @Query("UPDATE library_entries SET status = :status, progress = :progress, lastUpdated = :timestamp WHERE mediaId = :mediaId")
+    suspend fun updateStatusAndProgress(mediaId: Int, status: LibraryStatus, progress: Int, timestamp: Long = System.currentTimeMillis())
+
+    /**
+     * Delete a specific entry by mediaId.
+     * Used when an entry is removed from the user's list.
+     */
+    @Query("DELETE FROM library_entries WHERE mediaId = :mediaId")
+    suspend fun deleteByMediaId(mediaId: Int)
 }
