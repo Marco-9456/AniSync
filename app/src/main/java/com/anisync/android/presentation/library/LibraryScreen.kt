@@ -37,10 +37,13 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ButtonGroupDefaults
@@ -278,13 +281,26 @@ fun LibraryScreen(
                 ) {
                     items(statuses) { status ->
                         val isSelected = selectedStatus == status
+                        // Get status-specific icon
+                        val statusIcon = when (status) {
+                            LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
+                            LibraryStatus.PAUSED -> Icons.Default.Pause
+                            LibraryStatus.COMPLETED -> Icons.Default.Done
+                            LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
+                            LibraryStatus.DROPPED -> Icons.Default.Close
+                            else -> Icons.Default.Inbox
+                        }
                         FilterChip(
                             selected = isSelected,
                             onClick = { selectedStatus = status },
                             label = { Text(getStatusLabel(status, mediaType)) },
-                            leadingIcon = if (isSelected) {
-                                { Icon(Icons.Default.Done, null, modifier = Modifier.size(16.dp)) }
-                            } else null,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = statusIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
