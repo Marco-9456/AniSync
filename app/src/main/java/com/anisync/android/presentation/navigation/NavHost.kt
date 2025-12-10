@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
 import androidx.navigation.navDeepLink
+import androidx.navigation.toRoute
 import com.anisync.android.presentation.details.DetailsScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.library.LibraryScreen

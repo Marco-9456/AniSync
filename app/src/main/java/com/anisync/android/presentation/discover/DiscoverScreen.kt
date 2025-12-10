@@ -1,12 +1,7 @@
 package com.anisync.android.presentation.discover
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,16 +19,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.carousel.CarouselDefaults
-import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -58,13 +48,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.CarouselDefaults
+import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -73,11 +71,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
@@ -96,210 +91,196 @@ fun DiscoverScreen(
     val mediaType by viewModel.mediaType.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
 
     val keyboardController = LocalSoftwareKeyboardController.current
+    val searchBarState = rememberSearchBarState()
+    val textFieldState = rememberTextFieldState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Sync textFieldState changes with ViewModel
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { viewModel.onSearchQueryChange(it) }
+    }
 
     // Handle back press to close search
-    BackHandler(enabled = isSearchActive) {
-        viewModel.onSearchActiveChange(false)
+    BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
+        coroutineScope.launch { searchBarState.animateToCollapsed() }
+    }
+
+    // ExpandedFullScreenSearchBar displays the search results in a full-screen overlay
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        inputField = {
+            SearchBarDefaults.InputField(
+                searchBarState = searchBarState,
+                textFieldState = textFieldState,
+                onSearch = {
+                    viewModel.onSearch(textFieldState.text.toString())
+                    keyboardController?.hide()
+                },
+                placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
+                leadingIcon = {
+                    IconButton(onClick = { coroutineScope.launch { searchBarState.animateToCollapsed() } }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { 
+                            textFieldState.edit { replace(0, length, "") }
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                        }
+                    }
+                }
+            )
+        }
+    ) {
+        // Search Results Content
+        if (isSearching) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (searchResults.isEmpty() && searchQuery.isNotEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "No results found.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(searchResults) { item ->
+                    SearchResultItem(
+                        item = item,
+                        onClick = {
+                            keyboardController?.hide()
+                            onMediaClick(item.mediaId)
+                        }
+                    )
+                }
+            }
+        }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            // AppBarWithSearch integrates with Scaffold's topBar for proper window insets handling
+            AppBarWithSearch(
+                state = searchBarState,
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        searchBarState = searchBarState,
+                        textFieldState = textFieldState,
+                        onSearch = {
+                            viewModel.onSearch(textFieldState.text.toString())
+                            keyboardController?.hide()
+                        },
+                        placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        },
+                        trailingIcon = null
+                    )
+                }
+            )
+        }
     ) { paddingValues ->
-        Box(
+        // Main Content
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.refresh() },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = paddingValues.calculateBottomPadding())
+                .padding(paddingValues)
         ) {
-            // ---------------------------------------------------------------------
-            // Search Bar Layer
-            // ---------------------------------------------------------------------
-            val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
-            Box(
-                modifier = Modifier
-                    .zIndex(10f) // Keep SearchBar on top
-                    .fillMaxWidth()
-                    .padding(horizontal = if (isSearchActive) 0.dp else 16.dp)
-                    .padding(top = if (isSearchActive) 0.dp else statusBarHeight + 8.dp)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                SearchBar(
-                    inputField = {
-                        SearchBarDefaults.InputField(
-                            query = searchQuery,
-                            onQueryChange = viewModel::onSearchQueryChange,
-                            onSearch = {
-                                viewModel.onSearch(it)
-                                keyboardController?.hide()
-                            },
-                            expanded = isSearchActive,
-                            onExpandedChange = viewModel::onSearchActiveChange,
-                            placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
-                            leadingIcon = {
-                                if (isSearchActive) {
-                                    IconButton(onClick = { viewModel.onSearchActiveChange(false) }) {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                                    }
-                                } else {
-                                    Icon(Icons.Default.Search, contentDescription = "Search")
+                when (val state = uiState) {
+                    is DiscoverUiState.Loading -> {
+                        item { DiscoverShimmer() }
+                    }
+                    is DiscoverUiState.Error -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(400.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = "Failed to load content", color = MaterialTheme.colorScheme.error)
+                                    Text(text = state.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear")
-                                    }
-                                }
-                            }
-                        )
-                    },
-                    expanded = isSearchActive,
-                    onExpandedChange = viewModel::onSearchActiveChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = SearchBarDefaults.colors(
-                        containerColor = if (isSearchActive) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        dividerColor = if (isSearchActive) MaterialTheme.colorScheme.outlineVariant else Color.Transparent
-                    ),
-                    tonalElevation = if (isSearchActive) 0.dp else 6.dp,
-                    shape = if (isSearchActive) RoundedCornerShape(0.dp) else RoundedCornerShape(24.dp),
-                    windowInsets = if (isSearchActive) WindowInsets.statusBars else WindowInsets(0.dp)
-                ) {
-                    // Search Results
-                    if (isSearching) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (searchResults.isEmpty() && searchQuery.isNotEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "No results found.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 16.dp,
-                                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(searchResults) { item ->
-                                SearchResultItem(
-                                    item = item,
-                                    onClick = {
-                                        keyboardController?.hide()
-                                        onMediaClick(item.mediaId)
-                                    }
-                                )
                             }
                         }
                     }
-                }
-            }
-
-            // ---------------------------------------------------------------------
-            // Main Content
-            // ---------------------------------------------------------------------
-            AnimatedVisibility(
-                visible = !isSearchActive,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = { viewModel.refresh() },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 100.dp)
-                    ) {
-                        // Spacer for floating Search Bar (includes status bar height for edge-to-edge)
+                    is DiscoverUiState.Success -> {
                         item {
-                            val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-                            Spacer(modifier = Modifier.height(statusBarPadding + 80.dp))
+                            MediaTypeSelector(
+                                selected = mediaType,
+                                onSelect = viewModel::onMediaTypeChange,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
                         }
 
-                        when (val state = uiState) {
-                            is DiscoverUiState.Loading -> {
-                                item { DiscoverShimmer() }
-                            }
-                            is DiscoverUiState.Error -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().height(400.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(text = "Failed to load content", color = MaterialTheme.colorScheme.error)
-                                            Text(text = state.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                    }
-                                }
-                            }
-                            is DiscoverUiState.Success -> {
-                                item {
-                                    MediaTypeSelector(
-                                        selected = mediaType,
-                                        onSelect = viewModel::onMediaTypeChange,
-                                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                                    )
-                                }
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            SectionHeader(
+                                title = "Trending Now",
+                                icon = Icons.Default.LocalFireDepartment,
+                                color = Color(0xFFFF5722)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CinematicHeroCarousel(
+                                items = state.trending.take(10),
+                                onItemClick = onMediaClick
+                            )
+                        }
 
-                                item {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    SectionHeader(
-                                        title = "Trending Now",
-                                        icon = Icons.Default.LocalFireDepartment,
-                                        color = Color(0xFFFF5722)
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    CinematicHeroCarousel(
-                                        items = state.trending.take(10),
-                                        onItemClick = onMediaClick
-                                    )
-                                }
+                        item {
+                            Spacer(modifier = Modifier.height(48.dp))
+                            SectionHeader(
+                                title = "All Time Popular",
+                                icon = Icons.Default.Star,
+                                color = Color(0xFFFFC107)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalMediaList(
+                                items = state.popular,
+                                onItemClick = onMediaClick,
+                                isRanked = true
+                            )
+                        }
 
-                                item {
-                                    Spacer(modifier = Modifier.height(48.dp))
-                                    SectionHeader(
-                                        title = "All Time Popular",
-                                        icon = Icons.Default.Star,
-                                        color = Color(0xFFFFC107)
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    HorizontalMediaList(
-                                        items = state.popular,
-                                        onItemClick = onMediaClick,
-                                        isRanked = true
-                                    )
-                                }
-
-                                item {
-                                    Spacer(modifier = Modifier.height(48.dp))
-                                    SectionHeader(
-                                        title = "Upcoming Season",
-                                        icon = Icons.Default.CalendarMonth,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    HorizontalMediaList(
-                                        items = state.upcoming,
-                                        onItemClick = onMediaClick,
-                                        isRanked = false
-                                    )
-                                }
-                            }
+                        item {
+                            Spacer(modifier = Modifier.height(48.dp))
+                            SectionHeader(
+                                title = "Upcoming Season",
+                                icon = Icons.Default.CalendarMonth,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalMediaList(
+                                items = state.upcoming,
+                                onItemClick = onMediaClick,
+                                isRanked = false
+                            )
                         }
                     }
                 }
@@ -338,14 +319,14 @@ private fun MediaTypeTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // containerColor still needs animation for background transition
     val containerColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
         label = "TabContainer"
     )
-    val contentColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-        label = "TabContent"
-    )
+    // Cache theme colors for ColorProducer lambda to avoid recomposition
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         modifier = modifier
@@ -359,7 +340,8 @@ private fun MediaTypeTab(
             text = text,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = contentColor
+            // ColorProducer lambda: avoids recomposition when only color changes
+            color = { if (isSelected) onPrimary else onSurfaceVariant }
         )
     }
 }

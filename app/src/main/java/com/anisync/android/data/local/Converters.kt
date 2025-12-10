@@ -6,7 +6,6 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.type.MediaType
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**

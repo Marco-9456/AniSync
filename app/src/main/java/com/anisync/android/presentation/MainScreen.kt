@@ -111,8 +111,12 @@ fun MainScreen() {
                     navItems.forEach { item ->
                         val isSelected = currentDestination?.hasRoute(item.routeClass) == true
 
+                        // Cache theme colors for ColorProducer lambda
+                        val selectedColor = MaterialTheme.colorScheme.primary
+                        val unselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
                         val iconColor by animateColorAsState(
-                            targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            targetValue = if (isSelected) selectedColor else unselectedColor,
                             animationSpec = tween(300),
                             label = "IconColor"
                         )
@@ -130,7 +134,8 @@ fun MainScreen() {
                                     text = item.title,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = iconColor
+                                    // ColorProducer lambda: avoids recomposition when only color changes
+                                    color = { if (isSelected) selectedColor else unselectedColor }
                                 )
                             },
                             selected = isSelected,
