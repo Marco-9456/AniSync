@@ -212,11 +212,24 @@ fun DiscoverScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
             indicator = {
-                androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.LoadingIndicator(
-                    state = pullToRefreshState,
-                    isRefreshing = isRefreshing,
-                    modifier = Modifier.align(Alignment.TopCenter)
+                // Custom polygons for shape morphing during pull-to-refresh
+                val customPolygons = listOf(
+                    androidx.compose.material3.MaterialShapes.Circle,
+                    androidx.compose.material3.MaterialShapes.Flower,
+                    androidx.compose.material3.MaterialShapes.Diamond,
+                    androidx.compose.material3.MaterialShapes.Heart,
+                    androidx.compose.material3.MaterialShapes.Clover4Leaf
                 )
+                
+                // Show LoadingIndicator when refreshing or pulling
+                if (isRefreshing || pullToRefreshState.distanceFraction > 0f) {
+                    androidx.compose.material3.ContainedLoadingIndicator(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 16.dp),
+                        polygons = customPolygons
+                    )
+                }
             }
         ) {
             LazyColumn(
