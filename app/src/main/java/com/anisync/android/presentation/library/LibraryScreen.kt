@@ -57,11 +57,12 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,7 +92,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
@@ -235,23 +236,28 @@ fun LibraryScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Tabs: Anime / Manga
-                val selectedTabIndex = if (mediaType == MediaType.ANIME) 0 else 1
-                SecondaryTabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
                 ) {
-                    Tab(
-                        selected = mediaType == MediaType.ANIME,
-                        onClick = { viewModel.onMediaTypeChange(MediaType.ANIME) },
-                        text = { Text("Anime", fontWeight = FontWeight.SemiBold) }
-                    )
-                    Tab(
-                        selected = mediaType == MediaType.MANGA,
-                        onClick = { viewModel.onMediaTypeChange(MediaType.MANGA) },
-                        text = { Text("Manga", fontWeight = FontWeight.SemiBold) }
-                    )
+                    ToggleButton(
+                        checked = mediaType == MediaType.ANIME,
+                        onCheckedChange = { viewModel.onMediaTypeChange(MediaType.ANIME) },
+                        modifier = Modifier.weight(1f),
+                        shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
+                    ) {
+                        Text(text = "Anime", fontWeight = FontWeight.SemiBold)
+                    }
+                    ToggleButton(
+                        checked = mediaType == MediaType.MANGA,
+                        onCheckedChange = { viewModel.onMediaTypeChange(MediaType.MANGA) },
+                        modifier = Modifier.weight(1f),
+                        shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
+                    ) {
+                        Text(text = "Manga", fontWeight = FontWeight.SemiBold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))

@@ -33,14 +33,17 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -80,7 +83,7 @@ import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
@@ -293,6 +296,7 @@ fun DiscoverScreen(
 // UI COMPONENTS
 // -----------------------------------------------------------------------------
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MediaTypeSelector(
     selected: MediaType,
@@ -300,49 +304,25 @@ private fun MediaTypeSelector(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f), RoundedCornerShape(25.dp))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
     ) {
-        MediaTypeTab("Anime", selected == MediaType.ANIME, { onSelect(MediaType.ANIME) }, Modifier.weight(1f))
-        MediaTypeTab("Manga", selected == MediaType.MANGA, { onSelect(MediaType.MANGA) }, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun MediaTypeTab(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    // containerColor still needs animation for background transition
-    val containerColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        label = "TabContainer"
-    )
-    // Cache theme colors for ColorProducer lambda to avoid recomposition
-    val onPrimary = MaterialTheme.colorScheme.onPrimary
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clip(RoundedCornerShape(21.dp))
-            .background(containerColor)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            // ColorProducer lambda: avoids recomposition when only color changes
-            color = { if (isSelected) onPrimary else onSurfaceVariant }
-        )
+        ToggleButton(
+            checked = selected == MediaType.ANIME,
+            onCheckedChange = { onSelect(MediaType.ANIME) },
+            modifier = Modifier.weight(1f),
+            shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
+        ) {
+            Text(text = "Anime", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        }
+        ToggleButton(
+            checked = selected == MediaType.MANGA,
+            onCheckedChange = { onSelect(MediaType.MANGA) },
+            modifier = Modifier.weight(1f),
+            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
+        ) {
+            Text(text = "Manga", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
