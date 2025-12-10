@@ -201,13 +201,23 @@ fun DiscoverScreen(
             )
         }
     ) { paddingValues ->
+        val pullToRefreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
+        
         // Main Content
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refresh() },
+            state = pullToRefreshState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            indicator = {
+                androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.LoadingIndicator(
+                    state = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
