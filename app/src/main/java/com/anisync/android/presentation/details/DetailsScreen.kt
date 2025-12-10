@@ -37,6 +37,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
@@ -46,13 +47,12 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,7 +62,8 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,12 +72,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -181,6 +184,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailsPageContent(
     details: MediaDetails,
@@ -192,7 +196,7 @@ fun DetailsPageContent(
     val listState = rememberLazyListState()
     // Using 0 as a threshold is strict, let's give it a little buffer or just check index
     val isExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
-    var showStatusPicker by remember { mutableStateOf(false) }
+    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -260,51 +264,94 @@ fun DetailsPageContent(
             }
         }
 
-        // Animated FAB
-        val fabIcon = if (details.listEntryId != null) Icons.Default.Edit else Icons.Default.Add
-        val fabText = if (details.listEntryId != null) {
-            getStatusLabel(details.listStatus ?: LibraryStatus.UNKNOWN, details.type == MediaType.MANGA)
-        } else {
-            "Add to Library"
-        }
+        // FAB Menu for status selection
+        val isManga = details.type == MediaType.MANGA
+        val statuses = listOf(
+            LibraryStatus.CURRENT,
+            LibraryStatus.PLANNING,
+            LibraryStatus.COMPLETED,
+            LibraryStatus.PAUSED,
+            LibraryStatus.DROPPED
+        )
 
-        // Using AnimatedVisibility for a smoother entrance/exit of text if strictly needed,
-        // but ExtendedFloatingActionButton handles text expansion internally.
-        ExtendedFloatingActionButton(
-            text = { Text(text = fabText) },
-            icon = { Icon(imageVector = fabIcon, contentDescription = null) },
-            onClick = { showStatusPicker = true },
-            expanded = isExpanded,
-            containerColor = if (details.listEntryId != null)
-                MaterialTheme.colorScheme.secondaryContainer
-            else
-                MaterialTheme.colorScheme.primaryContainer,
-            contentColor = if (details.listEntryId != null)
-                MaterialTheme.colorScheme.onSecondaryContainer
-            else
-                MaterialTheme.colorScheme.onPrimaryContainer,
+        FloatingActionButtonMenu(
+            expanded = fabMenuExpanded,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
-                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-        )
-    }
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+            button = {
+                ToggleFloatingActionButton(
+                    checked = fabMenuExpanded,
+                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
+                ) {
+                    val imageVector by remember {
+                        derivedStateOf {
+                            if (checkedProgress > 0.5f) Icons.Filled.Close
+                            else if (details.listEntryId != null) Icons.Filled.Edit
+                            else Icons.Filled.Add
+                        }
+                    }
+                    Icon(
+                        painter = rememberVectorPainter(imageVector),
+                        contentDescription = if (fabMenuExpanded) "Close menu" else "Open menu",
+                        modifier = Modifier.animateIcon({ checkedProgress })
+                    )
+                }
+            }
+        ) {
+            // Status options
+            statuses.forEach { status ->
+                val isSelected = status == details.listStatus
+                FloatingActionButtonMenuItem(
+                    onClick = {
+                        val progress = details.listProgress ?: 0
+                        onStatusUpdate(status, progress)
+                        fabMenuExpanded = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = getStatusIcon(status, isManga),
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary 
+                                   else MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = getStatusLabel(status, isManga),
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary 
+                                    else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                )
+            }
 
-    if (showStatusPicker) {
-        StatusPickerDialog(
-            currentStatus = details.listStatus,
-            isManga = details.type == MediaType.MANGA,
-            onStatusSelected = { status ->
-                val progress = details.listProgress ?: 0
-                onStatusUpdate(status, progress)
-                showStatusPicker = false
-            },
-            onRemove = {
-                onRemove()
-                showStatusPicker = false
-            },
-            onDismiss = { showStatusPicker = false }
-        )
+            // Remove from Library option (only show if entry exists)
+            if (details.listEntryId != null) {
+                FloatingActionButtonMenuItem(
+                    onClick = {
+                        onRemove()
+                        fabMenuExpanded = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Remove",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                )
+            }
+        }
     }
 }
 
@@ -710,120 +757,6 @@ fun RelationItem(
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-@Composable
-fun StatusPickerDialog(
-    currentStatus: LibraryStatus?,
-    isManga: Boolean,
-    onStatusSelected: (LibraryStatus) -> Unit,
-    onRemove: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Update Status",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                val statuses = listOf(
-                    LibraryStatus.CURRENT,
-                    LibraryStatus.PLANNING,
-                    LibraryStatus.COMPLETED,
-                    LibraryStatus.PAUSED,
-                    LibraryStatus.DROPPED
-                )
-                statuses.chunked(2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { status ->
-                            val isSelected = status == currentStatus
-                            StatusOptionCard(
-                                status = status,
-                                isManga = isManga,
-                                isSelected = isSelected,
-                                onClick = { onStatusSelected(status) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        if (row.size == 1) Spacer(Modifier.weight(1f))
-                    }
-                }
-                if (currentStatus != null) {
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    OutlinedButton(
-                        onClick = onRemove,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Remove from Library")
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(24.dp)
-    )
-}
-
-@Composable
-fun StatusOptionCard(
-    status: LibraryStatus,
-    isManga: Boolean,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.height(70.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        border = if (isSelected)
-            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-        else null
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                getStatusIcon(status, isManga),
-                null,
-                tint = if (isSelected)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                getStatusLabel(status, isManga),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                else
-                    MaterialTheme.colorScheme.onSurface
-            )
-        }
     }
 }
 

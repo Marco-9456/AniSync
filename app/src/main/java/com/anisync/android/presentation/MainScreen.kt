@@ -5,6 +5,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
@@ -161,12 +163,24 @@ fun MainScreen() {
             }
         }
     ) { innerPadding ->
+        // Only apply bottom padding when nav bar is visible to prevent
+        // layout shift during nav bar hide animation (e.g., navigating to Details)
+        val effectivePadding = if (isBottomBarVisible) {
+            innerPadding
+        } else {
+            androidx.compose.foundation.layout.PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
+            )
+        }
+        
         AniSyncNavHost(
             navController = navController,
             onMediaClick = { mediaId ->
                 navController.navigate(Details(mediaId))
             },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(effectivePadding)
         )
     }
 }
