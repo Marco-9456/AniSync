@@ -60,8 +60,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.anisync.android.R
 import kotlinx.coroutines.delay
 
 // Constants for AniList OAuth
@@ -111,9 +113,9 @@ fun LoginScreen() {
                     Spacer(modifier = Modifier.height(32.dp))
                     Text(
                         text = buildAnnotatedString {
-                            append("Sync Your ")
+                            append(stringResource(R.string.login_sync_your))
                             withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append("World")
+                                append(stringResource(R.string.login_world))
                             }
                         },
                         style = MaterialTheme.typography.displaySmall.copy(
@@ -125,7 +127,7 @@ fun LoginScreen() {
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "The ultimate companion for Anime & Manga tracking, powered by AniList.",
+                        text = stringResource(R.string.login_tagline),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -207,13 +209,13 @@ private fun LoginCard(onLoginClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Get Started",
+                text = stringResource(R.string.login_get_started),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Sign in to access your library and discover new favorites.",
+                text = stringResource(R.string.login_description),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -241,7 +243,7 @@ private fun LoginCard(onLoginClick: () -> Unit) {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Continue with AniList",
+                        text = stringResource(R.string.login_continue_with_anilist),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -256,7 +258,7 @@ private fun LoginCard(onLoginClick: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "By continuing, you agree to our Terms of Service.",
+                text = stringResource(R.string.login_terms),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center

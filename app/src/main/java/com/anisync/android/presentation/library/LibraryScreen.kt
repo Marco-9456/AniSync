@@ -86,12 +86,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.formatTimeUntilAiring
+import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
@@ -146,7 +151,7 @@ fun LibraryScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Library",
+                        text = stringResource(R.string.library_title),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onBackground
@@ -167,7 +172,7 @@ fun LibraryScreen(
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.Sort,
-                                        contentDescription = "Sort",
+                                        contentDescription = stringResource(R.string.sort),
                                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -187,9 +192,9 @@ fun LibraryScreen(
                                         text = {
                                             Text(
                                                 text = when (sort) {
-                                                    LibrarySort.TITLE -> "Title (A-Z)"
-                                                    LibrarySort.PROGRESS -> "Progress (Most)"
-                                                    LibrarySort.AIRING_SOON -> "Airing Soon"
+                                                    LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
+                                                    LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
+                                                    LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
                                                 },
                                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
@@ -204,7 +209,7 @@ fun LibraryScreen(
                                             {
                                                 Icon(
                                                     imageVector = Icons.Default.Check,
-                                                    contentDescription = "Selected",
+                                                    contentDescription = stringResource(R.string.selected),
                                                     tint = MaterialTheme.colorScheme.primary
                                                 )
                                             }
@@ -228,7 +233,7 @@ fun LibraryScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
-                                    contentDescription = "Toggle View",
+                                    contentDescription = stringResource(R.string.toggle_view),
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -252,7 +257,7 @@ fun LibraryScreen(
                         modifier = Modifier.weight(1f),
                         shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
                     ) {
-                        Text(text = "Anime", fontWeight = FontWeight.SemiBold)
+                        Text(text = stringResource(R.string.media_type_anime), fontWeight = FontWeight.SemiBold)
                     }
                     ToggleButton(
                         checked = mediaType == MediaType.MANGA,
@@ -260,7 +265,7 @@ fun LibraryScreen(
                         modifier = Modifier.weight(1f),
                         shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
                     ) {
-                        Text(text = "Manga", fontWeight = FontWeight.SemiBold)
+                        Text(text = stringResource(R.string.media_type_manga), fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -483,13 +488,13 @@ fun NewGridCard(
                     if (entry.status == LibraryStatus.CURRENT) {
                         if (latest != null && entry.progress < latest) {
                             StatusBadge(
-                                text = "${latest - entry.progress} EP BEHIND",
+                                text = formatEpisodesBehind(latest - entry.progress),
                                 containerColor = Color(0xFFB3261E), // Red error color
                                 contentColor = Color.White
                             )
                         } else {
                             StatusBadge(
-                                text = "UP TO DATE",
+                                text = stringResource(R.string.badge_up_to_date),
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -499,7 +504,7 @@ fun NewGridCard(
                     // Time String
                     if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
                         Text(
-                            text = "Ep ${entry.nextAiringEpisode} in ${formatTimeShort(entry.timeUntilAiring)}",
+                            text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
                             style = MaterialTheme.typography.bodySmall,
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -527,7 +532,7 @@ fun NewGridCard(
                     )
 
                     Text(
-                        text = "${entry.progress} / ${total ?: "?"}",
+                        text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 10.sp
@@ -647,13 +652,13 @@ fun NewListCard(
                         if (entry.status == LibraryStatus.CURRENT) {
                             if (latest != null && entry.progress < latest) {
                                 StatusBadge(
-                                    text = "${latest - entry.progress} EP BEHIND",
+                                    text = formatEpisodesBehind(latest - entry.progress),
                                     containerColor = Color(0xFFF2B8B5), // Light Red
                                     contentColor = Color(0xFF601410)  // Dark Red
                                 )
                             } else {
                                 StatusBadge(
-                                    text = "UP TO DATE",
+                                    text = stringResource(R.string.badge_up_to_date),
                                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
@@ -662,7 +667,7 @@ fun NewListCard(
 
                         if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
                             Text(
-                                text = "Ep ${entry.nextAiringEpisode} in ${formatTimeShort(entry.timeUntilAiring)}",
+                                text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -689,7 +694,7 @@ fun NewListCard(
                     )
 
                     Text(
-                        text = "${entry.progress} / ${total ?: "?"}",
+                        text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp
@@ -773,10 +778,10 @@ fun EmptyLibraryTabState(status: LibraryStatus, type: MediaType) {
     }
 
     val message = when(status) {
-        LibraryStatus.CURRENT -> "You're not ${if(type == MediaType.ANIME) "watching" else "reading"} anything right now."
-        LibraryStatus.PLANNING -> "Your plan list is empty."
-        LibraryStatus.COMPLETED -> "No completed entries yet."
-        else -> "Nothing to show here."
+        LibraryStatus.CURRENT -> if(type == MediaType.ANIME) stringResource(R.string.empty_watching) else stringResource(R.string.empty_reading)
+        LibraryStatus.PLANNING -> stringResource(R.string.empty_planning)
+        LibraryStatus.COMPLETED -> stringResource(R.string.empty_completed)
+        else -> stringResource(R.string.empty_default)
     }
 
     Column(
@@ -815,7 +820,7 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Oops!", style = MaterialTheme.typography.headlineMedium)
+        Text(text = stringResource(R.string.error_oops), style = MaterialTheme.typography.headlineMedium)
         Text(text = message, color = MaterialTheme.colorScheme.error)
         Spacer(modifier = Modifier.height(16.dp))
         IconButton(onClick = onRetry) {
@@ -833,14 +838,15 @@ fun formatTimeShort(seconds: Int): String {
     return "${minutes}m"
 }
 
+@Composable
 fun getStatusLabel(status: LibraryStatus, type: MediaType): String {
     return when(status) {
-        LibraryStatus.CURRENT -> if (type == MediaType.MANGA) "Reading" else "Watching"
-        LibraryStatus.PLANNING -> "Planning"
-        LibraryStatus.COMPLETED -> "Completed"
-        LibraryStatus.PAUSED -> "Paused"
-        LibraryStatus.DROPPED -> "Dropped"
-        LibraryStatus.REPEATING -> "Repeating"
-        LibraryStatus.UNKNOWN -> "Unknown"
+        LibraryStatus.CURRENT -> if (type == MediaType.MANGA) stringResource(R.string.status_reading) else stringResource(R.string.status_watching)
+        LibraryStatus.PLANNING -> stringResource(R.string.status_planning)
+        LibraryStatus.COMPLETED -> stringResource(R.string.status_completed)
+        LibraryStatus.PAUSED -> stringResource(R.string.status_paused)
+        LibraryStatus.DROPPED -> stringResource(R.string.status_dropped)
+        LibraryStatus.REPEATING -> stringResource(R.string.status_repeating)
+        LibraryStatus.UNKNOWN -> stringResource(R.string.unknown)
     }
 }

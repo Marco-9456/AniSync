@@ -84,10 +84,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.anisync.android.R
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
@@ -165,7 +167,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Something went wrong",
+                text = stringResource(R.string.error_something_went_wrong),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -178,7 +180,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
             OutlinedButton(onClick = onBackClick) {
-                Text("Go Back")
+                Text(stringResource(R.string.action_go_back))
             }
         }
     }
@@ -233,7 +235,7 @@ fun DetailsPageContent(
             item {
                 if (details.characters.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(32.dp))
-                    SectionTitle("Cast", Modifier.padding(horizontal = 24.dp))
+                    SectionTitle(stringResource(R.string.section_cast), Modifier.padding(horizontal = 24.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -247,7 +249,7 @@ fun DetailsPageContent(
             item {
                 if (details.relations.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(32.dp))
-                    SectionTitle("Related", Modifier.padding(horizontal = 24.dp))
+                    SectionTitle(stringResource(R.string.section_related), Modifier.padding(horizontal = 24.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -294,7 +296,7 @@ fun DetailsPageContent(
                     }
                     Icon(
                         painter = rememberVectorPainter(imageVector),
-                        contentDescription = if (fabMenuExpanded) "Close menu" else "Open menu",
+                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(R.string.fab_open_menu),
                         modifier = Modifier.animateIcon({ checkedProgress })
                     )
                 }
@@ -344,7 +346,7 @@ fun DetailsPageContent(
                     },
                     text = {
                         Text(
-                            text = "Remove",
+                            text = stringResource(R.string.action_remove),
                             color = MaterialTheme.colorScheme.error
                         )
                     },
@@ -381,7 +383,7 @@ fun TitleSection(details: MediaDetails) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = if (format == "TV") "TV Series" else format.replace("_", " "),
+                        text = if (format == "TV") stringResource(R.string.format_tv_series) else format.replace("_", " "),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -495,7 +497,7 @@ fun PageHeaderSection(details: MediaDetails, onBackClick: () -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.back),
                 tint = Color.White,
                 modifier = Modifier.size(28.dp) // Slightly larger touch target visual
             )
@@ -514,7 +516,7 @@ fun PageHeaderSection(details: MediaDetails, onBackClick: () -> Unit) {
         ) {
             AsyncImage(
                 model = details.coverUrl,
-                contentDescription = "Cover",
+                contentDescription = stringResource(R.string.content_description_cover),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -573,11 +575,11 @@ fun StatsCard(details: MediaDetails) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatItem(if (isManga) "Chapters" else "Episodes", if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}")
+            StatItem(if (isManga) stringResource(R.string.stat_chapters) else stringResource(R.string.stat_episodes), if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}")
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            StatItem("Status", details.status.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
+            StatItem(stringResource(R.string.stat_status), details.status.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            StatItem("Source", "Original") // Replace with actual source if available in MediaDetails
+            StatItem(stringResource(R.string.stat_source), stringResource(R.string.source_original)) // Replace with actual source if available in MediaDetails
         }
     }
 }
@@ -640,7 +642,7 @@ fun ExpandableSynopsis(text: String) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "SYNOPSIS",
+                stringResource(R.string.section_synopsis),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
@@ -663,7 +665,7 @@ fun ExpandableSynopsis(text: String) {
             // Interaction hint
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (expanded) "Show less" else "Read more",
+                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(R.string.synopsis_read_more),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -760,15 +762,16 @@ fun RelationItem(
     }
 }
 
+@Composable
 fun getStatusLabel(status: LibraryStatus, isManga: Boolean): String {
     return when (status) {
-        LibraryStatus.CURRENT -> if (isManga) "Reading" else "Watching"
-        LibraryStatus.PLANNING -> "Planning"
-        LibraryStatus.COMPLETED -> "Completed"
-        LibraryStatus.DROPPED -> "Dropped"
-        LibraryStatus.PAUSED -> "Paused"
-        LibraryStatus.REPEATING -> "Rewatching"
-        else -> "Unknown"
+        LibraryStatus.CURRENT -> if (isManga) stringResource(R.string.status_reading) else stringResource(R.string.status_watching)
+        LibraryStatus.PLANNING -> stringResource(R.string.status_planning)
+        LibraryStatus.COMPLETED -> stringResource(R.string.status_completed)
+        LibraryStatus.DROPPED -> stringResource(R.string.status_dropped)
+        LibraryStatus.PAUSED -> stringResource(R.string.status_paused)
+        LibraryStatus.REPEATING -> stringResource(R.string.status_rewatching)
+        else -> stringResource(R.string.unknown)
     }
 }
 

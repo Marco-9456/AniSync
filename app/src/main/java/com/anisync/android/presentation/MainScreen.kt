@@ -30,11 +30,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.anisync.android.R
 import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Details
 import com.anisync.android.presentation.navigation.Discover
@@ -46,7 +48,7 @@ import kotlin.reflect.KClass
  * Helper class to define navigation items with selected/unselected icon states
  */
 private data class BottomNavItem<T : Any>(
-    val title: String,
+    val titleResId: Int,
     val route: T,
     val routeClass: KClass<T>,
     val selectedIcon: ImageVector,
@@ -61,21 +63,21 @@ fun MainScreen() {
     val navItems = remember {
         listOf(
             BottomNavItem(
-                title = "Library",
+                titleResId = R.string.nav_library,
                 route = Library,
                 routeClass = Library::class,
                 selectedIcon = Icons.Filled.VideoLibrary,
                 unselectedIcon = Icons.Outlined.VideoLibrary
             ),
             BottomNavItem(
-                title = "Discover",
+                titleResId = R.string.nav_discover,
                 route = Discover,
                 routeClass = Discover::class,
                 selectedIcon = Icons.Filled.Explore,
                 unselectedIcon = Icons.Outlined.Explore
             ),
             BottomNavItem(
-                title = "Profile",
+                titleResId = R.string.nav_profile,
                 route = Profile,
                 routeClass = Profile::class,
                 selectedIcon = Icons.Filled.Person,
@@ -125,15 +127,16 @@ fun MainScreen() {
 
                         NavigationBarItem(
                             icon = {
+                                val title = stringResource(item.titleResId)
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.title,
+                                    contentDescription = title,
                                     tint = iconColor
                                 )
                             },
                             label = {
                                 Text(
-                                    text = item.title,
+                                    text = stringResource(item.titleResId),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     // ColorProducer lambda: avoids recomposition when only color changes

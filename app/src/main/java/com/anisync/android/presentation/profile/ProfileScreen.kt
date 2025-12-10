@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,6 +85,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
 
@@ -151,9 +153,9 @@ fun BentoProfileLayout(
         // Time Watched
         item(span = StaggeredGridItemSpan.SingleLane) {
             StatCardLarge(
-                title = "Time Watched",
+                title = stringResource(R.string.stat_time_watched),
                 value = String.format("%.1f", profile.daysWatched),
-                unit = "Days",
+                unit = stringResource(R.string.stat_days),
                 icon = Icons.Default.AccessTime,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 onColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -172,7 +174,7 @@ fun BentoProfileLayout(
         // Anime Count
         item(span = StaggeredGridItemSpan.SingleLane) {
             StatCardSmall(
-                label = "Anime Completed",
+                label = stringResource(R.string.stat_anime_completed),
                 value = profile.animeCount.toString(),
                 icon = Icons.Default.PlayCircle,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -182,7 +184,7 @@ fun BentoProfileLayout(
         // Manga Count
         item(span = StaggeredGridItemSpan.SingleLane) {
             StatCardSmall(
-                label = "Chapters Read",
+                label = stringResource(R.string.stat_chapters_read),
                 value = profile.chaptersRead.toString(),
                 icon = Icons.AutoMirrored.Filled.MenuBook,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -265,7 +267,7 @@ fun ProfileHeaderBento(
                 ) {
                     AsyncImage(
                         model = profile.avatarUrl,
-                        contentDescription = "Avatar",
+                        contentDescription = stringResource(R.string.content_description_avatar),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
@@ -290,7 +292,7 @@ fun ProfileHeaderBento(
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Text(
-                            text = "ID: ${profile.id}",
+                            text = stringResource(R.string.profile_id, profile.id),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -374,7 +376,7 @@ fun ScoreCardRadial(
                     color = onColor
                 )
                 Text(
-                    text = "MEAN SCORE",
+                    text = stringResource(R.string.stat_mean_score),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 8.sp),
                     color = onColor.copy(alpha = 0.7f)
                 )
@@ -468,7 +470,7 @@ fun FavoritesSection(
             Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107))
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "Favorites",
+                text = stringResource(R.string.section_favorites),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         }
@@ -550,8 +552,8 @@ fun ControlCenterSection(
     if (showSettingsDialog) {
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
-            title = { Text("Enable Notifications") },
-            text = { Text("Please enable notifications in system settings.") },
+            title = { Text(stringResource(R.string.dialog_enable_notifications_title)) },
+            text = { Text(stringResource(R.string.dialog_enable_notifications_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
@@ -559,15 +561,15 @@ fun ControlCenterSection(
                     }
                     context.startActivity(intent)
                     showSettingsDialog = false
-                }) { Text("Settings") }
+                }) { Text(stringResource(R.string.settings)) }
             },
-            dismissButton = { TextButton(onClick = { showSettingsDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showSettingsDialog = false }) { Text(stringResource(R.string.cancel)) } }
         )
     }
 
     Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Control Center",
+            text = stringResource(R.string.section_control_center),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
@@ -618,9 +620,9 @@ fun ControlCenterSection(
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
-                            Text("Notifications", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(stringResource(R.string.control_notifications), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                             Text(
-                                if (isNotificationsEnabled) "On" else "Off",
+                                if (isNotificationsEnabled) stringResource(R.string.on) else stringResource(R.string.off),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -662,7 +664,7 @@ fun ControlCenterSection(
                     }
                     Spacer(Modifier.width(16.dp))
                     Text(
-                        "Log Out",
+                        stringResource(R.string.control_log_out),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                     )
                     Spacer(Modifier.weight(1f))
@@ -687,11 +689,11 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
             tint = MaterialTheme.colorScheme.error
         )
         Spacer(Modifier.height(16.dp))
-        Text(text = "Oops!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(text = stringResource(R.string.error_oops), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text(text = message, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
         Button(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(R.string.retry))
         }
     }
 }

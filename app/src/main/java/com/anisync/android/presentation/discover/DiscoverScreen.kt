@@ -72,11 +72,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.util.formatChaptersCount
+import com.anisync.android.presentation.util.formatEpisodesCount
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
@@ -121,10 +126,10 @@ fun DiscoverScreen(
                     viewModel.onSearch(textFieldState.text.toString())
                     keyboardController?.hide()
                 },
-                placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
+                placeholder = { Text(if (mediaType == MediaType.ANIME) stringResource(R.string.search_anime_placeholder) else stringResource(R.string.search_manga_placeholder)) },
                 leadingIcon = {
                     IconButton(onClick = { coroutineScope.launch { searchBarState.animateToCollapsed() } }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 trailingIcon = {
@@ -132,7 +137,7 @@ fun DiscoverScreen(
                         IconButton(onClick = {
                             textFieldState.edit { replace(0, length, "") }
                         }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
                         }
                     }
                 }
@@ -147,7 +152,7 @@ fun DiscoverScreen(
         } else if (searchResults.isEmpty() && searchQuery.isNotEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "No results found.",
+                    text = stringResource(R.string.search_no_results),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -191,9 +196,9 @@ fun DiscoverScreen(
                             viewModel.onSearch(textFieldState.text.toString())
                             keyboardController?.hide()
                         },
-                        placeholder = { Text("Search ${mediaType.name.lowercase().replaceFirstChar { it.uppercase() }}...") },
+                        placeholder = { Text(if (mediaType == MediaType.ANIME) stringResource(R.string.search_anime_placeholder) else stringResource(R.string.search_manga_placeholder)) },
                         leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
+                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search))
                         },
                         trailingIcon = null
                     )
@@ -247,7 +252,7 @@ fun DiscoverScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(text = "Failed to load content", color = MaterialTheme.colorScheme.error)
+                                    Text(text = stringResource(R.string.error_failed_to_load), color = MaterialTheme.colorScheme.error)
                                     Text(text = state.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
@@ -265,7 +270,7 @@ fun DiscoverScreen(
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
                             SectionHeader(
-                                title = "Trending Now",
+                                title = stringResource(R.string.section_trending_now),
                                 icon = Icons.Default.LocalFireDepartment,
                                 color = Color(0xFFFF5722)
                             )
@@ -279,7 +284,7 @@ fun DiscoverScreen(
                         item {
                             Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
-                                title = "All Time Popular",
+                                title = stringResource(R.string.section_all_time_popular),
                                 icon = Icons.Default.Star,
                                 color = Color(0xFFFFC107)
                             )
@@ -293,7 +298,7 @@ fun DiscoverScreen(
                         item {
                             Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
-                                title = "Upcoming Season",
+                                title = stringResource(R.string.section_upcoming_season),
                                 icon = Icons.Default.CalendarMonth,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -331,7 +336,7 @@ private fun MediaTypeSelector(
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
         ) {
-            Text(text = "Anime", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.media_type_anime), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
         }
         ToggleButton(
             checked = selected == MediaType.MANGA,
@@ -339,7 +344,7 @@ private fun MediaTypeSelector(
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
         ) {
-            Text(text = "Manga", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.media_type_manga), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -363,7 +368,7 @@ private fun SectionHeader(title: String, icon: ImageVector, color: Color) {
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = "More",
+            contentDescription = stringResource(R.string.more),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
     }
@@ -430,7 +435,7 @@ private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = item.type?.name ?: "ANIME",
+                        text = item.type?.name ?: stringResource(R.string.media_type_anime),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -448,7 +453,7 @@ private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier
                 )
 
                 val statusText = formatStatus(item.mediaStatus)
-                val countsText = if (item.totalEpisodes != null) "${item.totalEpisodes} Eps" else if (item.totalChapters != null) "${item.totalChapters} Ch" else null
+                val countsText = if (item.totalEpisodes != null) formatEpisodesCount(item.totalEpisodes) else if (item.totalChapters != null) formatChaptersCount(item.totalChapters) else null
 
                 if (statusText != null || countsText != null) {
                     Spacer(modifier = Modifier.height(6.dp))
@@ -582,8 +587,8 @@ private fun SearchResultItem(item: LibraryEntry, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
         supportingContent = {
-            val type = item.type?.name ?: "MEDIA"
-            val status = formatStatus(item.mediaStatus) ?: "Unknown"
+            val type = item.type?.name ?: stringResource(R.string.media_type_media)
+            val status = formatStatus(item.mediaStatus) ?: stringResource(R.string.unknown)
             Text(
                 text = "$type • $status",
                 style = MaterialTheme.typography.labelMedium,
