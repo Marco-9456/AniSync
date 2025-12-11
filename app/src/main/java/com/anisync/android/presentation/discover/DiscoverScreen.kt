@@ -82,6 +82,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.formatChaptersCount
 import com.anisync.android.presentation.util.formatEpisodesCount
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
@@ -326,13 +327,18 @@ private fun MediaTypeSelector(
     onSelect: (MediaType) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = rememberHapticFeedback()
+    
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
     ) {
         ToggleButton(
             checked = selected == MediaType.ANIME,
-            onCheckedChange = { onSelect(MediaType.ANIME) },
+            onCheckedChange = { 
+                haptic.click()
+                onSelect(MediaType.ANIME) 
+            },
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
         ) {
@@ -340,7 +346,10 @@ private fun MediaTypeSelector(
         }
         ToggleButton(
             checked = selected == MediaType.MANGA,
-            onCheckedChange = { onSelect(MediaType.MANGA) },
+            onCheckedChange = { 
+                haptic.click()
+                onSelect(MediaType.MANGA) 
+            },
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
         ) {

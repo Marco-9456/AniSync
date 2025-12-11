@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -14,14 +15,51 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-fun Modifier.shimmerEffect(): Modifier = composed {
+/**
+ * Default shimmer animation duration in milliseconds.
+ * 1200ms provides a smooth, premium feel.
+ */
+private const val DEFAULT_SHIMMER_DURATION = 1200
+
+/**
+ * Applies a shimmer loading effect to the composable.
+ * Uses Material 3 theme-aware colors for consistent appearance.
+ * 
+ * @param durationMillis Animation duration in milliseconds (default: 1200ms)
+ */
+fun Modifier.shimmerEffect(
+    durationMillis: Int = DEFAULT_SHIMMER_DURATION
+): Modifier = composed {
+    val shimmerColors = listOf(
+        MaterialTheme.colorScheme.surfaceContainerHighest,
+        MaterialTheme.colorScheme.surfaceContainerLow,
+        MaterialTheme.colorScheme.surfaceContainerHighest,
+    )
+    
+    shimmerEffect(
+        colors = shimmerColors,
+        durationMillis = durationMillis
+    )
+}
+
+/**
+ * Applies a shimmer loading effect with custom colors.
+ * Use this variant for custom color schemes.
+ * 
+ * @param colors List of colors for the shimmer gradient (should have at least 3 colors)
+ * @param durationMillis Animation duration in milliseconds
+ */
+fun Modifier.shimmerEffect(
+    colors: List<Color>,
+    durationMillis: Int = DEFAULT_SHIMMER_DURATION
+): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnimation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 1000,
+                durationMillis = durationMillis,
                 easing = LinearEasing
             ),
             repeatMode = RepeatMode.Restart
@@ -29,17 +67,28 @@ fun Modifier.shimmerEffect(): Modifier = composed {
         label = "shimmerOffset"
     )
 
+    val brush = Brush.linearGradient(
+        colors = colors,
+        start = Offset(translateAnimation - 500f, translateAnimation - 500f),
+        end = Offset(translateAnimation, translateAnimation)
+    )
+
+    this.background(brush)
+}
+
+/**
+ * Applies a shimmer effect with light gray colors.
+ * Use this for overlays on images or dark backgrounds.
+ */
+fun Modifier.shimmerEffectLight(): Modifier = composed {
     val shimmerColors = listOf(
         Color.LightGray.copy(alpha = 0.6f),
         Color.LightGray.copy(alpha = 0.2f),
         Color.LightGray.copy(alpha = 0.6f),
     )
-
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(x = translateAnimation, y = translateAnimation)
+    
+    shimmerEffect(
+        colors = shimmerColors
     )
-
-    this.background(brush)
 }
+

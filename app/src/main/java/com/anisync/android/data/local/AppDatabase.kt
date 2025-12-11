@@ -12,6 +12,10 @@ import com.anisync.android.data.local.entity.UserProfileEntity
 
 /**
  * Room database for offline caching.
+ * 
+ * Version History:
+ * - v1: Initial schema
+ * - v2: Added indices for LibraryEntryEntity (mediaType, status)
  */
 @Database(
     entities = [
@@ -19,7 +23,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         MediaDetailsEntity::class,
         UserProfileEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

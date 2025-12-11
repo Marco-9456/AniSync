@@ -10,6 +10,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,7 +51,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,6 +71,7 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,6 +81,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -95,8 +98,11 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.SkeletonGrid
+import com.anisync.android.presentation.components.SkeletonList
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.formatEpisodesBehind
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
@@ -113,6 +119,9 @@ fun LibraryScreen(
     // --- State Management ---
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    
+    // Haptic feedback for micro-interactions
+    val haptic = rememberHapticFeedback()
 
     // View Toggle (Grid vs List)
     var isGridView by remember { mutableStateOf(true) }
@@ -331,8 +340,11 @@ fun LibraryScreen(
         ) {
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    // Show skeleton loading instead of spinner
+                    if (isGridView) {
+                        SkeletonGrid(itemCount = 6)
+                    } else {
+                        SkeletonList(itemCount = 6)
                     }
                 }
                 is LibraryUiState.Error -> {
@@ -342,8 +354,9 @@ fun LibraryScreen(
                     )
                 }
                 is LibraryUiState.Success -> {
-                    val entries = remember(state.entries, selectedStatus) {
-                        state.entries.filter { it.status == selectedStatus }
+                    // Use derivedStateOf for efficient filtering
+                    val entries by remember(state.entries, selectedStatus) {
+                        derivedStateOf { state.entries.filter { it.status == selectedStatus } }
                     }
 
                     if (entries.isEmpty()) {
@@ -412,9 +425,22 @@ fun NewGridCard(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val isManga = mediaType == MediaType.MANGA
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
+    
+    // Use InteractionSource to track press state for animation
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "CardScale"
+    )
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
@@ -427,9 +453,11 @@ fun NewGridCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        interactionSource = interactionSource,
         modifier = Modifier
             .fillMaxWidth()
-            .height(340.dp) // Adjusted height for buttons
+            .height(340.dp)
+            .scale(scale)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Image Section with Title Overlay
@@ -550,7 +578,10 @@ fun NewGridCard(
             ) {
                 // Minus Button
                 Surface(
-                    onClick = onDecrement,
+                    onClick = {
+                        haptic.click()
+                        onDecrement()
+                    },
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier
@@ -564,7 +595,10 @@ fun NewGridCard(
 
                 // Plus Button
                 Surface(
-                    onClick = onIncrement,
+                    onClick = {
+                        haptic.click()
+                        onIncrement()
+                    },
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier
@@ -592,8 +626,21 @@ fun NewListCard(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit
 ) {
+    val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
+    
+    // Use InteractionSource to track press state for animation
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "CardScale"
+    )
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
@@ -606,9 +653,11 @@ fun NewListCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        interactionSource = interactionSource,
         modifier = Modifier
             .fillMaxWidth()
             .height(110.dp)
+            .scale(scale)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             // Image
@@ -712,7 +761,10 @@ fun NewListCard(
             ) {
                 // Plus Button
                 Surface(
-                    onClick = onIncrement,
+                    onClick = {
+                        haptic.click()
+                        onIncrement()
+                    },
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.weight(1f).fillMaxWidth()
@@ -724,7 +776,10 @@ fun NewListCard(
 
                 // Minus Button
                 Surface(
-                    onClick = onDecrement,
+                    onClick = {
+                        haptic.click()
+                        onDecrement()
+                    },
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.weight(1f).fillMaxWidth()

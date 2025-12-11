@@ -1,14 +1,27 @@
 package com.anisync.android.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
 
 /**
  * Room entity for caching library entries.
+ * 
+ * Indices are added for frequently-queried columns:
+ * - mediaType: Used for filtering Anime vs Manga
+ * - status: Used for filtering by library status (Watching, Completed, etc.)
+ * - Composite index for combined queries
  */
-@Entity(tableName = "library_entries")
+@Entity(
+    tableName = "library_entries",
+    indices = [
+        Index(value = ["mediaType"]),
+        Index(value = ["status"]),
+        Index(value = ["mediaType", "status"])
+    ]
+)
 data class LibraryEntryEntity(
     @PrimaryKey val id: Int,                   // MediaList ID
     val mediaId: Int,

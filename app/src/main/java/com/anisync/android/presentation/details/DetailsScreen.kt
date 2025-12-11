@@ -49,7 +49,6 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
@@ -94,6 +93,7 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
 
 /**
@@ -128,11 +128,8 @@ fun DetailsScreen(
         ) {
             when (val state = uiState) {
                 is DetailsUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(
-                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    }
+                    // Skeleton loading state for premium feel
+                    DetailsSkeletonContent(onBackClick = onBackClick)
                 }
                 is DetailsUiState.Success -> {
                     DetailsPageContent(
@@ -784,5 +781,197 @@ fun getStatusIcon(status: LibraryStatus, isManga: Boolean): androidx.compose.ui.
         LibraryStatus.PAUSED -> Icons.Default.Pause
         LibraryStatus.REPEATING -> Icons.Default.Repeat
         else -> Icons.Default.Add
+    }
+}
+
+// -----------------------------------------------------------------------------
+// SKELETON LOADING STATE
+// -----------------------------------------------------------------------------
+
+/**
+ * Skeleton loading content for the Details screen.
+ * Displays animated shimmer placeholders matching the actual content layout.
+ */
+@Composable
+fun DetailsSkeletonContent(onBackClick: () -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 100.dp)
+    ) {
+        // Header Skeleton
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp)
+            ) {
+                // Banner placeholder
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                        .shimmerEffect()
+                )
+                
+                // Gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .align(Alignment.TopCenter)
+                        .offset(y = 120.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
+                                    MaterialTheme.colorScheme.background
+                                )
+                            )
+                        )
+                )
+                
+                // Back Button
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, start = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                
+                // Cover placeholder
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 24.dp)
+                        .width(130.dp)
+                        .height(190.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .shimmerEffect()
+                )
+            }
+        }
+        
+        // Content Skeleton
+        item {
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                // Title placeholder
+                Box(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .height(28.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .shimmerEffect()
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Subtitle/badges row placeholder
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .shimmerEffect()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .shimmerEffect()
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Stats card placeholder
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .shimmerEffect()
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Genre chips placeholder
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    repeat(4) {
+                        Box(
+                            modifier = Modifier
+                                .width(70.dp)
+                                .height(32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Synopsis placeholder
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .shimmerEffect()
+                )
+            }
+        }
+        
+        // Cast section skeleton
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Section title placeholder
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .width(80.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .shimmerEffect()
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Cast items placeholder
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(5) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.width(80.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .shimmerEffect()
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(14.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                }
+            }
+        }
     }
 }
