@@ -4,11 +4,14 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
+import com.anisync.android.data.AppSettings
 
 /**
  * Types of haptic feedback available for UI interactions.
@@ -23,22 +26,29 @@ enum class HapticType {
 }
 
 /**
- * Provides haptic feedback utilities that respect system settings.
+ * Provides haptic feedback utilities that respect both system and app settings.
  * Uses both Compose's HapticFeedback API and View-based fallback for maximum compatibility.
+ * 
+ * @param hapticFeedback Compose haptic feedback API
+ * @param view Android View for fallback haptics
+ * @param isEnabledProvider Lambda that returns current enabled state (checked on each call)
  */
 class HapticFeedbackHelper(
     private val hapticFeedback: HapticFeedback,
-    private val view: View
+    private val view: View,
+    private val isEnabledProvider: () -> Boolean
 ) {
     
     /**
      * Performs haptic feedback of the specified type.
-     * Uses Compose's HapticFeedback API with View-based fallback.
-     * Respects system haptic settings.
+     * Only performs feedback if haptic is enabled in app settings.
      * 
      * @param type The type of haptic feedback to perform
      */
     fun performHapticFeedback(type: HapticType) {
+        // Check if haptic feedback is enabled in app settings
+        if (!isEnabledProvider()) return
+        
         when (type) {
             HapticType.Click -> {
                 // Use Compose API (reliable and respects system settings)
@@ -82,20 +92,51 @@ class HapticFeedbackHelper(
 
 /**
  * Remembers a HapticFeedbackHelper instance for use in composables.
+ * Reads haptic enabled setting from AppSettings.
  * 
  * Usage:
  * ```kotlin
- * val haptic = rememberHapticFeedback()
+ * val haptic = rememberHapticFeedback(appSettings)
  * Button(onClick = { 
  *     haptic.click()
  *     // ... action
  * }) { ... }
  * ```
+ * 
+ * @param appSettings The app settings to check for haptic enabled state
+ */
+@Composable
+fun rememberHapticFeedback(appSettings: AppSettings): HapticFeedbackHelper {
+    val hapticFeedback = LocalHapticFeedback.current
+    val view = LocalView.current
+    val hapticEnabled by appSettings.hapticEnabled.collectAsState()
+    
+    // Create a stable reference that captures the current enabled state
+    return remember(hapticFeedback, view) { 
+        HapticFeedbackHelper(
+            hapticFeedback = hapticFeedback,
+            view = view,
+            isEnabledProvider = { appSettings.hapticEnabled.value }
+        )
+    }
+}
+
+/**
+ * Remembers a HapticFeedbackHelper that respects app settings.
+ * Automatically reads the haptic enabled setting from LocalAppSettings.
  */
 @Composable
 fun rememberHapticFeedback(): HapticFeedbackHelper {
     val hapticFeedback = LocalHapticFeedback.current
     val view = LocalView.current
-    return remember(hapticFeedback, view) { HapticFeedbackHelper(hapticFeedback, view) }
+    val appSettings = LocalAppSettings.current
+    
+    return remember(hapticFeedback, view) { 
+        HapticFeedbackHelper(
+            hapticFeedback = hapticFeedback,
+            view = view,
+            isEnabledProvider = { appSettings.hapticEnabled.value }
+        )
+    }
 }
 

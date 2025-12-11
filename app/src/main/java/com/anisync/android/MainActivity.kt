@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -52,17 +54,20 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM -> isSystemDark
             }
             
-            AppTheme(darkTheme = useDarkTheme) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val isLoggedIn by authRepository.isLoggedIn.collectAsState(initial = false)
-                    
-                    if (isLoggedIn) {
-                        MainScreen()
-                    } else {
-                        LoginScreen()
+            // Provide AppSettings to the entire Compose tree via CompositionLocal
+            CompositionLocalProvider(LocalAppSettings provides appSettings) {
+                AppTheme(darkTheme = useDarkTheme) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        val isLoggedIn by authRepository.isLoggedIn.collectAsState(initial = false)
+                        
+                        if (isLoggedIn) {
+                            MainScreen()
+                        } else {
+                            LoginScreen()
+                        }
                     }
                 }
             }
