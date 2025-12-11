@@ -66,6 +66,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -96,6 +98,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.remember
 import com.anisync.android.presentation.util.MotionTokens
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
@@ -365,7 +368,13 @@ private fun MediaTypeSelector(
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
         ) {
-            Text(text = stringResource(R.string.media_type_anime), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            val scale by animateFloatAsState(if (selected == MediaType.ANIME) 1.1f else 1f, label = "AnimeScale")
+            Text(
+                text = stringResource(R.string.media_type_anime),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.scale(scale)
+            )
         }
         ToggleButton(
             checked = selected == MediaType.MANGA,
@@ -376,7 +385,13 @@ private fun MediaTypeSelector(
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
         ) {
-            Text(text = stringResource(R.string.media_type_manga), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            val scale by animateFloatAsState(if (selected == MediaType.MANGA) 1.1f else 1f, label = "MangaScale")
+            Text(
+                text = stringResource(R.string.media_type_manga),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.scale(scale)
+            )
         }
     }
 }
@@ -446,11 +461,26 @@ private fun HeroCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    // Press interaction state
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "HeroScale"
+    )
+
     Card(
         onClick = onClick,
-        modifier = modifier.height(380.dp),
+        modifier = modifier
+            .height(380.dp)
+            .scale(scale),
         shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        interactionSource = interactionSource
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             with(sharedTransitionScope) {
@@ -557,6 +587,18 @@ private fun MediaCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    // Press interaction state
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "CardScale"
+    )
+
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
@@ -564,7 +606,10 @@ private fun MediaCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainer, // Matches the white/light background of the design
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = modifier.width(150.dp)
+        modifier = modifier
+            .width(150.dp)
+            .scale(scale),
+        interactionSource = interactionSource
     ) {
         Column {
             // Image Container
@@ -696,6 +741,18 @@ private fun SearchResultItem(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    // Press interaction state
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "ItemScale"
+    )
+
     ListItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
         supportingContent = {
@@ -730,7 +787,13 @@ private fun SearchResultItem(
             }
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
+            .scale(scale)
     )
 }
 

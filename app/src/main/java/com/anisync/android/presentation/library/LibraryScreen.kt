@@ -301,7 +301,12 @@ fun LibraryScreen(
                         modifier = Modifier.weight(1f),
                         shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
                     ) {
-                        Text(text = stringResource(R.string.media_type_anime), fontWeight = FontWeight.SemiBold)
+                        val scale by animateFloatAsState(if (mediaType == MediaType.ANIME) 1.1f else 1f, label = "AnimeScale")
+                        Text(
+                            text = stringResource(R.string.media_type_anime),
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.scale(scale)
+                        )
                     }
                     ToggleButton(
                         checked = mediaType == MediaType.MANGA,
@@ -312,7 +317,12 @@ fun LibraryScreen(
                         modifier = Modifier.weight(1f),
                         shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
                     ) {
-                        Text(text = stringResource(R.string.media_type_manga), fontWeight = FontWeight.SemiBold)
+                        val scale by animateFloatAsState(if (mediaType == MediaType.MANGA) 1.1f else 1f, label = "MangaScale")
+                        Text(
+                            text = stringResource(R.string.media_type_manga),
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.scale(scale)
+                        )
                     }
                 }
 
@@ -342,6 +352,15 @@ fun LibraryScreen(
                             LibraryStatus.DROPPED -> Icons.Default.Close
                             else -> Icons.Default.Inbox
                         }
+                        val scale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.1f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            ),
+                            label = "ChipScale"
+                        )
+
                         FilterChip(
                             selected = isSelected,
                             onClick = { 
@@ -365,7 +384,8 @@ fun LibraryScreen(
                                 selected = isSelected,
                                 borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                                 selectedBorderColor = Color.Transparent
-                            )
+                            ),
+                            modifier = Modifier.scale(scale)
                         )
                     }
                 }
@@ -502,7 +522,7 @@ fun NewGridCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -732,7 +752,7 @@ fun NewListCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
