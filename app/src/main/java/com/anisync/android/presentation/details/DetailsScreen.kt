@@ -85,6 +85,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -430,7 +431,7 @@ fun DetailsPageContent(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TitleSection(
     details: MediaDetails,
@@ -438,6 +439,7 @@ fun TitleSection(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     Column {
         with(sharedTransitionScope) {
             Text(
@@ -449,12 +451,7 @@ fun TitleSection(
                 modifier = Modifier.sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_title_${details.id}"),
                     animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ ->
-                        spring(
-                            dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                            stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                        )
-                    }
+                    boundsTransform = { _, _ -> spatialSpec }
                 )
             )
         }
@@ -509,7 +506,7 @@ fun TitleSection(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PageHeaderSection(
     details: MediaDetails,
@@ -603,6 +600,7 @@ fun PageHeaderSection(
 
         // Cover Image (Poster)
         with(sharedTransitionScope) {
+            val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -612,12 +610,7 @@ fun PageHeaderSection(
                     .sharedElement(
                         sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
                         animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ ->
-                            spring(
-                                dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                            )
-                        },
+                        boundsTransform = { _, _ -> spatialSpec },
                         clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                     ),
                 shape = RoundedCornerShape(12.dp),

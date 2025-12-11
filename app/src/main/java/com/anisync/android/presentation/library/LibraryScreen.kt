@@ -91,6 +91,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -354,10 +355,7 @@ fun LibraryScreen(
                         }
                         val scale by animateFloatAsState(
                             targetValue = if (isSelected) 1.1f else 1f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            ),
+                            animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
                             label = "ChipScale"
                         )
 
@@ -459,7 +457,7 @@ fun LibraryScreen(
                                             modifier = Modifier.animateItem(
                                                 fadeInSpec = tween(MotionTokens.DurationMedium2),
                                                 fadeOutSpec = tween(MotionTokens.DurationShort4),
-                                                placementSpec = spring()
+                                                placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                                             )
                                         )
                                     }
@@ -483,7 +481,7 @@ fun LibraryScreen(
                                             modifier = Modifier.animateItem(
                                                 fadeInSpec = tween(MotionTokens.DurationMedium2),
                                                 fadeOutSpec = tween(MotionTokens.DurationShort4),
-                                                placementSpec = spring()
+                                                placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                                             )
                                         )
                                     }
@@ -501,7 +499,7 @@ fun LibraryScreen(
 // GRID CARD IMPLEMENTATION
 // -----------------------------------------------------------------------------
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NewGridCard(
     entry: LibraryEntry,
@@ -513,6 +511,7 @@ fun NewGridCard(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val isManga = mediaType == MediaType.MANGA
@@ -523,16 +522,13 @@ fun NewGridCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "CardScale"
     )
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "Progress"
     )
 
@@ -564,12 +560,7 @@ fun NewGridCard(
                             .sharedElement(
                                 sharedContentState = rememberSharedContentState(key = "library_media_cover_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ ->
-                                    spring(
-                                        dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                        stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                    )
-                                },
+                                boundsTransform = { _, _ -> spatialSpec },
                                 clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
                             )
                     )
@@ -602,12 +593,7 @@ fun NewGridCard(
                             .sharedBounds(
                                 sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ ->
-                                    spring(
-                                        dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                        stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                    )
-                                }
+                                boundsTransform = { _, _ -> spatialSpec }
                             )
                     )
                 }
@@ -732,7 +718,7 @@ fun NewGridCard(
 // LIST CARD IMPLEMENTATION
 // -----------------------------------------------------------------------------
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NewListCard(
     entry: LibraryEntry,
@@ -744,6 +730,7 @@ fun NewListCard(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
@@ -753,16 +740,13 @@ fun NewListCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "CardScale"
     )
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "Progress"
     )
 
@@ -792,12 +776,7 @@ fun NewListCard(
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "library_media_cover_${entry.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                )
-                            },
+                            boundsTransform = { _, _ -> spatialSpec },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
                 )
@@ -822,12 +801,7 @@ fun NewListCard(
                             modifier = Modifier.sharedBounds(
                                 sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ ->
-                                    spring(
-                                        dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                        stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                    )
-                                }
+                                boundsTransform = { _, _ -> spatialSpec }
                             )
                         )
                     }

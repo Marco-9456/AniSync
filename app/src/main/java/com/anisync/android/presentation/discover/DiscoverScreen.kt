@@ -99,6 +99,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Rect
 import com.anisync.android.presentation.util.MotionTokens
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
@@ -368,7 +369,7 @@ private fun MediaTypeSelector(
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
         ) {
-            val scale by animateFloatAsState(if (selected == MediaType.ANIME) 1.1f else 1f, label = "AnimeScale")
+            val scale by animateFloatAsState(targetValue = if (selected == MediaType.ANIME) 1.1f else 1f, animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(), label = "AnimeScale")
             Text(
                 text = stringResource(R.string.media_type_anime),
                 style = MaterialTheme.typography.titleSmall,
@@ -385,7 +386,7 @@ private fun MediaTypeSelector(
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
         ) {
-            val scale by animateFloatAsState(if (selected == MediaType.MANGA) 1.1f else 1f, label = "MangaScale")
+            val scale by animateFloatAsState(targetValue = if (selected == MediaType.MANGA) 1.1f else 1f, animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(), label = "MangaScale")
             Text(
                 text = stringResource(R.string.media_type_manga),
                 style = MaterialTheme.typography.titleSmall,
@@ -452,7 +453,7 @@ private fun CinematicHeroCarousel(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun HeroCard(
     item: LibraryEntry,
@@ -461,15 +462,13 @@ private fun HeroCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     // Press interaction state
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "HeroScale"
     )
 
@@ -492,12 +491,7 @@ private fun HeroCard(
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                )
-                            },
+                            boundsTransform = { _, _ -> spatialSpec },
                             clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge)
                         )
                 )
@@ -543,12 +537,7 @@ private fun HeroCard(
                         modifier = Modifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                )
-                            }
+                            boundsTransform = { _, _ -> spatialSpec }
                         )
                     )
                 }
@@ -578,7 +567,7 @@ private fun HeroCard(
  * - Top: Image Thumbnail
  * - Bottom: Content Area (Title + Type + Rating Pill)
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MediaCard(
     item: LibraryEntry,
@@ -587,15 +576,13 @@ private fun MediaCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     // Press interaction state
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "CardScale"
     )
 
@@ -624,12 +611,7 @@ private fun MediaCard(
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                )
-                            },
+                            boundsTransform = { _, _ -> spatialSpec },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
                 )
@@ -653,12 +635,7 @@ private fun MediaCard(
                         modifier = Modifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                )
-                            }
+                            boundsTransform = { _, _ -> spatialSpec }
                         )
                     )
                 }
@@ -733,7 +710,7 @@ private fun HorizontalMediaList(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SearchResultItem(
     item: LibraryEntry,
@@ -741,15 +718,13 @@ private fun SearchResultItem(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     // Press interaction state
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
         label = "ItemScale"
     )
 
@@ -774,12 +749,7 @@ private fun SearchResultItem(
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
-                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
-                                )
-                            },
+                            boundsTransform = { _, _ -> spatialSpec },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(8.dp))
                         ),
                     contentScale = ContentScale.Crop
