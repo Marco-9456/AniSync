@@ -502,14 +502,26 @@ private fun HeroCard(
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                with(sharedTransitionScope) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                spring(
+                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                )
+                            }
+                        )
+                    )
+                }
 
                 val statusText = formatStatus(item.mediaStatus)
                 val countsText = if (item.totalEpisodes != null) formatEpisodesCount(item.totalEpisodes) else if (item.totalChapters != null) formatChaptersCount(item.totalChapters) else null
@@ -585,14 +597,26 @@ private fun MediaCard(
                     .padding(12.dp)
             ) {
                 // Title (Bold, Black)
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                with(sharedTransitionScope) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                spring(
+                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                )
+                            }
+                        )
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -691,7 +715,7 @@ private fun SearchResultItem(
                     modifier = Modifier.size(56.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
                                 spring(

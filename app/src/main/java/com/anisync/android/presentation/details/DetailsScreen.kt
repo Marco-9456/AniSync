@@ -264,7 +264,12 @@ fun DetailsPageContent(
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     // Title Group (stagger index 0)
                     StaggeredAnimatedVisibility(index = 0) {
-                        TitleSection(details)
+                        TitleSection(
+                            details = details,
+                            sourceScreen = sourceScreen,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -425,16 +430,34 @@ fun DetailsPageContent(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun TitleSection(details: MediaDetails) {
+fun TitleSection(
+    details: MediaDetails,
+    sourceScreen: String,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     Column {
-        Text(
-            text = details.title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-            ),
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        with(sharedTransitionScope) {
+            Text(
+                text = details.title,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_title_${details.id}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ ->
+                        spring(
+                            dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                            stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                        )
+                    }
+                )
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 

@@ -568,17 +568,29 @@ fun NewGridCard(
                 )
 
                 // Title
-                Text(
-                    text = entry.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(12.dp)
-                )
+                with(sharedTransitionScope) {
+                    Text(
+                        text = entry.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp)
+                            .sharedBounds(
+                                sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    spring(
+                                        dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                        stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                    )
+                                }
+                            )
+                    )
+                }
             }
 
             // Info Section
@@ -758,7 +770,7 @@ fun NewListCard(
                         .padding(8.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "library_media_cover_${entry.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
                                 spring(
@@ -780,13 +792,25 @@ fun NewListCard(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(
-                        text = entry.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    with(sharedTransitionScope) {
+                        Text(
+                            text = entry.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    spring(
+                                        dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                        stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                    )
+                                }
+                            )
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
