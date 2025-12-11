@@ -34,9 +34,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -146,6 +150,19 @@ fun LibraryScreen(
             when (event) {
                 is LibraryEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
             }
+        }
+    }
+
+    // Lazy list/grid states for scroll control
+    val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
+
+    // Scroll to top when sort, status, or mediaType changes
+    LaunchedEffect(sortOption, selectedStatus, mediaType) {
+        if (isGridView) {
+            gridState.animateScrollToItem(0)
+        } else {
+            listState.animateScrollToItem(0)
         }
     }
 
@@ -404,6 +421,7 @@ fun LibraryScreen(
                             if (isGrid) {
                                 LazyVerticalGrid(
                                     columns = GridCells.Adaptive(minSize = 160.dp),
+                                    state = gridState,
                                     contentPadding = PaddingValues(20.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -428,6 +446,7 @@ fun LibraryScreen(
                                 }
                             } else {
                                 LazyColumn(
+                                    state = listState,
                                     contentPadding = PaddingValues(20.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                     modifier = Modifier.fillMaxSize()
