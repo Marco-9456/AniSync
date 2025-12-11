@@ -2,18 +2,17 @@ package com.anisync.android.presentation.navigation
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,44 +24,10 @@ import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
 
-/**
- * Material 3 Motion Easing tokens
- * Reference: https://m3.material.io/styles/motion/easing-and-duration/tokens-specs
- */
-private val EmphasizedEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
-private val EmphasizedAccelerateEasing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
-private val EmphasizedDecelerateEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
-
-// M3 Duration tokens (medium durations for navigation transitions)
-private const val DurationMedium2 = 300
-private const val DurationMedium4 = 400
-
-// Lateral slide offset for tab transitions (10% of width for subtle movement)
+// Lateral slide offset for tab transitions (10% of width)
 private const val TabSlideOffset = 10
 
-/**
- * Creates enter transition with lateral slide for tab navigation.
- * @param towards 1 for slide from right, -1 for slide from left
- */
-private fun tabEnterTransition(towards: Int) = fadeIn(
-    tween(DurationMedium2, easing = EmphasizedDecelerateEasing)
-) + slideInHorizontally(
-    initialOffsetX = { towards * (it / TabSlideOffset) },
-    animationSpec = tween(DurationMedium2, easing = EmphasizedDecelerateEasing)
-)
-
-/**
- * Creates exit transition with lateral slide for tab navigation.
- * @param towards 1 for slide to right, -1 for slide to left
- */
-private fun tabExitTransition(towards: Int) = fadeOut(
-    tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
-) + slideOutHorizontally(
-    targetOffsetX = { towards * (it / TabSlideOffset) },
-    animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
-)
-
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
@@ -70,26 +35,44 @@ fun AniSyncNavHost(
     modifier: Modifier = Modifier
 ) {
     SharedTransitionLayout(modifier = modifier) {
+        // We access the motion scheme here to ensure all transitions use the same physics
+        val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+        val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+
+        // For Scale transitions (Float)
+        val scaleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+
         NavHost(
             navController = navController,
             startDestination = Library,
             modifier = Modifier
         ) {
             composable<Login>(
-                enterTransition = { slideInHorizontally { it } + fadeIn() },
-                exitTransition = { slideOutHorizontally { -it } + fadeOut() },
-                popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
-                popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+                enterTransition = { slideInHorizontally(spatialSpec) { it } + fadeIn(effectsSpec) },
+                exitTransition = { slideOutHorizontally(spatialSpec) { -it } + fadeOut(effectsSpec) },
+                popEnterTransition = { slideInHorizontally(spatialSpec) { -it } + fadeIn(effectsSpec) },
+                popExitTransition = { slideOutHorizontally(spatialSpec) { it } + fadeOut(effectsSpec) }
             ) {
                 LoginScreen()
             }
-            
-            // Library (index 0) - slides from/to left relative to Discover/Profile
+
+            // --- MAIN TABS ---
+            // Note: We use springs (spatialSpec) here instead of tweens.
+            // This ensures the slide velocity matches the shared element velocity.
+
             composable<Library>(
-                enterTransition = { tabEnterTransition(-1) },  // Enter from left
-                exitTransition = { tabExitTransition(-1) },     // Exit to left
-                popEnterTransition = { tabEnterTransition(-1) },
-                popExitTransition = { tabExitTransition(-1) }
+                enterTransition = {
+                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { -it / TabSlideOffset }
+                },
+                exitTransition = {
+                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { -it / TabSlideOffset }
+                },
+                popEnterTransition = {
+                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { -it / TabSlideOffset }
+                },
+                popExitTransition = {
+                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { -it / TabSlideOffset }
+                }
             ) {
                 LibraryScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "library") },
@@ -97,25 +80,18 @@ fun AniSyncNavHost(
                     animatedVisibilityScope = this
                 )
             }
-            
-            // Discover (index 1) - center tab, uses simple fade for most cases
-            // When navigating from Library: enters from right
-            // When navigating from Profile: enters from left
+
             composable<Discover>(
-                enterTransition = { 
-                    when (initialState.destination?.route) {
-                        Library::class.qualifiedName -> tabEnterTransition(1)  // From Library: enter from right
-                        else -> tabEnterTransition(-1)  // From Profile: enter from left
-                    }
+                enterTransition = {
+                    val offset = if (initialState.destination.route == Library::class.qualifiedName) 1 else -1
+                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { offset * (it / TabSlideOffset) }
                 },
-                exitTransition = { 
-                    when (targetState.destination?.route) {
-                        Library::class.qualifiedName -> tabExitTransition(1)  // To Library: exit to right
-                        else -> tabExitTransition(-1)  // To Profile: exit to left
-                    }
+                exitTransition = {
+                    val offset = if (targetState.destination.route == Library::class.qualifiedName) 1 else -1
+                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { offset * (it / TabSlideOffset) }
                 },
-                popEnterTransition = { tabEnterTransition(1) },
-                popExitTransition = { tabExitTransition(1) }
+                popEnterTransition = { fadeIn(effectsSpec) },
+                popExitTransition = { fadeOut(effectsSpec) }
             ) {
                 DiscoverScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "discover") },
@@ -123,13 +99,20 @@ fun AniSyncNavHost(
                     animatedVisibilityScope = this
                 )
             }
-            
-            // Profile (index 2) - slides from/to right relative to Library/Discover
+
             composable<Profile>(
-                enterTransition = { tabEnterTransition(1) },   // Enter from right
-                exitTransition = { tabExitTransition(1) },      // Exit to right
-                popEnterTransition = { tabEnterTransition(1) },
-                popExitTransition = { tabExitTransition(1) }
+                enterTransition = {
+                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { it / TabSlideOffset }
+                },
+                exitTransition = {
+                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { it / TabSlideOffset }
+                },
+                popEnterTransition = {
+                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { it / TabSlideOffset }
+                },
+                popExitTransition = {
+                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { it / TabSlideOffset }
+                }
             ) {
                 ProfileScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "profile") },
@@ -143,40 +126,23 @@ fun AniSyncNavHost(
                 )
             }
 
-
-            // Details screen uses M3 fade-through transition pattern for entering detail views
-            // Fade-through: outgoing fades out, then incoming fades in with slight scale
+            // --- DETAILS ---
+            // Using "Fade Through" pattern with Springs
             composable<Details>(
                 deepLinks = listOf(
                     navDeepLink<Details>(basePath = "anisync://details")
                 ),
                 enterTransition = {
-                    fadeIn(tween(DurationMedium4, easing = EmphasizedDecelerateEasing)) +
-                    scaleIn(
-                        initialScale = 0.92f,
-                        animationSpec = tween(DurationMedium4, easing = EmphasizedDecelerateEasing)
-                    )
+                    fadeIn(effectsSpec) + scaleIn(initialScale = 0.92f, animationSpec = scaleSpec)
                 },
                 exitTransition = {
-                    fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) +
-                    scaleOut(
-                        targetScale = 1.04f,
-                        animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
-                    )
+                    fadeOut(effectsSpec) + scaleOut(targetScale = 1.04f, animationSpec = scaleSpec)
                 },
                 popEnterTransition = {
-                    fadeIn(tween(DurationMedium4, easing = EmphasizedDecelerateEasing)) +
-                    scaleIn(
-                        initialScale = 0.92f,
-                        animationSpec = tween(DurationMedium4, easing = EmphasizedDecelerateEasing)
-                    )
+                    fadeIn(effectsSpec) + scaleIn(initialScale = 0.92f, animationSpec = scaleSpec)
                 },
                 popExitTransition = {
-                    fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) +
-                    scaleOut(
-                        targetScale = 0.92f,
-                        animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
-                    )
+                    fadeOut(effectsSpec) + scaleOut(targetScale = 0.92f, animationSpec = scaleSpec)
                 }
             ) { backStackEntry ->
                 val details: Details = backStackEntry.toRoute()
@@ -186,7 +152,6 @@ fun AniSyncNavHost(
                     sourceScreen = details.sourceScreen,
                     onBackClick = { navController.popBackStack() },
                     onRelationClick = { relationMediaId ->
-                        // Relations navigate from Details, so use "details" as source
                         navController.navigate(Details(relationMediaId, "details"))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,

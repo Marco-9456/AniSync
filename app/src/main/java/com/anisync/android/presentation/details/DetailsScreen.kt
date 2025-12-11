@@ -103,45 +103,40 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
-import com.anisync.android.presentation.util.MotionTokens
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
-// Use MotionTokens for animation constants (legacy aliases for existing code)
-private val EmphasizedEasing = MotionTokens.EmphasizedEasing
-private const val AnimationDurationShort = MotionTokens.DurationMedium4
-private const val AnimationDurationLong = MotionTokens.DurationLong4
+// Stagger delay constant for content reveal animations (40ms for snappy feel)
+private const val StaggerDelayPerItem = 40
 
 /**
  * Staggered animation helper for content sections.
  * Each section fades + slides in with a delay based on its index.
+ * Uses spring physics via MotionScheme for consistent feel with shared element transitions.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StaggeredAnimatedVisibility(
     index: Int,
-    delayPerItem: Int = MotionTokens.StaggerDelayPerItem,
+    delayPerItem: Int = StaggerDelayPerItem,
     content: @Composable () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(MotionTokens.staggerDelay(index, delayPerItem).toLong())
+        delay((index * delayPerItem).toLong())
         visible = true
     }
     
+    // Use spring physics for both fade and slide to match shared element transitions
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()
+    
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(
-            animationSpec = tween(
-                durationMillis = MotionTokens.DurationMedium2,
-                easing = MotionTokens.EmphasizedDecelerateEasing
-            )
-        ) + slideInVertically(
+        enter = fadeIn(animationSpec = effectsSpec) + slideInVertically(
             initialOffsetY = { it / 4 },
-            animationSpec = tween(
-                durationMillis = MotionTokens.DurationMedium4,
-                easing = MotionTokens.EmphasizedDecelerateEasing
-            )
+            animationSpec = spatialSpec
         )
     ) {
         content()
@@ -726,17 +721,18 @@ fun GenreFlow(genres: List<String>) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpandableSynopsis(text: String) {
     var expanded by remember { mutableStateOf(false) }
     
+    // Use spring physics from motionScheme for consistent feel
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    
     // Animated arrow rotation (0° collapsed → 180° expanded)
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(
-            durationMillis = MotionTokens.DurationMedium2,
-            easing = MotionTokens.EmphasizedEasing
-        ),
+        animationSpec = effectsSpec,
         label = "ArrowRotation"
     )
 
@@ -748,10 +744,7 @@ fun ExpandableSynopsis(text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(
-                animationSpec = tween(
-                    durationMillis = AnimationDurationShort,
-                    easing = EmphasizedEasing
-                )
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
             )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

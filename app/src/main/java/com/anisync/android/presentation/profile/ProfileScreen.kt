@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -96,6 +95,9 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.util.bouncyClickable
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.ui.geometry.Rect
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -512,7 +514,7 @@ fun FavoritesSection(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FavoriteFilmStripItem(
     entry: LibraryEntry,
@@ -520,13 +522,15 @@ fun FavoriteFilmStripItem(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+
     Card(
-        onClick = { onClick(entry.mediaId) },
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .width(120.dp)
             .height(180.dp)
-            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f)),
+            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
+            .bouncyClickable { onClick(entry.mediaId) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -539,9 +543,7 @@ fun FavoriteFilmStripItem(
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "profile_media_cover_${entry.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                tween(durationMillis = 300)
-                            }
+                            boundsTransform = { _, _ -> spatialSpec }
                         )
                 )
             }

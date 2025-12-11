@@ -90,17 +90,11 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
-import com.anisync.android.presentation.util.MotionTokens
+import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
 
@@ -463,23 +457,13 @@ private fun HeroCard(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    // Press interaction state
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-        label = "HeroScale"
-    )
 
     Card(
-        onClick = onClick,
         modifier = modifier
             .height(380.dp)
-            .scale(scale),
+            .bouncyClickable(onClick = onClick),
         shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        interactionSource = interactionSource
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             with(sharedTransitionScope) {
@@ -577,17 +561,8 @@ private fun MediaCard(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    // Press interaction state
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-        label = "CardScale"
-    )
 
     Card(
-        onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer, // Matches the white/light background of the design
@@ -595,8 +570,7 @@ private fun MediaCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier
             .width(150.dp)
-            .scale(scale),
-        interactionSource = interactionSource
+            .bouncyClickable(onClick = onClick)
     ) {
         Column {
             // Image Container
@@ -719,14 +693,6 @@ private fun SearchResultItem(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    // Press interaction state
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) MotionTokens.PressedScale else MotionTokens.DefaultScale,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-        label = "ItemScale"
-    )
 
     ListItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
@@ -757,13 +723,7 @@ private fun SearchResultItem(
             }
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                onClick = onClick
-            )
-            .scale(scale)
+        modifier = Modifier.bouncyClickable(onClick = onClick)
     )
 }
 
