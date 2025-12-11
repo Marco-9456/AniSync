@@ -4,6 +4,7 @@ import com.anisync.android.SearchMediaQuery
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo3.ApolloClient
@@ -15,14 +16,23 @@ class SearchRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient
 ) : SearchRepository {
 
-    override suspend fun searchMedia(query: String, type: MediaType): Result<List<LibraryEntry>> {
+    override suspend fun searchMedia(
+        query: String, 
+        type: MediaType,
+        filters: SearchFilters
+    ): Result<List<LibraryEntry>> {
         return try {
             val response = apolloClient.query(
                 SearchMediaQuery(
                     search = Optional.present(query),
                     page = Optional.present(1),
                     perPage = Optional.present(20),
-                    type = Optional.present(type)
+                    type = Optional.present(type),
+                    status = filters.status?.let { Optional.present(it) } ?: Optional.absent(),
+                    format = filters.formats.firstOrNull()?.let { Optional.present(it) } ?: Optional.absent(),
+                    genre = filters.genres.firstOrNull()?.let { Optional.present(it) } ?: Optional.absent(),
+                    seasonYear = filters.year?.let { Optional.present(it) } ?: Optional.absent(),
+                    season = filters.season?.let { Optional.present(it) } ?: Optional.absent()
                 )
             ).execute()
 

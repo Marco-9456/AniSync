@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,10 +14,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 sealed interface DiscoverUiState {
@@ -57,6 +60,10 @@ class DiscoverViewModel @Inject constructor(
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
 
+    // --- Search Filters State ---
+    private val _searchFilters = MutableStateFlow(SearchFilters())
+    val searchFilters: StateFlow<SearchFilters> = _searchFilters.asStateFlow()
+
     init {
         loadDiscoveryData()
         observeSearchQuery()
@@ -95,13 +102,24 @@ class DiscoverViewModel @Inject constructor(
         // Search flow below will pick this up
     }
 
+    fun updateFilters(filters: SearchFilters) {
+        _searchFilters.value = filters
+    }
+
+    fun clearFilters() {
+        _searchFilters.value = SearchFilters()
+    }
+
     @OptIn(FlowPreview::class)
     private fun observeSearchQuery() {
         viewModelScope.launch {
-            _searchQuery
+            combine(
+                _searchQuery,
+                _searchFilters
+            ) { query, filters -> query to filters }
                 .debounce(300L)
                 .distinctUntilChanged()
-                .collect { query ->
+                .collect { (query, filters) ->
                     if (query.isBlank()) {
                         _searchResults.value = emptyList()
                         _isSearching.value = false
@@ -110,7 +128,7 @@ class DiscoverViewModel @Inject constructor(
 
                     _isSearching.value = true
                     
-                    when (val result = searchRepository.searchMedia(query, _mediaType.value)) {
+                    when (val result = searchRepository.searchMedia(query, _mediaType.value, filters)) {
                         is Result.Success -> _searchResults.value = result.data
                         is Result.Error -> _searchResults.value = emptyList()
                     }
@@ -123,6 +141,8 @@ class DiscoverViewModel @Inject constructor(
     private fun loadDiscoveryData(isRefresh: Boolean = false) {
         val currentType = _mediaType.value
         viewModelScope.launch {
+            val startTime = if (isRefresh) System.currentTimeMillis() else 0L
+            
             if (isRefresh) {
                 _isRefreshing.value = true
             } else if (_uiState.value !is DiscoverUiState.Success) {
@@ -158,6 +178,15 @@ class DiscoverViewModel @Inject constructor(
                     else -> "Unknown error"
                 }
                 _uiState.update { DiscoverUiState.Error(errorMessage) }
+            }
+            
+            // Ensure minimum display duration for pull-to-refresh indicator (800ms)
+            if (isRefresh) {
+                val elapsed = System.currentTimeMillis() - startTime
+                val minDisplayDuration = 800L
+                if (elapsed < minDisplayDuration) {
+                    delay(minDisplayDuration - elapsed)
+                }
             }
             
             _isRefreshing.value = false

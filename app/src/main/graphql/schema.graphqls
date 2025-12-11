@@ -127,6 +127,13 @@ enum MediaFormat {
   ONE_SHOT
 }
 
+enum MediaSeason {
+  WINTER
+  SPRING
+  SUMMER
+  FALL
+}
+
 type MediaTitle {
   userPreferred: String
   romaji: String
@@ -153,7 +160,7 @@ enum MediaListStatus {
 }
 
 type Page {
-  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus): [Media]
+  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, genre: String, seasonYear: Int, season: MediaSeason): [Media]
 }
 
 enum MediaSort {

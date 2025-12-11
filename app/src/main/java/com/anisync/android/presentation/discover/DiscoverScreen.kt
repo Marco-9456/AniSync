@@ -33,7 +33,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,12 +49,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
@@ -61,7 +70,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,7 +95,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.domain.AVAILABLE_GENRES
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.SearchFilters
 import com.anisync.android.presentation.util.formatChaptersCount
 import com.anisync.android.presentation.util.formatEpisodesCount
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -98,7 +112,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.ui.geometry.Rect
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
+import com.anisync.android.type.MediaFormat
+import com.anisync.android.type.MediaSeason
+import com.anisync.android.type.MediaStatus
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -114,12 +132,16 @@ fun DiscoverScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
+    val searchFilters by viewModel.searchFilters.collectAsState()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
+    
+    // Filter sheet state
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     // Sync textFieldState changes with ViewModel
     LaunchedEffect(textFieldState) {
@@ -162,11 +184,29 @@ fun DiscoverScreen(
                     }
                 },
                 trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = {
-                            textFieldState.edit { replace(0, length, "") }
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
+                    Row {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                textFieldState.edit { replace(0, length, "") }
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
+                            }
+                        }
+                        // Filter button with badge when filters are active
+                        IconButton(onClick = { showFilterSheet = true }) {
+                            if (searchFilters.hasActiveFilters) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge {
+                                            Text(searchFilters.activeFilterCount.toString())
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
+                                }
+                            } else {
+                                Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
+                            }
                         }
                     }
                 }
@@ -208,6 +248,16 @@ fun DiscoverScreen(
                 }
             }
         }
+    }
+
+    // Search Filter Bottom Sheet
+    if (showFilterSheet) {
+        SearchFilterSheet(
+            filters = searchFilters,
+            mediaType = mediaType,
+            onFiltersChanged = { viewModel.updateFilters(it) },
+            onDismiss = { showFilterSheet = false }
+        )
     }
 
     Scaffold(
@@ -752,4 +802,232 @@ private fun formatStatus(status: String?): String? {
         .lowercase()
         .split(" ")
         .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+}
+
+/**
+ * Bottom sheet for search filters including Genres, Year, Season, Format, and Airing Status.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchFilterSheet(
+    filters: SearchFilters,
+    mediaType: MediaType,
+    onFiltersChanged: (SearchFilters) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            // Header with title and clear button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.filter),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                if (filters.hasActiveFilters) {
+                    TextButton(onClick = { onFiltersChanged(SearchFilters()) }) {
+                        Text(stringResource(R.string.filter_clear_all))
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Genres Section
+            FilterSectionHeader(title = stringResource(R.string.filter_genres))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(AVAILABLE_GENRES) { genre ->
+                    FilterChip(
+                        selected = genre in filters.genres,
+                        onClick = {
+                            val newGenres = if (genre in filters.genres) 
+                                filters.genres - genre 
+                            else 
+                                filters.genres + genre
+                            onFiltersChanged(filters.copy(genres = newGenres))
+                        },
+                        label = { Text(genre) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // Year Section
+            FilterSectionHeader(title = stringResource(R.string.filter_year))
+            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            val years = (currentYear downTo currentYear - 20).toList()
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(years) { year ->
+                    FilterChip(
+                        selected = filters.year == year,
+                        onClick = {
+                            val newYear = if (filters.year == year) null else year
+                            onFiltersChanged(filters.copy(year = newYear))
+                        },
+                        label = { Text(year.toString()) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // Season Section
+            FilterSectionHeader(title = stringResource(R.string.filter_season))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                MediaSeason.entries.forEach { season ->
+                    FilterChip(
+                        selected = filters.season == season,
+                        onClick = {
+                            val newSeason = if (filters.season == season) null else season
+                            onFiltersChanged(filters.copy(season = newSeason))
+                        },
+                        label = { Text(getSeasonLabel(season)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // Format Section
+            FilterSectionHeader(title = stringResource(R.string.filter_format))
+            val availableFormats = if (mediaType == MediaType.ANIME) {
+                listOf(MediaFormat.TV, MediaFormat.TV_SHORT, MediaFormat.MOVIE, MediaFormat.SPECIAL, MediaFormat.OVA, MediaFormat.ONA, MediaFormat.MUSIC)
+            } else {
+                listOf(MediaFormat.MANGA, MediaFormat.NOVEL, MediaFormat.ONE_SHOT)
+            }
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(availableFormats) { format ->
+                    FilterChip(
+                        selected = format in filters.formats,
+                        onClick = {
+                            val newFormats = if (format in filters.formats) 
+                                filters.formats - format 
+                            else 
+                                filters.formats + format
+                            onFiltersChanged(filters.copy(formats = newFormats))
+                        },
+                        label = { Text(getFormatLabel(format)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // Airing Status Section
+            FilterSectionHeader(title = stringResource(R.string.filter_status))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(MediaStatus.entries.filter { it != MediaStatus.UNKNOWN__ }) { status ->
+                    FilterChip(
+                        selected = filters.status == status,
+                        onClick = {
+                            val newStatus = if (filters.status == status) null else status
+                            onFiltersChanged(filters.copy(status = newStatus))
+                        },
+                        label = { Text(getStatusLabel(status)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
+@Composable
+private fun getSeasonLabel(season: MediaSeason): String {
+    return when (season) {
+        MediaSeason.WINTER -> stringResource(R.string.season_winter)
+        MediaSeason.SPRING -> stringResource(R.string.season_spring)
+        MediaSeason.SUMMER -> stringResource(R.string.season_summer)
+        MediaSeason.FALL -> stringResource(R.string.season_fall)
+        MediaSeason.UNKNOWN__ -> ""
+    }
+}
+
+@Composable
+private fun getFormatLabel(format: MediaFormat): String {
+    return when (format) {
+        MediaFormat.TV -> stringResource(R.string.format_tv)
+        MediaFormat.TV_SHORT -> stringResource(R.string.format_tv_short)
+        MediaFormat.MOVIE -> stringResource(R.string.format_movie)
+        MediaFormat.SPECIAL -> stringResource(R.string.format_special)
+        MediaFormat.OVA -> stringResource(R.string.format_ova)
+        MediaFormat.ONA -> stringResource(R.string.format_ona)
+        MediaFormat.MUSIC -> stringResource(R.string.format_music)
+        MediaFormat.MANGA -> stringResource(R.string.media_type_manga)
+        MediaFormat.NOVEL -> stringResource(R.string.format_novel)
+        MediaFormat.ONE_SHOT -> stringResource(R.string.format_one_shot)
+        MediaFormat.UNKNOWN__ -> ""
+    }
+}
+
+@Composable
+private fun getStatusLabel(status: MediaStatus): String {
+    return when (status) {
+        MediaStatus.RELEASING -> stringResource(R.string.media_status_airing)
+        MediaStatus.FINISHED -> stringResource(R.string.media_status_finished)
+        MediaStatus.NOT_YET_RELEASED -> stringResource(R.string.media_status_not_yet_released)
+        MediaStatus.CANCELLED -> stringResource(R.string.media_status_cancelled)
+        MediaStatus.HIATUS -> stringResource(R.string.media_status_hiatus)
+        MediaStatus.UNKNOWN__ -> ""
+    }
 }

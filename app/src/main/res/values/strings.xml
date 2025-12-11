@@ -118,4 +118,37 @@
     <string name="login_description">Sign in to access your library and discover new favorites.</string>
     <string name="login_continue_with_anilist">Continue with AniList</string>
     <string name="login_terms">By continuing, you agree to our Terms of Service.</string>
+
+    <!-- Search Filters -->
+    <string name="filter">Filter</string>
+    <string name="filter_clear_all">Clear All</string>
+    <string name="filter_genres">Genres</string>
+    <string name="filter_year">Year</string>
+    <string name="filter_season">Season</string>
+    <string name="filter_format">Format</string>
+    <string name="filter_status">Status</string>
+
+    <!-- Seasons -->
+    <string name="season_winter">Winter</string>
+    <string name="season_spring">Spring</string>
+    <string name="season_summer">Summer</string>
+    <string name="season_fall">Fall</string>
+
+    <!-- Media Status (for search filter) -->
+    <string name="media_status_airing">Airing</string>
+    <string name="media_status_finished">Finished</string>
+    <string name="media_status_not_yet_released">Not Yet Released</string>
+    <string name="media_status_cancelled">Cancelled</string>
+    <string name="media_status_hiatus">Hiatus</string>
+
+    <!-- Media Formats -->
+    <string name="format_tv">TV</string>
+    <string name="format_tv_short">TV Short</string>
+    <string name="format_movie">Movie</string>
+    <string name="format_special">Special</string>
+    <string name="format_ova">OVA</string>
+    <string name="format_ona">ONA</string>
+    <string name="format_music">Music</string>
+    <string name="format_novel">Novel</string>
+    <string name="format_one_shot">One Shot</string>
 </resources>

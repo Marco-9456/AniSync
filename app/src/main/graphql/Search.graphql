@@ -1,6 +1,25 @@
-query SearchMedia($search: String, $type: MediaType, $page: Int, $perPage: Int) {
+query SearchMedia(
+  $search: String, 
+  $type: MediaType, 
+  $page: Int, 
+  $perPage: Int,
+  $status: MediaStatus,
+  $format: MediaFormat,
+  $genre: String,
+  $seasonYear: Int,
+  $season: MediaSeason
+) {
   Page(page: $page, perPage: $perPage) {
-    media(search: $search, sort: POPULARITY_DESC, type: $type) {
+    media(
+      search: $search, 
+      sort: POPULARITY_DESC, 
+      type: $type,
+      status: $status,
+      format: $format,
+      genre: $genre,
+      seasonYear: $seasonYear,
+      season: $season
+    ) {
       id
       title {
         userPreferred
@@ -14,6 +33,8 @@ query SearchMedia($search: String, $type: MediaType, $page: Int, $perPage: Int) 
       chapters
       volumes
       type
+      format
+      genres
     }
   }
 }
