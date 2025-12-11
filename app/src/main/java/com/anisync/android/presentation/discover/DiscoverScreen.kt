@@ -188,9 +188,7 @@ fun DiscoverScreen(
                         onClick = {
                             keyboardController?.hide()
                             onMediaClick(item.mediaId)
-                        },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope
+                        }
                     )
                 }
             }
@@ -684,16 +682,12 @@ private fun HorizontalMediaList(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SearchResultItem(
     item: LibraryEntry,
-    onClick: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    onClick: () -> Unit
 ) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-
     ListItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
         supportingContent = {
@@ -706,21 +700,14 @@ private fun SearchResultItem(
             )
         },
         leadingContent = {
-            with(sharedTransitionScope) {
-                AsyncImage(
-                    model = item.coverUrl,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(8.dp))
-                        ),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            AsyncImage(
+                model = item.coverUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.bouncyClickable(onClick = onClick)

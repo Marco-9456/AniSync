@@ -2,17 +2,16 @@ package com.anisync.android.presentation.navigation
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,7 +26,19 @@ import com.anisync.android.presentation.profile.ProfileScreen
 // Lateral slide offset for tab transitions (10% of width)
 private const val TabSlideOffset = 10
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
+// Spring specs that match MaterialTheme.motionScheme defaults
+// These can be called from non-composable contexts (transition lambdas)
+private fun <T> spatialSpring() = spring<T>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow
+)
+
+private fun <T> effectsSpring() = spring<T>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMedium
+)
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
@@ -35,43 +46,43 @@ fun AniSyncNavHost(
     modifier: Modifier = Modifier
 ) {
     SharedTransitionLayout(modifier = modifier) {
-        // We access the motion scheme here to ensure all transitions use the same physics
-        val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-        val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-        // For Scale transitions (Float)
-        val scaleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
-
         NavHost(
             navController = navController,
             startDestination = Library,
             modifier = Modifier
         ) {
             composable<Login>(
-                enterTransition = { slideInHorizontally(spatialSpec) { it } + fadeIn(effectsSpec) },
-                exitTransition = { slideOutHorizontally(spatialSpec) { -it } + fadeOut(effectsSpec) },
-                popEnterTransition = { slideInHorizontally(spatialSpec) { -it } + fadeIn(effectsSpec) },
-                popExitTransition = { slideOutHorizontally(spatialSpec) { it } + fadeOut(effectsSpec) }
+                enterTransition = {
+                    slideInHorizontally(spatialSpring()) { it } + fadeIn(effectsSpring())
+                },
+                exitTransition = {
+                    slideOutHorizontally(spatialSpring()) { -it } + fadeOut(effectsSpring())
+                },
+                popEnterTransition = {
+                    slideInHorizontally(spatialSpring()) { -it } + fadeIn(effectsSpring())
+                },
+                popExitTransition = {
+                    slideOutHorizontally(spatialSpring()) { it } + fadeOut(effectsSpring())
+                }
             ) {
                 LoginScreen()
             }
 
             // --- MAIN TABS ---
-            // Note: We use springs (spatialSpec) here instead of tweens.
-            // This ensures the slide velocity matches the shared element velocity.
+            // Using spring physics for smooth, natural animations
 
             composable<Library>(
                 enterTransition = {
-                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { -it / TabSlideOffset }
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { -it / TabSlideOffset }
                 },
                 exitTransition = {
-                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { -it / TabSlideOffset }
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { -it / TabSlideOffset }
                 },
                 popEnterTransition = {
-                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { -it / TabSlideOffset }
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { -it / TabSlideOffset }
                 },
                 popExitTransition = {
-                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { -it / TabSlideOffset }
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { -it / TabSlideOffset }
                 }
             ) {
                 LibraryScreen(
@@ -84,14 +95,18 @@ fun AniSyncNavHost(
             composable<Discover>(
                 enterTransition = {
                     val offset = if (initialState.destination.route == Library::class.qualifiedName) 1 else -1
-                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { offset * (it / TabSlideOffset) }
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { offset * (it / TabSlideOffset) }
                 },
                 exitTransition = {
                     val offset = if (targetState.destination.route == Library::class.qualifiedName) 1 else -1
-                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { offset * (it / TabSlideOffset) }
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { offset * (it / TabSlideOffset) }
                 },
-                popEnterTransition = { fadeIn(effectsSpec) },
-                popExitTransition = { fadeOut(effectsSpec) }
+                popEnterTransition = {
+                    fadeIn(effectsSpring())
+                },
+                popExitTransition = {
+                    fadeOut(effectsSpring())
+                }
             ) {
                 DiscoverScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "discover") },
@@ -102,16 +117,16 @@ fun AniSyncNavHost(
 
             composable<Profile>(
                 enterTransition = {
-                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { it / TabSlideOffset }
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { it / TabSlideOffset }
                 },
                 exitTransition = {
-                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { it / TabSlideOffset }
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { it / TabSlideOffset }
                 },
                 popEnterTransition = {
-                    fadeIn(effectsSpec) + slideInHorizontally(spatialSpec) { it / TabSlideOffset }
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { it / TabSlideOffset }
                 },
                 popExitTransition = {
-                    fadeOut(effectsSpec) + slideOutHorizontally(spatialSpec) { it / TabSlideOffset }
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { it / TabSlideOffset }
                 }
             ) {
                 ProfileScreen(
@@ -133,16 +148,16 @@ fun AniSyncNavHost(
                     navDeepLink<Details>(basePath = "anisync://details")
                 ),
                 enterTransition = {
-                    fadeIn(effectsSpec) + scaleIn(initialScale = 0.92f, animationSpec = scaleSpec)
+                    fadeIn(effectsSpring()) + scaleIn(initialScale = 0.92f, animationSpec = spatialSpring())
                 },
                 exitTransition = {
-                    fadeOut(effectsSpec) + scaleOut(targetScale = 1.04f, animationSpec = scaleSpec)
+                    fadeOut(effectsSpring()) + scaleOut(targetScale = 1.04f, animationSpec = spatialSpring())
                 },
                 popEnterTransition = {
-                    fadeIn(effectsSpec) + scaleIn(initialScale = 0.92f, animationSpec = scaleSpec)
+                    fadeIn(effectsSpring()) + scaleIn(initialScale = 0.92f, animationSpec = spatialSpring())
                 },
                 popExitTransition = {
-                    fadeOut(effectsSpec) + scaleOut(targetScale = 0.92f, animationSpec = scaleSpec)
+                    fadeOut(effectsSpring()) + scaleOut(targetScale = 0.92f, animationSpec = spatialSpring())
                 }
             ) { backStackEntry ->
                 val details: Details = backStackEntry.toRoute()
