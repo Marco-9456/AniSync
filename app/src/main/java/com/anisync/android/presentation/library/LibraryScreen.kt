@@ -123,8 +123,8 @@ fun LibraryScreen(
     // Haptic feedback for micro-interactions
     val haptic = rememberHapticFeedback()
 
-    // View Toggle (Grid vs List)
-    var isGridView by remember { mutableStateOf(true) }
+    // View Toggle (Grid vs List) - use rememberSaveable to preserve across navigation
+    var isGridView by rememberSaveable { mutableStateOf(true) }
 
     // Sort Dropdown State
     var showSortMenu by remember { mutableStateOf(false) }
