@@ -72,6 +72,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.pluralStringResource
@@ -114,6 +116,7 @@ fun DiscoverScreen(
     val isSearching by viewModel.isSearching.collectAsState()
 
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
@@ -124,8 +127,17 @@ fun DiscoverScreen(
             .collect { viewModel.onSearchQueryChange(it) }
     }
 
+    // Clear keyboard and focus when search bar is collapsing to prevent InputConnection warnings
+    LaunchedEffect(searchBarState.currentValue) {
+        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
+    }
+
     // Handle back press to close search
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
+        keyboardController?.hide()
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
@@ -142,7 +154,10 @@ fun DiscoverScreen(
                 },
                 placeholder = { Text(if (mediaType == MediaType.ANIME) stringResource(R.string.search_anime_placeholder) else stringResource(R.string.search_manga_placeholder)) },
                 leadingIcon = {
-                    IconButton(onClick = { coroutineScope.launch { searchBarState.animateToCollapsed() } }) {
+                    IconButton(onClick = {
+                        keyboardController?.hide()
+                        coroutineScope.launch { searchBarState.animateToCollapsed() }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
