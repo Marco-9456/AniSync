@@ -151,6 +151,7 @@ private fun StaggeredAnimatedVisibility(
 @Composable
 fun DetailsScreen(
     mediaId: Int,
+    sourceScreen: String = "unknown",
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit = {},
     viewModel: DetailsViewModel = hiltViewModel(),
@@ -180,6 +181,7 @@ fun DetailsScreen(
                 is DetailsUiState.Success -> {
                     DetailsPageContent(
                         details = state.details,
+                        sourceScreen = sourceScreen,
                         onBackClick = onBackClick,
                         onRelationClick = onRelationClick,
                         onStatusUpdate = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
@@ -235,6 +237,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
 @Composable
 fun DetailsPageContent(
     details: MediaDetails,
+    sourceScreen: String,
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit,
     onStatusUpdate: (LibraryStatus, Int) -> Unit,
@@ -254,7 +257,7 @@ fun DetailsPageContent(
             contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
         ) {
             item {
-                PageHeaderSection(details, onBackClick, sharedTransitionScope, animatedVisibilityScope)
+                PageHeaderSection(details, sourceScreen, onBackClick, sharedTransitionScope, animatedVisibilityScope)
             }
 
             item {
@@ -487,6 +490,7 @@ fun TitleSection(details: MediaDetails) {
 @Composable
 fun PageHeaderSection(
     details: MediaDetails,
+    sourceScreen: String,
     onBackClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -583,7 +587,7 @@ fun PageHeaderSection(
                     .width(130.dp)
                     .height(190.dp)
                     .sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "media_cover_${details.id}"),
+                        sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ ->
                             spring(

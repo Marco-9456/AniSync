@@ -460,7 +460,7 @@ private fun HeroCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
                                 spring(
@@ -565,7 +565,7 @@ private fun MediaCard(
                         .fillMaxWidth()
                         .aspectRatio(0.7f) // Standard poster ratio
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
                                 spring(

@@ -537,7 +537,7 @@ fun FavoriteFilmStripItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "profile_media_cover_${entry.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
                                 tween(durationMillis = 300)

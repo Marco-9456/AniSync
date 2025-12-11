@@ -20,5 +20,14 @@ object Discover
 @Serializable
 object Profile
 
+/**
+ * Details screen route with media ID and source screen for shared element matching.
+ * @param mediaId The ID of the media to display
+ * @param sourceScreen The screen that initiated navigation (e.g., "library", "discover", "profile")
+ *                     Used to match shared element keys and prevent cross-tab transitions.
+ */
 @Serializable
-data class Details(val mediaId: Int)
+data class Details(
+    val mediaId: Int,
+    val sourceScreen: String = "unknown"
+)

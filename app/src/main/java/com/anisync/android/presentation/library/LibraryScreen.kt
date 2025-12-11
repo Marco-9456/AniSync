@@ -542,7 +542,7 @@ fun NewGridCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .sharedElement(
-                                sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
+                                sharedContentState = rememberSharedContentState(key = "library_media_cover_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 boundsTransform = { _, _ ->
                                     spring(

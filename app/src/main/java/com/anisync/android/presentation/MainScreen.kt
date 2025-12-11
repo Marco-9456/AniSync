@@ -2,9 +2,12 @@ package com.anisync.android.presentation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
@@ -124,6 +127,16 @@ fun MainScreen() {
                             animationSpec = tween(300),
                             label = "IconColor"
                         )
+                        
+                        // Scale pulse animation when selected
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.1f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = 0.6f,
+                                stiffness = 500f
+                            ),
+                            label = "IconScale"
+                        )
 
                         NavigationBarItem(
                             icon = {
@@ -131,7 +144,11 @@ fun MainScreen() {
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                     contentDescription = title,
-                                    tint = iconColor
+                                    tint = iconColor,
+                                    modifier = Modifier.graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    }
                                 )
                             },
                             label = {
@@ -180,8 +197,8 @@ fun MainScreen() {
         
         AniSyncNavHost(
             navController = navController,
-            onMediaClick = { mediaId ->
-                navController.navigate(Details(mediaId))
+            onMediaClick = { mediaId, sourceScreen ->
+                navController.navigate(Details(mediaId, sourceScreen))
             },
             modifier = Modifier.padding(effectivePadding)
         )
