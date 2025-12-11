@@ -428,18 +428,24 @@ fun NewGridCard(
         label = "Progress"
     )
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .height(340.dp)
-            .bouncyClickable(onClick = onClick) // Using unified interaction
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .height(340.dp)
+                .bouncyClickable(onClick = onClick)
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
+                ) // Using unified interaction
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     AsyncImage(
                         model = entry.coverUrl,
                         contentDescription = null,
@@ -452,13 +458,11 @@ fun NewGridCard(
                                 clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
                             )
                     )
-                }
-                Box(
-                    modifier = Modifier.fillMaxSize().background(
-                        Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 200f)
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 200f)
+                        )
                     )
-                )
-                with(sharedTransitionScope) {
                     Text(
                         text = entry.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -474,59 +478,59 @@ fun NewGridCard(
                             )
                     )
                 }
-            }
 
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val nextAiring = entry.nextAiringEpisode
-                    val latest = if (nextAiring != null) nextAiring - 1 else total
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val nextAiring = entry.nextAiringEpisode
+                        val latest = if (nextAiring != null) nextAiring - 1 else total
 
-                    if (entry.status == LibraryStatus.CURRENT) {
-                        if (latest != null && entry.progress < latest) {
-                            StatusBadge(formatEpisodesBehind(latest - entry.progress), Color(0xFFB3261E), Color.White)
-                        } else {
-                            StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
+                        if (entry.status == LibraryStatus.CURRENT) {
+                            if (latest != null && entry.progress < latest) {
+                                StatusBadge(formatEpisodesBehind(latest - entry.progress), Color(0xFFB3261E), Color.White)
+                            } else {
+                                StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                        }
+
+                        if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
+                            Text(
+                                text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
+                                style = MaterialTheme.typography.bodySmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
 
-                    if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinearProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                        )
                         Text(
-                            text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
-                            style = MaterialTheme.typography.bodySmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis
+                            text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
+                            style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, fontSize = 10.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinearProgressIndicator(
-                        progress = { animatedProgress },
-                        modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                    )
-                    Text(
-                        text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
-                        style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, fontSize = 10.sp
-                    )
-                }
-            }
-
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(
-                    modifier = Modifier.weight(1f).height(36.dp).bouncyClickable { haptic.click(); onDecrement() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp)) }
-                }
-                Surface(
-                    modifier = Modifier.weight(1f).height(36.dp).bouncyClickable { haptic.click(); onIncrement() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)) }
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        modifier = Modifier.weight(1f).height(36.dp).bouncyClickable { haptic.click(); onDecrement() },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp)) }
+                    }
+                    Surface(
+                        modifier = Modifier.weight(1f).height(36.dp).bouncyClickable { haptic.click(); onIncrement() },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)) }
+                    }
                 }
             }
         }
@@ -556,17 +560,23 @@ fun NewListCard(
         label = "Progress"
     )
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .height(110.dp)
-            .bouncyClickable(onClick = onClick)
-    ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .height(110.dp)
+                .bouncyClickable(onClick = onClick)
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
+                )
+        ) {
+            Row(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
                     model = entry.coverUrl,
                     contentDescription = null,
@@ -579,11 +589,9 @@ fun NewListCard(
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
                 )
-            }
 
-            Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 8.dp), verticalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    with(sharedTransitionScope) {
+                Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 8.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                    Column {
                         Text(
                             text = entry.title,
                             style = MaterialTheme.typography.titleMedium,
@@ -596,54 +604,54 @@ fun NewListCard(
                                 boundsTransform = { _, _ -> spatialSpec }
                             )
                         )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val nextAiring = entry.nextAiringEpisode
-                        val latest = if (nextAiring != null) nextAiring - 1 else total
-                        if (entry.status == LibraryStatus.CURRENT) {
-                            if (latest != null && entry.progress < latest) {
-                                StatusBadge(formatEpisodesBehind(latest - entry.progress), Color(0xFFF2B8B5), Color(0xFF601410))
-                            } else {
-                                StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val nextAiring = entry.nextAiringEpisode
+                            val latest = if (nextAiring != null) nextAiring - 1 else total
+                            if (entry.status == LibraryStatus.CURRENT) {
+                                if (latest != null && entry.progress < latest) {
+                                    StatusBadge(formatEpisodesBehind(latest - entry.progress), Color(0xFFF2B8B5), Color(0xFF601410))
+                                } else {
+                                    StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+                                }
+                            }
+                            if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
+                                Text(
+                                    text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
+                                    style = MaterialTheme.typography.bodySmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
-                        if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
-                            Text(
-                                text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
-                                style = MaterialTheme.typography.bodySmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinearProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        )
+                        Text(
+                            text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
+                            style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, fontSize = 11.sp
+                        )
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    LinearProgressIndicator(
-                        progress = { animatedProgress },
-                        modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
-                        style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, fontSize = 11.sp
-                    )
-                }
-            }
 
-            Column(modifier = Modifier.width(48.dp).fillMaxHeight().padding(vertical = 12.dp, horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Surface(
-                    modifier = Modifier.weight(1f).fillMaxWidth().bouncyClickable { haptic.click(); onIncrement() },
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) }
-                }
-                Surface(
-                    modifier = Modifier.weight(1f).fillMaxWidth().bouncyClickable { haptic.click(); onDecrement() },
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh
-                ) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) }
+                Column(modifier = Modifier.width(48.dp).fillMaxHeight().padding(vertical = 12.dp, horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Surface(
+                        modifier = Modifier.weight(1f).fillMaxWidth().bouncyClickable { haptic.click(); onIncrement() },
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) }
+                    }
+                    Surface(
+                        modifier = Modifier.weight(1f).fillMaxWidth().bouncyClickable { haptic.click(); onDecrement() },
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) }
+                    }
                 }
             }
         }

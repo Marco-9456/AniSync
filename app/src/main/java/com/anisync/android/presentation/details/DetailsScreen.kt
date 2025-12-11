@@ -143,7 +143,7 @@ private fun StaggeredAnimatedVisibility(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailsScreen(
     mediaId: Int,
@@ -160,10 +160,20 @@ fun DetailsScreen(
         viewModel.loadMedia(mediaId)
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ) { paddingValues ->
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+
+    with(sharedTransitionScope) {
+        Scaffold(
+            modifier = Modifier
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "${sourceScreen}_container_${mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
+                ),
+            containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -191,6 +201,7 @@ fun DetailsScreen(
                 }
             }
         }
+    }
     }
 }
 
