@@ -34,19 +34,17 @@ class HapticFeedbackHelper(
     /**
      * Performs haptic feedback of the specified type.
      * Uses Compose's HapticFeedback API with View-based fallback.
+     * Respects system haptic settings.
      * 
      * @param type The type of haptic feedback to perform
      */
     fun performHapticFeedback(type: HapticType) {
         when (type) {
             HapticType.Click -> {
-                // Use Compose API first (more reliable)
+                // Use Compose API (reliable and respects system settings)
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 // Also trigger view-based feedback for stronger vibration on some devices
-                view.performHapticFeedback(
-                    HapticFeedbackConstants.VIRTUAL_KEY,
-                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-                )
+                view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
             }
             HapticType.LongPress -> {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -54,16 +52,10 @@ class HapticFeedbackHelper(
             HapticType.Confirm -> {
                 // CONFIRM constant is available on API 30+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    view.performHapticFeedback(
-                        HapticFeedbackConstants.CONFIRM,
-                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-                    )
+                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                 } else {
                     // Fallback for older devices
-                    view.performHapticFeedback(
-                        HapticFeedbackConstants.VIRTUAL_KEY,
-                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-                    )
+                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                 }
             }
         }
@@ -106,3 +98,4 @@ fun rememberHapticFeedback(): HapticFeedbackHelper {
     val view = LocalView.current
     return remember(hapticFeedback, view) { HapticFeedbackHelper(hapticFeedback, view) }
 }
+

@@ -37,12 +37,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -201,9 +205,9 @@ fun BentoProfileLayout(
             }
         }
 
-        // --- Settings (Control Center) ---
+        // --- Settings ---
         item(span = StaggeredGridItemSpan.FullLine) {
-            ControlCenterSection(
+            SettingsSection(
                 viewModel = viewModel,
                 onLogoutClick = onLogoutClick
             )
@@ -533,13 +537,15 @@ fun FavoriteFilmStripItem(
 }
 
 @Composable
-fun ControlCenterSection(
+fun SettingsSection(
     viewModel: ProfileViewModel,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
+    val hapticEnabled by viewModel.hapticEnabled.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -548,6 +554,7 @@ fun ControlCenterSection(
     }
 
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     if (showSettingsDialog) {
         AlertDialog(
@@ -567,24 +574,146 @@ fun ControlCenterSection(
         )
     }
 
-    Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // Theme selection dialog
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            currentTheme = themeMode,
+            onThemeSelected = { 
+                viewModel.setThemeMode(it)
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Section Title
         Text(
-            text = stringResource(R.string.section_control_center),
+            text = stringResource(R.string.section_settings),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+            modifier = Modifier.padding(start = 4.dp)
         )
 
+        // Look and Feel Card
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column {
+                // Section Header
+                Text(
+                    text = stringResource(R.string.section_look_and_feel),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                )
+
+                // Theme Row
+                Row(
+                    modifier = Modifier
+                        .clickable { showThemeDialog = true }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Palette,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text(stringResource(R.string.setting_theme), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                getThemeLabel(themeMode),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Haptic Feedback Row
+                Row(
+                    modifier = Modifier
+                        .clickable { viewModel.setHapticEnabled(!hapticEnabled) }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = if (hapticEnabled) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = CircleShape,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Vibration,
+                                    contentDescription = null,
+                                    tint = if (hapticEnabled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text(stringResource(R.string.setting_haptic_feedback), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                stringResource(R.string.setting_haptic_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = hapticEnabled,
+                        onCheckedChange = null, // Handled by Row click
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+            }
+        }
+
+        // Account Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                // Section Header
+                Text(
+                    text = stringResource(R.string.section_account),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                )
+
                 // Notification Row
                 Row(
                     modifier = Modifier
                         .clickable {
-                            // Toggle Logic (same as before)
+                            // Toggle Logic
                             if (!isNotificationsEnabled) {
                                 val areEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
                                 if (!areEnabled) {
@@ -672,6 +801,58 @@ fun ControlCenterSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ThemeSelectionDialog(
+    currentTheme: com.anisync.android.data.ThemeMode,
+    onThemeSelected: (com.anisync.android.data.ThemeMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.setting_theme)) },
+        text = {
+            Column {
+                com.anisync.android.data.ThemeMode.entries.forEach { mode ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onThemeSelected(mode) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (currentTheme == mode) Icons.Default.Check else Icons.Default.Circle,
+                            contentDescription = null,
+                            tint = if (currentTheme == mode) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = getThemeLabel(mode),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (currentTheme == mode) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun getThemeLabel(mode: com.anisync.android.data.ThemeMode): String {
+    return when (mode) {
+        com.anisync.android.data.ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+        com.anisync.android.data.ThemeMode.DARK -> stringResource(R.string.theme_dark)
+        com.anisync.android.data.ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
     }
 }
 

@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -12,7 +13,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
+import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.ui.theme.AppTheme
@@ -25,6 +28,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
+    
+    @Inject
+    lateinit var appSettings: AppSettings
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +42,17 @@ class MainActivity : ComponentActivity() {
         handleAuthRedirect(intent)
         
         setContent {
-            AppTheme {
+            val themeMode by appSettings.themeMode.collectAsState()
+            val isSystemDark = isSystemInDarkTheme()
+            
+            // Determine if dark theme should be used based on settings
+            val useDarkTheme = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> isSystemDark
+            }
+            
+            AppTheme(darkTheme = useDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -92,3 +108,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+

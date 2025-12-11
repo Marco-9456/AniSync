@@ -92,10 +92,19 @@
     <string name="stat_anime_completed">Anime Completed</string>
     <string name="stat_chapters_read">Chapters Read</string>
     <string name="section_favorites">Favorites</string>
-    <string name="section_control_center">Control Center</string>
+    <string name="section_settings">Settings</string>
+    <string name="section_look_and_feel">Look and Feel</string>
+    <string name="section_account">Account</string>
+    <string name="setting_theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System</string>
+    <string name="setting_haptic_feedback">Haptic Feedback</string>
+    <string name="setting_haptic_description">Vibrate on touch interactions</string>
     <string name="control_notifications">Notifications</string>
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>
+
 
     <!-- Notification Dialog -->
     <string name="dialog_enable_notifications_title">Enable Notifications</string>

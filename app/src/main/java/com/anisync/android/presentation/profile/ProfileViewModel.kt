@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.anisync.android.data.AppSettings
+import com.anisync.android.data.ThemeMode
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
@@ -13,10 +15,8 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -36,14 +36,16 @@ class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val profileRepository: ProfileRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
+    private val appSettings: AppSettings,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val workManager = WorkManager.getInstance(context)
-    private val prefs = context.getSharedPreferences("anisync_prefs", Context.MODE_PRIVATE)
 
-    private val _isNotificationsEnabled = MutableStateFlow(prefs.getBoolean("notifications_enabled", false))
-    val isNotificationsEnabled = _isNotificationsEnabled.asStateFlow()
+    // Settings from AppSettings
+    val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
+    val hapticEnabled: StateFlow<Boolean> = appSettings.hapticEnabled
+    val isNotificationsEnabled: StateFlow<Boolean> = appSettings.notificationsEnabled
 
     /**
      * Observe profile from local cache via Flow.
@@ -89,10 +91,17 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun setThemeMode(mode: ThemeMode) {
+        appSettings.setThemeMode(mode)
+    }
+
+    fun setHapticEnabled(enabled: Boolean) {
+        appSettings.setHapticEnabled(enabled)
+    }
+
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch {
-            _isNotificationsEnabled.value = enabled
-            prefs.edit().putBoolean("notifications_enabled", enabled).apply()
+            appSettings.setNotificationsEnabled(enabled)
 
             if (enabled) {
                 val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(15, TimeUnit.MINUTES)
@@ -109,3 +118,4 @@ class ProfileViewModel @Inject constructor(
         }
     }
 }
+
