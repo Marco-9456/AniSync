@@ -6,16 +6,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,12 +27,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Search
@@ -37,6 +44,8 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,7 +58,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -60,7 +68,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
@@ -77,6 +84,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.LocalIndication
@@ -92,6 +100,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.R
@@ -139,9 +149,9 @@ fun DiscoverScreen(
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
-    
-    // Filter sheet state
-    var showFilterSheet by remember { mutableStateOf(false) }
+
+    // Filter dialog state
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     // Sync textFieldState changes with ViewModel
     LaunchedEffect(textFieldState) {
@@ -193,7 +203,7 @@ fun DiscoverScreen(
                             }
                         }
                         // Filter button with badge when filters are active
-                        IconButton(onClick = { showFilterSheet = true }) {
+                        IconButton(onClick = { showFilterDialog = true }) {
                             if (searchFilters.hasActiveFilters) {
                                 BadgedBox(
                                     badge = {
@@ -250,13 +260,13 @@ fun DiscoverScreen(
         }
     }
 
-    // Search Filter Bottom Sheet
-    if (showFilterSheet) {
-        SearchFilterSheet(
+    // Search Filter Dialog
+    if (showFilterDialog) {
+        SearchFilterDialog(
             filters = searchFilters,
             mediaType = mediaType,
             onFiltersChanged = { viewModel.updateFilters(it) },
-            onDismiss = { showFilterSheet = false }
+            onDismiss = { showFilterDialog = false }
         )
     }
 
@@ -286,7 +296,7 @@ fun DiscoverScreen(
         }
     ) { paddingValues ->
         val pullToRefreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
-        
+
         // Main Content
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -304,7 +314,7 @@ fun DiscoverScreen(
                     androidx.compose.material3.MaterialShapes.Heart,
                     androidx.compose.material3.MaterialShapes.Clover4Leaf
                 )
-                
+
                 // Show LoadingIndicator when refreshing or pulling
                 if (isRefreshing || pullToRefreshState.distanceFraction > 0f) {
                     androidx.compose.material3.ContainedLoadingIndicator(
@@ -412,16 +422,16 @@ private fun MediaTypeSelector(
     modifier: Modifier = Modifier
 ) {
     val haptic = rememberHapticFeedback()
-    
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
     ) {
         ToggleButton(
             checked = selected == MediaType.ANIME,
-            onCheckedChange = { 
+            onCheckedChange = {
                 haptic.click()
-                onSelect(MediaType.ANIME) 
+                onSelect(MediaType.ANIME)
             },
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
@@ -436,9 +446,9 @@ private fun MediaTypeSelector(
         }
         ToggleButton(
             checked = selected == MediaType.MANGA,
-            onCheckedChange = { 
+            onCheckedChange = {
                 haptic.click()
-                onSelect(MediaType.MANGA) 
+                onSelect(MediaType.MANGA)
             },
             modifier = Modifier.weight(1f),
             shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
@@ -805,177 +815,214 @@ private fun formatStatus(status: String?): String? {
 }
 
 /**
- * Bottom sheet for search filters including Genres, Year, Season, Format, and Airing Status.
+ * Search Filter Dialog
+ * Replaces the Bottom Sheet with a centered, floating dialog.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun SearchFilterSheet(
+private fun SearchFilterDialog(
     filters: SearchFilters,
     mediaType: MediaType,
     onFiltersChanged: (SearchFilters) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
-    ModalBottomSheet(
+    Dialog(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Column(
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp)
+                .fillMaxWidth(0.9f) // Slightly narrower than screen
+                .fillMaxHeight(0.85f)
+                .clip(RoundedCornerShape(28.dp)),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh, // Slightly higher elevation color
+            tonalElevation = 6.dp
         ) {
-            // Header with title and clear button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                Text(
-                    text = stringResource(R.string.filter),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                if (filters.hasActiveFilters) {
-                    TextButton(onClick = { onFiltersChanged(SearchFilters()) }) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.filter),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // We keep the button in the layout (invisible) to prevent height jumps
+                    val hasFilters = filters.hasActiveFilters
+                    TextButton(
+                        onClick = { onFiltersChanged(SearchFilters()) },
+                        enabled = hasFilters,
+                        modifier = Modifier.alpha(if (hasFilters) 1f else 0f),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                            disabledContentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
                         Text(stringResource(R.string.filter_clear_all))
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Genres Section
-            FilterSectionHeader(title = stringResource(R.string.filter_genres))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(AVAILABLE_GENRES) { genre ->
-                    FilterChip(
-                        selected = genre in filters.genres,
-                        onClick = {
-                            val newGenres = if (genre in filters.genres) 
-                                filters.genres - genre 
-                            else 
-                                filters.genres + genre
-                            onFiltersChanged(filters.copy(genres = newGenres))
-                        },
-                        label = { Text(genre) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                // Content
+                Column(
+                    modifier = Modifier
+                        .weight(1f) // Takes remaining space
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(28.dp)
+                ) {
+
+                    // Genres Section (FlowRow)
+                    FilterSection(title = stringResource(R.string.filter_genres)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            AVAILABLE_GENRES.forEach { genre ->
+                                val selected = genre in filters.genres
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        val newGenres = if (selected) filters.genres - genre else filters.genres + genre
+                                        onFiltersChanged(filters.copy(genres = newGenres))
+                                    },
+                                    label = { Text(genre) },
+                                    leadingIcon = if (selected) {
+                                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null
+                                )
+                            }
+                        }
+                    }
+
+                    // Season Section
+                    FilterSection(title = stringResource(R.string.filter_season)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MediaSeason.entries.filter { it != MediaSeason.UNKNOWN__ }.forEach { season ->
+                                val selected = filters.season == season
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        onFiltersChanged(filters.copy(season = if (selected) null else season))
+                                    },
+                                    label = { Text(getSeasonLabel(season)) },
+                                    leadingIcon = if (selected) {
+                                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null
+                                )
+                            }
+                        }
+                    }
+
+                    // Year Section (Horizontal Scroll is better for timeline/numbers)
+                    FilterSection(title = stringResource(R.string.filter_year)) {
+                        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+                        val years = (currentYear downTo 1970).toList()
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                        ) {
+                            items(years) { year ->
+                                val selected = filters.year == year
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        onFiltersChanged(filters.copy(year = if (selected) null else year))
+                                    },
+                                    label = { Text(year.toString()) },
+                                    border = if (selected) null else FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = false,
+                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    // Format Section
+                    FilterSection(title = stringResource(R.string.filter_format)) {
+                        val availableFormats = if (mediaType == MediaType.ANIME) {
+                            listOf(MediaFormat.TV, MediaFormat.TV_SHORT, MediaFormat.MOVIE, MediaFormat.SPECIAL, MediaFormat.OVA, MediaFormat.ONA, MediaFormat.MUSIC)
+                        } else {
+                            listOf(MediaFormat.MANGA, MediaFormat.NOVEL, MediaFormat.ONE_SHOT)
+                        }
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            availableFormats.forEach { format ->
+                                val selected = format in filters.formats
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        val newFormats = if (selected) filters.formats - format else filters.formats + format
+                                        onFiltersChanged(filters.copy(formats = newFormats))
+                                    },
+                                    label = { Text(getFormatLabel(format)) },
+                                    leadingIcon = if (selected) {
+                                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null
+                                )
+                            }
+                        }
+                    }
+
+                    // Status Section
+                    FilterSection(title = stringResource(R.string.filter_status)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MediaStatus.entries.filter { it != MediaStatus.UNKNOWN__ }.forEach { status ->
+                                val selected = filters.status == status
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        onFiltersChanged(filters.copy(status = if (selected) null else status))
+                                    },
+                                    label = { Text(getStatusLabel(status)) },
+                                    leadingIcon = if (selected) {
+                                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null
+                                )
+                            }
+                        }
+                    }
                 }
-            }
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            
-            // Year Section
-            FilterSectionHeader(title = stringResource(R.string.filter_year))
-            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-            val years = (currentYear downTo currentYear - 20).toList()
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(years) { year ->
-                    FilterChip(
-                        selected = filters.year == year,
-                        onClick = {
-                            val newYear = if (filters.year == year) null else year
-                            onFiltersChanged(filters.copy(year = newYear))
-                        },
-                        label = { Text(year.toString()) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+
+                // Footer
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
                         )
-                    )
-                }
-            }
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            
-            // Season Section
-            FilterSectionHeader(title = stringResource(R.string.filter_season))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                MediaSeason.entries.forEach { season ->
-                    FilterChip(
-                        selected = filters.season == season,
-                        onClick = {
-                            val newSeason = if (filters.season == season) null else season
-                            onFiltersChanged(filters.copy(season = newSeason))
-                        },
-                        label = { Text(getSeasonLabel(season)) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Text(
+                            text = "Show Results",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
-                    )
-                }
-            }
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            
-            // Format Section
-            FilterSectionHeader(title = stringResource(R.string.filter_format))
-            val availableFormats = if (mediaType == MediaType.ANIME) {
-                listOf(MediaFormat.TV, MediaFormat.TV_SHORT, MediaFormat.MOVIE, MediaFormat.SPECIAL, MediaFormat.OVA, MediaFormat.ONA, MediaFormat.MUSIC)
-            } else {
-                listOf(MediaFormat.MANGA, MediaFormat.NOVEL, MediaFormat.ONE_SHOT)
-            }
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(availableFormats) { format ->
-                    FilterChip(
-                        selected = format in filters.formats,
-                        onClick = {
-                            val newFormats = if (format in filters.formats) 
-                                filters.formats - format 
-                            else 
-                                filters.formats + format
-                            onFiltersChanged(filters.copy(formats = newFormats))
-                        },
-                        label = { Text(getFormatLabel(format)) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                }
-            }
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            
-            // Airing Status Section
-            FilterSectionHeader(title = stringResource(R.string.filter_status))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(MediaStatus.entries.filter { it != MediaStatus.UNKNOWN__ }) { status ->
-                    FilterChip(
-                        selected = filters.status == status,
-                        onClick = {
-                            val newStatus = if (filters.status == status) null else status
-                            onFiltersChanged(filters.copy(status = newStatus))
-                        },
-                        label = { Text(getStatusLabel(status)) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
+                    }
                 }
             }
         }
@@ -983,13 +1030,19 @@ private fun SearchFilterSheet(
 }
 
 @Composable
-private fun FilterSectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontWeight = FontWeight.SemiBold
-    )
+private fun FilterSection(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
+        )
+        content()
+    }
 }
 
 @Composable
