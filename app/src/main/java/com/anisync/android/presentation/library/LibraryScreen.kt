@@ -176,7 +176,10 @@ fun LibraryScreen(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                                 modifier = Modifier.size(40.dp),
-                                onClick = { showSortMenu = true }
+                                onClick = { 
+                                    haptic.click()
+                                    showSortMenu = true 
+                                }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -210,6 +213,7 @@ fun LibraryScreen(
                                             )
                                         },
                                         onClick = {
+                                            haptic.click()
                                             viewModel.onSortChange(sort)
                                             showSortMenu = false
                                         },
@@ -237,7 +241,10 @@ fun LibraryScreen(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                             modifier = Modifier.size(40.dp),
-                            onClick = { isGridView = !isGridView }
+                            onClick = { 
+                                haptic.click()
+                                isGridView = !isGridView 
+                            }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -262,7 +269,10 @@ fun LibraryScreen(
                 ) {
                     ToggleButton(
                         checked = mediaType == MediaType.ANIME,
-                        onCheckedChange = { viewModel.onMediaTypeChange(MediaType.ANIME) },
+                        onCheckedChange = { 
+                            haptic.click()
+                            viewModel.onMediaTypeChange(MediaType.ANIME) 
+                        },
                         modifier = Modifier.weight(1f),
                         shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
                     ) {
@@ -270,7 +280,10 @@ fun LibraryScreen(
                     }
                     ToggleButton(
                         checked = mediaType == MediaType.MANGA,
-                        onCheckedChange = { viewModel.onMediaTypeChange(MediaType.MANGA) },
+                        onCheckedChange = { 
+                            haptic.click()
+                            viewModel.onMediaTypeChange(MediaType.MANGA) 
+                        },
                         modifier = Modifier.weight(1f),
                         shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
                     ) {
@@ -306,7 +319,10 @@ fun LibraryScreen(
                         }
                         FilterChip(
                             selected = isSelected,
-                            onClick = { selectedStatus = status },
+                            onClick = { 
+                                haptic.click()
+                                selectedStatus = status 
+                            },
                             label = { Text(getStatusLabel(status, mediaType)) },
                             leadingIcon = {
                                 Icon(
