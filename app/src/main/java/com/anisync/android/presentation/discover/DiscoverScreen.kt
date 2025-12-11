@@ -84,14 +84,23 @@ import com.anisync.android.presentation.util.formatChaptersCount
 import com.anisync.android.presentation.util.formatEpisodesCount
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.shimmerEffect
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
-    viewModel: DiscoverViewModel = hiltViewModel()
+    viewModel: DiscoverViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
@@ -175,7 +184,9 @@ fun DiscoverScreen(
                         onClick = {
                             keyboardController?.hide()
                             onMediaClick(item.mediaId)
-                        }
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
             }
@@ -278,7 +289,9 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             CinematicHeroCarousel(
                                 items = state.trending.take(10),
-                                onItemClick = onMediaClick
+                                onItemClick = onMediaClick,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
 
@@ -292,7 +305,9 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
                                 items = state.popular,
-                                onItemClick = onMediaClick
+                                onItemClick = onMediaClick,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
 
@@ -306,7 +321,9 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
                                 items = state.upcoming,
-                                onItemClick = onMediaClick
+                                onItemClick = onMediaClick,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
                     }
@@ -384,9 +401,14 @@ private fun SectionHeader(title: String, icon: ImageVector, color: Color) {
 }
 
 // --- CAROUSEL (UNTOUCHED) ---
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CinematicHeroCarousel(items: List<LibraryEntry>, onItemClick: (Int) -> Unit) {
+private fun CinematicHeroCarousel(
+    items: List<LibraryEntry>,
+    onItemClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     val carouselState = rememberCarouselState { items.size }
 
     HorizontalCenteredHeroCarousel(
@@ -402,13 +424,22 @@ private fun CinematicHeroCarousel(items: List<LibraryEntry>, onItemClick: (Int) 
         HeroCard(
             item = item,
             onClick = { onItemClick(item.mediaId) },
-            modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
+            modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge),
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope
         )
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun HeroCard(
+    item: LibraryEntry,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     Card(
         onClick = onClick,
         modifier = modifier.height(380.dp),
@@ -416,12 +447,21 @@ private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = item.coverUrl,
-                contentDescription = item.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = item.coverUrl,
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 300)
+                            }
+                        )
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -486,11 +526,14 @@ private fun HeroCard(item: LibraryEntry, onClick: () -> Unit, modifier: Modifier
  * - Top: Image Thumbnail
  * - Bottom: Content Area (Title + Type + Rating Pill)
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun MediaCard(
     item: LibraryEntry,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     Card(
         onClick = onClick,
@@ -503,14 +546,23 @@ private fun MediaCard(
     ) {
         Column {
             // Image Container
-            AsyncImage(
-                model = item.coverUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.7f) // Standard poster ratio
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = item.coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.7f) // Standard poster ratio
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 300)
+                            }
+                        )
+                )
+            }
 
             // Content Container
             Column(
@@ -577,7 +629,12 @@ private fun MediaCard(
 }
 
 @Composable
-private fun HorizontalMediaList(items: List<LibraryEntry>, onItemClick: (Int) -> Unit) {
+private fun HorizontalMediaList(
+    items: List<LibraryEntry>,
+    onItemClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -585,14 +642,22 @@ private fun HorizontalMediaList(items: List<LibraryEntry>, onItemClick: (Int) ->
         itemsIndexed(items) { _, item ->
             MediaCard(
                 item = item,
-                onClick = { onItemClick(item.mediaId) }
+                onClick = { onItemClick(item.mediaId) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
             )
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun SearchResultItem(item: LibraryEntry, onClick: () -> Unit) {
+private fun SearchResultItem(
+    item: LibraryEntry,
+    onClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     ListItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
         supportingContent = {
@@ -605,12 +670,22 @@ private fun SearchResultItem(item: LibraryEntry, onClick: () -> Unit) {
             )
         },
         leadingContent = {
-            AsyncImage(
-                model = item.coverUrl,
-                contentDescription = null,
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = item.coverUrl,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 300)
+                            }
+                        )
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable { onClick() }

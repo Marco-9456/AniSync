@@ -9,6 +9,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -93,11 +97,14 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
     onLogoutClick: () -> Unit,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -124,7 +131,9 @@ fun ProfileScreen(
                         profile = state.profile,
                         viewModel = viewModel,
                         onMediaClick = onMediaClick,
-                        onLogoutClick = onLogoutClick
+                        onLogoutClick = onLogoutClick,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
             }
@@ -132,12 +141,15 @@ fun ProfileScreen(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun BentoProfileLayout(
     profile: UserProfile,
     viewModel: ProfileViewModel,
     onMediaClick: (Int) -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
@@ -200,7 +212,9 @@ fun BentoProfileLayout(
             item(span = StaggeredGridItemSpan.FullLine) {
                 FavoritesSection(
                     favorites = profile.favoriteAnime,
-                    onMediaClick = onMediaClick
+                    onMediaClick = onMediaClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
                 )
             }
         }
@@ -460,11 +474,14 @@ fun StatCardSmall(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun FavoritesSection(
     favorites: List<LibraryEntry>,
     onMediaClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     Column(modifier = modifier.padding(top = 12.dp)) {
         Row(
@@ -484,16 +501,24 @@ fun FavoritesSection(
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             items(favorites) { entry ->
-                FavoriteFilmStripItem(entry, onMediaClick)
+                FavoriteFilmStripItem(
+                    entry = entry,
+                    onClick = onMediaClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun FavoriteFilmStripItem(
     entry: LibraryEntry,
-    onClick: (Int) -> Unit
+    onClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     Card(
         onClick = { onClick(entry.mediaId) },
@@ -505,12 +530,21 @@ fun FavoriteFilmStripItem(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = entry.coverUrl,
-                contentDescription = entry.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = entry.coverUrl,
+                    contentDescription = entry.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 300)
+                            }
+                        )
+                )
+            }
             // Title Gradient
             Box(
                 modifier = Modifier

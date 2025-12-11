@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -104,12 +107,15 @@ private val EmphasizedEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 private const val AnimationDurationShort = 400
 private const val AnimationDurationLong = 600
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DetailsScreen(
     mediaId: Int,
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit = {},
-    viewModel: DetailsViewModel = hiltViewModel()
+    viewModel: DetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -137,7 +143,9 @@ fun DetailsScreen(
                         onBackClick = onBackClick,
                         onRelationClick = onRelationClick,
                         onStatusUpdate = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
-                        onRemove = { viewModel.deleteMediaListEntry() }
+                        onRemove = { viewModel.deleteMediaListEntry() },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
                 is DetailsUiState.Error -> {
@@ -183,14 +191,16 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailsPageContent(
     details: MediaDetails,
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit,
     onStatusUpdate: (LibraryStatus, Int) -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val listState = rememberLazyListState()
     // Using 0 as a threshold is strict, let's give it a little buffer or just check index
@@ -204,7 +214,7 @@ fun DetailsPageContent(
             contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
         ) {
             item {
-                PageHeaderSection(details, onBackClick)
+                PageHeaderSection(details, onBackClick, sharedTransitionScope, animatedVisibilityScope)
             }
 
             item {
@@ -415,8 +425,14 @@ fun TitleSection(details: MediaDetails) {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun PageHeaderSection(details: MediaDetails, onBackClick: () -> Unit) {
+fun PageHeaderSection(
+    details: MediaDetails,
+    onBackClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -501,22 +517,31 @@ fun PageHeaderSection(details: MediaDetails, onBackClick: () -> Unit) {
         }
 
         // Cover Image (Poster)
-        Card(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 24.dp)
-                .width(130.dp)
-                .height(190.dp),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            AsyncImage(
-                model = details.coverUrl,
-                contentDescription = stringResource(R.string.content_description_cover),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+        with(sharedTransitionScope) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 24.dp)
+                    .width(130.dp)
+                    .height(190.dp)
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(key = "media_cover_${details.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ ->
+                            tween(durationMillis = 300)
+                        }
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                AsyncImage(
+                    model = details.coverUrl,
+                    contentDescription = stringResource(R.string.content_description_cover),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }

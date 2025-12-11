@@ -1,5 +1,9 @@
 package com.anisync.android.presentation.navigation
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -33,106 +37,117 @@ private val EmphasizedDecelerateEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.
 private const val DurationMedium2 = 300
 private const val DurationMedium4 = 400
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
     onMediaClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = Library,
-        modifier = modifier
-    ) {
-        composable<Login>(
-            enterTransition = { slideInHorizontally { it } + fadeIn() },
-            exitTransition = { slideOutHorizontally { -it } + fadeOut() },
-            popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
-            popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+    SharedTransitionLayout(modifier = modifier) {
+        NavHost(
+            navController = navController,
+            startDestination = Library,
+            modifier = Modifier
         ) {
-            LoginScreen()
-        }
-        composable<Library>(
-            enterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
-            exitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) },
-            popEnterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
-            popExitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) }
-        ) {
-            LibraryScreen(
-                onMediaClick = onMediaClick
-            )
-        }
-        composable<Discover>(
-            enterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
-            exitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) },
-            popEnterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
-            popExitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) }
-        ) {
-            DiscoverScreen(
-                onMediaClick = onMediaClick
-            )
-        }
-        composable<Profile>(
-            enterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
-            exitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) },
-            popEnterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
-            popExitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) }
-        ) {
-            ProfileScreen(
-                onMediaClick = onMediaClick,
-                onLogoutClick = {
-                    navController.navigate(Login) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-
-        // Details screen uses M3 fade-through transition pattern for entering detail views
-        // Fade-through: outgoing fades out, then incoming fades in with slight scale
-        composable<Details>(
-            deepLinks = listOf(
-                navDeepLink<Details>(basePath = "anisync://details")
-            ),
-            enterTransition = {
-                fadeIn(tween(DurationMedium4, easing = EmphasizedDecelerateEasing)) +
-                scaleIn(
-                    initialScale = 0.92f,
-                    animationSpec = tween(DurationMedium4, easing = EmphasizedDecelerateEasing)
-                )
-            },
-            exitTransition = {
-                fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) +
-                scaleOut(
-                    targetScale = 1.04f,
-                    animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
-                )
-            },
-            popEnterTransition = {
-                fadeIn(tween(DurationMedium4, easing = EmphasizedDecelerateEasing)) +
-                scaleIn(
-                    initialScale = 0.92f,
-                    animationSpec = tween(DurationMedium4, easing = EmphasizedDecelerateEasing)
-                )
-            },
-            popExitTransition = {
-                fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) +
-                scaleOut(
-                    targetScale = 0.92f,
-                    animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
+            composable<Login>(
+                enterTransition = { slideInHorizontally { it } + fadeIn() },
+                exitTransition = { slideOutHorizontally { -it } + fadeOut() },
+                popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
+                popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+            ) {
+                LoginScreen()
+            }
+            composable<Library>(
+                enterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
+                exitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) },
+                popEnterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
+                popExitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) }
+            ) {
+                LibraryScreen(
+                    onMediaClick = onMediaClick,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
-        ) { backStackEntry ->
-            val details: Details = backStackEntry.toRoute()
+            composable<Discover>(
+                enterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
+                exitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) },
+                popEnterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
+                popExitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) }
+            ) {
+                DiscoverScreen(
+                    onMediaClick = onMediaClick,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
+            composable<Profile>(
+                enterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
+                exitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) },
+                popEnterTransition = { fadeIn(tween(DurationMedium2, easing = EmphasizedDecelerateEasing)) },
+                popExitTransition = { fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) }
+            ) {
+                ProfileScreen(
+                    onMediaClick = onMediaClick,
+                    onLogoutClick = {
+                        navController.navigate(Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
 
-            DetailsScreen(
-                mediaId = details.mediaId,
-                onBackClick = { navController.popBackStack() },
-                onRelationClick = { relationMediaId ->
-                    navController.navigate(Details(relationMediaId))
+
+            // Details screen uses M3 fade-through transition pattern for entering detail views
+            // Fade-through: outgoing fades out, then incoming fades in with slight scale
+            composable<Details>(
+                deepLinks = listOf(
+                    navDeepLink<Details>(basePath = "anisync://details")
+                ),
+                enterTransition = {
+                    fadeIn(tween(DurationMedium4, easing = EmphasizedDecelerateEasing)) +
+                    scaleIn(
+                        initialScale = 0.92f,
+                        animationSpec = tween(DurationMedium4, easing = EmphasizedDecelerateEasing)
+                    )
+                },
+                exitTransition = {
+                    fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) +
+                    scaleOut(
+                        targetScale = 1.04f,
+                        animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(tween(DurationMedium4, easing = EmphasizedDecelerateEasing)) +
+                    scaleIn(
+                        initialScale = 0.92f,
+                        animationSpec = tween(DurationMedium4, easing = EmphasizedDecelerateEasing)
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(tween(DurationMedium2, easing = EmphasizedAccelerateEasing)) +
+                    scaleOut(
+                        targetScale = 0.92f,
+                        animationSpec = tween(DurationMedium2, easing = EmphasizedAccelerateEasing)
+                    )
                 }
-            )
+            ) { backStackEntry ->
+                val details: Details = backStackEntry.toRoute()
+
+                DetailsScreen(
+                    mediaId = details.mediaId,
+                    onBackClick = { navController.popBackStack() },
+                    onRelationClick = { relationMediaId ->
+                        navController.navigate(Details(relationMediaId))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.anisync.android.presentation.library
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -106,11 +109,13 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
-    viewModel: LibraryViewModel = hiltViewModel()
+    viewModel: LibraryViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
@@ -400,7 +405,9 @@ fun LibraryScreen(
                                             mediaType = mediaType,
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
-                                            onDecrement = { viewModel.decrementProgress(entry.mediaId) }
+                                            onDecrement = { viewModel.decrementProgress(entry.mediaId) },
+                                            sharedTransitionScope = sharedTransitionScope,
+                                            animatedVisibilityScope = animatedVisibilityScope
                                         )
                                     }
                                 }
@@ -416,7 +423,9 @@ fun LibraryScreen(
                                             mediaType = mediaType,
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
-                                            onDecrement = { viewModel.decrementProgress(entry.mediaId) }
+                                            onDecrement = { viewModel.decrementProgress(entry.mediaId) },
+                                            sharedTransitionScope = sharedTransitionScope,
+                                            animatedVisibilityScope = animatedVisibilityScope
                                         )
                                     }
                                 }
@@ -433,13 +442,16 @@ fun LibraryScreen(
 // GRID CARD IMPLEMENTATION
 // -----------------------------------------------------------------------------
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun NewGridCard(
     entry: LibraryEntry,
     mediaType: MediaType,
     onClick: () -> Unit,
     onIncrement: () -> Unit,
-    onDecrement: () -> Unit
+    onDecrement: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
@@ -482,12 +494,22 @@ fun NewGridCard(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                AsyncImage(
-                    model = entry.coverUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                with(sharedTransitionScope) {
+                     AsyncImage(
+                        model = entry.coverUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .sharedElement(
+                                sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 300)
+                                }
+                            )
+                    )
+                }
 
                 // Gradient Overlay for Title Visibility
                 Box(
@@ -634,13 +656,16 @@ fun NewGridCard(
 // LIST CARD IMPLEMENTATION
 // -----------------------------------------------------------------------------
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun NewListCard(
     entry: LibraryEntry,
     mediaType: MediaType,
     onClick: () -> Unit,
     onIncrement: () -> Unit,
-    onDecrement: () -> Unit
+    onDecrement: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
@@ -677,16 +702,25 @@ fun NewListCard(
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             // Image
-            AsyncImage(
-                model = entry.coverUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(80.dp)
-                    .fillMaxHeight()
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(12.dp))
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = entry.coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(80.dp)
+                        .fillMaxHeight()
+                        .padding(8.dp)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 300)
+                            }
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                )
+            }
 
             // Info Content
             Column(
