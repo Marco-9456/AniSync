@@ -6,10 +6,12 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -707,6 +709,16 @@ fun GenreFlow(genres: List<String>) {
 @Composable
 fun ExpandableSynopsis(text: String) {
     var expanded by remember { mutableStateOf(false) }
+    
+    // Animated arrow rotation (0° collapsed → 180° expanded)
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(
+            durationMillis = MotionTokens.DurationMedium2,
+            easing = MotionTokens.EmphasizedEasing
+        ),
+        label = "ArrowRotation"
+    )
 
     // Using Surface for better elevation handling
     Surface(
@@ -744,7 +756,7 @@ fun ExpandableSynopsis(text: String) {
 
             Spacer(Modifier.height(12.dp))
 
-            // Interaction hint
+            // Interaction hint with animated arrow
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(R.string.synopsis_read_more),
@@ -753,10 +765,12 @@ fun ExpandableSynopsis(text: String) {
                 )
                 Spacer(Modifier.width(4.dp))
                 Icon(
-                    imageVector = if(expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier
+                        .size(16.dp)
+                        .graphicsLayer { rotationZ = arrowRotation }
                 )
             }
         }

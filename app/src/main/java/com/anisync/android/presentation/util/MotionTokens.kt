@@ -114,11 +114,21 @@ object MotionTokens {
     // STAGGERED ANIMATION HELPERS  
     // -------------------------------------------------------------------------
     
-    /** Default delay between staggered items */
-    const val StaggerDelayPerItem = 50
+    /** Default delay between staggered items (40ms for snappier feel) */
+    const val StaggerDelayPerItem = 40
     
     /** Calculate delay for staggered animation by index */
     fun staggerDelay(index: Int, delayPerItem: Int = StaggerDelayPerItem): Int {
         return index * delayPerItem
     }
+    
+    // -------------------------------------------------------------------------
+    // PRESS ANIMATION CONSTANTS
+    // -------------------------------------------------------------------------
+    
+    /** Scale factor when a card/component is pressed */
+    const val PressedScale = 0.97f
+    
+    /** Default scale factor (no press) */
+    const val DefaultScale = 1f
 }
