@@ -1,11 +1,15 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,16 +100,50 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.presentation.util.MotionTokens
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.delay
+
+// Use MotionTokens for animation constants (legacy aliases for existing code)
+private val EmphasizedEasing = MotionTokens.EmphasizedEasing
+private const val AnimationDurationShort = MotionTokens.DurationMedium4
+private const val AnimationDurationLong = MotionTokens.DurationLong4
 
 /**
- * Material 3 Standard Motion Easing (Emphasized)
- * Reference: https://m3.material.io/styles/motion/easing-and-duration/tokens-specs
+ * Staggered animation helper for content sections.
+ * Each section fades + slides in with a delay based on its index.
  */
-private val EmphasizedEasing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
-private const val AnimationDurationShort = 400
-private const val AnimationDurationLong = 600
+@Composable
+private fun StaggeredAnimatedVisibility(
+    index: Int,
+    delayPerItem: Int = MotionTokens.StaggerDelayPerItem,
+    content: @Composable () -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(MotionTokens.staggerDelay(index, delayPerItem).toLong())
+        visible = true
+    }
+    
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(
+            animationSpec = tween(
+                durationMillis = MotionTokens.DurationMedium2,
+                easing = MotionTokens.EmphasizedDecelerateEasing
+            )
+        ) + slideInVertically(
+            initialOffsetY = { it / 4 },
+            animationSpec = tween(
+                durationMillis = MotionTokens.DurationMedium4,
+                easing = MotionTokens.EmphasizedDecelerateEasing
+            )
+        )
+    ) {
+        content()
+    }
+}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -219,54 +257,72 @@ fun DetailsPageContent(
 
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    // Title Group
-                    TitleSection(details)
+                    // Title Group (stagger index 0)
+                    StaggeredAnimatedVisibility(index = 0) {
+                        TitleSection(details)
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Stats
-                    StatsCard(details)
+                    // Stats (stagger index 1)
+                    StaggeredAnimatedVisibility(index = 1) {
+                        StatsCard(details)
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Genres
-                    GenreFlow(details.genres)
+                    // Genres (stagger index 2)
+                    StaggeredAnimatedVisibility(index = 2) {
+                        GenreFlow(details.genres)
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Synopsis
-                    ExpandableSynopsis(details.description)
+                    // Synopsis (stagger index 3)
+                    StaggeredAnimatedVisibility(index = 3) {
+                        ExpandableSynopsis(details.description)
+                    }
                 }
             }
 
             item {
                 if (details.characters.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    SectionTitle(stringResource(R.string.section_cast), Modifier.padding(horizontal = 24.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(details.characters) { CharacterItem(it) }
+                    // Cast section (stagger index 4)
+                    StaggeredAnimatedVisibility(index = 4) {
+                        Column {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            SectionTitle(stringResource(R.string.section_cast), Modifier.padding(horizontal = 24.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(details.characters) { CharacterItem(it) }
+                            }
+                        }
                     }
                 }
             }
 
             item {
                 if (details.relations.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    SectionTitle(stringResource(R.string.section_related), Modifier.padding(horizontal = 24.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(details.relations) { relation -> 
-                            RelationItem(
-                                relation = relation,
-                                onClick = { onRelationClick(relation.id) }
-                            )
+                    // Relations section (stagger index 5)
+                    StaggeredAnimatedVisibility(index = 5) {
+                        Column {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            SectionTitle(stringResource(R.string.section_related), Modifier.padding(horizontal = 24.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(details.relations) { relation -> 
+                                    RelationItem(
+                                        relation = relation,
+                                        onClick = { onRelationClick(relation.id) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -528,8 +584,12 @@ fun PageHeaderSection(
                         sharedContentState = rememberSharedContentState(key = "media_cover_${details.id}"),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ ->
-                            tween(durationMillis = 300)
-                        }
+                            spring(
+                                dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                            )
+                        },
+                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                     ),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),

@@ -10,6 +10,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -106,6 +108,7 @@ import com.anisync.android.presentation.components.SkeletonList
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.presentation.util.MotionTokens
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
@@ -386,8 +389,15 @@ fun LibraryScreen(
                         AnimatedContent(
                             targetState = isGridView,
                             transitionSpec = {
-                                fadeIn(animationSpec = tween(300)) togetherWith
-                                        fadeOut(animationSpec = tween(300))
+                                // M3 Shared Axis Y pattern for tab switching
+                                (slideInVertically(
+                                    initialOffsetY = { if (targetState) -it / 8 else it / 8 },
+                                    animationSpec = tween(MotionTokens.DurationMedium4, easing = MotionTokens.EmphasizedDecelerateEasing)
+                                ) + fadeIn(tween(MotionTokens.DurationMedium2))) togetherWith
+                                (slideOutVertically(
+                                    targetOffsetY = { if (targetState) it / 8 else -it / 8 },
+                                    animationSpec = tween(MotionTokens.DurationMedium2, easing = MotionTokens.EmphasizedAccelerateEasing)
+                                ) + fadeOut(tween(MotionTokens.DurationShort4)))
                             },
                             label = "ViewMode"
                         ) { isGrid ->
@@ -407,7 +417,12 @@ fun LibraryScreen(
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
                                             onDecrement = { viewModel.decrementProgress(entry.mediaId) },
                                             sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            modifier = Modifier.animateItem(
+                                                fadeInSpec = tween(MotionTokens.DurationMedium2),
+                                                fadeOutSpec = tween(MotionTokens.DurationShort4),
+                                                placementSpec = spring()
+                                            )
                                         )
                                     }
                                 }
@@ -425,7 +440,12 @@ fun LibraryScreen(
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
                                             onDecrement = { viewModel.decrementProgress(entry.mediaId) },
                                             sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            modifier = Modifier.animateItem(
+                                                fadeInSpec = tween(MotionTokens.DurationMedium2),
+                                                fadeOutSpec = tween(MotionTokens.DurationShort4),
+                                                placementSpec = spring()
+                                            )
                                         )
                                     }
                                 }
@@ -451,7 +471,8 @@ fun NewGridCard(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    modifier: Modifier = Modifier
 ) {
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
@@ -482,7 +503,7 @@ fun NewGridCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         interactionSource = interactionSource,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(340.dp)
             .scale(scale)
@@ -505,8 +526,12 @@ fun NewGridCard(
                                 sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 boundsTransform = { _, _ ->
-                                    tween(durationMillis = 300)
-                                }
+                                    spring(
+                                        dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                        stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                    )
+                                },
+                                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
                             )
                     )
                 }
@@ -665,7 +690,8 @@ fun NewListCard(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    modifier: Modifier = Modifier
 ) {
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
@@ -695,7 +721,7 @@ fun NewListCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         interactionSource = interactionSource,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(110.dp)
             .scale(scale)
@@ -711,14 +737,18 @@ fun NewListCard(
                         .width(80.dp)
                         .fillMaxHeight()
                         .padding(8.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "media_cover_${entry.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
-                                tween(durationMillis = 300)
-                            }
+                                spring(
+                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                )
+                            },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
-                        .clip(RoundedCornerShape(12.dp))
                 )
             }
 

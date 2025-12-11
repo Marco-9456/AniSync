@@ -88,9 +88,15 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import com.anisync.android.presentation.util.MotionTokens
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
 
@@ -457,8 +463,12 @@ private fun HeroCard(
                             sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
-                                tween(durationMillis = 300)
-                            }
+                                spring(
+                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                )
+                            },
+                            clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge)
                         )
                 )
             }
@@ -558,8 +568,12 @@ private fun MediaCard(
                             sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
-                                tween(durationMillis = 300)
-                            }
+                                spring(
+                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                )
+                            },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
                 )
             }
@@ -675,14 +689,18 @@ private fun SearchResultItem(
                     model = item.coverUrl,
                     contentDescription = null,
                     modifier = Modifier.size(56.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "media_cover_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
-                                tween(durationMillis = 300)
-                            }
-                        )
-                        .clip(RoundedCornerShape(8.dp)),
+                                spring(
+                                    dampingRatio = MotionTokens.Springs.DefaultSpatialDamping,
+                                    stiffness = MotionTokens.Springs.DefaultSpatialStiffness
+                                )
+                            },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(8.dp))
+                        ),
                     contentScale = ContentScale.Crop
                 )
             }
