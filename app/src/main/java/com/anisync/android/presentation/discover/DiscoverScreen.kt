@@ -132,6 +132,7 @@ import java.util.Calendar
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
+    onSectionSeeAllClick: (title: String, sectionType: String) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -358,10 +359,12 @@ fun DiscoverScreen(
 
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
+                            val trendingTitle = stringResource(R.string.section_trending_now)
                             SectionHeader(
-                                title = stringResource(R.string.section_trending_now),
+                                title = trendingTitle,
                                 icon = Icons.Default.LocalFireDepartment,
-                                color = Color(0xFFFF5722)
+                                color = Color(0xFFFF5722),
+                                onSeeAllClick = { onSectionSeeAllClick(trendingTitle, "trending") }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             CinematicHeroCarousel(
@@ -374,10 +377,12 @@ fun DiscoverScreen(
 
                         item {
                             Spacer(modifier = Modifier.height(48.dp))
+                            val popularTitle = stringResource(R.string.section_all_time_popular)
                             SectionHeader(
-                                title = stringResource(R.string.section_all_time_popular),
+                                title = popularTitle,
                                 icon = Icons.Default.Star,
-                                color = Color(0xFFFFC107)
+                                color = Color(0xFFFFC107),
+                                onSeeAllClick = { onSectionSeeAllClick(popularTitle, "popular") }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
@@ -390,10 +395,12 @@ fun DiscoverScreen(
 
                         item {
                             Spacer(modifier = Modifier.height(48.dp))
+                            val upcomingTitle = stringResource(R.string.section_upcoming_season)
                             SectionHeader(
-                                title = stringResource(R.string.section_upcoming_season),
+                                title = upcomingTitle,
                                 icon = Icons.Default.CalendarMonth,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                onSeeAllClick = { onSectionSeeAllClick(upcomingTitle, "upcoming") }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
@@ -465,9 +472,21 @@ private fun MediaTypeSelector(
 }
 
 @Composable
-private fun SectionHeader(title: String, icon: ImageVector, color: Color) {
+private fun SectionHeader(
+    title: String,
+    icon: ImageVector,
+    color: Color,
+    onSeeAllClick: (() -> Unit)? = null
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .then(
+                if (onSeeAllClick != null) {
+                    Modifier.clickable(onClick = onSeeAllClick)
+                } else Modifier
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -481,13 +500,16 @@ private fun SectionHeader(title: String, icon: ImageVector, color: Color) {
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = stringResource(R.string.more),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-        )
+        if (onSeeAllClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = stringResource(R.string.more),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+        }
     }
 }
+
 
 // --- CAROUSEL (UNTOUCHED) ---
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)

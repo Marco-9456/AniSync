@@ -31,3 +31,14 @@ data class Details(
     val mediaId: Int,
     val sourceScreen: String = "unknown"
 )
+
+/**
+ * Section grid screen route for displaying all items from a Discover section.
+ * @param sectionTitle The title of the section to display
+ * @param sectionType The type of section: "trending", "popular", or "upcoming"
+ */
+@Serializable
+data class SectionGrid(
+    val sectionTitle: String,
+    val sectionType: String
+)

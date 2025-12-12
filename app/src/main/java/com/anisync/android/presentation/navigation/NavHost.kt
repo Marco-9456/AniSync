@@ -19,6 +19,7 @@ import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.details.DetailsScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
+import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
@@ -26,16 +27,17 @@ import com.anisync.android.presentation.profile.ProfileScreen
 // Lateral slide offset for tab transitions (10% of width)
 private const val TabSlideOffset = 10
 
-// Spring specs that match MaterialTheme.motionScheme defaults
-// These can be called from non-composable contexts (transition lambdas)
+// Spring specs optimized for tab navigation
+// Higher stiffness ensures animations complete quickly during rapid tab switching
+// This prevents animation jitter when users switch tabs faster than animations can complete
 private fun <T> spatialSpring() = spring<T>(
     dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMediumLow
+    stiffness = Spring.StiffnessMedium  // Increased from MediumLow for faster completion
 )
 
 private fun <T> effectsSpring() = spring<T>(
     dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMedium
+    stiffness = Spring.StiffnessHigh  // Increased from Medium for faster completion
 )
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -110,6 +112,9 @@ fun AniSyncNavHost(
             ) {
                 DiscoverScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "discover") },
+                    onSectionSeeAllClick = { title, sectionType ->
+                        navController.navigate(SectionGrid(title, sectionType))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -168,6 +173,36 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onRelationClick = { relationMediaId ->
                         navController.navigate(Details(relationMediaId, "details"))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
+
+            // --- SECTION GRID ---
+            // Grid view for "See All" from Discover sections
+            composable<SectionGrid>(
+                enterTransition = {
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { it }
+                },
+                exitTransition = {
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { -it }
+                },
+                popEnterTransition = {
+                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { -it }
+                },
+                popExitTransition = {
+                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { it }
+                }
+            ) { backStackEntry ->
+                val sectionGrid: SectionGrid = backStackEntry.toRoute()
+
+                SectionGridScreen(
+                    sectionTitle = sectionGrid.sectionTitle,
+                    sectionType = sectionGrid.sectionType,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(Details(mediaId, "sectiongrid"))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
