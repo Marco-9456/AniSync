@@ -12,6 +12,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -523,51 +525,60 @@ fun FavoriteFilmStripItem(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .width(120.dp)
-            .height(180.dp)
-            .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
-            .bouncyClickable { onClick(entry.mediaId) },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .width(120.dp)
+                .height(180.dp)
+                .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
+                .bouncyClickable { onClick(entry.mediaId) }
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "profile_media_cover_${entry.mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
+                ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
                     model = entry.coverUrl,
                     contentDescription = entry.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "profile_media_cover_${entry.mediaId}"),
+                )
+                // Title Gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "profile_gradient_${entry.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec }
+                            boundsTransform = { _, _ -> spatialSpec },
+                            enter = fadeIn(effectsSpec),
+                            exit = fadeOut(effectsSpec)
+                        )
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                startY = 200f
+                            )
                         )
                 )
+                Text(
+                    text = entry.title,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(10.dp)
+                )
             }
-            // Title Gradient
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                            startY = 200f
-                        )
-                    )
-            )
-            Text(
-                text = entry.title,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(10.dp)
-            )
         }
     }
 }

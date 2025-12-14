@@ -3,6 +3,8 @@ package com.anisync.android.presentation.discover
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -160,6 +162,7 @@ private fun SectionGridCard(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
     with(sharedTransitionScope) {
         Card(
@@ -171,6 +174,12 @@ private fun SectionGridCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .bouncyClickable(onClick = onClick)
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "sectiongrid_media_cover_${item.mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+                )
         ) {
             Box {
                 AsyncImage(
@@ -180,12 +189,6 @@ private fun SectionGridCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.7f) // Standard poster ratio
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "sectiongrid_media_cover_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-                        )
                 )
 
                 // Gradient overlay at bottom for text readability
@@ -193,6 +196,13 @@ private fun SectionGridCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.7f)
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "sectiongrid_gradient_${item.mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            enter = fadeIn(effectsSpec),
+                            exit = fadeOut(effectsSpec)
+                        )
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(

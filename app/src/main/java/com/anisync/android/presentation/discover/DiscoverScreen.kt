@@ -552,44 +552,51 @@ private fun HeroCard(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
-    Card(
-        modifier = modifier
-            .height(380.dp)
-            .bouncyClickable(onClick = onClick),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Card(
+            modifier = modifier
+                .height(380.dp)
+                .bouncyClickable(onClick = onClick)
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge)
+                ),
+            shape = MaterialTheme.shapes.extraLarge,
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
                     model = item.coverUrl,
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "discover_gradient_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge)
+                            enter = fadeIn(effectsSpec),
+                            exit = fadeOut(effectsSpec)
                         )
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.1f),
-                                Color.Black.copy(alpha = 0.8f),
-                                Color.Black
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.1f),
+                                    Color.Black.copy(alpha = 0.8f),
+                                    Color.Black
+                                )
                             )
                         )
-                    )
-            )
-            Column(
+                )
+                Column(
                 modifier = Modifier.align(Alignment.BottomStart).padding(24.dp)
             ) {
                 Surface(
@@ -605,21 +612,19 @@ private fun HeroCard(
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                with(sharedTransitionScope) {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec }
-                        )
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec }
                     )
-                }
+                )
 
                 val statusText = formatStatus(item.mediaStatus)
                 val countsText = if (item.totalEpisodes != null) formatEpisodesCount(item.totalEpisodes) else if (item.totalChapters != null) formatChaptersCount(item.totalChapters) else null
@@ -633,6 +638,7 @@ private fun HeroCard(
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
             }
         }
     }
@@ -657,19 +663,25 @@ private fun MediaCard(
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
 
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer, // Matches the white/light background of the design
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = modifier
-            .width(150.dp)
-            .bouncyClickable(onClick = onClick)
-    ) {
-        Column {
-            // Image Container
-            with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer, // Matches the white/light background of the design
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            modifier = modifier
+                .width(150.dp)
+                .bouncyClickable(onClick = onClick)
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+                )
+        ) {
+            Column {
+                // Image Container
                 AsyncImage(
                     model = item.coverUrl,
                     contentDescription = null,
@@ -677,23 +689,15 @@ private fun MediaCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.7f) // Standard poster ratio
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-                        )
                 )
-            }
 
-            // Content Container
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
-            ) {
-                // Title (Bold, Black)
-                with(sharedTransitionScope) {
+                // Content Container
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                ) {
+                    // Title (Bold, Black)
                     Text(
                         text = item.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -707,47 +711,47 @@ private fun MediaCard(
                             boundsTransform = { _, _ -> spatialSpec }
                         )
                     )
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                // Bottom Row: Type and Rating Pill
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Type (e.g., "TV") - Secondary Color
-                    Text(
-                        text = item.type?.name ?: "TV",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // Bottom Row: Type and Rating Pill
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Type (e.g., "TV") - Secondary Color
+                        Text(
+                            text = item.type?.name ?: "TV",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
-                    // Rating Pill (e.g., "8.8" with Star) - Only show if score is available
-                    item.averageScore?.let { score ->
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest, // Light grey/purple tint
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        // Rating Pill (e.g., "8.8" with Star) - Only show if score is available
+                        item.averageScore?.let { score ->
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest, // Light grey/purple tint
+                                shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFC107), // Amber/Gold Star
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                // Convert from 0-100 scale to 0-10 scale for display
-                                Text(
-                                    text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFC107), // Amber/Gold Star
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    // Convert from 0-100 scale to 0-10 scale for display
+                                    Text(
+                                        text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     }
@@ -756,7 +760,6 @@ private fun MediaCard(
         }
     }
 }
-
 @Composable
 private fun HorizontalMediaList(
     items: List<LibraryEntry>,

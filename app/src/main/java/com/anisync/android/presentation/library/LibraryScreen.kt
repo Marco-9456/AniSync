@@ -417,6 +417,7 @@ fun NewGridCard(
     modifier: Modifier = Modifier
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
@@ -451,17 +452,20 @@ fun NewGridCard(
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
-                            .sharedElement(
-                                sharedContentState = rememberSharedContentState(key = "library_media_cover_${entry.mediaId}"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ -> spatialSpec },
-                                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
-                            )
                     )
                     Box(
-                        modifier = Modifier.fillMaxSize().background(
-                            Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 200f)
-                        )
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .sharedBounds(
+                                sharedContentState = rememberSharedContentState(key = "library_gradient_${entry.mediaId}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ -> spatialSpec },
+                                enter = fadeIn(effectsSpec),
+                                exit = fadeOut(effectsSpec)
+                            )
+                            .background(
+                                Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 200f)
+                            )
                     )
                     Text(
                         text = entry.title,
@@ -582,12 +586,6 @@ fun NewListCard(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.width(80.dp).fillMaxHeight().padding(8.dp).clip(RoundedCornerShape(12.dp))
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "library_media_cover_${entry.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-                        )
                 )
 
                 Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 8.dp), verticalArrangement = Arrangement.SpaceBetween) {
