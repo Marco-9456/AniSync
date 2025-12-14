@@ -94,6 +94,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
@@ -544,8 +545,14 @@ fun FavoriteFilmStripItem(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                val cacheKey = "profile_cover_${entry.mediaId}"
                 AsyncImage(
-                    model = entry.coverUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(entry.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
                     contentDescription = entry.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

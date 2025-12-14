@@ -97,8 +97,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
@@ -458,7 +460,8 @@ fun TitleSection(
                 modifier = Modifier.sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_title_${details.id}"),
                     animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec }
+                    boundsTransform = { _, _ -> spatialSpec },
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
             )
         }
@@ -624,8 +627,14 @@ fun PageHeaderSection(
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
+                val cacheKey = "${sourceScreen}_cover_${details.id}"
                 AsyncImage(
-                    model = details.coverUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(details.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
                     contentDescription = stringResource(R.string.content_description_cover),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

@@ -96,7 +96,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -447,8 +449,14 @@ fun NewGridCard(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    val cacheKey = "library_cover_${entry.mediaId}"
                     AsyncImage(
-                        model = entry.coverUrl,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(entry.coverUrl)
+                            .crossfade(true)
+                            .placeholderMemoryCacheKey(cacheKey)
+                            .memoryCacheKey(cacheKey)
+                            .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -478,7 +486,8 @@ fun NewGridCard(
                             .sharedBounds(
                                 sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ -> spatialSpec }
+                                boundsTransform = { _, _ -> spatialSpec },
+                                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                             )
                     )
                 }
@@ -581,8 +590,14 @@ fun NewListCard(
                 )
         ) {
             Row(modifier = Modifier.fillMaxSize()) {
+                val cacheKey = "library_cover_${entry.mediaId}"
                 AsyncImage(
-                    model = entry.coverUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(entry.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.width(80.dp).fillMaxHeight().padding(8.dp).clip(RoundedCornerShape(12.dp))
@@ -599,7 +614,8 @@ fun NewListCard(
                             modifier = Modifier.sharedBounds(
                                 sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
                                 animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ -> spatialSpec }
+                                boundsTransform = { _, _ -> spatialSpec },
+                                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                             )
                         )
                         Spacer(modifier = Modifier.height(6.dp))

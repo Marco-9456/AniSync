@@ -45,8 +45,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.bouncyClickable
@@ -182,8 +184,14 @@ private fun SectionGridCard(
                 )
         ) {
             Box {
+                val cacheKey = "sectiongrid_cover_${item.mediaId}"
                 AsyncImage(
-                    model = item.coverUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -228,7 +236,8 @@ private fun SectionGridCard(
                         .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = "sectiongrid_media_title_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec }
+                            boundsTransform = { _, _ -> spatialSpec },
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                         )
                 )
             }

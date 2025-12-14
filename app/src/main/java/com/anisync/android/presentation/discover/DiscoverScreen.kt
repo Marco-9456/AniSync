@@ -93,6 +93,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -104,6 +105,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.AVAILABLE_GENRES
 import com.anisync.android.domain.LibraryEntry
@@ -569,8 +571,14 @@ private fun HeroCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                val cacheKey = "discover_cover_${item.mediaId}"
                 AsyncImage(
-                    model = item.coverUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -622,7 +630,8 @@ private fun HeroCard(
                     modifier = Modifier.sharedBounds(
                         sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
                         animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec }
+                        boundsTransform = { _, _ -> spatialSpec },
+                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                     )
                 )
 
@@ -682,8 +691,14 @@ private fun MediaCard(
         ) {
             Column {
                 // Image Container
+                val cacheKey = "discover_cover_${item.mediaId}"
                 AsyncImage(
-                    model = item.coverUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -708,7 +723,8 @@ private fun MediaCard(
                         modifier = Modifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec }
+                            boundsTransform = { _, _ -> spatialSpec },
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                         )
                     )
 
