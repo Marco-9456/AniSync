@@ -36,6 +36,7 @@
     <string name="status_dropped">Dropped</string>
     <string name="status_repeating">Repeating</string>
     <string name="status_rewatching">Rewatching</string>
+    <string name="status_rereading">Rereading</string>
 
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">Search Anime…</string>

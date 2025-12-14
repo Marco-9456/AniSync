@@ -123,6 +123,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.ui.geometry.Rect
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSeason
@@ -1034,7 +1035,7 @@ private fun SearchFilterDialog(
                                     onClick = {
                                         onFiltersChanged(filters.copy(status = if (selected) null else status))
                                     },
-                                    label = { Text(getStatusLabel(status)) },
+                                    label = { Text(status.toLabel()) },
                                     leadingIcon = if (selected) {
                                         { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                                     } else null
@@ -1114,14 +1115,3 @@ private fun getFormatLabel(format: MediaFormat): String {
     }
 }
 
-@Composable
-private fun getStatusLabel(status: MediaStatus): String {
-    return when (status) {
-        MediaStatus.RELEASING -> stringResource(R.string.media_status_airing)
-        MediaStatus.FINISHED -> stringResource(R.string.media_status_finished)
-        MediaStatus.NOT_YET_RELEASED -> stringResource(R.string.media_status_not_yet_released)
-        MediaStatus.CANCELLED -> stringResource(R.string.media_status_cancelled)
-        MediaStatus.HIATUS -> stringResource(R.string.media_status_hiatus)
-        MediaStatus.UNKNOWN__ -> ""
-    }
-}

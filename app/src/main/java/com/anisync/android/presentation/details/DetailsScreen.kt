@@ -107,6 +107,8 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.presentation.util.shimmerEffect
+import com.anisync.android.presentation.util.toIcon
+import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
@@ -396,7 +398,7 @@ fun DetailsPageContent(
                     },
                     icon = {
                         Icon(
-                            imageVector = getStatusIcon(status, isManga),
+                            imageVector = status.toIcon(details.type),
                             contentDescription = null,
                             tint = if (isSelected) MaterialTheme.colorScheme.primary 
                                    else MaterialTheme.colorScheme.onSurface
@@ -404,7 +406,7 @@ fun DetailsPageContent(
                     },
                     text = {
                         Text(
-                            text = getStatusLabel(status, isManga),
+                            text = status.toLabel(details.type),
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) MaterialTheme.colorScheme.primary 
                                     else MaterialTheme.colorScheme.onSurface
@@ -892,30 +894,7 @@ fun RelationItem(
     }
 }
 
-@Composable
-fun getStatusLabel(status: LibraryStatus, isManga: Boolean): String {
-    return when (status) {
-        LibraryStatus.CURRENT -> if (isManga) stringResource(R.string.status_reading) else stringResource(R.string.status_watching)
-        LibraryStatus.PLANNING -> stringResource(R.string.status_planning)
-        LibraryStatus.COMPLETED -> stringResource(R.string.status_completed)
-        LibraryStatus.DROPPED -> stringResource(R.string.status_dropped)
-        LibraryStatus.PAUSED -> stringResource(R.string.status_paused)
-        LibraryStatus.REPEATING -> stringResource(R.string.status_rewatching)
-        else -> stringResource(R.string.unknown)
-    }
-}
 
-fun getStatusIcon(status: LibraryStatus, isManga: Boolean): androidx.compose.ui.graphics.vector.ImageVector {
-    return when (status) {
-        LibraryStatus.CURRENT -> if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.PlayArrow
-        LibraryStatus.PLANNING -> Icons.Default.Event
-        LibraryStatus.COMPLETED -> Icons.Default.Check
-        LibraryStatus.DROPPED -> Icons.Default.Delete
-        LibraryStatus.PAUSED -> Icons.Default.Pause
-        LibraryStatus.REPEATING -> Icons.Default.Repeat
-        else -> Icons.Default.Add
-    }
-}
 
 // -----------------------------------------------------------------------------
 // SKELETON LOADING STATE

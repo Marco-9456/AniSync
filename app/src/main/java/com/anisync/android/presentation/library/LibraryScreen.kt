@@ -108,6 +108,7 @@ import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
@@ -302,7 +303,7 @@ fun LibraryScreen(
                                 haptic.click()
                                 selectedStatus = status
                             },
-                            label = { Text(getStatusLabel(status, mediaType)) },
+                            label = { Text(status.toLabel(mediaType)) },
                             leadingIcon = { Icon(imageVector = statusIcon, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -714,15 +715,3 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
     }
 }
 
-@Composable
-fun getStatusLabel(status: LibraryStatus, type: MediaType): String {
-    return when(status) {
-        LibraryStatus.CURRENT -> if (type == MediaType.MANGA) stringResource(R.string.status_reading) else stringResource(R.string.status_watching)
-        LibraryStatus.PLANNING -> stringResource(R.string.status_planning)
-        LibraryStatus.COMPLETED -> stringResource(R.string.status_completed)
-        LibraryStatus.PAUSED -> stringResource(R.string.status_paused)
-        LibraryStatus.DROPPED -> stringResource(R.string.status_dropped)
-        LibraryStatus.REPEATING -> stringResource(R.string.status_repeating)
-        LibraryStatus.UNKNOWN -> stringResource(R.string.unknown)
-    }
-}
