@@ -1,9 +1,12 @@
 package com.anisync.android.presentation.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -24,21 +27,169 @@ import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
 
-// Lateral slide offset for tab transitions (10% of width)
-private const val TabSlideOffset = 10
+// =============================================================================
+// MATERIAL 3 MOTION CONSTANTS
+// =============================================================================
+// Duration and easing values based on Material 3 Motion guidelines
+// See: https://m3.material.io/styles/motion/easing-and-duration/applying-easing-and-duration
 
-// Spring specs optimized for tab navigation
-// Higher stiffness ensures animations complete quickly during rapid tab switching
-// This prevents animation jitter when users switch tabs faster than animations can complete
-private fun <T> spatialSpring() = spring<T>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMedium  // Increased from MediumLow for faster completion
+/** Standard duration for navigation transitions (300ms as per M3 guidelines) */
+private const val TRANSITION_DURATION = 300
+
+/** Slide offset fraction for Shared Axis X transitions (30% of screen width) */
+private const val SHARED_AXIS_OFFSET_FRACTION = 0.30f
+
+/** Scale factor for Shared Axis Z forward entry (slightly zoomed out) */
+private const val SHARED_AXIS_Z_INITIAL_SCALE = 0.92f
+
+/** Scale factor for Shared Axis Z forward exit (slightly zoomed in) */
+private const val SHARED_AXIS_Z_TARGET_SCALE = 1.10f
+
+// =============================================================================
+// SHARED AXIS X TRANSITIONS (Horizontal - for Tab Navigation)
+// =============================================================================
+// Material 3 Shared Axis X: Used for switching between peer destinations
+// at the same hierarchy level (e.g., tabs in a bottom navigation bar).
+// Combines a horizontal slide with a fade for smooth lateral movement.
+
+/**
+ * Shared Axis X enter transition - slides in from the specified direction with fade.
+ * @param forward If true, slides in from the right (forward navigation).
+ *                If false, slides in from the left (backward navigation).
+ */
+private fun sharedAxisXEnter(forward: Boolean): EnterTransition {
+    val offsetMultiplier = if (forward) 1 else -1
+    return slideInHorizontally(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = FastOutSlowInEasing
+        ),
+        initialOffsetX = { (it * SHARED_AXIS_OFFSET_FRACTION * offsetMultiplier).toInt() }
+    ) + fadeIn(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = LinearOutSlowInEasing
+        )
+    )
+}
+
+/**
+ * Shared Axis X exit transition - slides out in the specified direction with fade.
+ * @param forward If true, slides out to the left (forward navigation).
+ *                If false, slides out to the right (backward navigation).
+ */
+private fun sharedAxisXExit(forward: Boolean): ExitTransition {
+    val offsetMultiplier = if (forward) -1 else 1
+    return slideOutHorizontally(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = FastOutSlowInEasing
+        ),
+        targetOffsetX = { (it * SHARED_AXIS_OFFSET_FRACTION * offsetMultiplier).toInt() }
+    ) + fadeOut(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = LinearOutSlowInEasing
+        )
+    )
+}
+
+// =============================================================================
+// SHARED AXIS Z TRANSITIONS (Depth - for Detail/Hierarchy Navigation)
+// =============================================================================
+// Material 3 Shared Axis Z: Used for navigation between a parent and child,
+// or when moving deeper into a hierarchy (e.g., list to detail screen).
+// Combines a scale transformation with fade for depth perception.
+
+/** Shared Axis Z forward enter - scales up from a smaller size with fade in */
+private fun sharedAxisZEnter(): EnterTransition {
+    return scaleIn(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = FastOutSlowInEasing
+        ),
+        initialScale = SHARED_AXIS_Z_INITIAL_SCALE
+    ) + fadeIn(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = LinearOutSlowInEasing
+        )
+    )
+}
+
+/** Shared Axis Z forward exit - scales up slightly with fade out (behind the entering screen) */
+private fun sharedAxisZExit(): ExitTransition {
+    return scaleOut(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = FastOutSlowInEasing
+        ),
+        targetScale = SHARED_AXIS_Z_TARGET_SCALE
+    ) + fadeOut(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = LinearOutSlowInEasing
+        )
+    )
+}
+
+/** Shared Axis Z pop enter - scales down from larger size with fade in (returning from detail) */
+private fun sharedAxisZPopEnter(): EnterTransition {
+    return scaleIn(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = FastOutSlowInEasing
+        ),
+        initialScale = SHARED_AXIS_Z_TARGET_SCALE
+    ) + fadeIn(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = LinearOutSlowInEasing
+        )
+    )
+}
+
+/** Shared Axis Z pop exit - scales down with fade out (detail screen exiting) */
+private fun sharedAxisZPopExit(): ExitTransition {
+    return scaleOut(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = FastOutSlowInEasing
+        ),
+        targetScale = SHARED_AXIS_Z_INITIAL_SCALE
+    ) + fadeOut(
+        animationSpec = tween(
+            durationMillis = TRANSITION_DURATION,
+            easing = LinearOutSlowInEasing
+        )
+    )
+}
+
+// =============================================================================
+// TAB ORDER HELPER
+// =============================================================================
+// Defines the order of tabs for determining slide direction during navigation.
+// Lower order = further left in the navigation hierarchy.
+
+private val tabOrder = mapOf(
+    Library::class.qualifiedName to 0,
+    Discover::class.qualifiedName to 1,
+    Profile::class.qualifiedName to 2
 )
 
-private fun <T> effectsSpring() = spring<T>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessHigh  // Increased from Medium for faster completion
-)
+/**
+ * Determines slide direction for tab transitions based on relative position.
+ * @return true if navigating forward (left to right), false if backward (right to left)
+ */
+private fun isForwardNavigation(fromRoute: String?, toRoute: String?): Boolean {
+    val fromOrder = tabOrder[fromRoute] ?: 0
+    val toOrder = tabOrder[toRoute] ?: 0
+    return toOrder > fromOrder
+}
+
+// =============================================================================
+// MAIN NAVIGATION HOST
+// =============================================================================
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -53,39 +204,41 @@ fun AniSyncNavHost(
             startDestination = Library,
             modifier = Modifier
         ) {
+            // =================================================================
+            // LOGIN SCREEN
+            // =================================================================
+            // Full slide transitions for authentication flow
             composable<Login>(
-                enterTransition = {
-                    slideInHorizontally(spatialSpring()) { it } + fadeIn(effectsSpring())
-                },
-                exitTransition = {
-                    slideOutHorizontally(spatialSpring()) { -it } + fadeOut(effectsSpring())
-                },
-                popEnterTransition = {
-                    slideInHorizontally(spatialSpring()) { -it } + fadeIn(effectsSpring())
-                },
-                popExitTransition = {
-                    slideOutHorizontally(spatialSpring()) { it } + fadeOut(effectsSpring())
-                }
+                enterTransition = { sharedAxisXEnter(forward = true) },
+                exitTransition = { sharedAxisXExit(forward = true) },
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
                 LoginScreen()
             }
 
-            // --- MAIN TABS ---
-            // Using spring physics for smooth, natural animations
+            // =================================================================
+            // MAIN TABS - Shared Axis X (Horizontal)
+            // =================================================================
+            // Tab navigation uses directional awareness for natural feel
 
             composable<Library>(
                 enterTransition = {
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { -it / TabSlideOffset }
+                    val forward = isForwardNavigation(
+                        fromRoute = initialState.destination.route,
+                        toRoute = Library::class.qualifiedName
+                    )
+                    sharedAxisXEnter(forward = !forward)
                 },
                 exitTransition = {
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { -it / TabSlideOffset }
+                    val forward = isForwardNavigation(
+                        fromRoute = Library::class.qualifiedName,
+                        toRoute = targetState.destination.route
+                    )
+                    sharedAxisXExit(forward = forward)
                 },
-                popEnterTransition = {
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { -it / TabSlideOffset }
-                },
-                popExitTransition = {
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { -it / TabSlideOffset }
-                }
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
                 LibraryScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "library") },
@@ -96,19 +249,21 @@ fun AniSyncNavHost(
 
             composable<Discover>(
                 enterTransition = {
-                    val offset = if (initialState.destination.route == Library::class.qualifiedName) 1 else -1
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { offset * (it / TabSlideOffset) }
+                    val forward = isForwardNavigation(
+                        fromRoute = initialState.destination.route,
+                        toRoute = Discover::class.qualifiedName
+                    )
+                    sharedAxisXEnter(forward = forward)
                 },
                 exitTransition = {
-                    val offset = if (targetState.destination.route == Library::class.qualifiedName) 1 else -1
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { offset * (it / TabSlideOffset) }
+                    val forward = isForwardNavigation(
+                        fromRoute = Discover::class.qualifiedName,
+                        toRoute = targetState.destination.route
+                    )
+                    sharedAxisXExit(forward = forward)
                 },
-                popEnterTransition = {
-                    fadeIn(effectsSpring())
-                },
-                popExitTransition = {
-                    fadeOut(effectsSpring())
-                }
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
                 DiscoverScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "discover") },
@@ -122,17 +277,21 @@ fun AniSyncNavHost(
 
             composable<Profile>(
                 enterTransition = {
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { it / TabSlideOffset }
+                    val forward = isForwardNavigation(
+                        fromRoute = initialState.destination.route,
+                        toRoute = Profile::class.qualifiedName
+                    )
+                    sharedAxisXEnter(forward = forward)
                 },
                 exitTransition = {
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { it / TabSlideOffset }
+                    val forward = isForwardNavigation(
+                        fromRoute = Profile::class.qualifiedName,
+                        toRoute = targetState.destination.route
+                    )
+                    sharedAxisXExit(forward = forward)
                 },
-                popEnterTransition = {
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { it / TabSlideOffset }
-                },
-                popExitTransition = {
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { it / TabSlideOffset }
-                }
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
                 ProfileScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "profile") },
@@ -142,7 +301,6 @@ fun AniSyncNavHost(
                         }
                     },
                     onFavoritesClick = {
-                        // Use a distinct navigation route for favorites
                         navController.navigate(SectionGrid("Favorites", "favorites"))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -150,24 +308,18 @@ fun AniSyncNavHost(
                 )
             }
 
-            // --- DETAILS ---
-            // Using "Fade Through" pattern with Springs
+            // =================================================================
+            // DETAILS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            // Navigating to detail view uses scale+fade for depth perception
             composable<Details>(
                 deepLinks = listOf(
                     navDeepLink<Details>(basePath = "anisync://details")
                 ),
-                enterTransition = {
-                    fadeIn(effectsSpring()) + scaleIn(initialScale = 0.92f, animationSpec = spatialSpring())
-                },
-                exitTransition = {
-                    fadeOut(effectsSpring()) + scaleOut(targetScale = 1.04f, animationSpec = spatialSpring())
-                },
-                popEnterTransition = {
-                    fadeIn(effectsSpring()) + scaleIn(initialScale = 0.92f, animationSpec = spatialSpring())
-                },
-                popExitTransition = {
-                    fadeOut(effectsSpring()) + scaleOut(targetScale = 0.92f, animationSpec = spatialSpring())
-                }
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val details: Details = backStackEntry.toRoute()
 
@@ -183,21 +335,15 @@ fun AniSyncNavHost(
                 )
             }
 
-            // --- SECTION GRID ---
-            // Grid view for "See All" from Discover sections
+            // =================================================================
+            // SECTION GRID SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            // Grid view for "See All" uses same depth pattern as Details
             composable<SectionGrid>(
-                enterTransition = {
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { it }
-                },
-                exitTransition = {
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { -it }
-                },
-                popEnterTransition = {
-                    fadeIn(effectsSpring()) + slideInHorizontally(spatialSpring()) { -it }
-                },
-                popExitTransition = {
-                    fadeOut(effectsSpring()) + slideOutHorizontally(spatialSpring()) { it }
-                }
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val sectionGrid: SectionGrid = backStackEntry.toRoute()
 

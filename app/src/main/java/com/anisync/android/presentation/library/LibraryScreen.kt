@@ -26,8 +26,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -144,11 +146,28 @@ fun LibraryScreen(
         }
     }
 
-    val gridState = rememberLazyGridState()
-    val listState = rememberLazyListState()
+    // Use rememberSaveable to persist scroll position across navigation
+    // This ensures returning from Details screen restores the scroll position
+    val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
+    // Only scroll to top when filter/sort changes, not on initial composition
+    var previousMediaType by rememberSaveable { mutableStateOf(mediaType) }
+    var previousSelectedStatus by rememberSaveable { mutableStateOf(selectedStatus) }
+    var previousSortOption by rememberSaveable { mutableStateOf(sortOption) }
 
     LaunchedEffect(sortOption, selectedStatus, mediaType) {
-        if (isGridView) gridState.animateScrollToItem(0) else listState.animateScrollToItem(0)
+        // Only scroll to top if the user actually changed a filter, not on navigation return
+        val filterChanged = mediaType != previousMediaType ||
+                            selectedStatus != previousSelectedStatus ||
+                            sortOption != previousSortOption
+
+        if (filterChanged) {
+            if (isGridView) gridState.animateScrollToItem(0) else listState.animateScrollToItem(0)
+            previousMediaType = mediaType
+            previousSelectedStatus = selectedStatus
+            previousSortOption = sortOption
+        }
     }
 
     Scaffold(
