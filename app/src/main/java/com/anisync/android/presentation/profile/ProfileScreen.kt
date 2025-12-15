@@ -99,6 +99,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.HeaderLevel
@@ -511,84 +512,19 @@ fun FavoritesSection(
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             items(favorites) { entry ->
-                FavoriteFilmStripItem(
-                    entry = entry,
-                    onClick = onMediaClick,
+                PosterCard(
+                    title = entry.title,
+                    coverUrl = entry.coverUrl,
+                    mediaId = entry.mediaId,
+                    onClick = { onMediaClick(entry.mediaId) },
                     sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun FavoriteFilmStripItem(
-    entry: LibraryEntry,
-    onClick: (Int) -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
-) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    with(sharedTransitionScope) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .width(120.dp)
-                .height(180.dp)
-                .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
-                .bouncyClickable { onClick(entry.mediaId) }
-                .sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "profile_media_cover_${entry.mediaId}"),
                     animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
-                ),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                val cacheKey = "profile_cover_${entry.mediaId}"
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(entry.coverUrl)
-                        .crossfade(true)
-                        .placeholderMemoryCacheKey(cacheKey)
-                        .memoryCacheKey(cacheKey)
-                        .build(),
-                    contentDescription = entry.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-                // Title Gradient
-                Box(
+                    transitionPrefix = "profile",
+                    aspectRatio = 120f / 180f, // Match original dimensions (120.dp width / 180.dp height approx 0.66f)
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
-                        .fillMaxSize()
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "profile_gradient_${entry.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            enter = fadeIn(effectsSpec),
-                            exit = fadeOut(effectsSpec)
-                        )
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                                startY = 200f
-                            )
-                        )
-                )
-                Text(
-                    text = entry.title,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(10.dp)
+                        .width(120.dp)
+                        .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
                 )
             }
         }

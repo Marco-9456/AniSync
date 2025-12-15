@@ -53,6 +53,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.bouncyClickable
 import androidx.compose.foundation.background
+import com.anisync.android.presentation.components.PosterCard
 
 /**
  * Grid screen for displaying all media items from a Discover section.
@@ -121,11 +122,14 @@ fun MediaGridContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(items, key = { it.mediaId }) { item ->
-                            SectionGridCard(
-                                item = item,
+                            PosterCard(
+                                title = item.title,
+                                coverUrl = item.coverUrl,
+                                mediaId = item.mediaId,
                                 onClick = { onMediaClick(item.mediaId) },
                                 sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                transitionPrefix = "sectiongrid"
                             )
                         }
                     }
@@ -195,97 +199,4 @@ fun FavoritesGridScreen(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope
     )
-}
-
-/**
- * Simplified card for grid view without controls (increment/decrement buttons).
- */
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun SectionGridCard(
-    item: LibraryEntry,
-    onClick: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
-) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    with(sharedTransitionScope) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .bouncyClickable(onClick = onClick)
-                .sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "sectiongrid_media_cover_${item.mediaId}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-                )
-        ) {
-            Box {
-                val cacheKey = "sectiongrid_cover_${item.mediaId}"
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.coverUrl)
-                        .crossfade(true)
-                        .placeholderMemoryCacheKey(cacheKey)
-                        .memoryCacheKey(cacheKey)
-                        .build(),
-                    contentDescription = item.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.7f) // Standard poster ratio
-                )
-
-                // Gradient overlay at bottom for text readability
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.7f)
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "sectiongrid_gradient_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            enter = fadeIn(effectsSpec),
-                            exit = fadeOut(effectsSpec)
-                        )
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.7f)
-                                )
-                            )
-                        )
-                )
-
-                // Title at bottom
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "sectiongrid_media_title_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                        )
-                )
-            }
-        }
-    }
 }
