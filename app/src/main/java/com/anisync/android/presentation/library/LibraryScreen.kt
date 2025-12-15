@@ -104,6 +104,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.SkeletonGrid
 import com.anisync.android.presentation.components.SkeletonList
 import com.anisync.android.presentation.util.formatTimeUntilAiring
@@ -480,7 +481,7 @@ fun NewGridCard(
 
                         if (entry.status == LibraryStatus.CURRENT) {
                             if (latest != null && entry.progress < latest) {
-                                StatusBadge(formatEpisodesBehind(latest - entry.progress), Color(0xFFB3261E), Color.White)
+                                StatusBadge(formatEpisodesBehind(latest - entry.progress), MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.onError)
                             } else {
                                 StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
                             }
@@ -605,7 +606,7 @@ fun NewListCard(
                             val latest = if (nextAiring != null) nextAiring - 1 else total
                             if (entry.status == LibraryStatus.CURRENT) {
                                 if (latest != null && entry.progress < latest) {
-                                    StatusBadge(formatEpisodesBehind(latest - entry.progress), Color(0xFFF2B8B5), Color(0xFF601410))
+                                    StatusBadge(formatEpisodesBehind(latest - entry.progress), MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
                                 } else {
                                     StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
                                 }
@@ -649,15 +650,6 @@ fun NewListCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun StatusBadge(text: String, containerColor: Color, contentColor: Color) {
-    Surface(color = containerColor, shape = RoundedCornerShape(4.dp), modifier = Modifier.height(18.dp)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 6.dp)) {
-            Text(text = text, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 9.sp, color = contentColor)
         }
     }
 }
