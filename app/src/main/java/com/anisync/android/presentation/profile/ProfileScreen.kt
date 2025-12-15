@@ -98,6 +98,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.util.bouncyClickable
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.ui.geometry.Rect
@@ -910,25 +911,3 @@ fun getThemeLabel(mode: com.anisync.android.data.ThemeMode): String {
     }
 }
 
-@Composable
-fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Timeline,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(text = stringResource(R.string.error_oops), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text(text = message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onRetry) {
-            Text(stringResource(R.string.retry))
-        }
-    }
-}

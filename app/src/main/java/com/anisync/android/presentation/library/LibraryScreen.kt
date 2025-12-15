@@ -103,6 +103,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.SkeletonGrid
 import com.anisync.android.presentation.components.SkeletonList
 import com.anisync.android.presentation.util.formatTimeUntilAiring
@@ -306,7 +307,7 @@ fun LibraryScreen(
                 is LibraryUiState.Loading -> {
                     if (isGridView) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
                 }
-                is LibraryUiState.Error -> ErrorState(state.message) { viewModel.refresh() }
+                is LibraryUiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.refresh() })
                 is LibraryUiState.Success -> {
                     val entries by remember(state.entries, selectedStatus) {
                         derivedStateOf { state.entries.filter { it.status == selectedStatus } }
@@ -681,16 +682,6 @@ fun EmptyLibraryTabState(status: LibraryStatus, type: MediaType) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text(text = stringResource(R.string.error_oops), style = MaterialTheme.typography.headlineMedium)
-        Text(text = message, color = MaterialTheme.colorScheme.error)
-        Spacer(modifier = Modifier.height(16.dp))
-        IconButton(onClick = onRetry) { Icon(Icons.Default.Add, null) }
     }
 }
 
