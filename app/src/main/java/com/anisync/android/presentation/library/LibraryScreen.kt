@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
+import com.anisync.android.presentation.components.MediaTypeSelector
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -251,33 +252,11 @@ fun LibraryScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-                ) {
-                    ToggleButton(
-                        checked = mediaType == MediaType.ANIME,
-                        onCheckedChange = {
-                            haptic.click()
-                            viewModel.onMediaTypeChange(MediaType.ANIME)
-                        },
-                        modifier = Modifier.weight(1f),
-                        shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
-                    ) {
-                        Text(text = stringResource(R.string.media_type_anime), fontWeight = FontWeight.SemiBold)
-                    }
-                    ToggleButton(
-                        checked = mediaType == MediaType.MANGA,
-                        onCheckedChange = {
-                            haptic.click()
-                            viewModel.onMediaTypeChange(MediaType.MANGA)
-                        },
-                        modifier = Modifier.weight(1f),
-                        shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
-                    ) {
-                        Text(text = stringResource(R.string.media_type_manga), fontWeight = FontWeight.SemiBold)
-                    }
-                }
+                MediaTypeSelector(
+                    selected = mediaType,
+                    onSelect = viewModel::onMediaTypeChange,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 

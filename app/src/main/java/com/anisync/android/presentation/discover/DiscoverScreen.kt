@@ -48,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
+import com.anisync.android.presentation.components.MediaTypeSelector
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
@@ -424,55 +425,6 @@ fun DiscoverScreen(
 // UI COMPONENTS
 // -----------------------------------------------------------------------------
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun MediaTypeSelector(
-    selected: MediaType,
-    onSelect: (MediaType) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val haptic = rememberHapticFeedback()
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-    ) {
-        ToggleButton(
-            checked = selected == MediaType.ANIME,
-            onCheckedChange = {
-                haptic.click()
-                onSelect(MediaType.ANIME)
-            },
-            modifier = Modifier.weight(1f),
-            shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
-        ) {
-            val scale by animateFloatAsState(targetValue = if (selected == MediaType.ANIME) 1.1f else 1f, animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(), label = "AnimeScale")
-            Text(
-                text = stringResource(R.string.media_type_anime),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.scale(scale)
-            )
-        }
-        ToggleButton(
-            checked = selected == MediaType.MANGA,
-            onCheckedChange = {
-                haptic.click()
-                onSelect(MediaType.MANGA)
-            },
-            modifier = Modifier.weight(1f),
-            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
-        ) {
-            val scale by animateFloatAsState(targetValue = if (selected == MediaType.MANGA) 1.1f else 1f, animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(), label = "MangaScale")
-            Text(
-                text = stringResource(R.string.media_type_manga),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.scale(scale)
-            )
-        }
-    }
-}
 
 @Composable
 private fun SectionHeader(
