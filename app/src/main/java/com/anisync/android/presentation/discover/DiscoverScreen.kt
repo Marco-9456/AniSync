@@ -113,6 +113,7 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatChaptersCount
 import com.anisync.android.presentation.util.formatEpisodesCount
+import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
@@ -542,7 +543,7 @@ private fun HeroCard(
                     )
                 )
 
-                val statusText = formatStatus(item.mediaStatus)
+                val statusText = item.mediaStatus.formatAsTitle()
                 val countsText = if (item.totalEpisodes != null) formatEpisodesCount(item.totalEpisodes) else if (item.totalChapters != null) formatChaptersCount(item.totalChapters) else null
 
                 if (statusText != null || countsText != null) {
@@ -593,7 +594,7 @@ private fun SearchResultItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
         supportingContent = {
             val type = item.type?.name ?: stringResource(R.string.media_type_media)
-            val status = formatStatus(item.mediaStatus) ?: stringResource(R.string.unknown)
+            val status = item.mediaStatus.formatAsTitle() ?: stringResource(R.string.unknown)
             Text(
                 text = "$type • $status",
                 style = MaterialTheme.typography.labelMedium,
@@ -632,13 +633,7 @@ private fun DiscoverShimmer() {
     }
 }
 
-private fun formatStatus(status: String?): String? {
-    if (status == null) return null
-    return status.replace("_", " ")
-        .lowercase()
-        .split(" ")
-        .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
-}
+
 
 /**
  * Search Filter Dialog

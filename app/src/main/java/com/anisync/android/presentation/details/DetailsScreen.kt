@@ -106,6 +106,7 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
@@ -486,7 +487,7 @@ fun TitleSection(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = if (format == "TV") stringResource(R.string.format_tv_series) else format.replace("_", " "),
+                        text = if (format == "TV") stringResource(R.string.format_tv_series) else format.formatAsTitle() ?: format,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -670,7 +671,7 @@ fun StatsCard(details: MediaDetails) {
         ) {
             StatItem(if (isManga) stringResource(R.string.stat_chapters) else stringResource(R.string.stat_episodes), if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}")
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            StatItem(stringResource(R.string.stat_status), details.status.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
+            StatItem(stringResource(R.string.stat_status), details.status.formatAsTitle() ?: details.status)
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
             StatItem(stringResource(R.string.stat_source), stringResource(R.string.source_original)) // Replace with actual source if available in MediaDetails
         }
@@ -843,7 +844,7 @@ fun RelationItem(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = relation.relationType.replace("_", " "),
+            text = relation.relationType.formatAsTitle() ?: relation.relationType,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.primary
         )

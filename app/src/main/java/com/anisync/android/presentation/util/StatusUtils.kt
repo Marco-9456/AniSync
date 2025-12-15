@@ -55,3 +55,16 @@ fun MediaStatus.toLabel(): String {
         MediaStatus.UNKNOWN__ -> ""
     }
 }
+
+/**
+ * Formats a snake_case string (e.g., "SOME_STATUS") to Title Case (e.g., "Some Status").
+ * Returns null if the input is null.
+ */
+fun String?.formatAsTitle(): String? {
+    if (this == null) return null
+    return this.replace("_", " ")
+        .lowercase()
+        .split(" ")
+        .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+}
+
