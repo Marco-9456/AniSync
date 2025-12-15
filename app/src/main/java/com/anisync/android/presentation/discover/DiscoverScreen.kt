@@ -107,6 +107,7 @@ import com.anisync.android.domain.AVAILABLE_GENRES
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.MediaCard
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.bouncyClickable
@@ -559,129 +560,7 @@ private fun HeroCard(
     }
 }
 
-// --- REDESIGNED MEDIA CARD ---
 
-/**
- * A specialized Media Card strictly following the provided redesign image.
- * Structure:
- * - Top: Image Thumbnail
- * - Bottom: Content Area (Title + Type + Rating Pill)
- */
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun MediaCard(
-    item: LibraryEntry,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
-) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-
-    with(sharedTransitionScope) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer, // Matches the white/light background of the design
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            modifier = modifier
-                .width(150.dp)
-                .bouncyClickable(onClick = onClick)
-                .sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-                )
-        ) {
-            Column {
-                // Image Container
-                val cacheKey = "discover_cover_${item.mediaId}"
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.coverUrl)
-                        .crossfade(true)
-                        .placeholderMemoryCacheKey(cacheKey)
-                        .memoryCacheKey(cacheKey)
-                        .build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.7f) // Standard poster ratio
-                )
-
-                // Content Container
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp)
-                ) {
-                    // Title (Bold, Black)
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Bottom Row: Type and Rating Pill
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Type (e.g., "TV") - Secondary Color
-                        Text(
-                            text = item.type?.name ?: "TV",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        // Rating Pill (e.g., "8.8" with Star) - Only show if score is available
-                        item.averageScore?.let { score ->
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceContainerHighest, // Light grey/purple tint
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = StarGold,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    // Convert from 0-100 scale to 0-10 scale for display
-                                    Text(
-                                        text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 @Composable
 private fun HorizontalMediaList(
     items: List<LibraryEntry>,
