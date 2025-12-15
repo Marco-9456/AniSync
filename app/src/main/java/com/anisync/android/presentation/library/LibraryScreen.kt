@@ -103,6 +103,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.CircularIconButton
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.SkeletonGrid
@@ -177,25 +178,14 @@ fun LibraryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .bouncyClickable(pressedScale = 0.9f) {
-                                        haptic.click()
-                                        showSortMenu = true
-                                    }
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Sort,
-                                        contentDescription = stringResource(R.string.sort),
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                            CircularIconButton(
+                                icon = Icons.AutoMirrored.Filled.Sort,
+                                contentDescription = stringResource(R.string.sort),
+                                onClick = {
+                                    haptic.click()
+                                    showSortMenu = true
                                 }
-                            }
+                            )
 
                             DropdownMenu(
                                 expanded = showSortMenu,
@@ -230,25 +220,14 @@ fun LibraryScreen(
                             }
                         }
 
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                            modifier = Modifier
-                                .size(40.dp)
-                                .bouncyClickable(pressedScale = 0.9f) {
-                                    haptic.click()
-                                    isGridView = !isGridView
-                                }
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
-                                    contentDescription = stringResource(R.string.toggle_view),
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                        CircularIconButton(
+                            icon = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
+                            contentDescription = stringResource(R.string.toggle_view),
+                            onClick = {
+                                haptic.click()
+                                isGridView = !isGridView
                             }
-                        }
+                        )
                     }
                 }
 
