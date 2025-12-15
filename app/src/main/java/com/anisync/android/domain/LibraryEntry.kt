@@ -1,5 +1,6 @@
 package com.anisync.android.domain
 
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.Serializable
 
@@ -24,6 +25,7 @@ data class LibraryEntry(
     val totalChapters: Int?,
     val totalVolumes: Int?,
     val type: MediaType?,
+    val format: MediaFormat? = null,
     val status: LibraryStatus,
     val nextAiringEpisode: Int? = null,
     val timeUntilAiring: Int? = null,

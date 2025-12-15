@@ -12,6 +12,7 @@ query GetMediaBySort($sort: [MediaSort], $type: MediaType, $perPage: Int) {
       chapters
       volumes
       type
+      format
       averageScore
     }
   }
@@ -31,6 +32,7 @@ query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
       chapters
       volumes
       type
+      format
       averageScore
     }
   }

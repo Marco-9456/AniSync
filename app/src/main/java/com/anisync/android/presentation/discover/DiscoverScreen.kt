@@ -520,7 +520,7 @@ private fun HeroCard(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = item.type?.name ?: stringResource(R.string.media_type_anime),
+                        text = item.format?.toLabel() ?: stringResource(R.string.media_type_anime),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -593,10 +593,10 @@ private fun SearchResultItem(
     ListItem(
         headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold) },
         supportingContent = {
-            val type = item.type?.name ?: stringResource(R.string.media_type_media)
+            val formatLabel = item.format?.toLabel() ?: stringResource(R.string.media_type_media)
             val status = item.mediaStatus.formatAsTitle() ?: stringResource(R.string.unknown)
             Text(
-                text = "$type • $status",
+                text = "$formatLabel • $status",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -792,7 +792,7 @@ private fun SearchFilterDialog(
                                         val newFormats = if (selected) filters.formats - format else filters.formats + format
                                         onFiltersChanged(filters.copy(formats = newFormats))
                                     },
-                                    label = { Text(getFormatLabel(format)) },
+                                    label = { Text(format.toLabel()) },
                                     leadingIcon = if (selected) {
                                         { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                                     } else null
@@ -874,23 +874,6 @@ private fun getSeasonLabel(season: MediaSeason): String {
         MediaSeason.SUMMER -> stringResource(R.string.season_summer)
         MediaSeason.FALL -> stringResource(R.string.season_fall)
         MediaSeason.UNKNOWN__ -> ""
-    }
-}
-
-@Composable
-private fun getFormatLabel(format: MediaFormat): String {
-    return when (format) {
-        MediaFormat.TV -> stringResource(R.string.format_tv)
-        MediaFormat.TV_SHORT -> stringResource(R.string.format_tv_short)
-        MediaFormat.MOVIE -> stringResource(R.string.format_movie)
-        MediaFormat.SPECIAL -> stringResource(R.string.format_special)
-        MediaFormat.OVA -> stringResource(R.string.format_ova)
-        MediaFormat.ONA -> stringResource(R.string.format_ona)
-        MediaFormat.MUSIC -> stringResource(R.string.format_music)
-        MediaFormat.MANGA -> stringResource(R.string.media_type_manga)
-        MediaFormat.NOVEL -> stringResource(R.string.format_novel)
-        MediaFormat.ONE_SHOT -> stringResource(R.string.format_one_shot)
-        MediaFormat.UNKNOWN__ -> ""
     }
 }
 

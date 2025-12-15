@@ -47,6 +47,7 @@ class SearchRepositoryImpl @Inject constructor(
                     totalChapters = media.chapters,
                     totalVolumes = media.volumes,
                     type = media.type,
+                    format = media.format,
                     status = LibraryStatus.UNKNOWN,
                     mediaStatus = media.status?.name
                 )

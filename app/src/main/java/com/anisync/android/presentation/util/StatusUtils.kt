@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaType
 
@@ -57,6 +58,27 @@ fun MediaStatus.toLabel(): String {
 }
 
 /**
+ * Converts a MediaFormat enum to a user-friendly display label.
+ * For example: TV -> "TV Series", MOVIE -> "Movie", OVA -> "OVA", etc.
+ */
+@Composable
+fun MediaFormat.toLabel(): String {
+    return when (this) {
+        MediaFormat.TV -> stringResource(R.string.format_tv)
+        MediaFormat.TV_SHORT -> stringResource(R.string.format_tv_short)
+        MediaFormat.MOVIE -> stringResource(R.string.format_movie)
+        MediaFormat.SPECIAL -> stringResource(R.string.format_special)
+        MediaFormat.OVA -> stringResource(R.string.format_ova)
+        MediaFormat.ONA -> stringResource(R.string.format_ona)
+        MediaFormat.MUSIC -> stringResource(R.string.format_music)
+        MediaFormat.MANGA -> stringResource(R.string.media_type_manga)
+        MediaFormat.NOVEL -> stringResource(R.string.format_novel)
+        MediaFormat.ONE_SHOT -> stringResource(R.string.format_one_shot)
+        MediaFormat.UNKNOWN__ -> stringResource(R.string.unknown)
+    }
+}
+
+/**
  * Formats a snake_case string (e.g., "SOME_STATUS") to Title Case (e.g., "Some Status").
  * Returns null if the input is null.
  */
@@ -67,4 +89,5 @@ fun String?.formatAsTitle(): String? {
         .split(" ")
         .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
 }
+
 
