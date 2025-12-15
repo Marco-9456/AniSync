@@ -834,7 +834,7 @@ fun RelationItem(
     ) {
         AsyncImage(
             model = relation.coverUrl,
-            contentDescription = relation.title,
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .height(140.dp)
