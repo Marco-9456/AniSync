@@ -719,7 +719,7 @@ fun GenreFlow(genres: List<String>) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpandableSynopsis(text: String) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     
     // Use spring physics from motionScheme for consistent feel
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
