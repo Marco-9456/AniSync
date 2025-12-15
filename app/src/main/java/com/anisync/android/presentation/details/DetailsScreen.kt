@@ -110,6 +110,7 @@ import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
+import com.anisync.android.presentation.components.ScoreBadge
 import kotlinx.coroutines.delay
 
 // Stagger delay constant for content reveal animations (40ms for snappy feel)
@@ -646,39 +647,7 @@ fun PageHeaderSection(
     }
 }
 
-@Composable
-fun ScoreBadge(score: Int) {
-    // Semantic colors based on score
-    val (containerColor, contentColor) = when {
-        score >= 75 -> Color(0xFFE6F4EA) to Color(0xFF1E8E3E) // Light Green / Dark Green
-        score >= 60 -> Color(0xFFFFF7E0) to Color(0xFFF9A825) // Light Yellow / Dark Yellow
-        else -> Color(0xFFFCE8E6) to Color(0xFFC62828) // Light Red / Dark Red
-    }
 
-    Surface(
-        color = containerColor,
-        shape = RoundedCornerShape(8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, contentColor.copy(alpha = 0.2f))
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Icon(
-                Icons.Default.Star,
-                null,
-                tint = contentColor,
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(
-                "$score%",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = contentColor
-            )
-        }
-    }
-}
 
 @Composable
 fun StatsCard(details: MediaDetails) {
