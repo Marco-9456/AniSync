@@ -100,6 +100,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.ui.theme.StarGold
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.ui.geometry.Rect
 
@@ -494,7 +495,7 @@ fun FavoritesSection(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
         ) {
-            Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107))
+            Icon(Icons.Default.Star, null, tint = StarGold)
             Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.section_favorites),

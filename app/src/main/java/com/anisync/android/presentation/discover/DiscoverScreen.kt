@@ -124,6 +124,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.ui.geometry.Rect
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.type.MediaFormat
@@ -385,7 +386,7 @@ fun DiscoverScreen(
                             SectionHeader(
                                 title = popularTitle,
                                 icon = Icons.Default.Star,
-                                color = Color(0xFFFFC107),
+                                color = StarGold,
                                 onSeeAllClick = { onSectionSeeAllClick(popularTitle, "popular") }
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -709,7 +710,7 @@ private fun MediaCard(
                                     Icon(
                                         imageVector = Icons.Default.Star,
                                         contentDescription = null,
-                                        tint = Color(0xFFFFC107), // Amber/Gold Star
+                                        tint = StarGold,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))

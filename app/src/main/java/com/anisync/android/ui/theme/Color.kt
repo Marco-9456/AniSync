@@ -216,3 +216,9 @@ val surfaceContainerLowDarkHighContrast = Color(0xFF1E201A)
 val surfaceContainerDarkHighContrast = Color(0xFF2F312A)
 val surfaceContainerHighDarkHighContrast = Color(0xFF3A3C35)
 val surfaceContainerHighestDarkHighContrast = Color(0xFF454840)
+
+// --- Semantic Colors ---
+// These colors are used for specific UI purposes that don't fit standard M3 tokens
+
+/** Amber/Gold color for star icons (ratings, favorites, popular sections) */
+val StarGold = Color(0xFFFFC107)
