@@ -60,17 +60,16 @@ import androidx.compose.foundation.background
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun SectionGridScreen(
-    sectionTitle: String,
-    sectionType: String,
+fun MediaGridContent(
+    title: String,
+    items: List<LibraryEntry>,
+    isLoading: Boolean,
+    errorMessage: String?,
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
-    viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -78,7 +77,7 @@ fun SectionGridScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = sectionTitle,
+                        text = title,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -97,59 +96,105 @@ fun SectionGridScreen(
             )
         }
     ) { paddingValues ->
-        when (val state = uiState) {
-            is DiscoverUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            is DiscoverUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                errorMessage != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+                    }
                 }
-            }
-            is DiscoverUiState.Success -> {
-                val items = when (sectionType) {
-                    "trending" -> state.trending
-                    "popular" -> state.popular
-                    "upcoming" -> state.upcoming
-                    else -> emptyList()
-                }
-
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 150.dp),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    items(items, key = { it.mediaId }) { item ->
-                        SectionGridCard(
-                            item = item,
-                            onClick = { onMediaClick(item.mediaId) },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
+                else -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 150.dp),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(items, key = { it.mediaId }) { item ->
+                            SectionGridCard(
+                                item = item,
+                                onClick = { onMediaClick(item.mediaId) },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun SectionGridScreen(
+    sectionTitle: String,
+    sectionType: String,
+    onBackClick: () -> Unit,
+    onMediaClick: (Int) -> Unit,
+    viewModel: DiscoverViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    
+    val items = if (uiState is DiscoverUiState.Success) {
+         when (sectionType) {
+            "trending" -> (uiState as DiscoverUiState.Success).trending
+            "popular" -> (uiState as DiscoverUiState.Success).popular
+            "upcoming" -> (uiState as DiscoverUiState.Success).upcoming
+            else -> emptyList()
+        }
+    } else emptyList()
+
+    MediaGridContent(
+        title = sectionTitle,
+        items = items,
+        isLoading = uiState is DiscoverUiState.Loading,
+        errorMessage = (uiState as? DiscoverUiState.Error)?.message,
+        onBackClick = onBackClick,
+        onMediaClick = onMediaClick,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope
+    )
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun FavoritesGridScreen(
+    sectionTitle: String, // Likely "Favorites"
+    onBackClick: () -> Unit,
+    onMediaClick: (Int) -> Unit,
+    viewModel: com.anisync.android.presentation.profile.ProfileViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    
+    val items = if (uiState is com.anisync.android.presentation.profile.ProfileUiState.Success) {
+        (uiState as com.anisync.android.presentation.profile.ProfileUiState.Success).profile.favoriteAnime
+    } else emptyList()
+
+    MediaGridContent(
+        title = sectionTitle,
+        items = items,
+        isLoading = uiState is com.anisync.android.presentation.profile.ProfileUiState.Loading,
+        errorMessage = (uiState as? com.anisync.android.presentation.profile.ProfileUiState.Error)?.message,
+        onBackClick = onBackClick,
+        onMediaClick = onMediaClick,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope
+    )
 }
 
 /**

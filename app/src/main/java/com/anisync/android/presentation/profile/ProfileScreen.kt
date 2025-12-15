@@ -100,6 +100,8 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.ui.theme.StarGold
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.ui.geometry.Rect
@@ -109,6 +111,7 @@ import androidx.compose.ui.geometry.Rect
 fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
     onLogoutClick: () -> Unit,
+    onFavoritesClick: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -139,6 +142,7 @@ fun ProfileScreen(
                         viewModel = viewModel,
                         onMediaClick = onMediaClick,
                         onLogoutClick = onLogoutClick,
+                        onFavoritesClick = onFavoritesClick,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
@@ -155,6 +159,7 @@ fun BentoProfileLayout(
     viewModel: ProfileViewModel,
     onMediaClick: (Int) -> Unit,
     onLogoutClick: () -> Unit,
+    onFavoritesClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -220,6 +225,7 @@ fun BentoProfileLayout(
                 FavoritesSection(
                     favorites = profile.favoriteAnime,
                     onMediaClick = onMediaClick,
+                    onFavoritesClick = onFavoritesClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope
                 )
@@ -486,22 +492,19 @@ fun StatCardSmall(
 fun FavoritesSection(
     favorites: List<LibraryEntry>,
     onMediaClick: (Int) -> Unit,
+    onFavoritesClick: () -> Unit,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     Column(modifier = modifier.padding(top = 12.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-        ) {
-            Icon(Icons.Default.Star, null, tint = StarGold)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.section_favorites),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            )
-        }
+        SectionHeader(
+            title = stringResource(R.string.section_favorites),
+            level = HeaderLevel.Section,
+            iconColor = StarGold,
+            padding = PaddingValues(start = 4.dp, bottom = 12.dp),
+            onActionClick = onFavoritesClick
+        )
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -644,10 +647,10 @@ fun SettingsSection(
 
     Column(modifier = modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Section Title
-        Text(
-            text = stringResource(R.string.section_settings),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(start = 4.dp)
+        SectionHeader(
+            title = stringResource(R.string.section_settings),
+            level = HeaderLevel.Section,
+            padding = PaddingValues(start = 4.dp)
         )
 
         // Look and Feel Card
@@ -658,11 +661,10 @@ fun SettingsSection(
         ) {
             Column {
                 // Section Header
-                Text(
-                    text = stringResource(R.string.section_look_and_feel),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                SectionHeader(
+                    title = stringResource(R.string.section_look_and_feel),
+                    level = HeaderLevel.Subsection,
+                    padding = PaddingValues(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
                 // Theme Row
@@ -758,11 +760,10 @@ fun SettingsSection(
         ) {
             Column {
                 // Section Header
-                Text(
-                    text = stringResource(R.string.section_account),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                SectionHeader(
+                   title = stringResource(R.string.section_account),
+                   level = HeaderLevel.Subsection,
+                   padding = PaddingValues(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
                 // Notification Row

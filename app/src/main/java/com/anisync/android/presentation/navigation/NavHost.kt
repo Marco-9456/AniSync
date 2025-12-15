@@ -141,6 +141,10 @@ fun AniSyncNavHost(
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                    onFavoritesClick = {
+                        // Use a distinct navigation route for favorites
+                        navController.navigate(SectionGrid("Favorites", "favorites"))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -197,16 +201,28 @@ fun AniSyncNavHost(
             ) { backStackEntry ->
                 val sectionGrid: SectionGrid = backStackEntry.toRoute()
 
-                SectionGridScreen(
-                    sectionTitle = sectionGrid.sectionTitle,
-                    sectionType = sectionGrid.sectionType,
-                    onBackClick = { navController.popBackStack() },
-                    onMediaClick = { mediaId ->
-                        navController.navigate(Details(mediaId, "sectiongrid"))
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
+                if (sectionGrid.sectionType == "favorites") {
+                    com.anisync.android.presentation.discover.FavoritesGridScreen(
+                        sectionTitle = sectionGrid.sectionTitle,
+                        onBackClick = { navController.popBackStack() },
+                        onMediaClick = { mediaId ->
+                            navController.navigate(Details(mediaId, "sectiongrid"))
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this
+                    )
+                } else {
+                    SectionGridScreen(
+                        sectionTitle = sectionGrid.sectionTitle,
+                        sectionType = sectionGrid.sectionType,
+                        onBackClick = { navController.popBackStack() },
+                        onMediaClick = { mediaId ->
+                            navController.navigate(Details(mediaId, "sectiongrid"))
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this
+                    )
+                }
             }
         }
     }

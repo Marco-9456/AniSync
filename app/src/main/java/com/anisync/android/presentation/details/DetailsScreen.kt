@@ -111,6 +111,8 @@ import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.presentation.components.ScoreBadge
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.HeaderLevel
 import kotlinx.coroutines.delay
 
 // Stagger delay constant for content reveal animations (40ms for snappy feel)
@@ -314,7 +316,7 @@ fun DetailsPageContent(
                     StaggeredAnimatedVisibility(index = 4) {
                         Column {
                             Spacer(modifier = Modifier.height(32.dp))
-                            SectionTitle(stringResource(R.string.section_cast), Modifier.padding(horizontal = 24.dp))
+                            SectionHeader(stringResource(R.string.section_cast), level = HeaderLevel.Section)
                             Spacer(modifier = Modifier.height(16.dp))
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
@@ -333,7 +335,7 @@ fun DetailsPageContent(
                     StaggeredAnimatedVisibility(index = 5) {
                         Column {
                             Spacer(modifier = Modifier.height(32.dp))
-                            SectionTitle(stringResource(R.string.section_related), Modifier.padding(horizontal = 24.dp))
+                            SectionHeader(stringResource(R.string.section_related), level = HeaderLevel.Section)
                             Spacer(modifier = Modifier.height(16.dp))
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
@@ -782,15 +784,7 @@ fun ExpandableSynopsis(text: String) {
     }
 }
 
-@Composable
-fun SectionTitle(title: String, modifier: Modifier = Modifier) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
-    )
-}
+
 
 @Composable
 fun CharacterItem(character: CharacterInfo) {

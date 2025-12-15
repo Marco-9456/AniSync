@@ -1,8 +1,12 @@
 package com.anisync.android.presentation.discover
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,41 +36,37 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Upcoming
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
-import com.anisync.android.presentation.components.MediaTypeSelector
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
@@ -87,19 +86,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.foundation.LocalIndication
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -111,25 +106,19 @@ import com.anisync.android.R
 import com.anisync.android.domain.AVAILABLE_GENRES
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.SearchFilters
+import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.MediaTypeSelector
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatChaptersCount
 import com.anisync.android.presentation.util.formatEpisodesCount
-import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.shimmerEffect
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.ui.geometry.Rect
-import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.presentation.util.toLabel
-import com.anisync.android.type.MediaType
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaStatus
+import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -367,9 +356,9 @@ fun DiscoverScreen(
                             val trendingTitle = stringResource(R.string.section_trending_now)
                             SectionHeader(
                                 title = trendingTitle,
-                                icon = Icons.Default.LocalFireDepartment,
-                                color = Color(0xFFFF5722),
-                                onSeeAllClick = { onSectionSeeAllClick(trendingTitle, "trending") }
+                                iconColor = Color(0xFFFF5722),
+                                onActionClick = { onSectionSeeAllClick(trendingTitle, "trending") },
+                                level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             CinematicHeroCarousel(
@@ -385,9 +374,9 @@ fun DiscoverScreen(
                             val popularTitle = stringResource(R.string.section_all_time_popular)
                             SectionHeader(
                                 title = popularTitle,
-                                icon = Icons.Default.Star,
-                                color = StarGold,
-                                onSeeAllClick = { onSectionSeeAllClick(popularTitle, "popular") }
+                                iconColor = StarGold,
+                                onActionClick = { onSectionSeeAllClick(popularTitle, "popular") },
+                                level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
@@ -403,9 +392,9 @@ fun DiscoverScreen(
                             val upcomingTitle = stringResource(R.string.section_upcoming_season)
                             SectionHeader(
                                 title = upcomingTitle,
-                                icon = Icons.Default.CalendarMonth,
-                                color = MaterialTheme.colorScheme.primary,
-                                onSeeAllClick = { onSectionSeeAllClick(upcomingTitle, "upcoming") }
+                                iconColor = MaterialTheme.colorScheme.primary,
+                                onActionClick = { onSectionSeeAllClick(upcomingTitle, "upcoming") },
+                                level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
@@ -427,44 +416,7 @@ fun DiscoverScreen(
 // -----------------------------------------------------------------------------
 
 
-@Composable
-private fun SectionHeader(
-    title: String,
-    icon: ImageVector,
-    color: Color,
-    onSeeAllClick: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .then(
-                if (onSeeAllClick != null) {
-                    Modifier.clickable(onClick = onSeeAllClick)
-                } else Modifier
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        if (onSeeAllClick != null) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = stringResource(R.string.more),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
+
 
 
 // --- CAROUSEL (UNTOUCHED) ---

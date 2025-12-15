@@ -108,6 +108,8 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.SkeletonGrid
 import com.anisync.android.presentation.components.SkeletonList
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -166,11 +168,11 @@ fun LibraryScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(R.string.library_title),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Normal,
-                        color = MaterialTheme.colorScheme.onBackground
+                    SectionHeader(
+                        title = stringResource(R.string.library_title),
+                        level = HeaderLevel.Screen,
+                        modifier = Modifier.weight(1f),
+                        padding = PaddingValues(0.dp) // Reset padding as parent handles it
                     )
 
                     Row(
