@@ -67,8 +67,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -702,16 +700,18 @@ fun GenreFlow(genres: List<String>) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         genres.forEach { genre ->
-            SuggestionChip(
-                onClick = {},
-                label = { Text(genre, style = MaterialTheme.typography.labelMedium) },
-                colors = SuggestionChipDefaults.suggestionChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    labelColor = MaterialTheme.colorScheme.onSurface
-                ),
-                border = null,
+            // Non-clickable Surface - no misleading interaction affordances
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = CircleShape
-            )
+            ) {
+                Text(
+                    text = genre,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
         }
     }
 }
