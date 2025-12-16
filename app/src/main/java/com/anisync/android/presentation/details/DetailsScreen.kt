@@ -321,7 +321,10 @@ fun DetailsPageContent(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                items(details.characters) { CharacterItem(it) }
+                                items(
+                                    items = details.characters,
+                                    key = { it.id }
+                                ) { CharacterItem(it) }
                             }
                         }
                     }
@@ -340,7 +343,10 @@ fun DetailsPageContent(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(details.relations) { relation -> 
+                                items(
+                                    items = details.relations,
+                                    key = { it.id }
+                                ) { relation -> 
                                     RelationItem(
                                         relation = relation,
                                         onClick = { onRelationClick(relation.id) }

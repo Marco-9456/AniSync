@@ -144,13 +144,17 @@ fun DiscoverScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    val searchBarState = rememberSearchBarState()
+    // Search Bar State with persistence
+    val isSearchExpanded = rememberSaveable { mutableStateOf(false) }
+    val searchBarState = rememberSearchBarState(
+        initialValue = if (isSearchExpanded.value) SearchBarValue.Expanded else SearchBarValue.Collapsed
+    )
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
 
     // Filter dialog state
-    var showFilterDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
     // Sync textFieldState changes with ViewModel
     LaunchedEffect(textFieldState) {
@@ -158,8 +162,11 @@ fun DiscoverScreen(
             .collect { viewModel.onSearchQueryChange(it) }
     }
 
-    // Clear keyboard and focus when search bar is collapsing to prevent InputConnection warnings
+    // Sync searchBarState changes back to isSearchExpanded to persist state
     LaunchedEffect(searchBarState.currentValue) {
+        isSearchExpanded.value = searchBarState.currentValue == SearchBarValue.Expanded
+        
+        // Clear keyboard and focus when search bar is collapsing
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
             keyboardController?.hide()
             focusManager.clearFocus()
@@ -576,7 +583,10 @@ private fun HorizontalMediaList(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        itemsIndexed(items) { _, item ->
+        items(
+            items = items,
+            key = { it.mediaId }
+        ) { item ->
             MediaCard(
                 item = item,
                 onClick = { onItemClick(item.mediaId) },
