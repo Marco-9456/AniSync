@@ -135,7 +135,7 @@ fun LibraryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = rememberHapticFeedback()
     var isGridView by rememberSaveable { mutableStateOf(true) }
-    var showSortMenu by remember { mutableStateOf(false) }
+    var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
 
     LaunchedEffect(Unit) {

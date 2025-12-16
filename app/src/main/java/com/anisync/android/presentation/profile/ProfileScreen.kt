@@ -72,6 +72,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -511,7 +512,10 @@ fun FavoritesSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
-            items(favorites) { entry ->
+            items(
+                items = favorites,
+                key = { it.mediaId }
+            ) { entry ->
                 PosterCard(
                     title = entry.title,
                     coverUrl = entry.coverUrl,
@@ -548,8 +552,8 @@ fun SettingsSection(
         if (isGranted) viewModel.toggleNotifications(true)
     }
 
-    var showSettingsDialog by remember { mutableStateOf(false) }
-    var showThemeDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
+    var showThemeDialog by rememberSaveable { mutableStateOf(false) }
 
     if (showSettingsDialog) {
         AlertDialog(
