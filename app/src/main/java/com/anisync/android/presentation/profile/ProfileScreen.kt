@@ -529,6 +529,7 @@ fun FavoritesSection(
                     modifier = Modifier
                         .width(120.dp)
                         .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
+                        .animateItem()
                 )
             }
         }

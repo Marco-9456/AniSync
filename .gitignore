@@ -15,7 +15,6 @@ bin/
 gen/
 out/
 docs/
-.jules/
 build/
 .gradle/
 .cxx/

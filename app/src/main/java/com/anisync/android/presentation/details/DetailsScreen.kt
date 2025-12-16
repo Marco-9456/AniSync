@@ -324,7 +324,7 @@ fun DetailsPageContent(
                                 items(
                                     items = details.characters,
                                     key = { it.id }
-                                ) { CharacterItem(it) }
+                                ) { CharacterItem(it, modifier = Modifier.animateItem()) }
                             }
                         }
                     }
@@ -349,7 +349,8 @@ fun DetailsPageContent(
                                 ) { relation -> 
                                     RelationItem(
                                         relation = relation,
-                                        onClick = { onRelationClick(relation.id) }
+                                        onClick = { onRelationClick(relation.id) },
+                                        modifier = Modifier.animateItem()
                                     )
                                 }
                             }
@@ -794,10 +795,13 @@ fun ExpandableSynopsis(text: String) {
 
 
 @Composable
-fun CharacterItem(character: CharacterInfo) {
+fun CharacterItem(
+    character: CharacterInfo,
+    modifier: Modifier = Modifier
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(80.dp)
+        modifier = modifier.width(80.dp)
     ) {
         AsyncImage(
             model = character.imageUrl,
@@ -830,10 +834,11 @@ fun CharacterItem(character: CharacterInfo) {
 @Composable
 fun RelationItem(
     relation: RelatedMedia,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .width(100.dp)
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)

@@ -183,7 +183,7 @@ fun LibraryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -257,14 +257,14 @@ fun LibraryScreen(
                 MediaTypeSelector(
                     selected = mediaType,
                     onSelect = viewModel::onMediaTypeChange,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 val statuses = listOf(LibraryStatus.CURRENT, LibraryStatus.PAUSED, LibraryStatus.COMPLETED, LibraryStatus.PLANNING, LibraryStatus.DROPPED)
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(statuses) { status ->
@@ -333,7 +333,7 @@ fun LibraryScreen(
                                 LazyVerticalGrid(
                                     columns = GridCells.Adaptive(minSize = 160.dp),
                                     state = gridState,
-                                    contentPadding = PaddingValues(20.dp),
+                                contentPadding = PaddingValues(24.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
                                     modifier = Modifier.fillMaxSize()
@@ -358,7 +358,7 @@ fun LibraryScreen(
                             } else {
                                 LazyColumn(
                                     state = listState,
-                                    contentPadding = PaddingValues(20.dp),
+                                    contentPadding = PaddingValues(24.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {

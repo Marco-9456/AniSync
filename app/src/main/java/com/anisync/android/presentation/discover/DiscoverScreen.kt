@@ -152,6 +152,8 @@ fun DiscoverScreen(
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
+    // Main content scroll state (separate from search results)
+    val mainListState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
 
     // Filter dialog state
     var showFilterDialog by rememberSaveable { mutableStateOf(false) }
@@ -334,6 +336,7 @@ fun DiscoverScreen(
             }
         ) {
             LazyColumn(
+                state = mainListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
@@ -591,7 +594,8 @@ private fun HorizontalMediaList(
                 item = item,
                 onClick = { onItemClick(item.mediaId) },
                 sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope
+                animatedVisibilityScope = animatedVisibilityScope,
+                modifier = Modifier.animateItem()
             )
         }
     }
