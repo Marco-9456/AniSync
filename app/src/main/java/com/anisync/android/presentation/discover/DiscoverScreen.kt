@@ -80,6 +80,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -146,6 +147,7 @@ fun DiscoverScreen(
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
+    val listState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
 
     // Filter dialog state
     var showFilterDialog by remember { mutableStateOf(false) }
@@ -242,9 +244,10 @@ fun DiscoverScreen(
                     bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                state = listState
             ) {
-                items(searchResults) { item ->
+                items(searchResults, key = { it.mediaId }) { item ->
                     SearchResultItem(
                         item = item,
                         onClick = {
