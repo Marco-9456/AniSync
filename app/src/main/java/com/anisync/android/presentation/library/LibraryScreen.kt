@@ -228,6 +228,11 @@ fun LibraryScreen(
                                                     LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
                                                     LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
                                                     LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
+                                                    LibrarySort.SCORE -> stringResource(R.string.sort_score)
+                                                    LibrarySort.LAST_UPDATED -> stringResource(R.string.sort_last_updated)
+                                                    LibrarySort.LAST_ADDED -> stringResource(R.string.sort_last_added)
+                                                    LibrarySort.START_DATE -> stringResource(R.string.sort_start_date)
+                                                    LibrarySort.RELEASE_DATE -> stringResource(R.string.sort_release_date)
                                                 },
                                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface

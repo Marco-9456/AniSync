@@ -55,6 +55,11 @@
     <string name="sort_title_az">Title (A-Z)</string>
     <string name="sort_progress">Progress (Most)</string>
     <string name="sort_airing_soon">Airing Soon</string>
+    <string name="sort_score">Score</string>
+    <string name="sort_last_updated">Last Updated</string>
+    <string name="sort_last_added">Last Added</string>
+    <string name="sort_start_date">Start Date</string>
+    <string name="sort_release_date">Release Date</string>
     <string name="badge_up_to_date">UP TO DATE</string>
     <string name="airing_episode_in">Ep %1$d in %2$s</string>
     <string name="progress_format">%1$d / %2$s</string>

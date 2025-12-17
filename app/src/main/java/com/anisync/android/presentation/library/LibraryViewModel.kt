@@ -36,7 +36,12 @@ sealed interface LibraryEvent {
 enum class LibrarySort {
     TITLE,
     PROGRESS,
-    AIRING_SOON
+    AIRING_SOON,
+    SCORE,
+    LAST_UPDATED,
+    LAST_ADDED,
+    START_DATE,
+    RELEASE_DATE
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -76,6 +81,26 @@ class LibraryViewModel @Inject constructor(
                 )
                 LibrarySort.AIRING_SOON -> entries.sortedWith(
                     compareBy<LibraryEntry, Int?>(nullsLast()) { it.timeUntilAiring }
+                        .thenBy { it.title.lowercase() }
+                )
+                LibrarySort.SCORE -> entries.sortedWith(
+                    compareByDescending<LibraryEntry> { it.score }
+                        .thenBy { it.title.lowercase() }
+                )
+                LibrarySort.LAST_UPDATED -> entries.sortedWith(
+                    compareByDescending<LibraryEntry> { it.updatedAt }
+                        .thenBy { it.title.lowercase() }
+                )
+                LibrarySort.LAST_ADDED -> entries.sortedWith(
+                    compareByDescending<LibraryEntry> { it.createdAt }
+                        .thenBy { it.title.lowercase() }
+                )
+                LibrarySort.START_DATE -> entries.sortedWith(
+                    compareByDescending<LibraryEntry> { it.startedAt }
+                        .thenBy { it.title.lowercase() }
+                )
+                LibrarySort.RELEASE_DATE -> entries.sortedWith(
+                    compareByDescending<LibraryEntry> { it.mediaStartDate }
                         .thenBy { it.title.lowercase() }
                 )
             }

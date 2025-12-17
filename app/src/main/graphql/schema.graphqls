@@ -39,6 +39,8 @@ type MediaList {
   notes: String
   startedAt: FuzzyDate
   completedAt: FuzzyDate
+  updatedAt: Int
+  createdAt: Int
 }
 
 input FuzzyDateInput {

@@ -75,6 +75,15 @@ class LibraryRepositoryImpl @Inject constructor(
                         else -> LibraryStatus.UNKNOWN
                     }
 
+                    val startDateLong = media?.startDate?.let { date ->
+                        if (date.year != null) {
+                            val c = Calendar.getInstance()
+                            c.clear()
+                            c.set(date.year!!, (date.month ?: 1) - 1, date.day ?: 1)
+                            c.timeInMillis
+                        } else null
+                    }
+
                     LibraryEntry(
                         id = entry.id ?: 0,
                         mediaId = media?.id ?: 0,
@@ -87,7 +96,11 @@ class LibraryRepositoryImpl @Inject constructor(
                         type = media?.type,
                         status = status,
                         nextAiringEpisode = media?.nextAiringEpisode?.episode,
-                        timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring
+                        timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
+                        score = entry.score,
+                        updatedAt = entry.updatedAt?.toLong()?.times(1000L),
+                        createdAt = entry.createdAt?.toLong()?.times(1000L),
+                        mediaStartDate = startDateLong
                     )
                 } ?: emptyList()
             }

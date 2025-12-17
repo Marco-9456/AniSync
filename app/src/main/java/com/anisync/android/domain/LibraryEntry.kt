@@ -35,5 +35,8 @@ data class LibraryEntry(
     val startedAt: Long? = null,
     val completedAt: Long? = null,
     val rewatches: Int = 0,
-    val notes: String? = null
+    val notes: String? = null,
+    val updatedAt: Long? = null,
+    val createdAt: Long? = null,
+    val mediaStartDate: Long? = null
 )

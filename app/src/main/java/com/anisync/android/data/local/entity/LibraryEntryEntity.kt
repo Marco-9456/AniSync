@@ -41,5 +41,8 @@ data class LibraryEntryEntity(
     val notes: String? = null,
     val startedAt: Long? = null,
     val completedAt: Long? = null,
+    val updatedAt: Long? = null,
+    val createdAt: Long? = null,
+    val mediaStartDate: Long? = null,
     val lastUpdated: Long = System.currentTimeMillis()
 )

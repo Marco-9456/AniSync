@@ -20,9 +20,17 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
             episode
             timeUntilAiring
           }
+          startDate {
+            year
+            month
+            day
+          }
         }
         status
         progress
+        score
+        updatedAt
+        createdAt
       }
     }
   }

@@ -14,6 +14,8 @@ import com.anisync.android.type.MediaType
 
 // --- LibraryEntry ---
 
+
+
 fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     id = id,
     mediaId = mediaId,
@@ -32,7 +34,10 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     rewatches = rewatches,
     notes = notes,
     startedAt = startedAt,
-    completedAt = completedAt
+    completedAt = completedAt,
+    updatedAt = updatedAt,
+    createdAt = createdAt,
+    mediaStartDate = mediaStartDate
 )
 
 fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEntryEntity(
@@ -53,7 +58,10 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     rewatches = rewatches,
     notes = notes,
     startedAt = startedAt,
-    completedAt = completedAt
+    completedAt = completedAt,
+    updatedAt = updatedAt,
+    createdAt = createdAt,
+    mediaStartDate = mediaStartDate
 )
 
 // --- MediaDetails ---
