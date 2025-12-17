@@ -103,17 +103,32 @@ class LibraryRepositoryImpl @Inject constructor(
 
     /**
      * Optimistic local update + network sync.
+     * Automatically changes status to COMPLETED if progress reaches total.
      */
     override suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit> {
-        // 1. Update local immediately (UI sees change via Flow)
-        libraryDao.updateProgress(mediaId, progress)
+        // 1. Get current entry to check for completion
+        val entry = libraryDao.getEntry(mediaId) ?: return Result.Error("Entry not found")
+        
+        // Determine the total based on media type
+        val total = if (entry.mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+        
+        // Check if this progress update completes the media
+        val isCompleted = total != null && total > 0 && progress >= total
+        
+        // 2. Update local immediately (UI sees change via Flow)
+        if (isCompleted) {
+            libraryDao.updateStatusAndProgress(mediaId, LibraryStatus.COMPLETED, progress)
+        } else {
+            libraryDao.updateProgress(mediaId, progress)
+        }
 
-        // 2. Try sync to network
+        // 3. Try sync to network
         return try {
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMediaListEntryMutation(
                     mediaId = Optional.present(mediaId),
-                    progress = Optional.present(progress)
+                    progress = Optional.present(progress),
+                    status = if (isCompleted) Optional.present(MediaListStatus.COMPLETED) else Optional.absent()
                 )
             ).execute()
 

@@ -30,6 +30,12 @@ interface LibraryDao {
     suspend fun getByType(type: MediaType): List<LibraryEntryEntity>
 
     /**
+     * Get a single entry by mediaId.
+     */
+    @Query("SELECT * FROM library_entries WHERE mediaId = :mediaId LIMIT 1")
+    suspend fun getEntry(mediaId: Int): LibraryEntryEntity?
+
+    /**
      * Insert or replace entries.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

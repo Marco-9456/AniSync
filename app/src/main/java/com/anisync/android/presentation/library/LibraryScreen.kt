@@ -107,7 +107,9 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.CircularIconButton
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.StatusBadge
+import com.anisync.android.presentation.components.WatchingCardConfig
 import com.anisync.android.presentation.components.SkeletonGrid
 import com.anisync.android.presentation.components.SkeletonList
 import com.anisync.android.presentation.components.SectionHeader
@@ -339,12 +341,13 @@ fun LibraryScreen(
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     items(entries, key = { it.id }) { entry ->
-                                        NewGridCard(
+                                        LibraryMediaCard(
                                             entry = entry,
                                             mediaType = mediaType,
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = { viewModel.incrementProgress(entry.mediaId) },
                                             onDecrement = { viewModel.decrementProgress(entry.mediaId) },
+                                            config = WatchingCardConfig,
                                             sharedTransitionScope = sharedTransitionScope,
                                             animatedVisibilityScope = animatedVisibilityScope,
                                             modifier = Modifier.animateItem(
@@ -381,150 +384,6 @@ fun LibraryScreen(
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun NewGridCard(
-    entry: LibraryEntry,
-    mediaType: MediaType,
-    onClick: () -> Unit,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope,
-    modifier: Modifier = Modifier
-) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val haptic = rememberHapticFeedback()
-    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-    val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
-
-    // Animate progress using MotionScheme
-    val animatedProgress by animateFloatAsState(
-        targetValue = progressPercent,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-        label = "Progress"
-    )
-
-    with(sharedTransitionScope) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            modifier = modifier
-                .fillMaxWidth()
-                .height(340.dp)
-                .bouncyClickable(onClick = onClick)
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
-                ) // Using unified interaction
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    val cacheKey = "library_cover_${entry.mediaId}"
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(entry.coverUrl)
-                            .crossfade(true)
-                            .placeholderMemoryCacheKey(cacheKey)
-                            .memoryCacheKey(cacheKey)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .sharedBounds(
-                                sharedContentState = rememberSharedContentState(key = "library_gradient_${entry.mediaId}"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ -> spatialSpec },
-                                enter = fadeIn(effectsSpec),
-                                exit = fadeOut(effectsSpec)
-                            )
-                            .background(
-                                Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 200f)
-                            )
-                    )
-                    Text(
-                        text = entry.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
-                            .sharedBounds(
-                                sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ -> spatialSpec },
-                                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                            )
-                    )
-                }
-
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val nextAiring = entry.nextAiringEpisode
-                        val latest = if (nextAiring != null) nextAiring - 1 else total
-
-                        if (entry.status == LibraryStatus.CURRENT) {
-                            if (latest != null && entry.progress < latest) {
-                                StatusBadge(formatEpisodesBehind(latest - entry.progress), MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.onError)
-                            } else {
-                                StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
-                            }
-                        }
-
-                        if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
-                            Text(
-                                text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
-                                style = MaterialTheme.typography.bodySmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                        )
-                        Text(
-                            text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
-                            style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, fontSize = 10.sp
-                        )
-                    }
-                }
-
-                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(
-                        modifier = Modifier.weight(1f).height(36.dp).bouncyClickable { haptic.click(); onDecrement() },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp)) }
-                    }
-                    Surface(
-                        modifier = Modifier.weight(1f).height(36.dp).bouncyClickable { haptic.click(); onIncrement() },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)) }
                     }
                 }
             }
