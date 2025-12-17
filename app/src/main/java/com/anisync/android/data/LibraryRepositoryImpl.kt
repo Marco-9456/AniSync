@@ -75,15 +75,6 @@ class LibraryRepositoryImpl @Inject constructor(
                         else -> LibraryStatus.UNKNOWN
                     }
 
-                    val startDateLong = media?.startDate?.let { date ->
-                        if (date.year != null) {
-                            val c = Calendar.getInstance()
-                            c.clear()
-                            c.set(date.year!!, (date.month ?: 1) - 1, date.day ?: 1)
-                            c.timeInMillis
-                        } else null
-                    }
-
                     LibraryEntry(
                         id = entry.id ?: 0,
                         mediaId = media?.id ?: 0,
@@ -98,9 +89,13 @@ class LibraryRepositoryImpl @Inject constructor(
                         nextAiringEpisode = media?.nextAiringEpisode?.episode,
                         timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
                         score = entry.score,
+                        rewatches = entry.repeat ?: 0,
+                        notes = entry.notes,
+                        startedAt = entry.startedAt?.let { mapFuzzyDate(it.year, it.month, it.day) },
+                        completedAt = entry.completedAt?.let { mapFuzzyDate(it.year, it.month, it.day) },
                         updatedAt = entry.updatedAt?.toLong()?.times(1000L),
                         createdAt = entry.createdAt?.toLong()?.times(1000L),
-                        mediaStartDate = startDateLong
+                        mediaStartDate = media?.startDate?.let { mapFuzzyDate(it.year, it.month, it.day) }
                     )
                 } ?: emptyList()
             }
@@ -211,5 +206,13 @@ class LibraryRepositoryImpl @Inject constructor(
             // Local updated, network failed
             Result.Error("Offline: Saved locally", e)
         }
+    }
+
+    private fun mapFuzzyDate(year: Int?, month: Int?, day: Int?): Long? {
+        if (year == null) return null
+        val c = Calendar.getInstance()
+        c.clear()
+        c.set(year, (month ?: 1) - 1, day ?: 1)
+        return c.timeInMillis
     }
 }

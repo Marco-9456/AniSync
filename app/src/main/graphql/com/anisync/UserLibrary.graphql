@@ -29,6 +29,18 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
         status
         progress
         score
+        repeat
+        notes
+        startedAt {
+          year
+          month
+          day
+        }
+        completedAt {
+          year
+          month
+          day
+        }
         updatedAt
         createdAt
       }
