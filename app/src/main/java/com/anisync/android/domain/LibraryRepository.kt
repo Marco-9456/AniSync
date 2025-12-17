@@ -21,4 +21,9 @@ interface LibraryRepository {
      * Update progress locally (optimistic) and sync to network.
      */
     suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit>
+
+    /**
+     * Update an entire entry (score, status, notes, etc).
+     */
+    suspend fun updateEntry(entry: LibraryEntry): Result<Unit>
 }

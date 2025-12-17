@@ -59,6 +59,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.anisync.android.presentation.components.EditLibraryEntryDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -110,6 +111,7 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.WatchingCardConfig
+import com.anisync.android.presentation.components.CompletedCardConfig
 import com.anisync.android.presentation.components.SkeletonGrid
 import com.anisync.android.presentation.components.SkeletonList
 import com.anisync.android.presentation.components.SectionHeader
@@ -139,6 +141,7 @@ fun LibraryScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
+    var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -341,13 +344,15 @@ fun LibraryScreen(
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     items(entries, key = { it.id }) { entry ->
+                                        val cardConfig = if (selectedStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
                                         LibraryMediaCard(
                                             entry = entry,
                                             mediaType = mediaType,
                                             onClick = { onMediaClick(entry.mediaId) },
-                                            onIncrement = { viewModel.incrementProgress(entry.mediaId) },
-                                            onDecrement = { viewModel.decrementProgress(entry.mediaId) },
-                                            config = WatchingCardConfig,
+                                            onIncrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.incrementProgress(entry.mediaId) } } else null,
+                                            onDecrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.decrementProgress(entry.mediaId) } } else null,
+                                            onEdit = { editingEntry = entry },
+                                            config = cardConfig,
                                             sharedTransitionScope = sharedTransitionScope,
                                             animatedVisibilityScope = animatedVisibilityScope,
                                             modifier = Modifier.animateItem(
@@ -388,6 +393,17 @@ fun LibraryScreen(
                 }
             }
         }
+    }
+
+    if (editingEntry != null) {
+        EditLibraryEntryDialog(
+            entry = editingEntry!!,
+            onDismiss = { editingEntry = null },
+            onSave = {
+                viewModel.updateEntry(it)
+                editingEntry = null
+            }
+        )
     }
 }
 

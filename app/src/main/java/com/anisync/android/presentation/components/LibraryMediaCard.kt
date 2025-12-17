@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -54,6 +55,13 @@ import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
+import androidx.compose.runtime.CompositionLocalProvider
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.data.AppSettings
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.filled.Edit
+import com.anisync.android.presentation.components.EditLibraryEntryDialog
+import com.anisync.android.presentation.util.bouncyCombinedClickable
 
 /**
  * Configuration for the LibraryMediaCard content display.
@@ -80,11 +88,11 @@ val WatchingCardConfig = LibraryCardConfig(
  * Configuration for completed/other list cards (no controls).
  */
 val CompletedCardConfig = LibraryCardConfig(
-    showProgressBar = false,
+    showProgressBar = true,
     showAdjusters = false,
     showAiringInfo = false,
     showBehindBadge = false,
-    showMetadata = true
+    showMetadata = false
 )
 
 /**
@@ -101,13 +109,15 @@ fun LibraryMediaCard(
     config: LibraryCardConfig = WatchingCardConfig,
     onIncrement: (() -> Unit)? = null,
     onDecrement: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    // Note: unused variable effectsSpec removed or can be used if needed
+    // val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
-    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
 
     val animatedProgress by animateFloatAsState(
@@ -121,9 +131,18 @@ fun LibraryMediaCard(
             modifier
                 .fillMaxWidth()
                 .height(if (config.showAdjusters) 340.dp else 280.dp)
-                .bouncyClickable(onClick = onClick)
+                .then(
+                    if (config.showAdjusters && onEdit != null) {
+                         Modifier.bouncyCombinedClickable(
+                            onClick = onClick,
+                            onLongClick = onEdit
+                        )
+                    } else {
+                        Modifier.bouncyClickable(onClick = onClick)
+                    }
+                )
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
+                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.id}"),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ -> spatialSpec },
                     clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
@@ -133,7 +152,16 @@ fun LibraryMediaCard(
         modifier
             .fillMaxWidth()
             .height(if (config.showAdjusters) 340.dp else 280.dp)
-            .bouncyClickable(onClick = onClick)
+            .then(
+                if (config.showAdjusters && onEdit != null) {
+                    Modifier.bouncyCombinedClickable(
+                        onClick = onClick,
+                        onLongClick = onEdit
+                    )
+                } else {
+                    Modifier.bouncyClickable(onClick = onClick)
+                }
+            )
     }
 
     Card(
@@ -145,7 +173,7 @@ fun LibraryMediaCard(
         Column(modifier = Modifier.fillMaxSize()) {
             // Image section
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                val cacheKey = "library_cover_${entry.mediaId}"
+                val cacheKey = "library_cover_${entry.id}"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(entry.coverUrl)
@@ -192,7 +220,7 @@ fun LibraryMediaCard(
                     ) {
                         if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
                             val nextAiring = entry.nextAiringEpisode
-                            val latest = if (nextAiring != null) nextAiring - 1 else total
+                            val latest: Int? = if (nextAiring != null) nextAiring - 1 else total
 
                             if (latest != null && entry.progress < latest) {
                                 StatusBadge(
@@ -213,8 +241,8 @@ fun LibraryMediaCard(
                             Text(
                                 text = stringResource(
                                     R.string.airing_episode_in,
-                                    entry.nextAiringEpisode,
-                                    formatTimeUntilAiring(entry.timeUntilAiring)
+                                    entry.nextAiringEpisode ?: 0, // safe fallback for preview
+                                    formatTimeUntilAiring(entry.timeUntilAiring ?: 0)
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontSize = 10.sp,
@@ -267,13 +295,41 @@ fun LibraryMediaCard(
                         )
                     }
                 }
+
+                // Edit button for non-adjuster cards
+                if (!config.showAdjusters && onEdit != null) {
+                     Spacer(modifier = Modifier.height(8.dp))
+                     val haptic = rememberHapticFeedback()
+                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp), // Adjust padding as needed
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f) // Fill width like adjusters
+                                .height(36.dp)
+                                .bouncyClickable {
+                                    haptic.click()
+                                    onEdit()
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        }
+                    }
+                }
             }
 
             // Adjusters - only render when enabled and callbacks provided
             if (config.showAdjusters && onIncrement != null && onDecrement != null) {
                 // Haptic feedback is only needed when adjusters are shown
                 val haptic = rememberHapticFeedback()
-                
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -317,66 +373,125 @@ fun LibraryMediaCard(
     }
 }
 
+// --------------------------------------------------------------------------------
+// PREVIEWS
+// --------------------------------------------------------------------------------
+
 /**
- * Configuration for previews without haptic feedback dependency.
+ * Mock data generator for Previews.
+ * Adjust the constructor arguments to match your actual LibraryEntry definition.
  */
-private val PreviewCardConfig = LibraryCardConfig(
-    showProgressBar = true,
-    showAdjusters = false, // Disable adjusters to avoid LocalAppSettings requirement
-    showAiringInfo = false,
-    showBehindBadge = false,
-    showMetadata = false
-)
+private fun mockEntry(
+    id: Int = 1,
+    title: String = "Frieren: Beyond Journey's End",
+    progress: Int = 12,
+    total: Int? = 28,
+    status: LibraryStatus = LibraryStatus.CURRENT,
+    nextAiring: Int? = 13,
+    timeUntil: Int? = 86400 // 1 day
+): LibraryEntry {
+    // We construct a mock object here.
+    // NOTE: This assumes LibraryEntry is a data class.
+    // You may need to update this to match your actual Domain model constructor.
+    return LibraryEntry(
+        id = id,
+        mediaId = id,
+        title = title,
+        coverUrl = "", // Empty for preview
+        progress = progress,
+        totalEpisodes = total, // Assuming anime for default
+        totalChapters = null,
+        totalVolumes = null,
+        type = MediaType.ANIME,
+        status = status,
+        nextAiringEpisode = nextAiring,
+        timeUntilAiring = timeUntil,
+        // Add other required fields with dummy values if your model has them
+    )
+}
 
-@Preview(showBackground = true)
+// Simplified mock StatusBadge for preview context if it's not available in this file scope
 @Composable
-private fun LibraryMediaCardWatchingPreview() {
-    MaterialTheme {
-        LibraryMediaCard(
-            entry = LibraryEntry(
-                id = 1,
-                mediaId = 1,
-                title = "Attack on Titan: Final Season Part 3",
-                coverUrl = null,
-                progress = 8,
-                totalEpisodes = 12,
-                totalChapters = null,
-                totalVolumes = null,
-                type = MediaType.ANIME,
-                status = LibraryStatus.CURRENT,
-                nextAiringEpisode = 10,
-                timeUntilAiring = 172800
-            ),
-            mediaType = MediaType.ANIME,
-            onClick = {},
-            config = PreviewCardConfig,
-            modifier = Modifier.padding(16.dp)
+private fun StatusBadge(text: String, containerColor: Color, contentColor: Color) {
+    Surface(
+        color = containerColor,
+        contentColor = contentColor,
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun LibraryMediaCardCompletedPreview() {
+private fun PreviewMediaCardTheme(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val appSettings = androidx.compose.runtime.remember { AppSettings(context) }
+    
     MaterialTheme {
-        LibraryMediaCard(
-            entry = LibraryEntry(
-                id = 2,
-                mediaId = 2,
-                title = "Steins;Gate",
-                coverUrl = null,
-                progress = 24,
-                totalEpisodes = 24,
-                totalChapters = null,
-                totalVolumes = null,
-                type = MediaType.ANIME,
-                status = LibraryStatus.COMPLETED
-            ),
-            mediaType = MediaType.ANIME,
-            onClick = {},
-            config = CompletedCardConfig,
-            modifier = Modifier.padding(16.dp)
-        )
+        CompositionLocalProvider(LocalAppSettings provides appSettings) {
+             content()
+        }
     }
 }
 
+@Preview(name = "Anime - Watching (Behind)", showBackground = true)
+@Composable
+private fun PreviewLibraryCardWatchingBehind() {
+    PreviewMediaCardTheme {
+        Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+            LibraryMediaCard(
+                entry = mockEntry(progress = 10, total = 24, nextAiring = 12),
+                mediaType = MediaType.ANIME,
+                onClick = {},
+                config = WatchingCardConfig,
+                onIncrement = {},
+                onDecrement = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Anime - Up To Date", showBackground = true)
+@Composable
+private fun PreviewLibraryCardUpToDate() {
+    PreviewMediaCardTheme {
+        Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+            LibraryMediaCard(
+                entry = mockEntry(progress = 11, total = 24, nextAiring = 12),
+                mediaType = MediaType.ANIME,
+                onClick = {},
+                config = WatchingCardConfig,
+                onIncrement = {},
+                onDecrement = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Manga - Completed", showBackground = true)
+@Composable
+private fun PreviewLibraryCardCompleted() {
+    val completedEntry = mockEntry(
+        title = "Berserk",
+        progress = 364,
+        total = 364,
+        status = LibraryStatus.COMPLETED,
+        nextAiring = null,
+        timeUntil = null
+    ).copy(totalChapters = 364, totalEpisodes = null, type = MediaType.MANGA)
+
+    PreviewMediaCardTheme {
+        Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+            LibraryMediaCard(
+                entry = completedEntry,
+                mediaType = MediaType.MANGA,
+                onClick = {},
+                config = CompletedCardConfig
+            )
+        }
+    }
+}

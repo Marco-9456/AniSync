@@ -76,4 +76,10 @@ interface LibraryDao {
      */
     @Query("DELETE FROM library_entries WHERE mediaId = :mediaId")
     suspend fun deleteByMediaId(mediaId: Int)
+
+    /**
+     * Update an entire entry.
+     */
+    @androidx.room.Update
+    suspend fun updateEntry(entry: LibraryEntryEntity)
 }

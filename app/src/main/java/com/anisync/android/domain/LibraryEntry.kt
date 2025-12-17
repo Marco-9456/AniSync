@@ -30,5 +30,10 @@ data class LibraryEntry(
     val nextAiringEpisode: Int? = null,
     val timeUntilAiring: Int? = null,
     val mediaStatus: String? = null,
-    val averageScore: Int? = null
+    val averageScore: Int? = null,
+    val score: Double? = 0.0,
+    val startedAt: Long? = null,
+    val completedAt: Long? = null,
+    val rewatches: Int = 0,
+    val notes: String? = null
 )

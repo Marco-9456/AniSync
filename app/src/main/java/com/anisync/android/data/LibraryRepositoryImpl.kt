@@ -16,6 +16,8 @@ import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.anisync.android.type.FuzzyDateInput
+import java.util.Calendar
 import javax.inject.Inject
 
 class LibraryRepositoryImpl @Inject constructor(
@@ -143,6 +145,58 @@ class LibraryRepositoryImpl @Inject constructor(
             Result.Error("Offline: Saved locally", e)
         } catch (e: Exception) {
             Result.Error("Unexpected error: ${e.message}", e)
+        }
+    }
+
+    override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {
+        // 1. Update local DB
+        // We assume media type is present or default to ANIME logic for entity mapping
+        libraryDao.updateEntry(entry.toEntity(entry.type ?: MediaType.ANIME))
+
+        // 2. Sync to network
+        return try {
+            fun toFuzzyDate(timestamp: Long?): FuzzyDateInput? {
+                if (timestamp == null) return null
+                val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+                return FuzzyDateInput(
+                    year = Optional.present(calendar.get(Calendar.YEAR)),
+                    month = Optional.present(calendar.get(Calendar.MONTH) + 1),
+                    day = Optional.present(calendar.get(Calendar.DAY_OF_MONTH))
+                )
+            }
+
+            val apiStatus = when (entry.status) {
+                LibraryStatus.CURRENT -> MediaListStatus.CURRENT
+                LibraryStatus.PLANNING -> MediaListStatus.PLANNING
+                LibraryStatus.COMPLETED -> MediaListStatus.COMPLETED
+                LibraryStatus.DROPPED -> MediaListStatus.DROPPED
+                LibraryStatus.PAUSED -> MediaListStatus.PAUSED
+                LibraryStatus.REPEATING -> MediaListStatus.REPEATING
+                else -> MediaListStatus.CURRENT
+            }
+
+            val response = apolloClient.mutation(
+                com.anisync.android.SaveMediaListEntryMutation(
+                    mediaId = Optional.present(entry.mediaId),
+                    status = Optional.present(apiStatus),
+                    progress = Optional.present(entry.progress),
+                    score = Optional.present(entry.score),
+                    repeat = Optional.present(entry.rewatches),
+                    notes = Optional.present(entry.notes),
+                    startedAt = Optional.present(toFuzzyDate(entry.startedAt)),
+                    completedAt = Optional.present(toFuzzyDate(entry.completedAt))
+                )
+            ).execute()
+
+            if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
+                Result.Success(Unit)
+            } else {
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Sync failed"
+                Result.Error(errorMessage)
+            }
+        } catch (e: Exception) {
+            // Local updated, network failed
+            Result.Error("Offline: Saved locally", e)
         }
     }
 }

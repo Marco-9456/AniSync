@@ -146,5 +146,18 @@ class LibraryViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateEntry(entry: LibraryEntry) {
+        viewModelScope.launch {
+            when (val result = libraryRepository.updateEntry(entry)) {
+                is Result.Success -> {
+                    _events.emit(LibraryEvent.ShowSnackbar("Entry updated"))
+                }
+                is Result.Error -> {
+                    _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                }
+            }
+        }
+    }
 }
 

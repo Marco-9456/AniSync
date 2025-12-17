@@ -12,7 +12,7 @@ type Query {
 }
 
 type Mutation {
-  SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int): MediaList
+  SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int, score: Float, repeat: Int, notes: String, startedAt: FuzzyDateInput, completedAt: FuzzyDateInput): MediaList
   DeleteMediaListEntry(id: Int): Deleted
 }
 
@@ -35,6 +35,16 @@ type MediaList {
   status: MediaListStatus
   progress: Int
   score: Float
+  repeat: Int
+  notes: String
+  startedAt: FuzzyDate
+  completedAt: FuzzyDate
+}
+
+input FuzzyDateInput {
+  year: Int
+  month: Int
+  day: Int
 }
 
 type Media {

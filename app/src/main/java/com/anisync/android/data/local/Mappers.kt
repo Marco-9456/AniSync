@@ -27,7 +27,12 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     status = status,
     nextAiringEpisode = nextAiringEpisode,
     timeUntilAiring = timeUntilAiring,
-    mediaStatus = mediaStatus
+    mediaStatus = mediaStatus,
+    score = score,
+    rewatches = rewatches,
+    notes = notes,
+    startedAt = startedAt,
+    completedAt = completedAt
 )
 
 fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEntryEntity(
@@ -43,7 +48,12 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     status = status,
     nextAiringEpisode = nextAiringEpisode,
     timeUntilAiring = timeUntilAiring,
-    mediaStatus = mediaStatus
+    mediaStatus = mediaStatus,
+    score = score,
+    rewatches = rewatches,
+    notes = notes,
+    startedAt = startedAt,
+    completedAt = completedAt
 )
 
 // --- MediaDetails ---
