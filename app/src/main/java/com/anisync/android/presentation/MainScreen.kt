@@ -5,8 +5,11 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.foundation.layout.padding
@@ -107,8 +110,8 @@ fun MainScreen() {
         bottomBar = {
             AnimatedVisibility(
                 visible = isBottomBarVisible,
-                enter = slideInVertically { it },
-                exit = slideOutVertically { it }
+                enter = slideInVertically { it } + expandVertically(expandFrom = Alignment.Top),
+                exit = slideOutVertically { it } + shrinkVertically(shrinkTowards = Alignment.Top)
             ) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,

@@ -168,47 +168,137 @@ fun DetailsScreen(
     }
 
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
     with(sharedTransitionScope) {
         Scaffold(
-            modifier = Modifier
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "${sourceScreen}_container_${mediaId}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
-                ),
             containerColor = MaterialTheme.colorScheme.background,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0)
-        ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (val state = uiState) {
-                is DetailsUiState.Loading -> {
-                    // Skeleton loading state for premium feel
-                    DetailsSkeletonContent(onBackClick = onBackClick)
-                }
-                is DetailsUiState.Success -> {
-                    DetailsPageContent(
-                        details = state.details,
-                        sourceScreen = sourceScreen,
-                        onBackClick = onBackClick,
-                        onRelationClick = onRelationClick,
-                        onStatusUpdate = { status, progress -> viewModel.saveMediaListEntry(status, progress) },
-                        onRemove = { viewModel.deleteMediaListEntry() },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            floatingActionButton = {
+                val state = uiState
+                if (state is DetailsUiState.Success) {
+                    val details = state.details
+                    val isManga = details.type == MediaType.MANGA
+                    val statuses = listOf(
+                        LibraryStatus.CURRENT,
+                        LibraryStatus.PLANNING,
+                        LibraryStatus.COMPLETED,
+                        LibraryStatus.PAUSED,
+                        LibraryStatus.DROPPED
                     )
+
+                    FloatingActionButtonMenu(
+                        expanded = fabMenuExpanded,
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                        button = {
+                            ToggleFloatingActionButton(
+                                checked = fabMenuExpanded,
+                                onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
+                            ) {
+                                val imageVector by remember {
+                                    derivedStateOf {
+                                        if (checkedProgress > 0.5f) Icons.Filled.Close
+                                        else if (details.listEntryId != null) Icons.Filled.Edit
+                                        else Icons.Filled.Add
+                                    }
+                                }
+                                Icon(
+                                    painter = rememberVectorPainter(imageVector),
+                                    contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(R.string.fab_open_menu),
+                                    modifier = Modifier.animateIcon({ checkedProgress })
+                                )
+                            }
+                        }
+                    ) {
+                        // Status options
+                        statuses.forEach { status ->
+                            val isSelected = status == details.listStatus
+                            FloatingActionButtonMenuItem(
+                                onClick = {
+                                    val progress = details.listProgress ?: 0
+                                    viewModel.saveMediaListEntry(status, progress)
+                                    fabMenuExpanded = false
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = status.toIcon(details.type),
+                                        contentDescription = null,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary 
+                                               else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                text = {
+                                    Text(
+                                        text = status.toLabel(details.type),
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary 
+                                                else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            )
+                        }
+
+                        // Remove from Library option
+                        if (details.listEntryId != null) {
+                            FloatingActionButtonMenuItem(
+                                onClick = {
+                                    viewModel.deleteMediaListEntry()
+                                    fabMenuExpanded = false
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                text = {
+                                    Text(
+                                        text = stringResource(R.string.action_remove),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                            )
+                        }
+                    }
                 }
-                is DetailsUiState.Error -> {
-                    ErrorStateContent(message = state.message, onBackClick = onBackClick)
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = "${sourceScreen}_container_${mediaId}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec },
+                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
+                    )
+            ) {
+                when (val state = uiState) {
+                    is DetailsUiState.Loading -> {
+                        // Skeleton loading state for premium feel
+                        DetailsSkeletonContent(onBackClick = onBackClick)
+                    }
+                    is DetailsUiState.Success -> {
+                        DetailsPageContent(
+                            details = state.details,
+                            sourceScreen = sourceScreen,
+                            onBackClick = onBackClick,
+                            onRelationClick = onRelationClick,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    }
+                    is DetailsUiState.Error -> {
+                        ErrorStateContent(message = state.message, onBackClick = onBackClick)
+                    }
                 }
             }
         }
-    }
     }
 }
 
@@ -254,16 +344,11 @@ fun DetailsPageContent(
     sourceScreen: String,
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit,
-    onStatusUpdate: (LibraryStatus, Int) -> Unit,
-    onRemove: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val listState = rememberLazyListState()
-    // Using 0 as a threshold is strict, let's give it a little buffer or just check index
-    val isExpanded by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
-    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-
+    
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -357,95 +442,6 @@ fun DetailsPageContent(
                         }
                     }
                 }
-            }
-        }
-
-        // FAB Menu for status selection
-        val isManga = details.type == MediaType.MANGA
-        val statuses = listOf(
-            LibraryStatus.CURRENT,
-            LibraryStatus.PLANNING,
-            LibraryStatus.COMPLETED,
-            LibraryStatus.PAUSED,
-            LibraryStatus.DROPPED
-        )
-
-        FloatingActionButtonMenu(
-            expanded = fabMenuExpanded,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-            button = {
-                ToggleFloatingActionButton(
-                    checked = fabMenuExpanded,
-                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
-                ) {
-                    val imageVector by remember {
-                        derivedStateOf {
-                            if (checkedProgress > 0.5f) Icons.Filled.Close
-                            else if (details.listEntryId != null) Icons.Filled.Edit
-                            else Icons.Filled.Add
-                        }
-                    }
-                    Icon(
-                        painter = rememberVectorPainter(imageVector),
-                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(R.string.fab_open_menu),
-                        modifier = Modifier.animateIcon({ checkedProgress })
-                    )
-                }
-            }
-        ) {
-            // Status options
-            statuses.forEach { status ->
-                val isSelected = status == details.listStatus
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        val progress = details.listProgress ?: 0
-                        onStatusUpdate(status, progress)
-                        fabMenuExpanded = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = status.toIcon(details.type),
-                            contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary 
-                                   else MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    text = {
-                        Text(
-                            text = status.toLabel(details.type),
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary 
-                                    else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                )
-            }
-
-            // Remove from Library option (only show if entry exists)
-            if (details.listEntryId != null) {
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        onRemove()
-                        fabMenuExpanded = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    },
-                    text = {
-                        Text(
-                            text = stringResource(R.string.action_remove),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    },
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                )
             }
         }
     }
