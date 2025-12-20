@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -45,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,6 +76,13 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterMedia
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntOffset
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.shimmerEffect
@@ -100,7 +109,7 @@ private fun StaggeredAnimatedVisibility(
 
     // Use spring physics for both fade and slide
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 
     AnimatedVisibility(
         visible = visible,
@@ -159,9 +168,13 @@ private fun CharacterDetailsContent(
 ) {
     val listState = rememberLazyListState()
 
+    // Extract colors for parser
+    val spoilerBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
+    val spoilerContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     // Parse description into Key-Values (attributes) and Body (bio)
-    val (attributes, bio) = remember(character.description) {
-        parseCharacterDescription(character.description)
+    val (attributes, bio) = remember(character.description, spoilerBackgroundColor, spoilerContentColor) {
+        parseCharacterDescription(character.description, spoilerBackgroundColor, spoilerContentColor)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -185,14 +198,23 @@ private fun CharacterDetailsContent(
 
                     // Stats (stagger index 1)
                     StaggeredAnimatedVisibility(index = 1) {
-                        CharacterStatsCard(character)
+                        CharacterStatsCard(character, attributes)
                     }
 
                     // Attributes Table (stagger index 2)
-                    if (attributes.isNotEmpty()) {
+                    // Filter out stats that are already shown in the StatsCard
+                    val displayAttributes = remember(attributes) {
+                        attributes.filterNot { (key, _) ->
+                            key.equals("Age", ignoreCase = true) || 
+                            key.equals("Gender", ignoreCase = true) || 
+                            key.contains("Blood", ignoreCase = true)
+                        }
+                    }
+
+                    if (displayAttributes.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
                         StaggeredAnimatedVisibility(index = 2) {
-                            CharacterInfoSection(attributes)
+                            CharacterInfoSection(displayAttributes)
                         }
                     }
                 }
@@ -200,14 +222,16 @@ private fun CharacterDetailsContent(
 
             // Biography (stagger index 3)
             // Moved out of the previous column item to align properly with other sections
-            if (bio.isNotBlank()) {
+            if (bio.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
                     StaggeredAnimatedVisibility(index = 3) {
-                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Column {
                             SectionHeader(title = "Biography", level = HeaderLevel.Section)
                             Spacer(modifier = Modifier.height(12.dp))
-                            ExpandableCharacterSynopsis(bio)
+                            Box(modifier = Modifier.padding(horizontal = 24.dp)) {
+                                ExpandableCharacterSynopsis(bio)
+                            }
                         }
                     }
                 }
@@ -242,8 +266,12 @@ private fun CharacterDetailsContent(
  * Parses markdown-like description into Attributes (Height: 170cm) and Bio text.
  * Handles formats like "__Height:__ 172cm" or "**Affiliations** Straw Hats".
  */
-private fun parseCharacterDescription(description: String?): Pair<List<Pair<String, String>>, String> {
-    if (description.isNullOrBlank()) return emptyList<Pair<String, String>>() to ""
+private fun parseCharacterDescription(
+    description: String?,
+    spoilerBackgroundColor: Color,
+    spoilerContentColor: Color
+): Pair<List<Pair<String, String>>, AnnotatedString> {
+    if (description.isNullOrBlank()) return emptyList<Pair<String, String>>() to AnnotatedString("")
 
     val attributes = mutableListOf<Pair<String, String>>()
     val bioLines = mutableListOf<String>()
@@ -254,54 +282,117 @@ private fun parseCharacterDescription(description: String?): Pair<List<Pair<Stri
     // Extended Regex to catch lines starting with bold keys or simple "Key: Value" patterns
     // Catch: "__Key__ Value", "**Key** Value", "Key: Value" (if line is short-ish)
     // Updated to allow () in keys for cases like "Devil Fruit (Type):"
-    val attributeRegex = Regex("^(__|\\*\\*)?([a-zA-Z0-9\\s\\-_()]+?)(:|\\1)\\s*(.*)")
+    // Also handles spoiler-wrapped attributes like "~!Key: Value!~"
+    val attributeRegex = Regex("^(~!)?\\s*(__|\\*\\*)?([a-zA-Z0-9\\s\\-_()]+?)(:|\\2)\\s*(.*)(!~)?$")
 
     normalized.lines().forEach { line ->
         val trimLine = line.trim()
-        if (trimLine.isBlank()) return@forEach
-
         val match = attributeRegex.find(trimLine)
         var isAttribute = false
 
-        if (match != null) {
-            val key = match.groupValues[2].trim()
-            val value = match.groupValues[4].trim()
+        if (trimLine.isNotBlank()) {
+            if (match != null) {
+                val hasSpoilerMarker = match.groupValues[1].isNotEmpty() // ~!
+                val hasBoldMarkers = match.groupValues[2].isNotEmpty() // __ or **
+                val key = match.groupValues[3].trim()
+                val value = match.groupValues[5].trim()
 
-            // Heuristic: It's an attribute if:
-            // 1. It explicitly used bold markers (__ or **)
-            // 2. OR the line is reasonably short AND contains a colon
-            val hasBoldMarkers = match.groupValues[1].isNotEmpty()
-            // Increased length limit to 200 to catch long attribute values (e.g. descriptions)
-            // Increased key length limit to 50
-            val isShortAndHasColon = trimLine.length < 200 && match.groupValues[3] == ":"
+                // Heuristic: It's an attribute if:
+                // 1. It explicitly used bold markers (__ or **) OR spoiler markers (~!)
+                // 2. OR the line is reasonably short AND contains a colon
+                // Increased length limit to 200 to catch long attribute values (e.g. descriptions)
+                // Increased key length limit to 50
+                val isShortAndHasColon = trimLine.length < 200 && match.groupValues[4] == ":"
 
-            if ((hasBoldMarkers || isShortAndHasColon) && key.length < 50 && value.isNotEmpty()) {
-                // Clean spoiler tags and markdown from value
-                val cleanValue = value
-                    .replace("~!", "")
-                    .replace("!~", "")
-                    .replace("__", "")
-                    .replace("**", "")
+                if ((hasBoldMarkers || hasSpoilerMarker || isShortAndHasColon) && key.length < 50 && value.isNotEmpty()) {
+                    // Clean spoiler tags, markdown, links, and italics from value
+                    // Also trim leading colons that might have been captured
+                    var cleanValue = value.trimStart { it == ':' || it.isWhitespace() }
+                        .replace("~!", "")
+                        .replace("!~", "")
+                        .replace("__", "")
+                        .replace("**", "")
+                    
+                    // Strip markdown links [text](url) -> text
+                    cleanValue = cleanValue.replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")
+                    
+                    // Strip single-underscore italics _text_ -> text
+                    cleanValue = cleanValue.replace(Regex("(?<![_])_([^_]+)_(?![_])"), "$1")
 
-                attributes.add(key to cleanValue)
-                isAttribute = true
+                    attributes.add(key to cleanValue)
+                    isAttribute = true
+                }
             }
-        }
 
-        if (!isAttribute) {
-            // It's a bio line. Clean it up.
-            val cleanLine = trimLine
-                .replace("~!", "")
-                .replace("!~", "")
-                .replace("__", "") // Remove bold markers from normal text
-                .replace("**", "")
-
-            bioLines.add(cleanLine)
+            if (!isAttribute) {
+                bioLines.add(trimLine)
+            }
+        } else {
+             // Preserve empty lines for paragraph spacing, but handle them in the builder
+             if (bioLines.isNotEmpty() && bioLines.last().isNotEmpty()) {
+                 bioLines.add("")
+             }
         }
     }
 
     // Drop empty lines at start of bio
-    val bio = bioLines.dropWhile { it.isBlank() }.joinToString("\n")
+    val cleanBioLines = bioLines.dropWhile { it.isBlank() }
+    var fullBioText = cleanBioLines.joinToString("\n")
+    
+    // Pre-process: Strip markdown links [text](url) -> text
+    fullBioText = fullBioText.replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")
+    
+    // Pre-process: Strip single-underscore italics _text_ -> text (but not double __ which is bold)
+    fullBioText = fullBioText.replace(Regex("(?<![_])_([^_]+)_(?![_])"), "$1")
+    
+    // Build AnnotatedString for Bio - process entire text for multi-line spoilers
+    // Spoilers are annotated with "SPOILER" tag for click-to-reveal functionality
+    val bio = buildAnnotatedString {
+        val hiddenSpoilerStyle = SpanStyle(
+            background = spoilerBackgroundColor,
+            color = spoilerBackgroundColor // Same color = text hidden
+        )
+        val boldStyle = SpanStyle(fontWeight = FontWeight.Bold)
+
+        var currentIndex = 0
+        var spoilerIndex = 0
+        // Regex to find markers: **bold**, __bold__, ~!spoiler!~
+        // Use DOTALL flag (?s) to make . match newlines for multi-line spoilers
+        val tokenRegex = Regex("(\\*\\*|__|~!)(.+?)(\\1|!~)", RegexOption.DOT_MATCHES_ALL)
+        
+        val matches = tokenRegex.findAll(fullBioText)
+        for (match in matches) {
+            // Append text before match
+            if (match.range.first > currentIndex) {
+                append(fullBioText.substring(currentIndex, match.range.first))
+            }
+            
+            val token = match.groupValues[1] // **, __, or ~!
+            val content = match.groupValues[2]
+            
+            if (token == "~!") {
+                // Add annotation for click handling
+                pushStringAnnotation(tag = "SPOILER", annotation = spoilerIndex.toString())
+                withStyle(hiddenSpoilerStyle) {
+                    append(content)
+                }
+                pop()
+                spoilerIndex++
+            } else {
+                withStyle(boldStyle) {
+                    append(content)
+                }
+            }
+            
+            currentIndex = match.range.last + 1
+        }
+        
+        // Append remaining text
+        if (currentIndex < fullBioText.length) {
+            append(fullBioText.substring(currentIndex))
+        }
+    }
+
     return attributes to bio
 }
 
@@ -520,7 +611,9 @@ fun NameSection(character: CharacterDetails) {
 }
 
 @Composable
-fun CharacterStatsCard(character: CharacterDetails) {
+fun CharacterStatsCard(character: CharacterDetails, attributes: List<Pair<String, String>>) {
+    fun findAttr(key: String): String? = attributes.find { it.first.equals(key, ignoreCase = true) }?.second
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -535,24 +628,37 @@ fun CharacterStatsCard(character: CharacterDetails) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatItem(label = "Gender", value = character.gender ?: "?")
+            val gender = character.gender.takeUnless { it.isNullOrEmpty() || it == "?" } ?: findAttr("Gender") ?: "?"
+            StatItem(label = "Gender", value = gender, modifier = Modifier.weight(1f))
+            
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            
             // Remove trailing dash from age (e.g., "17-" -> "17")
-            val ageDisplay = character.age?.replace("-", "")?.trim() ?: "?"
-            StatItem(label = "Age", value = ageDisplay)
+            val ageRaw = character.age?.replace("-", "")?.trim()
+            val age = ageRaw.takeUnless { it.isNullOrEmpty() || it == "?" } ?: findAttr("Age") ?: "?"
+            StatItem(label = "Age", value = age, modifier = Modifier.weight(1f))
+            
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            StatItem(label = "Blood", value = character.bloodType ?: "?")
+            
+            val blood = character.bloodType.takeUnless { it.isNullOrEmpty() || it == "?" } ?: findAttr("Blood Type") ?: findAttr("Blood") ?: "?"
+            StatItem(label = "Blood", value = blood, modifier = Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-fun StatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.padding(horizontal = 4.dp)
+    ) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
         Text(
             text = label,
@@ -564,8 +670,10 @@ fun StatItem(label: String, value: String) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ExpandableCharacterSynopsis(text: String) {
+fun ExpandableCharacterSynopsis(text: AnnotatedString) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    // Track which spoiler indices have been revealed
+    var revealedSpoilers by rememberSaveable { mutableStateOf(setOf<Int>()) }
 
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val arrowRotation by animateFloatAsState(
@@ -574,8 +682,70 @@ fun ExpandableCharacterSynopsis(text: String) {
         label = "ArrowRotation"
     )
 
+    // Colors for spoiler styles
+    val spoilerBackground = MaterialTheme.colorScheme.surfaceVariant
+    val spoilerRevealedColor = MaterialTheme.colorScheme.onSurfaceVariant
+    
+    // Build display text with revealed/hidden spoiler styles
+    val displayText = remember(text, revealedSpoilers) {
+        buildAnnotatedString {
+            // Copy the original text structure but update spoiler styles based on revealed state
+            var i = 0
+            while (i < text.length) {
+                val annotations = text.getStringAnnotations(tag = "SPOILER", start = i, end = i + 1)
+                if (annotations.isNotEmpty()) {
+                    val annotation = annotations.first()
+                    val spoilerIndex = annotation.item.toIntOrNull() ?: -1
+                    val isRevealed = spoilerIndex in revealedSpoilers
+                    
+                    // Extract the spoiler content
+                    val spoilerContent = text.substring(annotation.start, annotation.end)
+                    
+                    val listener = LinkInteractionListener {
+                         revealedSpoilers = if (spoilerIndex in revealedSpoilers) {
+                             revealedSpoilers - spoilerIndex
+                         } else {
+                             revealedSpoilers + spoilerIndex
+                         }
+                    }
+
+                    // Add clickable link annotation for spoiler toggle
+                    addLink(
+                        LinkAnnotation.Clickable(
+                            tag = "SPOILER",
+                            linkInteractionListener = listener
+                        ),
+                        start = length,
+                        end = length + spoilerContent.length
+                    )
+
+                    withStyle(SpanStyle(
+                        background = spoilerBackground,
+                        color = if (isRevealed) spoilerRevealedColor else spoilerBackground
+                    )) {
+                        append(spoilerContent)
+                    }
+                    
+                    i = annotation.end
+                } else {
+                    // Check for other styles (bold, etc)
+                    val spanStyles = text.spanStyles.filter { it.start <= i && it.end > i }
+                    if (spanStyles.isNotEmpty()) {
+                        val span = spanStyles.first()
+                        withStyle(span.item) {
+                            append(text.substring(i, minOf(i + 1, span.end)))
+                        }
+                        i++
+                    } else {
+                        append(text[i])
+                        i++
+                    }
+                }
+            }
+        }
+    }
+
     Surface(
-        onClick = { expanded = !expanded },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
@@ -588,9 +758,12 @@ fun ExpandableCharacterSynopsis(text: String) {
             // Note: Header is now external to this component
             Box {
                 Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    text = displayText,
+                    modifier = Modifier.clickable { expanded = !expanded },
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 22.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    ),
                     maxLines = if (expanded) Int.MAX_VALUE else 4,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -598,7 +771,10 @@ fun ExpandableCharacterSynopsis(text: String) {
 
             Spacer(Modifier.height(12.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { expanded = !expanded }
+            ) {
                 Text(
                     text = if (expanded) "Show less" else "Read more",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
@@ -708,11 +884,11 @@ private fun ErrorState(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(24.dp))
-            androidx.compose.material3.Button(onClick = onRetry) {
+            Button(onClick = onRetry) {
                 Text("Retry")
             }
             Spacer(modifier = Modifier.height(8.dp))
-            androidx.compose.material3.TextButton(onClick = onBackClick) {
+            TextButton(onClick = onBackClick) {
                 Text("Go Back")
             }
         }
