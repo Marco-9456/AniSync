@@ -122,11 +122,11 @@ private fun StaggeredAnimatedVisibility(
         delay((index * delayPerItem).toLong())
         visible = true
     }
-    
+
     // Use spring physics for both fade and slide to match shared element transitions
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()
-    
+
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = effectsSpec) + slideInVertically(
@@ -214,7 +214,7 @@ fun MediaDetailsScreen(
                                     Icon(
                                         imageVector = status.toIcon(details.type),
                                         contentDescription = null,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.primary 
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary
                                                else MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -222,7 +222,7 @@ fun MediaDetailsScreen(
                                     Text(
                                         text = status.toLabel(details.type),
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary 
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary
                                                 else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -339,7 +339,7 @@ fun DetailsPageContent(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val listState = rememberLazyListState()
-    
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -422,7 +422,7 @@ fun DetailsPageContent(
                                 items(
                                     items = details.relations,
                                     key = { it.id }
-                                ) { relation -> 
+                                ) { relation ->
                                     RelationItem(
                                         relation = relation,
                                         onClick = { onRelationClick(relation.id) },
@@ -671,7 +671,7 @@ fun StatsCard(details: MediaDetails) {
 }
 
 @Composable
-fun StatItem(label: String, value: String) {
+private fun CharacterStatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
@@ -714,10 +714,10 @@ fun GenreFlow(genres: List<String>) {
 @Composable
 fun ExpandableSynopsis(text: String) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    
+
     // Use spring physics from motionScheme for consistent feel
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    
+
     // Animated arrow rotation (0° collapsed → 180° expanded)
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
@@ -890,7 +890,7 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                         .height(240.dp)
                         .shimmerEffect()
                 )
-                
+
                 // Gradient overlay
                 Box(
                     modifier = Modifier
@@ -908,7 +908,7 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                             )
                         )
                 )
-                
+
                 // Back Button
                 IconButton(
                     onClick = onBackClick,
@@ -922,7 +922,7 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                         modifier = Modifier.size(28.dp)
                     )
                 }
-                
+
                 // Cover placeholder
                 Box(
                     modifier = Modifier
@@ -935,7 +935,7 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                 )
             }
         }
-        
+
         // Content Skeleton
         item {
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -947,9 +947,9 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                         .clip(RoundedCornerShape(4.dp))
                         .shimmerEffect()
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // Subtitle/badges row placeholder
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
@@ -967,9 +967,9 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                             .shimmerEffect()
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Stats card placeholder
                 Box(
                     modifier = Modifier
@@ -978,9 +978,9 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                         .clip(RoundedCornerShape(16.dp))
                         .shimmerEffect()
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Genre chips placeholder
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     repeat(4) {
@@ -993,9 +993,9 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Synopsis placeholder
                 Box(
                     modifier = Modifier
@@ -1006,11 +1006,11 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                 )
             }
         }
-        
+
         // Cast section skeleton
         item {
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Section title placeholder
             Box(
                 modifier = Modifier
@@ -1020,9 +1020,9 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                     .clip(RoundedCornerShape(4.dp))
                     .shimmerEffect()
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Cast items placeholder
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 24.dp),
