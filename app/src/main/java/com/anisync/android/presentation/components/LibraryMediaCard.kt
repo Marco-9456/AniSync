@@ -228,12 +228,6 @@ fun LibraryMediaCard(
                                     MaterialTheme.colorScheme.error,
                                     MaterialTheme.colorScheme.onError
                                 )
-                            } else {
-                                StatusBadge(
-                                    stringResource(R.string.badge_up_to_date),
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                )
                             }
                         }
 
