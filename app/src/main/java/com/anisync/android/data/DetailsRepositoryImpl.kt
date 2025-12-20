@@ -6,13 +6,17 @@ import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.toDomain
+import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
+import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.VoiceActor
 import com.anisync.android.type.MediaListStatus
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
@@ -186,5 +190,58 @@ class DetailsRepositoryImpl @Inject constructor(
             .replace("&gt;", ">")
             .replace("&quot;", "\"")
             .trim()
+    }
+    override suspend fun getCharacterDetails(id: Int): Result<CharacterDetails> {
+        return try {
+            val response = apolloClient.query(
+                GetCharacterDetailsQuery(id = id)
+            ).execute()
+
+            val charData = response.data?.Character
+                ?: return Result.Error("Character not found")
+
+            val mediaList = charData.media?.edges?.filterNotNull()?.mapNotNull { edge ->
+                val node = edge.node ?: return@mapNotNull null
+                val voiceActorNode = edge.voiceActors?.firstOrNull() // Get first voice actor
+                
+                CharacterMedia(
+                    id = node.id ?: 0,
+                    title = node.title?.userPreferred ?: "Unknown",
+                    coverUrl = node.coverImage?.large,
+                    type = node.type,
+                    voiceActor = voiceActorNode?.let { va -> 
+                        VoiceActor(
+                           id = va.id ?: 0,
+                           name = va.name?.full ?: "Unknown",
+                           imageUrl = va.image?.medium
+                        ) 
+                    }
+                )
+            } ?: emptyList()
+
+            val character = CharacterDetails(
+                id = charData.id ?: 0,
+                name = charData.name?.full ?: "Unknown",
+                nativeName = charData.name?.native,
+                imageUrl = charData.image?.large,
+                description = charData.description?.stripHtml(),
+                gender = charData.gender,
+                age = charData.age,
+                bloodType = charData.bloodType,
+                dateOfBirth = charData.dateOfBirth?.let { dob ->
+                   if (dob.month != null && dob.day != null) {
+                       "${dob.month}/${dob.day}" + (if (dob.year != null) "/${dob.year}" else "") 
+                   } else null
+                },
+                favourites = charData.favourites,
+                media = mediaList
+            )
+
+            Result.Success(character)
+        } catch (e: ApolloException) {
+            Result.Error("Network error: ${e.message}", e)
+        } catch (e: Exception) {
+            Result.Error("Unexpected error: ${e.message}", e)
+        }
     }
 }

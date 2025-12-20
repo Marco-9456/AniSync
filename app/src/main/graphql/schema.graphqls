@@ -8,6 +8,7 @@ type Query {
   Page(page: Int, perPage: Int): Page
   User(name: String): User
   Media(id: Int): Media
+  Character(id: Int): Character
   Viewer: User
 }
 
@@ -83,6 +84,7 @@ type CharacterConnection {
 type CharacterEdge {
   role: CharacterRole
   node: Character
+  voiceActors(language: StaffLanguage, sort: [StaffSort]): [Staff]
 }
 
 enum CharacterRole {
@@ -95,19 +97,70 @@ type Character {
   id: Int
   name: CharacterName
   image: CharacterImage
+  description: String
+  gender: String
+  dateOfBirth: FuzzyDate
+  age: String
+  bloodType: String
+  favourites: Int
+  media(sort: [MediaSort], type: MediaType, onList: Boolean, page: Int, perPage: Int): MediaConnection
 }
 
 type CharacterName {
   userPreferred: String
+  full: String
+  native: String
 }
 
 type CharacterImage {
   large: String
+  medium: String
+}
+
+type Staff {
+  id: Int
+  name: StaffName
+  image: StaffImage
+}
+
+type StaffName {
+  full: String
+}
+
+type StaffImage {
+  medium: String
+}
+
+enum StaffLanguage {
+  JAPANESE
+  ENGLISH
+  KOREAN
+  ITALIAN
+  SPANISH
+  PORTUGUESE
+  FRENCH
+  GERMAN
+  HEBREW
+  HUNGARIAN
+  CHINESE
+  ARABIC
+  FILIPINO
+  CATALAN
+}
+
+enum StaffSort {
+  ID
+  ROLE
+  LANGUAGE
+  SEARCH_MATCH
+  FAVOURITES
+  RELEVANCE
 }
 
 type MediaEdge {
   relationType: MediaRelation
   node: Media
+  voiceActors(language: StaffLanguage, sort: [StaffSort]): [Staff]
 }
 
 enum MediaRelation {

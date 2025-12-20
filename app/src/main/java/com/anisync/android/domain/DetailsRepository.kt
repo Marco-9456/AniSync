@@ -24,4 +24,6 @@ interface DetailsRepository {
      * @param mediaId The media ID to remove from local library cache
      */
     suspend fun deleteMediaListEntry(entryId: Int, mediaId: Int): Result<Unit>
+
+    suspend fun getCharacterDetails(id: Int): Result<CharacterDetails>
 }

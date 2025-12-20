@@ -1,0 +1,45 @@
+query GetCharacterDetails($id: Int!) {
+    Character(id: $id) {
+        id
+        name {
+            full
+            native
+        }
+        image {
+            large
+        }
+        description
+        gender
+        age
+        dateOfBirth {
+            year
+            month
+            day
+        }
+        bloodType
+        favourites
+        media(perPage: 10, sort: [POPULARITY_DESC]) {
+            edges {
+                node {
+                    id
+                    title {
+                        userPreferred
+                    }
+                    coverImage {
+                        large
+                    }
+                    type
+                }
+                voiceActors(language: JAPANESE, sort: [RELEVANCE, ID]) {
+                    id
+                    name {
+                        full
+                    }
+                    image {
+                        medium
+                    }
+                }
+            }
+        }
+    }
+}
