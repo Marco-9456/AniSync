@@ -27,7 +27,7 @@ sealed interface DetailsUiState {
 }
 
 @HiltViewModel
-class DetailsViewModel @Inject constructor(
+class MediaDetailsViewModel @Inject constructor(
     private val getMediaDetailsUseCase: GetMediaDetailsUseCase,
     private val detailsRepository: DetailsRepository,
     savedStateHandle: SavedStateHandle
@@ -38,7 +38,7 @@ class DetailsViewModel @Inject constructor(
 
     // Get the ID directly from the navigation route "details/{mediaId}"
     private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
-        "Media ID is required for DetailsViewModel"
+        "Media ID is required for MediaDetailsViewModel"
     }
 
     /**

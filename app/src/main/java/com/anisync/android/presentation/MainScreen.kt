@@ -43,7 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
 import com.anisync.android.presentation.navigation.AniSyncNavHost
-import com.anisync.android.presentation.navigation.Details
+import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Discover
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.Profile
@@ -188,7 +188,7 @@ fun MainScreen() {
         AniSyncNavHost(
             navController = navController,
             onMediaClick = { mediaId, sourceScreen ->
-                navController.navigate(Details(mediaId, sourceScreen))
+                navController.navigate(MediaDetails(mediaId, sourceScreen))
             },
             modifier = Modifier.padding(innerPadding)
         )

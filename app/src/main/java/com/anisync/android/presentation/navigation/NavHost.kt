@@ -20,7 +20,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.anisync.android.presentation.details.DetailsScreen
+import com.anisync.android.presentation.details.MediaDetailsScreen
+import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
@@ -312,26 +313,49 @@ fun AniSyncNavHost(
             // DETAILS SCREEN - Shared Axis Z (Depth)
             // =================================================================
             // Navigating to detail view uses scale+fade for depth perception
-            composable<Details>(
+            // =================================================================
+            // MEDIA DETAILS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            // Navigating to detail view uses scale+fade for depth perception
+            composable<MediaDetails>(
                 deepLinks = listOf(
-                    navDeepLink<Details>(basePath = "anisync://details")
+                    navDeepLink<MediaDetails>(basePath = "anisync://details")
                 ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
-                val details: Details = backStackEntry.toRoute()
+                val details: MediaDetails = backStackEntry.toRoute()
 
-                DetailsScreen(
+                MediaDetailsScreen(
                     mediaId = details.mediaId,
                     sourceScreen = details.sourceScreen,
                     onBackClick = { navController.popBackStack() },
                     onRelationClick = { relationMediaId ->
-                        navController.navigate(Details(relationMediaId, "details"))
+                        navController.navigate(MediaDetails(relationMediaId, "media_details"))
+                    },
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // CHARACTER DETAILS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            composable<CharacterDetails>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val character: CharacterDetails = backStackEntry.toRoute()
+                CharacterDetailsScreen(
+                    characterId = character.characterId,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 
@@ -352,7 +376,7 @@ fun AniSyncNavHost(
                         sectionTitle = sectionGrid.sectionTitle,
                         onBackClick = { navController.popBackStack() },
                         onMediaClick = { mediaId ->
-                            navController.navigate(Details(mediaId, "sectiongrid"))
+                            navController.navigate(MediaDetails(mediaId, "sectiongrid"))
                         },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this
@@ -363,7 +387,7 @@ fun AniSyncNavHost(
                         sectionType = sectionGrid.sectionType,
                         onBackClick = { navController.popBackStack() },
                         onMediaClick = { mediaId ->
-                            navController.navigate(Details(mediaId, "sectiongrid"))
+                            navController.navigate(MediaDetails(mediaId, "sectiongrid"))
                         },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this

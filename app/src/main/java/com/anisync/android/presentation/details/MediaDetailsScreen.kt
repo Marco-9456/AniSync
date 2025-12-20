@@ -140,12 +140,13 @@ private fun StaggeredAnimatedVisibility(
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun DetailsScreen(
+fun MediaDetailsScreen(
     mediaId: Int,
     sourceScreen: String = "unknown",
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit = {},
-    viewModel: DetailsViewModel = hiltViewModel(),
+    onCharacterClick: (Int) -> Unit = {},
+    viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -277,6 +278,7 @@ fun DetailsScreen(
                             sourceScreen = sourceScreen,
                             onBackClick = onBackClick,
                             onRelationClick = onRelationClick,
+                            onCharacterClick = onCharacterClick,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -332,6 +334,7 @@ fun DetailsPageContent(
     sourceScreen: String,
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -397,7 +400,7 @@ fun DetailsPageContent(
                                 items(
                                     items = details.characters,
                                     key = { it.id }
-                                ) { CharacterItem(it, modifier = Modifier.animateItem()) }
+                                ) { CharacterItem(it, onClick = { onCharacterClick(it.id) }, modifier = Modifier.animateItem()) }
                             }
                         }
                     }
@@ -781,6 +784,7 @@ fun ExpandableSynopsis(text: String) {
 @Composable
 fun CharacterItem(
     character: CharacterInfo,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -788,6 +792,7 @@ fun CharacterItem(
         modifier = modifier
             .width(100.dp)
             .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
     ) {
         AsyncImage(
             model = character.imageUrl,

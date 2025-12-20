@@ -27,9 +27,14 @@ object Profile
  *                     Used to match shared element keys and prevent cross-tab transitions.
  */
 @Serializable
-data class Details(
+data class MediaDetails(
     val mediaId: Int,
     val sourceScreen: String = "unknown"
+)
+
+@Serializable
+data class CharacterDetails(
+    val characterId: Int
 )
 
 /**
