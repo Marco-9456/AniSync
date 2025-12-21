@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing -->
+    <dimen name="spacing_tiny">4dp</dimen>
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_normal">12dp</dimen>
+    <dimen name="spacing_medium">16dp</dimen>
+    <dimen name="spacing_large">24dp</dimen>
+    <dimen name="spacing_extra_large">32dp</dimen>
+
+    <!-- Corner Radius -->
+    <dimen name="corner_radius_small">4dp</dimen>
+    <dimen name="corner_radius_medium">8dp</dimen>
+    <dimen name="corner_radius_large">12dp</dimen>
+    <dimen name="corner_radius_extra_large">16dp</dimen>
+
+    <!-- Icons -->
+    <dimen name="icon_size_tiny">16dp</dimen>
+    <dimen name="icon_size_small">24dp</dimen>
+    <dimen name="icon_size_medium">28dp</dimen>
+    <dimen name="icon_size_large">48dp</dimen>
+
+    <!-- Media Details Header -->
+    <dimen name="details_header_height">320dp</dimen>
+    <dimen name="details_banner_height">240dp</dimen>
+    <dimen name="details_cover_width">130dp</dimen>
+    <dimen name="details_cover_height">190dp</dimen>
+    <dimen name="details_scrim_height_top">100dp</dimen>
+    <dimen name="details_scrim_height_bottom">120dp</dimen>
+    <dimen name="details_scrim_offset_y">120dp</dimen>
+    <dimen name="details_scrim_hard_cut_offset_y">140dp</dimen>
+    
+    <!-- Cards -->
+    <dimen name="card_elevation_large">8dp</dimen>
+    
+    <!-- Lists -->
+    <dimen name="list_bottom_padding_fab">100dp</dimen>
+    
+    <!-- Component Specific -->
+    <dimen name="character_item_width">100dp</dimen>
+    <dimen name="character_image_height">140dp</dimen>
+    
+    <dimen name="genre_chip_height">32dp</dimen>
+    <dimen name="genre_chip_width">70dp</dimen>
+    
+    <dimen name="skeleton_text_height_large">28dp</dimen>
+    <dimen name="skeleton_text_height_medium">24dp</dimen>
+    <dimen name="skeleton_text_height_small">20dp</dimen>
+    <dimen name="skeleton_text_width_large">200dp</dimen>
+    <dimen name="skeleton_text_width_small">60dp</dimen>
+
+    <dimen name="skeleton_stats_height">80dp</dimen>
+    <dimen name="skeleton_cast_item_width">80dp</dimen>
+    
+    <dimen name="studio_name_max_width">120dp</dimen>
+    
+    <dimen name="fab_menu_padding">24dp</dimen>
+</resources>

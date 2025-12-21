@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -44,14 +45,14 @@ import com.anisync.android.presentation.util.shimmerEffect
 fun DetailsSkeletonContent(onBackClick: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp)
+        contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab))
     ) {
         // Header Skeleton
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .height(dimensionResource(R.dimen.details_header_height))
             ) {
                 // Banner placeholder
                 Box(
@@ -65,9 +66,9 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
+                        .height(dimensionResource(R.dimen.details_scrim_height_bottom))
                         .align(Alignment.TopCenter)
-                        .offset(y = 120.dp)
+                        .offset(y = dimensionResource(R.dimen.details_scrim_offset_y))
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
@@ -83,13 +84,13 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
-                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, start = 8.dp)
+                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + dimensionResource(R.dimen.spacing_small), start = dimensionResource(R.dimen.spacing_small))
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
                         tint = Color.White,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(dimensionResource(R.dimen.icon_size_medium))
                     )
                 }
 
@@ -97,10 +98,10 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 24.dp)
-                        .width(130.dp)
-                        .height(190.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .padding(start = dimensionResource(R.dimen.spacing_large))
+                        .width(dimensionResource(R.dimen.details_cover_width))
+                        .height(dimensionResource(R.dimen.details_cover_height))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
                         .shimmerEffect()
                 )
             }
@@ -108,70 +109,70 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
 
         // Content Skeleton
         item {
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                 // Title placeholder
                 Box(
                     modifier = Modifier
-                        .width(200.dp)
-                        .height(28.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .width(dimensionResource(R.dimen.skeleton_text_width_large))
+                        .height(dimensionResource(R.dimen.skeleton_text_height_large))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_small)))
                         .shimmerEffect()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
                 // Subtitle/badges row placeholder
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))) {
                     Box(
                         modifier = Modifier
                             .width(60.dp)
-                            .height(24.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .height(dimensionResource(R.dimen.skeleton_text_height_medium))
+                            .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium)))
                             .shimmerEffect()
                     )
                     Box(
                         modifier = Modifier
                             .width(60.dp)
-                            .height(24.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .height(dimensionResource(R.dimen.skeleton_text_height_medium))
+                            .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium)))
                             .shimmerEffect()
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                 // Stats card placeholder
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .height(dimensionResource(R.dimen.skeleton_stats_height))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)))
                         .shimmerEffect()
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                 // Genre chips placeholder
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))) {
                     repeat(4) {
                         Box(
                             modifier = Modifier
-                                .width(70.dp)
-                                .height(32.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .width(dimensionResource(R.dimen.genre_chip_width))
+                                .height(dimensionResource(R.dimen.genre_chip_height))
+                                .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)))
                                 .shimmerEffect()
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                 // Synopsis placeholder
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)))
                         .shimmerEffect()
                 )
             }
@@ -179,42 +180,42 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
 
         // Cast section skeleton
         item {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
 
             // Section title placeholder
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = dimensionResource(R.dimen.spacing_large))
                     .width(80.dp)
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .height(dimensionResource(R.dimen.skeleton_text_height_small))
+                    .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_small)))
                     .shimmerEffect()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
             // Cast items placeholder
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
             ) {
                 items(5) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.width(80.dp)
+                        modifier = Modifier.width(dimensionResource(R.dimen.skeleton_cast_item_width))
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(72.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
                                 .shimmerEffect()
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
                         Box(
                             modifier = Modifier
-                                .width(60.dp)
+                                .width(dimensionResource(R.dimen.skeleton_text_width_small))
                                 .height(14.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_small)))
                                 .shimmerEffect()
                         )
                     }

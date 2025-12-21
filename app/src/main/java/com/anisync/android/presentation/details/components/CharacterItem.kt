@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import coil.compose.AsyncImage
 import com.anisync.android.domain.CharacterInfo
 
@@ -31,8 +33,8 @@ fun CharacterItem(
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
-            .width(100.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .width(dimensionResource(R.dimen.character_item_width))
+            .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
             .clickable(onClick = onClick)
     ) {
         AsyncImage(
@@ -40,12 +42,12 @@ fun CharacterItem(
             contentDescription = character.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .height(140.dp)
+                .height(dimensionResource(R.dimen.character_image_height))
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = character.name,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),

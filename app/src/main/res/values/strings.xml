@@ -160,4 +160,5 @@
     <string name="format_music">Music</string>
     <string name="format_novel">Novel</string>
     <string name="format_one_shot">One Shot</string>
+    <string name="separator_bullet">•</string>
 </resources>

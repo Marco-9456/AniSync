@@ -10,14 +10,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GenreFlow(genres: List<String>) {
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
     ) {
         genres.forEach { genre ->
             // Non-clickable Surface - no misleading interaction affordances
@@ -29,7 +31,7 @@ fun GenreFlow(genres: List<String>) {
                     text = genre,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_normal), vertical = 6.dp)
                 )
             }
         }

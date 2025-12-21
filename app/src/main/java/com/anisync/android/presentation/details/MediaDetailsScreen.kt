@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -134,7 +135,7 @@ fun MediaDetailsScreen(
                     FloatingActionButtonMenu(
                         expanded = fabMenuExpanded,
                         modifier = Modifier
-                            .padding(24.dp)
+                            .padding(dimensionResource(R.dimen.fab_menu_padding))
                             .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
                         button = {
                             ToggleFloatingActionButton(
@@ -253,15 +254,15 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(dimensionResource(R.dimen.spacing_large))
         ) {
             Icon(
                 imageVector = Icons.Default.Delete, // Or an error icon
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_size_large))
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
             Text(
                 text = stringResource(R.string.error_something_went_wrong),
                 style = MaterialTheme.typography.titleLarge,
@@ -299,14 +300,14 @@ fun DetailsPageContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp) // Space for FAB
+            contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab)) // Space for FAB
         ) {
             item {
                 PageHeaderSection(details, sourceScreen, onBackClick, sharedTransitionScope, animatedVisibilityScope)
             }
 
             item {
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     // Title Group (stagger index 0)
                     StaggeredAnimatedVisibility(index = 0, delayPerItem = MediaStaggerDelay) {
                         TitleSection(
@@ -317,21 +318,21 @@ fun DetailsPageContent(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Stats (stagger index 1)
                     StaggeredAnimatedVisibility(index = 1, delayPerItem = MediaStaggerDelay) {
                         StatsCard(details)
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Genres (stagger index 2)
                     StaggeredAnimatedVisibility(index = 2, delayPerItem = MediaStaggerDelay) {
                         GenreFlow(details.genres)
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Synopsis (stagger index 3)
                     StaggeredAnimatedVisibility(index = 3, delayPerItem = MediaStaggerDelay) {
@@ -345,12 +346,12 @@ fun DetailsPageContent(
                     // Cast section (stagger index 4)
                     StaggeredAnimatedVisibility(index = 4, delayPerItem = MediaStaggerDelay) {
                         Column {
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(stringResource(R.string.section_cast), level = HeaderLevel.Section)
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                             LazyRow(
-                                contentPadding = PaddingValues(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
                             ) {
                                 items(
                                     items = details.characters,
@@ -367,12 +368,12 @@ fun DetailsPageContent(
                     // Relations section (stagger index 5)
                     StaggeredAnimatedVisibility(index = 5, delayPerItem = MediaStaggerDelay) {
                         Column {
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(stringResource(R.string.section_related), level = HeaderLevel.Section)
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                             LazyRow(
-                                contentPadding = PaddingValues(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal))
                             ) {
                                 items(
                                     items = details.relations,
@@ -419,11 +420,11 @@ fun TitleSection(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
             modifier = Modifier.fillMaxWidth()
         ) {
             details.score?.let { ScoreBadge(it) }
@@ -431,12 +432,12 @@ fun TitleSection(
             details.format?.let { format ->
                 Surface(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium))
                 ) {
                     Text(
                         text = if (format == "TV") stringResource(R.string.format_tv_series) else format.formatAsTitle() ?: format,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_small), vertical = dimensionResource(R.dimen.spacing_tiny)),
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 }
@@ -452,9 +453,9 @@ fun TitleSection(
 
             if (details.studio != null) {
                 Text(
-                    "•",
+                    stringResource(R.string.separator_bullet),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_tiny))
                 )
                 Text(
                     text = details.studio,
@@ -462,7 +463,7 @@ fun TitleSection(
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.widthIn(max = 120.dp)
+                    modifier = Modifier.widthIn(max = dimensionResource(R.dimen.studio_name_max_width))
                 )
             }
         }
@@ -481,7 +482,7 @@ fun PageHeaderSection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(320.dp) // Slightly taller for better proportions
+            .height(dimensionResource(R.dimen.details_header_height)) // Slightly taller for better proportions
     ) {
         // Banner Image
         AsyncImage(
@@ -490,7 +491,7 @@ fun PageHeaderSection(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
+                .height(dimensionResource(R.dimen.details_banner_height))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
@@ -498,7 +499,7 @@ fun PageHeaderSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(100.dp)
+                .height(dimensionResource(R.dimen.details_scrim_height_top))
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
@@ -514,9 +515,9 @@ fun PageHeaderSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp) // Taller fade for smoother transition
+                .height(dimensionResource(R.dimen.details_scrim_height_bottom)) // Taller fade for smoother transition
                 .align(Alignment.TopCenter) // Align to top box but offset
-                .offset(y = 120.dp) // Start where the banner ends
+                .offset(y = dimensionResource(R.dimen.details_scrim_offset_y)) // Start where the banner ends
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -533,9 +534,9 @@ fun PageHeaderSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(100.dp)
+                .height(dimensionResource(R.dimen.details_scrim_height_top))
                 .align(Alignment.TopCenter)
-                .offset(y = 140.dp)
+                .offset(y = dimensionResource(R.dimen.details_scrim_hard_cut_offset_y))
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -551,13 +552,13 @@ fun PageHeaderSection(
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
-                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, start = 8.dp)
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + dimensionResource(R.dimen.spacing_small), start = dimensionResource(R.dimen.spacing_small))
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = stringResource(R.string.back),
                 tint = Color.White,
-                modifier = Modifier.size(28.dp) // Slightly larger touch target visual
+                modifier = Modifier.size(dimensionResource(R.dimen.icon_size_medium)) // Slightly larger touch target visual
             )
         }
 
@@ -567,17 +568,17 @@ fun PageHeaderSection(
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = 24.dp)
-                    .width(130.dp)
-                    .height(190.dp)
+                    .padding(start = dimensionResource(R.dimen.spacing_large))
+                    .width(dimensionResource(R.dimen.details_cover_width))
+                    .height(dimensionResource(R.dimen.details_cover_height))
                     .sharedElement(
                         sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
-                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
                     ),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
+                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 val cacheKey = "${sourceScreen}_cover_${details.id}"

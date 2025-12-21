@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
@@ -28,13 +29,13 @@ fun StatsCard(details: MediaDetails) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = dimensionResource(R.dimen.spacing_medium)),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -42,12 +43,12 @@ fun StatsCard(details: MediaDetails) {
                 label = if (isManga) stringResource(R.string.stat_chapters) else stringResource(R.string.stat_episodes),
                 value = if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}"
             )
-            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            VerticalDivider(Modifier.height(dimensionResource(R.dimen.spacing_extra_large)), color = MaterialTheme.colorScheme.outlineVariant)
             StatItem(
                 label = stringResource(R.string.stat_status),
                 value = details.status.formatAsTitle() ?: details.status
             )
-            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            VerticalDivider(Modifier.height(dimensionResource(R.dimen.spacing_extra_large)), color = MaterialTheme.colorScheme.outlineVariant)
             StatItem(
                 label = stringResource(R.string.stat_source),
                 value = stringResource(R.string.source_original) // Replace with actual source if available in MediaDetails

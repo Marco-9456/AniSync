@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +53,7 @@ fun ExpandableSynopsis(text: String) {
     // Using Surface for better elevation handling
     Surface(
         onClick = { expanded = !expanded },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .fillMaxWidth()
@@ -60,14 +61,14 @@ fun ExpandableSynopsis(text: String) {
                 animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
             )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
             Text(
                 stringResource(R.string.section_synopsis),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
             // Text Content with crossfade effect
             Box {
@@ -80,7 +81,7 @@ fun ExpandableSynopsis(text: String) {
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
             // Interaction hint with animated arrow
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -89,13 +90,13 @@ fun ExpandableSynopsis(text: String) {
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .size(16.dp)
+                        .size(dimensionResource(R.dimen.icon_size_tiny))
                         .graphicsLayer { rotationZ = arrowRotation }
                 )
             }
