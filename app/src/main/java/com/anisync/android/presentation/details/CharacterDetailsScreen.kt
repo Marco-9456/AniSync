@@ -1,10 +1,7 @@
 package com.anisync.android.presentation.details
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -83,46 +80,14 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.IntOffset
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.util.shimmerEffect
-import kotlinx.coroutines.delay
 import androidx.core.net.toUri
 
-// Stagger delay constant for content reveal animations
-private const val StaggerDelayPerItem = 10
-
-/**
- * Staggered animation helper for content sections.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun StaggeredAnimatedVisibility(
-    index: Int,
-    delayPerItem: Int = StaggerDelayPerItem,
-    content: @Composable () -> Unit
-) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay((index * delayPerItem).toLong())
-        visible = true
-    }
-
-    // Use spring physics for both fade and slide
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(animationSpec = effectsSpec) + slideInVertically(
-            initialOffsetY = { it / 4 },
-            animationSpec = spatialSpec
-        )
-    ) {
-        content()
-    }
-}
+// Custom stagger delay for character details (faster reveal)
+private const val CharacterStaggerDelay = 10
 
 @Composable
 fun CharacterDetailsScreen(
@@ -192,14 +157,14 @@ private fun CharacterDetailsContent(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     // Name Section (stagger index 0)
-                    StaggeredAnimatedVisibility(index = 0) {
+                    StaggeredAnimatedVisibility(index = 0, delayPerItem = CharacterStaggerDelay) {
                         NameSection(character)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Stats (stagger index 1)
-                    StaggeredAnimatedVisibility(index = 1) {
+                    StaggeredAnimatedVisibility(index = 1, delayPerItem = CharacterStaggerDelay) {
                         CharacterStatsCard(character, attributes)
                     }
 
@@ -215,7 +180,7 @@ private fun CharacterDetailsContent(
 
                     if (displayAttributes.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
-                        StaggeredAnimatedVisibility(index = 2) {
+                        StaggeredAnimatedVisibility(index = 2, delayPerItem = CharacterStaggerDelay) {
                             CharacterInfoSection(displayAttributes)
                         }
                     }
@@ -227,7 +192,7 @@ private fun CharacterDetailsContent(
             if (bio.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    StaggeredAnimatedVisibility(index = 3) {
+                    StaggeredAnimatedVisibility(index = 3, delayPerItem = CharacterStaggerDelay) {
                         Column {
                             SectionHeader(title = "Biography", level = HeaderLevel.Section)
                             Spacer(modifier = Modifier.height(12.dp))
@@ -243,7 +208,7 @@ private fun CharacterDetailsContent(
             if (character.media.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    StaggeredAnimatedVisibility(index = 4) {
+                    StaggeredAnimatedVisibility(index = 4, delayPerItem = CharacterStaggerDelay) {
                         Column {
                             // Using standard SectionHeader for consistency
                             SectionHeader(title = "Appears In", level = HeaderLevel.Section)

@@ -1,13 +1,10 @@
 package com.anisync.android.presentation.details
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -95,48 +92,15 @@ import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScoreBadge
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
-import kotlinx.coroutines.delay
 
-// Stagger delay constant for content reveal animations (40ms for snappy feel)
-private const val StaggerDelayPerItem = 10
-
-/**
- * Staggered animation helper for content sections.
- * Each section fades + slides in with a delay based on its index.
- * Uses spring physics via MotionScheme for consistent feel with shared element transitions.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun StaggeredAnimatedVisibility(
-    index: Int,
-    delayPerItem: Int = StaggerDelayPerItem,
-    content: @Composable () -> Unit
-) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay((index * delayPerItem).toLong())
-        visible = true
-    }
-
-    // Use spring physics for both fade and slide to match shared element transitions
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()
-
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(animationSpec = effectsSpec) + slideInVertically(
-            initialOffsetY = { it / 4 },
-            animationSpec = spatialSpec
-        )
-    ) {
-        content()
-    }
-}
+// Custom stagger delay for media details (faster reveal)
+private const val MediaStaggerDelay = 10
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -353,7 +317,7 @@ fun DetailsPageContent(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     // Title Group (stagger index 0)
-                    StaggeredAnimatedVisibility(index = 0) {
+                    StaggeredAnimatedVisibility(index = 0, delayPerItem = MediaStaggerDelay) {
                         TitleSection(
                             details = details,
                             sourceScreen = sourceScreen,
@@ -365,21 +329,21 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Stats (stagger index 1)
-                    StaggeredAnimatedVisibility(index = 1) {
+                    StaggeredAnimatedVisibility(index = 1, delayPerItem = MediaStaggerDelay) {
                         StatsCard(details)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Genres (stagger index 2)
-                    StaggeredAnimatedVisibility(index = 2) {
+                    StaggeredAnimatedVisibility(index = 2, delayPerItem = MediaStaggerDelay) {
                         GenreFlow(details.genres)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Synopsis (stagger index 3)
-                    StaggeredAnimatedVisibility(index = 3) {
+                    StaggeredAnimatedVisibility(index = 3, delayPerItem = MediaStaggerDelay) {
                         ExpandableSynopsis(details.description)
                     }
                 }
@@ -388,7 +352,7 @@ fun DetailsPageContent(
             item {
                 if (details.characters.isNotEmpty()) {
                     // Cast section (stagger index 4)
-                    StaggeredAnimatedVisibility(index = 4) {
+                    StaggeredAnimatedVisibility(index = 4, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(32.dp))
                             SectionHeader(stringResource(R.string.section_cast), level = HeaderLevel.Section)
@@ -410,7 +374,7 @@ fun DetailsPageContent(
             item {
                 if (details.relations.isNotEmpty()) {
                     // Relations section (stagger index 5)
-                    StaggeredAnimatedVisibility(index = 5) {
+                    StaggeredAnimatedVisibility(index = 5, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(32.dp))
                             SectionHeader(stringResource(R.string.section_related), level = HeaderLevel.Section)
