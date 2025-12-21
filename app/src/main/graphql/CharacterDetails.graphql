@@ -4,6 +4,7 @@ query GetCharacterDetails($id: Int!) {
         name {
             full
             native
+            userPreferred
         }
         image {
             large
@@ -18,7 +19,7 @@ query GetCharacterDetails($id: Int!) {
         }
         bloodType
         favourites
-        media(perPage: 10, sort: [POPULARITY_DESC]) {
+        media(perPage: 25, sort: [POPULARITY_DESC]) {
             edges {
                 node {
                     id

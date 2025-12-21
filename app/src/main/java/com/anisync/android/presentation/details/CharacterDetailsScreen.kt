@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material3.Button
@@ -87,6 +88,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.shimmerEffect
 import kotlinx.coroutines.delay
+import androidx.core.net.toUri
 
 // Stagger delay constant for content reveal animations
 private const val StaggerDelayPerItem = 40
@@ -580,6 +582,8 @@ fun NameSection(character: CharacterDetails) {
             )
         }
 
+
+
         Spacer(modifier = Modifier.height(12.dp))
 
         // Favourites Badge
@@ -854,6 +858,8 @@ fun MediaRoleItem(media: CharacterMedia) {
                 overflow = TextOverflow.Ellipsis
             )
         }
+        
+
     }
 }
 
