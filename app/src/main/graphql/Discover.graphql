@@ -34,6 +34,41 @@ query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
       type
       format
       averageScore
+      season
+    }
+  }
+}
+
+query GetPaginatedMedia(
+  $page: Int,
+  $perPage: Int,
+  $sort: [MediaSort],
+  $type: MediaType,
+  $status: MediaStatus,
+  $format: MediaFormat
+) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo {
+      hasNextPage
+      currentPage
+      lastPage
+      total
+    }
+    media(sort: $sort, type: $type, status: $status, format: $format) {
+      id
+      title {
+        userPreferred
+      }
+      coverImage {
+        extraLarge
+      }
+      episodes
+      chapters
+      volumes
+      type
+      format
+      averageScore
+      season
     }
   }
 }

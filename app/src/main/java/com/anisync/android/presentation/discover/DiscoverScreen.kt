@@ -78,7 +78,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
-    onSectionSeeAllClick: (title: String, sectionType: String) -> Unit,
+    onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -310,7 +310,7 @@ fun DiscoverScreen(
                             SectionHeader(
                                 title = trendingTitle,
                                 iconColor = Color(0xFFFF5722),
-                                onActionClick = { onSectionSeeAllClick(trendingTitle, "trending") },
+                                onActionClick = { onSectionSeeAllClick(trendingTitle, "trending", mediaType) },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -328,7 +328,7 @@ fun DiscoverScreen(
                             SectionHeader(
                                 title = popularTitle,
                                 iconColor = StarGold,
-                                onActionClick = { onSectionSeeAllClick(popularTitle, "popular") },
+                                onActionClick = { onSectionSeeAllClick(popularTitle, "popular", mediaType) },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -340,18 +340,39 @@ fun DiscoverScreen(
                             )
                         }
 
+                        // Upcoming section only shown for Anime
+                        if (mediaType == MediaType.ANIME) {
+                            item {
+                                Spacer(modifier = Modifier.height(48.dp))
+                                val upcomingTitle = stringResource(R.string.section_upcoming_season)
+                                SectionHeader(
+                                    title = upcomingTitle,
+                                    iconColor = MaterialTheme.colorScheme.primary,
+                                    onActionClick = { onSectionSeeAllClick(upcomingTitle, "upcoming", mediaType) },
+                                    level = HeaderLevel.Section
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalMediaList(
+                                    items = state.upcoming.take(10),
+                                    onItemClick = onMediaClick,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            }
+                        }
+
                         item {
                             Spacer(modifier = Modifier.height(48.dp))
-                            val upcomingTitle = stringResource(R.string.section_upcoming_season)
+                            val tbaTitle = stringResource(R.string.section_tba)
                             SectionHeader(
-                                title = upcomingTitle,
-                                iconColor = MaterialTheme.colorScheme.primary,
-                                onActionClick = { onSectionSeeAllClick(upcomingTitle, "upcoming") },
+                                title = tbaTitle,
+                                iconColor = Color(0xFF9E9E9E), // Gray for TBA
+                                onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", mediaType) },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalMediaList(
-                                items = state.upcoming,
+                                items = state.tba.take(10),
                                 onItemClick = onMediaClick,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope

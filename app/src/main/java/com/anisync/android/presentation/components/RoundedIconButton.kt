@@ -2,7 +2,7 @@ package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.GridView
@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.util.bouncyClickable
 
 /**
- * A reusable circular icon button with bouncy click interaction.
- * Follows Material 3 design system with secondaryContainer styling.
+ * A reusable icon button with rounded square shape per MD3 specs.
+ * Uses 40dp container with 8dp corner radius (MD3 standard icon button shape).
  *
  * @param icon The icon to display inside the button
  * @param contentDescription Accessibility description for the icon
@@ -27,14 +27,14 @@ import com.anisync.android.presentation.util.bouncyClickable
  * @param modifier Modifier for the composable
  */
 @Composable
-fun CircularIconButton(
+fun RoundedIconButton(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = CircleShape,
+        shape = RoundedCornerShape(8.dp), // MD3 standard icon button shape
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
         modifier = modifier
             .size(40.dp)
@@ -51,13 +51,28 @@ fun CircularIconButton(
     }
 }
 
+/**
+ * @deprecated Use [RoundedIconButton] instead. This alias is kept for backward compatibility.
+ */
+@Deprecated(
+    message = "Use RoundedIconButton instead",
+    replaceWith = ReplaceWith("RoundedIconButton(icon, contentDescription, onClick, modifier)")
+)
+@Composable
+fun CircularIconButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) = RoundedIconButton(icon, contentDescription, onClick, modifier)
+
 // --- PREVIEWS ---
 
 @Preview(showBackground = true)
 @Composable
-private fun CircularIconButtonSortPreview() {
+private fun RoundedIconButtonSortPreview() {
     MaterialTheme {
-        CircularIconButton(
+        RoundedIconButton(
             icon = Icons.AutoMirrored.Filled.Sort,
             contentDescription = "Sort",
             onClick = {}
@@ -67,9 +82,9 @@ private fun CircularIconButtonSortPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun CircularIconButtonGridPreview() {
+private fun RoundedIconButtonGridPreview() {
     MaterialTheme {
-        CircularIconButton(
+        RoundedIconButton(
             icon = Icons.Default.GridView,
             contentDescription = "Toggle view",
             onClick = {}

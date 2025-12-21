@@ -27,7 +27,8 @@ sealed interface DiscoverUiState {
     data class Success(
         val trending: List<LibraryEntry>,
         val popular: List<LibraryEntry>,
-        val upcoming: List<LibraryEntry>
+        val upcoming: List<LibraryEntry>,
+        val tba: List<LibraryEntry>
     ) : DiscoverUiState
     data class Error(val message: String) : DiscoverUiState
 }
@@ -153,20 +154,24 @@ class DiscoverViewModel @Inject constructor(
             val trendingDeferred = async { discoverRepository.getTrending(currentType) }
             val popularDeferred = async { discoverRepository.getPopular(currentType) }
             val upcomingDeferred = async { discoverRepository.getUpcoming(currentType) }
+            val tbaDeferred = async { discoverRepository.getTBA(currentType) }
 
             val trendingResult = trendingDeferred.await()
             val popularResult = popularDeferred.await()
             val upcomingResult = upcomingDeferred.await()
+            val tbaResult = tbaDeferred.await()
 
             // Check if all succeeded
             if (trendingResult is Result.Success && 
                 popularResult is Result.Success && 
-                upcomingResult is Result.Success) {
+                upcomingResult is Result.Success &&
+                tbaResult is Result.Success) {
                 _uiState.update {
                     DiscoverUiState.Success(
                         trending = trendingResult.data,
                         popular = popularResult.data,
-                        upcoming = upcomingResult.data
+                        upcoming = upcomingResult.data,
+                        tba = tbaResult.data
                     )
                 }
             } else {
@@ -175,6 +180,7 @@ class DiscoverViewModel @Inject constructor(
                     trendingResult is Result.Error -> trendingResult.message
                     popularResult is Result.Error -> popularResult.message
                     upcomingResult is Result.Error -> upcomingResult.message
+                    tbaResult is Result.Error -> tbaResult.message
                     else -> "Unknown error"
                 }
                 _uiState.update { DiscoverUiState.Error(errorMessage) }

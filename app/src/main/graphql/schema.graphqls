@@ -70,6 +70,7 @@ type Media {
   characters(sort: [CharacterSort], perPage: Int): CharacterConnection
   relations: MediaConnection
   nextAiringEpisode: AiringSchedule
+  season: MediaSeason
 }
 
 enum CharacterSort {
@@ -225,7 +226,16 @@ enum MediaListStatus {
 }
 
 type Page {
-  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, genre: String, genre_in: [String], seasonYear: Int, season: MediaSeason): [Media]
+  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, format_in: [MediaFormat], genre: String, genre_in: [String], seasonYear: Int, season: MediaSeason): [Media]
+  pageInfo: PageInfo
+}
+
+type PageInfo {
+  total: Int
+  perPage: Int
+  currentPage: Int
+  lastPage: Int
+  hasNextPage: Boolean
 }
 
 enum MediaSort {

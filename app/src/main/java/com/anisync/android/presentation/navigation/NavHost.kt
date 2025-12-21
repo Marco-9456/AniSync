@@ -268,8 +268,8 @@ fun AniSyncNavHost(
             ) {
                 DiscoverScreen(
                     onMediaClick = { mediaId -> onMediaClick(mediaId, "discover") },
-                    onSectionSeeAllClick = { title, sectionType ->
-                        navController.navigate(SectionGrid(title, sectionType))
+                    onSectionSeeAllClick = { title, sectionType, mediaType ->
+                        navController.navigate(SectionGrid(title, sectionType, mediaType.name))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this

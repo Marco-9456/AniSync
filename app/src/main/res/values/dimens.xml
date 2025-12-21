@@ -54,5 +54,6 @@
     
     <dimen name="studio_name_max_width">120dp</dimen>
     
-    <dimen name="fab_menu_padding">24dp</dimen>
+    <!-- FAB Menu (MD3 spec: 16dp margins from edges) -->
+    <dimen name="fab_menu_padding">16dp</dimen>
 </resources>

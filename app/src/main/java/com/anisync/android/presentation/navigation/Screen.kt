@@ -40,10 +40,12 @@ data class CharacterDetails(
 /**
  * Section grid screen route for displaying all items from a Discover section.
  * @param sectionTitle The title of the section to display
- * @param sectionType The type of section: "trending", "popular", or "upcoming"
+ * @param sectionType The type of section: "trending", "popular", "upcoming", or "tba"
+ * @param mediaType The media type: "ANIME" or "MANGA"
  */
 @Serializable
 data class SectionGrid(
     val sectionTitle: String,
-    val sectionType: String
+    val sectionType: String,
+    val mediaType: String = "ANIME"
 )

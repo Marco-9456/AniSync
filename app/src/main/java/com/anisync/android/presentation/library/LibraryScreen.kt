@@ -106,7 +106,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.CircularIconButton
+import com.anisync.android.presentation.components.RoundedIconButton
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.StatusBadge
@@ -204,7 +204,7 @@ fun LibraryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box {
-                            CircularIconButton(
+                            RoundedIconButton(
                                 icon = Icons.AutoMirrored.Filled.Sort,
                                 contentDescription = stringResource(R.string.sort),
                                 onClick = {
@@ -251,7 +251,7 @@ fun LibraryScreen(
                             }
                         }
 
-                        CircularIconButton(
+                        RoundedIconButton(
                             icon = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
                             contentDescription = stringResource(R.string.toggle_view),
                             onClick = {
