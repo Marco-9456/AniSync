@@ -3,16 +3,10 @@ package com.anisync.android.presentation.details
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,7 +26,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,7 +33,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -55,7 +47,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,11 +58,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -80,22 +69,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
-import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
-import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScoreBadge
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
-import com.anisync.android.presentation.details.components.StatItem
+import com.anisync.android.presentation.details.components.CharacterItem
+import com.anisync.android.presentation.details.components.DetailsSkeletonContent
+import com.anisync.android.presentation.details.components.ExpandableSynopsis
+import com.anisync.android.presentation.details.components.GenreFlow
+import com.anisync.android.presentation.details.components.RelationItem
+import com.anisync.android.presentation.details.components.StatsCard
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
@@ -602,418 +592,6 @@ fun PageHeaderSection(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-            }
-        }
-    }
-}
-
-
-
-@Composable
-fun StatsCard(details: MediaDetails) {
-    val isManga = details.type == MediaType.MANGA
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StatItem(if (isManga) stringResource(R.string.stat_chapters) else stringResource(R.string.stat_episodes), if (isManga) "${details.chapters ?: "?"}" else "${details.episodes ?: "?"}")
-            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            StatItem(stringResource(R.string.stat_status), details.status.formatAsTitle() ?: details.status)
-            VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            StatItem(stringResource(R.string.stat_source), stringResource(R.string.source_original)) // Replace with actual source if available in MediaDetails
-        }
-    }
-}
-
-@Composable
-private fun CharacterStatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun GenreFlow(genres: List<String>) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        genres.forEach { genre ->
-            // Non-clickable Surface - no misleading interaction affordances
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = CircleShape
-            ) {
-                Text(
-                    text = genre,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun ExpandableSynopsis(text: String) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-
-    // Use spring physics from motionScheme for consistent feel
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    // Animated arrow rotation (0° collapsed → 180° expanded)
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = effectsSpec,
-        label = "ArrowRotation"
-    )
-
-    // Using Surface for better elevation handling
-    Surface(
-        onClick = { expanded = !expanded },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(
-                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
-            )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                stringResource(R.string.section_synopsis),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.sp
-            )
-            Spacer(Modifier.height(8.dp))
-
-            // Text Content with crossfade effect
-            Box {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    maxLines = if (expanded) Int.MAX_VALUE else 4,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // Interaction hint with animated arrow
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(R.string.synopsis_read_more),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(16.dp)
-                        .graphicsLayer { rotationZ = arrowRotation }
-                )
-            }
-        }
-    }
-}
-
-
-
-@Composable
-fun CharacterItem(
-    character: CharacterInfo,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.Start,
-        modifier = modifier
-            .width(100.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-    ) {
-        AsyncImage(
-            model = character.imageUrl,
-            contentDescription = character.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(140.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = character.name,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            textAlign = TextAlign.Start,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = character.role,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Start
-        )
-    }
-}
-
-@Composable
-fun RelationItem(
-    relation: RelatedMedia,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .width(100.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-    ) {
-        AsyncImage(
-            model = relation.coverUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(140.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = relation.relationType.formatAsTitle() ?: relation.relationType,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = relation.title,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-
-
-// -----------------------------------------------------------------------------
-// SKELETON LOADING STATE
-// -----------------------------------------------------------------------------
-
-/**
- * Skeleton loading content for the Details screen.
- * Displays animated shimmer placeholders matching the actual content layout.
- */
-@Composable
-fun DetailsSkeletonContent(onBackClick: () -> Unit) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp)
-    ) {
-        // Header Skeleton
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(320.dp)
-            ) {
-                // Banner placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp)
-                        .shimmerEffect()
-                )
-
-                // Gradient overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .align(Alignment.TopCenter)
-                        .offset(y = 120.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
-                                    MaterialTheme.colorScheme.background
-                                )
-                            )
-                        )
-                )
-
-                // Back Button
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier
-                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, start = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                // Cover placeholder
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 24.dp)
-                        .width(130.dp)
-                        .height(190.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .shimmerEffect()
-                )
-            }
-        }
-
-        // Content Skeleton
-        item {
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                // Title placeholder
-                Box(
-                    modifier = Modifier
-                        .width(200.dp)
-                        .height(28.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .shimmerEffect()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Subtitle/badges row placeholder
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .width(60.dp)
-                            .height(24.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .shimmerEffect()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .width(60.dp)
-                            .height(24.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .shimmerEffect()
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Stats card placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .shimmerEffect()
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Genre chips placeholder
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(4) {
-                        Box(
-                            modifier = Modifier
-                                .width(70.dp)
-                                .height(32.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .shimmerEffect()
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Synopsis placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .shimmerEffect()
-                )
-            }
-        }
-
-        // Cast section skeleton
-        item {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Section title placeholder
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp)
-                    .width(80.dp)
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Cast items placeholder
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(5) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.width(80.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .shimmerEffect()
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(60.dp)
-                                .height(14.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .shimmerEffect()
-                        )
-                    }
-                }
             }
         }
     }
