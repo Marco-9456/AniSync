@@ -32,7 +32,7 @@ query GetMediaDetails($id: Int) {
       progress
       score
     }
-    characters(sort: [ROLE, RELEVANCE], perPage: 6) {
+    characters(sort: [ROLE, RELEVANCE], perPage: 25) {
       edges {
         role
         node {

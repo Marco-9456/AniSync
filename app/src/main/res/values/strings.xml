@@ -93,6 +93,8 @@
     <string name="stat_score">Score</string>
     <string name="stat_format">Format</string>
     <string name="badge_up_to_date">Up to Date</string>
+    <string name="empty_no_characters">No characters found</string>
+    <string name="empty_no_related">No related media found</string>
 
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>

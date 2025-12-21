@@ -52,6 +52,7 @@ private const val CharacterStaggerDelay = 10
 fun CharacterDetailsScreen(
     characterId: Int,
     onBackClick: () -> Unit,
+    onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     viewModel: CharacterDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -72,7 +73,8 @@ fun CharacterDetailsScreen(
                 is CharacterDetailsUiState.Success -> {
                     CharacterDetailsContent(
                         character = state.details,
-                        onBackClick = onBackClick
+                        onBackClick = onBackClick,
+                        onMediaSeeAllClick = { onMediaSeeAllClick(state.details.id, state.details.name) }
                     )
                 }
                 is CharacterDetailsUiState.Error -> {
@@ -90,7 +92,8 @@ fun CharacterDetailsScreen(
 @Composable
 private fun CharacterDetailsContent(
     character: CharacterDetails,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onMediaSeeAllClick: () -> Unit
 ) {
     val listState = rememberLazyListState()
 
@@ -171,13 +174,18 @@ private fun CharacterDetailsContent(
                     StaggeredAnimatedVisibility(index = 4, delayPerItem = CharacterStaggerDelay) {
                         Column {
                             // Using standard SectionHeader for consistency
-                            SectionHeader(title = "Appears In", level = HeaderLevel.Section)
+                            SectionHeader(
+                                title = "Appears In",
+                                level = HeaderLevel.Section,
+                                onActionClick = if (character.media.size > 10) onMediaSeeAllClick else null
+                            )
                             Spacer(modifier = Modifier.height(16.dp))
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.height(180.dp)
                             ) {
-                                items(character.media) { media ->
+                                items(character.media.take(10)) { media ->
                                     MediaRoleItem(media)
                                 }
                             }

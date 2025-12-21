@@ -49,3 +49,36 @@ data class SectionGrid(
     val sectionType: String,
     val mediaType: String = "ANIME"
 )
+
+/**
+ * Grid screen for displaying all characters from a media's cast.
+ * @param mediaId The ID of the media
+ * @param mediaTitle The title of the media (for display in app bar)
+ */
+@Serializable
+data class MediaCharactersGrid(
+    val mediaId: Int,
+    val mediaTitle: String
+)
+
+/**
+ * Grid screen for displaying all related media.
+ * @param mediaId The ID of the media
+ * @param mediaTitle The title of the media (for display in app bar)
+ */
+@Serializable
+data class MediaRelationsGrid(
+    val mediaId: Int,
+    val mediaTitle: String
+)
+
+/**
+ * Grid screen for displaying all media a character appears in.
+ * @param characterId The ID of the character
+ * @param characterName The name of the character (for display in app bar)
+ */
+@Serializable
+data class CharacterMediaGrid(
+    val characterId: Int,
+    val characterName: String
+)

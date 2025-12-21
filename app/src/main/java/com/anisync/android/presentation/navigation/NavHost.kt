@@ -21,6 +21,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.details.MediaDetailsScreen
+import com.anisync.android.presentation.details.MediaCharactersGridScreen
+import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
@@ -338,6 +341,12 @@ fun AniSyncNavHost(
                     onCharacterClick = { characterId ->
                         navController.navigate(CharacterDetails(characterId))
                     },
+                    onCastSeeAllClick = { mediaId, mediaTitle ->
+                        navController.navigate(MediaCharactersGrid(mediaId, mediaTitle))
+                    },
+                    onRelatedSeeAllClick = { mediaId, mediaTitle ->
+                        navController.navigate(MediaRelationsGrid(mediaId, mediaTitle))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -355,7 +364,10 @@ fun AniSyncNavHost(
                 val character: CharacterDetails = backStackEntry.toRoute()
                 CharacterDetailsScreen(
                     characterId = character.characterId,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onMediaSeeAllClick = { characterId, characterName ->
+                        navController.navigate(CharacterMediaGrid(characterId, characterName))
+                    }
                 )
             }
 
@@ -393,6 +405,63 @@ fun AniSyncNavHost(
                         animatedVisibilityScope = this
                     )
                 }
+            }
+
+            // =================================================================
+            // MEDIA CHARACTERS GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<MediaCharactersGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: MediaCharactersGrid = backStackEntry.toRoute()
+                MediaCharactersGridScreen(
+                    mediaId = grid.mediaId,
+                    mediaTitle = grid.mediaTitle,
+                    onBackClick = { navController.popBackStack() },
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
+                    }
+                )
+            }
+
+            // =================================================================
+            // MEDIA RELATIONS GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<MediaRelationsGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: MediaRelationsGrid = backStackEntry.toRoute()
+                MediaRelationsGridScreen(
+                    mediaId = grid.mediaId,
+                    mediaTitle = grid.mediaTitle,
+                    onBackClick = { navController.popBackStack() },
+                    onRelationClick = { relationMediaId ->
+                        navController.navigate(MediaDetails(relationMediaId, "relations_grid"))
+                    }
+                )
+            }
+
+            // =================================================================
+            // CHARACTER MEDIA GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<CharacterMediaGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: CharacterMediaGrid = backStackEntry.toRoute()
+                CharacterMediaGridScreen(
+                    characterId = grid.characterId,
+                    characterName = grid.characterName,
+                    onBackClick = { navController.popBackStack() }
+                )
             }
         }
     }

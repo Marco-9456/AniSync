@@ -102,6 +102,8 @@ fun MediaDetailsScreen(
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
+    onCastSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -235,6 +237,8 @@ fun MediaDetailsScreen(
                             onBackClick = onBackClick,
                             onRelationClick = onRelationClick,
                             onCharacterClick = onCharacterClick,
+                            onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.title) },
+                            onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.title) },
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -291,6 +295,8 @@ fun DetailsPageContent(
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
+    onCastSeeAllClick: () -> Unit,
+    onRelatedSeeAllClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -347,14 +353,19 @@ fun DetailsPageContent(
                     StaggeredAnimatedVisibility(index = 4, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                            SectionHeader(stringResource(R.string.section_cast), level = HeaderLevel.Section)
+                            SectionHeader(
+                                title = stringResource(R.string.section_cast),
+                                level = HeaderLevel.Section,
+                                onActionClick = if (details.characters.size > 10) onCastSeeAllClick else null
+                            )
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                                modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
                                 items(
-                                    items = details.characters,
+                                    items = details.characters.take(10),
                                     key = { it.id }
                                 ) { CharacterItem(it, onClick = { onCharacterClick(it.id) }, modifier = Modifier.animateItem()) }
                             }
@@ -369,14 +380,19 @@ fun DetailsPageContent(
                     StaggeredAnimatedVisibility(index = 5, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                            SectionHeader(stringResource(R.string.section_related), level = HeaderLevel.Section)
+                            SectionHeader(
+                                title = stringResource(R.string.section_related),
+                                level = HeaderLevel.Section,
+                                onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
+                            )
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal))
+                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
+                                modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
                                 items(
-                                    items = details.relations,
+                                    items = details.relations.take(10),
                                     key = { it.id }
                                 ) { relation ->
                                     RelationItem(
