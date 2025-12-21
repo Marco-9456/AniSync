@@ -102,8 +102,8 @@ fun CharacterStatsCard(character: CharacterDetails, attributes: List<Pair<String
             
             VerticalDivider(Modifier.height(32.dp), color = MaterialTheme.colorScheme.outlineVariant)
             
-            // Remove trailing dash from age (e.g., "17-" -> "17")
-            val ageRaw = character.age?.replace("-", "")?.trim()
+            // Remove leading/trailing dashes from age (e.g., "17-" or "-17" -> "17") while preserving ranges like "16-17"
+            val ageRaw = character.age?.trim('-')?.trim()
             val age = ageRaw.takeUnless { it.isNullOrEmpty() || it == "?" } ?: findAttr("Age") ?: "?"
             StatItem(label = "Age", value = age, modifier = Modifier.weight(1f))
             
