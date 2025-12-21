@@ -93,6 +93,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScoreBadge
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
+import com.anisync.android.presentation.details.components.StatItem
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toIcon

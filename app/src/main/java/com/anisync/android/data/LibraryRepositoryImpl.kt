@@ -16,9 +16,15 @@ import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.anisync.android.data.mapper.mapFuzzyDateToLong
+import com.anisync.android.data.mapper.toApiStatus
+import com.anisync.android.data.mapper.toDomainStatus
+import com.anisync.android.data.mapper.toFuzzyDateInput
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.type.FuzzyDateInput
 import java.util.Calendar
 import javax.inject.Inject
+
 
 class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
@@ -39,12 +45,12 @@ class LibraryRepositoryImpl @Inject constructor(
      * The Flow from getLibrary() will emit automatically.
      */
     override suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit> {
-        return try {
+        return safeApiCall {
             // Resolve username
             val actualUsername = if (username.isBlank()) {
                 val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
                 viewerResponse.data?.Viewer?.name
-                    ?: return Result.Error("Unable to get current user")
+                    ?: throw Exception("Unable to get current user")
             } else {
                 username
             }
@@ -55,7 +61,7 @@ class LibraryRepositoryImpl @Inject constructor(
             
             if (response.hasErrors()) {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Unknown error"
-                return Result.Error(errorMessage)
+                throw Exception(errorMessage)
             }
 
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
@@ -65,15 +71,7 @@ class LibraryRepositoryImpl @Inject constructor(
                 group.entries?.filterNotNull()?.map { entry ->
                     val media = entry.media
                     
-                    val status = when (entry.status) {
-                        MediaListStatus.CURRENT -> LibraryStatus.CURRENT
-                        MediaListStatus.PLANNING -> LibraryStatus.PLANNING
-                        MediaListStatus.COMPLETED -> LibraryStatus.COMPLETED
-                        MediaListStatus.DROPPED -> LibraryStatus.DROPPED
-                        MediaListStatus.PAUSED -> LibraryStatus.PAUSED
-                        MediaListStatus.REPEATING -> LibraryStatus.REPEATING
-                        else -> LibraryStatus.UNKNOWN
-                    }
+                    val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
 
                     LibraryEntry(
                         id = entry.id ?: 0,
@@ -91,23 +89,17 @@ class LibraryRepositoryImpl @Inject constructor(
                         score = entry.score,
                         rewatches = entry.repeat ?: 0,
                         notes = entry.notes,
-                        startedAt = entry.startedAt?.let { mapFuzzyDate(it.year, it.month, it.day) },
-                        completedAt = entry.completedAt?.let { mapFuzzyDate(it.year, it.month, it.day) },
+                        startedAt = entry.startedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                        completedAt = entry.completedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
                         updatedAt = entry.updatedAt?.toLong()?.times(1000L),
                         createdAt = entry.createdAt?.toLong()?.times(1000L),
-                        mediaStartDate = media?.startDate?.let { mapFuzzyDate(it.year, it.month, it.day) }
+                        mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) }
                     )
                 } ?: emptyList()
             }
             
             // Atomic update to prevent UI flicker
             libraryDao.replaceByType(type, entries.map { it.toEntity(type) })
-            
-            Result.Success(Unit)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -162,26 +154,8 @@ class LibraryRepositoryImpl @Inject constructor(
         libraryDao.updateEntry(entry.toEntity(entry.type ?: MediaType.ANIME))
 
         // 2. Sync to network
-        return try {
-            fun toFuzzyDate(timestamp: Long?): FuzzyDateInput? {
-                if (timestamp == null) return null
-                val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
-                return FuzzyDateInput(
-                    year = Optional.present(calendar.get(Calendar.YEAR)),
-                    month = Optional.present(calendar.get(Calendar.MONTH) + 1),
-                    day = Optional.present(calendar.get(Calendar.DAY_OF_MONTH))
-                )
-            }
-
-            val apiStatus = when (entry.status) {
-                LibraryStatus.CURRENT -> MediaListStatus.CURRENT
-                LibraryStatus.PLANNING -> MediaListStatus.PLANNING
-                LibraryStatus.COMPLETED -> MediaListStatus.COMPLETED
-                LibraryStatus.DROPPED -> MediaListStatus.DROPPED
-                LibraryStatus.PAUSED -> MediaListStatus.PAUSED
-                LibraryStatus.REPEATING -> MediaListStatus.REPEATING
-                else -> MediaListStatus.CURRENT
-            }
+        return safeApiCall {
+            val apiStatus = entry.status.toApiStatus()
 
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMediaListEntryMutation(
@@ -191,28 +165,19 @@ class LibraryRepositoryImpl @Inject constructor(
                     score = Optional.present(entry.score),
                     repeat = Optional.present(entry.rewatches),
                     notes = Optional.present(entry.notes),
-                    startedAt = Optional.present(toFuzzyDate(entry.startedAt)),
-                    completedAt = Optional.present(toFuzzyDate(entry.completedAt))
+                    startedAt = Optional.present(entry.startedAt?.toFuzzyDateInput()),
+                    completedAt = Optional.present(entry.completedAt?.toFuzzyDateInput())
                 )
             ).execute()
 
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
-                Result.Success(Unit)
+                // Success
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Sync failed"
-                Result.Error(errorMessage)
+                throw Exception(errorMessage)
             }
-        } catch (e: Exception) {
-            // Local updated, network failed
-            Result.Error("Offline: Saved locally", e)
         }
     }
 
-    private fun mapFuzzyDate(year: Int?, month: Int?, day: Int?): Long? {
-        if (year == null) return null
-        val c = Calendar.getInstance()
-        c.clear()
-        c.set(year, (month ?: 1) - 1, day ?: 1)
-        return c.timeInMillis
-    }
+
 }

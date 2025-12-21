@@ -18,6 +18,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.NotificationRepository
+import com.anisync.android.domain.PreferencesRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -26,6 +27,7 @@ class NotificationWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val notificationRepository: NotificationRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val imageLoader: ImageLoader
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -43,8 +45,7 @@ class NotificationWorker @AssistedInject constructor(
                 is com.anisync.android.domain.Result.Success -> {
                     val notifications = repoResult.data
                     
-                    val prefs = applicationContext.getSharedPreferences("anisync_prefs", Context.MODE_PRIVATE)
-                    val lastNotifiedId = prefs.getInt("last_notified_id", 0)
+                    val lastNotifiedId = preferencesRepository.getLastNotifiedId()
                     
                     val newAiring: List<AiringNotification> = notifications
                         .filterIsInstance<AiringNotification>()
@@ -63,7 +64,8 @@ class NotificationWorker @AssistedInject constructor(
                         }
 
                         val maxId = newAiring.maxOf { notification -> notification.id }
-                        prefs.edit().putInt("last_notified_id", maxId).apply()
+
+                        preferencesRepository.setLastNotifiedId(maxId)
                     }
 
                     androidx.work.ListenableWorker.Result.success()

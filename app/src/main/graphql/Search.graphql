@@ -5,7 +5,7 @@ query SearchMedia(
   $perPage: Int,
   $status: MediaStatus,
   $format: MediaFormat,
-  $genre: String,
+  $genres: [String],
   $seasonYear: Int,
   $season: MediaSeason
 ) {
@@ -16,7 +16,7 @@ query SearchMedia(
       type: $type,
       status: $status,
       format: $format,
-      genre: $genre,
+      genre_in: $genres,
       seasonYear: $seasonYear,
       season: $season
     ) {

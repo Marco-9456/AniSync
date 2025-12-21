@@ -225,7 +225,7 @@ enum MediaListStatus {
 }
 
 type Page {
-  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, genre: String, seasonYear: Int, season: MediaSeason): [Media]
+  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, genre: String, genre_in: [String], seasonYear: Int, season: MediaSeason): [Media]
 }
 
 enum MediaSort {

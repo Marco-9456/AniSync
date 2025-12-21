@@ -1,7 +1,15 @@
 package com.anisync.android.util
 
-import androidx.core.text.HtmlCompat
-
+/**
+ * Strips HTML tags from a string while preserving newlines for Markdown content.
+ * Replaces common HTML entities.
+ */
 fun String.stripHtml(): String {
-    return HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+    return this.replace(Regex("<[^>]*>"), "")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .trim()
 }

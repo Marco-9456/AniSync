@@ -48,4 +48,9 @@ abstract class RepositoryModule {
     abstract fun bindNotificationRepository(
         impl: com.anisync.android.data.NotificationRepositoryImpl
     ): com.anisync.android.domain.NotificationRepository
+
+    @Binds
+    abstract fun bindPreferencesRepository(
+        impl: com.anisync.android.data.repository.PreferencesRepositoryImpl
+    ): com.anisync.android.domain.PreferencesRepository
 }

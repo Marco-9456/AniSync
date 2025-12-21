@@ -30,7 +30,7 @@ class SearchRepositoryImpl @Inject constructor(
                     type = Optional.present(type),
                     status = filters.status?.let { Optional.present(it) } ?: Optional.absent(),
                     format = filters.formats.firstOrNull()?.let { Optional.present(it) } ?: Optional.absent(),
-                    genre = filters.genres.firstOrNull()?.let { Optional.present(it) } ?: Optional.absent(),
+                    genres = if (filters.genres.isNotEmpty()) Optional.present(filters.genres.toList()) else Optional.absent(),
                     seasonYear = filters.year?.let { Optional.present(it) } ?: Optional.absent(),
                     season = filters.season?.let { Optional.present(it) } ?: Optional.absent()
                 )

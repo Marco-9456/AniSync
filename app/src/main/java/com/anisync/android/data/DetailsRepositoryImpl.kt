@@ -17,10 +17,13 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.VoiceActor
-import com.anisync.android.type.MediaListStatus
+import com.anisync.android.data.mapper.toApiStatus
+import com.anisync.android.data.mapper.toDomainStatus
+import com.anisync.android.data.util.safeApiCall
+import com.anisync.android.util.stripHtml
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
-import com.apollographql.apollo3.exception.ApolloException
+
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -43,24 +46,16 @@ class DetailsRepositoryImpl @Inject constructor(
      * Fetch from network and update local cache.
      */
     override suspend fun refreshMediaDetails(id: Int): Result<Unit> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetMediaDetailsQuery(id = Optional.present(id))
             ).execute()
 
             val media = response.data?.Media
-                ?: return Result.Error("Media not found")
+                ?: throw Exception("Media not found")
 
             val listEntry = media.mediaListEntry
-            val listStatus = when (listEntry?.status) {
-                MediaListStatus.CURRENT -> LibraryStatus.CURRENT
-                MediaListStatus.PLANNING -> LibraryStatus.PLANNING
-                MediaListStatus.COMPLETED -> LibraryStatus.COMPLETED
-                MediaListStatus.DROPPED -> LibraryStatus.DROPPED
-                MediaListStatus.PAUSED -> LibraryStatus.PAUSED
-                MediaListStatus.REPEATING -> LibraryStatus.REPEATING
-                else -> null
-            }
+            val listStatus = listEntry?.status?.toDomainStatus()
 
             val characters = media.characters?.edges?.filterNotNull()?.map { edge ->
                 CharacterInfo(
@@ -111,12 +106,6 @@ class DetailsRepositoryImpl @Inject constructor(
 
             // Update cache
             mediaDetailsDao.insert(details.toEntity())
-            
-            Result.Success(Unit)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -125,16 +114,8 @@ class DetailsRepositoryImpl @Inject constructor(
         status: LibraryStatus,
         progress: Int
     ): Result<Unit> {
-        return try {
-            val apiStatus = when (status) {
-                LibraryStatus.CURRENT -> MediaListStatus.CURRENT
-                LibraryStatus.PLANNING -> MediaListStatus.PLANNING
-                LibraryStatus.COMPLETED -> MediaListStatus.COMPLETED
-                LibraryStatus.DROPPED -> MediaListStatus.DROPPED
-                LibraryStatus.PAUSED -> MediaListStatus.PAUSED
-                LibraryStatus.REPEATING -> MediaListStatus.REPEATING
-                LibraryStatus.UNKNOWN -> MediaListStatus.CURRENT
-            }
+        return safeApiCall {
+            val apiStatus = status.toApiStatus()
 
             val response = apolloClient.mutation(
                 SaveMediaListEntryMutation(
@@ -149,20 +130,15 @@ class DetailsRepositoryImpl @Inject constructor(
                 refreshMediaDetails(mediaId)
                 // Also update the library cache so LibraryScreen reflects the change immediately
                 libraryDao.updateStatusAndProgress(mediaId, status, progress)
-                Result.Success(Unit)
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Update failed"
-                Result.Error(errorMessage)
+                throw Exception(errorMessage)
             }
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
     override suspend fun deleteMediaListEntry(entryId: Int, mediaId: Int): Result<Unit> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.mutation(
                 DeleteMediaListEntryMutation(id = Optional.present(entryId))
             ).execute()
@@ -170,35 +146,22 @@ class DetailsRepositoryImpl @Inject constructor(
             if (response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()) {
                 // Remove from library cache so LibraryScreen reflects the deletion immediately
                 libraryDao.deleteByMediaId(mediaId)
-                Result.Success(Unit)
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"
-                Result.Error(errorMessage)
+                throw Exception(errorMessage)
             }
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
-    private fun String.stripHtml(): String {
-        return this.replace(Regex("<[^>]*>"), "")
-            .replace("&nbsp;", " ")
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", "\"")
-            .trim()
-    }
+
     override suspend fun getCharacterDetails(id: Int): Result<CharacterDetails> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetCharacterDetailsQuery(id = id)
             ).execute()
 
             val charData = response.data?.Character
-                ?: return Result.Error("Character not found")
+                ?: throw Exception("Character not found")
 
             val mediaList = charData.media?.edges?.filterNotNull()?.mapNotNull { edge ->
                 val node = edge.node ?: return@mapNotNull null
@@ -219,7 +182,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            val character = CharacterDetails(
+            CharacterDetails(
                 id = charData.id ?: 0,
                 name = charData.name?.full ?: "Unknown",
                 nativeName = charData.name?.native,
@@ -236,12 +199,6 @@ class DetailsRepositoryImpl @Inject constructor(
                 favourites = charData.favourites,
                 media = mediaList
             )
-
-            Result.Success(character)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 }
