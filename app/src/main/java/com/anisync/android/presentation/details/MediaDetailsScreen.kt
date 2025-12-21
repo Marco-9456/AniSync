@@ -103,7 +103,7 @@ import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
 // Stagger delay constant for content reveal animations (40ms for snappy feel)
-private const val StaggerDelayPerItem = 40
+private const val StaggerDelayPerItem = 10
 
 /**
  * Staggered animation helper for content sections.

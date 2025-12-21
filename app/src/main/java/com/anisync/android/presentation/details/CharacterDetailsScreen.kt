@@ -91,7 +91,7 @@ import kotlinx.coroutines.delay
 import androidx.core.net.toUri
 
 // Stagger delay constant for content reveal animations
-private const val StaggerDelayPerItem = 40
+private const val StaggerDelayPerItem = 10
 
 /**
  * Staggered animation helper for content sections.
