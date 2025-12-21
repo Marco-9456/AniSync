@@ -35,17 +35,17 @@ fun StatusBadge(
     Surface(
         color = containerColor,
         shape = RoundedCornerShape(4.dp),
-        modifier = modifier.height(18.dp)
+        modifier = modifier.height(14.dp)
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(horizontal = 6.dp)
+            modifier = Modifier.padding(horizontal = 4.dp)
         ) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                fontSize = 9.sp,
+                fontSize = 8.sp,
                 color = contentColor
             )
         }

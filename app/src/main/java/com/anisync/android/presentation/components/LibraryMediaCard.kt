@@ -216,7 +216,8 @@ fun LibraryMediaCard(
                 if (config.showBehindBadge || config.showAiringInfo) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.height(20.dp) // Reserve fixed height matching badge/text
                     ) {
                         if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
                             val nextAiring = entry.nextAiringEpisode
