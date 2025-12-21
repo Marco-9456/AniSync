@@ -1,0 +1,24 @@
+query GetPlanningFirstEpisodes($mediaIds: [Int!], $airingBefore: Int!) {
+  Page {
+    airingSchedules(
+      mediaId_in: $mediaIds
+      episode: 1
+      airingAt_lesser: $airingBefore
+    ) {
+      id
+      episode
+      airingAt
+      mediaId
+      media {
+        id
+        title {
+          userPreferred
+        }
+        coverImage {
+          large
+        }
+        type
+      }
+    }
+  }
+}

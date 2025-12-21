@@ -397,4 +397,11 @@ enum NotificationType {
 
 extend type Page {
   notifications(type: NotificationType, resetNotificationCount: Boolean, typeIn: [NotificationType]): [NotificationUnion]
+  airingSchedules(
+    mediaId_in: [Int],
+    episode: Int,
+    notYetAired: Boolean,
+    airingAt_greater: Int,
+    airingAt_lesser: Int
+  ): [AiringSchedule]
 }

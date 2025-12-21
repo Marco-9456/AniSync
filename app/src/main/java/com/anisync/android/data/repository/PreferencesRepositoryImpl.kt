@@ -24,8 +24,21 @@ class PreferencesRepositoryImpl @Inject constructor(
         prefs.edit().putInt(KEY_LAST_NOTIFIED_ID, id).apply()
     }
 
+    override suspend fun getNotifiedPlanningMediaIds(): Set<Int> = withContext(Dispatchers.IO) {
+        prefs.getStringSet(KEY_NOTIFIED_PLANNING, emptySet())
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet() ?: emptySet()
+    }
+
+    override suspend fun markPlanningMediaAsNotified(mediaId: Int) = withContext(Dispatchers.IO) {
+        val current = prefs.getStringSet(KEY_NOTIFIED_PLANNING, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        current.add(mediaId.toString())
+        prefs.edit().putStringSet(KEY_NOTIFIED_PLANNING, current).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "anisync_prefs"
         private const val KEY_LAST_NOTIFIED_ID = "last_notified_id"
+        private const val KEY_NOTIFIED_PLANNING = "notified_planning_media_ids"
     }
 }

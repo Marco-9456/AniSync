@@ -1,9 +1,11 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetNotificationsQuery
+import com.anisync.android.GetPlanningFirstEpisodesQuery
 import com.anisync.android.domain.ActivityLikeNotification
 import com.anisync.android.domain.ActivityReplyNotification
 import com.anisync.android.domain.AiringNotification
+import com.anisync.android.domain.AiringSchedule
 import com.anisync.android.domain.FollowingNotification
 import com.anisync.android.domain.Media
 import com.anisync.android.domain.Notification
@@ -102,6 +104,40 @@ class NotificationRepositoryImpl @Inject constructor(
             } ?: emptyList()
             
             Result.Success(notifications)
+        } catch (e: ApolloException) {
+            Result.Error("Network error: ${e.message}", e)
+        } catch (e: Exception) {
+            Result.Error("Unexpected error: ${e.message}", e)
+        }
+    }
+
+    override suspend fun getFirstEpisodeAirings(mediaIds: List<Int>): Result<List<AiringSchedule>> {
+        if (mediaIds.isEmpty()) return Result.Success(emptyList())
+
+        return try {
+            val currentTime = (System.currentTimeMillis() / 1000).toInt()
+            val response = apolloClient.query(
+                GetPlanningFirstEpisodesQuery(
+                    mediaIds = Optional.present(mediaIds),
+                    airingBefore = currentTime
+                )
+            ).execute()
+
+            val airings = response.data?.Page?.airingSchedules?.mapNotNull { airing ->
+                airing?.let {
+                    AiringSchedule(
+                        id = it.id ?: 0,
+                        episode = it.episode ?: 0,
+                        airingAt = (it.airingAt ?: 0).toLong(),
+                        mediaId = it.mediaId ?: 0,
+                        mediaTitle = it.media?.title?.userPreferred ?: "Unknown",
+                        mediaCoverUrl = it.media?.coverImage?.large,
+                        mediaType = it.media?.type ?: com.anisync.android.type.MediaType.ANIME
+                    )
+                }
+            } ?: emptyList()
+
+            Result.Success(airings)
         } catch (e: ApolloException) {
             Result.Error("Network error: ${e.message}", e)
         } catch (e: Exception) {
