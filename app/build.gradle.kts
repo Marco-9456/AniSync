@@ -38,6 +38,7 @@ android {
             )
             // Release-specific config
             buildConfigField("Boolean", "IS_DEBUG_BUILD", "false")
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             applicationIdSuffix = ".debug"

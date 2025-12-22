@@ -60,6 +60,7 @@ fun SectionHeader(
     iconColor: Color = MaterialTheme.colorScheme.primary,
     onActionClick: (() -> Unit)? = null,
     actionLabel: String? = null,
+    actionIcon: ImageVector? = null,
     padding: androidx.compose.foundation.layout.PaddingValues? = null
 ) {
     Row(
@@ -138,6 +139,14 @@ fun SectionHeader(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
+                    )
+                } else if (actionIcon != null) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .size(24.dp)
                     )
                 } else {
                     Icon(

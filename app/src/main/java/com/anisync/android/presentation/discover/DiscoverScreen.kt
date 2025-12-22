@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -233,24 +234,36 @@ fun DiscoverScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             // AppBarWithSearch integrates with Scaffold's topBar for proper window insets handling
-            AppBarWithSearch(
-                state = searchBarState,
-                inputField = {
-                    SearchBarDefaults.InputField(
-                        searchBarState = searchBarState,
-                        textFieldState = textFieldState,
-                        onSearch = {
-                            viewModel.onSearch(textFieldState.text.toString())
-                            keyboardController?.hide()
-                        },
-                        placeholder = { Text(if (mediaType == MediaType.ANIME) stringResource(R.string.search_anime_placeholder) else stringResource(R.string.search_manga_placeholder)) },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search))
-                        },
-                        trailingIcon = null
-                    )
-                }
-            )
+            // Custom Header instead of AppBarWithSearch
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(top = 16.dp)
+            ) {
+                SectionHeader(
+                    title = stringResource(R.string.nav_discover),
+                    level = HeaderLevel.Screen,
+                    actionIcon = Icons.Default.Search,
+                    onActionClick = {
+                        keyboardController?.hide()
+                        coroutineScope.launch { searchBarState.animateToExpanded() }
+                    },
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    padding = PaddingValues(0.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                MediaTypeSelector(
+                    selected = mediaType,
+                    onSelect = viewModel::onMediaTypeChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     ) { paddingValues ->
         val pullToRefreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
@@ -296,13 +309,7 @@ fun DiscoverScreen(
                         }
                     }
                     is DiscoverUiState.Success -> {
-                        item {
-                            MediaTypeSelector(
-                                selected = mediaType,
-                                onSelect = viewModel::onMediaTypeChange,
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                            )
-                        }
+                        // MediaTypeSelector moved to sticky header
 
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
@@ -320,6 +327,7 @@ fun DiscoverScreen(
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
 
                         item {
@@ -338,6 +346,7 @@ fun DiscoverScreen(
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
 
                         // Upcoming section only shown for Anime
@@ -358,6 +367,7 @@ fun DiscoverScreen(
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
 
@@ -377,6 +387,7 @@ fun DiscoverScreen(
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
