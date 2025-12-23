@@ -2,16 +2,11 @@ package com.anisync.android.presentation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.graphicsLayer
-
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
@@ -32,10 +27,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -43,9 +39,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
 import com.anisync.android.presentation.navigation.AniSyncNavHost
-import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Discover
 import com.anisync.android.presentation.navigation.Library
+import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
 import kotlin.reflect.KClass
 
@@ -129,16 +125,6 @@ fun MainScreen() {
                             animationSpec = tween(300),
                             label = "IconColor"
                         )
-                        
-                        // Scale pulse animation when selected
-                        val iconScale by animateFloatAsState(
-                            targetValue = if (isSelected) 1.1f else 1f,
-                            animationSpec = spring(
-                                dampingRatio = 0.6f,
-                                stiffness = 500f
-                            ),
-                            label = "IconScale"
-                        )
 
                         NavigationBarItem(
                             icon = {
@@ -146,11 +132,7 @@ fun MainScreen() {
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                                     contentDescription = title,
-                                    tint = iconColor,
-                                    modifier = Modifier.graphicsLayer {
-                                        scaleX = iconScale
-                                        scaleY = iconScale
-                                    }
+                                    tint = iconColor
                                 )
                             },
                             label = {
