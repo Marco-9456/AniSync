@@ -273,6 +273,17 @@ fun AppTheme(
       else -> lightScheme
   }
 
+  // Set status bar icons color based on theme
+  val view = androidx.compose.ui.platform.LocalView.current
+  if (!view.isInEditMode) {
+      androidx.compose.runtime.SideEffect {
+          val window = (view.context as android.app.Activity).window
+          val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+          // In light mode, use dark status bar icons; in dark mode, use light icons
+          insetsController.isAppearanceLightStatusBars = !darkTheme
+      }
+  }
+
   MaterialTheme(
     colorScheme = colorScheme,
     typography = AppTypography,

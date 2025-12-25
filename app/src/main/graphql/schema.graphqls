@@ -209,6 +209,7 @@ type MediaTitle {
 type MediaCoverImage {
   extraLarge: String
   large: String
+  medium: String
 }
 
 enum MediaType {
@@ -249,6 +250,8 @@ type User {
   name: String
   avatar: UserAvatar
   bannerImage: String
+  about: String
+  updatedAt: Int
   statistics: UserStatisticTypes
   favourites: Favourites
 }
@@ -368,6 +371,7 @@ type ListActivity {
   type: ActivityType
   status: String
   progress: String
+  createdAt: Int
   media: Media
   user: User
 }
@@ -411,7 +415,12 @@ extend type Page {
     mediaId_in: [Int],
     episode: Int,
     notYetAired: Boolean,
-    airingAt_greater: Int,
     airingAt_lesser: Int
   ): [AiringSchedule]
+  activities(userId: Int, type: ActivityType, sort: [ActivitySort], perPage: Int): [ActivityUnion]
+}
+
+enum ActivitySort {
+  ID
+  ID_DESC
 }

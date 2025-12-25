@@ -1,6 +1,7 @@
 package com.anisync.android.data.local
 
 import androidx.room.TypeConverter
+import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -59,4 +60,14 @@ class Converters {
 
     @TypeConverter
     fun toLibraryEntryList(list: List<LibraryEntry>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromUserActivityList(value: String): List<UserActivity> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toUserActivityList(list: List<UserActivity>): String = json.encodeToString(list)
 }

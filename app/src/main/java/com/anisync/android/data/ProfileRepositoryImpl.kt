@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetUserProfileQuery
+import com.anisync.android.GetUserActivitiesQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
@@ -22,20 +23,13 @@ class ProfileRepositoryImpl @Inject constructor(
     private val userProfileDao: UserProfileDao
 ) : ProfileRepository {
 
-    /**
-     * Observe profile from local cache.
-     */
     override fun observeProfile(): Flow<UserProfile?> {
         return userProfileDao.observe()
             .map { entity -> entity?.toDomain() }
     }
 
-    /**
-     * Fetch from network and update cache.
-     */
     override suspend fun refreshProfile(username: String): Result<Unit> {
         return try {
-            // If no username provided, get current authenticated user
             val actualUsername = if (username.isBlank()) {
                 val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
                 viewerResponse.data?.Viewer?.name
@@ -43,13 +37,30 @@ class ProfileRepositoryImpl @Inject constructor(
             } else {
                 username
             }
-            
+
             val response = apolloClient.query(
                 GetUserProfileQuery(name = Optional.present(actualUsername))
             ).execute()
 
             val user = response.data?.User
                 ?: return Result.Error("User not found")
+
+            // Fetch Activities
+            val activitiesResponse = apolloClient.query(
+                GetUserActivitiesQuery(userId = Optional.present(user.id))
+            ).execute()
+
+            val activities = activitiesResponse.data?.Page?.activities?.filterNotNull()?.mapNotNull { it.onListActivity }?.map { activity ->
+                com.anisync.android.domain.UserActivity(
+                    id = activity.id ?: 0,
+                    status = activity.status,
+                    progress = activity.progress,
+                    mediaTitle = activity.media?.title?.userPreferred ?: "Unknown",
+                    mediaCoverUrl = activity.media?.coverImage?.medium,
+                    timestamp = (activity.createdAt?.toLong() ?: 0L) * 1000L,
+                    mediaScore = null
+                )
+            } ?: emptyList()
 
             val stats = user.statistics?.anime
             val mangaStats = user.statistics?.manga
@@ -76,17 +87,18 @@ class ProfileRepositoryImpl @Inject constructor(
                 name = user.name ?: "Unknown",
                 avatarUrl = user.avatar?.large,
                 bannerUrl = user.bannerImage,
+                about = user.about,
+                activeAt = user.updatedAt?.toLong()?.times(1000),
                 animeCount = stats?.count ?: 0,
                 daysWatched = daysWatched,
                 mangaCount = mangaStats?.count ?: 0,
                 chaptersRead = mangaStats?.chaptersRead ?: 0,
                 meanScore = stats?.meanScore?.toFloat() ?: 0f,
-                favoriteAnime = favorites
+                favoriteAnime = favorites,
+                activities = activities
             )
 
-            // Update cache
             userProfileDao.insert(profile.toEntity())
-            
             Result.Success(Unit)
         } catch (e: ApolloException) {
             Result.Error("Network error: ${e.message}", e)

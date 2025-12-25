@@ -119,12 +119,15 @@ fun UserProfileEntity.toDomain(): UserProfile = UserProfile(
     name = name,
     avatarUrl = avatarUrl,
     bannerUrl = bannerUrl,
+    about = about,
+    activeAt = activeAt,
     animeCount = animeCount,
     daysWatched = daysWatched,
     mangaCount = mangaCount,
     chaptersRead = chaptersRead,
     meanScore = meanScore,
-    favoriteAnime = favoriteAnime
+    favoriteAnime = favoriteAnime,
+    activities = activities
 )
 
 fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
@@ -132,10 +135,13 @@ fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
     name = name,
     avatarUrl = avatarUrl,
     bannerUrl = bannerUrl,
+    about = about,
+    activeAt = activeAt,
     animeCount = animeCount,
     daysWatched = daysWatched,
     mangaCount = mangaCount,
     chaptersRead = chaptersRead,
     meanScore = meanScore,
-    favoriteAnime = favoriteAnime
+    favoriteAnime = favoriteAnime,
+    activities = activities
 )

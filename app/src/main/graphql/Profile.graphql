@@ -6,6 +6,8 @@ query GetUserProfile($name: String) {
       large
     }
     bannerImage
+    about
+    updatedAt
     statistics {
       anime {
         count
@@ -28,6 +30,30 @@ query GetUserProfile($name: String) {
           coverImage {
             large
           }
+        }
+      }
+    }
+  }
+}
+
+query GetUserActivities($userId: Int) {
+  Page(perPage: 5) {
+    activities(userId: $userId, sort: [ID_DESC], type: MEDIA_LIST) {
+      ... on ListActivity {
+        id
+        type
+        status
+        progress
+        createdAt
+        media {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+             medium
+          }
+          type
         }
       }
     }
