@@ -223,7 +223,10 @@ fun DiscoverScreen(
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
                     inputField = inputField,
-                    colors = SearchBarDefaults.appBarWithSearchColors()
+                    colors = SearchBarDefaults.appBarWithSearchColors(
+                        appBarContainerColor = Color.Transparent,
+                        scrolledAppBarContainerColor = Color.Transparent
+                    )
                 )
                 
                 // MediaTypeSelector below the search bar

@@ -266,7 +266,10 @@ fun LibraryScreen(
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
                     inputField = inputField,
-                    colors = SearchBarDefaults.appBarWithSearchColors(),
+                    colors = SearchBarDefaults.appBarWithSearchColors(
+                        appBarContainerColor = Color.Transparent,
+                        scrolledAppBarContainerColor = Color.Transparent
+                    ),
                     actions = {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
