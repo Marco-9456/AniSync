@@ -61,6 +61,10 @@ class LibraryViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    // Search query for local library filtering
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     private val _events = MutableSharedFlow<LibraryEvent>()
     val events: SharedFlow<LibraryEvent> = _events.asSharedFlow()
 
@@ -73,6 +77,9 @@ class LibraryViewModel @Inject constructor(
             libraryRepository.getLibrary("", type)
         }
         .combine(_sortOption) { entries, sort ->
+            Pair(entries, sort)
+        }
+        .combine(_searchQuery) { (entries, sort), query ->
             val sortedEntries = when (sort) {
                 LibrarySort.TITLE -> entries.sortedBy { it.title.lowercase() }
                 LibrarySort.PROGRESS -> entries.sortedWith(
@@ -104,7 +111,13 @@ class LibraryViewModel @Inject constructor(
                         .thenBy { it.title.lowercase() }
                 )
             }
-            LibraryUiState.Success(sortedEntries) as LibraryUiState
+            // Filter by search query if present
+            val filteredEntries = if (query.isBlank()) {
+                sortedEntries
+            } else {
+                sortedEntries.filter { it.title.contains(query, ignoreCase = true) }
+            }
+            LibraryUiState.Success(filteredEntries) as LibraryUiState
         }
         .onStart { emit(LibraryUiState.Loading) }
         .catch { e -> emit(LibraryUiState.Error(e.message ?: "Unknown error")) }
@@ -143,6 +156,10 @@ class LibraryViewModel @Inject constructor(
 
     fun onSortChange(sort: LibrarySort) {
         _sortOption.value = sort
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
     }
 
     fun incrementProgress(mediaId: Int) {

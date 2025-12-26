@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -10,7 +11,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,12 +32,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -51,12 +51,14 @@ import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Card
 import com.anisync.android.presentation.components.MediaTypeSelector
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import com.anisync.android.presentation.components.EditLibraryEntryDialog
@@ -68,11 +70,13 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,14 +87,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,8 +120,6 @@ import com.anisync.android.presentation.components.WatchingCardConfig
 import com.anisync.android.presentation.components.CompletedCardConfig
 import com.anisync.android.presentation.components.SkeletonGrid
 import com.anisync.android.presentation.components.SkeletonList
-import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -123,6 +127,7 @@ import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -135,13 +140,25 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = rememberHapticFeedback()
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
     var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
+
+    // Search Bar State
+    val searchBarState = rememberSearchBarState()
+    val textFieldState = rememberTextFieldState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Scroll behavior for AppBarWithSearch
+    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -149,6 +166,26 @@ fun LibraryScreen(
                 is LibraryEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
             }
         }
+    }
+
+    // Sync textFieldState changes with ViewModel
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { viewModel.onSearchQueryChange(it) }
+    }
+
+    // Clear keyboard and focus when search bar collapses
+    LaunchedEffect(searchBarState.currentValue) {
+        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
+    }
+
+    // Handle back press to close search
+    BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
+        keyboardController?.hide()
+        coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
     // Use rememberSaveable to persist scroll position across navigation
@@ -175,103 +212,136 @@ fun LibraryScreen(
         }
     }
 
+    // Shared input field composable used by both AppBarWithSearch and ExpandedFullScreenSearchBar
+    val inputField = @Composable {
+        SearchBarDefaults.InputField(
+            searchBarState = searchBarState,
+            textFieldState = textFieldState,
+            onSearch = { keyboardController?.hide() },
+            placeholder = {
+                if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.search_library_placeholder),
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Text(stringResource(R.string.search_library_placeholder))
+                }
+            },
+            leadingIcon = {
+                if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                    IconButton(onClick = {
+                        keyboardController?.hide()
+                        coroutineScope.launch { searchBarState.animateToCollapsed() }
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                } else {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                }
+            },
+            trailingIcon = {
+                if (searchBarState.currentValue == SearchBarValue.Expanded && searchQuery.isNotEmpty()) {
+                    IconButton(onClick = {
+                        textFieldState.edit { replace(0, length, "") }
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
+                    }
+                }
+            }
+        )
+    }
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Column(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(top = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SectionHeader(
-                        title = stringResource(R.string.library_title),
-                        level = HeaderLevel.Screen,
-                        modifier = Modifier.weight(1f),
-                        padding = PaddingValues(0.dp) // Reset padding as parent handles it
-                    )
+            Column {
+                // AppBarWithSearch for proper search bar transition animation
+                AppBarWithSearch(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    scrollBehavior = scrollBehavior,
+                    state = searchBarState,
+                    inputField = inputField,
+                    colors = SearchBarDefaults.appBarWithSearchColors(),
+                    actions = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box {
+                                RoundedIconButton(
+                                    icon = Icons.AutoMirrored.Filled.Sort,
+                                    contentDescription = stringResource(R.string.sort),
+                                    onClick = {
+                                        haptic.click()
+                                        showSortMenu = true
+                                    }
+                                )
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box {
+                                DropdownMenu(
+                                    expanded = showSortMenu,
+                                    onDismissRequest = { showSortMenu = false },
+                                    shape = MenuDefaults.shape,
+                                    containerColor = MenuDefaults.containerColor
+                                ) {
+                                    LibrarySort.entries.forEach { sort ->
+                                        val isSelected = sortOption == sort
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = when (sort) {
+                                                        LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
+                                                        LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
+                                                        LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
+                                                        LibrarySort.SCORE -> stringResource(R.string.sort_score)
+                                                        LibrarySort.LAST_UPDATED -> stringResource(R.string.sort_last_updated)
+                                                        LibrarySort.LAST_ADDED -> stringResource(R.string.sort_last_added)
+                                                        LibrarySort.START_DATE -> stringResource(R.string.sort_start_date)
+                                                        LibrarySort.RELEASE_DATE -> stringResource(R.string.sort_release_date)
+                                                    },
+                                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            },
+                                            onClick = {
+                                                haptic.click()
+                                                viewModel.onSortChange(sort)
+                                                showSortMenu = false
+                                            },
+                                            trailingIcon = if (isSelected) {
+                                                { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
+                                            } else null
+                                        )
+                                    }
+                                }
+                            }
+
                             RoundedIconButton(
-                                icon = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(R.string.sort),
+                                icon = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
+                                contentDescription = stringResource(R.string.toggle_view),
                                 onClick = {
                                     haptic.click()
-                                    showSortMenu = true
+                                    isGridView = !isGridView
                                 }
                             )
-
-                            DropdownMenu(
-                                expanded = showSortMenu,
-                                onDismissRequest = { showSortMenu = false },
-                                shape = MenuDefaults.shape,
-                                containerColor = MenuDefaults.containerColor
-                            ) {
-                                LibrarySort.entries.forEach { sort ->
-                                    val isSelected = sortOption == sort
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = when (sort) {
-                                                    LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
-                                                    LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
-                                                    LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
-                                                    LibrarySort.SCORE -> stringResource(R.string.sort_score)
-                                                    LibrarySort.LAST_UPDATED -> stringResource(R.string.sort_last_updated)
-                                                    LibrarySort.LAST_ADDED -> stringResource(R.string.sort_last_added)
-                                                    LibrarySort.START_DATE -> stringResource(R.string.sort_start_date)
-                                                    LibrarySort.RELEASE_DATE -> stringResource(R.string.sort_release_date)
-                                                },
-                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                            )
-                                        },
-                                        onClick = {
-                                            haptic.click()
-                                            viewModel.onSortChange(sort)
-                                            showSortMenu = false
-                                        },
-                                        trailingIcon = if (isSelected) {
-                                            { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
-                                        } else null
-                                    )
-                                }
-                            }
                         }
-
-                        RoundedIconButton(
-                            icon = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
-                            contentDescription = stringResource(R.string.toggle_view),
-                            onClick = {
-                                haptic.click()
-                                isGridView = !isGridView
-                            }
-                        )
                     }
-                }
+                )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
+                // MediaTypeSelector below the search bar
                 MediaTypeSelector(
                     selected = mediaType,
                     onSelect = viewModel::onMediaTypeChange,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
+                // Status filter chips
                 val statuses = listOf(LibraryStatus.CURRENT, LibraryStatus.PAUSED, LibraryStatus.COMPLETED, LibraryStatus.PLANNING, LibraryStatus.DROPPED)
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 24.dp),
@@ -400,6 +470,61 @@ fun LibraryScreen(
         }
     }
 
+    // ExpandedFullScreenSearchBar displays filtered library results in a full-screen overlay
+    // It must be placed after Scaffold to overlay properly and share the same searchBarState
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        inputField = inputField
+    ) {
+        // Show filtered library results in the expanded search view
+        when (val state = uiState) {
+            is LibraryUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.loading),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            is LibraryUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            is LibraryUiState.Success -> {
+                if (state.entries.isEmpty() && searchQuery.isNotEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = stringResource(R.string.search_no_results),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.entries, key = { it.id }) { entry ->
+                            LibrarySearchResultCard(
+                                entry = entry,
+                                mediaType = mediaType,
+                                onClick = {
+                                    keyboardController?.hide()
+                                    onMediaClick(entry.mediaId)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (editingEntry != null) {
         EditLibraryEntryDialog(
             entry = editingEntry!!,
@@ -409,6 +534,60 @@ fun LibraryScreen(
                 editingEntry = null
             }
         )
+    }
+}
+
+@Composable
+private fun LibrarySearchResultCard(
+    entry: LibraryEntry,
+    mediaType: MediaType,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = rememberHapticFeedback()
+    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = modifier
+            .fillMaxWidth()
+            .bouncyClickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(entry.coverUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(50.dp)
+                    .height(75.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = entry.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${entry.status.toLabel(mediaType)} • ${entry.progress}/${total ?: "?"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
@@ -556,4 +735,3 @@ fun EmptyLibraryTabState(status: LibraryStatus, type: MediaType) {
         Text(text = message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }
-

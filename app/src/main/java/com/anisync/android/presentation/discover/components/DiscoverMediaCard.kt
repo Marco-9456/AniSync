@@ -108,7 +108,7 @@ fun DiscoverMediaCard(
         is CardStyle.Hero -> Modifier.height(style.height)
         is CardStyle.Standard -> Modifier.width(style.width).aspectRatio(0.6f)
         is CardStyle.Grid -> Modifier.fillMaxWidth().aspectRatio(style.aspectRatio)
-        is CardStyle.ListItem -> Modifier.fillMaxWidth().height(100.dp)
+        is CardStyle.ListItem -> Modifier.fillMaxWidth().height(120.dp)
     }
 
     val spatialSpec = if (sharedTransitionScope != null) {
@@ -492,9 +492,9 @@ private fun ListItemContent(
                 .crossfade(true)
                 .build(),
             contentDescription = null,
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
-                .size(width = 100.dp, height = 76.dp)
+                .size(width = 60.dp, height = 90.dp)
                 .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         )

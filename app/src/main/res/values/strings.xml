@@ -50,6 +50,8 @@
 
     <!-- Library Screen -->
     <string name="library_title">Library</string>
+    <string name="search_library_placeholder">Search Library…</string>
+    <string name="loading">Loading…</string>
     <string name="sort">Sort</string>
     <string name="selected">Selected</string>
     <string name="toggle_view">Toggle View</string>

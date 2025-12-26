@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -55,17 +53,18 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
-import com.anisync.android.domain.SearchFilters
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
-import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.discover.components.CinematicHeroCarousel
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
@@ -94,15 +93,17 @@ fun DiscoverScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    // Search Bar State with persistence
-    val isSearchExpanded = rememberSaveable { mutableStateOf(false) }
-    val searchBarState = rememberSearchBarState(
-        initialValue = if (isSearchExpanded.value) SearchBarValue.Expanded else SearchBarValue.Collapsed
-    )
+    
+    // Search Bar State
+    val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
+    
+    // Scroll behavior for AppBarWithSearch
+    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+    
+    // List states
     val listState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
-    // Main content scroll state (separate from search results)
     val mainListState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
 
     // Filter dialog state
@@ -114,11 +115,8 @@ fun DiscoverScreen(
             .collect { viewModel.onSearchQueryChange(it) }
     }
 
-    // Sync searchBarState changes back to isSearchExpanded to persist state
+    // Clear keyboard and focus when search bar collapses
     LaunchedEffect(searchBarState.currentValue) {
-        isSearchExpanded.value = searchBarState.currentValue == SearchBarValue.Expanded
-        
-        // Clear keyboard and focus when search bar is collapsing
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
             keyboardController?.hide()
             focusManager.clearFocus()
@@ -131,27 +129,48 @@ fun DiscoverScreen(
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    // ExpandedFullScreenSearchBar displays the search results in a full-screen overlay
-    ExpandedFullScreenSearchBar(
-        state = searchBarState,
-        inputField = {
-            SearchBarDefaults.InputField(
-                searchBarState = searchBarState,
-                textFieldState = textFieldState,
-                onSearch = {
-                    viewModel.onSearch(textFieldState.text.toString())
-                    keyboardController?.hide()
-                },
-                placeholder = { Text(if (mediaType == MediaType.ANIME) stringResource(R.string.search_anime_placeholder) else stringResource(R.string.search_manga_placeholder)) },
-                leadingIcon = {
+    // Shared input field composable used by both AppBarWithSearch and ExpandedFullScreenSearchBar
+    val inputField = @Composable {
+        SearchBarDefaults.InputField(
+            searchBarState = searchBarState,
+            textFieldState = textFieldState,
+            onSearch = {
+                viewModel.onSearch(textFieldState.text.toString())
+                keyboardController?.hide()
+            },
+            placeholder = {
+                if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = if (mediaType == MediaType.ANIME) 
+                            stringResource(R.string.search_anime_placeholder) 
+                        else 
+                            stringResource(R.string.search_manga_placeholder),
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Text(
+                        if (mediaType == MediaType.ANIME) 
+                            stringResource(R.string.search_anime_placeholder) 
+                        else 
+                            stringResource(R.string.search_manga_placeholder)
+                    )
+                }
+            },
+            leadingIcon = {
+                if (searchBarState.currentValue == SearchBarValue.Expanded) {
                     IconButton(onClick = {
                         keyboardController?.hide()
                         coroutineScope.launch { searchBarState.animateToCollapsed() }
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                },
-                trailingIcon = {
+                } else {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                }
+            },
+            trailingIcon = {
+                if (searchBarState.currentValue == SearchBarValue.Expanded) {
                     Row {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = {
@@ -178,45 +197,8 @@ fun DiscoverScreen(
                         }
                     }
                 }
-            )
-        }
-    ) {
-        // Search Results Content
-        if (isSearching) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
             }
-        } else if (searchResults.isEmpty() && searchQuery.isNotEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.search_no_results),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 16.dp,
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize(),
-                state = listState
-            ) {
-                items(searchResults, key = { it.mediaId }) { item ->
-                    SearchResultItem(
-                        item = item,
-                        onClick = {
-                            keyboardController?.hide()
-                            onMediaClick(item.mediaId)
-                        }
-                    )
-                }
-            }
-        }
+        )
     }
 
     // Search Filter Dialog
@@ -230,39 +212,28 @@ fun DiscoverScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            // AppBarWithSearch integrates with Scaffold's topBar for proper window insets handling
-            // Custom Header instead of AppBarWithSearch
-            Column(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(top = 16.dp)
-            ) {
-                SectionHeader(
-                    title = stringResource(R.string.nav_discover),
-                    level = HeaderLevel.Screen,
-                    actionIcon = Icons.Default.Search,
-                    onActionClick = {
-                        keyboardController?.hide()
-                        coroutineScope.launch { searchBarState.animateToExpanded() }
-                    },
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    padding = PaddingValues(0.dp)
+            Column {
+                // AppBarWithSearch for proper search bar transition animation
+                AppBarWithSearch(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    scrollBehavior = scrollBehavior,
+                    state = searchBarState,
+                    inputField = inputField,
+                    colors = SearchBarDefaults.appBarWithSearchColors()
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
+                
+                // MediaTypeSelector below the search bar
                 MediaTypeSelector(
                     selected = mediaType,
                     onSelect = viewModel::onMediaTypeChange,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     ) { paddingValues ->
@@ -309,8 +280,6 @@ fun DiscoverScreen(
                         }
                     }
                     is DiscoverUiState.Success -> {
-                        // MediaTypeSelector moved to sticky header
-
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
                             val trendingTitle = stringResource(R.string.section_trending_now)
@@ -394,5 +363,48 @@ fun DiscoverScreen(
             }
         }
     }
-}
 
+    // ExpandedFullScreenSearchBar displays the search results in a full-screen overlay
+    // It must be placed after Scaffold to overlay properly and share the same searchBarState
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        inputField = inputField
+    ) {
+        // Search Results Content
+        if (isSearching) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (searchResults.isEmpty() && searchQuery.isNotEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.search_no_results),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize(),
+                state = listState
+            ) {
+                items(searchResults, key = { it.mediaId }) { item ->
+                    SearchResultItem(
+                        item = item,
+                        onClick = {
+                            keyboardController?.hide()
+                            onMediaClick(item.mediaId)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
