@@ -1,0 +1,25 @@
+query GetPlanningUpcomingEpisodes($mediaIds: [Int!]) {
+  Page {
+    airingSchedules(
+      mediaId_in: $mediaIds
+      episode: 1
+      notYetAired: true
+    ) {
+      id
+      episode
+      airingAt
+      timeUntilAiring
+      mediaId
+      media {
+        id
+        title {
+          userPreferred
+        }
+        coverImage {
+          large
+        }
+        type
+      }
+    }
+  }
+}
