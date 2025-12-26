@@ -15,6 +15,7 @@ type Query {
 type Mutation {
   SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int, score: Float, repeat: Int, notes: String, startedAt: FuzzyDateInput, completedAt: FuzzyDateInput): MediaList
   DeleteMediaListEntry(id: Int): Deleted
+  UpdateUser(about: String): User
 }
 
 type Deleted {

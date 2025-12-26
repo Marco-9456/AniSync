@@ -59,3 +59,10 @@ query GetUserActivities($userId: Int) {
     }
   }
 }
+
+mutation UpdateAbout($about: String) {
+  UpdateUser(about: $about) {
+    id
+    about
+  }
+}

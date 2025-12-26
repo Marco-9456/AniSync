@@ -12,4 +12,9 @@ interface ProfileRepository {
      * Fetch fresh profile from network and update cache.
      */
     suspend fun refreshProfile(username: String): Result<Unit>
+
+    /**
+     * Update user's about section.
+     */
+    suspend fun updateAbout(about: String): Result<Unit>
 }

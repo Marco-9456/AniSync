@@ -106,4 +106,23 @@ class ProfileRepositoryImpl @Inject constructor(
             Result.Error("Unexpected error: ${e.message}", e)
         }
     }
+
+    override suspend fun updateAbout(about: String): Result<Unit> {
+        return try {
+            val response = apolloClient.mutation(
+                com.anisync.android.UpdateAboutMutation(about = Optional.present(about))
+            ).execute()
+
+            if (response.hasErrors()) {
+                return Result.Error(response.errors?.first()?.message ?: "Failed to update profile")
+            }
+
+            // Refresh profile to update local cache
+            refreshProfile("")
+        } catch (e: ApolloException) {
+            Result.Error("Network error: ${e.message}", e)
+        } catch (e: Exception) {
+            Result.Error("Unexpected error: ${e.message}", e)
+        }
+    }
 }

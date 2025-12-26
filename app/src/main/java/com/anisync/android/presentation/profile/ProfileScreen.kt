@@ -107,6 +107,7 @@ fun ProfileScreen(
     
     // Settings Sheet State
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -132,11 +133,25 @@ fun ProfileScreen(
                     ProfileScreenContent(
                         profile = state.profile,
                         onSettingsClick = { showSettingsSheet = true },
+                        onEditProfileClick = { showEditProfileDialog = true },
                         onMediaClick = onMediaClick,
                         onFavoritesClick = onFavoritesClick,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
+
+                    if (showEditProfileDialog) {
+                        com.anisync.android.presentation.components.EditProfileDialog(
+                            initialAbout = state.profile.about ?: "",
+                            onDismiss = { showEditProfileDialog = false },
+                            onSave = { about ->
+                                viewModel.updateAbout(about) { error ->
+                                    // TODO: Show error snackbar
+                                }
+                                showEditProfileDialog = false
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -166,6 +181,7 @@ fun ProfileScreen(
 fun ProfileScreenContent(
     profile: UserProfile,
     onSettingsClick: () -> Unit,
+    onEditProfileClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
     onFavoritesClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
@@ -179,7 +195,8 @@ fun ProfileScreenContent(
         item {
             ProfileTopSection(
                 profile = profile,
-                onSettingsClick = onSettingsClick
+                onSettingsClick = onSettingsClick,
+                onEditProfileClick = onEditProfileClick
             )
         }
 
@@ -217,7 +234,8 @@ fun ProfileScreenContent(
 @Composable
 fun ProfileTopSection(
     profile: UserProfile,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onEditProfileClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         // User Banner with Overlay
@@ -334,7 +352,7 @@ fun ProfileTopSection(
                 // Edit & Settings Buttons
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     IconButton(
-                        onClick = { /* TODO */ },
+                        onClick = onEditProfileClick,
                         modifier = Modifier
                             .size(36.dp)
                             .background(

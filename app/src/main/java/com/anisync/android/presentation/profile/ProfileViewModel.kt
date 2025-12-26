@@ -84,6 +84,14 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun updateAbout(about: String, onUnsuccessful: (String) -> Unit) {
+        viewModelScope.launch {
+            if (profileRepository.updateAbout(about) is Result.Error) {
+                onUnsuccessful("Failed to update profile")
+            }
+        }
+    }
+
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
             authRepository.logout()
