@@ -58,6 +58,10 @@ class LibraryViewModel @Inject constructor(
     private val _sortOption = MutableStateFlow(LibrarySort.TITLE)
     val sortOption: StateFlow<LibrarySort> = _sortOption.asStateFlow()
 
+    // Sort Direction State (Default: Ascending)
+    private val _isAscending = MutableStateFlow(true)
+    val isAscending: StateFlow<Boolean> = _isAscending.asStateFlow()
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
@@ -79,8 +83,11 @@ class LibraryViewModel @Inject constructor(
         .combine(_sortOption) { entries, sort ->
             Pair(entries, sort)
         }
-        .combine(_searchQuery) { (entries, sort), query ->
-            val sortedEntries = when (sort) {
+        .combine(_isAscending) { (entries, sort), ascending ->
+            Triple(entries, sort, ascending)
+        }
+        .combine(_searchQuery) { (entries, sort, ascending), query ->
+            val baseSortedEntries = when (sort) {
                 LibrarySort.TITLE -> entries.sortedBy { it.title.lowercase() }
                 LibrarySort.PROGRESS -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.progress }
@@ -111,6 +118,8 @@ class LibraryViewModel @Inject constructor(
                         .thenBy { it.title.lowercase() }
                 )
             }
+            // Apply direction: if ascending, keep sorted as is; if descending, reverse
+            val sortedEntries = if (ascending) baseSortedEntries else baseSortedEntries.reversed()
             // Filter by search query if present
             val filteredEntries = if (query.isBlank()) {
                 sortedEntries
@@ -154,8 +163,9 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    fun onSortChange(sort: LibrarySort) {
-        _sortOption.value = sort
+    fun onSortOptionChange(option: LibrarySort, ascending: Boolean) {
+        _sortOption.value = option
+        _isAscending.value = ascending
     }
 
     fun onSearchQueryChange(query: String) {

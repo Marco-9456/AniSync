@@ -54,6 +54,7 @@ import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Card
 import com.anisync.android.presentation.components.MediaTypeSelector
+import com.anisync.android.presentation.components.SortIcon
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -136,6 +137,7 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
+    val isAscending by viewModel.isAscending.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -258,7 +260,7 @@ fun LibraryScreen(
                             haptic.click()
                             showSortMenu = true
                         }) {
-                            Icon(Icons.Outlined.SwapVert, contentDescription = stringResource(R.string.sort))
+                            SortIcon(isAscending = isAscending)
                         }
                     }
                 }
@@ -496,21 +498,10 @@ fun LibraryScreen(
         onDismiss = { showSortMenu = false },
         options = LibrarySort.entries.toList(),
         selectedOption = sortOption,
-        onOptionSelected = { sort ->
+        isAscending = isAscending,
+        onOptionSelected = { sort, ascending ->
             haptic.click()
-            viewModel.onSortChange(sort)
-        },
-        optionLabel = { sort ->
-            when (sort) {
-                LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
-                LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
-                LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
-                LibrarySort.SCORE -> stringResource(R.string.sort_score)
-                LibrarySort.LAST_UPDATED -> stringResource(R.string.sort_last_updated)
-                LibrarySort.LAST_ADDED -> stringResource(R.string.sort_last_added)
-                LibrarySort.START_DATE -> stringResource(R.string.sort_start_date)
-                LibrarySort.RELEASE_DATE -> stringResource(R.string.sort_release_date)
-            }
+            viewModel.onSortOptionChange(sort, ascending)
         }
     )
 }
