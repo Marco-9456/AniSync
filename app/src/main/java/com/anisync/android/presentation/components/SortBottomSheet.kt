@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -126,6 +127,7 @@ private fun SortOptionItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(28.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(28.dp),
         color = if (isSelected) {
