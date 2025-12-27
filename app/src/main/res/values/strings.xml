@@ -53,6 +53,7 @@
     <string name="search_library_placeholder">Search Library…</string>
     <string name="loading">Loading…</string>
     <string name="sort">Sort</string>
+    <string name="sort_by">Sort by</string>
     <string name="selected">Selected</string>
     <string name="toggle_view">Toggle View</string>
     <string name="sort_title_az">Title (A-Z)</string>

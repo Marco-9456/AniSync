@@ -39,25 +39,22 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Card
 import com.anisync.android.presentation.components.MediaTypeSelector
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -68,7 +65,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
@@ -98,7 +94,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -107,13 +102,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.RoundedIconButton
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.SortBottomSheet
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.WatchingCardConfig
@@ -229,24 +225,41 @@ fun LibraryScreen(
                     Text(stringResource(R.string.search_library_placeholder))
                 }
             },
-            leadingIcon = {
-                if (searchBarState.currentValue == SearchBarValue.Expanded) {
+            leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                {
                     IconButton(onClick = {
                         keyboardController?.hide()
                         coroutineScope.launch { searchBarState.animateToCollapsed() }
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                } else {
-                    Icon(Icons.Default.Search, contentDescription = null)
                 }
-            },
+            } else null,
             trailingIcon = {
                 if (searchBarState.currentValue == SearchBarValue.Expanded && searchQuery.isNotEmpty()) {
                     IconButton(onClick = {
                         textFieldState.edit { replace(0, length, "") }
                     }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
+                    }
+                } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                    Row {
+                        IconButton(onClick = {
+                            haptic.click()
+                            isGridView = !isGridView
+                        }) {
+                            Icon(
+                                imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
+                                contentDescription = stringResource(R.string.toggle_view)
+                            )
+                        }
+
+                        IconButton(onClick = {
+                            haptic.click()
+                            showSortMenu = true
+                        }) {
+                            Icon(Icons.Outlined.SwapVert, contentDescription = stringResource(R.string.sort))
+                        }
                     }
                 }
             }
@@ -270,69 +283,7 @@ fun LibraryScreen(
                         appBarContainerColor = Color.Transparent,
                         scrolledAppBarContainerColor = Color.Transparent
                     ),
-                    actions = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box {
-                                RoundedIconButton(
-                                    icon = Icons.AutoMirrored.Filled.Sort,
-                                    contentDescription = stringResource(R.string.sort),
-                                    onClick = {
-                                        haptic.click()
-                                        showSortMenu = true
-                                    }
-                                )
 
-                                DropdownMenu(
-                                    expanded = showSortMenu,
-                                    onDismissRequest = { showSortMenu = false },
-                                    shape = MenuDefaults.shape,
-                                    containerColor = MenuDefaults.containerColor
-                                ) {
-                                    LibrarySort.entries.forEach { sort ->
-                                        val isSelected = sortOption == sort
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = when (sort) {
-                                                        LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
-                                                        LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
-                                                        LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
-                                                        LibrarySort.SCORE -> stringResource(R.string.sort_score)
-                                                        LibrarySort.LAST_UPDATED -> stringResource(R.string.sort_last_updated)
-                                                        LibrarySort.LAST_ADDED -> stringResource(R.string.sort_last_added)
-                                                        LibrarySort.START_DATE -> stringResource(R.string.sort_start_date)
-                                                        LibrarySort.RELEASE_DATE -> stringResource(R.string.sort_release_date)
-                                                    },
-                                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                                )
-                                            },
-                                            onClick = {
-                                                haptic.click()
-                                                viewModel.onSortChange(sort)
-                                                showSortMenu = false
-                                            },
-                                            trailingIcon = if (isSelected) {
-                                                { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
-                                            } else null
-                                        )
-                                    }
-                                }
-                            }
-
-                            RoundedIconButton(
-                                icon = if (isGridView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
-                                contentDescription = stringResource(R.string.toggle_view),
-                                onClick = {
-                                    haptic.click()
-                                    isGridView = !isGridView
-                                }
-                            )
-                        }
-                    }
                 )
 
                 // MediaTypeSelector below the search bar
@@ -538,6 +489,30 @@ fun LibraryScreen(
             }
         )
     }
+
+    // Sort Bottom Sheet
+    SortBottomSheet(
+        visible = showSortMenu,
+        onDismiss = { showSortMenu = false },
+        options = LibrarySort.entries.toList(),
+        selectedOption = sortOption,
+        onOptionSelected = { sort ->
+            haptic.click()
+            viewModel.onSortChange(sort)
+        },
+        optionLabel = { sort ->
+            when (sort) {
+                LibrarySort.TITLE -> stringResource(R.string.sort_title_az)
+                LibrarySort.PROGRESS -> stringResource(R.string.sort_progress)
+                LibrarySort.AIRING_SOON -> stringResource(R.string.sort_airing_soon)
+                LibrarySort.SCORE -> stringResource(R.string.sort_score)
+                LibrarySort.LAST_UPDATED -> stringResource(R.string.sort_last_updated)
+                LibrarySort.LAST_ADDED -> stringResource(R.string.sort_last_added)
+                LibrarySort.START_DATE -> stringResource(R.string.sort_start_date)
+                LibrarySort.RELEASE_DATE -> stringResource(R.string.sort_release_date)
+            }
+        }
+    )
 }
 
 @Composable
