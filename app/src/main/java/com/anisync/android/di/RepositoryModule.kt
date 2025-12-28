@@ -3,11 +3,15 @@ package com.anisync.android.di
 import com.anisync.android.data.DetailsRepositoryImpl
 import com.anisync.android.data.DiscoverRepositoryImpl
 import com.anisync.android.data.LibraryRepositoryImpl
+import com.anisync.android.data.NotificationRepositoryImpl
 import com.anisync.android.data.ProfileRepositoryImpl
 import com.anisync.android.data.SearchRepositoryImpl
+import com.anisync.android.data.repository.PreferencesRepositoryImpl
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryRepository
+import com.anisync.android.domain.NotificationRepository
+import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.SearchRepository
 import dagger.Binds
@@ -46,11 +50,11 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindNotificationRepository(
-        impl: com.anisync.android.data.NotificationRepositoryImpl
-    ): com.anisync.android.domain.NotificationRepository
+        impl: NotificationRepositoryImpl
+    ): NotificationRepository
 
     @Binds
     abstract fun bindPreferencesRepository(
-        impl: com.anisync.android.data.repository.PreferencesRepositoryImpl
-    ): com.anisync.android.domain.PreferencesRepository
+        impl: PreferencesRepositoryImpl
+    ): PreferencesRepository
 }

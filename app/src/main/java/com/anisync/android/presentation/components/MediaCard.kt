@@ -45,10 +45,14 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.type.MediaStatus
 
 /**
- * A specialized Media Card extracted from DiscoverScreen.
- * Structure:
- * - Top: Image Thumbnail
- * - Bottom: Content Area (Title + Type + Rating Pill)
+ * A specialized Media Card for the Discover screen.
+ * Displays a poster image with content area showing title, media type, and rating.
+ *
+ * @param item The library entry data to display
+ * @param onClick Click handler for card tap
+ * @param modifier Composable modifier
+ * @param sharedTransitionScope Scope for shared element animations
+ * @param animatedVisibilityScope Scope for visibility animations
  */
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable

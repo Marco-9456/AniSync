@@ -14,8 +14,6 @@ import com.anisync.android.type.MediaType
 
 // --- LibraryEntry ---
 
-
-
 fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     id = id,
     mediaId = mediaId,

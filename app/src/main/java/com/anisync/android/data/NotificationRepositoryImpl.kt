@@ -16,7 +16,7 @@ import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
-import com.apollographql.apollo3.exception.ApolloException
+import com.anisync.android.data.util.safeApiCall
 import javax.inject.Inject
 
 class NotificationRepositoryImpl @Inject constructor(
@@ -30,7 +30,7 @@ class NotificationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNotifications(page: Int): Result<List<Notification>> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetNotificationsQuery(
                     page = Optional.present(page),
@@ -38,7 +38,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 )
             ).execute()
 
-            val notifications = response.data?.Page?.notifications?.filterNotNull()?.mapNotNull { notification ->
+            response.data?.Page?.notifications?.filterNotNull()?.mapNotNull { notification ->
                 when {
                     notification.onAiringNotification != null -> {
                         val data = notification.onAiringNotification!!
@@ -109,19 +109,13 @@ class NotificationRepositoryImpl @Inject constructor(
                     else -> null
                 }
             } ?: emptyList()
-            
-            Result.Success(notifications)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
     override suspend fun getFirstEpisodeAirings(mediaIds: List<Int>): Result<List<AiringSchedule>> {
         if (mediaIds.isEmpty()) return Result.Success(emptyList())
 
-        return try {
+        return safeApiCall {
             val currentTime = (System.currentTimeMillis() / 1000).toInt()
             val recencyThreshold = currentTime - (RECENCY_THRESHOLD_DAYS * SECONDS_PER_DAY)
             
@@ -133,7 +127,7 @@ class NotificationRepositoryImpl @Inject constructor(
             ).execute()
 
             // Filter to only include episodes that aired within the recency threshold
-            val airings = response.data?.Page?.airingSchedules?.mapNotNull { airing ->
+            response.data?.Page?.airingSchedules?.mapNotNull { airing ->
                 airing?.let {
                     val airingAt = it.airingAt ?: 0
                     // Only include if Episode 1 aired within the last RECENCY_THRESHOLD_DAYS
@@ -152,12 +146,6 @@ class NotificationRepositoryImpl @Inject constructor(
                     }
                 }
             } ?: emptyList()
-
-            Result.Success(airings)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -167,7 +155,7 @@ class NotificationRepositoryImpl @Inject constructor(
     ): Result<List<AiringSchedule>> {
         if (mediaIds.isEmpty()) return Result.Success(emptyList())
 
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetPlanningUpcomingEpisodesQuery(
                     mediaIds = Optional.present(mediaIds)
@@ -177,7 +165,7 @@ class NotificationRepositoryImpl @Inject constructor(
             // Filter client-side to only include airings within the specified hours
             val withinSeconds = withinHours * 60 * 60
             
-            val airings = response.data?.Page?.airingSchedules?.mapNotNull { airing ->
+            response.data?.Page?.airingSchedules?.mapNotNull { airing ->
                 airing?.let {
                     val timeUntil = it.timeUntilAiring ?: Int.MAX_VALUE
                     // Only include if airing within the specified time window
@@ -196,12 +184,6 @@ class NotificationRepositoryImpl @Inject constructor(
                     }
                 }
             } ?: emptyList()
-
-            Result.Success(airings)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 }

@@ -35,7 +35,7 @@ class LibraryRepositoryImpl @Inject constructor(
      * Observe library from local Room database (SSOT).
      * UI updates automatically when cache changes.
      */
-    override fun getLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>> {
+    override fun observeLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>> {
         return libraryDao.observeByType(type)
             .map { entities -> entities.map { it.toDomain() } }
     }

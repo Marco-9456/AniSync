@@ -12,6 +12,6 @@ class GetLibraryUseCase @Inject constructor(
     private val repository: LibraryRepository
 ) {
     operator fun invoke(username: String, type: MediaType): Flow<List<LibraryEntry>> {
-        return repository.getLibrary(username, type)
+        return repository.observeLibrary(username, type)
     }
 }

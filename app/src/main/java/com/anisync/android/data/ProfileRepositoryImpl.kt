@@ -14,6 +14,7 @@ import com.anisync.android.domain.UserProfile
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
+import com.anisync.android.data.util.safeApiCall
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -108,21 +109,17 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateAbout(about: String): Result<Unit> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.UpdateAboutMutation(about = Optional.present(about))
             ).execute()
 
             if (response.hasErrors()) {
-                return Result.Error(response.errors?.first()?.message ?: "Failed to update profile")
+                throw Exception(response.errors?.first()?.message ?: "Failed to update profile")
             }
 
             // Refresh profile to update local cache
             refreshProfile("")
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 }

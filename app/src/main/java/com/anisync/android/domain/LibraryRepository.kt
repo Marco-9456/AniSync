@@ -8,7 +8,7 @@ interface LibraryRepository {
      * Observe library entries from local cache (SSOT).
      * Emits new list whenever data changes.
      */
-    fun getLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>>
+    fun observeLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>>
 
     /**
      * Trigger a network refresh. 

@@ -78,7 +78,7 @@ class LibraryViewModel @Inject constructor(
      */
     val uiState: StateFlow<LibraryUiState> = _mediaType
         .flatMapLatest { type ->
-            libraryRepository.getLibrary("", type)
+            libraryRepository.observeLibrary("", type)
         }
         .combine(_sortOption) { entries, sort ->
             Pair(entries, sort)
