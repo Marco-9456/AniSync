@@ -81,6 +81,17 @@ class DetailsRepositoryImpl @Inject constructor(
             // Use english title if available, otherwise romaji
             val title = media.title?.english ?: media.title?.romaji ?: "Unknown"
 
+            val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            val monthName = media.startDate?.month?.let { if (it in 1..12) months[it - 1] else null }
+            val day = media.startDate?.day?.let { if (it < 10) "0$it" else "$it" }
+            val yearVal = media.startDate?.year
+            
+            val formattedDate = if (monthName != null && day != null && yearVal != null) {
+                "$monthName $day, $yearVal"
+            } else {
+                 yearVal?.toString()
+            }
+
             val details = MediaDetails(
                 id = media.id ?: 0,
                 title = title,
@@ -97,6 +108,9 @@ class DetailsRepositoryImpl @Inject constructor(
                 genres = media.genres?.filterNotNull() ?: emptyList(),
                 studio = media.studios?.nodes?.firstOrNull()?.name,
                 year = media.startDate?.year,
+                startDate = formattedDate,
+                season = media.season?.name,
+                seasonYear = media.startDate?.year,
                 listEntryId = listEntry?.id,
                 listStatus = listStatus,
                 listProgress = listEntry?.progress,

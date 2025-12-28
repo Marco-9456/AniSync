@@ -1,8 +1,11 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,21 +23,25 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
@@ -43,10 +50,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -61,12 +71,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -83,18 +97,15 @@ import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
-import com.anisync.android.presentation.details.components.GenreFlow
 import com.anisync.android.presentation.details.components.RelationItem
-import com.anisync.android.presentation.details.components.StatsCard
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 
-// Custom stagger delay for media details (faster reveal)
 private const val MediaStaggerDelay = 10
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MediaDetailsScreen(
     mediaId: Int,
@@ -116,135 +127,174 @@ fun MediaDetailsScreen(
 
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-
+    val listState = rememberLazyListState()
+    
+    // Setup ScrollBehavior for the TopAppBar
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    
     with(sharedTransitionScope) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            floatingActionButton = {
-                val state = uiState
-                if (state is DetailsUiState.Success) {
-                    val details = state.details
-                    val isManga = details.type == MediaType.MANGA
-                    val statuses = listOf(
-                        LibraryStatus.CURRENT,
-                        LibraryStatus.PLANNING,
-                        LibraryStatus.COMPLETED,
-                        LibraryStatus.PAUSED,
-                        LibraryStatus.DROPPED
-                    )
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                containerColor = MaterialTheme.colorScheme.background,
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                topBar = {
+                    val state = uiState
+                    if (state is DetailsUiState.Success) {
+                        // Calculate title alpha based on scroll offset
+                        // We assume the header is roughly 280.dp.
+                        // contentOffset is negative when scrolled.
+                        val density = LocalDensity.current
+                        val headerHeightPx = remember(density) { with(density) { 280.dp.toPx() } }
+                        val scrolledFraction = remember {
+                            derivedStateOf {
+                                val offset = kotlin.math.abs(scrollBehavior.state.contentOffset)
+                                (offset / headerHeightPx).coerceIn(0f, 1f)
+                            }
+                        }
+                        
+                        val titleAlpha = if (scrolledFraction.value > 0.8f) 1f else 0f
+                        val contentColor = if (scrolledFraction.value > 0.5f) MaterialTheme.colorScheme.onSurface else Color.White
+                        val containerColor = MaterialTheme.colorScheme.surface.copy(alpha = scrolledFraction.value)
 
-                    FloatingActionButtonMenu(
-                        expanded = fabMenuExpanded,
-                        modifier = Modifier
-                            .padding(dimensionResource(R.dimen.fab_menu_padding))
-                            .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-                        button = {
-                            ToggleFloatingActionButton(
-                                checked = fabMenuExpanded,
-                                onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
-                            ) {
-                                val imageVector by remember {
-                                    derivedStateOf {
-                                        if (checkedProgress > 0.5f) Icons.Filled.Close
-                                        else if (details.listEntryId != null) Icons.Filled.Edit
-                                        else Icons.Filled.Add
-                                    }
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    text = state.details.title,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = contentColor.copy(alpha = titleAlpha)
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = onBackClick) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.back),
+                                        tint = contentColor
+                                    )
                                 }
-                                Icon(
-                                    painter = rememberVectorPainter(imageVector),
-                                    contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(R.string.fab_open_menu),
-                                    modifier = Modifier.animateIcon({ checkedProgress })
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = containerColor,
+                                scrolledContainerColor = containerColor,
+                                titleContentColor = contentColor,
+                                actionIconContentColor = contentColor,
+                                navigationIconContentColor = contentColor
+                            ),
+                            scrollBehavior = scrollBehavior
+                        )
+                    }
+                },
+                floatingActionButton = {
+                    val state = uiState
+                    if (state is DetailsUiState.Success) {
+                        val details = state.details
+                        val statuses = listOf(
+                            LibraryStatus.CURRENT,
+                            LibraryStatus.PLANNING,
+                            LibraryStatus.COMPLETED,
+                            LibraryStatus.PAUSED,
+                            LibraryStatus.DROPPED
+                        )
+
+                        FloatingActionButtonMenu(
+                            expanded = fabMenuExpanded,
+                            modifier = Modifier
+                                .padding(dimensionResource(R.dimen.fab_menu_padding))
+                                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                            button = {
+                                ToggleFloatingActionButton(
+                                    checked = fabMenuExpanded,
+                                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
+                                ) {
+                                    val imageVector by remember {
+                                        derivedStateOf {
+                                            if (checkedProgress > 0.5f) Icons.Filled.Close
+                                            else if (details.listEntryId != null) Icons.Filled.Edit
+                                            else Icons.Filled.Add
+                                        }
+                                    }
+                                    Icon(
+                                        painter = rememberVectorPainter(imageVector),
+                                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(R.string.fab_open_menu),
+                                        modifier = Modifier.animateIcon({ checkedProgress })
+                                    )
+                                }
+                            }
+                        ) {
+                            statuses.forEach { status ->
+                                val isSelected = status == details.listStatus
+                                FloatingActionButtonMenuItem(
+                                    onClick = {
+                                        val progress = details.listProgress ?: 0
+                                        viewModel.saveMediaListEntry(status, progress)
+                                        fabMenuExpanded = false
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = status.toIcon(details.type),
+                                            contentDescription = null,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    text = {
+                                        Text(
+                                            text = status.toLabel(details.type),
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                )
+                            }
+                            if (details.listEntryId != null) {
+                                FloatingActionButtonMenuItem(
+                                    onClick = {
+                                        viewModel.deleteMediaListEntry()
+                                        fabMenuExpanded = false
+                                    },
+                                    icon = {
+                                        Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    },
+                                    text = {
+                                        Text(stringResource(R.string.action_remove), color = MaterialTheme.colorScheme.error)
+                                    },
+                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
                                 )
                             }
                         }
-                    ) {
-                        // Status options
-                        statuses.forEach { status ->
-                            val isSelected = status == details.listStatus
-                            FloatingActionButtonMenuItem(
-                                onClick = {
-                                    val progress = details.listProgress ?: 0
-                                    viewModel.saveMediaListEntry(status, progress)
-                                    fabMenuExpanded = false
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = status.toIcon(details.type),
-                                        contentDescription = null,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.primary
-                                               else MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                text = {
-                                    Text(
-                                        text = status.toLabel(details.type),
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            )
-                        }
-
-                        // Remove from Library option
-                        if (details.listEntryId != null) {
-                            FloatingActionButtonMenuItem(
-                                onClick = {
-                                    viewModel.deleteMediaListEntry()
-                                    fabMenuExpanded = false
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                text = {
-                                    Text(
-                                        text = stringResource(R.string.action_remove),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                            )
-                        }
                     }
                 }
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = "${sourceScreen}_container_${mediaId}"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
-                    )
-            ) {
-                when (val state = uiState) {
-                    is DetailsUiState.Loading -> {
-                        // Skeleton loading state for premium feel
-                        DetailsSkeletonContent(onBackClick = onBackClick)
-                    }
-                    is DetailsUiState.Success -> {
-                        DetailsPageContent(
-                            details = state.details,
-                            sourceScreen = sourceScreen,
-                            onBackClick = onBackClick,
-                            onRelationClick = onRelationClick,
-                            onCharacterClick = onCharacterClick,
-                            onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.title) },
-                            onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.title) },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // Apply only bottom padding to keep banner at top
+                        .padding(bottom = paddingValues.calculateBottomPadding())
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "${sourceScreen}_container_${mediaId}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
                         )
-                    }
-                    is DetailsUiState.Error -> {
-                        ErrorStateContent(message = state.message, onBackClick = onBackClick)
+                ) {
+                    when (val state = uiState) {
+                        is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
+                        is DetailsUiState.Success -> {
+                            DetailsPageContent(
+                                details = state.details,
+                                sourceScreen = sourceScreen,
+                                listState = listState,
+                                onRelationClick = onRelationClick,
+                                onCharacterClick = onCharacterClick,
+                                onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.title) },
+                                onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.title) },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                        is DetailsUiState.Error -> ErrorStateContent(message = state.message, onBackClick = onBackClick)
                     }
                 }
             }
@@ -261,7 +311,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
             modifier = Modifier.padding(dimensionResource(R.dimen.spacing_large))
         ) {
             Icon(
-                imageVector = Icons.Default.Delete, // Or an error icon
+                imageVector = Icons.Default.Delete,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(dimensionResource(R.dimen.icon_size_large))
@@ -292,7 +342,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
 fun DetailsPageContent(
     details: MediaDetails,
     sourceScreen: String,
-    onBackClick: () -> Unit,
+    listState: LazyListState,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
@@ -300,48 +350,51 @@ fun DetailsPageContent(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-    val listState = rememberLazyListState()
-
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab)) // Space for FAB
+            contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab))
         ) {
             item {
-                PageHeaderSection(details, sourceScreen, onBackClick, sharedTransitionScope, animatedVisibilityScope)
+                PageHeaderSection(details, sourceScreen, sharedTransitionScope, animatedVisibilityScope)
             }
 
             item {
                 Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
-                    // Title Group (stagger index 0)
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+
+                    // Info Cards (Format, Status, Date)
                     StaggeredAnimatedVisibility(index = 0, delayPerItem = MediaStaggerDelay) {
-                        TitleSection(
-                            details = details,
-                            sourceScreen = sourceScreen,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
+                        InfoCardsSection(details)
                     }
 
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
-                    // Stats (stagger index 1)
+                    // Genres (LazyRow)
                     StaggeredAnimatedVisibility(index = 1, delayPerItem = MediaStaggerDelay) {
-                        StatsCard(details)
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+                        ) {
+                            items(details.genres) { genre ->
+                                SuggestionChip(
+                                    onClick = { /* TODO: Filter by genre */ },
+                                    label = { Text(genre) },
+                                    colors = SuggestionChipDefaults.suggestionChipColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    ),
+                                    border = null,
+                                    shape = CircleShape
+                                )
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
-                    // Genres (stagger index 2)
+                    // Synopsis
                     StaggeredAnimatedVisibility(index = 2, delayPerItem = MediaStaggerDelay) {
-                        GenreFlow(details.genres)
-                    }
-
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-
-                    // Synopsis (stagger index 3)
-                    StaggeredAnimatedVisibility(index = 3, delayPerItem = MediaStaggerDelay) {
                         ExpandableSynopsis(details.description)
                     }
                 }
@@ -349,8 +402,7 @@ fun DetailsPageContent(
 
             item {
                 if (details.characters.isNotEmpty()) {
-                    // Cast section (stagger index 4)
-                    StaggeredAnimatedVisibility(index = 4, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(index = 3, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
@@ -376,8 +428,7 @@ fun DetailsPageContent(
 
             item {
                 if (details.relations.isNotEmpty()) {
-                    // Relations section (stagger index 5)
-                    StaggeredAnimatedVisibility(index = 5, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(index = 4, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
@@ -412,93 +463,18 @@ fun DetailsPageContent(
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun TitleSection(
+fun PageHeaderSection(
     details: MediaDetails,
     sourceScreen: String,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    Column {
-        with(sharedTransitionScope) {
-            Text(
-                text = details.title,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_title_${details.id}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_normal)))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            details.score?.let { ScoreBadge(it) }
-
-            details.format?.let { format ->
-                Surface(
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium))
-                ) {
-                    Text(
-                        text = if (format == "TV") stringResource(R.string.format_tv_series) else format.formatAsTitle() ?: format,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_small), vertical = dimensionResource(R.dimen.spacing_tiny)),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = details.year?.toString() ?: "",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (details.studio != null) {
-                Text(
-                    stringResource(R.string.separator_bullet),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_tiny))
-                )
-                Text(
-                    text = details.studio,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.widthIn(max = dimensionResource(R.dimen.studio_name_max_width))
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun PageHeaderSection(
-    details: MediaDetails,
-    sourceScreen: String,
-    onBackClick: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
-) {
+    
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(dimensionResource(R.dimen.details_header_height)) // Slightly taller for better proportions
+            .height(280.dp) // Adjusted height
     ) {
         // Banner Image
         AsyncImage(
@@ -507,109 +483,190 @@ fun PageHeaderSection(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(dimensionResource(R.dimen.details_banner_height))
+                .height(200.dp) // Banner height
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
-        // Gradient Scrim (Top for status bar/back button visibility)
+         // Gradient Overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(dimensionResource(R.dimen.details_scrim_height_top))
-                .align(Alignment.TopCenter)
+                .height(200.dp) // Match banner height
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.6f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
-        // Gradient Scrim (Bottom to blend into background)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(dimensionResource(R.dimen.details_scrim_height_bottom)) // Taller fade for smoother transition
-                .align(Alignment.TopCenter) // Align to top box but offset
-                .offset(y = dimensionResource(R.dimen.details_scrim_offset_y)) // Start where the banner ends
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
+                            Color.Black.copy(alpha = 0.4f),
                             Color.Transparent,
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
-                            MaterialTheme.colorScheme.background
-                        ),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
-                    )
-                )
-        )
-        // Hard cut gradient overlay at the bottom of the banner image itself
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(dimensionResource(R.dimen.details_scrim_height_top))
-                .align(Alignment.TopCenter)
-                .offset(y = dimensionResource(R.dimen.details_scrim_hard_cut_offset_y))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
                             MaterialTheme.colorScheme.background
                         )
                     )
                 )
         )
 
-
-        // Back Button
-        IconButton(
-            onClick = onBackClick,
+        // Poster and Title Row
+        Row(
             modifier = Modifier
-                .padding(dimensionResource(R.dimen.spacing_small))
+                .align(Alignment.BottomStart)
+                .padding(horizontal = dimensionResource(R.dimen.spacing_large))
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-                tint = Color.White,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_size_medium)) // Slightly larger touch target visual
-            )
-        }
-
-        // Cover Image (Poster)
-        with(sharedTransitionScope) {
-            val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-            Card(
+            // Cover Image (Poster)
+            with(sharedTransitionScope) {
+                 Card(
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(160.dp)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
+                        ),
+                    shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    val cacheKey = "${sourceScreen}_cover_${details.id}"
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(details.coverUrl)
+                            .crossfade(true)
+                            .placeholderMemoryCacheKey(cacheKey)
+                            .memoryCacheKey(cacheKey)
+                            .build(),
+                        contentDescription = stringResource(R.string.content_description_cover),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_medium)))
+            
+            // Title and Score
+            Column(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = dimensionResource(R.dimen.spacing_large))
-                    .width(dimensionResource(R.dimen.details_cover_width))
-                    .height(dimensionResource(R.dimen.details_cover_height))
-                    .sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
-                    ),
-                shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
-                elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    .align(Alignment.Bottom)
+                    .padding(bottom = 8.dp) // Adjust to align with the bottom of the visible section text
             ) {
-                val cacheKey = "${sourceScreen}_cover_${details.id}"
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(details.coverUrl)
-                        .crossfade(true)
-                        .placeholderMemoryCacheKey(cacheKey)
-                        .memoryCacheKey(cacheKey)
-                        .build(),
-                    contentDescription = stringResource(R.string.content_description_cover),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                 with(sharedTransitionScope) {
+                    Text(
+                        text = details.title,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_title_${details.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                        )
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                
+                details.score?.let { ScoreBadge(it) }
             }
         }
+    }
+}
+
+@Composable
+fun InfoCardsSection(details: MediaDetails) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        ) {
+            // Format Card
+            InfoCard(
+                modifier = Modifier.weight(1f),
+                icon = MediaDetailsIcons.getFormatIcon(details.format, details.type),
+                label = stringResource(R.string.stat_format),
+                value = details.format?.formatAsTitle() ?: stringResource(R.string.unknown),
+                iconTint = MaterialTheme.colorScheme.tertiary // Pinkish/Red
+            )
+            // Status Card
+            InfoCard(
+                modifier = Modifier.weight(1f),
+                icon = MediaDetailsIcons.getStatusIcon(details.status),
+                label = stringResource(R.string.stat_status),
+                value = details.status.formatAsTitle() ?: stringResource(R.string.unknown),
+                iconTint = MediaDetailsIcons.getStatusColor(details.status),
+                isStatus = true
+            )
+        }
+        // Release Date Card
+        val seasonText = if(details.season != null && details.seasonYear != null) {
+            " • ${details.season.lowercase().replaceFirstChar { it.uppercase() }} ${details.seasonYear}"
+        } else ""
+        
+        InfoCard(
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Default.DateRange,
+            label = stringResource(R.string.sort_release_date),
+            value = "${details.startDate ?: stringResource(R.string.unknown)}$seasonText",
+            iconTint = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@Composable
+fun InfoCard(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    value: String,
+    iconTint: Color,
+    isStatus: Boolean = false
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium))
+    ) {
+         Row(
+             modifier = Modifier.padding(12.dp),
+             verticalAlignment = Alignment.CenterVertically,
+             horizontalArrangement = Arrangement.spacedBy(12.dp)
+         ) {
+             Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                         if (isStatus) iconTint.copy(alpha=0.2f) else iconTint.copy(alpha=0.1f), 
+                         CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+             ) {
+                 Icon(
+                     imageVector = icon, 
+                     contentDescription = null, 
+                     tint = iconTint, 
+                     modifier = Modifier.size(20.dp)
+                 )
+             }
+             
+             Column {
+                 Text(
+                     text = label, 
+                     style = MaterialTheme.typography.labelSmall, 
+                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                 )
+                 Text(
+                     text = value, 
+                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), // Slightly larger
+                     maxLines = 1,
+                     overflow = TextOverflow.Ellipsis
+                 )
+             }
+         }
     }
 }

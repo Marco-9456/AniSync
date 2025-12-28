@@ -85,9 +85,13 @@ fun MediaFormat.toLabel(): String {
 fun String?.formatAsTitle(): String? {
     if (this == null) return null
     return this.replace("_", " ")
-        .lowercase()
         .split(" ")
-        .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
+        .joinToString(" ") { word ->
+            when (word.uppercase()) {
+                "TV", "OVA", "ONA" -> word.uppercase()
+                else -> word.lowercase().replaceFirstChar { char -> char.uppercase() }
+            }
+        }
 }
 
 

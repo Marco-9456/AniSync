@@ -19,6 +19,9 @@ data class MediaDetails(
     val genres: List<String>,
     val studio: String?,
     val year: Int?,
+    val startDate: String?,
+    val season: String?,
+    val seasonYear: Int?,
     // User's list entry (null if not in user's list)
     val listEntryId: Int?,
     val listStatus: LibraryStatus?,

@@ -23,8 +23,11 @@ query GetMediaDetails($id: Int) {
         name
       }
     }
+    season
     startDate {
       year
+      month
+      day
     }
     mediaListEntry {
       id
