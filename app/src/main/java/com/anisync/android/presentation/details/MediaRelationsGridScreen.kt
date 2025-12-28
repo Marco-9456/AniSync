@@ -67,6 +67,7 @@ fun MediaRelationsGridScreen(
                         )
                     }
                 },
+                windowInsets = WindowInsets(0),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )

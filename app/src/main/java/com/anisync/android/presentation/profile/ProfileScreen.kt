@@ -278,13 +278,7 @@ fun ProfileTopSection(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
         ) {
-            // Top spacing for status bar
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .height(8.dp)
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
             Spacer(modifier = Modifier.height(20.dp))
 

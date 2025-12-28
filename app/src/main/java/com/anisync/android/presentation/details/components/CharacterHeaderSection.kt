@@ -113,10 +113,7 @@ fun CharacterHeaderSection(
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
-                .padding(
-                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
-                    start = 8.dp
-                )
+                .padding(8.dp)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,

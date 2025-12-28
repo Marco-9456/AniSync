@@ -277,10 +277,10 @@ fun LibraryScreen(
             Column {
                 // AppBarWithSearch for proper search bar transition animation
                 AppBarWithSearch(
-                    modifier = Modifier.padding(horizontal = 16.dp),
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
                     inputField = inputField,
+                    windowInsets = WindowInsets(0),
                     colors = SearchBarDefaults.appBarWithSearchColors(
                         appBarContainerColor = Color.Transparent,
                         scrolledAppBarContainerColor = Color.Transparent

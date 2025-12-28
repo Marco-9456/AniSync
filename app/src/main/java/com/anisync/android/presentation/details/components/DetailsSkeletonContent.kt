@@ -84,7 +84,7 @@ fun DetailsSkeletonContent(onBackClick: () -> Unit) {
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
-                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + dimensionResource(R.dimen.spacing_small), start = dimensionResource(R.dimen.spacing_small))
+                        .padding(dimensionResource(R.dimen.spacing_small))
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
