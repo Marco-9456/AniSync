@@ -28,6 +28,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -66,7 +70,10 @@ fun SectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(padding ?: androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp, vertical = if (level == HeaderLevel.Screen) 16.dp else 8.dp)),
+            .padding(padding ?: androidx.compose.foundation.layout.PaddingValues(
+                horizontal = androidx.compose.ui.res.dimensionResource(com.anisync.android.R.dimen.spacing_large),
+                vertical = if (level == HeaderLevel.Screen) androidx.compose.ui.res.dimensionResource(com.anisync.android.R.dimen.spacing_medium) else androidx.compose.ui.res.dimensionResource(com.anisync.android.R.dimen.spacing_small)
+            )),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically // Align to center for cleaner look
     ) {
@@ -82,7 +89,7 @@ fun SectionHeader(
                        .clip(RoundedCornerShape(4.dp))
                        .background(iconColor)
                )
-               Spacer(modifier = Modifier.width(12.dp))
+               Spacer(modifier = Modifier.width(androidx.compose.ui.res.dimensionResource(com.anisync.android.R.dimen.spacing_normal)))
             }
 
             // Optional Leading Icon (used if provided)
@@ -101,16 +108,16 @@ fun SectionHeader(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(androidx.compose.ui.res.dimensionResource(com.anisync.android.R.dimen.spacing_normal)))
             }
 
             Column {
                 Text(
                     text = title,
                     style = when (level) {
-                        HeaderLevel.Screen -> MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-                        HeaderLevel.Section -> MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        HeaderLevel.Subsection -> MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        HeaderLevel.Screen -> MaterialTheme.typography.headlineMedium
+                        HeaderLevel.Section -> MaterialTheme.typography.titleLarge
+                        HeaderLevel.Subsection -> MaterialTheme.typography.titleMedium
                     },
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -130,6 +137,10 @@ fun SectionHeader(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .bouncyClickable(onClick = onActionClick)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = actionLabel ?: "See all $title"
+                    }
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
