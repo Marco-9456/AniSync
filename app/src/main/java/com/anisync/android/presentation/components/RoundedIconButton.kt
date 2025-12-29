@@ -34,7 +34,7 @@ fun RoundedIconButton(
     FilledTonalIconButton(
         onClick = onClick,
         modifier = modifier.size(40.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer

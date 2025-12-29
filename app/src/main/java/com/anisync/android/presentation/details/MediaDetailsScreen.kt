@@ -93,6 +93,7 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScoreBadge
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.InfoCard
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
@@ -627,55 +628,3 @@ fun InfoCardsSection(details: MediaDetails) {
     }
 }
 
-@Composable
-fun InfoCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    label: String,
-    value: String,
-    iconTint: Color,
-    isStatus: Boolean = false
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium))
-    ) {
-         Row(
-             modifier = Modifier.padding(12.dp),
-             verticalAlignment = Alignment.CenterVertically,
-             horizontalArrangement = Arrangement.spacedBy(12.dp)
-         ) {
-             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                         if (isStatus) iconTint.copy(alpha=0.2f) else iconTint.copy(alpha=0.1f), 
-                         CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-             ) {
-                 Icon(
-                     imageVector = icon, 
-                     contentDescription = null, 
-                     tint = iconTint, 
-                     modifier = Modifier.size(20.dp)
-                 )
-             }
-             
-             Column {
-                 Text(
-                     text = label, 
-                     style = MaterialTheme.typography.labelSmall, 
-                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                 )
-                 Text(
-                     text = value, 
-                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), // Slightly larger
-                     maxLines = 1,
-                     overflow = TextOverflow.Ellipsis
-                 )
-             }
-         }
-    }
-}
