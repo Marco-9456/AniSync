@@ -16,6 +16,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,6 +63,7 @@ import com.anisync.android.presentation.details.components.NameSection
 // Custom stagger delay for character details (faster reveal)
 private const val CharacterStaggerDelay = 10
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterDetailsScreen(
     characterId: Int,
@@ -57,9 +73,55 @@ fun CharacterDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            // Use standard overlappedFraction for state-based transitions
+            val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
+
+            TopAppBar(
+                title = {
+                    AnimatedVisibility(
+                        visible = isScrolled,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        // Extract name safely
+                        val title = (uiState as? CharacterDetailsUiState.Success)?.details?.name ?: ""
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = androidx.compose.animation.animateColorAsState(
+                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                label = "navIconTint"
+                            ).value
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                windowInsets = WindowInsets(0),
+                scrollBehavior = scrollBehavior
+            )
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -73,7 +135,7 @@ fun CharacterDetailsScreen(
                 is CharacterDetailsUiState.Success -> {
                     CharacterDetailsContent(
                         character = state.details,
-                        onBackClick = onBackClick,
+                        // onBackClick handled by Scaffold
                         onMediaSeeAllClick = { onMediaSeeAllClick(state.details.id, state.details.name) }
                     )
                 }
@@ -92,7 +154,6 @@ fun CharacterDetailsScreen(
 @Composable
 private fun CharacterDetailsContent(
     character: CharacterDetails,
-    onBackClick: () -> Unit,
     onMediaSeeAllClick: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -114,7 +175,7 @@ private fun CharacterDetailsContent(
             contentPadding = PaddingValues(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
         ) {
             item {
-                CharacterHeaderSection(character, onBackClick)
+                CharacterHeaderSection(character)
             }
 
             item {

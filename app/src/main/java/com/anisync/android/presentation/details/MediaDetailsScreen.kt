@@ -141,52 +141,48 @@ fun MediaDetailsScreen(
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 topBar = {
                     val state = uiState
-                    if (state is DetailsUiState.Success) {
-                        // Calculate title alpha based on scroll offset
-                        // We assume the header is roughly 280.dp.
-                        // contentOffset is negative when scrolled.
-                        val density = LocalDensity.current
-                        val headerHeightPx = remember(density) { with(density) { 280.dp.toPx() } }
-                        val scrolledFraction = remember {
-                            derivedStateOf {
-                                val offset = kotlin.math.abs(scrollBehavior.state.contentOffset)
-                                (offset / headerHeightPx).coerceIn(0f, 1f)
-                            }
-                        }
-                        
-                        val titleAlpha = if (scrolledFraction.value > 0.8f) 1f else 0f
-                        val contentColor = if (scrolledFraction.value > 0.5f) MaterialTheme.colorScheme.onSurface else Color.White
-                        val containerColor = MaterialTheme.colorScheme.surface.copy(alpha = scrolledFraction.value)
+                        // Use standard overlappedFraction for state-based transitions
+                        val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
 
                         TopAppBar(
                             title = {
-                                Text(
-                                    text = state.details.title,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = contentColor.copy(alpha = titleAlpha)
-                                )
+                                // Show title only when scrolled to avoid duplication with the header
+                                AnimatedVisibility(
+                                    visible = isScrolled,
+                                    enter = fadeIn(),
+                                    exit = fadeOut()
+                                ) {
+                                    val title = (state as? DetailsUiState.Success)?.details?.title ?: ""
+                                    Text(
+                                        text = title,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                }
                             },
                             navigationIcon = {
                                 IconButton(onClick = onBackClick) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = stringResource(R.string.back),
-                                        tint = contentColor
+                                        // Animate color between White (on image) and OnSurface (on background)
+                                        tint = androidx.compose.animation.animateColorAsState(
+                                            if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                            label = "navIconTint"
+                                        ).value
                                     )
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = containerColor,
-                                scrolledContainerColor = containerColor,
-                                titleContentColor = contentColor,
-                                actionIconContentColor = contentColor,
-                                navigationIconContentColor = contentColor
+                                containerColor = Color.Transparent,
+                                scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                actionIconContentColor = MaterialTheme.colorScheme.onSurface
                             ),
+                            windowInsets = WindowInsets(0),
                             scrollBehavior = scrollBehavior
                         )
-                    }
                 },
                 floatingActionButton = {
                     val state = uiState

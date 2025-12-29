@@ -37,8 +37,7 @@ import com.anisync.android.domain.CharacterDetails
 
 @Composable
 fun CharacterHeaderSection(
-    character: CharacterDetails,
-    onBackClick: () -> Unit
+    character: CharacterDetails
 ) {
     Box(
         modifier = Modifier
@@ -109,19 +108,7 @@ fun CharacterHeaderSection(
                 )
         )
 
-        // Back Button
-        IconButton(
-            onClick = onBackClick,
-            modifier = Modifier
-                .padding(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
-        }
+
 
         // Cover Image (Poster)
         Card(
