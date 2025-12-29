@@ -14,7 +14,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -50,6 +52,25 @@ private const val SHARED_AXIS_Z_INITIAL_SCALE = 0.92f
 private const val SHARED_AXIS_Z_TARGET_SCALE = 1.10f
 
 // =============================================================================
+// ANIMATION SPECS
+// =============================================================================
+
+private val SpatialSpec = tween<IntOffset>(
+    durationMillis = TRANSITION_DURATION,
+    easing = FastOutSlowInEasing
+)
+
+private val ScaleSpec = tween<Float>(
+    durationMillis = TRANSITION_DURATION,
+    easing = FastOutSlowInEasing
+)
+
+private val FadeSpec = tween<Float>(
+    durationMillis = TRANSITION_DURATION,
+    easing = LinearOutSlowInEasing
+)
+
+// =============================================================================
 // SHARED AXIS X TRANSITIONS (Horizontal - for Tab Navigation)
 // =============================================================================
 // Material 3 Shared Axis X: Used for switching between peer destinations
@@ -64,16 +85,10 @@ private const val SHARED_AXIS_Z_TARGET_SCALE = 1.10f
 private fun sharedAxisXEnter(forward: Boolean): EnterTransition {
     val offsetMultiplier = if (forward) 1 else -1
     return slideInHorizontally(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = SpatialSpec,
         initialOffsetX = { (it * SHARED_AXIS_OFFSET_FRACTION * offsetMultiplier).toInt() }
     ) + fadeIn(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = FadeSpec
     )
 }
 
@@ -85,16 +100,10 @@ private fun sharedAxisXEnter(forward: Boolean): EnterTransition {
 private fun sharedAxisXExit(forward: Boolean): ExitTransition {
     val offsetMultiplier = if (forward) -1 else 1
     return slideOutHorizontally(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = SpatialSpec,
         targetOffsetX = { (it * SHARED_AXIS_OFFSET_FRACTION * offsetMultiplier).toInt() }
     ) + fadeOut(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = FadeSpec
     )
 }
 
@@ -108,64 +117,40 @@ private fun sharedAxisXExit(forward: Boolean): ExitTransition {
 /** Shared Axis Z forward enter - scales up from a smaller size with fade in */
 private fun sharedAxisZEnter(): EnterTransition {
     return scaleIn(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = ScaleSpec,
         initialScale = SHARED_AXIS_Z_INITIAL_SCALE
     ) + fadeIn(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = FadeSpec
     )
 }
 
 /** Shared Axis Z forward exit - scales up slightly with fade out (behind the entering screen) */
 private fun sharedAxisZExit(): ExitTransition {
     return scaleOut(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = ScaleSpec,
         targetScale = SHARED_AXIS_Z_TARGET_SCALE
     ) + fadeOut(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = FadeSpec
     )
 }
 
 /** Shared Axis Z pop enter - scales down from larger size with fade in (returning from detail) */
 private fun sharedAxisZPopEnter(): EnterTransition {
     return scaleIn(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = ScaleSpec,
         initialScale = SHARED_AXIS_Z_TARGET_SCALE
     ) + fadeIn(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = FadeSpec
     )
 }
 
 /** Shared Axis Z pop exit - scales down with fade out (detail screen exiting) */
 private fun sharedAxisZPopExit(): ExitTransition {
     return scaleOut(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = ScaleSpec,
         targetScale = SHARED_AXIS_Z_INITIAL_SCALE
     ) + fadeOut(
-        animationSpec = tween(
-            durationMillis = TRANSITION_DURATION,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = FadeSpec
     )
 }
 
@@ -244,8 +229,13 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisXEnter(forward = false) },
                 popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
+                // Optimization: Memoize the callback to prevent unnecessary recompositions of LibraryScreen
+                val onLibraryMediaClick = remember(onMediaClick) { 
+                    { mediaId: Int -> onMediaClick(mediaId, "library") } 
+                }
+                
                 LibraryScreen(
-                    onMediaClick = { mediaId -> onMediaClick(mediaId, "library") },
+                    onMediaClick = onLibraryMediaClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -269,11 +259,19 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisXEnter(forward = false) },
                 popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
-                DiscoverScreen(
-                    onMediaClick = { mediaId -> onMediaClick(mediaId, "discover") },
-                    onSectionSeeAllClick = { title, sectionType, mediaType ->
+                // Optimization: Memoize callbacks
+                val onDiscoverMediaClick = remember(onMediaClick) {
+                    { mediaId: Int -> onMediaClick(mediaId, "discover") }
+                }
+                val onSectionClick = remember(navController) {
+                    { title: String, sectionType: String, mediaType: com.anisync.android.type.MediaType ->
                         navController.navigate(SectionGrid(title, sectionType, mediaType.name))
-                    },
+                    }
+                }
+
+                DiscoverScreen(
+                    onMediaClick = onDiscoverMediaClick,
+                    onSectionSeeAllClick = onSectionClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -297,16 +295,25 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisXEnter(forward = false) },
                 popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
-                ProfileScreen(
-                    onMediaClick = { mediaId -> onMediaClick(mediaId, "profile") },
-                    onLogoutClick = {
+                // Optimization: Memoize callbacks
+                val onProfileMediaClick = remember(onMediaClick) { 
+                    { mediaId: Int -> onMediaClick(mediaId, "profile") } 
+                }
+                val onLogout = remember(navController) {
+                    {
                         navController.navigate(Login) {
                             popUpTo(0) { inclusive = true }
                         }
-                    },
-                    onFavoritesClick = {
-                        navController.navigate(SectionGrid("Favorites", "favorites"))
-                    },
+                    }
+                }
+                val onFavorites = remember(navController) {
+                    { navController.navigate(SectionGrid("Favorites", "favorites")) }
+                }
+
+                ProfileScreen(
+                    onMediaClick = onProfileMediaClick,
+                    onLogoutClick = onLogout,
+                    onFavoritesClick = onFavorites,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

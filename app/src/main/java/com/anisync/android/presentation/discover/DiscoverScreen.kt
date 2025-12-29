@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.discover
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
@@ -40,12 +42,15 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -62,9 +67,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.discover.components.CinematicHeroCarousel
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
@@ -74,7 +79,13 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+private const val TAG = "DiscoverScreen"
+
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
@@ -83,6 +94,15 @@ fun DiscoverScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    // Add lifecycle logging for performance monitoring
+    DisposableEffect(Unit) {
+        val startTime = System.currentTimeMillis()
+        Log.d(TAG, "DiscoverScreen: Composition started")
+        onDispose {
+            Log.d(TAG, "DiscoverScreen: Disposed after ${System.currentTimeMillis() - startTime}ms")
+        }
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -93,29 +113,25 @@ fun DiscoverScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    
-    // Search Bar State
+
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
-    
-    // Scroll behavior for AppBarWithSearch
-    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
-    
-    // List states
-    val listState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
-    val mainListState = rememberSaveable(saver = androidx.compose.foundation.lazy.LazyListState.Saver) { androidx.compose.foundation.lazy.LazyListState() }
 
-    // Filter dialog state
+    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+
+    val listState =
+        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val mainListState =
+        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
     var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Sync textFieldState changes with ViewModel
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .collect { viewModel.onSearchQueryChange(it) }
     }
 
-    // Clear keyboard and focus when search bar collapses
     LaunchedEffect(searchBarState.currentValue) {
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
             keyboardController?.hide()
@@ -123,85 +139,101 @@ fun DiscoverScreen(
         }
     }
 
-    // Handle back press to close search
+    // Optimization: Memoize search result click to avoid recreation in lazy list
+    val onSearchItemClick: (Int) -> Unit = remember(onMediaClick, keyboardController) {
+        { id ->
+            keyboardController?.hide()
+            onMediaClick(id)
+        }
+    }
+
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         keyboardController?.hide()
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    // Shared input field composable used by both AppBarWithSearch and ExpandedFullScreenSearchBar
-    val inputField = @Composable {
-        SearchBarDefaults.InputField(
-            searchBarState = searchBarState,
-            textFieldState = textFieldState,
-            onSearch = {
-                viewModel.onSearch(textFieldState.text.toString())
-                keyboardController?.hide()
-            },
-            placeholder = {
-                if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = if (mediaType == MediaType.ANIME) 
-                            stringResource(R.string.search_anime_placeholder) 
-                        else 
-                            stringResource(R.string.search_manga_placeholder),
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    Text(
-                        if (mediaType == MediaType.ANIME) 
-                            stringResource(R.string.search_anime_placeholder) 
-                        else 
-                            stringResource(R.string.search_manga_placeholder)
-                    )
-                }
-            },
-            leadingIcon = {
-                if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                    IconButton(onClick = {
-                        keyboardController?.hide()
-                        coroutineScope.launch { searchBarState.animateToCollapsed() }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+    // Optimization: remember inputField to avoid recreation on every recomposition
+    val inputField = remember(searchBarState.currentValue, mediaType, searchQuery, searchFilters) {
+        @Composable {
+            SearchBarDefaults.InputField(
+                searchBarState = searchBarState,
+                textFieldState = textFieldState,
+                onSearch = {
+                    viewModel.onSearch(textFieldState.text.toString())
+                    keyboardController?.hide()
+                },
+                placeholder = {
+                    val textRes = if (mediaType == MediaType.ANIME)
+                        R.string.search_anime_placeholder
+                    else
+                        R.string.search_manga_placeholder
+
+                    if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = stringResource(textRes),
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(stringResource(textRes))
                     }
-                } else {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                }
-            },
-            trailingIcon = {
-                if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                    Row {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = {
-                                textFieldState.edit { replace(0, length, "") }
-                            }) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
-                            }
+                },
+                leadingIcon = {
+                    if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                        IconButton(onClick = {
+                            keyboardController?.hide()
+                            coroutineScope.launch { searchBarState.animateToCollapsed() }
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
-                        // Filter button with badge when filters are active
-                        IconButton(onClick = { showFilterDialog = true }) {
-                            if (searchFilters.hasActiveFilters) {
-                                BadgedBox(
-                                    badge = {
-                                        Badge {
-                                            Text(searchFilters.activeFilterCount.toString())
-                                        }
-                                    }
-                                ) {
-                                    Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    }
+                },
+                trailingIcon = {
+                    if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                        Row {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    textFieldState.edit { replace(0, length, "") }
+                                }) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.clear)
+                                    )
                                 }
-                            } else {
-                                Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
+                            }
+                            IconButton(onClick = { showFilterDialog = true }) {
+                                if (searchFilters.hasActiveFilters) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge {
+                                                Text(searchFilters.activeFilterCount.toString())
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.FilterList,
+                                            contentDescription = stringResource(R.string.filter)
+                                        )
+                                    }
+                                } else {
+                                    Icon(
+                                        Icons.Default.FilterList,
+                                        contentDescription = stringResource(R.string.filter)
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
-    // Search Filter Dialog
     if (showFilterDialog) {
         SearchFilterDialog(
             filters = searchFilters,
@@ -217,7 +249,6 @@ fun DiscoverScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             Column {
-                // AppBarWithSearch for proper search bar transition animation
                 AppBarWithSearch(
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
@@ -228,8 +259,7 @@ fun DiscoverScreen(
                         scrolledAppBarContainerColor = Color.Transparent
                     )
                 )
-                
-                // MediaTypeSelector below the search bar
+
                 MediaTypeSelector(
                     selected = mediaType,
                     onSelect = viewModel::onMediaTypeChange,
@@ -240,9 +270,9 @@ fun DiscoverScreen(
             }
         }
     ) { paddingValues ->
-        val pullToRefreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
+        val pullToRefreshState =
+            rememberPullToRefreshState()
 
-        // Main Content
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refresh() },
@@ -267,34 +297,58 @@ fun DiscoverScreen(
             ) {
                 when (val state = uiState) {
                     is DiscoverUiState.Loading -> {
-                        item { DiscoverShimmer() }
+                        item(contentType = "shimmer") { DiscoverShimmer() }
                     }
+
                     is DiscoverUiState.Error -> {
-                        item {
+                        item(contentType = "error") {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(400.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(text = stringResource(R.string.error_failed_to_load), color = MaterialTheme.colorScheme.error)
-                                    Text(text = state.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        text = stringResource(R.string.error_failed_to_load),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Text(
+                                        text = state.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
                     }
+
                     is DiscoverUiState.Success -> {
-                        item {
-                            Spacer(modifier = Modifier.height(24.dp))
+                        // Trending Section
+                        item(contentType = "section_header") {
                             val trendingTitle = stringResource(R.string.section_trending_now)
+                            Spacer(modifier = Modifier.height(24.dp))
                             SectionHeader(
                                 title = trendingTitle,
                                 iconColor = Color(0xFFFF5722),
-                                onActionClick = { onSectionSeeAllClick(trendingTitle, "trending", mediaType) },
+
+                                onActionClick = remember(mediaType, onSectionSeeAllClick) {
+                                    {
+                                        onSectionSeeAllClick(
+                                            trendingTitle,
+                                            "trending",
+                                            mediaType
+                                        )
+                                    }
+                                },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        item(contentType = "hero_carousel") {
+                            // Optimization: Slice the list outside of the composable parameters if possible, 
+                            // though here it's simple enough inside item.
                             CinematicHeroCarousel(
-                                items = state.trending.take(10),
+                                items = remember(state.trending) { state.trending.take(10) },
                                 onItemClick = onMediaClick,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
@@ -302,16 +356,28 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
-                        item {
-                            Spacer(modifier = Modifier.height(48.dp))
+                        // Popular Section
+                        item(contentType = "section_header") {
                             val popularTitle = stringResource(R.string.section_all_time_popular)
+                            Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
                                 title = popularTitle,
                                 iconColor = StarGold,
-                                onActionClick = { onSectionSeeAllClick(popularTitle, "popular", mediaType) },
+                                onActionClick = remember(mediaType, onSectionSeeAllClick) {
+                                    {
+                                        onSectionSeeAllClick(
+                                            popularTitle,
+                                            "popular",
+                                            mediaType
+                                        )
+                                    }
+                                },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        item(contentType = "media_list") {
                             HorizontalMediaList(
                                 items = state.popular,
                                 onItemClick = onMediaClick,
@@ -321,20 +387,31 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
-                        // Upcoming section only shown for Anime
+                        // Upcoming Section
                         if (mediaType == MediaType.ANIME) {
-                            item {
-                                Spacer(modifier = Modifier.height(48.dp))
+                            item(contentType = "section_header") {
                                 val upcomingTitle = stringResource(R.string.section_upcoming_season)
+                                Spacer(modifier = Modifier.height(48.dp))
                                 SectionHeader(
                                     title = upcomingTitle,
                                     iconColor = MaterialTheme.colorScheme.primary,
-                                    onActionClick = { onSectionSeeAllClick(upcomingTitle, "upcoming", mediaType) },
+                                    onActionClick = remember(mediaType, onSectionSeeAllClick) {
+                                        {
+                                            onSectionSeeAllClick(
+                                                upcomingTitle,
+                                                "upcoming",
+                                                mediaType
+                                            )
+                                        }
+                                    },
                                     level = HeaderLevel.Section
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            item(contentType = "media_list") {
                                 HorizontalMediaList(
-                                    items = state.upcoming.take(10),
+                                    items = remember(state.upcoming) { state.upcoming.take(10) },
                                     onItemClick = onMediaClick,
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
@@ -343,18 +420,30 @@ fun DiscoverScreen(
                             }
                         }
 
-                        item {
-                            Spacer(modifier = Modifier.height(48.dp))
+                        // TBA Section
+                        item(contentType = "section_header") {
                             val tbaTitle = stringResource(R.string.section_tba)
+                            Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
                                 title = tbaTitle,
-                                iconColor = Color(0xFF9E9E9E), // Gray for TBA
-                                onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", mediaType) },
+                                iconColor = Color(0xFF9E9E9E),
+                                onActionClick = remember(mediaType, onSectionSeeAllClick) {
+                                    {
+                                        onSectionSeeAllClick(
+                                            tbaTitle,
+                                            "tba",
+                                            mediaType
+                                        )
+                                    }
+                                },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        item(contentType = "media_list") {
                             HorizontalMediaList(
-                                items = state.tba.take(10),
+                                items = remember(state.tba) { state.tba.take(10) },
                                 onItemClick = onMediaClick,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
@@ -367,13 +456,10 @@ fun DiscoverScreen(
         }
     }
 
-    // ExpandedFullScreenSearchBar displays the search results in a full-screen overlay
-    // It must be placed after Scaffold to overlay properly and share the same searchBarState
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         inputField = inputField
     ) {
-        // Search Results Content
         if (isSearching) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -392,19 +478,21 @@ fun DiscoverScreen(
                     start = 16.dp,
                     end = 16.dp,
                     top = 16.dp,
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+                    bottom = WindowInsets.navigationBars.asPaddingValues()
+                        .calculateBottomPadding() + 16.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
-                items(searchResults, key = { it.mediaId }) { item ->
+                items(
+                    items = searchResults,
+                    key = { it.mediaId },
+                    contentType = { "search_result" }
+                ) { item ->
                     SearchResultItem(
                         item = item,
-                        onClick = {
-                            keyboardController?.hide()
-                            onMediaClick(item.mediaId)
-                        }
+                        onClick = { onSearchItemClick(item.mediaId) }
                     )
                 }
             }

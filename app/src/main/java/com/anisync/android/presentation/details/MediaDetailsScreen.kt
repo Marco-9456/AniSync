@@ -376,7 +376,8 @@ fun DetailsPageContent(
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
                         ) {
-                            items(details.genres) { genre ->
+                            // Optimization: Add key for stable item identity
+                            items(details.genres, key = { it }) { genre ->
                                 SuggestionChip(
                                     onClick = { /* TODO: Filter by genre */ },
                                     label = { Text(genre) },
@@ -419,7 +420,14 @@ fun DetailsPageContent(
                                 items(
                                     items = details.characters.take(10),
                                     key = { it.id }
-                                ) { CharacterItem(it, onClick = { onCharacterClick(it.id) }, modifier = Modifier.animateItem()) }
+                                ) { character ->
+                                    // Optimization: onCharacterClick is stable from parent
+                                    CharacterItem(
+                                        character,
+                                        onClick = { onCharacterClick(character.id) },
+                                        modifier = Modifier.animateItem()
+                                    )
+                                }
                             }
                         }
                     }
@@ -446,6 +454,7 @@ fun DetailsPageContent(
                                     items = details.relations.take(10),
                                     key = { it.id }
                                 ) { relation ->
+                                    // Optimization: onRelationClick is stable from parent
                                     RelationItem(
                                         relation = relation,
                                         onClick = { onRelationClick(relation.id) },

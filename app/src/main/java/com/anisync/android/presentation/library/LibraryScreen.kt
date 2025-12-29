@@ -186,6 +186,14 @@ fun LibraryScreen(
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
+    // Optimization: Memoize search result click to avoid recreation in lazy list
+    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick, keyboardController) {
+        { id ->
+            keyboardController?.hide()
+            onMediaClick(id)
+        }
+    }
+
     // Use rememberSaveable to persist scroll position across navigation
     // This ensures returning from Details screen restores the scroll position
     val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
@@ -210,62 +218,64 @@ fun LibraryScreen(
         }
     }
 
-    // Shared input field composable used by both AppBarWithSearch and ExpandedFullScreenSearchBar
-    val inputField = @Composable {
-        SearchBarDefaults.InputField(
-            searchBarState = searchBarState,
-            textFieldState = textFieldState,
-            onSearch = { keyboardController?.hide() },
-            placeholder = {
-                if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-                    Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(R.string.search_library_placeholder),
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    Text(stringResource(R.string.search_library_placeholder))
-                }
-            },
-            leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                {
-                    IconButton(onClick = {
-                        keyboardController?.hide()
-                        coroutineScope.launch { searchBarState.animateToCollapsed() }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+    // Optimization: Memoize inputField to avoid recreation on every recomposition
+    val inputField = remember(searchBarState.currentValue, searchQuery, isGridView, isAscending) {
+        @Composable {
+            SearchBarDefaults.InputField(
+                searchBarState = searchBarState,
+                textFieldState = textFieldState,
+                onSearch = { keyboardController?.hide() },
+                placeholder = {
+                    if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = stringResource(R.string.search_library_placeholder),
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(stringResource(R.string.search_library_placeholder))
                     }
-                }
-            } else null,
-            trailingIcon = {
-                if (searchBarState.currentValue == SearchBarValue.Expanded && searchQuery.isNotEmpty()) {
-                    IconButton(onClick = {
-                        textFieldState.edit { replace(0, length, "") }
-                    }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
-                    }
-                } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-                    Row {
+                },
+                leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                    {
                         IconButton(onClick = {
-                            haptic.click()
-                            isGridView = !isGridView
+                            keyboardController?.hide()
+                            coroutineScope.launch { searchBarState.animateToCollapsed() }
                         }) {
-                            Icon(
-                                imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
-                                contentDescription = stringResource(R.string.toggle_view)
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
+                    }
+                } else null,
+                trailingIcon = {
+                    if (searchBarState.currentValue == SearchBarValue.Expanded && searchQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            textFieldState.edit { replace(0, length, "") }
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
+                        }
+                    } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                        Row {
+                            IconButton(onClick = {
+                                haptic.click()
+                                isGridView = !isGridView
+                            }) {
+                                Icon(
+                                    imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
+                                    contentDescription = stringResource(R.string.toggle_view)
+                                )
+                            }
 
-                        IconButton(onClick = {
-                            haptic.click()
-                            showSortMenu = true
-                        }) {
-                            SortIcon(isAscending = isAscending)
+                            IconButton(onClick = {
+                                haptic.click()
+                                showSortMenu = true
+                            }) {
+                                SortIcon(isAscending = isAscending)
+                            }
                         }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
     Scaffold(
@@ -469,10 +479,7 @@ fun LibraryScreen(
                             LibrarySearchResultCard(
                                 entry = entry,
                                 mediaType = mediaType,
-                                onClick = {
-                                    keyboardController?.hide()
-                                    onMediaClick(entry.mediaId)
-                                }
+                                onClick = { onSearchResultClick(entry.mediaId) }
                             )
                         }
                     }

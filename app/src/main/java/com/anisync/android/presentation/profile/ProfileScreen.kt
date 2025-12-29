@@ -60,6 +60,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -638,11 +639,12 @@ fun FavoritesSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            items(favorites) { entry ->
+            items(favorites, key = { it.mediaId }) { entry ->
                 PosterCard(
                     title = entry.title,
                     coverUrl = entry.coverUrl,
                     mediaId = entry.mediaId,
+                    // Optimization: Use stable onMediaClick reference directly
                     onClick = { onMediaClick(entry.mediaId) },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
