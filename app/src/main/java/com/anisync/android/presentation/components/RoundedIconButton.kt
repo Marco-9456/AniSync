@@ -1,21 +1,19 @@
 package com.anisync.android.presentation.components
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.anisync.android.presentation.util.bouncyClickable
 
 /**
  * A reusable icon button with rounded square shape per MD3 specs.
@@ -33,21 +31,20 @@ fun RoundedIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(8.dp), // MD3 standard icon button shape
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-        modifier = modifier
-            .size(40.dp)
-            .bouncyClickable(pressedScale = 0.9f, onClick = onClick)
+    FilledTonalIconButton(
+        onClick = onClick,
+        modifier = modifier.size(40.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
