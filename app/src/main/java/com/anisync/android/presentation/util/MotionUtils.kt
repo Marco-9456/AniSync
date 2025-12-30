@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.graphicsLayer
  * Uses [MaterialTheme.motionScheme] to ensure physics match the rest of the app.
  *
  * @param onClick The callback when the item is clicked.
- * @param pressedScale The scale factor when pressed (default 0.97f).
+ * @param pressedScale The scale factor when pressed (default 0.95f).
  * @param enabled Whether the click is enabled.
  */
 fun Modifier.bouncyClickable(
@@ -46,7 +46,7 @@ fun Modifier.bouncyClickable(
         }
         .clickable(
             interactionSource = interactionSource,
-            indication = null, // Disable default ripple if the scale is the primary feedback, or keep it.
+            indication = null,
             enabled = enabled,
             onClick = onClick
         )

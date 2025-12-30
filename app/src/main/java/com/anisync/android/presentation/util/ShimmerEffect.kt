@@ -8,9 +8,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -27,16 +28,17 @@ private const val DEFAULT_SHIMMER_DURATION = 1200
  * 
  * @param durationMillis Animation duration in milliseconds (default: 1200ms)
  */
+@Composable
 fun Modifier.shimmerEffect(
     durationMillis: Int = DEFAULT_SHIMMER_DURATION
-): Modifier = composed {
+): Modifier {
     val shimmerColors = listOf(
         MaterialTheme.colorScheme.surfaceContainerHighest,
         MaterialTheme.colorScheme.surfaceContainerLow,
         MaterialTheme.colorScheme.surfaceContainerHighest,
     )
     
-    shimmerEffect(
+    return shimmerEffect(
         colors = shimmerColors,
         durationMillis = durationMillis
     )
@@ -49,10 +51,11 @@ fun Modifier.shimmerEffect(
  * @param colors List of colors for the shimmer gradient (should have at least 3 colors)
  * @param durationMillis Animation duration in milliseconds
  */
+@Composable
 fun Modifier.shimmerEffect(
     colors: List<Color>,
     durationMillis: Int = DEFAULT_SHIMMER_DURATION
-): Modifier = composed {
+): Modifier {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnimation by transition.animateFloat(
         initialValue = 0f,
@@ -67,28 +70,32 @@ fun Modifier.shimmerEffect(
         label = "shimmerOffset"
     )
 
-    val brush = Brush.linearGradient(
-        colors = colors,
-        start = Offset(translateAnimation - 500f, translateAnimation - 500f),
-        end = Offset(translateAnimation, translateAnimation)
-    )
+    val brush = remember(translateAnimation, colors) {
+        Brush.linearGradient(
+            colors = colors,
+            start = Offset(translateAnimation - 500f, translateAnimation - 500f),
+            end = Offset(translateAnimation, translateAnimation)
+        )
+    }
 
-    this.background(brush)
+    return this.background(brush)
 }
 
 /**
  * Applies a shimmer effect with light gray colors.
  * Use this for overlays on images or dark backgrounds.
  */
-fun Modifier.shimmerEffectLight(): Modifier = composed {
-    val shimmerColors = listOf(
-        Color.LightGray.copy(alpha = 0.6f),
-        Color.LightGray.copy(alpha = 0.2f),
-        Color.LightGray.copy(alpha = 0.6f),
-    )
+@Composable
+fun Modifier.shimmerEffectLight(): Modifier {
+    val shimmerColors = remember {
+        listOf(
+            Color.LightGray.copy(alpha = 0.6f),
+            Color.LightGray.copy(alpha = 0.2f),
+            Color.LightGray.copy(alpha = 0.6f),
+        )
+    }
     
-    shimmerEffect(
+    return shimmerEffect(
         colors = shimmerColors
     )
 }
-

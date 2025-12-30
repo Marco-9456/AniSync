@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +59,7 @@ import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
+import java.util.Locale
 
 /**
  * Sealed class defining the card style variants for the unified DiscoverMediaCard.
@@ -98,35 +101,45 @@ fun DiscoverMediaCard(
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = "discover"
 ) {
-    val cardShape = when (style) {
-        is CardStyle.Hero -> MaterialTheme.shapes.extraLarge
-        is CardStyle.Standard, is CardStyle.Grid -> RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
-        is CardStyle.ListItem -> RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val cardShape = remember(style) {
+        when (style) {
+            is CardStyle.Hero -> RoundedCornerShape(28.dp) // extraLarge
+            is CardStyle.Standard, is CardStyle.Grid -> RoundedCornerShape(24.dp)
+            is CardStyle.ListItem -> RoundedCornerShape(16.dp)
+        }
     }
 
-    val sizeModifier = when (style) {
-        is CardStyle.Hero -> Modifier.height(style.height)
-        is CardStyle.Standard -> Modifier.width(style.width).aspectRatio(0.6f)
-        is CardStyle.Grid -> Modifier.fillMaxWidth().aspectRatio(style.aspectRatio)
-        is CardStyle.ListItem -> Modifier.fillMaxWidth().height(120.dp)
+    val sizeModifier = remember(style) {
+        when (style) {
+            is CardStyle.Hero -> Modifier.height(style.height)
+            is CardStyle.Standard -> Modifier.width(style.width).aspectRatio(0.6f)
+            is CardStyle.Grid -> Modifier.fillMaxWidth().aspectRatio(style.aspectRatio)
+            is CardStyle.ListItem -> Modifier.fillMaxWidth().height(120.dp)
+        }
     }
 
-    val spatialSpec = if (sharedTransitionScope != null) {
-        @Suppress("UNCHECKED_CAST")
-        MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    } else null
+    val motionScheme = MaterialTheme.motionScheme
+    val spatialSpec = remember(motionScheme, sharedTransitionScope) {
+        if (sharedTransitionScope != null) {
+            @Suppress("UNCHECKED_CAST")
+            motionScheme.defaultSpatialSpec<Rect>()
+        } else null
+    }
 
-    val effectsSpec = if (sharedTransitionScope != null) {
-        @Suppress("UNCHECKED_CAST")
-        MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    } else null
+    val effectsSpec = remember(motionScheme, sharedTransitionScope) {
+        if (sharedTransitionScope != null) {
+            @Suppress("UNCHECKED_CAST")
+            motionScheme.defaultEffectsSpec<Float>()
+        } else null
+    }
 
+    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
     val baseModifier = modifier
         .then(sizeModifier)
         .clip(cardShape)
         .border(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+            color = outlineVariant.copy(alpha = 0.5f),
             shape = cardShape
         )
         .bouncyClickable(onClick = onClick)
@@ -179,23 +192,27 @@ private fun ImmersiveCardContent(
     transitionPrefix: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-    spatialSpec: androidx.compose.animation.core.FiniteAnimationSpec<Rect>?,
-    effectsSpec: androidx.compose.animation.core.FiniteAnimationSpec<Float>?
+    spatialSpec: FiniteAnimationSpec<Rect>?,
+    effectsSpec: FiniteAnimationSpec<Float>?
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Background Image
-        val cacheKey = "${transitionPrefix}_cover_${item.mediaId}"
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
+        val context = LocalContext.current
+        val cacheKey = remember(transitionPrefix, item.mediaId) { "${transitionPrefix}_cover_${item.mediaId}" }
+        val imageRequest = remember(item.coverUrl, cacheKey) {
+            ImageRequest.Builder(context)
                 .data(item.coverUrl)
                 .crossfade(true)
                 .placeholderMemoryCacheKey(cacheKey)
                 .memoryCacheKey(cacheKey)
-                .build(),
+                .build()
+        }
+
+        AsyncImage(
+            model = imageRequest,
             contentDescription = item.title,
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
 
         // 2. Gradient Overlay with shared bounds
@@ -215,34 +232,36 @@ private fun ImmersiveCardContent(
             Modifier.fillMaxSize()
         }
 
-        Box(
-            modifier = gradientModifier.background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        Color.Black.copy(alpha = 0.1f),
-                        Color.Black.copy(alpha = 0.8f),
-                        Color.Black
-                    )
+        val brush = remember {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    Color.Black.copy(alpha = 0.1f),
+                    Color.Black.copy(alpha = 0.8f),
+                    Color.Black
                 )
             )
+        }
+
+        Box(
+            modifier = gradientModifier.background(brush)
         )
 
         // 3. Top Badge (status for upcoming content)
-        val statusBadge = item.mediaStatus?.formatAsTitle()
+        val statusBadge = remember(item.mediaStatus) { item.mediaStatus?.formatAsTitle() }
         if (statusBadge != null && style is CardStyle.Grid) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(dimensionResource(R.dimen.spacing_normal))
-                    .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_small)))
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f))
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_small))
+                        shape = RoundedCornerShape(4.dp)
                     )
-                    .padding(horizontal = dimensionResource(R.dimen.spacing_small), vertical = dimensionResource(R.dimen.spacing_tiny))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = statusBadge,
@@ -254,9 +273,8 @@ private fun ImmersiveCardContent(
         }
 
         // 4. Content Area
-        val contentPadding = when (style) {
-            is CardStyle.Hero -> dimensionResource(R.dimen.spacing_large)
-            else -> dimensionResource(R.dimen.spacing_medium)
+        val contentPadding = remember(style) {
+            if (style is CardStyle.Hero) 24.dp else 16.dp
         }
 
         Column(
@@ -270,20 +288,17 @@ private fun ImmersiveCardContent(
                 val formatLabel = item.format.toLabel()
                 Surface(
                     color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_small))
+                    shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
                         text = formatLabel,
                         color = MaterialTheme.colorScheme.onPrimary,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(
-                            horizontal = dimensionResource(R.dimen.spacing_small),
-                            vertical = dimensionResource(R.dimen.spacing_tiny)
-                        )
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             // Title with shared bounds
@@ -307,161 +322,48 @@ private fun ImmersiveCardContent(
                     is CardStyle.Hero -> MaterialTheme.typography.headlineSmall
                     else -> MaterialTheme.typography.titleMedium
                 },
-                fontWeight = when (style) {
-                    is CardStyle.Hero -> FontWeight.Black
-                    else -> FontWeight.Bold
-                },
+                fontWeight = if (style is CardStyle.Hero) FontWeight.Black else FontWeight.Bold,
                 maxLines = if (style is CardStyle.Hero) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = titleModifier
             )
 
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_tiny)))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Subtitle / Metadata
             Row(verticalAlignment = Alignment.CenterVertically) {
-                when (style) {
-                    is CardStyle.Hero -> {
-                        // Show status and episode/chapter count for hero
-                        val statusText = item.mediaStatus?.formatAsTitle()
-                        val countsText = when {
-                            item.totalEpisodes != null -> formatEpisodesCount(item.totalEpisodes)
-                            item.totalChapters != null -> formatChaptersCount(item.totalChapters)
-                            else -> null
-                        }
-                        val metadataText = listOfNotNull(statusText, countsText).joinToString(" • ")
-                        if (metadataText.isNotEmpty()) {
-                            Text(
-                                text = metadataText,
-                                color = Color.White.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                if (style is CardStyle.Hero) {
+                    val statusText = item.mediaStatus?.formatAsTitle()
+                    val episodesText = item.totalEpisodes?.let { formatEpisodesCount(it) }
+                    val chaptersText = item.totalChapters?.let { formatChaptersCount(it) }
+
+                    val metadataText = remember(statusText, episodesText, chaptersText) {
+                        val countsText = episodesText ?: chaptersText
+                        listOfNotNull(statusText, countsText).joinToString(" • ")
                     }
-                    else -> {
-                        // Show rating for Standard/Grid
-                        item.averageScore?.let { score ->
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = StarGold,
-                                modifier = Modifier.size(dimensionResource(R.dimen.icon_size_tiny))
-                            )
-                            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
-                            Text(
-                                text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
-                                color = Color.White.copy(alpha = 0.9f),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                    if (metadataText.isNotEmpty()) {
+                        Text(
+                            text = metadataText,
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Standard card layout: Image on top, content area below with title + type + rating pill.
- * This matches the original MediaCard design used in horizontal lists.
- */
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun StandardCardContent(
-    item: LibraryEntry,
-    transitionPrefix: String,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
-    spatialSpec: androidx.compose.animation.core.FiniteAnimationSpec<Rect>?
-) {
-    Column {
-        // Image Container
-        val cacheKey = "${transitionPrefix}_cover_${item.mediaId}"
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(item.coverUrl)
-                .crossfade(true)
-                .placeholderMemoryCacheKey(cacheKey)
-                .memoryCacheKey(cacheKey)
-                .build(),
-            contentDescription = item.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(0.7f) // Standard poster ratio
-        )
-
-        // Content Container
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimensionResource(R.dimen.spacing_normal))
-        ) {
-            // Title with shared bounds
-            val titleModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
-                with(sharedTransitionScope) {
-                    Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_title_${item.mediaId}"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                    )
-                }
-            } else {
-                Modifier
-            }
-
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = titleModifier
-            )
-
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
-
-            // Bottom Row: Type and Rating Pill
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Type (e.g., "TV", "ANIME")
-                Text(
-                    text = item.type?.name ?: "TV",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // Rating Pill with Star
-                item.averageScore?.let { score ->
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_medium))
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = StarGold,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
-                            Text(
-                                text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                } else {
+                    item.averageScore?.let { score ->
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = StarGold,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = String.format(Locale.US, "%.1f", score / 10.0),
+                            color = Color.White.copy(alpha = 0.9f),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -476,30 +378,34 @@ private fun ListItemContent(
     transitionPrefix: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-    spatialSpec: androidx.compose.animation.core.FiniteAnimationSpec<Rect>?
+    spatialSpec: FiniteAnimationSpec<Rect>?
 ) {
     Row(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(dimensionResource(R.dimen.spacing_normal)),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Thumbnail
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
+        val context = LocalContext.current
+        val imageRequest = remember(item.coverUrl) {
+            ImageRequest.Builder(context)
                 .data(item.coverUrl)
                 .crossfade(true)
-                .build(),
+                .build()
+        }
+        AsyncImage(
+            model = imageRequest,
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .size(width = 60.dp, height = 90.dp)
-                .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
+                .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         )
 
-        Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_medium)))
+        Spacer(modifier = Modifier.width(16.dp))
 
         // Info
         Column(
@@ -508,12 +414,13 @@ private fun ListItemContent(
         ) {
             // Format label
             item.format?.let { format ->
+                val formatLabel = format.toLabel().uppercase()
                 Text(
-                    text = format.toLabel().uppercase(),
+                    text = formatLabel,
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacing_tiny))
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
             }
 
@@ -542,7 +449,7 @@ private fun ListItemContent(
             )
 
             // Status
-            val statusText = item.mediaStatus?.formatAsTitle()
+            val statusText = remember(item.mediaStatus) { item.mediaStatus?.formatAsTitle() }
             if (statusText != null) {
                 Text(
                     text = statusText,
@@ -550,7 +457,7 @@ private fun ListItemContent(
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = dimensionResource(R.dimen.spacing_tiny))
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
@@ -562,10 +469,10 @@ private fun ListItemContent(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
                     tint = StarGold,
-                    modifier = Modifier.size(dimensionResource(R.dimen.icon_size_tiny))
+                    modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
+                    text = String.format(Locale.US, "%.1f", score / 10.0),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold

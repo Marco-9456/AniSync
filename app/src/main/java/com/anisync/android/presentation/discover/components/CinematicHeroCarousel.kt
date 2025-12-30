@@ -27,6 +27,7 @@ import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -45,15 +46,6 @@ import com.anisync.android.ui.theme.StarGold
 /**
  * A cinematic Hero Carousel component rewritten from scratch according to
  * Material Design 3 guidelines for high-emphasis featured content.
- *
- * This implementation uses the latest Material 3 Carousel APIs and follows the
- * "Hero" design pattern for prominent media discovery.
- *
- * @param items List of library entries to display.
- * @param onItemClick Callback when an item is clicked.
- * @param sharedTransitionScope Scope for shared element transitions.
- * @param animatedVisibilityScope Scope for visibility animations.
- * @param modifier Optional modifier for the carousel container.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -64,11 +56,8 @@ fun CinematicHeroCarousel(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
-    // 1. Initialize the Carousel State
     val carouselState = rememberCarouselState { items.size }
 
-    // 2. HorizontalCenteredHeroCarousel provides the Material 3 Hero behavior:
-    // Large center item with partially visible items on the sides.
     HorizontalCenteredHeroCarousel(
         state = carouselState,
         modifier = modifier
@@ -80,7 +69,6 @@ fun CinematicHeroCarousel(
     ) { index ->
         val item = items[index]
         
-        // 3. Render each item using a dedicated component
         HeroCarouselItem(
             item = item,
             onClick = { onItemClick(item.mediaId) },
@@ -91,10 +79,6 @@ fun CinematicHeroCarousel(
     }
 }
 
-/**
- * A dedicated item component for the Hero Carousel, designed with Material 3 principles.
- * It uses shared transitions and high-emphasis typography to create a cinematic feel.
- */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun HeroCarouselItem(
@@ -104,7 +88,6 @@ private fun HeroCarouselItem(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
-    // Surface provides the container for the item with proper M3 shape and elevation
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxSize(),
@@ -112,13 +95,20 @@ private fun HeroCarouselItem(
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // A. Background Artwork with Shared Element
+            val context = LocalContext.current
+            val cacheKey = remember(item.mediaId) { "hero_cover_${item.mediaId}" }
+            val imageRequest = remember(item.coverUrl, cacheKey) {
+                ImageRequest.Builder(context)
+                    .data(item.coverUrl)
+                    .crossfade(true)
+                    .placeholderMemoryCacheKey(cacheKey)
+                    .memoryCacheKey(cacheKey)
+                    .build()
+            }
+
             with(sharedTransitionScope) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.coverUrl)
-                        .crossfade(true)
-                        .build(),
+                    model = imageRequest,
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -130,35 +120,33 @@ private fun HeroCarouselItem(
                 )
             }
 
-            // B. Depth Gradient (Scrim) for text legibility
+            val brush = remember {
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.2f),
+                        Color.Black.copy(alpha = 0.9f)
+                    ),
+                    startY = 0.35f
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.9f)
-                            ),
-                            startY = 0.35f
-                        )
-                    )
+                    .background(brush)
             )
 
-            // C. Content Overlay (Text and Badges)
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(24.dp)
                     .fillMaxWidth()
             ) {
-                // Info Section: Format and Rating
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Media Format Badge
                     item.format?.let { format ->
                         Surface(
                             color = MaterialTheme.colorScheme.primary,
@@ -174,7 +162,6 @@ private fun HeroCarouselItem(
                         }
                     }
 
-                    // Average Score
                     item.averageScore?.let { score ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -196,7 +183,6 @@ private fun HeroCarouselItem(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Media Title with Shared Element
                 with(sharedTransitionScope) {
                     Text(
                         text = item.title,
@@ -214,11 +200,13 @@ private fun HeroCarouselItem(
                     )
                 }
 
-                // Airing Status / Release Status
                 item.mediaStatus?.let { status ->
+                    val statusLabel = remember(status) {
+                        status.replace("_", " ").lowercase()
+                            .replaceFirstChar { it.uppercase() }
+                    }
                     Text(
-                        text = status.replace("_", " ").lowercase()
-                            .replaceFirstChar { it.uppercase() },
+                        text = statusLabel,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.7f),
                         fontWeight = FontWeight.Medium,
