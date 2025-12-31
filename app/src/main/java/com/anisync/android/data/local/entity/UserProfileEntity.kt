@@ -2,6 +2,7 @@ package com.anisync.android.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.anisync.android.domain.AnimeStatusCounts
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserActivity
 
@@ -21,6 +22,7 @@ data class UserProfileEntity(
     val mangaCount: Int,
     val chaptersRead: Int,
     val meanScore: Float,
+    val animeStatusCounts: AnimeStatusCounts = AnimeStatusCounts(),
     val favoriteAnime: List<LibraryEntry>,
     val activities: List<UserActivity> = emptyList(),
     val lastUpdated: Long = System.currentTimeMillis()

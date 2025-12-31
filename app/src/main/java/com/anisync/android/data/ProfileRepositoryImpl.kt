@@ -68,6 +68,19 @@ class ProfileRepositoryImpl @Inject constructor(
             val minutesWatched = stats?.minutesWatched ?: 0
             val daysWatched = minutesWatched / 1440f
 
+            // Parse anime status counts
+            val statusCounts = stats?.statuses?.filterNotNull()?.associate { 
+                it.status to (it.count ?: 0) 
+            } ?: emptyMap()
+            
+            val animeStatusCounts = com.anisync.android.domain.AnimeStatusCounts(
+                watching = statusCounts[com.anisync.android.type.MediaListStatus.CURRENT] ?: 0,
+                completed = statusCounts[com.anisync.android.type.MediaListStatus.COMPLETED] ?: 0,
+                onHold = statusCounts[com.anisync.android.type.MediaListStatus.PAUSED] ?: 0,
+                dropped = statusCounts[com.anisync.android.type.MediaListStatus.DROPPED] ?: 0,
+                planning = statusCounts[com.anisync.android.type.MediaListStatus.PLANNING] ?: 0
+            )
+
             val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { media ->
                 LibraryEntry(
                     id = 0,
@@ -95,6 +108,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 mangaCount = mangaStats?.count ?: 0,
                 chaptersRead = mangaStats?.chaptersRead ?: 0,
                 meanScore = stats?.meanScore?.toFloat() ?: 0f,
+                animeStatusCounts = animeStatusCounts,
                 favoriteAnime = favorites,
                 activities = activities
             )

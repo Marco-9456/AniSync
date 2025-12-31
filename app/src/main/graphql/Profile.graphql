@@ -13,6 +13,10 @@ query GetUserProfile($name: String) {
         count
         minutesWatched
         meanScore
+        statuses {
+          count
+          status
+        }
       }
       manga {
         count

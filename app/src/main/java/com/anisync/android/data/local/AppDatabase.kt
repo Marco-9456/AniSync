@@ -16,6 +16,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  * Version History:
  * - v1: Initial schema
  * - v2: Added indices for LibraryEntryEntity (mediaType, status)
+ * - v7: Added animeStatusCounts to UserProfileEntity
  */
 @Database(
     entities = [
@@ -23,7 +24,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         MediaDetailsEntity::class,
         UserProfileEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

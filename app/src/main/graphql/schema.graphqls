@@ -270,6 +270,12 @@ type UserAnimeStatistics {
   count: Int
   minutesWatched: Int
   meanScore: Float
+  statuses: [UserStatusStatistic]
+}
+
+type UserStatusStatistic {
+  count: Int
+  status: MediaListStatus
 }
 
 type UserMangaStatistics {

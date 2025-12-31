@@ -121,6 +121,19 @@
     <string name="control_notifications">Notifications</string>
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>
+    <string name="profile_level">Level %1$d</string>
+    <string name="profile_active">Active %1$s</string>
+    <string name="profile_edit">Edit Profile</string>
+    <string name="stat_days_watched">Days Watched</string>
+    <string name="stat_manga_read">Manga Read</string>
+    <string name="section_anime_status">Anime Status</string>
+    <string name="section_recent_updates">Recent Updates</string>
+    <string name="status_watching_count">Watching %1$d</string>
+    <string name="status_completed_count">Completed %1$d</string>
+    <string name="status_on_hold">Paused</string>
+    <string name="status_on_hold_count">Paused %1$d</string>
+    <string name="status_dropped_count">Dropped %1$d</string>
+    <string name="content_description_profile_avatar">Profile avatar</string>
 
 
     <!-- Notification Dialog -->

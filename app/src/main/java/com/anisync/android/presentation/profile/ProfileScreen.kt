@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -208,16 +209,6 @@ fun ProfileScreenContent(
             ProfileStatsRow(profile = profile)
         }
 
-        // --- Recent Updates ---
-        if (profile.activities.isNotEmpty()) {
-            item {
-                RecentUpdatesSection(
-                    activities = profile.activities,
-                    modifier = Modifier.padding(top = 24.dp, start = 16.dp, end = 16.dp)
-                )
-            }
-        }
-
         // --- Favorites ---
         item {
             if (profile.favoriteAnime.isNotEmpty()) {
@@ -231,6 +222,16 @@ fun ProfileScreenContent(
                 )
             }
         }
+
+        // --- Recent Updates ---
+        if (profile.activities.isNotEmpty()) {
+            item {
+                RecentUpdatesSection(
+                    activities = profile.activities,
+                    modifier = Modifier.padding(top = 24.dp, start = 16.dp, end = 16.dp)
+                )
+            }
+        }
     }
 }
 
@@ -240,14 +241,14 @@ fun ProfileTopSection(
     onSettingsClick: () -> Unit,
     onEditProfileClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    
     Box(modifier = Modifier.fillMaxWidth()) {
         // User Banner with Overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .height(200.dp)
         ) {
             if (profile.bannerUrl != null) {
                 AsyncImage(
@@ -257,20 +258,25 @@ fun ProfileTopSection(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer))
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                )
             }
 
-            // Gradient Overlay
+            // Gradient Overlay from bottom for text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.3f),
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.4f),
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
                                 MaterialTheme.colorScheme.background
-                            )
+                            ),
+                            startY = 100f
                         )
                     )
             )
@@ -279,116 +285,137 @@ fun ProfileTopSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 16.dp)
+                .padding(top = 140.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .shadow(8.dp, RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
+                    .padding(3.dp)
+            ) {
+                AsyncImage(
+                    model = profile.avatarUrl,
+                    contentDescription = stringResource(R.string.content_description_profile_avatar),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(17.dp))
+                )
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Avatar & Action Buttons Row
+            // Username
+            Text(
+                text = profile.name,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            // Level & Active time
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val level = (profile.animeCount + profile.mangaCount) / 10
+                Text(
+                    text = stringResource(R.string.profile_level, level),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                val activeTime = formatRelativeTime(profile.activeAt, context)
+                Text(
+                    text = " · " + stringResource(R.string.profile_active, activeTime),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Edit Profile & Settings Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .shadow(8.dp, RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
-                        .padding(4.dp)
+                // Edit Profile Button (takes most of the width)
+                Button(
+                    onClick = onEditProfileClick,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 ) {
-                   AsyncImage(
-                        model = profile.avatarUrl,
+                    Icon(
+                        imageVector = Icons.Default.Edit,
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(20.dp))
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.profile_edit),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+
+                // Settings Icon Button
+                FilledTonalIconButton(
+                    onClick = onSettingsClick,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.settings),
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Text Info
-            Text(
-                text = profile.name,
-                style = MaterialTheme.typography.displaySmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 28.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Level & Active time
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val level = (profile.animeCount + profile.mangaCount) / 10
-                    Text(
-                        text = "Level $level",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    val activeTime = formatRelativeTime(profile.activeAt, LocalContext.current)
-                    Text(
-                        text = " • Active $activeTime",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Edit & Settings Buttons
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    FilledTonalIconButton(
-                        onClick = onEditProfileClick,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ),
-                        modifier = Modifier.size(50.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Profile",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    FilledTonalIconButton(
-                        onClick = onSettingsClick,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        modifier = Modifier.size(50.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
+            // Bio with hashtag styling
             if (!profile.about.isNullOrBlank()) {
-                // Strip HTML tags from AniList bio
                 val cleanBio = profile.about?.replace(Regex("<[^>]*>"), "")?.trim() ?: ""
+                
+                // Parse and style hashtags
+                val styledBio = buildAnnotatedString {
+                    val hashtagPattern = Regex("#\\w+")
+                    var lastIndex = 0
+                    
+                    hashtagPattern.findAll(cleanBio).forEach { matchResult ->
+                        // Append text before hashtag
+                        append(cleanBio.substring(lastIndex, matchResult.range.first))
+                        
+                        // Append hashtag with primary color
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                            append(matchResult.value)
+                        }
+                        lastIndex = matchResult.range.last + 1
+                    }
+                    
+                    // Append remaining text
+                    if (lastIndex < cleanBio.length) {
+                        append(cleanBio.substring(lastIndex))
+                    }
+                }
+                
                 Text(
-                    text = cleanBio,
+                    text = styledBio,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp,
@@ -402,87 +429,239 @@ fun ProfileTopSection(
 
 @Composable
 fun ProfileStatsRow(profile: UserProfile) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Anime
-        StatPill(
-            icon = Icons.Default.Movie,
-            count = profile.animeCount.toString(),
-            label = "ANIME",
-            color = MaterialTheme.colorScheme.primaryContainer,
-            iconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Manga
-        StatPill(
-            icon = Icons.AutoMirrored.Filled.MenuBook,
-            count = profile.mangaCount.toString(),
-            label = "MANGA",
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            iconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Time
-        StatPill(
-            icon = Icons.Default.AccessTime,
-            count = "${profile.daysWatched.toInt()}d",
-            label = "TIME",
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            iconColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.weight(1f)
-        )
+        // First row: Days Watched & Anime Completed
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                icon = Icons.Default.AccessTime,
+                value = String.format("%.1f", profile.daysWatched),
+                label = stringResource(R.string.stat_days_watched),
+                iconBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                iconColor = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            
+            StatCard(
+                icon = Icons.Default.Movie,
+                value = profile.animeCount.toString(),
+                label = stringResource(R.string.stat_anime_completed),
+                iconBackgroundColor = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                iconColor = Color(0xFF4CAF50),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
+        // Second row: Manga Read & Mean Score
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                icon = Icons.AutoMirrored.Filled.MenuBook,
+                value = profile.mangaCount.toString(),
+                label = stringResource(R.string.stat_manga_read),
+                iconBackgroundColor = Color(0xFFFF9800).copy(alpha = 0.15f),
+                iconColor = Color(0xFFFF9800),
+                modifier = Modifier.weight(1f)
+            )
+            
+            StatCard(
+                icon = Icons.Default.Star,
+                value = String.format("%.1f", profile.meanScore),
+                label = stringResource(R.string.stat_mean_score),
+                iconBackgroundColor = Color(0xFF2196F3).copy(alpha = 0.15f),
+                iconColor = Color(0xFF2196F3),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
+        // Anime Status Bar
+        AnimeStatusBar(profile = profile)
     }
 }
 
 @Composable
-fun StatPill(
+fun StatCard(
     icon: ImageVector,
-    count: String,
+    value: String,
     label: String,
-    color: Color,
+    iconBackgroundColor: Color,
     iconColor: Color,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.height(56.dp),
-        color = color,
-        shape = RoundedCornerShape(12.dp)
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = count,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = UtilColor.darken(iconColor, 0.2f)
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 8.sp,
-                        letterSpacing = 1.sp
-                    ),
-                    color = UtilColor.darken(iconColor, 0.4f)
+            // Icon in colored circle
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(iconBackgroundColor, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(22.dp)
                 )
             }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Value
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            // Label
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+    }
+}
+
+@Composable
+fun AnimeStatusBar(profile: UserProfile) {
+    // Use real status counts from the profile
+    val statusCounts = profile.animeStatusCounts
+    val watching = statusCounts.watching
+    val completed = statusCounts.completed
+    val onHold = statusCounts.onHold
+    val dropped = statusCounts.dropped
+    val total = watching + completed + onHold + dropped
+    
+    if (total == 0) return
+    
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Section Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(20.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(2.dp)
+                    )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.section_anime_status),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Status Bar
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(12.dp),
+            shape = RoundedCornerShape(6.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest
+        ) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                // Watching (Green)
+                if (watching > 0) {
+                    Box(
+                        modifier = Modifier
+                            .weight(watching.toFloat() / total)
+                            .fillMaxSize()
+                            .background(Color(0xFF4CAF50))
+                    )
+                }
+                // Completed (Blue)
+                if (completed > 0) {
+                    Box(
+                        modifier = Modifier
+                            .weight(completed.toFloat() / total)
+                            .fillMaxSize()
+                            .background(Color(0xFF2196F3))
+                    )
+                }
+                // On Hold (Yellow)
+                if (onHold > 0) {
+                    Box(
+                        modifier = Modifier
+                            .weight(onHold.toFloat() / total)
+                            .fillMaxSize()
+                            .background(Color(0xFFFFC107))
+                    )
+                }
+                // Dropped (Red)
+                if (dropped > 0) {
+                    Box(
+                        modifier = Modifier
+                            .weight(dropped.toFloat() / total)
+                            .fillMaxSize()
+                            .background(Color(0xFFF44336))
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Legend
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            StatusLegendItem(color = Color(0xFF4CAF50), label = stringResource(R.string.status_watching_count, watching))
+            StatusLegendItem(color = Color(0xFF2196F3), label = stringResource(R.string.status_completed_count, completed))
+            StatusLegendItem(color = Color(0xFFFFC107), label = stringResource(R.string.status_on_hold_count, onHold))
+            StatusLegendItem(color = Color(0xFFF44336), label = stringResource(R.string.status_dropped_count, dropped))
+        }
+    }
+}
+
+@Composable
+fun StatusLegendItem(
+    color: Color,
+    label: String
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -505,7 +684,7 @@ fun RecentUpdatesSection(
 ) {
     Column(modifier = modifier) {
         SectionHeader(
-            title = "Recent Updates",
+            title = stringResource(R.string.section_recent_updates),
             level = HeaderLevel.Section,
             padding = PaddingValues(bottom = 16.dp)
         )

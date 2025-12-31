@@ -14,8 +14,21 @@ data class UserProfile(
     val mangaCount: Int,
     val chaptersRead: Int,
     val meanScore: Float,
+    val animeStatusCounts: AnimeStatusCounts,
     val favoriteAnime: List<LibraryEntry>,
     val activities: List<UserActivity>
+)
+
+/**
+ * Holds counts of anime by status for the profile status bar.
+ */
+@Serializable
+data class AnimeStatusCounts(
+    val watching: Int = 0,
+    val completed: Int = 0,
+    val onHold: Int = 0,
+    val dropped: Int = 0,
+    val planning: Int = 0
 )
 
 @Serializable

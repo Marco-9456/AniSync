@@ -130,6 +130,7 @@ fun UserProfileEntity.toDomain(): UserProfile = UserProfile(
     mangaCount = mangaCount,
     chaptersRead = chaptersRead,
     meanScore = meanScore,
+    animeStatusCounts = animeStatusCounts,
     favoriteAnime = favoriteAnime,
     activities = activities
 )
@@ -146,6 +147,7 @@ fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
     mangaCount = mangaCount,
     chaptersRead = chaptersRead,
     meanScore = meanScore,
+    animeStatusCounts = animeStatusCounts,
     favoriteAnime = favoriteAnime,
     activities = activities
 )
