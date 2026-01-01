@@ -134,6 +134,7 @@
     <string name="status_on_hold_count">Paused %1$d</string>
     <string name="status_dropped_count">Dropped %1$d</string>
     <string name="content_description_profile_avatar">Profile avatar</string>
+    <string name="content_description_media_cover">Cover for %1$s</string>
 
 
     <!-- Notification Dialog -->

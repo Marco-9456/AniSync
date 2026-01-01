@@ -222,3 +222,30 @@ val surfaceContainerHighestDarkHighContrast = Color(0xFF454840)
 
 /** Amber/Gold color for star icons (ratings, favorites, popular sections) */
 val StarGold = Color(0xFFFFC107)
+
+// --- Status Colors ---
+// Used for anime/manga tracking status indicators
+
+/** Green color for "Watching" status */
+val StatusWatching = Color(0xFF4CAF50)
+
+/** Blue color for "Completed" status */
+val StatusCompleted = Color(0xFF2196F3)
+
+/** Yellow/Amber color for "On Hold" status */
+val StatusOnHold = Color(0xFFFFC107)
+
+/** Red color for "Dropped" status */
+val StatusDropped = Color(0xFFF44336)
+
+/** Purple color for "Planning" status */
+val StatusPlanning = Color(0xFF9C27B0)
+
+// --- Stat Card Colors ---
+// Used for profile statistics card icons
+
+/** Orange color for manga stat icon */
+val StatManga = Color(0xFFFF9800)
+
+/** Blue color for score stat icon */
+val StatScore = Color(0xFF2196F3)
