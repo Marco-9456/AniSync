@@ -53,13 +53,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.R
@@ -172,7 +168,7 @@ fun ProfileScreenContent(
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         // --- Header Section ---
-        item {
+        item(key = "profile_header") {
             ProfileTopSection(
                 profile = profile,
                 onSettingsClick = onSettingsClick,
@@ -181,12 +177,12 @@ fun ProfileScreenContent(
         }
 
         // --- Stats Row ---
-        item {
+        item(key = "profile_stats") {
             ProfileStatsRow(profile = profile)
         }
 
         // --- Favorites ---
-        item {
+        item(key = "profile_favorites") {
             if (profile.favoriteAnime.isNotEmpty()) {
                 FavoritesSection(
                     favorites = profile.favoriteAnime,
@@ -200,8 +196,8 @@ fun ProfileScreenContent(
         }
 
         // --- Recent Updates ---
-        if (profile.activities.isNotEmpty()) {
-            item {
+        item(key = "profile_activities") {
+            if (profile.activities.isNotEmpty()) {
                 RecentUpdatesSection(
                     activities = profile.activities,
                     modifier = Modifier.padding(top = 24.dp, start = 16.dp, end = 16.dp)
@@ -368,61 +364,9 @@ fun ProfileTopSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Bio with hashtag styling - memoized
+            // Bio with hashtag styling - using memoized composable
             if (!profile.about.isNullOrBlank()) {
-                val cleanBio = remember(profile.about) {
-                    profile.about?.replace(Regex("<[^>]*>"), "")?.trim() ?: ""
-                }
-                
-                // Memoize regex pattern
-                val hashtagPattern = remember { Regex("#\\w+") }
-                
-                // Memoize styled bio
-                val styledBio = remember(cleanBio) {
-                    buildAnnotatedString {
-                        var lastIndex = 0
-                        
-                        hashtagPattern.findAll(cleanBio).forEach { matchResult ->
-                            // Append text before hashtag
-                            append(cleanBio.substring(lastIndex, matchResult.range.first))
-                            
-                            // Append hashtag with primary color (will be applied at render)
-                            pushStringAnnotation("hashtag", matchResult.value)
-                            append(matchResult.value)
-                            pop()
-                            lastIndex = matchResult.range.last + 1
-                        }
-                        
-                        // Append remaining text
-                        if (lastIndex < cleanBio.length) {
-                            append(cleanBio.substring(lastIndex))
-                        }
-                    }
-                }
-                
-                // Apply color styling at render time
-                val coloredBio = buildAnnotatedString {
-                    var lastIndex = 0
-                    hashtagPattern.findAll(cleanBio).forEach { matchResult ->
-                        append(cleanBio.substring(lastIndex, matchResult.range.first))
-                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                            append(matchResult.value)
-                        }
-                        lastIndex = matchResult.range.last + 1
-                    }
-                    if (lastIndex < cleanBio.length) {
-                        append(cleanBio.substring(lastIndex))
-                    }
-                }
-                
-                Text(
-                    text = coloredBio,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 20.sp,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis
-                )
+                StyledBioText(bio = profile.about)
             }
         }
     }

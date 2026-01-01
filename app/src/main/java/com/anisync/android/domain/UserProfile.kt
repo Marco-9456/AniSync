@@ -1,7 +1,9 @@
 package com.anisync.android.domain
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
+@Immutable
 data class UserProfile(
     val id: Int,
     val name: String,
@@ -22,6 +24,7 @@ data class UserProfile(
 /**
  * Holds counts of anime by status for the profile status bar.
  */
+@Immutable
 @Serializable
 data class AnimeStatusCounts(
     val watching: Int = 0,
@@ -31,6 +34,7 @@ data class AnimeStatusCounts(
     val planning: Int = 0
 )
 
+@Immutable
 @Serializable
 data class UserActivity(
     val id: Int,

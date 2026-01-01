@@ -48,6 +48,8 @@ fun RecentUpdatesSection(
     activities: List<UserActivity>,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    
     Column(modifier = modifier) {
         SectionHeader(
             title = stringResource(R.string.section_recent_updates),
@@ -56,7 +58,7 @@ fun RecentUpdatesSection(
         )
 
         activities.take(5).forEach { activity ->
-            UpdateItem(activity)
+            UpdateItem(activity = activity, context = context)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -64,10 +66,12 @@ fun RecentUpdatesSection(
 
 /**
  * A single activity/update item in the timeline.
+ *
+ * @param activity The user activity to display.
+ * @param context Context for formatting relative time.
  */
 @Composable
-fun UpdateItem(activity: UserActivity) {
-    val context = LocalContext.current
+fun UpdateItem(activity: UserActivity, context: Context) {
     
     Row(modifier = Modifier.fillMaxWidth()) {
         // Timeline Dot

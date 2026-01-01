@@ -1,5 +1,6 @@
 package com.anisync.android.domain
 
+import androidx.compose.runtime.Immutable
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.Serializable
@@ -14,6 +15,7 @@ enum class LibraryStatus {
     UNKNOWN
 }
 
+@Immutable
 @Serializable
 data class LibraryEntry(
     val id: Int,
