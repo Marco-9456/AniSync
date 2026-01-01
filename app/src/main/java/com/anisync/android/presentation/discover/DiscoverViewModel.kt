@@ -2,6 +2,7 @@ package com.anisync.android.presentation.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.runtime.Stable
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.Result
@@ -24,6 +25,7 @@ import javax.inject.Inject
 
 sealed interface DiscoverUiState {
     data object Loading : DiscoverUiState
+    @Stable
     data class Success(
         val trending: List<LibraryEntry>,
         val popular: List<LibraryEntry>,

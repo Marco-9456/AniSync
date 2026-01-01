@@ -1,5 +1,6 @@
 package com.anisync.android.domain
 
+import androidx.compose.runtime.Immutable
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaStatus
@@ -8,6 +9,7 @@ import com.anisync.android.type.MediaStatus
  * Data class representing search filter options.
  * Used to filter search results by various criteria.
  */
+@Immutable
 data class SearchFilters(
     val genres: Set<String> = emptySet(),
     val year: Int? = null,

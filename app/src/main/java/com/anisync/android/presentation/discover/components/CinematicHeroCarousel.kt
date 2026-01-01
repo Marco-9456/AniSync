@@ -42,6 +42,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.ui.theme.StarGold
+import android.content.Context
 
 /**
  * A cinematic Hero Carousel component rewritten from scratch according to
@@ -56,6 +57,7 @@ fun CinematicHeroCarousel(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val carouselState = rememberCarouselState { items.size }
 
     HorizontalCenteredHeroCarousel(
@@ -71,6 +73,7 @@ fun CinematicHeroCarousel(
         
         HeroCarouselItem(
             item = item,
+            context = context,
             onClick = { onItemClick(item.mediaId) },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
@@ -83,6 +86,7 @@ fun CinematicHeroCarousel(
 @Composable
 private fun HeroCarouselItem(
     item: LibraryEntry,
+    context: Context,
     onClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -95,7 +99,6 @@ private fun HeroCarouselItem(
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val context = LocalContext.current
             val cacheKey = remember(item.mediaId) { "hero_cover_${item.mediaId}" }
             val imageRequest = remember(item.coverUrl, cacheKey) {
                 ImageRequest.Builder(context)
@@ -172,7 +175,7 @@ private fun HeroCarouselItem(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = String.format("%.1f", score / 10.0),
+                                text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold

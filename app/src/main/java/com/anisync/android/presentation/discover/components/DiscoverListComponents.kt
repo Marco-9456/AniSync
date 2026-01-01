@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -40,10 +41,11 @@ fun HorizontalMediaList(
             items = items,
             key = { it.mediaId }
         ) { item ->
+            val onClick = remember(item.mediaId) { { onItemClick(item.mediaId) } }
             DiscoverMediaCard(
                 item = item,
                 style = CardStyle.Standard(),
-                onClick = { onItemClick(item.mediaId) },
+                onClick = onClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "discover",

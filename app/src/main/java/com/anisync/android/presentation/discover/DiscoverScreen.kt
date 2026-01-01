@@ -297,11 +297,11 @@ fun DiscoverScreen(
             ) {
                 when (val state = uiState) {
                     is DiscoverUiState.Loading -> {
-                        item(contentType = "shimmer") { DiscoverShimmer() }
+                        item(key = "shimmer", contentType = "shimmer") { DiscoverShimmer() }
                     }
 
                     is DiscoverUiState.Error -> {
-                        item(contentType = "error") {
+                        item(key = "error", contentType = "error") {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(400.dp),
                                 contentAlignment = Alignment.Center
@@ -323,7 +323,7 @@ fun DiscoverScreen(
 
                     is DiscoverUiState.Success -> {
                         // Trending Section
-                        item(contentType = "section_header") {
+                        item(key = "trending_header", contentType = "section_header") {
                             val trendingTitle = stringResource(R.string.section_trending_now)
                             Spacer(modifier = Modifier.height(24.dp))
                             SectionHeader(
@@ -344,7 +344,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        item(contentType = "hero_carousel") {
+                        item(key = "trending_carousel", contentType = "hero_carousel") {
                             // Optimization: Slice the list outside of the composable parameters if possible, 
                             // though here it's simple enough inside item.
                             CinematicHeroCarousel(
@@ -357,7 +357,7 @@ fun DiscoverScreen(
                         }
 
                         // Popular Section
-                        item(contentType = "section_header") {
+                        item(key = "popular_header", contentType = "section_header") {
                             val popularTitle = stringResource(R.string.section_all_time_popular)
                             Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
@@ -377,7 +377,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        item(contentType = "media_list") {
+                        item(key = "popular_list", contentType = "media_list") {
                             HorizontalMediaList(
                                 items = state.popular,
                                 onItemClick = onMediaClick,
@@ -389,7 +389,7 @@ fun DiscoverScreen(
 
                         // Upcoming Section
                         if (mediaType == MediaType.ANIME) {
-                            item(contentType = "section_header") {
+                            item(key = "upcoming_header", contentType = "section_header") {
                                 val upcomingTitle = stringResource(R.string.section_upcoming_season)
                                 Spacer(modifier = Modifier.height(48.dp))
                                 SectionHeader(
@@ -409,7 +409,7 @@ fun DiscoverScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
 
-                            item(contentType = "media_list") {
+                            item(key = "upcoming_list", contentType = "media_list") {
                                 HorizontalMediaList(
                                     items = remember(state.upcoming) { state.upcoming.take(10) },
                                     onItemClick = onMediaClick,
@@ -421,7 +421,7 @@ fun DiscoverScreen(
                         }
 
                         // TBA Section
-                        item(contentType = "section_header") {
+                        item(key = "tba_header", contentType = "section_header") {
                             val tbaTitle = stringResource(R.string.section_tba)
                             Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
@@ -441,7 +441,7 @@ fun DiscoverScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        item(contentType = "media_list") {
+                        item(key = "tba_list", contentType = "media_list") {
                             HorizontalMediaList(
                                 items = remember(state.tba) { state.tba.take(10) },
                                 onItemClick = onMediaClick,
