@@ -3,7 +3,6 @@ package com.anisync.android.presentation.login
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -35,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -61,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
@@ -71,9 +72,14 @@ private const val CLIENT_ID = "32893"
 private const val REDIRECT_URI = "anisync://auth"
 private const val AUTH_URL = "https://anilist.co/api/v2/oauth/authorize?client_id=$CLIENT_ID&redirect_uri=$REDIRECT_URI&response_type=code"
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LoginScreen() {
     val context = LocalContext.current
+    
+    // Use theme motion specs for consistent feel
+    val spatialSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntOffset>()
+    val effectsSpec = MaterialTheme.motionScheme.slowEffectsSpec<Float>()
     var isVisible by remember { mutableStateOf(false) }
 
     // Trigger entrance animations
@@ -105,8 +111,8 @@ fun LoginScreen() {
                 visible = isVisible,
                 enter = slideInVertically(
                     initialOffsetY = { 40 },
-                    animationSpec = tween(800, easing = FastOutSlowInEasing)
-                ) + fadeIn(tween(800))
+                    animationSpec = spatialSpec
+                ) + fadeIn(animationSpec = effectsSpec)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AppLogo()
@@ -138,13 +144,20 @@ fun LoginScreen() {
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Login Action Area
+            // Login Action Area (with stagger delay)
+            var isLoginCardVisible by remember { mutableStateOf(false) }
+            LaunchedEffect(isVisible) {
+                if (isVisible) {
+                    delay(200) // Stagger delay
+                    isLoginCardVisible = true
+                }
+            }
             AnimatedVisibility(
-                visible = isVisible,
+                visible = isLoginCardVisible,
                 enter = slideInVertically(
                     initialOffsetY = { 60 },
-                    animationSpec = tween(800, delayMillis = 200, easing = FastOutSlowInEasing)
-                ) + fadeIn(tween(800, delayMillis = 200))
+                    animationSpec = spatialSpec
+                ) + fadeIn(animationSpec = effectsSpec)
             ) {
                 LoginCard {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AUTH_URL))
@@ -310,7 +323,7 @@ private fun AnimatedMeshBackground() {
                 .align(Alignment.TopEnd)
                 .size(400.dp)
                 .offset(x = 120.dp, y = (-80).dp)
-                .blur(80.dp)
+                .blur(50.dp)
                 .graphicsLayer {
                     translationX = offset1
                     translationY = offset2
@@ -336,7 +349,7 @@ private fun AnimatedMeshBackground() {
                 .align(Alignment.BottomStart)
                 .size(450.dp)
                 .offset(x = (-80).dp, y = 80.dp)
-                .blur(60.dp)
+                .blur(40.dp)
                 .graphicsLayer {
                     translationX = offset2
                     translationY = offset1

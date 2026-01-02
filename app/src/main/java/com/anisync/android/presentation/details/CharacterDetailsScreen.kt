@@ -181,14 +181,14 @@ private fun CharacterDetailsContent(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     // Name Section (stagger index 0)
-                    StaggeredAnimatedVisibility(index = 0, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "char_name", index = 0, delayPerItem = CharacterStaggerDelay) {
                         NameSection(character)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Stats (stagger index 1)
-                    StaggeredAnimatedVisibility(index = 1, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "char_stats", index = 1, delayPerItem = CharacterStaggerDelay) {
                         CharacterStatsCard(character, attributes)
                     }
 
@@ -204,7 +204,7 @@ private fun CharacterDetailsContent(
 
                     if (displayAttributes.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
-                        StaggeredAnimatedVisibility(index = 2, delayPerItem = CharacterStaggerDelay) {
+                        StaggeredAnimatedVisibility(key = "char_info", index = 2, delayPerItem = CharacterStaggerDelay) {
                             CharacterInfoSection(displayAttributes)
                         }
                     }
@@ -216,7 +216,7 @@ private fun CharacterDetailsContent(
             if (bio.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    StaggeredAnimatedVisibility(index = 3, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "char_bio", index = 3, delayPerItem = CharacterStaggerDelay) {
                         Column {
                             SectionHeader(title = "Biography", level = HeaderLevel.Section)
                             Spacer(modifier = Modifier.height(12.dp))
@@ -232,7 +232,7 @@ private fun CharacterDetailsContent(
             if (character.media.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    StaggeredAnimatedVisibility(index = 4, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "char_media", index = 4, delayPerItem = CharacterStaggerDelay) {
                         Column {
                             // Using standard SectionHeader for consistency
                             SectionHeader(

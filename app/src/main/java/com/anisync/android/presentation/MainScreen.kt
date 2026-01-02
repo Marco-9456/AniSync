@@ -2,7 +2,7 @@ package com.anisync.android.presentation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
@@ -126,7 +126,7 @@ fun MainScreen() {
 
                         val iconColor by animateColorAsState(
                             targetValue = if (isSelected) selectedColor else unselectedColor,
-                            animationSpec = tween(300),
+                            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                             label = "IconColor"
                         )
 

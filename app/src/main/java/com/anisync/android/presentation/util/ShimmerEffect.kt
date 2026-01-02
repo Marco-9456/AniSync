@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -70,15 +71,16 @@ fun Modifier.shimmerEffect(
         label = "shimmerOffset"
     )
 
-    val brush = remember(translateAnimation, colors) {
-        Brush.linearGradient(
+    return this.drawWithCache {
+        val brush = Brush.linearGradient(
             colors = colors,
             start = Offset(translateAnimation - 500f, translateAnimation - 500f),
             end = Offset(translateAnimation, translateAnimation)
         )
+        onDrawBehind {
+            drawRect(brush)
+        }
     }
-
-    return this.background(brush)
 }
 
 /**

@@ -362,14 +362,14 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Info Cards (Format, Status, Date)
-                    StaggeredAnimatedVisibility(index = 0, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_info_cards", index = 0, delayPerItem = MediaStaggerDelay) {
                         InfoCardsSection(details)
                     }
 
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Genres (LazyRow)
-                    StaggeredAnimatedVisibility(index = 1, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_genres", index = 1, delayPerItem = MediaStaggerDelay) {
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
                         ) {
@@ -392,7 +392,7 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Synopsis
-                    StaggeredAnimatedVisibility(index = 2, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_synopsis", index = 2, delayPerItem = MediaStaggerDelay) {
                         ExpandableSynopsis(details.description)
                     }
                 }
@@ -400,7 +400,7 @@ fun DetailsPageContent(
 
             item {
                 if (details.characters.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(index = 3, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_cast", index = 3, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
@@ -433,7 +433,7 @@ fun DetailsPageContent(
 
             item {
                 if (details.relations.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(index = 4, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_related", index = 4, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
