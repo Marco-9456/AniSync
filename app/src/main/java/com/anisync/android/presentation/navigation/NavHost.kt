@@ -4,9 +4,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
+
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -14,6 +12,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -33,127 +32,6 @@ import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
-
-// =============================================================================
-// MATERIAL 3 MOTION CONSTANTS
-// =============================================================================
-// Duration and easing values based on Material 3 Motion guidelines
-// See: https://m3.material.io/styles/motion/easing-and-duration/applying-easing-and-duration
-
-/** Standard duration for navigation transitions (300ms as per M3 guidelines) */
-private const val TRANSITION_DURATION = 300
-
-/** Slide offset fraction for Shared Axis X transitions (20% of screen width for snappier feel) */
-private const val SHARED_AXIS_OFFSET_FRACTION = 0.20f
-
-/** Scale factor for Shared Axis Z forward entry (subtle zoom from background) */
-private const val SHARED_AXIS_Z_INITIAL_SCALE = 0.96f
-
-/** Scale factor for Shared Axis Z forward exit (minimal zoom behind entering screen) */
-private const val SHARED_AXIS_Z_TARGET_SCALE = 1.02f
-
-// =============================================================================
-// ANIMATION SPECS
-// =============================================================================
-
-private val SpatialSpec = tween<IntOffset>(
-    durationMillis = TRANSITION_DURATION,
-    easing = FastOutSlowInEasing
-)
-
-private val ScaleSpec = tween<Float>(
-    durationMillis = TRANSITION_DURATION,
-    easing = FastOutSlowInEasing
-)
-
-private val FadeSpec = tween<Float>(
-    durationMillis = TRANSITION_DURATION,
-    easing = LinearOutSlowInEasing
-)
-
-// =============================================================================
-// SHARED AXIS X TRANSITIONS (Horizontal - for Tab Navigation)
-// =============================================================================
-// Material 3 Shared Axis X: Used for switching between peer destinations
-// at the same hierarchy level (e.g., tabs in a bottom navigation bar).
-// Combines a horizontal slide with a fade for smooth lateral movement.
-
-/**
- * Shared Axis X enter transition - slides in from the specified direction with fade.
- * @param forward If true, slides in from the right (forward navigation).
- *                If false, slides in from the left (backward navigation).
- */
-private fun sharedAxisXEnter(forward: Boolean): EnterTransition {
-    val offsetMultiplier = if (forward) 1 else -1
-    return slideInHorizontally(
-        animationSpec = SpatialSpec,
-        initialOffsetX = { (it * SHARED_AXIS_OFFSET_FRACTION * offsetMultiplier).toInt() }
-    ) + fadeIn(
-        animationSpec = FadeSpec
-    )
-}
-
-/**
- * Shared Axis X exit transition - slides out in the specified direction with fade.
- * @param forward If true, slides out to the left (forward navigation).
- *                If false, slides out to the right (backward navigation).
- */
-private fun sharedAxisXExit(forward: Boolean): ExitTransition {
-    val offsetMultiplier = if (forward) -1 else 1
-    return slideOutHorizontally(
-        animationSpec = SpatialSpec,
-        targetOffsetX = { (it * SHARED_AXIS_OFFSET_FRACTION * offsetMultiplier).toInt() }
-    ) + fadeOut(
-        animationSpec = FadeSpec
-    )
-}
-
-// =============================================================================
-// SHARED AXIS Z TRANSITIONS (Depth - for Detail/Hierarchy Navigation)
-// =============================================================================
-// Material 3 Shared Axis Z: Used for navigation between a parent and child,
-// or when moving deeper into a hierarchy (e.g., list to detail screen).
-// Combines a scale transformation with fade for depth perception.
-
-/** Shared Axis Z forward enter - scales up from a smaller size with fade in */
-private fun sharedAxisZEnter(): EnterTransition {
-    return scaleIn(
-        animationSpec = ScaleSpec,
-        initialScale = SHARED_AXIS_Z_INITIAL_SCALE
-    ) + fadeIn(
-        animationSpec = FadeSpec
-    )
-}
-
-/** Shared Axis Z forward exit - scales up slightly with fade out (behind the entering screen) */
-private fun sharedAxisZExit(): ExitTransition {
-    return scaleOut(
-        animationSpec = ScaleSpec,
-        targetScale = SHARED_AXIS_Z_TARGET_SCALE
-    ) + fadeOut(
-        animationSpec = FadeSpec
-    )
-}
-
-/** Shared Axis Z pop enter - scales down from larger size with fade in (returning from detail) */
-private fun sharedAxisZPopEnter(): EnterTransition {
-    return scaleIn(
-        animationSpec = ScaleSpec,
-        initialScale = SHARED_AXIS_Z_TARGET_SCALE
-    ) + fadeIn(
-        animationSpec = FadeSpec
-    )
-}
-
-/** Shared Axis Z pop exit - scales down with fade out (detail screen exiting) */
-private fun sharedAxisZPopExit(): ExitTransition {
-    return scaleOut(
-        animationSpec = ScaleSpec,
-        targetScale = SHARED_AXIS_Z_INITIAL_SCALE
-    ) + fadeOut(
-        animationSpec = FadeSpec
-    )
-}
 
 // =============================================================================
 // TAB ORDER HELPER
@@ -181,13 +59,94 @@ private fun isForwardNavigation(fromRoute: String?, toRoute: String?): Boolean {
 // MAIN NAVIGATION HOST
 // =============================================================================
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
     onMediaClick: (mediaId: Int, sourceScreen: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // =============================================================================
+    // MATERIAL 3 MOTION SPECS
+    // =============================================================================
+    val motionScheme = MaterialTheme.motionScheme
+    
+    // Spatial spec for movement (translation)
+    val spatialSpec = motionScheme.defaultSpatialSpec<IntOffset>()
+    
+    // Scale spec for zooming effects
+    val scaleSpec = motionScheme.defaultSpatialSpec<Float>()
+    
+    // Effects spec for opacity/fade
+    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+
+    // Constants for transitions
+    val sharedAxisOffsetFraction = 0.20f
+    val sharedAxisZInitialScale = 0.96f
+    val sharedAxisZTargetScale = 1.02f
+
+    // =============================================================================
+    // TRANSITION HELPERS
+    // =============================================================================
+    
+    // Using local functions to capture the theme specs without passing them around
+    
+    fun sharedAxisXEnter(forward: Boolean): EnterTransition {
+        val offsetMultiplier = if (forward) 1 else -1
+        return slideInHorizontally(
+            animationSpec = spatialSpec,
+            initialOffsetX = { (it * sharedAxisOffsetFraction * offsetMultiplier).toInt() }
+        ) + fadeIn(
+            animationSpec = effectsSpec
+        )
+    }
+
+    fun sharedAxisXExit(forward: Boolean): ExitTransition {
+        val offsetMultiplier = if (forward) -1 else 1
+        return slideOutHorizontally(
+            animationSpec = spatialSpec,
+            targetOffsetX = { (it * sharedAxisOffsetFraction * offsetMultiplier).toInt() }
+        ) + fadeOut(
+            animationSpec = effectsSpec
+        )
+    }
+
+    fun sharedAxisZEnter(): EnterTransition {
+        return scaleIn(
+            animationSpec = scaleSpec,
+            initialScale = sharedAxisZInitialScale
+        ) + fadeIn(
+            animationSpec = effectsSpec
+        )
+    }
+
+    fun sharedAxisZExit(): ExitTransition {
+        return scaleOut(
+            animationSpec = scaleSpec,
+            targetScale = sharedAxisZTargetScale
+        ) + fadeOut(
+            animationSpec = effectsSpec
+        )
+    }
+
+    fun sharedAxisZPopEnter(): EnterTransition {
+        return scaleIn(
+            animationSpec = scaleSpec,
+            initialScale = sharedAxisZTargetScale
+        ) + fadeIn(
+            animationSpec = effectsSpec
+        )
+    }
+
+    fun sharedAxisZPopExit(): ExitTransition {
+        return scaleOut(
+            animationSpec = scaleSpec,
+            targetScale = sharedAxisZInitialScale
+        ) + fadeOut(
+            animationSpec = effectsSpec
+        )
+    }
+
     SharedTransitionLayout(modifier = modifier) {
         NavHost(
             navController = navController,

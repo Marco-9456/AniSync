@@ -32,10 +32,10 @@ fun Modifier.bouncyClickable(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Use the slow spatial spec for a "heavy", premium feel suitable for cards
+    // Use the default spatial spec for a balanced, expressive feel
     val scale by animateFloatAsState(
         targetValue = if (isPressed) pressedScale else 1f,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "BouncyScale"
     )
 
@@ -73,7 +73,7 @@ fun Modifier.bouncyCombinedClickable(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) pressedScale else 1f,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "BouncyScale"
     )
 
