@@ -61,17 +61,20 @@ class NotificationWorker @AssistedInject constructor(
         }
 
         return try {
-            // Channels are initialized in Application, but we can ensure they exist here too if needed.
-            // For now, relying on Application init or assume they exist.
-            
-            // Check for Watching list airing notifications
-            checkWatchingListNotifications()
+            val isFirstRun = !preferencesRepository.hasNotificationsEverRun()
 
-            // Check for upcoming Episode 1 airings in Planning list (proactive)
-            checkUpcomingPlanningEpisodes()
-
-            // Check for already-aired Episode 1 in Planning list (reactive)
-            checkPlanningFirstEpisodes()
+            if (isFirstRun) {
+                // On first run, establish baseline without showing any notifications.
+                // This prevents spamming the user with all historical notifications.
+                performBaselineSync()
+                preferencesRepository.markNotificationsHaveRun()
+                Log.d(TAG, "First run: Baseline sync completed. Future runs will notify.")
+            } else {
+                // Normal run: check and notify
+                checkWatchingListNotifications()
+                checkUpcomingPlanningEpisodes()
+                checkPlanningFirstEpisodes()
+            }
 
             androidx.work.ListenableWorker.Result.success()
         } catch (e: Exception) {
@@ -91,15 +94,52 @@ class NotificationWorker @AssistedInject constructor(
         }
     }
 
+    /**
+     * On first run, fetch the current state and set baselines WITHOUT notifying.
+     * This prevents spamming the user with all historical notifications.
+     */
+    private suspend fun performBaselineSync() {
+        // 1. Set baseline for Watching notifications
+        val repoResult = notificationRepository.getNotifications(1)
+        if (repoResult is DomainResult.Success) {
+            val latestId = repoResult.data
+                .filterIsInstance<AiringNotification>()
+                .maxOfOrNull { it.id } ?: 0
+            if (latestId > 0) {
+                preferencesRepository.setLastNotifiedId(latestId)
+                Log.d(TAG, "Baseline: Set lastNotifiedId to $latestId")
+            }
+        }
+
+        // 2. Mark all current planning items as "already notified"
+        val planningEntries = libraryDao.getByType(MediaType.ANIME)
+            .filter { it.status == LibraryStatus.PLANNING }
+        val planningMediaIds = planningEntries.map { it.mediaId }
+
+        // Mark all planning items that have already aired Ep1 as notified
+        val airedResult = notificationRepository.getFirstEpisodeAirings(planningMediaIds)
+        if (airedResult is DomainResult.Success) {
+            for (airing in airedResult.data) {
+                preferencesRepository.markPlanningMediaAsNotified(airing.mediaId)
+            }
+            Log.d(TAG, "Baseline: Marked ${airedResult.data.size} planning items as already notified")
+        }
+
+        // Mark all upcoming items as notified (so we don't alert about already-upcoming shows)
+        val upcomingResult = notificationRepository.getUpcomingFirstEpisodes(planningMediaIds, UPCOMING_HOURS)
+        if (upcomingResult is DomainResult.Success) {
+            for (airing in upcomingResult.data) {
+                preferencesRepository.markUpcomingAiringNotified(airing.id)
+            }
+            Log.d(TAG, "Baseline: Marked ${upcomingResult.data.size} upcoming episodes as already notified")
+        }
+    }
+
     private suspend fun checkWatchingListNotifications() {
         val allNewAiring = mutableListOf<AiringNotification>()
         val lastNotifiedId = preferencesRepository.getLastNotifiedId()
         var currentPage = 1
         var hasMore = true
-
-        // If this is the first run (id == 0), we just want to establish a baseline.
-        // We will fetch the latest page and set the lastNotifiedId to the most recent one.
-        val isFirstRun = lastNotifiedId == 0
 
         while (hasMore && currentPage <= MAX_NOTIFICATION_PAGES) {
             val repoResult = notificationRepository.getNotifications(currentPage)
@@ -133,25 +173,18 @@ class NotificationWorker @AssistedInject constructor(
         if (allNewAiring.isNotEmpty()) {
             val sortedAiring = allNewAiring.sortedBy { it.id }
             
-            if (isFirstRun) {
-                // On first run, do NOT notify. Just assume everything up to now is "old".
-                val maxId = sortedAiring.maxOf { it.id }
-                preferencesRepository.setLastNotifiedId(maxId)
-                Log.d(TAG, "First run: Synchronized baseline to notification ID $maxId (suppressed ${sortedAiring.size} notifications)")
-            } else {
-                for (notification in sortedAiring) {
-                    showNotification(notification)
-                }
-                
-                if (sortedAiring.size >= 3) {
-                    showSummaryNotification(sortedAiring)
-                }
-                
-                val maxId = sortedAiring.maxOf { it.id }
-                preferencesRepository.setLastNotifiedId(maxId)
-                
-                Log.d(TAG, "Processed ${sortedAiring.size} new airing notifications")
+            for (notification in sortedAiring) {
+                showNotification(notification)
             }
+            
+            if (sortedAiring.size >= 3) {
+                showSummaryNotification(sortedAiring)
+            }
+            
+            val maxId = sortedAiring.maxOf { it.id }
+            preferencesRepository.setLastNotifiedId(maxId)
+            
+            Log.d(TAG, "Processed ${sortedAiring.size} new airing notifications")
         }
     }
 

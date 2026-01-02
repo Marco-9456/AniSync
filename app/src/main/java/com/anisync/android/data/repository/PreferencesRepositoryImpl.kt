@@ -80,10 +80,19 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun hasNotificationsEverRun(): Boolean = withContext(Dispatchers.IO) {
+        prefs.getBoolean(KEY_HAS_EVER_RUN, false)
+    }
+
+    override suspend fun markNotificationsHaveRun() = withContext(Dispatchers.IO) {
+        prefs.edit().putBoolean(KEY_HAS_EVER_RUN, true).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "anisync_prefs"
         private const val KEY_LAST_NOTIFIED_ID = "last_notified_id"
         private const val KEY_NOTIFIED_PLANNING = "notified_planning_media_ids"
         private const val KEY_NOTIFIED_UPCOMING = "notified_upcoming_airing_ids"
+        private const val KEY_HAS_EVER_RUN = "notifications_have_ever_run"
     }
 }

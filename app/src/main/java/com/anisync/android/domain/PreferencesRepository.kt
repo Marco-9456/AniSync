@@ -26,4 +26,15 @@ interface PreferencesRepository {
      * Clean up old upcoming airing IDs that are no longer relevant.
      */
     suspend fun cleanupOldUpcomingAirings(currentValidIds: Set<Int>)
+    
+    /**
+     * Check if the notification worker has ever completed a baseline sync.
+     * Used to suppress notifications on the very first run.
+     */
+    suspend fun hasNotificationsEverRun(): Boolean
+    
+    /**
+     * Mark that the notification worker has completed its first baseline sync.
+     */
+    suspend fun markNotificationsHaveRun()
 }
