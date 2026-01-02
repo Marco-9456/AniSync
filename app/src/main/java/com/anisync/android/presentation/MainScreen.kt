@@ -2,7 +2,8 @@ package com.anisync.android.presentation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
@@ -26,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -107,9 +109,15 @@ fun MainScreen() {
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                ) + expandVertically(
+                    expandFrom = Alignment.Top,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                 ),
                 exit = slideOutVertically(
                     targetOffsetY = { it },
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                ) + shrinkVertically(
+                    shrinkTowards = Alignment.Top,
                     animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
                 )
             ) {
