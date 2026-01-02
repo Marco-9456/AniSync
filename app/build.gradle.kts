@@ -28,6 +28,16 @@ android {
         resValue("string", "app_name", "AniSync")
     }
 
+    signingConfigs {
+        create("release") {
+            // Read from environment variables (CI) or local properties
+            storeFile = file(System.getenv("KEYSTORE_FILE") ?: "release.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -38,7 +48,7 @@ android {
             )
             // Release-specific config
             buildConfigField("Boolean", "IS_DEBUG_BUILD", "false")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             applicationIdSuffix = ".debug"
