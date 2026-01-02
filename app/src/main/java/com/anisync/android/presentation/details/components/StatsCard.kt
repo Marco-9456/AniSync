@@ -13,13 +13,11 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.details.components.StatItem
 import com.anisync.android.type.MediaType
 
 @Composable

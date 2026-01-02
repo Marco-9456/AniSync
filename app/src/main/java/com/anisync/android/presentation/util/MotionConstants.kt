@@ -1,8 +1,6 @@
 package com.anisync.android.presentation.util
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 
 /**
  * Centralized motion constants for consistent animation behavior.

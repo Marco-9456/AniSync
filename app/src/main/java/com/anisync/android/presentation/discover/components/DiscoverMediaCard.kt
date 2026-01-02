@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,13 +47,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.formatEpisodesCount
 import com.anisync.android.presentation.util.formatChaptersCount
+import com.anisync.android.presentation.util.formatEpisodesCount
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType

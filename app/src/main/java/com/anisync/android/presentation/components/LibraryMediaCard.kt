@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,20 +50,16 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
-import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
-import androidx.compose.runtime.CompositionLocalProvider
-import com.anisync.android.presentation.util.LocalAppSettings
-import com.anisync.android.data.AppSettings
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.material.icons.filled.Edit
-import com.anisync.android.presentation.components.EditLibraryEntryDialog
-import com.anisync.android.presentation.util.bouncyCombinedClickable
 
 /**
  * Configuration for the LibraryMediaCard content display.

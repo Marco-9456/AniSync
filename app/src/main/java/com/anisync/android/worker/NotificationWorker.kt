@@ -1,13 +1,11 @@
 package com.anisync.android.worker
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -23,14 +21,12 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.AiringSchedule
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.PreferencesRepository
-import com.anisync.android.domain.Result as DomainResult
 import com.anisync.android.type.MediaType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.util.concurrent.TimeUnit
+import com.anisync.android.domain.Result as DomainResult
 
 @HiltWorker
 class NotificationWorker @AssistedInject constructor(
@@ -100,7 +96,11 @@ class NotificationWorker @AssistedInject constructor(
         val lastNotifiedId = preferencesRepository.getLastNotifiedId()
         var currentPage = 1
         var hasMore = true
-        
+
+        // If this is the first run (id == 0), we just want to establish a baseline.
+        // We will fetch the latest page and set the lastNotifiedId to the most recent one.
+        val isFirstRun = lastNotifiedId == 0
+
         while (hasMore && currentPage <= MAX_NOTIFICATION_PAGES) {
             val repoResult = notificationRepository.getNotifications(currentPage)
             
@@ -133,18 +133,25 @@ class NotificationWorker @AssistedInject constructor(
         if (allNewAiring.isNotEmpty()) {
             val sortedAiring = allNewAiring.sortedBy { it.id }
             
-            for (notification in sortedAiring) {
-                showNotification(notification)
+            if (isFirstRun) {
+                // On first run, do NOT notify. Just assume everything up to now is "old".
+                val maxId = sortedAiring.maxOf { it.id }
+                preferencesRepository.setLastNotifiedId(maxId)
+                Log.d(TAG, "First run: Synchronized baseline to notification ID $maxId (suppressed ${sortedAiring.size} notifications)")
+            } else {
+                for (notification in sortedAiring) {
+                    showNotification(notification)
+                }
+                
+                if (sortedAiring.size >= 3) {
+                    showSummaryNotification(sortedAiring)
+                }
+                
+                val maxId = sortedAiring.maxOf { it.id }
+                preferencesRepository.setLastNotifiedId(maxId)
+                
+                Log.d(TAG, "Processed ${sortedAiring.size} new airing notifications")
             }
-            
-            if (sortedAiring.size >= 3) {
-                showSummaryNotification(sortedAiring)
-            }
-            
-            val maxId = sortedAiring.maxOf { it.id }
-            preferencesRepository.setLastNotifiedId(maxId)
-            
-            Log.d(TAG, "Processed ${sortedAiring.size} new airing notifications")
         }
     }
 

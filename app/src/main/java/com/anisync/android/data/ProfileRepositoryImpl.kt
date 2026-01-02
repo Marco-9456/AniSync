@@ -1,11 +1,12 @@
 package com.anisync.android.data
 
-import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetUserActivitiesQuery
+import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
@@ -14,7 +15,6 @@ import com.anisync.android.domain.UserProfile
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
-import com.anisync.android.data.util.safeApiCall
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

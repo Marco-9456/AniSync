@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.discover.components
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -42,7 +43,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.ui.theme.StarGold
-import android.content.Context
 
 /**
  * A cinematic Hero Carousel component rewritten from scratch according to

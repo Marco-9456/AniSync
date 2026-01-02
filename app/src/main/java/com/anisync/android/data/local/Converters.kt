@@ -1,12 +1,12 @@
 package com.anisync.android.data.local
 
 import androidx.room.TypeConverter
-import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.AnimeStatusCounts
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.domain.UserActivity
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.json.Json
 

@@ -4,7 +4,6 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -22,11 +21,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.anisync.android.presentation.details.MediaDetailsScreen
-import com.anisync.android.presentation.details.MediaCharactersGridScreen
-import com.anisync.android.presentation.details.MediaRelationsGridScreen
-import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
+import com.anisync.android.presentation.details.CharacterMediaGridScreen
+import com.anisync.android.presentation.details.MediaCharactersGridScreen
+import com.anisync.android.presentation.details.MediaDetailsScreen
+import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen

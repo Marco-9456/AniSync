@@ -11,9 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.anisync.android.R
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 

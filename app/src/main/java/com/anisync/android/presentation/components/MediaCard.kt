@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,9 +39,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.type.MediaType
-import com.anisync.android.type.MediaStatus
+import com.anisync.android.ui.theme.StarGold
 
 /**
  * A specialized Media Card for the Discover screen.

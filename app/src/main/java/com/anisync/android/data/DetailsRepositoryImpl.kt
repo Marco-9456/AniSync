@@ -1,13 +1,16 @@
 package com.anisync.android.data
 
 import com.anisync.android.DeleteMediaListEntryMutation
+import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.toDomain
-import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.data.mapper.toApiStatus
+import com.anisync.android.data.mapper.toDomainStatus
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
@@ -17,13 +20,9 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.VoiceActor
-import com.anisync.android.data.mapper.toApiStatus
-import com.anisync.android.data.mapper.toDomainStatus
-import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.util.stripHtml
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
-
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

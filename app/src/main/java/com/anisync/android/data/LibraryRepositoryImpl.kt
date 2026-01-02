@@ -5,6 +5,11 @@ import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.data.mapper.mapFuzzyDateToLong
+import com.anisync.android.data.mapper.toApiStatus
+import com.anisync.android.data.mapper.toDomainStatus
+import com.anisync.android.data.mapper.toFuzzyDateInput
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
@@ -16,13 +21,6 @@ import com.apollographql.apollo3.api.Optional
 import com.apollographql.apollo3.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.anisync.android.data.mapper.mapFuzzyDateToLong
-import com.anisync.android.data.mapper.toApiStatus
-import com.anisync.android.data.mapper.toDomainStatus
-import com.anisync.android.data.mapper.toFuzzyDateInput
-import com.anisync.android.data.util.safeApiCall
-import com.anisync.android.type.FuzzyDateInput
-import java.util.Calendar
 import javax.inject.Inject
 
 

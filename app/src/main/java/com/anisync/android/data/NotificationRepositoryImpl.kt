@@ -3,6 +3,7 @@ package com.anisync.android.data
 import com.anisync.android.GetNotificationsQuery
 import com.anisync.android.GetPlanningFirstEpisodesQuery
 import com.anisync.android.GetPlanningUpcomingEpisodesQuery
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityLikeNotification
 import com.anisync.android.domain.ActivityReplyNotification
 import com.anisync.android.domain.AiringNotification
@@ -16,7 +17,6 @@ import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
-import com.anisync.android.data.util.safeApiCall
 import javax.inject.Inject
 
 class NotificationRepositoryImpl @Inject constructor(
