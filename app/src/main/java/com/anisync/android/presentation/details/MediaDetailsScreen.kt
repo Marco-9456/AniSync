@@ -525,8 +525,7 @@ fun PageHeaderSection(
                         .sharedElement(
                             sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
+                            boundsTransform = { _, _ -> spatialSpec }
                         ),
                     shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
                     elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
