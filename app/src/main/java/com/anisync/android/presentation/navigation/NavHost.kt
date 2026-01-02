@@ -13,6 +13,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -42,14 +43,14 @@ import com.anisync.android.presentation.profile.ProfileScreen
 /** Standard duration for navigation transitions (300ms as per M3 guidelines) */
 private const val TRANSITION_DURATION = 300
 
-/** Slide offset fraction for Shared Axis X transitions (30% of screen width) */
-private const val SHARED_AXIS_OFFSET_FRACTION = 0.30f
+/** Slide offset fraction for Shared Axis X transitions (20% of screen width for snappier feel) */
+private const val SHARED_AXIS_OFFSET_FRACTION = 0.20f
 
-/** Scale factor for Shared Axis Z forward entry (slightly zoomed out) */
-private const val SHARED_AXIS_Z_INITIAL_SCALE = 0.92f
+/** Scale factor for Shared Axis Z forward entry (subtle zoom from background) */
+private const val SHARED_AXIS_Z_INITIAL_SCALE = 0.96f
 
-/** Scale factor for Shared Axis Z forward exit (slightly zoomed in) */
-private const val SHARED_AXIS_Z_TARGET_SCALE = 1.10f
+/** Scale factor for Shared Axis Z forward exit (minimal zoom behind entering screen) */
+private const val SHARED_AXIS_Z_TARGET_SCALE = 1.02f
 
 // =============================================================================
 // ANIMATION SPECS

@@ -3,8 +3,6 @@ package com.anisync.android.presentation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
@@ -16,6 +14,7 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -27,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -56,7 +54,7 @@ private data class BottomNavItem<T : Any>(
     val unselectedIcon: ImageVector
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -106,8 +104,14 @@ fun MainScreen() {
         bottomBar = {
             AnimatedVisibility(
                 visible = isBottomBarVisible,
-                enter = slideInVertically { it } + expandVertically(expandFrom = Alignment.Top),
-                exit = slideOutVertically { it } + shrinkVertically(shrinkTowards = Alignment.Top)
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                )
             ) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,

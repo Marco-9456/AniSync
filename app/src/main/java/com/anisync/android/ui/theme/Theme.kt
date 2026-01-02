@@ -287,7 +287,7 @@ fun AppTheme(
   MaterialTheme(
     colorScheme = colorScheme,
     typography = AppTypography,
-    motionScheme = MotionScheme.standard(),
+    motionScheme = MotionScheme.expressive(),
     content = content
   )
 }
