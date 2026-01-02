@@ -34,7 +34,7 @@ jobs:
 
       - name: Build Release APK
         env:
-          KEYSTORE_FILE: ../release.keystore # Relative to app module
+          KEYSTORE_FILE: release.keystore # File is inside app module
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
