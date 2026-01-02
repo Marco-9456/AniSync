@@ -15,4 +15,10 @@ class AniSyncApplication : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    override fun onCreate() {
+        super.onCreate()
+        // Initialize notification channels on app startup
+        com.anisync.android.worker.NotificationChannels.createChannels(this)
+    }
 }

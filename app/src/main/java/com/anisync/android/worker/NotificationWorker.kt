@@ -49,9 +49,6 @@ class NotificationWorker @AssistedInject constructor(
         private const val MAX_NOTIFICATION_PAGES = 3
         private const val UPCOMING_HOURS = 24 // Notify 24 hours before airing
 
-        private const val CHANNEL_ID = "airing_notifications"
-        private const val PLANNING_CHANNEL_ID = "planning_notifications"
-        private const val UPCOMING_CHANNEL_ID = "upcoming_notifications"
         private const val GROUP_KEY_AIRING = "com.anisync.android.AIRING_GROUP"
         private const val GROUP_KEY_PLANNING = "com.anisync.android.PLANNING_GROUP"
         private const val SUMMARY_ID = 0
@@ -68,11 +65,9 @@ class NotificationWorker @AssistedInject constructor(
         }
 
         return try {
-            // Create notification channels
-            createNotificationChannel()
-            createPlanningNotificationChannel()
-            createUpcomingNotificationChannel()
-
+            // Channels are initialized in Application, but we can ensure they exist here too if needed.
+            // For now, relying on Application init or assume they exist.
+            
             // Check for Watching list airing notifications
             checkWatchingListNotifications()
 
@@ -227,48 +222,6 @@ class NotificationWorker @AssistedInject constructor(
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Airing Episodes",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications for new airing episodes"
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createPlanningNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                PLANNING_CHANNEL_ID,
-                "Planning List Updates",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications when shows in your Planning list start airing"
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun createUpcomingNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                UPCOMING_CHANNEL_ID,
-                "Upcoming Episodes",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications for upcoming episode premieres"
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
     private suspend fun showNotification(notification: AiringNotification) {
         val notificationId = AIRING_NOTIFICATION_BASE_ID + notification.id
         val media = notification.media
@@ -287,7 +240,7 @@ class NotificationWorker @AssistedInject constructor(
             loadImage(url)
         }
 
-        val builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.AIRING_CHANNEL_ID)
             .setSmallIcon(getApplicationIcon())
             .setContentTitle(title)
             .setContentText(content)
@@ -306,14 +259,16 @@ class NotificationWorker @AssistedInject constructor(
 
     private suspend fun showUpcomingEpisodeNotification(airing: AiringSchedule) {
         val notificationId = UPCOMING_NOTIFICATION_BASE_ID + airing.id
-        val title = "${airing.mediaTitle}"
+        val title = "Premiere Alert: ${airing.mediaTitle}"
         
         // Calculate hours until airing
         val currentTime = System.currentTimeMillis() / 1000
         val hoursUntil = ((airing.airingAt - currentTime) / 3600).toInt()
+        
         val content = when {
             hoursUntil <= 1 -> "Episode 1 airs in less than an hour!"
-            hoursUntil < 24 -> "Episode 1 airs in $hoursUntil hours!"
+            hoursUntil < 12 -> "Episode 1 airs in about $hoursUntil hours!"
+            hoursUntil < 24 -> "Episode 1 airs tomorrow!" // Simplified usage of 'tomorrow' for user friendlyness
             else -> "Episode 1 airs soon!"
         }
 
@@ -329,7 +284,7 @@ class NotificationWorker @AssistedInject constructor(
             loadImage(url)
         }
 
-        val builder = NotificationCompat.Builder(applicationContext, UPCOMING_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.UPCOMING_CHANNEL_ID)
             .setSmallIcon(getApplicationIcon())
             .setContentTitle(title)
             .setContentText(content)
@@ -363,7 +318,7 @@ class NotificationWorker @AssistedInject constructor(
             loadImage(url)
         }
 
-        val builder = NotificationCompat.Builder(applicationContext, PLANNING_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.PLANNING_CHANNEL_ID)
             .setSmallIcon(getApplicationIcon())
             .setContentTitle(title)
             .setContentText(content)
@@ -390,7 +345,7 @@ class NotificationWorker @AssistedInject constructor(
             inboxStyle.addLine("Ep ${notification.episode}: $title")
         }
 
-        val builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.AIRING_CHANNEL_ID)
             .setSmallIcon(getApplicationIcon())
             .setStyle(inboxStyle)
             .setGroup(GROUP_KEY_AIRING)

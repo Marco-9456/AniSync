@@ -34,6 +34,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appSettings: AppSettings
 
+    @Inject
+    lateinit var notificationScheduler: com.anisync.android.worker.NotificationScheduler
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -42,6 +45,18 @@ class MainActivity : ComponentActivity() {
         
         // Handle initial intent (when app first opens with redirect)
         handleAuthRedirect(intent)
+
+        // Ensure notifications are scheduled if enabled
+        lifecycleScope.launch {
+            kotlinx.coroutines.flow.combine(
+                appSettings.notificationsEnabled,
+                authRepository.isLoggedIn
+            ) { enabled, loggedIn ->
+                if (enabled && loggedIn) {
+                    notificationScheduler.schedule()
+                }
+            }.collect {}
+        }
         
         setContent {
             val themeMode by appSettings.themeMode.collectAsState()

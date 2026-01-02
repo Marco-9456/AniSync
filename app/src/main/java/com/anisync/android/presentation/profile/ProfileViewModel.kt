@@ -39,10 +39,9 @@ class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
+    private val notificationScheduler: com.anisync.android.worker.NotificationScheduler,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-
-    private val workManager = WorkManager.getInstance(context)
 
     // Settings from AppSettings
     val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
@@ -114,21 +113,9 @@ class ProfileViewModel @Inject constructor(
             appSettings.setNotificationsEnabled(enabled)
 
             if (enabled) {
-                val constraints = Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-
-                val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(15, TimeUnit.MINUTES)
-                    .setConstraints(constraints)
-                    .build()
-                
-                workManager.enqueueUniquePeriodicWork(
-                    "notification_worker",
-                    ExistingPeriodicWorkPolicy.UPDATE,
-                    workRequest
-                )
+                notificationScheduler.schedule()
             } else {
-                workManager.cancelUniqueWork("notification_worker")
+                notificationScheduler.cancel()
             }
         }
     }
