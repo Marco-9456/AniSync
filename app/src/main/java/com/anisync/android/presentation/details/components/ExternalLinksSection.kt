@@ -33,10 +33,12 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.type.MediaType
 
 @Composable
 fun ExternalLinksSection(
     externalLinks: List<ExternalLink>,
+    mediaType: MediaType?,
     modifier: Modifier = Modifier
 ) {
     // Group links by type: STREAMING first, then SOCIAL, then INFO
@@ -54,7 +56,10 @@ fun ExternalLinksSection(
         // Streaming links (if any) - prominent display
         if (streamingLinks.isNotEmpty()) {
             Text(
-                text = stringResource(R.string.subsection_streaming),
+                text = stringResource(
+                    if (mediaType == MediaType.MANGA) R.string.subsection_reading
+                    else R.string.subsection_streaming
+                ),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))

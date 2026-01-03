@@ -151,6 +151,7 @@
     <!-- External Links -->
     <string name="section_external_links">External &amp; Streaming Links</string>
     <string name="subsection_streaming">Watch On</string>
+    <string name="subsection_reading">Read On</string>
     <string name="subsection_external">External Links</string>
 
     <!-- Login Screen -->

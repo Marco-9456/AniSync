@@ -397,7 +397,10 @@ fun DetailsPageContent(
                     ) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                            ExternalLinksSection(externalLinks = details.externalLinks)
+                            ExternalLinksSection(
+                                externalLinks = details.externalLinks,
+                                mediaType = details.type
+                            )
                         }
                     }
                 }
