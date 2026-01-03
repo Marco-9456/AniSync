@@ -65,5 +65,16 @@ query GetMediaDetails($id: Int) {
         }
       }
     }
+    externalLinks {
+      id
+      url
+      site
+      type
+      color
+      icon
+      language
+      notes
+      isDisabled
+    }
   }
 }

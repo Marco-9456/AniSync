@@ -3,6 +3,7 @@ package com.anisync.android.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.anisync.android.domain.CharacterInfo
+import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.type.MediaType
@@ -35,5 +36,6 @@ data class MediaDetailsEntity(
     val listProgress: Int?,
     val characters: List<CharacterInfo>,
     val relations: List<RelatedMedia>,
+    val externalLinks: List<ExternalLink>,
     val lastUpdated: Long = System.currentTimeMillis()
 )

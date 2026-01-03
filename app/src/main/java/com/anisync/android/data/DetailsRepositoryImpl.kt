@@ -15,6 +15,8 @@ import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.domain.DetailsRepository
+import com.anisync.android.domain.ExternalLink
+import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
@@ -77,6 +79,27 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
+            // Map external links, filtering out disabled ones
+            val externalLinks = media.externalLinks?.filterNotNull()
+                ?.filter { it.isDisabled != true }
+                ?.map { link ->
+                    ExternalLink(
+                        id = link.id,
+                        url = link.url,
+                        site = link.site,
+                        type = when (link.type?.name) {
+                            "STREAMING" -> ExternalLinkType.STREAMING
+                            "SOCIAL" -> ExternalLinkType.SOCIAL
+                            "INFO" -> ExternalLinkType.INFO
+                            else -> null
+                        },
+                        color = link.color,
+                        icon = link.icon,
+                        language = link.language,
+                        notes = link.notes
+                    )
+                } ?: emptyList()
+
             // Use english title if available, otherwise romaji
             val title = media.title?.english ?: media.title?.romaji ?: "Unknown"
 
@@ -114,7 +137,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 listStatus = listStatus,
                 listProgress = listEntry?.progress,
                 characters = characters,
-                relations = relations
+                relations = relations,
+                externalLinks = externalLinks
             )
 
             // Update cache

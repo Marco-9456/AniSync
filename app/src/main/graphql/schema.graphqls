@@ -72,6 +72,7 @@ type Media {
   relations: MediaConnection
   nextAiringEpisode: AiringSchedule
   season: MediaSeason
+  externalLinks: [MediaExternalLink]
 }
 
 enum CharacterSort {
@@ -199,6 +200,37 @@ enum MediaSeason {
   SPRING
   SUMMER
   FALL
+}
+
+"""External link to another site related to media"""
+type MediaExternalLink {
+  """The id of the external link"""
+  id: Int!
+  """The url of the external link"""
+  url: String
+  """The site name"""
+  site: String!
+  """The site id"""
+  siteId: Int
+  """The type of external link"""
+  type: ExternalLinkType
+  """Language the site content is in"""
+  language: String
+  """The icon color of the site"""
+  color: String
+  """The icon url of the site"""
+  icon: String
+  """Notes about the link"""
+  notes: String
+  """Whether the link is disabled"""
+  isDisabled: Boolean
+}
+
+"""The type of external link"""
+enum ExternalLinkType {
+  INFO
+  STREAMING
+  SOCIAL
 }
 
 type MediaTitle {

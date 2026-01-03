@@ -141,6 +141,11 @@
     <string name="dialog_enable_notifications_title">Enable Notifications</string>
     <string name="dialog_enable_notifications_message">Please enable notifications in system settings.</string>
 
+    <!-- External Links -->
+    <string name="section_external_links">External &amp; Streaming Links</string>
+    <string name="subsection_streaming">Watch On</string>
+    <string name="subsection_external">External Links</string>
+
     <!-- Login Screen -->
     <string name="login_sync_your">Sync Your </string>
     <string name="login_world">World</string>

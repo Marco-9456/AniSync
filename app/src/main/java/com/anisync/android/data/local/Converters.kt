@@ -3,6 +3,7 @@ package com.anisync.android.data.local
 import androidx.room.TypeConverter
 import com.anisync.android.domain.AnimeStatusCounts
 import com.anisync.android.domain.CharacterInfo
+import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
@@ -55,6 +56,12 @@ class Converters {
 
     @TypeConverter
     fun toRelationList(list: List<RelatedMedia>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromExternalLinkList(value: String): List<ExternalLink> = json.decodeFromString(value)
+
+    @TypeConverter
+    fun toExternalLinkList(list: List<ExternalLink>): String = json.encodeToString(list)
 
     @TypeConverter
     fun fromLibraryEntryList(value: String): List<LibraryEntry> = json.decodeFromString(value)

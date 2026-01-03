@@ -58,6 +58,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import com.anisync.android.presentation.details.components.ExternalLinksSection
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -383,10 +384,31 @@ fun DetailsPageContent(
                         }
                     }
 
+                }
+            }
+
+            // External Links (Separate Item for correct alignment)
+            item {
+                if (details.externalLinks.isNotEmpty()) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_links",
+                        index = 2,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                            ExternalLinksSection(externalLinks = details.externalLinks)
+                        }
+                    }
+                }
+            }
+
+            item {
+                Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Synopsis
-                    StaggeredAnimatedVisibility(key = "media_synopsis", index = 2, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_synopsis", index = 3, delayPerItem = MediaStaggerDelay) {
                         ExpandableSynopsis(details.description)
                     }
                 }
@@ -394,7 +416,7 @@ fun DetailsPageContent(
 
             item {
                 if (details.characters.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(key = "media_cast", index = 3, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_cast", index = 4, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
@@ -427,7 +449,7 @@ fun DetailsPageContent(
 
             item {
                 if (details.relations.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(key = "media_related", index = 4, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(key = "media_related", index = 5, delayPerItem = MediaStaggerDelay) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
