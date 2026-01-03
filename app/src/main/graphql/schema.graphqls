@@ -448,13 +448,26 @@ enum NotificationType {
   ACTIVITY_REPLY_LIKE
 }
 
+enum AiringSort {
+  ID
+  ID_DESC
+  MEDIA_ID
+  MEDIA_ID_DESC
+  TIME
+  TIME_DESC
+  EPISODE
+  EPISODE_DESC
+}
+
 extend type Page {
   notifications(type: NotificationType, resetNotificationCount: Boolean, typeIn: [NotificationType]): [NotificationUnion]
   airingSchedules(
     mediaId_in: [Int],
     episode: Int,
     notYetAired: Boolean,
-    airingAt_lesser: Int
+    airingAt_lesser: Int,
+    airingAt_greater: Int,
+    sort: [AiringSort]
   ): [AiringSchedule]
   activities(userId: Int, type: ActivityType, sort: [ActivitySort], perPage: Int): [ActivityUnion]
 }

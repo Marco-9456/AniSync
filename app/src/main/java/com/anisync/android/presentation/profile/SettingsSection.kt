@@ -1,24 +1,39 @@
 package com.anisync.android.presentation.profile
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -29,6 +44,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,14 +53,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.anisync.android.R
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.util.NotificationPermissionHelper
 
 /**
  * Settings section displayed in the Profile screen's bottom sheet.
@@ -59,6 +80,11 @@ fun SettingsSection(
     val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val hapticEnabled by viewModel.hapticEnabled.collectAsState()
+    
+    // Granular notification settings
+    val watchingEnabled by viewModel.watchingNotificationsEnabled.collectAsState()
+    val planningEnabled by viewModel.planningNotificationsEnabled.collectAsState()
+    val upcomingEnabled by viewModel.upcomingNotificationsEnabled.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -137,12 +163,34 @@ fun SettingsSection(
             }
         }
 
-        // Account Card
+        // Account Card with Expandable Notification Settings
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
+            val context = LocalContext.current
+            val lifecycleOwner = LocalLifecycleOwner.current
+            
+            // Track actual system permission status
+            var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
+            var isNotificationExpanded by rememberSaveable { mutableStateOf(false) }
+            
+            // Check permission when screen becomes visible (handles return from settings)
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        hasSystemPermission = NotificationPermissionHelper.hasNotificationPermission(context)
+                        // Auto-disable if permission was revoked
+                        if (!hasSystemPermission && isNotificationsEnabled) {
+                            viewModel.toggleNotifications(false)
+                        }
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
+
             Column {
                 SectionHeader(
                    title = stringResource(R.string.section_account),
@@ -150,18 +198,53 @@ fun SettingsSection(
                    padding = PaddingValues(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
-                // Notification Row
+                // Permission revoked warning banner
+                AnimatedVisibility(
+                    visible = !hasSystemPermission && isNotificationsEnabled,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .clickable {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            stringResource(R.string.notification_permission_revoked),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+
+                // Notification Row with expand indicator
                 Row(
                     modifier = Modifier
                         .clickable {
                             if (!isNotificationsEnabled) {
+                                // Enable notifications
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 } else {
                                     viewModel.toggleNotifications(true)
                                 }
                             } else {
-                                viewModel.toggleNotifications(false)
+                                // Toggle expansion when enabled
+                                isNotificationExpanded = !isNotificationExpanded
                             }
                         }
                         .padding(16.dp)
@@ -170,14 +253,91 @@ fun SettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                         Icon(Icons.Default.Notifications, null, tint = MaterialTheme.colorScheme.primary)
-                         Spacer(Modifier.width(16.dp))
-                         Text(stringResource(R.string.control_notifications))
+                        Icon(
+                            Icons.Default.Notifications,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(stringResource(R.string.control_notifications))
+                        
+                        // Show expand icon when enabled
+                        if (isNotificationsEnabled) {
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                if (isNotificationExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    Switch(checked = isNotificationsEnabled, onCheckedChange = null)
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Vertical divider indicator for expandable section (before switch)
+                        if (isNotificationsEnabled) {
+                            Box(
+                                modifier = Modifier
+                                    .width(3.dp)
+                                    .height(24.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                            )
+                            Spacer(Modifier.width(12.dp))
+                        }
+                        Switch(
+                            checked = isNotificationsEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        viewModel.toggleNotifications(true)
+                                    }
+                                } else {
+                                    viewModel.toggleNotifications(false)
+                                    isNotificationExpanded = false
+                                }
+                            }
+                        )
+                    }
                 }
                 
-                 // Logout Row
+                // Expandable notification type options
+                AnimatedVisibility(
+                    visible = isNotificationsEnabled && isNotificationExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(start = 32.dp, end = 16.dp, bottom = 8.dp)
+                    ) {
+                        // Watching List toggle
+                        NotificationTypeRow(
+                            title = stringResource(R.string.notification_watching),
+                            description = stringResource(R.string.notification_watching_desc),
+                            isEnabled = watchingEnabled,
+                            onToggle = { viewModel.setWatchingNotificationsEnabled(it) }
+                        )
+                        
+                        // Planning List toggle
+                        NotificationTypeRow(
+                            title = stringResource(R.string.notification_planning),
+                            description = stringResource(R.string.notification_planning_desc),
+                            isEnabled = planningEnabled,
+                            onToggle = { viewModel.setPlanningNotificationsEnabled(it) }
+                        )
+                        
+                        // Upcoming Premieres toggle
+                        NotificationTypeRow(
+                            title = stringResource(R.string.notification_upcoming),
+                            description = stringResource(R.string.notification_upcoming_desc),
+                            isEnabled = upcomingEnabled,
+                            onToggle = { viewModel.setUpcomingNotificationsEnabled(it) }
+                        )
+                    }
+                }
+                
+                // Logout Row
                 Row(
                     modifier = Modifier
                         .clickable { viewModel.logout { onLogoutClick() } }
@@ -191,6 +351,42 @@ fun SettingsSection(
                 }
             }
         }
+    }
+}
+
+/**
+ * Row for individual notification type toggle.
+ */
+@Composable
+private fun NotificationTypeRow(
+    title: String,
+    description: String,
+    isEnabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle(!isEnabled) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = onToggle
+        )
     }
 }
 

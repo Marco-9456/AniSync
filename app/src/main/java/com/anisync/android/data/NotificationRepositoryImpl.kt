@@ -119,19 +119,22 @@ class NotificationRepositoryImpl @Inject constructor(
             val currentTime = (System.currentTimeMillis() / 1000).toInt()
             val recencyThreshold = currentTime - (RECENCY_THRESHOLD_DAYS * SECONDS_PER_DAY)
             
+            // Use server-side filtering with airingAfter for recency
             val response = apolloClient.query(
                 GetPlanningFirstEpisodesQuery(
                     mediaIds = Optional.present(mediaIds),
-                    airingBefore = currentTime
+                    airingBefore = currentTime,
+                    airingAfter = recencyThreshold
                 )
             ).execute()
 
-            // Filter to only include episodes that aired within the recency threshold
+            // Server now filters by recency, but we still need to verify it's in the past
+            // to avoid race conditions with episodes airing exactly now
             response.data?.Page?.airingSchedules?.mapNotNull { airing ->
                 airing?.let {
                     val airingAt = it.airingAt ?: 0
-                    // Only include if Episode 1 aired within the last RECENCY_THRESHOLD_DAYS
-                    if (airingAt >= recencyThreshold) {
+                    // Verify episode has actually aired (in the past)
+                    if (airingAt < currentTime) {
                         AiringSchedule(
                             id = it.id ?: 0,
                             episode = it.episode ?: 0,
@@ -156,20 +159,23 @@ class NotificationRepositoryImpl @Inject constructor(
         if (mediaIds.isEmpty()) return Result.Success(emptyList())
 
         return safeApiCall {
+            val currentTime = (System.currentTimeMillis() / 1000).toInt()
+            val maxAiringTime = currentTime + (withinHours * 60 * 60)
+            
+            // Use server-side filtering with airingBefore for time window
             val response = apolloClient.query(
                 GetPlanningUpcomingEpisodesQuery(
-                    mediaIds = Optional.present(mediaIds)
+                    mediaIds = Optional.present(mediaIds),
+                    airingBefore = maxAiringTime
                 )
             ).execute()
 
-            // Filter client-side to only include airings within the specified hours
-            val withinSeconds = withinHours * 60 * 60
-            
+            // Server now handles time filtering, results are already sorted by TIME
             response.data?.Page?.airingSchedules?.mapNotNull { airing ->
                 airing?.let {
                     val timeUntil = it.timeUntilAiring ?: Int.MAX_VALUE
-                    // Only include if airing within the specified time window
-                    if (timeUntil in 1..withinSeconds) {
+                    // Only include if actually in the future (timeUntil > 0)
+                    if (timeUntil > 0) {
                         AiringSchedule(
                             id = it.id ?: 0,
                             episode = it.episode ?: 0,

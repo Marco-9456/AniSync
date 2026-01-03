@@ -1,9 +1,11 @@
-query GetPlanningFirstEpisodes($mediaIds: [Int!], $airingBefore: Int!) {
+query GetPlanningFirstEpisodes($mediaIds: [Int!], $airingBefore: Int!, $airingAfter: Int!) {
   Page {
     airingSchedules(
       mediaId_in: $mediaIds
       episode: 1
       airingAt_lesser: $airingBefore
+      airingAt_greater: $airingAfter
+      sort: [TIME_DESC]
     ) {
       id
       episode

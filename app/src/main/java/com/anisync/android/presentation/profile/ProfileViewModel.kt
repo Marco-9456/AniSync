@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
@@ -32,6 +33,7 @@ class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
+    private val notificationPreferences: NotificationPreferences,
     private val notificationScheduler: com.anisync.android.worker.NotificationScheduler,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -40,6 +42,11 @@ class ProfileViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
     val hapticEnabled: StateFlow<Boolean> = appSettings.hapticEnabled
     val isNotificationsEnabled: StateFlow<Boolean> = appSettings.notificationsEnabled
+
+    // Granular notification settings from NotificationPreferences
+    val watchingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.watchingEnabled
+    val planningNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.planningEnabled
+    val upcomingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.upcomingEnabled
 
     /**
      * Observe profile from local cache via Flow.
@@ -111,6 +118,19 @@ class ProfileViewModel @Inject constructor(
                 notificationScheduler.cancel()
             }
         }
+    }
+
+    // Granular notification settings
+    fun setWatchingNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setWatchingEnabled(enabled)
+    }
+
+    fun setPlanningNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setPlanningEnabled(enabled)
+    }
+
+    fun setUpcomingNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setUpcomingEnabled(enabled)
     }
 }
 

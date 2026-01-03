@@ -37,4 +37,17 @@ interface PreferencesRepository {
      * Mark that the notification worker has completed its first baseline sync.
      */
     suspend fun markNotificationsHaveRun()
+    
+    // ---- Key-based notification tracking for two-tier system ----
+    
+    /**
+     * Check if a notification has been sent for a specific key.
+     * Used for two-tier notification system (advance_123, imminent_123).
+     */
+    suspend fun hasNotifiedWithKey(key: String): Boolean
+    
+    /**
+     * Mark a notification key as sent.
+     */
+    suspend fun markNotifiedWithKey(key: String)
 }

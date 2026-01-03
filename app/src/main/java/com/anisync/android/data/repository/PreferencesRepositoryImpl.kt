@@ -88,11 +88,34 @@ class PreferencesRepositoryImpl @Inject constructor(
         prefs.edit().putBoolean(KEY_HAS_EVER_RUN, true).apply()
     }
 
+    // ---- Key-based notification tracking for two-tier system ----
+
+    override suspend fun hasNotifiedWithKey(key: String): Boolean = withContext(Dispatchers.IO) {
+        val keys = prefs.getStringSet(KEY_NOTIFICATION_KEYS, emptySet()) ?: emptySet()
+        key in keys
+    }
+
+    override suspend fun markNotifiedWithKey(key: String) = withContext(Dispatchers.IO) {
+        val current = prefs.getStringSet(KEY_NOTIFICATION_KEYS, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        current.add(key)
+        
+        // Clean up old keys to prevent unbounded growth
+        // Keep only keys from the last 7 days worth of airings (assuming ~50 per day max)
+        if (current.size > MAX_NOTIFICATION_KEYS) {
+            val keysToKeep = current.toList().takeLast(MAX_NOTIFICATION_KEYS).toSet()
+            prefs.edit().putStringSet(KEY_NOTIFICATION_KEYS, keysToKeep).apply()
+        } else {
+            prefs.edit().putStringSet(KEY_NOTIFICATION_KEYS, current).apply()
+        }
+    }
+
     companion object {
         private const val PREFS_NAME = "anisync_prefs"
         private const val KEY_LAST_NOTIFIED_ID = "last_notified_id"
         private const val KEY_NOTIFIED_PLANNING = "notified_planning_media_ids"
         private const val KEY_NOTIFIED_UPCOMING = "notified_upcoming_airing_ids"
         private const val KEY_HAS_EVER_RUN = "notifications_have_ever_run"
+        private const val KEY_NOTIFICATION_KEYS = "notification_keys"
+        private const val MAX_NOTIFICATION_KEYS = 350 // ~50 notifications per day * 7 days
     }
 }

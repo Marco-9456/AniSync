@@ -1,9 +1,11 @@
-query GetPlanningUpcomingEpisodes($mediaIds: [Int!]) {
+query GetPlanningUpcomingEpisodes($mediaIds: [Int!], $airingBefore: Int!) {
   Page {
     airingSchedules(
       mediaId_in: $mediaIds
       episode: 1
       notYetAired: true
+      airingAt_lesser: $airingBefore
+      sort: [TIME]
     ) {
       id
       episode

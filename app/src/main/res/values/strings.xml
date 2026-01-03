@@ -119,6 +119,13 @@
     <string name="setting_haptic_feedback">Haptic Feedback</string>
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
     <string name="control_notifications">Notifications</string>
+    <string name="notification_watching">Watching List</string>
+    <string name="notification_watching_desc">New episodes for shows you\'re watching</string>
+    <string name="notification_planning">Planning List</string>
+    <string name="notification_planning_desc">Alerts when Episode 1 airs for shows you plan to watch</string>
+    <string name="notification_upcoming">Upcoming Premieres</string>
+    <string name="notification_upcoming_desc">Advance notice before episodes air</string>
+    <string name="notification_permission_revoked">Notification permission was revoked. Tap to open settings.</string>
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>
     <string name="profile_level">Level %1$d</string>

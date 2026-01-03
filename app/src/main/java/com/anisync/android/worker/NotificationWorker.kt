@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.text.format.DateFormat
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -36,21 +37,26 @@ class NotificationWorker @AssistedInject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val libraryDao: LibraryDao,
     private val imageLoader: ImageLoader,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val notificationPreferences: com.anisync.android.data.NotificationPreferences
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
         private const val TAG = "NotificationWorker"
         private const val MAX_RETRY_ATTEMPTS = 3
         private const val MAX_NOTIFICATION_PAGES = 3
-        private const val UPCOMING_HOURS = 24 // Notify 24 hours before airing
+        
+        // Two-tier upcoming notification system
+        private const val ADVANCE_NOTICE_HOURS = 12 // First notification: "Episode 1 airs tomorrow at X"
+        private const val IMMINENT_NOTICE_HOURS = 2  // Second notification: "Episode 1 airs in 2 hours"
 
         private const val GROUP_KEY_AIRING = "com.anisync.android.AIRING_GROUP"
         private const val GROUP_KEY_PLANNING = "com.anisync.android.PLANNING_GROUP"
         private const val SUMMARY_ID = 0
         private const val AIRING_NOTIFICATION_BASE_ID = 1000
         private const val PLANNING_NOTIFICATION_BASE_ID = 100000
-        private const val UPCOMING_NOTIFICATION_BASE_ID = 200000
+        private const val UPCOMING_ADVANCE_NOTIFICATION_BASE_ID = 200000  // 12h notice
+        private const val UPCOMING_IMMINENT_NOTIFICATION_BASE_ID = 300000 // 2h notice
     }
 
     override suspend fun doWork(): androidx.work.ListenableWorker.Result {
@@ -70,10 +76,24 @@ class NotificationWorker @AssistedInject constructor(
                 preferencesRepository.markNotificationsHaveRun()
                 Log.d(TAG, "First run: Baseline sync completed. Future runs will notify.")
             } else {
-                // Normal run: check and notify
-                checkWatchingListNotifications()
-                checkUpcomingPlanningEpisodes()
-                checkPlanningFirstEpisodes()
+                // Normal run: check and notify based on granular settings
+                if (notificationPreferences.watchingEnabled.value) {
+                    checkWatchingListNotifications()
+                } else {
+                    Log.d(TAG, "Skipping watching list notifications - disabled by user")
+                }
+                
+                if (notificationPreferences.upcomingEnabled.value) {
+                    checkUpcomingPlanningEpisodes()
+                } else {
+                    Log.d(TAG, "Skipping upcoming notifications - disabled by user")
+                }
+                
+                if (notificationPreferences.planningEnabled.value) {
+                    checkPlanningFirstEpisodes()
+                } else {
+                    Log.d(TAG, "Skipping planning notifications - disabled by user")
+                }
             }
 
             androidx.work.ListenableWorker.Result.success()
@@ -126,7 +146,7 @@ class NotificationWorker @AssistedInject constructor(
         }
 
         // Mark all upcoming items as notified (so we don't alert about already-upcoming shows)
-        val upcomingResult = notificationRepository.getUpcomingFirstEpisodes(planningMediaIds, UPCOMING_HOURS)
+        val upcomingResult = notificationRepository.getUpcomingFirstEpisodes(planningMediaIds, ADVANCE_NOTICE_HOURS)
         if (upcomingResult is DomainResult.Success) {
             for (airing in upcomingResult.data) {
                 preferencesRepository.markUpcomingAiringNotified(airing.id)
@@ -189,8 +209,10 @@ class NotificationWorker @AssistedInject constructor(
     }
 
     /**
-     * Check for upcoming Episode 1 airings (within next 24 hours) for Planning list items.
-     * This is a proactive notification - "Episode 1 airs in X hours!"
+     * Check for upcoming Episode 1 airings for Planning list items.
+     * Implements a two-tier notification system:
+     * - 12 hours before: "Episode 1 airs tomorrow at 3:00 PM"
+     * - 2 hours before: "Episode 1 is airing in 2 hours"
      */
     private suspend fun checkUpcomingPlanningEpisodes() {
         val planningEntries = libraryDao.getByType(MediaType.ANIME)
@@ -199,9 +221,10 @@ class NotificationWorker @AssistedInject constructor(
         if (planningEntries.isEmpty()) return
 
         val mediaIds = planningEntries.map { it.mediaId }
+        val currentTimeSeconds = System.currentTimeMillis() / 1000
         
-        // Get upcoming Episode 1 airings within next 24 hours
-        val result = notificationRepository.getUpcomingFirstEpisodes(mediaIds, UPCOMING_HOURS)
+        // Get upcoming Episode 1 airings within next 12 hours
+        val result = notificationRepository.getUpcomingFirstEpisodes(mediaIds, ADVANCE_NOTICE_HOURS)
 
         if (result is DomainResult.Success) {
             val upcomingAirings = result.data
@@ -210,19 +233,30 @@ class NotificationWorker @AssistedInject constructor(
             val currentAiringIds = upcomingAirings.map { it.id }.toSet()
             preferencesRepository.cleanupOldUpcomingAirings(currentAiringIds)
             
-            // Get already notified upcoming airings
-            val notifiedIds = preferencesRepository.getNotifiedUpcomingAiringIds()
-            
-            // Filter to only unnotified
-            val newUpcoming = upcomingAirings.filter { it.id !in notifiedIds }
-            
-            for (airing in newUpcoming) {
-                showUpcomingEpisodeNotification(airing)
-                preferencesRepository.markUpcomingAiringNotified(airing.id)
-            }
-            
-            if (newUpcoming.isNotEmpty()) {
-                Log.d(TAG, "Processed ${newUpcoming.size} upcoming episode notifications")
+            for (airing in upcomingAirings) {
+                val hoursUntil = ((airing.airingAt - currentTimeSeconds) / 3600).toInt()
+                
+                // Determine which tier of notification to send
+                when {
+                    hoursUntil <= IMMINENT_NOTICE_HOURS -> {
+                        // 2 hours or less: Send imminent notification
+                        val imminentKey = "imminent_${airing.id}"
+                        if (!preferencesRepository.hasNotifiedWithKey(imminentKey)) {
+                            showImminentEpisodeNotification(airing, hoursUntil)
+                            preferencesRepository.markNotifiedWithKey(imminentKey)
+                            preferencesRepository.markUpcomingAiringNotified(airing.id)
+                        }
+                    }
+                    hoursUntil <= ADVANCE_NOTICE_HOURS -> {
+                        // Between 2-12 hours: Send advance notification (only once)
+                        val advanceKey = "advance_${airing.id}"
+                        if (!preferencesRepository.hasNotifiedWithKey(advanceKey)) {
+                            showAdvanceEpisodeNotification(airing)
+                            preferencesRepository.markNotifiedWithKey(advanceKey)
+                            preferencesRepository.markUpcomingAiringNotified(airing.id)
+                        }
+                    }
+                }
             }
         } else if (result is DomainResult.Error) {
             Log.e(TAG, "Failed to fetch upcoming episodes: ${result.message}", result.exception)
@@ -232,6 +266,9 @@ class NotificationWorker @AssistedInject constructor(
     /**
      * Check for already-aired Episode 1 for Planning list items.
      * This is a reactive notification - "Episode 1 is now available!"
+     * 
+     * IMPORTANT: Skips media that have already received upcoming notifications
+     * to prevent duplicate alerts.
      */
     private suspend fun checkPlanningFirstEpisodes() {
         val planningEntries = libraryDao.getByType(MediaType.ANIME)
@@ -247,10 +284,22 @@ class NotificationWorker @AssistedInject constructor(
         val unnotifiedIds = mediaIds.filter { it !in notifiedIds }
         if (unnotifiedIds.isEmpty()) return
 
+        // Get upcoming airing IDs to cross-reference and avoid duplicates
+        val upcomingNotifiedAiringIds = preferencesRepository.getNotifiedUpcomingAiringIds()
+
         val result = notificationRepository.getFirstEpisodeAirings(unnotifiedIds)
 
         if (result is DomainResult.Success) {
             for (airing in result.data) {
+                // Skip if we already sent an upcoming notification for this specific airing
+                // This prevents "Episode 1 is now available" after "Episode 1 airs in 2 hours"
+                if (airing.id in upcomingNotifiedAiringIds) {
+                    Log.d(TAG, "Skipping '${airing.mediaTitle}' - already notified as upcoming")
+                    // Still mark as notified to prevent future checks
+                    preferencesRepository.markPlanningMediaAsNotified(airing.mediaId)
+                    continue
+                }
+                
                 showPlanningFirstEpisodeNotification(airing)
                 preferencesRepository.markPlanningMediaAsNotified(airing.mediaId)
             }
@@ -297,20 +346,35 @@ class NotificationWorker @AssistedInject constructor(
         notificationManager.notify(notificationId, builder.build())
     }
 
-    private suspend fun showUpcomingEpisodeNotification(airing: AiringSchedule) {
-        val notificationId = UPCOMING_NOTIFICATION_BASE_ID + airing.id
-        val title = "Premiere Alert: ${airing.mediaTitle}"
+    /**
+     * Show advance notification (12 hours before).
+     * Example: "Episode 1 airs tomorrow at 3:00 PM"
+     */
+    private suspend fun showAdvanceEpisodeNotification(airing: AiringSchedule) {
+        val notificationId = UPCOMING_ADVANCE_NOTIFICATION_BASE_ID + airing.id
+        val title = "📅 Premiere Alert: ${airing.mediaTitle}"
         
-        // Calculate hours until airing
-        val currentTime = System.currentTimeMillis() / 1000
-        val hoursUntil = ((airing.airingAt - currentTime) / 3600).toInt()
+        // Format the airing time in user's locale
+        val airingDate = java.util.Date(airing.airingAt * 1000)
+        val timeFormat = DateFormat.getTimeFormat(applicationContext)
+        val formattedTime = timeFormat.format(airingDate)
         
-        val content = when {
-            hoursUntil <= 1 -> "Episode 1 airs in less than an hour!"
-            hoursUntil < 12 -> "Episode 1 airs in about $hoursUntil hours!"
-            hoursUntil < 24 -> "Episode 1 airs tomorrow!" // Simplified usage of 'tomorrow' for user friendlyness
-            else -> "Episode 1 airs soon!"
+        // Determine if it's today or tomorrow
+        val calendar = java.util.Calendar.getInstance()
+        val currentDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
+        calendar.time = airingDate
+        val airingDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
+        
+        val dayPrefix = when {
+            airingDay == currentDay -> "today"
+            airingDay == currentDay + 1 -> "tomorrow"
+            else -> {
+                val dateFormat = DateFormat.getDateFormat(applicationContext)
+                "on ${dateFormat.format(airingDate)}"
+            }
         }
+        
+        val content = "Episode 1 airs $dayPrefix at $formattedTime"
 
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/${airing.mediaId}"))
         val pendingIntent = PendingIntent.getActivity(
@@ -339,6 +403,51 @@ class NotificationWorker @AssistedInject constructor(
 
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationId, builder.build())
+        Log.d(TAG, "Sent advance notification for ${airing.mediaTitle}: $content")
+    }
+
+    /**
+     * Show imminent notification (2 hours or less before).
+     * Example: "Episode 1 is airing in 2 hours!"
+     */
+    private suspend fun showImminentEpisodeNotification(airing: AiringSchedule, hoursUntil: Int) {
+        val notificationId = UPCOMING_IMMINENT_NOTIFICATION_BASE_ID + airing.id
+        val title = "🔔 Starting Soon: ${airing.mediaTitle}"
+        
+        val content = when {
+            hoursUntil < 1 -> "Episode 1 is airing in less than an hour!"
+            hoursUntil == 1 -> "Episode 1 is airing in about an hour!"
+            else -> "Episode 1 is airing in $hoursUntil hours!"
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/${airing.mediaId}"))
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { url ->
+            loadImage(url)
+        }
+
+        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.UPCOMING_CHANNEL_ID)
+            .setSmallIcon(getApplicationIcon())
+            .setContentTitle(title)
+            .setContentText(content)
+            .setPriority(NotificationCompat.PRIORITY_HIGH) // Higher priority for imminent notifications
+            .setAutoCancel(true)
+            .setGroup(GROUP_KEY_PLANNING)
+            .setContentIntent(pendingIntent)
+
+        if (largeIcon != null) {
+            builder.setLargeIcon(largeIcon)
+        }
+
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(notificationId, builder.build())
+        Log.d(TAG, "Sent imminent notification for ${airing.mediaTitle}: $content")
     }
 
     private suspend fun showPlanningFirstEpisodeNotification(airing: AiringSchedule) {
