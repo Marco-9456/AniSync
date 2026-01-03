@@ -24,7 +24,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         MediaDetailsEntity::class,
         UserProfileEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
