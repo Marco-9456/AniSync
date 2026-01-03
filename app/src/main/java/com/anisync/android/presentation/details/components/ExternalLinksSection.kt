@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
@@ -139,7 +140,8 @@ fun ExternalLinkChip(
                     model = link.icon,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+                    colorFilter = chipColor?.let { ColorFilter.tint(it) }
                 )
             } else {
                 Icon(
@@ -151,14 +153,13 @@ fun ExternalLinkChip(
             }
         },
         colors = AssistChipDefaults.assistChipColors(
-            containerColor = chipColor?.copy(alpha = 0.1f) 
-                ?: MaterialTheme.colorScheme.secondaryContainer,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             labelColor = MaterialTheme.colorScheme.onSurface,
             leadingIconContentColor = chipColor ?: MaterialTheme.colorScheme.primary
         ),
         border = AssistChipDefaults.assistChipBorder(
             enabled = true,
-            borderColor = chipColor?.copy(alpha = 0.3f) ?: MaterialTheme.colorScheme.outlineVariant
+            borderColor = MaterialTheme.colorScheme.outlineVariant
         ),
         modifier = modifier
     )
