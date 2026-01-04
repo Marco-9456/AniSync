@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationPreferences
+import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
@@ -35,6 +36,7 @@ class ProfileViewModel @Inject constructor(
     private val appSettings: AppSettings,
     private val notificationPreferences: NotificationPreferences,
     private val notificationScheduler: com.anisync.android.worker.NotificationScheduler,
+    private val notificationDebugService: NotificationDebugService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -131,6 +133,27 @@ class ProfileViewModel @Inject constructor(
 
     fun setUpcomingNotificationsEnabled(enabled: Boolean) {
         notificationPreferences.setUpcomingEnabled(enabled)
+    }
+
+    // Debug notification methods
+    fun sendTestWatchingNotification() {
+        notificationDebugService.sendTestWatchingNotification()
+    }
+
+    fun sendTestPlanningNotification() {
+        notificationDebugService.sendTestPlanningNotification()
+    }
+
+    fun sendTestAdvanceNotification() {
+        notificationDebugService.sendTestAdvanceNotification()
+    }
+
+    fun sendTestImminentNotification() {
+        notificationDebugService.sendTestImminentNotification()
+    }
+
+    fun clearAllNotifications() {
+        notificationDebugService.clearAllNotifications()
     }
 }
 

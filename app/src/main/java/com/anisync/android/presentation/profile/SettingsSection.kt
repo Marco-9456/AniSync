@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -42,6 +43,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -65,6 +67,7 @@ import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.util.NotificationPermissionHelper
+import com.anisync.android.BuildConfig
 
 /**
  * Settings section displayed in the Profile screen's bottom sheet.
@@ -347,6 +350,113 @@ fun SettingsSection(
                     Icon(Icons.AutoMirrored.Filled.Logout, null, tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(16.dp))
                     Text(stringResource(R.string.control_log_out), color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+
+        // Developer Card (debug builds only)
+        if (BuildConfig.DEBUG) {
+            var isDebugExpanded by rememberSaveable { mutableStateOf(false) }
+            
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    SectionHeader(
+                        title = stringResource(R.string.section_developer),
+                        level = HeaderLevel.Subsection,
+                        padding = PaddingValues(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                    )
+
+                    // Notification Debug Row
+                    Row(
+                        modifier = Modifier
+                            .clickable { isDebugExpanded = !isDebugExpanded }
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                null,
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Text(stringResource(R.string.debug_notifications))
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                if (isDebugExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Expandable debug buttons
+                    AnimatedVisibility(
+                        visible = isDebugExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // First row: Watching and Planning
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilledTonalButton(
+                                    onClick = { viewModel.sendTestWatchingNotification() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.debug_test_watching))
+                                }
+                                FilledTonalButton(
+                                    onClick = { viewModel.sendTestPlanningNotification() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.debug_test_planning))
+                                }
+                            }
+                            
+                            // Second row: Advance and Imminent
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilledTonalButton(
+                                    onClick = { viewModel.sendTestAdvanceNotification() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.debug_test_advance))
+                                }
+                                FilledTonalButton(
+                                    onClick = { viewModel.sendTestImminentNotification() },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.debug_test_imminent))
+                                }
+                            }
+                            
+                            // Third row: Clear All
+                            FilledTonalButton(
+                                onClick = { viewModel.clearAllNotifications() },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            ) {
+                                Text(stringResource(R.string.debug_clear_all))
+                            }
+                        }
+                    }
                 }
             }
         }

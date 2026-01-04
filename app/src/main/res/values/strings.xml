@@ -126,6 +126,16 @@
     <string name="notification_upcoming">Upcoming Premieres</string>
     <string name="notification_upcoming_desc">Advance notice before episodes air</string>
     <string name="notification_permission_revoked">Notification permission was revoked. Tap to open settings.</string>
+
+    <!-- Developer Debug (debug builds only) -->
+    <string name="section_developer">Developer</string>
+    <string name="debug_notifications">Notification Debug</string>
+    <string name="debug_test_watching">Test Watching</string>
+    <string name="debug_test_planning">Test Planning</string>
+    <string name="debug_test_advance">Test Advance (12h)</string>
+    <string name="debug_test_imminent">Test Imminent (2h)</string>
+    <string name="debug_clear_all">Clear All</string>
+
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>
     <string name="profile_level">Level %1$d</string>
