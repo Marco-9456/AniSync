@@ -157,6 +157,11 @@ fun LibraryScreen(
     // Scroll behavior for AppBarWithSearch
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
+    // Trigger initial data load when screen becomes visible (deferred from ViewModel init)
+    LaunchedEffect(Unit) {
+        viewModel.onScreenVisible()
+    }
+
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {

@@ -67,9 +67,22 @@ class DiscoverViewModel @Inject constructor(
     private val _searchFilters = MutableStateFlow(SearchFilters())
     val searchFilters: StateFlow<SearchFilters> = _searchFilters.asStateFlow()
 
+    private var hasLoadedInitially = false
+
     init {
-        loadDiscoveryData()
+        // Data loading is deferred until screen visibility to improve startup performance
         observeSearchQuery()
+    }
+
+    /**
+     * Called when the screen becomes visible for the first time.
+     * Triggers initial data fetch from network.
+     */
+    fun onScreenVisible() {
+        if (!hasLoadedInitially) {
+            hasLoadedInitially = true
+            loadDiscoveryData()
+        }
     }
 
     fun onMediaTypeChange(type: MediaType) {

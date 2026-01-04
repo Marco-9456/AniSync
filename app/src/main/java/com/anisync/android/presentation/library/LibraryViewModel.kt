@@ -136,9 +136,21 @@ class LibraryViewModel @Inject constructor(
             initialValue = LibraryUiState.Loading
         )
 
+    private var hasLoadedInitially = false
+
     init {
-        // Trigger initial refresh from network
-        refresh()
+        // Data loading is deferred until screen visibility to improve startup performance
+    }
+
+    /**
+     * Called when the screen becomes visible for the first time.
+     * Triggers initial data fetch from network.
+     */
+    fun onScreenVisible() {
+        if (!hasLoadedInitially) {
+            hasLoadedInitially = true
+            refresh()
+        }
     }
 
     fun refresh() {

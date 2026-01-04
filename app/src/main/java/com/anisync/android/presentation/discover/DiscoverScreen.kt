@@ -127,6 +127,11 @@ fun DiscoverScreen(
 
     var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
+    // Trigger initial data load when screen becomes visible (deferred from ViewModel init)
+    LaunchedEffect(Unit) {
+        viewModel.onScreenVisible()
+    }
+
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .collect { viewModel.onSearchQueryChange(it) }
