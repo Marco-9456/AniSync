@@ -463,6 +463,20 @@ class NotificationWorker @AssistedInject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Create "Add to Watching" action button
+        val addToWatchingIntent = Intent(applicationContext, AddToWatchingReceiver::class.java).apply {
+            action = AddToWatchingReceiver.ACTION_ADD_TO_WATCHING
+            putExtra(AddToWatchingReceiver.EXTRA_MEDIA_ID, airing.mediaId)
+            putExtra(AddToWatchingReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(AddToWatchingReceiver.EXTRA_MEDIA_TITLE, airing.mediaTitle)
+        }
+        val addToWatchingPendingIntent = PendingIntent.getBroadcast(
+            applicationContext,
+            notificationId + 1000000, // Unique request code to avoid conflicts
+            addToWatchingIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { url ->
             loadImage(url)
         }
@@ -475,6 +489,11 @@ class NotificationWorker @AssistedInject constructor(
             .setAutoCancel(true)
             .setGroup(GROUP_KEY_PLANNING)
             .setContentIntent(pendingIntent)
+            .addAction(
+                R.drawable.ic_notification, // Icon for the action
+                "Add to Watching",
+                addToWatchingPendingIntent
+            )
 
         if (largeIcon != null) {
             builder.setLargeIcon(largeIcon)

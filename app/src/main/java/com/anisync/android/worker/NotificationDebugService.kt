@@ -111,6 +111,20 @@ class NotificationDebugService @Inject constructor(
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            // Create "Add to Watching" action button
+            val addToWatchingIntent = Intent(context, AddToWatchingReceiver::class.java).apply {
+                action = AddToWatchingReceiver.ACTION_ADD_TO_WATCHING
+                putExtra(AddToWatchingReceiver.EXTRA_MEDIA_ID, SAMPLE_MEDIA_ID)
+                putExtra(AddToWatchingReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+                putExtra(AddToWatchingReceiver.EXTRA_MEDIA_TITLE, SAMPLE_TITLE)
+            }
+            val addToWatchingPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId + 1000000,
+                addToWatchingIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val largeIcon = loadImage(SAMPLE_COVER_URL)
 
             val builder = NotificationCompat.Builder(context, NotificationChannels.PLANNING_CHANNEL_ID)
@@ -121,6 +135,11 @@ class NotificationDebugService @Inject constructor(
                 .setAutoCancel(true)
                 .setGroup(GROUP_KEY_PLANNING)
                 .setContentIntent(pendingIntent)
+                .addAction(
+                    R.drawable.ic_notification,
+                    "Add to Watching",
+                    addToWatchingPendingIntent
+                )
 
             if (largeIcon != null) {
                 builder.setLargeIcon(largeIcon)

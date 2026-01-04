@@ -56,6 +56,11 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+
+        <!-- BroadcastReceiver for handling "Add to Watching" action from notifications -->
+        <receiver
+            android:name=".worker.AddToWatchingReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>
