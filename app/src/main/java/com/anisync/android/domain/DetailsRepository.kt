@@ -1,5 +1,6 @@
 package com.anisync.android.domain
 
+import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.Flow
 
 interface DetailsRepository {
@@ -25,5 +26,11 @@ interface DetailsRepository {
      */
     suspend fun deleteMediaListEntry(entryId: Int, mediaId: Int): Result<Unit>
 
+    /**
+     * Toggle favorite status for a media.
+     */
+    suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean>
+
     suspend fun getCharacterDetails(id: Int): Result<CharacterDetails>
 }
+

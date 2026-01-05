@@ -33,9 +33,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -88,7 +92,6 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.InfoCard
-import com.anisync.android.presentation.components.ScoreBadge
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
@@ -282,6 +285,7 @@ fun MediaDetailsScreen(
                                 onCharacterClick = onCharacterClick,
                                 onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.title) },
                                 onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.title) },
+                                onFavouriteClick = { viewModel.toggleFavourite() },
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
@@ -339,6 +343,7 @@ fun DetailsPageContent(
     onCharacterClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
+    onFavouriteClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -356,9 +361,12 @@ fun DetailsPageContent(
                 Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
-                    // Info Cards (Format, Status, Date)
-                    StaggeredAnimatedVisibility(key = "media_info_cards", index = 0, delayPerItem = MediaStaggerDelay) {
-                        InfoCardsSection(details)
+                    // Action Buttons (Favorite, Share)
+                    StaggeredAnimatedVisibility(key = "media_action_buttons", index = 0, delayPerItem = MediaStaggerDelay) {
+                        ActionButtonsRow(
+                            isFavorite = details.isFavourite,
+                            onFavoriteClick = onFavouriteClick
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
@@ -384,6 +392,12 @@ fun DetailsPageContent(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+
+                    // Info Cards (Status, Episodes, Season, Source)
+                    StaggeredAnimatedVisibility(key = "media_info_cards", index = 2, delayPerItem = MediaStaggerDelay) {
+                        InfoCardsSection(details)
+                    }
                 }
             }
 
@@ -569,7 +583,7 @@ fun PageHeaderSection(
             
             Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_medium)))
             
-            // Title and Score
+            // Title and Metadata
             Column(
                 modifier = Modifier
                     .align(Alignment.Bottom)
@@ -595,7 +609,47 @@ fun PageHeaderSection(
                 
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
                 
-                details.score?.let { ScoreBadge(it) }
+                // Metadata chips row (Format, Year, Score)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Format chip (TV Show, Movie, etc.)
+                    details.format?.formatAsTitle()?.let { formattedFormat ->
+                        MetadataChip(text = formattedFormat)
+                    }
+                    
+                    // Year chip
+                    details.seasonYear?.let { year ->
+                        MetadataChip(text = year.toString())
+                    }
+                    
+                    // Score chip with star icon
+                    details.score?.let { score ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFC107), // Amber/gold color
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = String.format("%.1f", score / 10f),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -603,22 +657,33 @@ fun PageHeaderSection(
 
 @Composable
 fun InfoCardsSection(details: MediaDetails) {
+    val episodesLabel = if (details.type == com.anisync.android.type.MediaType.MANGA) {
+        stringResource(R.string.stat_chapters)
+    } else {
+        stringResource(R.string.stat_episodes)
+    }
+    
+    val episodesValue = if (details.type == com.anisync.android.type.MediaType.MANGA) {
+        details.chapters?.let { "$it Chs" } ?: stringResource(R.string.unknown)
+    } else {
+        details.episodes?.let { "$it Eps" } ?: stringResource(R.string.unknown)
+    }
+    
+    val seasonValue = if (details.season != null && details.seasonYear != null) {
+        "${details.season.lowercase().replaceFirstChar { it.uppercase() }} ${details.seasonYear}"
+    } else {
+        details.seasonYear?.toString() ?: stringResource(R.string.unknown)
+    }
+    
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
     ) {
+        // Row 1: Status, Episodes
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
         ) {
-            // Format Card
-            InfoCard(
-                modifier = Modifier.weight(1f),
-                icon = MediaDetailsIcons.getFormatIcon(details.format, details.type),
-                label = stringResource(R.string.stat_format),
-                value = details.format?.formatAsTitle() ?: stringResource(R.string.unknown),
-                iconTint = MaterialTheme.colorScheme.tertiary // Pinkish/Red
-            )
             // Status Card
             InfoCard(
                 modifier = Modifier.weight(1f),
@@ -628,19 +693,128 @@ fun InfoCardsSection(details: MediaDetails) {
                 iconTint = MediaDetailsIcons.getStatusColor(details.status),
                 isStatus = true
             )
+            // Episodes Card
+            InfoCard(
+                modifier = Modifier.weight(1f),
+                icon = MediaDetailsIcons.getEpisodesIcon(details.type),
+                label = episodesLabel,
+                value = episodesValue,
+                iconTint = MaterialTheme.colorScheme.primary
+            )
         }
-        // Release Date Card
-        val seasonText = if(details.season != null && details.seasonYear != null) {
-            " • ${details.season.lowercase().replaceFirstChar { it.uppercase() }} ${details.seasonYear}"
-        } else ""
         
-        InfoCard(
+        // Row 2: Season, Source
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            icon = Icons.Default.DateRange,
-            label = stringResource(R.string.sort_release_date),
-            value = "${details.startDate ?: stringResource(R.string.unknown)}$seasonText",
-            iconTint = MaterialTheme.colorScheme.secondary
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        ) {
+            // Season Card - uses custom drawables for Fall/Spring
+            if (MediaDetailsIcons.useCustomSeasonIcon(details.season)) {
+                InfoCard(
+                    modifier = Modifier.weight(1f),
+                    iconResId = MediaDetailsIcons.getSeasonIconResId(details.season),
+                    label = stringResource(R.string.stat_season),
+                    value = seasonValue,
+                    iconTint = MediaDetailsIcons.getSeasonColor(details.season)
+                )
+            } else {
+                InfoCard(
+                    modifier = Modifier.weight(1f),
+                    icon = MediaDetailsIcons.getSeasonIcon(details.season)!!,
+                    label = stringResource(R.string.stat_season),
+                    value = seasonValue,
+                    iconTint = MediaDetailsIcons.getSeasonColor(details.season)
+                )
+            }
+            // Source Card
+            InfoCard(
+                modifier = Modifier.weight(1f),
+                icon = MediaDetailsIcons.getSourceIcon(),
+                label = stringResource(R.string.stat_source),
+                value = stringResource(R.string.source_original), // TODO: Get actual source from API
+                iconTint = MaterialTheme.colorScheme.tertiary
+            )
+        }
+    }
+}
+
+/**
+ * A simple metadata chip used for displaying format, year, etc.
+ */
+@Composable
+fun MetadataChip(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
+/**
+ * Row containing Favorite and Share action buttons.
+ * Favorite is a larger filled icon-only button, Share is smaller outlined with label.
+ */
+@Composable
+fun ActionButtonsRow(
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
+    onShareClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Favorite Button - Filled, icon-only, larger
+        androidx.compose.material3.FilledIconButton(
+            onClick = onFavoriteClick,
+            modifier = Modifier.size(48.dp),
+            colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+                containerColor = if (isFavorite) 
+                    Color(0xFFE91E63) 
+                else 
+                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = if (isFavorite) 
+                    Color.White 
+                else 
+                    Color(0xFFE91E63)
+            )
+        ) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = stringResource(R.string.action_favorite),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        
+        // Share Button - Outlined with label
+        OutlinedButton(
+            onClick = onShareClick,
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Share,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.action_share))
+        }
+    }
+}

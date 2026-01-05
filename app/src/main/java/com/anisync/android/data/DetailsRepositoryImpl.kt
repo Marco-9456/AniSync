@@ -4,6 +4,8 @@ import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
+import com.anisync.android.ToggleFavouriteMutation
+import com.anisync.android.type.MediaType
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.toDomain
@@ -138,7 +140,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 listProgress = listEntry?.progress,
                 characters = characters,
                 relations = relations,
-                externalLinks = externalLinks
+                externalLinks = externalLinks,
+                isFavourite = media.isFavourite ?: false
             )
 
             // Update cache
@@ -190,6 +193,36 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean> {
+        return safeApiCall {
+            val mutation = if (mediaType == MediaType.MANGA) {
+                ToggleFavouriteMutation(
+                    animeId = Optional.absent(),
+                    mangaId = Optional.present(mediaId)
+                )
+            } else {
+                ToggleFavouriteMutation(
+                    animeId = Optional.present(mediaId),
+                    mangaId = Optional.absent()
+                )
+            }
+
+            val response = apolloClient.mutation(mutation).execute()
+
+            if (response.hasErrors()) {
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
+                throw Exception(errorMessage)
+            }
+
+            // Refresh to get the updated isFavourite state
+            refreshMediaDetails(mediaId)
+
+            // Return the new favourite state (toggled)
+            val currentEntity = mediaDetailsDao.getById(mediaId)
+            currentEntity?.isFavourite ?: false
+        }
+    }
 
     override suspend fun getCharacterDetails(id: Int): Result<CharacterDetails> {
         return safeApiCall {

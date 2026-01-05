@@ -122,4 +122,27 @@ class MediaDetailsViewModel @Inject constructor(
             _isSaving.value = false
         }
     }
+
+    /**
+     * Toggle favourite status for the current media.
+     */
+    fun toggleFavourite() {
+        viewModelScope.launch {
+            val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
+            val mediaType = details.type ?: return@launch
+
+            _isSaving.value = true
+            
+            when (val result = detailsRepository.toggleFavourite(mediaId, mediaType)) {
+                is Result.Success -> {
+                    // Cache updated via refresh, Flow emits automatically
+                }
+                is Result.Error -> {
+                    // Could emit a one-time event for error (e.g., Snackbar)
+                }
+            }
+            
+            _isSaving.value = false
+        }
+    }
 }

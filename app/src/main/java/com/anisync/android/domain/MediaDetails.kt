@@ -55,7 +55,9 @@ data class MediaDetails(
     // Related media
     val relations: List<RelatedMedia>,
     // External and streaming links
-    val externalLinks: List<ExternalLink>
+    val externalLinks: List<ExternalLink>,
+    // Whether this media is in user's favorites
+    val isFavourite: Boolean = false
 )
 
 @Serializable

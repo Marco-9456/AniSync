@@ -16,6 +16,7 @@ type Mutation {
   SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int, score: Float, repeat: Int, notes: String, startedAt: FuzzyDateInput, completedAt: FuzzyDateInput): MediaList
   DeleteMediaListEntry(id: Int): Deleted
   UpdateUser(about: String): User
+  ToggleFavourite(animeId: Int, mangaId: Int, characterId: Int, staffId: Int, studioId: Int): Favourites
 }
 
 type Deleted {
@@ -73,6 +74,7 @@ type Media {
   nextAiringEpisode: AiringSchedule
   season: MediaSeason
   externalLinks: [MediaExternalLink]
+  isFavourite: Boolean
 }
 
 enum CharacterSort {

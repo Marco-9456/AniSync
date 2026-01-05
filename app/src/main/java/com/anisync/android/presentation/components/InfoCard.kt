@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,10 +41,63 @@ fun InfoCard(
     iconTint: Color,
     isStatus: Boolean = false
 ) {
+    InfoCardContent(
+        modifier = modifier,
+        label = label,
+        value = value,
+        iconTint = iconTint,
+        isStatus = isStatus
+    ) {
+        Icon(
+            imageVector = icon, 
+            contentDescription = null, 
+            tint = iconTint, 
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+/**
+ * InfoCard variant that accepts a drawable resource ID for the icon.
+ */
+@Composable
+fun InfoCard(
+    modifier: Modifier = Modifier,
+    @DrawableRes iconResId: Int,
+    label: String,
+    value: String,
+    iconTint: Color,
+    isStatus: Boolean = false
+) {
+    InfoCardContent(
+        modifier = modifier,
+        label = label,
+        value = value,
+        iconTint = iconTint,
+        isStatus = isStatus
+    ) {
+        Icon(
+            painter = painterResource(id = iconResId), 
+            contentDescription = null, 
+            tint = iconTint, 
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun InfoCardContent(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    iconTint: Color,
+    isStatus: Boolean = false,
+    iconContent: @Composable () -> Unit
+) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shape = RoundedCornerShape(12.dp) // Using standard medium corner radius (approx) or 12.dp per design
+        shape = RoundedCornerShape(12.dp)
     ) {
          Row(
              modifier = Modifier.padding(12.dp),
@@ -58,12 +113,7 @@ fun InfoCard(
                     ),
                 contentAlignment = Alignment.Center
              ) {
-                 Icon(
-                     imageVector = icon, 
-                     contentDescription = null, 
-                     tint = iconTint, 
-                     modifier = Modifier.size(20.dp)
-                 )
+                 iconContent()
              }
              
              Column {

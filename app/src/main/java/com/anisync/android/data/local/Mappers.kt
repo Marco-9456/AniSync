@@ -88,7 +88,8 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     listProgress = listProgress,
     characters = characters,
     relations = relations,
-    externalLinks = externalLinks
+    externalLinks = externalLinks,
+    isFavourite = isFavourite
 )
 
 fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
@@ -115,7 +116,8 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     listProgress = listProgress,
     characters = characters,
     relations = relations,
-    externalLinks = externalLinks
+    externalLinks = externalLinks,
+    isFavourite = isFavourite
 )
 
 // --- UserProfile ---

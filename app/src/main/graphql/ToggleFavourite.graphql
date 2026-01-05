@@ -1,0 +1,10 @@
+mutation ToggleFavourite($animeId: Int, $mangaId: Int) {
+  ToggleFavourite(animeId: $animeId, mangaId: $mangaId) {
+    anime {
+      nodes {
+        id
+        isFavourite
+      }
+    }
+  }
+}

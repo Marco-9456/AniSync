@@ -37,5 +37,6 @@ data class MediaDetailsEntity(
     val characters: List<CharacterInfo>,
     val relations: List<RelatedMedia>,
     val externalLinks: List<ExternalLink>,
+    val isFavourite: Boolean = false,
     val lastUpdated: Long = System.currentTimeMillis()
 )
