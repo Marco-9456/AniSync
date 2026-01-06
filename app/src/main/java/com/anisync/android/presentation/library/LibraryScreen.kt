@@ -88,6 +88,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -106,7 +107,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.CompletedCardConfig
-import com.anisync.android.presentation.components.EditLibraryEntryDialog
+
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.MediaTypeSelector
@@ -139,6 +140,7 @@ fun LibraryScreen(
     val isAscending by viewModel.isAscending.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val haptic = rememberHapticFeedback()
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -147,7 +149,7 @@ fun LibraryScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
-    var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
+
 
     // Search Bar State
     val searchBarState = rememberSearchBarState()
@@ -396,7 +398,7 @@ fun LibraryScreen(
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.incrementProgress(entry.mediaId) } } else null,
                                             onDecrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.decrementProgress(entry.mediaId) } } else null,
-                                            onEdit = { editingEntry = entry },
+                                            onEdit = { Toast.makeText(context, R.string.feature_coming_soon, Toast.LENGTH_SHORT).show() },
                                             config = cardConfig,
                                             sharedTransitionScope = sharedTransitionScope,
                                             animatedVisibilityScope = animatedVisibilityScope,
@@ -492,16 +494,7 @@ fun LibraryScreen(
         }
     }
 
-    if (editingEntry != null) {
-        EditLibraryEntryDialog(
-            entry = editingEntry!!,
-            onDismiss = { editingEntry = null },
-            onSave = {
-                viewModel.updateEntry(it)
-                editingEntry = null
-            }
-        )
-    }
+
 
     // Sort Bottom Sheet
     SortBottomSheet(
