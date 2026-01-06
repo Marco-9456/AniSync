@@ -160,6 +160,17 @@ class NotificationWorker @AssistedInject constructor(
         val lastNotifiedId = preferencesRepository.getLastNotifiedId()
         var currentPage = 1
         var hasMore = true
+        
+        // Get planning list media IDs to exclude Episode 1 notifications for them
+        // (those are handled by checkPlanningFirstEpisodes with "Add to Watching" action)
+        val planningMediaIds = if (notificationPreferences.planningEnabled.value) {
+            libraryDao.getByType(MediaType.ANIME)
+                .filter { it.status == LibraryStatus.PLANNING }
+                .map { it.mediaId }
+                .toSet()
+        } else {
+            emptySet()
+        }
 
         while (hasMore && currentPage <= MAX_NOTIFICATION_PAGES) {
             val repoResult = notificationRepository.getNotifications(currentPage)
@@ -171,6 +182,12 @@ class NotificationWorker @AssistedInject constructor(
                     val newOnThisPage = notifications
                         .filterIsInstance<AiringNotification>()
                         .filter { it.id > lastNotifiedId }
+                        // Skip Episode 1 for Planning items (handled by checkPlanningFirstEpisodes)
+                        .filter { notification ->
+                            val isEpisode1ForPlanning = notification.episode == 1 && 
+                                notification.media?.id in planningMediaIds
+                            !isEpisode1ForPlanning
+                        }
                     
                     if (newOnThisPage.isEmpty()) {
                         hasMore = false
@@ -276,7 +293,10 @@ class NotificationWorker @AssistedInject constructor(
 
         val mediaIds = planningEntries.map { it.mediaId }
         
-        preferencesRepository.cleanupOrphanedPlanningIds(mediaIds.toSet())
+        // NOTE: We intentionally do NOT call cleanupOrphanedPlanningIds here.
+        // Once an "Episode 1 aired" notification has been sent for a media ID,
+        // that fact should persist permanently. If a user moves an item out of
+        // Planning and then back, they should not receive the notification again.
         
         if (planningEntries.isEmpty()) return
 
