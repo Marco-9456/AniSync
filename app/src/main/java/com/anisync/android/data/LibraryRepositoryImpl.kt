@@ -104,6 +104,7 @@ class LibraryRepositoryImpl @Inject constructor(
     /**
      * Optimistic local update + network sync.
      * Automatically changes status to COMPLETED if progress reaches total.
+     * Also sets completedAt date when completing.
      */
     override suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit> {
         // 1. Get current entry to check for completion
@@ -114,10 +115,17 @@ class LibraryRepositoryImpl @Inject constructor(
         
         // Check if this progress update completes the media
         val isCompleted = total != null && total > 0 && progress >= total
+        val now = System.currentTimeMillis()
         
         // 2. Update local immediately (UI sees change via Flow)
         if (isCompleted) {
-            libraryDao.updateStatusAndProgress(mediaId, LibraryStatus.COMPLETED, progress)
+            // Auto-set completedAt when finishing
+            libraryDao.updateStatusProgressAndCompletedAt(
+                mediaId = mediaId,
+                status = LibraryStatus.COMPLETED,
+                progress = progress,
+                completedAt = now
+            )
         } else {
             libraryDao.updateProgress(mediaId, progress)
         }
@@ -128,7 +136,8 @@ class LibraryRepositoryImpl @Inject constructor(
                 com.anisync.android.SaveMediaListEntryMutation(
                     mediaId = Optional.present(mediaId),
                     progress = Optional.present(progress),
-                    status = if (isCompleted) Optional.present(MediaListStatus.COMPLETED) else Optional.absent()
+                    status = if (isCompleted) Optional.present(MediaListStatus.COMPLETED) else Optional.absent(),
+                    completedAt = if (isCompleted) Optional.present(now.toFuzzyDateInput()) else Optional.absent()
                 )
             ).execute()
 
@@ -147,24 +156,45 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {
+        // Get original entry to detect status changes
+        val originalEntry = libraryDao.getEntry(entry.mediaId)
+        val now = System.currentTimeMillis()
+        
+        // Auto-fill dates based on status changes
+        var updatedEntry = entry
+        
+        // If changing to CURRENT (Watching/Reading) and startedAt is not set, auto-fill it
+        if (entry.status == LibraryStatus.CURRENT && 
+            originalEntry?.status != LibraryStatus.CURRENT &&
+            entry.startedAt == null) {
+            updatedEntry = updatedEntry.copy(startedAt = now)
+        }
+        
+        // If changing to COMPLETED and completedAt is not set, auto-fill it
+        if (entry.status == LibraryStatus.COMPLETED && 
+            originalEntry?.status != LibraryStatus.COMPLETED &&
+            entry.completedAt == null) {
+            updatedEntry = updatedEntry.copy(completedAt = now)
+        }
+        
         // 1. Update local DB
         // We assume media type is present or default to ANIME logic for entity mapping
-        libraryDao.updateEntry(entry.toEntity(entry.type ?: MediaType.ANIME))
+        libraryDao.updateEntry(updatedEntry.toEntity(updatedEntry.type ?: MediaType.ANIME))
 
         // 2. Sync to network
         return safeApiCall {
-            val apiStatus = entry.status.toApiStatus()
+            val apiStatus = updatedEntry.status.toApiStatus()
 
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMediaListEntryMutation(
-                    mediaId = Optional.present(entry.mediaId),
+                    mediaId = Optional.present(updatedEntry.mediaId),
                     status = Optional.present(apiStatus),
-                    progress = Optional.present(entry.progress),
-                    score = Optional.present(entry.score),
-                    repeat = Optional.present(entry.rewatches),
-                    notes = Optional.present(entry.notes),
-                    startedAt = Optional.present(entry.startedAt?.toFuzzyDateInput()),
-                    completedAt = Optional.present(entry.completedAt?.toFuzzyDateInput())
+                    progress = Optional.present(updatedEntry.progress),
+                    score = Optional.presentIfNotNull(updatedEntry.score),
+                    repeat = Optional.present(updatedEntry.rewatches),
+                    notes = Optional.presentIfNotNull(updatedEntry.notes),
+                    startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
+                    completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent()
                 )
             ).execute()
 
@@ -177,5 +207,25 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteEntry(entryId: Int, mediaId: Int): Result<Unit> {
+        // 1. Delete from local DB immediately (optimistic)
+        libraryDao.deleteByMediaId(mediaId)
+
+        // 2. Delete from network
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.DeleteMediaListEntryMutation(
+                    id = Optional.present(entryId)
+                )
+            ).execute()
+
+            if (response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()) {
+                // Success
+            } else {
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"
+                throw Exception(errorMessage)
+            }
+        }
+    }
 
 }

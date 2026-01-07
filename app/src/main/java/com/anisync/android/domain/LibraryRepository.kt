@@ -26,4 +26,9 @@ interface LibraryRepository {
      * Update an entire entry (score, status, notes, etc).
      */
     suspend fun updateEntry(entry: LibraryEntry): Result<Unit>
+
+    /**
+     * Delete an entry from the library.
+     */
+    suspend fun deleteEntry(entryId: Int, mediaId: Int): Result<Unit>
 }

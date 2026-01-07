@@ -82,4 +82,27 @@ interface LibraryDao {
      */
     @androidx.room.Update
     suspend fun updateEntry(entry: LibraryEntryEntity)
+
+    /**
+     * Update status, progress, and completedAt when media is completed.
+     */
+    @Query("UPDATE library_entries SET status = :status, progress = :progress, completedAt = :completedAt, lastUpdated = :timestamp WHERE mediaId = :mediaId")
+    suspend fun updateStatusProgressAndCompletedAt(
+        mediaId: Int,
+        status: LibraryStatus,
+        progress: Int,
+        completedAt: Long,
+        timestamp: Long = System.currentTimeMillis()
+    )
+
+    /**
+     * Update status and startedAt when starting to watch/read.
+     */
+    @Query("UPDATE library_entries SET status = :status, startedAt = :startedAt, lastUpdated = :timestamp WHERE mediaId = :mediaId")
+    suspend fun updateStatusAndStartedAt(
+        mediaId: Int,
+        status: LibraryStatus,
+        startedAt: Long,
+        timestamp: Long = System.currentTimeMillis()
+    )
 }

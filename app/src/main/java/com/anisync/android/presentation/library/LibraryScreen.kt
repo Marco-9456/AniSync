@@ -88,7 +88,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -107,7 +106,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.CompletedCardConfig
-
+import com.anisync.android.presentation.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.MediaTypeSelector
@@ -149,6 +148,9 @@ fun LibraryScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
+    
+    // State for edit sheet
+    var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
 
 
     // Search Bar State
@@ -398,7 +400,7 @@ fun LibraryScreen(
                                             onClick = { onMediaClick(entry.mediaId) },
                                             onIncrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.incrementProgress(entry.mediaId) } } else null,
                                             onDecrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.decrementProgress(entry.mediaId) } } else null,
-                                            onEdit = { Toast.makeText(context, R.string.feature_coming_soon, Toast.LENGTH_SHORT).show() },
+                                            onEdit = { editingEntry = entry },
                                             config = cardConfig,
                                             sharedTransitionScope = sharedTransitionScope,
                                             animatedVisibilityScope = animatedVisibilityScope,
@@ -444,49 +446,52 @@ fun LibraryScreen(
 
     // ExpandedFullScreenSearchBar displays filtered library results in a full-screen overlay
     // It must be placed after Scaffold to overlay properly and share the same searchBarState
-    ExpandedFullScreenSearchBar(
-        state = searchBarState,
-        inputField = inputField
-    ) {
-        // Show filtered library results in the expanded search view
-        when (val state = uiState) {
-            is LibraryUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.loading),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            is LibraryUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-            is LibraryUiState.Success -> {
-                if (state.entries.isEmpty() && searchQuery.isNotEmpty()) {
+    // Only render when not editing to prevent focus conflicts with bottom sheet inputs
+    if (editingEntry == null) {
+        ExpandedFullScreenSearchBar(
+            state = searchBarState,
+            inputField = inputField
+        ) {
+            // Show filtered library results in the expanded search view
+            when (val state = uiState) {
+                is LibraryUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = stringResource(R.string.search_no_results),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge
+                            text = stringResource(R.string.loading),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(state.entries, key = { it.id }) { entry ->
-                            LibrarySearchResultCard(
-                                entry = entry,
-                                mediaType = mediaType,
-                                onClick = { onSearchResultClick(entry.mediaId) }
+                }
+                is LibraryUiState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                is LibraryUiState.Success -> {
+                    if (state.entries.isEmpty() && searchQuery.isNotEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = stringResource(R.string.search_no_results),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyLarge
                             )
+                        }
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(state.entries, key = { it.id }) { entry ->
+                                LibrarySearchResultCard(
+                                    entry = entry,
+                                    mediaType = mediaType,
+                                    onClick = { onSearchResultClick(entry.mediaId) }
+                                )
+                            }
                         }
                     }
                 }
@@ -508,6 +513,29 @@ fun LibraryScreen(
             viewModel.onSortOptionChange(sort, ascending)
         }
     )
+
+    // Edit Library Entry Bottom Sheet
+    editingEntry?.let { entry ->
+        // Collapse search bar when edit sheet is open to prevent focus conflicts
+        LaunchedEffect(Unit) {
+            if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                searchBarState.animateToCollapsed()
+            }
+        }
+        
+        EditLibraryEntrySheet(
+            entry = entry,
+            onDismiss = { editingEntry = null },
+            onSave = { updatedEntry ->
+                viewModel.updateEntry(updatedEntry)
+                editingEntry = null
+            },
+            onDelete = {
+                viewModel.deleteEntry(entry.id, entry.mediaId)
+                editingEntry = null
+            }
+        )
+    }
 }
 
 @Composable

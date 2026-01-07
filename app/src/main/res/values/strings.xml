@@ -168,6 +168,22 @@
     <string name="subsection_reading">Read On</string>
     <string name="subsection_external">External Links</string>
 
+    <!-- Edit Library Entry -->
+    <string name="edit_entry">Edit Entry</string>
+    <string name="no_score">No Score</string>
+    <string name="dates">Dates</string>
+    <string name="start_date">Start Date</string>
+    <string name="completed_date">Completed Date</string>
+    <string name="no_date">Not Set</string>
+    <string name="times_rewatched">Times Rewatched</string>
+    <string name="times_reread">Times Reread</string>
+    <string name="notes">Notes</string>
+    <string name="notes_placeholder">Add your notes here…</string>
+    <string name="save">Save</string>
+    <string name="delete_entry_confirm">Remove this entry from your library?</string>
+    <string name="entry_saved">Entry saved</string>
+    <string name="entry_deleted">Entry removed</string>
+
     <!-- Login Screen -->
     <string name="login_sync_your">Sync Your </string>
     <string name="login_world">World</string>

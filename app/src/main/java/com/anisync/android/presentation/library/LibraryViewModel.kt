@@ -223,5 +223,18 @@ class LibraryViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteEntry(entryId: Int, mediaId: Int) {
+        viewModelScope.launch {
+            when (val result = libraryRepository.deleteEntry(entryId, mediaId)) {
+                is Result.Success -> {
+                    _events.emit(LibraryEvent.ShowSnackbar("Entry removed"))
+                }
+                is Result.Error -> {
+                    _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                }
+            }
+        }
+    }
 }
 
