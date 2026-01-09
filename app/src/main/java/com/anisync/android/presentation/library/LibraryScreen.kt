@@ -436,7 +436,9 @@ fun LibraryScreen(
                             ) { isGrid ->
                                 if (isGrid) {
                                     LazyVerticalGrid(
-                                        columns = GridCells.Adaptive(minSize = 160.dp),
+                                        // Fixed(2) guarantees 2 columns on all phone screens
+                                        // Adaptive(160.dp) can result in 1 column on edge-case widths
+                                        columns = GridCells.Fixed(2),
                                         state = gridState,
                                         contentPadding = PaddingValues(24.dp),
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
