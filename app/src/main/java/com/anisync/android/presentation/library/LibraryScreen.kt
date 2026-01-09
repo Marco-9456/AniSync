@@ -11,6 +11,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +29,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -56,8 +57,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -116,6 +118,7 @@ import com.anisync.android.presentation.components.SortBottomSheet
 import com.anisync.android.presentation.components.SortIcon
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.WatchingCardConfig
+import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
@@ -147,7 +150,20 @@ fun LibraryScreen(
     
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
-    var selectedStatus by rememberSaveable { mutableStateOf(LibraryStatus.CURRENT) }
+    
+    // Status tabs for HorizontalPager
+    val statuses = remember {
+        listOf(
+            LibraryStatus.CURRENT,
+            LibraryStatus.PAUSED,
+            LibraryStatus.COMPLETED,
+            LibraryStatus.PLANNING,
+            LibraryStatus.DROPPED
+        )
+    }
+    
+    // Pager state - single source of truth for current tab
+    val pagerState = rememberPagerState(pageCount = { statuses.size })
     
     // State for edit sheet
     var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
@@ -202,28 +218,19 @@ fun LibraryScreen(
         }
     }
 
-    // Use rememberSaveable to persist scroll position across navigation
-    // This ensures returning from Details screen restores the scroll position
-    val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
-    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-
-    // Only scroll to top when filter/sort changes, not on initial composition
-    var previousMediaType by rememberSaveable { mutableStateOf(mediaType) }
-    var previousSelectedStatus by rememberSaveable { mutableStateOf(selectedStatus) }
-    var previousSortOption by rememberSaveable { mutableStateOf(sortOption) }
-
-    LaunchedEffect(sortOption, selectedStatus, mediaType) {
-        // Only scroll to top if the user actually changed a filter, not on navigation return
-        val filterChanged = mediaType != previousMediaType ||
-                            selectedStatus != previousSelectedStatus ||
-                            sortOption != previousSortOption
-
-        if (filterChanged) {
-            if (isGridView) gridState.animateScrollToItem(0) else listState.animateScrollToItem(0)
-            previousMediaType = mediaType
-            previousSelectedStatus = selectedStatus
-            previousSortOption = sortOption
-        }
+    // Per-page scroll states using key-based rememberSaveable
+    // Each status tab maintains its own scroll position
+    val gridScrollStates = statuses.associateWith { status ->
+        rememberSaveable(
+            key = "grid_${status.name}",
+            saver = LazyGridState.Saver
+        ) { LazyGridState() }
+    }
+    val listScrollStates = statuses.associateWith { status ->
+        rememberSaveable(
+            key = "list_${status.name}",
+            saver = LazyListState.Saver
+        ) { LazyListState() }
     }
 
     // Optimization: Memoize inputField to avoid recreation on every recomposition
@@ -315,14 +322,16 @@ fun LibraryScreen(
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                 )
 
-                // Status filter chips
-                val statuses = listOf(LibraryStatus.CURRENT, LibraryStatus.PAUSED, LibraryStatus.COMPLETED, LibraryStatus.PLANNING, LibraryStatus.DROPPED)
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Status tabs with ScrollableTabRow
+                ScrollableTabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    edgePadding = 16.dp,
+                    indicator = {}, // No indicator needed - pill background shows selection
+                    divider = {} // Remove the default divider
                 ) {
-                    items(statuses) { status ->
-                        val isSelected = selectedStatus == status
+                    statuses.forEachIndexed { index, status ->
                         val statusIcon = when (status) {
                             LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
                             LibraryStatus.PAUSED -> Icons.Default.Pause
@@ -331,29 +340,22 @@ fun LibraryScreen(
                             LibraryStatus.DROPPED -> Icons.Default.Close
                             else -> Icons.Default.Inbox
                         }
-
-                        FilterChip(
-                            selected = isSelected,
+                        
+                        AnimatedTab(
+                            index = index,
+                            selectedIndex = pagerState.currentPage,
+                            selected = pagerState.currentPage == index,
                             onClick = {
-                                haptic.click()
-                                selectedStatus = status
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
                             },
-                            label = { Text(status.toLabel(mediaType)) },
-                            leadingIcon = { Icon(imageVector = statusIcon, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                selectedBorderColor = Color.Transparent
-                            )
+                            icon = statusIcon,
+                            label = status.toLabel(mediaType)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     ) { innerPadding ->
@@ -364,76 +366,87 @@ fun LibraryScreen(
                 }
                 is LibraryUiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.refresh() })
                 is LibraryUiState.Success -> {
-                    val entries by remember(state.entries, selectedStatus) {
-                        derivedStateOf { state.entries.filter { it.status == selectedStatus } }
-                    }
-
-                    if (entries.isEmpty()) {
-                        EmptyLibraryTabState(selectedStatus, mediaType)
-                    } else {
-                        // Using MotionScheme specs for the transition
-                        val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-                        val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-                        AnimatedContent(
-                            targetState = isGridView,
-                            transitionSpec = {
-                                (slideInVertically(spatialSpec) { if (targetState) -it / 8 else it / 8 } + fadeIn(effectsSpec)) togetherWith
-                                        (slideOutVertically(spatialSpec) { if (targetState) it / 8 else -it / 8 } + fadeOut(effectsSpec))
-                            },
-                            label = "ViewMode"
-                        ) { isGrid ->
-                            if (isGrid) {
-                                LazyVerticalGrid(
-                                    columns = GridCells.Adaptive(minSize = 160.dp),
-                                    state = gridState,
-                                contentPadding = PaddingValues(24.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(entries, key = { it.id }) { entry ->
-                                        val cardConfig = if (selectedStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
-                                        LibraryMediaCard(
-                                            entry = entry,
-                                            mediaType = mediaType,
-                                            onClick = { onMediaClick(entry.mediaId) },
-                                            onIncrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.incrementProgress(entry.mediaId) } } else null,
-                                            onDecrement = if (selectedStatus == LibraryStatus.CURRENT) { { viewModel.decrementProgress(entry.mediaId) } } else null,
-                                            onEdit = { editingEntry = entry },
-                                            config = cardConfig,
-                                            sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope,
-                                            modifier = Modifier.animateItem(
-                                                fadeInSpec = effectsSpec,
-                                                fadeOutSpec = effectsSpec,
-                                                placementSpec = spatialSpec
+                    // Using MotionScheme specs for animations
+                    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+                    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                    
+                    // HorizontalPager for swipeable status tabs
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { pageIndex ->
+                        val pageStatus = statuses[pageIndex]
+                        val entries by remember(state.entries, pageStatus) {
+                            derivedStateOf { state.entries.filter { it.status == pageStatus } }
+                        }
+                        
+                        // Get scroll states for this page
+                        val gridState = gridScrollStates[pageStatus] ?: rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+                        val listState = listScrollStates[pageStatus] ?: rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+                        
+                        if (entries.isEmpty()) {
+                            EmptyLibraryTabState(pageStatus, mediaType)
+                        } else {
+                            AnimatedContent(
+                                targetState = isGridView,
+                                transitionSpec = {
+                                    (slideInVertically(spatialSpec) { if (targetState) -it / 8 else it / 8 } + fadeIn(effectsSpec)) togetherWith
+                                            (slideOutVertically(spatialSpec) { if (targetState) it / 8 else -it / 8 } + fadeOut(effectsSpec))
+                                },
+                                label = "ViewMode"
+                            ) { isGrid ->
+                                if (isGrid) {
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Adaptive(minSize = 160.dp),
+                                        state = gridState,
+                                        contentPadding = PaddingValues(24.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        items(entries, key = { it.id }) { entry ->
+                                            val cardConfig = if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
+                                            LibraryMediaCard(
+                                                entry = entry,
+                                                mediaType = mediaType,
+                                                onClick = { onMediaClick(entry.mediaId) },
+                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) { { viewModel.incrementProgress(entry.mediaId) } } else null,
+                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) { { viewModel.decrementProgress(entry.mediaId) } } else null,
+                                                onEdit = { editingEntry = entry },
+                                                config = cardConfig,
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                                modifier = Modifier.animateItem(
+                                                    fadeInSpec = effectsSpec,
+                                                    fadeOutSpec = effectsSpec,
+                                                    placementSpec = spatialSpec
+                                                )
                                             )
-                                        )
+                                        }
                                     }
-                                }
-                            } else {
-                                LazyColumn(
-                                    state = listState,
-                                    contentPadding = PaddingValues(24.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    items(entries, key = { it.id }) { entry ->
-                                        NewListCard(
-                                            entry = entry,
-                                            mediaType = mediaType,
-                                            onClick = { onMediaClick(entry.mediaId) },
-                                            onIncrement = { viewModel.incrementProgress(entry.mediaId) },
-                                            onDecrement = { viewModel.decrementProgress(entry.mediaId) },
-                                            sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope,
-                                            modifier = Modifier.animateItem(
-                                                fadeInSpec = effectsSpec,
-                                                fadeOutSpec = effectsSpec,
-                                                placementSpec = spatialSpec
+                                } else {
+                                    LazyColumn(
+                                        state = listState,
+                                        contentPadding = PaddingValues(24.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        items(entries, key = { it.id }) { entry ->
+                                            NewListCard(
+                                                entry = entry,
+                                                mediaType = mediaType,
+                                                onClick = { onMediaClick(entry.mediaId) },
+                                                onIncrement = { viewModel.incrementProgress(entry.mediaId) },
+                                                onDecrement = { viewModel.decrementProgress(entry.mediaId) },
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                                modifier = Modifier.animateItem(
+                                                    fadeInSpec = effectsSpec,
+                                                    fadeOutSpec = effectsSpec,
+                                                    placementSpec = spatialSpec
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
                             }

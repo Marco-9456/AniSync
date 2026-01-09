@@ -1,0 +1,164 @@
+package com.anisync.android.presentation.components
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+
+/**
+ * Animated tab with horizontal stretch effect and neighbor displacement.
+ * 
+ * Based on PixelPlayer's TabAnimation implementation:
+ * - Selected tab stretches horizontally (scaleX 1.0 → 1.15 → 1.0)
+ * - Neighbor tabs slide away (translationX ±12px) and return
+ * - Smooth color transitions for selected/unselected states
+ *
+ * @param index The index of this tab
+ * @param selectedIndex The currently selected tab index
+ * @param selected Whether this tab is selected
+ * @param onClick Callback when tab is clicked
+ * @param icon The icon to display
+ * @param label The text label to display
+ */
+@Composable
+fun AnimatedTab(
+    modifier: Modifier = Modifier,
+    index: Int = 0,
+    selectedIndex: Int = 0,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+    icon: ImageVector,
+    label: String
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    val isSelected = selected
+    
+    // Stretch animation (scaleX for horizontal expansion)
+    val scale = remember { Animatable(1f) }
+    // Neighbor displacement
+    val offsetX = remember { Animatable(0f) }
+    
+    val animationSpec = tween<Float>(durationMillis = 250, easing = FastOutSlowInEasing)
+    
+    // Color transitions
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        animationSpec = tween(durationMillis = 200),
+        label = "TabBackground"
+    )
+    
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(durationMillis = 200),
+        label = "TabContent"
+    )
+    
+    // Handles the "stretch" animation for the selected tab
+    LaunchedEffect(isSelected) {
+        if (isSelected) {
+            launch {
+                scale.animateTo(1.15f, animationSpec = animationSpec)
+                scale.animateTo(1f, animationSpec = animationSpec)
+            }
+        } else {
+            // Instantly reset scale for non-selected tabs
+            scale.snapTo(1f)
+        }
+    }
+    
+    // Handles the offset for neighbor tabs when selection changes
+    LaunchedEffect(selectedIndex) {
+        if (!isSelected) {
+            val distance = index - selectedIndex
+            if (abs(distance) == 1) {
+                // Only affect direct neighbors
+                val direction = if (distance > 0) 1 else -1
+                val offsetValue = 12f * direction
+                launch {
+                    offsetX.animateTo(offsetValue, animationSpec = animationSpec)
+                    offsetX.animateTo(0f, animationSpec = animationSpec)
+                }
+            } else {
+                // Instantly reset offset for non-neighbor tabs
+                offsetX.snapTo(0f)
+            }
+        } else {
+            // Ensure the selected tab itself has no offset
+            offsetX.snapTo(0f)
+        }
+    }
+    
+    Tab(
+        modifier = modifier
+            .padding(horizontal = 8.dp, vertical = 12.dp)
+            .graphicsLayer {
+                scaleX = scale.value
+                translationX = offsetX.value
+            }
+            .clip(CircleShape)
+            .background(
+                color = backgroundColor,
+                shape = RoundedCornerShape(50)
+            ),
+        selected = isSelected,
+        onClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
+        selectedContentColor = contentColor,
+        unselectedContentColor = contentColor
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = contentColor
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = contentColor
+            )
+        }
+    }
+}
