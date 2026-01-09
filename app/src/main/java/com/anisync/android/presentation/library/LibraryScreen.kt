@@ -11,8 +11,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +32,8 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -57,14 +57,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
@@ -107,6 +105,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.components.CompletedCardConfig
 import com.anisync.android.presentation.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.components.ErrorState
@@ -118,7 +117,6 @@ import com.anisync.android.presentation.components.SortBottomSheet
 import com.anisync.android.presentation.components.SortIcon
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.presentation.components.WatchingCardConfig
-import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
@@ -128,7 +126,12 @@ import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
@@ -147,10 +150,10 @@ fun LibraryScreen(
     val haptic = rememberHapticFeedback()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    
+
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
-    
+
     // Status tabs for HorizontalPager
     val statuses = remember {
         listOf(
@@ -161,10 +164,10 @@ fun LibraryScreen(
             LibraryStatus.DROPPED
         )
     }
-    
+
     // Pager state - single source of truth for current tab
     val pagerState = rememberPagerState(pageCount = { statuses.size })
-    
+
     // State for edit sheet
     var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
 
@@ -173,7 +176,7 @@ fun LibraryScreen(
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
-    
+
     // Scroll behavior for AppBarWithSearch
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
@@ -211,7 +214,7 @@ fun LibraryScreen(
     }
 
     // Optimization: Memoize search result click to avoid recreation in lazy list
-    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick, keyboardController) {
+    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick) {
         { id ->
             keyboardController?.hide()
             onMediaClick(id)
@@ -233,15 +236,22 @@ fun LibraryScreen(
         ) { LazyListState() }
     }
 
-    // Optimization: Memoize inputField to avoid recreation on every recomposition
-    val inputField = remember(searchBarState.currentValue, searchQuery, isGridView, isAscending) {
+    // Optimization: Memoize inputField to avoid recreating the lambda on every recomposition.
+    // The keys are reduced to only what's necessary to redefine the composable's structure.
+    val inputField = remember {
         @Composable {
+            // Read states within this Composable lambda to ensure it recomposes when they change.
+            val currentSearchBarValue = searchBarState.currentValue
+            val currentSearchQuery = searchQuery
+            val currentIsGridView = isGridView
+            val currentIsAscending = isAscending
+
             SearchBarDefaults.InputField(
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 onSearch = { keyboardController?.hide() },
                 placeholder = {
-                    if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                    if (currentSearchBarValue == SearchBarValue.Collapsed) {
                         Text(
                             modifier = Modifier.fillMaxWidth(),
                             text = stringResource(R.string.search_library_placeholder),
@@ -251,31 +261,37 @@ fun LibraryScreen(
                         Text(stringResource(R.string.search_library_placeholder))
                     }
                 },
-                leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                leadingIcon = if (currentSearchBarValue == SearchBarValue.Expanded) {
                     {
                         IconButton(onClick = {
                             keyboardController?.hide()
                             coroutineScope.launch { searchBarState.animateToCollapsed() }
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
                     }
                 } else null,
                 trailingIcon = {
-                    if (searchBarState.currentValue == SearchBarValue.Expanded && searchQuery.isNotEmpty()) {
+                    if (currentSearchBarValue == SearchBarValue.Expanded && currentSearchQuery.isNotEmpty()) {
                         IconButton(onClick = {
                             textFieldState.edit { replace(0, length, "") }
                         }) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.clear)
+                            )
                         }
-                    } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                    } else if (currentSearchBarValue == SearchBarValue.Collapsed) {
                         Row {
                             IconButton(onClick = {
                                 haptic.click()
-                                isGridView = !isGridView
+                                isGridView = !currentIsGridView
                             }) {
                                 Icon(
-                                    imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
+                                    imageVector = if (currentIsGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
                                     contentDescription = stringResource(R.string.toggle_view)
                                 )
                             }
@@ -284,7 +300,7 @@ fun LibraryScreen(
                                 haptic.click()
                                 showSortMenu = true
                             }) {
-                                SortIcon(isAscending = isAscending)
+                                SortIcon(isAscending = currentIsAscending)
                             }
                         }
                     }
@@ -311,7 +327,7 @@ fun LibraryScreen(
                         scrolledAppBarContainerColor = Color.Transparent
                     ),
 
-                )
+                    )
 
                 // MediaTypeSelector below the search bar
                 MediaTypeSelector(
@@ -338,9 +354,10 @@ fun LibraryScreen(
                             LibraryStatus.COMPLETED -> Icons.Default.Done
                             LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
                             LibraryStatus.DROPPED -> Icons.Default.Close
+                            // Added a fallback to handle potential new statuses gracefully
                             else -> Icons.Default.Inbox
                         }
-                        
+
                         AnimatedTab(
                             index = index,
                             selectedIndex = pagerState.currentPage,
@@ -359,39 +376,61 @@ fun LibraryScreen(
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
                     if (isGridView) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
                 }
-                is LibraryUiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.refresh() })
+
+                is LibraryUiState.Error -> ErrorState(
+                    message = state.message,
+                    onRetry = { viewModel.refresh() })
+
                 is LibraryUiState.Success -> {
+                    // PERFORMANCE: Pre-group entries by status.
+                    // This is much more efficient than filtering the list on every recomposition within the pager.
+                    // The grouping is only re-calculated when state.entries itself changes.
+                    val groupedEntries by remember(state.entries) {
+                        derivedStateOf { state.entries.groupBy { it.status } }
+                    }
+
                     // Using MotionScheme specs for animations
                     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
                     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-                    
+
                     // HorizontalPager for swipeable status tabs
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { pageIndex ->
                         val pageStatus = statuses[pageIndex]
-                        val entries by remember(state.entries, pageStatus) {
-                            derivedStateOf { state.entries.filter { it.status == pageStatus } }
+                        // PERFORMANCE: Directly access the pre-grouped list. This is a very cheap operation.
+                        val entries = remember(groupedEntries, pageStatus) {
+                            groupedEntries[pageStatus] ?: emptyList()
                         }
-                        
+
                         // Get scroll states for this page
-                        val gridState = gridScrollStates[pageStatus] ?: rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
-                        val listState = listScrollStates[pageStatus] ?: rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-                        
+                        val gridState = gridScrollStates[pageStatus]
+                            ?: rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+                        val listState = listScrollStates[pageStatus]
+                            ?: rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
                         if (entries.isEmpty()) {
                             EmptyLibraryTabState(pageStatus, mediaType)
                         } else {
                             AnimatedContent(
                                 targetState = isGridView,
                                 transitionSpec = {
-                                    (slideInVertically(spatialSpec) { if (targetState) -it / 8 else it / 8 } + fadeIn(effectsSpec)) togetherWith
-                                            (slideOutVertically(spatialSpec) { if (targetState) it / 8 else -it / 8 } + fadeOut(effectsSpec))
+                                    (slideInVertically(spatialSpec) { if (targetState) -it / 8 else it / 8 } + fadeIn(
+                                        effectsSpec
+                                    )) togetherWith
+                                            (slideOutVertically(spatialSpec) { if (targetState) it / 8 else -it / 8 } + fadeOut(
+                                                effectsSpec
+                                            ))
                                 },
                                 label = "ViewMode"
                             ) { isGrid ->
@@ -405,14 +444,29 @@ fun LibraryScreen(
                                         modifier = Modifier.fillMaxSize()
                                     ) {
                                         items(entries, key = { it.id }) { entry ->
-                                            val cardConfig = if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
+                                            val cardConfig =
+                                                if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
+                                            // PERFORMANCE: Using remember to stabilize the lambda functions passed to the card
+                                            val onIncrement = remember(entry.mediaId) {
+                                                {
+                                                    viewModel.incrementProgress(entry.mediaId)
+                                                }
+                                            }
+                                            val onDecrement = remember(entry.mediaId) {
+                                                {
+                                                    viewModel.decrementProgress(entry.mediaId)
+                                                }
+                                            }
+                                            val onEdit =
+                                                remember(entry) { { editingEntry = entry } }
+
                                             LibraryMediaCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { onMediaClick(entry.mediaId) },
-                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) { { viewModel.incrementProgress(entry.mediaId) } } else null,
-                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) { { viewModel.decrementProgress(entry.mediaId) } } else null,
-                                                onEdit = { editingEntry = entry },
+                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) onIncrement else null,
+                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) onDecrement else null,
+                                                onEdit = onEdit,
                                                 config = cardConfig,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -432,12 +486,24 @@ fun LibraryScreen(
                                         modifier = Modifier.fillMaxSize()
                                     ) {
                                         items(entries, key = { it.id }) { entry ->
+                                            // PERFORMANCE: Using remember to stabilize the lambda functions
+                                            val onIncrement = remember(entry.mediaId) {
+                                                {
+                                                    viewModel.incrementProgress(entry.mediaId)
+                                                }
+                                            }
+                                            val onDecrement = remember(entry.mediaId) {
+                                                {
+                                                    viewModel.decrementProgress(entry.mediaId)
+                                                }
+                                            }
+
                                             NewListCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { onMediaClick(entry.mediaId) },
-                                                onIncrement = { viewModel.incrementProgress(entry.mediaId) },
-                                                onDecrement = { viewModel.decrementProgress(entry.mediaId) },
+                                                onIncrement = onIncrement,
+                                                onDecrement = onDecrement,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 modifier = Modifier.animateItem(
@@ -475,6 +541,7 @@ fun LibraryScreen(
                         )
                     }
                 }
+
                 is LibraryUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
@@ -483,9 +550,13 @@ fun LibraryScreen(
                         )
                     }
                 }
+
                 is LibraryUiState.Success -> {
                     if (state.entries.isEmpty() && searchQuery.isNotEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = stringResource(R.string.search_no_results),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -513,7 +584,6 @@ fun LibraryScreen(
     }
 
 
-
     // Sort Bottom Sheet
     SortBottomSheet(
         visible = showSortMenu,
@@ -535,7 +605,7 @@ fun LibraryScreen(
                 searchBarState.animateToCollapsed()
             }
         }
-        
+
         EditLibraryEntrySheet(
             entry = entry,
             onDismiss = { editingEntry = null },
@@ -560,7 +630,7 @@ private fun LibrarySearchResultCard(
 ) {
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-    
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -585,7 +655,7 @@ private fun LibrarySearchResultCard(
                     .height(75.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = entry.title,
@@ -655,10 +725,19 @@ fun NewListCard(
                         .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.width(80.dp).fillMaxHeight().padding(8.dp).clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier
+                        .width(80.dp)
+                        .fillMaxHeight()
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(12.dp))
                 )
 
-                Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 8.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 12.dp)
+                        .padding(end = 8.dp), verticalArrangement = Arrangement.SpaceBetween
+                ) {
                     Column {
                         Text(
                             text = entry.title,
@@ -674,52 +753,107 @@ fun NewListCard(
                             )
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             val nextAiring = entry.nextAiringEpisode
                             val latest = if (nextAiring != null) nextAiring - 1 else total
                             if (entry.status == LibraryStatus.CURRENT) {
                                 if (latest != null && entry.progress < latest) {
-                                    StatusBadge(formatEpisodesBehind(latest - entry.progress), MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
+                                    StatusBadge(
+                                        formatEpisodesBehind(latest - entry.progress),
+                                        MaterialTheme.colorScheme.errorContainer,
+                                        MaterialTheme.colorScheme.onErrorContainer
+                                    )
                                 } else {
-                                    StatusBadge(stringResource(R.string.badge_up_to_date), MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
+                                    StatusBadge(
+                                        stringResource(R.string.badge_up_to_date),
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
                                 }
                             }
                             if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
                                 Text(
-                                    text = stringResource(R.string.airing_episode_in, entry.nextAiringEpisode, formatTimeUntilAiring(entry.timeUntilAiring)),
-                                    style = MaterialTheme.typography.bodySmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                    text = stringResource(
+                                        R.string.airing_episode_in,
+                                        entry.nextAiringEpisode,
+                                        formatTimeUntilAiring(entry.timeUntilAiring)
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         LinearProgressIndicator(
                             progress = { animatedProgress },
-                            modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         )
                         Text(
-                            text = stringResource(R.string.progress_format, entry.progress, total?.toString() ?: stringResource(R.string.progress_unknown)),
-                            style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace, fontSize = 11.sp
+                            text = stringResource(
+                                R.string.progress_format,
+                                entry.progress,
+                                total?.toString() ?: stringResource(R.string.progress_unknown)
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp
                         )
                     }
                 }
 
-                Column(modifier = Modifier.width(48.dp).fillMaxHeight().padding(vertical = 12.dp, horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .fillMaxHeight()
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Surface(
-                        modifier = Modifier.weight(1f).fillMaxWidth().bouncyClickable { haptic.click(); onIncrement() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .bouncyClickable { haptic.click(); onIncrement() },
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
-                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) }
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Add,
+                                null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                     Surface(
-                        modifier = Modifier.weight(1f).fillMaxWidth().bouncyClickable { haptic.click(); onDecrement() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .bouncyClickable { haptic.click(); onDecrement() },
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
-                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) }
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Remove,
+                                null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -729,23 +863,48 @@ fun NewListCard(
 
 @Composable
 fun EmptyLibraryTabState(status: LibraryStatus, type: MediaType) {
-    val icon = when(status) {
+    val icon = when (status) {
         LibraryStatus.CURRENT -> if (type == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
         LibraryStatus.PLANNING -> Icons.Default.Check
         LibraryStatus.COMPLETED -> Icons.Default.Check
         else -> Icons.Default.Inbox
     }
-    val message = when(status) {
-        LibraryStatus.CURRENT -> if(type == MediaType.ANIME) stringResource(R.string.empty_watching) else stringResource(R.string.empty_reading)
+    val message = when (status) {
+        LibraryStatus.CURRENT -> if (type == MediaType.ANIME) stringResource(R.string.empty_watching) else stringResource(
+            R.string.empty_reading
+        )
+
         LibraryStatus.PLANNING -> stringResource(R.string.empty_planning)
         LibraryStatus.COMPLETED -> stringResource(R.string.empty_completed)
         else -> stringResource(R.string.empty_default)
     }
-    Column(modifier = Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.size(80.dp)) {
-            Box(contentAlignment = Alignment.Center) { Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.size(80.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
