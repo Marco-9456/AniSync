@@ -455,7 +455,13 @@ private fun DiscoverContent(
                         SectionHeader(
                             title = trendingTitle,
                             iconColor = Color(0xFFFF5722),
-                            onActionClick = { onSectionSeeAllClick(trendingTitle, "trending", mediaType) },
+                            onActionClick = {
+                                onSectionSeeAllClick(
+                                    trendingTitle,
+                                    "trending",
+                                    mediaType
+                                )
+                            },
                             level = HeaderLevel.Section
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -479,7 +485,13 @@ private fun DiscoverContent(
                         SectionHeader(
                             title = popularTitle,
                             iconColor = StarGold,
-                            onActionClick = { onSectionSeeAllClick(popularTitle, "popular", mediaType) },
+                            onActionClick = {
+                                onSectionSeeAllClick(
+                                    popularTitle,
+                                    "popular",
+                                    mediaType
+                                )
+                            },
                             level = HeaderLevel.Section
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -502,14 +514,21 @@ private fun DiscoverContent(
                             SectionHeader(
                                 title = upcomingTitle,
                                 iconColor = MaterialTheme.colorScheme.primary,
-                                onActionClick = { onSectionSeeAllClick(upcomingTitle, "upcoming", mediaType) },
+                                onActionClick = {
+                                    onSectionSeeAllClick(
+                                        upcomingTitle,
+                                        "upcoming",
+                                        mediaType
+                                    )
+                                },
                                 level = HeaderLevel.Section
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 
                         item(key = "upcoming_list", contentType = "media_list") {
-                            val upcomingItems = remember(uiState.upcoming) { uiState.upcoming.take(10) }
+                            val upcomingItems =
+                                remember(uiState.upcoming) { uiState.upcoming.take(10) }
                             HorizontalMediaList(
                                 items = upcomingItems,
                                 onItemClick = onMediaClick,
@@ -628,6 +647,7 @@ private fun SearchResultsContent(
                 CircularProgressIndicator()
             }
         }
+
         searchResults.isEmpty() && searchQuery.isNotEmpty() -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
@@ -637,6 +657,7 @@ private fun SearchResultsContent(
                 )
             }
         }
+
         else -> {
             LazyColumn(
                 contentPadding = PaddingValues(
