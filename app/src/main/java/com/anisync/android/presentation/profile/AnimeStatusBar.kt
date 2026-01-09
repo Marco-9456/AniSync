@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,13 +38,19 @@ import com.anisync.android.ui.theme.StatusWatching
  */
 @Composable
 fun AnimeStatusBar(profile: UserProfile) {
-    // Use real status counts from the profile
-    val statusCounts = profile.animeStatusCounts
-    val watching = statusCounts.watching
-    val completed = statusCounts.completed
-    val onHold = statusCounts.onHold
-    val dropped = statusCounts.dropped
-    val total = watching + completed + onHold + dropped
+    // PERF: Memoize status count extraction and total calculation
+    // These values are recalculated on every recomposition without remember
+    // By remembering them keyed on animeStatusCounts, we avoid repeated work
+    val (watching, completed, onHold, dropped, total) = remember(profile.animeStatusCounts) {
+        val statusCounts = profile.animeStatusCounts
+        val w = statusCounts.watching
+        val c = statusCounts.completed
+        val h = statusCounts.onHold
+        val d = statusCounts.dropped
+        val t = w + c + h + d
+        // Return as a data class-like tuple for destructuring
+        StatusBarData(w, c, h, d, t)
+    }
     
     if (total == 0) return
     
@@ -161,3 +168,15 @@ fun StatusLegendItem(
         )
     }
 }
+
+/**
+ * PERF: Helper data class for destructuring memoized status bar values.
+ * Using a data class enables clean destructuring syntax with remember.
+ */
+private data class StatusBarData(
+    val watching: Int,
+    val completed: Int,
+    val onHold: Int,
+    val dropped: Int,
+    val total: Int
+)

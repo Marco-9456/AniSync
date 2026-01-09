@@ -41,6 +41,17 @@ import java.util.Locale
  */
 @Composable
 fun ProfileStatsRow(profile: UserProfile) {
+    // PERF: Memoize stat values to prevent StatCard recomposition when unrelated profile data changes
+    // By extracting these values with remember, we ensure StatCard only recomposes when its specific data changes
+    val daysWatchedFormatted = remember(profile.daysWatched) {
+        String.format(Locale.US, "%.1f", profile.daysWatched)
+    }
+    val animeCountStr = remember(profile.animeCount) { profile.animeCount.toString() }
+    val mangaCountStr = remember(profile.mangaCount) { profile.mangaCount.toString() }
+    val meanScoreFormatted = remember(profile.meanScore) {
+        String.format(Locale.US, "%.1f", profile.meanScore)
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -52,11 +63,6 @@ fun ProfileStatsRow(profile: UserProfile) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Memoize formatted days watched
-            val daysWatchedFormatted = remember(profile.daysWatched) {
-                String.format(Locale.US, "%.1f", profile.daysWatched)
-            }
-            
             StatCard(
                 icon = Icons.Default.AccessTime,
                 value = daysWatchedFormatted,
@@ -68,7 +74,7 @@ fun ProfileStatsRow(profile: UserProfile) {
             
             StatCard(
                 icon = Icons.Default.Movie,
-                value = profile.animeCount.toString(),
+                value = animeCountStr,
                 label = stringResource(R.string.stat_anime_completed),
                 iconBackgroundColor = StatusCompleted.copy(alpha = 0.15f),
                 iconColor = StatusCompleted,
@@ -83,17 +89,12 @@ fun ProfileStatsRow(profile: UserProfile) {
         ) {
             StatCard(
                 icon = Icons.AutoMirrored.Filled.MenuBook,
-                value = profile.mangaCount.toString(),
+                value = mangaCountStr,
                 label = stringResource(R.string.stat_manga_read),
                 iconBackgroundColor = StatManga.copy(alpha = 0.15f),
                 iconColor = StatManga,
                 modifier = Modifier.weight(1f)
             )
-            
-            // Memoize formatted mean score
-            val meanScoreFormatted = remember(profile.meanScore) {
-                String.format(Locale.US, "%.1f", profile.meanScore)
-            }
             
             StatCard(
                 icon = Icons.Default.Star,

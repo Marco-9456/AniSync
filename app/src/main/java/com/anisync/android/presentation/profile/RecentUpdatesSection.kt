@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +57,16 @@ fun RecentUpdatesSection(
             level = HeaderLevel.Section,
             padding = PaddingValues(bottom = 16.dp)
         )
+        
+        // PERF: Memoize the sliced list to prevent recalculation on recomposition
+        val displayedActivities = remember(activities) { activities.take(5) }
 
-        activities.take(5).forEach { activity ->
-            UpdateItem(activity = activity, context = context)
-            Spacer(modifier = Modifier.height(16.dp))
+        displayedActivities.forEach { activity ->
+            // PERF: Using key() helps Compose track items and skip unchanged ones
+            key(activity.id) {
+                UpdateItem(activity = activity, context = context)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -127,18 +134,18 @@ fun UpdateItem(activity: UserActivity, context: Context) {
                      color = MaterialTheme.colorScheme.onSurfaceVariant
                  )
                  
-                 // Construct styled text: "Watched Episode X of Title"
-                 val statusText = activity.status ?: "Updated"
-                 val progressText = activity.progress ?: ""
-                 
-                 // Capitalize status
-                 val capStatus = statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                 
-                 Text(
-                     text = buildAnnotatedString {
+                 // PERF: Memoize the entire AnnotatedString to avoid rebuilding on recomposition
+                 // buildAnnotatedString is expensive and should only run when activity changes
+                 val primaryColor = MaterialTheme.colorScheme.primary
+                 val styledActivityText = remember(activity.status, activity.progress, activity.mediaTitle, primaryColor) {
+                     val statusText = activity.status ?: "Updated"
+                     val progressText = activity.progress ?: ""
+                     val capStatus = statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                     
+                     buildAnnotatedString {
                          append("$capStatus ")
                          if (progressText.isNotEmpty()) {
-                             withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
+                             withStyle(SpanStyle(color = primaryColor, fontWeight = FontWeight.SemiBold)) {
                                  append(progressText)
                              }
                              append(" of ")
@@ -146,7 +153,11 @@ fun UpdateItem(activity: UserActivity, context: Context) {
                          withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
                              append(activity.mediaTitle)
                          }
-                     },
+                     }
+                 }
+                 
+                 Text(
+                     text = styledActivityText,
                      style = MaterialTheme.typography.bodyMedium,
                      color = MaterialTheme.colorScheme.onSurface,
                      lineHeight = 20.sp,

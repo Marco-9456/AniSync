@@ -37,13 +37,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.util.Log
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,11 +83,24 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
+    // PERF: Track recomposition count for performance monitoring
+    val recomposeCount = remember { mutableIntStateOf(0) }
+    SideEffect {
+        recomposeCount.intValue++
+        Log.d("ProfilePerf", "ProfileScreen recomposed: ${recomposeCount.intValue} times")
+    }
+    
     // Settings Sheet State
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    
+    // PERF: Stabilize callbacks with remember to prevent unnecessary recompositions
+    // When lambdas capture state, wrapping them prevents child composables from recomposing
+    val onShowSettings = remember { { showSettingsSheet = true } }
+    val onShowEditProfile = remember { { showEditProfileDialog = true } }
+    val onHideEditProfile = remember { { showEditProfileDialog = false } }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -107,8 +123,9 @@ fun ProfileScreen(
                 is ProfileUiState.Success -> {
                     ProfileScreenContent(
                         profile = state.profile,
-                        onSettingsClick = { showSettingsSheet = true },
-                        onEditProfileClick = { showEditProfileDialog = true },
+                        // PERF: Use remembered callbacks instead of inline lambdas
+                        onSettingsClick = onShowSettings,
+                        onEditProfileClick = onShowEditProfile,
                         onMediaClick = onMediaClick,
                         onFavoritesClick = onFavoritesClick,
                         sharedTransitionScope = sharedTransitionScope,
@@ -118,9 +135,10 @@ fun ProfileScreen(
                     if (showEditProfileDialog) {
                         EditProfileDialog(
                             initialAbout = state.profile.about ?: "",
-                            onDismiss = { showEditProfileDialog = false },
+                            // PERF: Use remembered callback
+                            onDismiss = onHideEditProfile,
                             onSave = { about ->
-                                viewModel.updateAbout(about) { error ->
+                                viewModel.updateAbout(about) { _ ->
                                     // TODO: Show error snackbar
                                 }
                                 showEditProfileDialog = false
@@ -167,7 +185,8 @@ fun ProfileScreenContent(
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         // --- Header Section ---
-        item(key = "profile_header") {
+        // PERF: contentType helps Compose optimize item recycling by grouping similar items
+        item(key = "profile_header", contentType = "header") {
             ProfileTopSection(
                 profile = profile,
                 onSettingsClick = onSettingsClick,
@@ -176,12 +195,14 @@ fun ProfileScreenContent(
         }
 
         // --- Stats Row ---
-        item(key = "profile_stats") {
+        // PERF: contentType for stats section
+        item(key = "profile_stats", contentType = "stats") {
             ProfileStatsRow(profile = profile)
         }
 
         // --- Favorites ---
-        item(key = "profile_favorites") {
+        // PERF: contentType for favorites section
+        item(key = "profile_favorites", contentType = "favorites") {
             if (profile.favoriteAnime.isNotEmpty()) {
                 FavoritesSection(
                     favorites = profile.favoriteAnime,
@@ -195,7 +216,8 @@ fun ProfileScreenContent(
         }
 
         // --- Recent Updates ---
-        item(key = "profile_activities") {
+        // PERF: contentType for activities section
+        item(key = "profile_activities", contentType = "activities") {
             if (profile.activities.isNotEmpty()) {
                 RecentUpdatesSection(
                     activities = profile.activities,
@@ -395,12 +417,17 @@ fun FavoritesSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            items(favorites, key = { it.mediaId }) { entry ->
+            // PERF: contentType for poster cards enables efficient item recycling
+            items(favorites, key = { it.mediaId }, contentType = { "poster" }) { entry ->
+                // PERF: Stabilize onClick lambda to prevent PosterCard recomposition
+                // By remembering the lambda keyed on mediaId, we ensure the same instance is passed
+                val onClick = remember(entry.mediaId) { { onMediaClick(entry.mediaId) } }
+                
                 PosterCard(
                     title = entry.title,
                     coverUrl = entry.coverUrl,
                     mediaId = entry.mediaId,
-                    onClick = { onMediaClick(entry.mediaId) },
+                    onClick = onClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
                     transitionPrefix = "profile_fav",
