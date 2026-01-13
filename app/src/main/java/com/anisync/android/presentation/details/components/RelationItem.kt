@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +34,7 @@ fun RelationItem(
             .width(dimensionResource(R.dimen.character_item_width))
             .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
             .clickable(onClick = onClick)
+            .padding(bottom = dimensionResource(R.dimen.spacing_small))
     ) {
         AsyncImage(
             model = relation.coverUrl,

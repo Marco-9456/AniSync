@@ -39,7 +39,7 @@
     <!-- Component Specific -->
     <dimen name="character_item_width">100dp</dimen>
     <dimen name="character_image_height">140dp</dimen>
-    <dimen name="character_item_height">180dp</dimen>
+    <dimen name="character_item_height">220dp</dimen>
     
     <dimen name="genre_chip_height">32dp</dimen>
     <dimen name="genre_chip_width">70dp</dimen>
