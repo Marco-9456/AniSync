@@ -475,14 +475,16 @@ fun DetailsPageContent(
                                 onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
                             )
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                            val uniqueRelations = details.relations.take(10)
+                                .distinctBy { "${it.id}_${it.relationType}" }
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
                                 items(
-                                    items = details.relations.take(10),
-                                    key = { it.id }
+                                    items = uniqueRelations,
+                                    key = { "${it.id}_${it.relationType}" }
                                 ) { relation ->
                                     // Optimization: onRelationClick is stable from parent
                                     RelationItem(
