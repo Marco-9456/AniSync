@@ -17,6 +17,7 @@ out/
 docs/
 build/
 .gradle/
+.TODO/
 .cxx/
 .externalNativeBuild/
 
