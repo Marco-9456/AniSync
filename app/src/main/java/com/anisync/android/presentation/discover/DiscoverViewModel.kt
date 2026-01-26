@@ -38,8 +38,11 @@ sealed interface DiscoverUiState {
 @HiltViewModel
 class DiscoverViewModel @Inject constructor(
     private val discoverRepository: DiscoverRepository,
-    private val searchRepository: SearchRepository
+    private val searchRepository: SearchRepository,
+    private val appSettings: com.anisync.android.data.AppSettings
 ) : ViewModel() {
+
+    val titleLanguage = appSettings.titleLanguage
 
     private val _uiState = MutableStateFlow<DiscoverUiState>(DiscoverUiState.Loading)
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()

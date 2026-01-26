@@ -29,7 +29,10 @@ data class ExternalLink(
 
 data class MediaDetails(
     val id: Int,
-    val title: String,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
+    val titleUserPreferred: String,
     val coverUrl: String?,
     val bannerUrl: String?,
     val description: String,
@@ -63,7 +66,9 @@ data class MediaDetails(
 @Serializable
 data class CharacterInfo(
     val id: Int,
-    val name: String,
+    val nameFull: String,
+    val nameNative: String?,
+    val nameUserPreferred: String,
     val imageUrl: String?,
     val role: String
 )
@@ -71,7 +76,10 @@ data class CharacterInfo(
 @Serializable
 data class RelatedMedia(
     val id: Int,
-    val title: String,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
+    val titleUserPreferred: String,
     val coverUrl: String?,
     val format: String?,
     val status: String?,

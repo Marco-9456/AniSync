@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -66,6 +67,7 @@ import com.anisync.android.R
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.util.NotificationPermissionHelper
 import com.anisync.android.BuildConfig
 
@@ -81,6 +83,7 @@ fun SettingsSection(
 ) {
     val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val titleLanguage by viewModel.titleLanguage.collectAsState()
     val hapticEnabled by viewModel.hapticEnabled.collectAsState()
     
     // Granular notification settings
@@ -95,6 +98,7 @@ fun SettingsSection(
     }
 
     var showThemeDialog by rememberSaveable { mutableStateOf(false) }
+    var showTitleLanguageDialog by rememberSaveable { mutableStateOf(false) }
     
     // Theme selection dialog
     if (showThemeDialog) {
@@ -105,6 +109,18 @@ fun SettingsSection(
                 showThemeDialog = false
             },
             onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    // Title Language selection dialog
+    if (showTitleLanguageDialog) {
+        TitleLanguageSelectionDialog(
+            currentLanguage = titleLanguage,
+            onLanguageSelected = {
+                viewModel.setTitleLanguage(it)
+                showTitleLanguageDialog = false
+            },
+            onDismiss = { showTitleLanguageDialog = false }
         )
     }
 
@@ -145,6 +161,26 @@ fun SettingsSection(
                     }
                     Text(getThemeLabel(themeMode), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+
+                // Title Language Row
+                Row(
+                    modifier = Modifier
+                        .clickable { showTitleLanguageDialog = true }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                         Icon(Icons.Default.Language, null, tint = MaterialTheme.colorScheme.primary)
+                         Spacer(Modifier.width(16.dp))
+                         // You might need to add this string resource if it doesn't exist, using raw for now or assume existence
+                         Text("Title Language") 
+                    }
+                    Text(getTitleLanguageLabel(titleLanguage), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+
                 
                 // Haptic
                  Row(
@@ -586,5 +622,94 @@ fun getThemeLabel(mode: ThemeMode): String {
         ThemeMode.LIGHT -> stringResource(R.string.theme_light)
         ThemeMode.DARK -> stringResource(R.string.theme_dark)
         ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+    }
+}
+
+/**
+ * Title Language selection dialog following Material Design 3 guidelines.
+ */
+@Composable
+fun TitleLanguageSelectionDialog(
+    currentLanguage: TitleLanguage,
+    onLanguageSelected: (TitleLanguage) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp), // M3 dialog corner radius
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                // Title - left aligned
+                Text(
+                    text = "Preferred Title Language", // Replace with string resource
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.padding(top = 16.dp))
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Spacer(modifier = Modifier.padding(top = 16.dp))
+
+                // Radio options
+                TitleLanguage.entries.forEach { language ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onLanguageSelected(language) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentLanguage == language,
+                            onClick = { onLanguageSelected(language) }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = getTitleLanguageLabel(language),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.padding(top = 24.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.padding(top = 24.dp))
+                
+                // Dismiss button aligned to end
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Returns the localized label for a [TitleLanguage].
+ */
+@Composable
+fun getTitleLanguageLabel(language: TitleLanguage): String {
+    return when (language) {
+        TitleLanguage.ROMAJI -> "Romaji"
+        TitleLanguage.ENGLISH -> "English"
+        TitleLanguage.NATIVE -> "Native"
     }
 }

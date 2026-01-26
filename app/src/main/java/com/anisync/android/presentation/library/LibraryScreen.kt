@@ -99,7 +99,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
@@ -122,6 +122,7 @@ import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.util.getTitle
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -144,6 +145,7 @@ fun LibraryScreen(
     val sortOption by viewModel.sortOption.collectAsState()
     val isAscending by viewModel.isAscending.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val titleLanguage by viewModel.titleLanguage.collectAsState()
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -472,6 +474,7 @@ fun LibraryScreen(
                                                 config = cardConfig,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
+                                                titleLanguage = titleLanguage,
                                                 modifier = Modifier.animateItem(
                                                     fadeInSpec = effectsSpec,
                                                     fadeOutSpec = effectsSpec,
@@ -508,6 +511,7 @@ fun LibraryScreen(
                                                 onDecrement = onDecrement,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
+                                                titleLanguage = titleLanguage,
                                                 modifier = Modifier.animateItem(
                                                     fadeInSpec = effectsSpec,
                                                     fadeOutSpec = effectsSpec,
@@ -575,7 +579,8 @@ fun LibraryScreen(
                                 LibrarySearchResultCard(
                                     entry = entry,
                                     mediaType = mediaType,
-                                    onClick = { onSearchResultClick(entry.mediaId) }
+                                    onClick = { onSearchResultClick(entry.mediaId) },
+                                    titleLanguage = titleLanguage
                                 )
                             }
                         }
@@ -628,6 +633,7 @@ private fun LibrarySearchResultCard(
     entry: LibraryEntry,
     mediaType: MediaType,
     onClick: () -> Unit,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     modifier: Modifier = Modifier
 ) {
     val haptic = rememberHapticFeedback()
@@ -660,7 +666,7 @@ private fun LibrarySearchResultCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entry.title,
+                    text = entry.getTitle(titleLanguage),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -687,6 +693,7 @@ fun NewListCard(
     onDecrement: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope,
+    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
     modifier: Modifier = Modifier
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
@@ -742,7 +749,7 @@ fun NewListCard(
                 ) {
                     Column {
                         Text(
-                            text = entry.title,
+                            text = entry.getTitle(titleLanguage),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,

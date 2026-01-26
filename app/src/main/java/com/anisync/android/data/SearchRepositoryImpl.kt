@@ -40,7 +40,10 @@ class SearchRepositoryImpl @Inject constructor(
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
-                    title = media.title?.userPreferred ?: "Unknown",
+                    titleRomaji = media.title?.romaji,
+                    titleEnglish = media.title?.english,
+                    titleNative = media.title?.native,
+                    titleUserPreferred = media.title?.userPreferred ?: "Unknown",
                     coverUrl = media.coverImage?.extraLarge,
                     progress = 0,
                     totalEpisodes = media.episodes,

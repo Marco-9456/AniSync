@@ -74,7 +74,10 @@ class LibraryRepositoryImpl @Inject constructor(
                     LibraryEntry(
                         id = entry.id ?: 0,
                         mediaId = media?.id ?: 0,
-                        title = media?.title?.userPreferred ?: "Unknown Title",
+                        titleRomaji = media?.title?.romaji,
+                        titleEnglish = media?.title?.english,
+                        titleNative = media?.title?.native,
+                        titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
                         coverUrl = media?.coverImage?.extraLarge,
                         progress = entry.progress ?: 0,
                         totalEpisodes = media?.episodes,

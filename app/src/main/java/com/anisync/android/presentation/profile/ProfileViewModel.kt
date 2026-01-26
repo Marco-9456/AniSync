@@ -41,6 +41,7 @@ class ProfileViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Settings from AppSettings
+    val titleLanguage: StateFlow<com.anisync.android.data.TitleLanguage> = appSettings.titleLanguage
     val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
     val hapticEnabled: StateFlow<Boolean> = appSettings.hapticEnabled
     val isNotificationsEnabled: StateFlow<Boolean> = appSettings.notificationsEnabled
@@ -104,6 +105,10 @@ class ProfileViewModel @Inject constructor(
 
     fun setThemeMode(mode: ThemeMode) {
         appSettings.setThemeMode(mode)
+    }
+
+    fun setTitleLanguage(language: com.anisync.android.data.TitleLanguage) {
+        appSettings.setTitleLanguage(language)
     }
 
     fun setHapticEnabled(enabled: Boolean) {

@@ -20,7 +20,10 @@ enum class LibraryStatus {
 data class LibraryEntry(
     val id: Int,
     val mediaId: Int,
-    val title: String,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
+    val titleUserPreferred: String,
     val coverUrl: String?,
     val progress: Int,
     val totalEpisodes: Int?,

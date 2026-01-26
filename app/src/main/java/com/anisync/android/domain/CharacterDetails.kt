@@ -21,7 +21,10 @@ data class CharacterDetails(
 @Serializable
 data class CharacterMedia(
     val id: Int,
-    val title: String,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
+    val titleUserPreferred: String,
     val coverUrl: String?,
     val type: MediaType?,
     val voiceActor: VoiceActor?
@@ -30,6 +33,8 @@ data class CharacterMedia(
 @Serializable
 data class VoiceActor(
     val id: Int,
-    val name: String,
+    val nameFull: String,
+    val nameNative: String?,
+    val nameUserPreferred: String,
     val imageUrl: String?
 )

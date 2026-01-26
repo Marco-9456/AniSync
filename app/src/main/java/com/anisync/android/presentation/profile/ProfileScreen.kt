@@ -58,7 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
@@ -82,6 +82,7 @@ fun ProfileScreen(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val titleLanguage by viewModel.titleLanguage.collectAsState()
     
     // PERF: Track recomposition count for performance monitoring
     val recomposeCount = remember { mutableIntStateOf(0) }
@@ -129,7 +130,8 @@ fun ProfileScreen(
                         onMediaClick = onMediaClick,
                         onFavoritesClick = onFavoritesClick,
                         sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        titleLanguage = titleLanguage
                     )
 
                     if (showEditProfileDialog) {
@@ -178,7 +180,8 @@ fun ProfileScreenContent(
     onMediaClick: (Int) -> Unit,
     onFavoritesClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -210,6 +213,7 @@ fun ProfileScreenContent(
                     onFavoritesClick = onFavoritesClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
+                    titleLanguage = titleLanguage,
                     modifier = Modifier.padding(top = 24.dp)
                 )
             }
@@ -401,7 +405,8 @@ fun FavoritesSection(
     onFavoritesClick: () -> Unit,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI
 ) {
     Column(modifier = modifier) {
         SectionHeader(
@@ -424,9 +429,8 @@ fun FavoritesSection(
                 val onClick = remember(entry.mediaId) { { onMediaClick(entry.mediaId) } }
                 
                 PosterCard(
-                    title = entry.title,
-                    coverUrl = entry.coverUrl,
-                    mediaId = entry.mediaId,
+                    item = entry,
+                    titleLanguage = titleLanguage,
                     onClick = onClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,

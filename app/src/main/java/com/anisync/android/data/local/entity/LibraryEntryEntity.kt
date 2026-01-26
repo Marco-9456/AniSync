@@ -25,7 +25,10 @@ import com.anisync.android.type.MediaType
 data class LibraryEntryEntity(
     @PrimaryKey val id: Int,                   // MediaList ID
     val mediaId: Int,
-    val title: String,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
+    val titleUserPreferred: String,
     val coverUrl: String?,
     val progress: Int,
     val totalEpisodes: Int?,

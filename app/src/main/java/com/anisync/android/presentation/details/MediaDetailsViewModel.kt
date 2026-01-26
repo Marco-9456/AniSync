@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DetailsRepository
+import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
@@ -30,8 +31,11 @@ sealed interface DetailsUiState {
 class MediaDetailsViewModel @Inject constructor(
     private val getMediaDetailsUseCase: GetMediaDetailsUseCase,
     private val detailsRepository: DetailsRepository,
+    private val appSettings: AppSettings,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    val titleLanguage = appSettings.titleLanguage
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()

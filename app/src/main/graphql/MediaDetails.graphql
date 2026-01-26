@@ -4,6 +4,8 @@ query GetMediaDetails($id: Int) {
     title {
       romaji
       english
+      native
+      userPreferred
     }
     coverImage {
       extraLarge
@@ -42,6 +44,8 @@ query GetMediaDetails($id: Int) {
           id
           name {
             userPreferred
+            full
+            native
           }
           image {
             large
@@ -56,6 +60,9 @@ query GetMediaDetails($id: Int) {
           id
           title {
             userPreferred
+            romaji
+            english
+            native
           }
           format
           status

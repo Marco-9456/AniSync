@@ -53,7 +53,7 @@ fun RelationItem(
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = relation.title,
+            text = relation.titleUserPreferred,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

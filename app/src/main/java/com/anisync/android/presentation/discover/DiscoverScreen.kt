@@ -69,7 +69,7 @@ import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
@@ -119,6 +119,7 @@ fun DiscoverScreen(
     // PERF: Group related state to reduce recomposition scope
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val searchFilters by viewModel.searchFilters.collectAsStateWithLifecycle()
 
@@ -210,6 +211,7 @@ fun DiscoverScreen(
         DiscoverContent(
             uiState = uiState,
             mediaType = mediaType,
+            titleLanguage = titleLanguage,
             isRefreshing = isRefreshing,
             mainListState = mainListState,
             pullToRefreshState = pullToRefreshState,
@@ -231,6 +233,7 @@ fun DiscoverScreen(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         mediaType = mediaType,
+        titleLanguage = titleLanguage,
         searchFilters = searchFilters,
         coroutineScope = coroutineScope,
         keyboardController = keyboardController,
@@ -401,6 +404,7 @@ private fun SearchTrailingIcons(
 private fun DiscoverContent(
     uiState: DiscoverUiState,
     mediaType: MediaType,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     isRefreshing: Boolean,
     mainListState: LazyListState,
     pullToRefreshState: PullToRefreshState,
@@ -473,6 +477,7 @@ private fun DiscoverContent(
                         CinematicHeroCarousel(
                             items = trendingItems,
                             onItemClick = onMediaClick,
+                            titleLanguage = titleLanguage,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -501,6 +506,7 @@ private fun DiscoverContent(
                         HorizontalMediaList(
                             items = uiState.popular,
                             onItemClick = onMediaClick,
+                            titleLanguage = titleLanguage,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -532,6 +538,7 @@ private fun DiscoverContent(
                             HorizontalMediaList(
                                 items = upcomingItems,
                                 onItemClick = onMediaClick,
+                                titleLanguage = titleLanguage,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
@@ -556,6 +563,7 @@ private fun DiscoverContent(
                         HorizontalMediaList(
                             items = tbaItems,
                             onItemClick = onMediaClick,
+                            titleLanguage = titleLanguage,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -595,6 +603,7 @@ private fun DiscoverSearchOverlay(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     mediaType: MediaType,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     searchFilters: SearchFilters,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
@@ -627,6 +636,7 @@ private fun DiscoverSearchOverlay(
             isSearching = isSearching,
             searchResults = searchResults,
             searchQuery = searchQuery,
+            titleLanguage = titleLanguage,
             listState = listState,
             onSearchItemClick = onSearchItemClick
         )
@@ -638,6 +648,7 @@ private fun SearchResultsContent(
     isSearching: Boolean,
     searchResults: List<LibraryEntry>,
     searchQuery: String,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     listState: LazyListState,
     onSearchItemClick: (Int) -> Unit
 ) {
@@ -682,7 +693,8 @@ private fun SearchResultsContent(
                     }
                     SearchResultItem(
                         item = item,
-                        onClick = onClick
+                        onClick = onClick,
+                        titleLanguage = titleLanguage
                     )
                 }
             }

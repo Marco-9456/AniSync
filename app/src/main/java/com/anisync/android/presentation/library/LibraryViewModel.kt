@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.data.AppSettings
+import com.anisync.android.util.getTitle
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,6 +31,14 @@ sealed interface LibraryUiState {
     data class Error(val message: String) : LibraryUiState
 }
 
+// Data class to hold combined flow data
+private data class DataTriple(
+    val entries: List<LibraryEntry>, 
+    val sort: LibrarySort, 
+    val ascending: Boolean, 
+    val query: String
+)
+
 sealed interface LibraryEvent {
     data class ShowSnackbar(val message: String) : LibraryEvent
 }
@@ -47,7 +57,8 @@ enum class LibrarySort {
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
-    private val libraryRepository: LibraryRepository
+    private val libraryRepository: LibraryRepository,
+    private val appSettings: AppSettings
 ) : ViewModel() {
 
     // MediaType State (Default: Anime)
@@ -57,6 +68,8 @@ class LibraryViewModel @Inject constructor(
     // Sort Option State (Default: Title)
     private val _sortOption = MutableStateFlow(LibrarySort.TITLE)
     val sortOption: StateFlow<LibrarySort> = _sortOption.asStateFlow()
+
+    val titleLanguage = appSettings.titleLanguage
 
     // Sort Direction State (Default: Ascending)
     private val _isAscending = MutableStateFlow(true)
@@ -87,44 +100,47 @@ class LibraryViewModel @Inject constructor(
             Triple(entries, sort, ascending)
         }
         .combine(_searchQuery) { (entries, sort, ascending), query ->
-            val baseSortedEntries = when (sort) {
-                LibrarySort.TITLE -> entries.sortedBy { it.title.lowercase() }
+            DataTriple(entries, sort, ascending, query)
+        }
+        .combine(appSettings.titleLanguage) { (entries, sort, ascending, query), titleLanguage ->
+             val sortedEntries = when (sort) {
+                LibrarySort.TITLE -> entries.sortedBy { it.getTitle(titleLanguage).lowercase() }
                 LibrarySort.PROGRESS -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.progress }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.AIRING_SOON -> entries.sortedWith(
                     compareBy<LibraryEntry, Int?>(nullsLast()) { it.timeUntilAiring }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.SCORE -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.score }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.LAST_UPDATED -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.updatedAt }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.LAST_ADDED -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.createdAt }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.START_DATE -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.startedAt }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.RELEASE_DATE -> entries.sortedWith(
                     compareByDescending<LibraryEntry> { it.mediaStartDate }
-                        .thenBy { it.title.lowercase() }
+                        .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
             }
             // Apply direction: if ascending, keep sorted as is; if descending, reverse
-            val sortedEntries = if (ascending) baseSortedEntries else baseSortedEntries.reversed()
+            val finalEntries = if (ascending) sortedEntries else sortedEntries.reversed()
             // Filter by search query if present
             val filteredEntries = if (query.isBlank()) {
-                sortedEntries
+                finalEntries
             } else {
-                sortedEntries.filter { it.title.contains(query, ignoreCase = true) }
+                finalEntries.filter { it.getTitle(titleLanguage).contains(query, ignoreCase = true) }
             }
             LibraryUiState.Success(filteredEntries) as LibraryUiState
         }

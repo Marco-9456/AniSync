@@ -42,6 +42,12 @@ class AppSettings @Inject constructor(
     private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, false))
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
     
+    // Title language setting
+    private val _titleLanguage = MutableStateFlow(
+        TitleLanguage.entries.getOrElse(prefs.getInt(KEY_TITLE_LANGUAGE, TitleLanguage.ROMAJI.ordinal)) { TitleLanguage.ROMAJI }
+    )
+    val titleLanguage: StateFlow<TitleLanguage> = _titleLanguage.asStateFlow()
+
     /**
      * Set the app theme mode.
      */
@@ -66,10 +72,28 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled).apply()
     }
     
+    /**
+     * Set the preferred title language.
+     */
+    fun setTitleLanguage(language: TitleLanguage) {
+        _titleLanguage.value = language
+        prefs.edit().putInt(KEY_TITLE_LANGUAGE, language.ordinal).apply()
+    }
+    
     companion object {
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+        private const val KEY_TITLE_LANGUAGE = "title_language"
     }
+}
+
+/**
+ * Preferred title language options.
+ */
+enum class TitleLanguage {
+    ROMAJI,
+    ENGLISH,
+    NATIVE
 }

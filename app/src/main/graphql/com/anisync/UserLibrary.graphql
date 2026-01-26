@@ -8,6 +8,9 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
           id
           title {
             userPreferred
+            romaji
+            english
+            native
           }
           coverImage {
             extraLarge

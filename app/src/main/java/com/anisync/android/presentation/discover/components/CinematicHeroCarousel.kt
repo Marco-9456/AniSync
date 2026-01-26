@@ -43,6 +43,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.ui.theme.StarGold
+import com.anisync.android.util.getTitle
+import com.anisync.android.data.TitleLanguage
 
 /**
  * A cinematic Hero Carousel component rewritten from scratch according to
@@ -53,6 +55,7 @@ import com.anisync.android.ui.theme.StarGold
 fun CinematicHeroCarousel(
     items: List<LibraryEntry>,
     onItemClick: (Int) -> Unit,
+    titleLanguage: TitleLanguage,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
@@ -75,6 +78,7 @@ fun CinematicHeroCarousel(
             item = item,
             context = context,
             onClick = { onItemClick(item.mediaId) },
+            titleLanguage = titleLanguage,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
             modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
@@ -88,6 +92,7 @@ private fun HeroCarouselItem(
     item: LibraryEntry,
     context: Context,
     onClick: () -> Unit,
+    titleLanguage: TitleLanguage,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
@@ -112,7 +117,7 @@ private fun HeroCarouselItem(
             with(sharedTransitionScope) {
                 AsyncImage(
                     model = imageRequest,
-                    contentDescription = item.title,
+                    contentDescription = item.getTitle(titleLanguage),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
@@ -188,7 +193,7 @@ private fun HeroCarouselItem(
 
                 with(sharedTransitionScope) {
                     Text(
-                        text = item.title,
+                        text = item.getTitle(titleLanguage),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Black,
                             letterSpacing = (-0.5).sp

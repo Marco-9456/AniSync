@@ -122,7 +122,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+
     implementation(libs.androidx.material3.adaptive.navigation.suite)
     implementation(libs.androidx.ui.text.google.fonts)
 

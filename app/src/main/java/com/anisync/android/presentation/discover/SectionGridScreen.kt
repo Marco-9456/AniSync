@@ -46,6 +46,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.discover.components.FormatFilterRow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anisync.android.data.TitleLanguage
 
 /**
  * Grid screen for displaying all media items from a Discover section.
@@ -57,6 +59,7 @@ fun MediaGridContent(
     title: String,
     items: List<LibraryEntry>,
     isLoading: Boolean,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     errorMessage: String?,
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
@@ -121,9 +124,8 @@ fun MediaGridContent(
                         items(items, key = { it.mediaId }) { item ->
                             // Optimization: Use stable callback
                             PosterCard(
-                                title = item.title,
-                                coverUrl = item.coverUrl,
-                                mediaId = item.mediaId,
+                                item = item,
+                                titleLanguage = titleLanguage,
                                 onClick = { onMediaClick(item.mediaId) },
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -155,6 +157,7 @@ fun SectionGridScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val selectedFormat by viewModel.selectedFormat.collectAsState()
     val mediaType by viewModel.mediaType.collectAsState()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
     
     val gridState = rememberLazyGridState()
     
@@ -242,9 +245,8 @@ fun SectionGridScreen(
                             items(items, key = { it.mediaId }) { item ->
                                 // Optimization: Use stable callback
                                 PosterCard(
-                                    title = item.title,
-                                    coverUrl = item.coverUrl,
-                                    mediaId = item.mediaId,
+                                    item = item,
+                                    titleLanguage = titleLanguage,
                                     onClick = { onMediaClick(item.mediaId) },
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope,
@@ -288,6 +290,7 @@ fun FavoritesGridScreen(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
     
     val items = if (uiState is com.anisync.android.presentation.profile.ProfileUiState.Success) {
         (uiState as com.anisync.android.presentation.profile.ProfileUiState.Success).profile.favoriteAnime
@@ -297,6 +300,7 @@ fun FavoritesGridScreen(
         title = sectionTitle,
         items = items,
         isLoading = uiState is com.anisync.android.presentation.profile.ProfileUiState.Loading,
+        titleLanguage = titleLanguage,
         errorMessage = (uiState as? com.anisync.android.presentation.profile.ProfileUiState.Error)?.message,
         onBackClick = onBackClick,
         onMediaClick = onMediaClick,

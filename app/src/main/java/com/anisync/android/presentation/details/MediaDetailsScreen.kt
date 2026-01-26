@@ -100,7 +100,9 @@ import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.toIcon
+import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.util.getTitle
 
 private const val MediaStaggerDelay = 10
 
@@ -119,6 +121,7 @@ fun MediaDetailsScreen(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val titleLanguage by viewModel.titleLanguage.collectAsState()
 
     LaunchedEffect(mediaId) {
         viewModel.loadMedia(mediaId)
@@ -150,7 +153,7 @@ fun MediaDetailsScreen(
                                     enter = fadeIn(),
                                     exit = fadeOut()
                                 ) {
-                                    val title = (state as? DetailsUiState.Success)?.details?.title ?: ""
+                                    val title = (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
                                     Text(
                                         text = title,
                                         maxLines = 1,
@@ -283,11 +286,12 @@ fun MediaDetailsScreen(
                                 listState = listState,
                                 onRelationClick = onRelationClick,
                                 onCharacterClick = onCharacterClick,
-                                onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.title) },
-                                onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.title) },
+                                onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.getTitle(titleLanguage)) },
+                                onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.getTitle(titleLanguage)) },
                                 onFavouriteClick = { viewModel.toggleFavourite() },
                                 sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                titleLanguage = titleLanguage
                             )
                         }
                         is DetailsUiState.Error -> ErrorStateContent(message = state.message, onBackClick = onBackClick)
@@ -345,7 +349,8 @@ fun DetailsPageContent(
     onRelatedSeeAllClick: () -> Unit,
     onFavouriteClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    titleLanguage: com.anisync.android.data.TitleLanguage
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -354,7 +359,7 @@ fun DetailsPageContent(
             contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab))
         ) {
             item {
-                PageHeaderSection(details, sourceScreen, sharedTransitionScope, animatedVisibilityScope)
+                PageHeaderSection(details, sourceScreen, sharedTransitionScope, animatedVisibilityScope, titleLanguage)
             }
 
             item {
@@ -453,7 +458,11 @@ fun DetailsPageContent(
                                 ) { character ->
                                     // Optimization: onCharacterClick is stable from parent
                                     CharacterItem(
-                                        character,
+                                        character = character.copy(nameUserPreferred = when(titleLanguage) {
+                                            com.anisync.android.data.TitleLanguage.ROMAJI -> character.nameUserPreferred // Default fallback
+                                            com.anisync.android.data.TitleLanguage.ENGLISH -> character.nameUserPreferred // No separate English name for chars usually
+                                            com.anisync.android.data.TitleLanguage.NATIVE -> character.nameNative ?: character.nameUserPreferred
+                                        }),
                                         onClick = { onCharacterClick(character.id) },
                                         modifier = Modifier.animateItem()
                                     )
@@ -488,7 +497,7 @@ fun DetailsPageContent(
                                 ) { relation ->
                                     // Optimization: onRelationClick is stable from parent
                                     RelationItem(
-                                        relation = relation,
+                                        relation = relation.copy(titleUserPreferred = relation.getTitle(titleLanguage)), // Helper update
                                         onClick = { onRelationClick(relation.id) },
                                         modifier = Modifier.animateItem()
                                     )
@@ -508,7 +517,8 @@ fun PageHeaderSection(
     details: MediaDetails,
     sourceScreen: String,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    titleLanguage: com.anisync.android.data.TitleLanguage
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     
@@ -593,7 +603,7 @@ fun PageHeaderSection(
             ) {
                  with(sharedTransitionScope) {
                     Text(
-                        text = details.title,
+                        text = details.getTitle(titleLanguage),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                         ),

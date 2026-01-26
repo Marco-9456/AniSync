@@ -23,7 +23,11 @@ query SearchMedia(
       id
       title {
         userPreferred
+        romaji
+        english
+        native
       }
+
       coverImage {
         extraLarge
       }

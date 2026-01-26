@@ -85,6 +85,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.util.getTitle
 import com.anisync.android.ui.theme.AppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -104,6 +106,7 @@ import java.util.Locale
 @Composable
 fun EditLibraryEntrySheet(
     entry: LibraryEntry,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     onDismiss: () -> Unit,
     onSave: (LibraryEntry) -> Unit,
     onDelete: () -> Unit,
@@ -153,7 +156,7 @@ fun EditLibraryEntrySheet(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // Header Section
-            HeaderSection(entry = entry)
+            HeaderSection(entry = entry, titleLanguage = titleLanguage)
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
@@ -255,7 +258,7 @@ fun EditLibraryEntrySheet(
 // -------------------------
 
 @Composable
-private fun HeaderSection(entry: LibraryEntry) {
+private fun HeaderSection(entry: LibraryEntry, titleLanguage: TitleLanguage) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -285,7 +288,7 @@ private fun HeaderSection(entry: LibraryEntry) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = entry.title,
+                text = entry.getTitle(titleLanguage),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
@@ -903,7 +906,10 @@ private fun PreviewEditLibraryEntrySheet() {
                 val mockEntry = LibraryEntry(
                     id = 1,
                     mediaId = 101,
-                    title = "Frieren: Beyond Journey's End",
+                    titleRomaji = "Frieren: Beyond Journey's End",
+                    titleEnglish = "Frieren: Beyond Journey's End",
+                    titleNative = "Sousou no Frieren",
+                    titleUserPreferred = "Frieren: Beyond Journey's End",
                     coverUrl = null,
                     progress = 12,
                     totalEpisodes = 28,
@@ -918,7 +924,7 @@ private fun PreviewEditLibraryEntrySheet() {
                     notes = "Great anime!"
                 )
 
-                HeaderSection(entry = mockEntry)
+                HeaderSection(entry = mockEntry, titleLanguage = TitleLanguage.ROMAJI)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 StatusSection(
                     status = mockEntry.status,

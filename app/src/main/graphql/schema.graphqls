@@ -130,6 +130,8 @@ type Staff {
 
 type StaffName {
   full: String
+  native: String
+  userPreferred: String
 }
 
 type StaffImage {
@@ -239,6 +241,7 @@ type MediaTitle {
   userPreferred: String
   romaji: String
   english: String
+  native: String
 }
 
 type MediaCoverImage {

@@ -60,6 +60,8 @@ import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.util.getTitle
 
 /**
  * Configuration for the LibraryMediaCard content display.
@@ -102,6 +104,7 @@ val CompletedCardConfig = LibraryCardConfig(
 fun LibraryMediaCard(
     entry: LibraryEntry,
     mediaType: MediaType,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     config: LibraryCardConfig = WatchingCardConfig,
@@ -194,7 +197,7 @@ fun LibraryMediaCard(
                         )
                 )
                 Text(
-                    text = entry.title,
+                    text = entry.getTitle(titleLanguage),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
@@ -389,7 +392,10 @@ private fun mockEntry(
     return LibraryEntry(
         id = id,
         mediaId = id,
-        title = title,
+        titleRomaji = title,
+        titleEnglish = title,
+        titleNative = title,
+        titleUserPreferred = title,
         coverUrl = "", // Empty for preview
         progress = progress,
         totalEpisodes = total, // Assuming anime for default
@@ -439,6 +445,7 @@ private fun PreviewLibraryCardWatchingBehind() {
             LibraryMediaCard(
                 entry = mockEntry(progress = 10, total = 24, nextAiring = 12),
                 mediaType = MediaType.ANIME,
+                titleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
                 onClick = {},
                 config = WatchingCardConfig,
                 onIncrement = {},
@@ -456,6 +463,7 @@ private fun PreviewLibraryCardUpToDate() {
             LibraryMediaCard(
                 entry = mockEntry(progress = 11, total = 24, nextAiring = 12),
                 mediaType = MediaType.ANIME,
+                titleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
                 onClick = {},
                 config = WatchingCardConfig,
                 onIncrement = {},
@@ -482,6 +490,7 @@ private fun PreviewLibraryCardCompleted() {
             LibraryMediaCard(
                 entry = completedEntry,
                 mediaType = MediaType.MANGA,
+                titleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
                 onClick = {},
                 config = CompletedCardConfig
             )

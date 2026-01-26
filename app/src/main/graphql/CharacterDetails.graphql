@@ -25,6 +25,9 @@ query GetCharacterDetails($id: Int!) {
                     id
                     title {
                         userPreferred
+                        romaji
+                        english
+                        native
                     }
                     coverImage {
                         large
@@ -35,6 +38,8 @@ query GetCharacterDetails($id: Int!) {
                     id
                     name {
                         full
+                        native
+                        userPreferred
                     }
                     image {
                         medium

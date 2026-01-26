@@ -85,7 +85,10 @@ class ProfileRepositoryImpl @Inject constructor(
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
-                    title = media.title?.userPreferred ?: "Unknown",
+                    titleRomaji = media.title?.romaji,
+                    titleEnglish = media.title?.english,
+                    titleNative = media.title?.native,
+                    titleUserPreferred = media.title?.userPreferred ?: "Unknown",
                     coverUrl = media.coverImage?.large,
                     progress = 0,
                     totalEpisodes = null,

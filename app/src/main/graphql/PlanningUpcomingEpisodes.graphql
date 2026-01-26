@@ -16,6 +16,9 @@ query GetPlanningUpcomingEpisodes($mediaIds: [Int!], $airingBefore: Int!) {
         id
         title {
           userPreferred
+          romaji
+          english
+          native
         }
         coverImage {
           large

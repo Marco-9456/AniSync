@@ -40,7 +40,7 @@ fun CharacterItem(
     ) {
         AsyncImage(
             model = character.imageUrl,
-            contentDescription = character.name,
+            contentDescription = character.nameUserPreferred,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .height(dimensionResource(R.dimen.character_image_height))
@@ -50,7 +50,7 @@ fun CharacterItem(
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
-            text = character.name,
+            text = character.nameUserPreferred,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
             textAlign = TextAlign.Start,
             maxLines = 2,

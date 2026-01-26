@@ -57,6 +57,8 @@ import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
+import com.anisync.android.util.getTitle
+import com.anisync.android.data.TitleLanguage
 import java.util.Locale
 
 /**
@@ -95,6 +97,7 @@ fun DiscoverMediaCard(
     style: CardStyle,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = "discover"
@@ -165,6 +168,7 @@ fun DiscoverMediaCard(
             is CardStyle.ListItem -> ListItemContent(
                 item = item,
                 transitionPrefix = transitionPrefix,
+                titleLanguage = titleLanguage,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 spatialSpec = spatialSpec
@@ -173,6 +177,7 @@ fun DiscoverMediaCard(
                 item = item,
                 style = style,
                 transitionPrefix = transitionPrefix,
+                titleLanguage = titleLanguage,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 spatialSpec = spatialSpec,
@@ -188,6 +193,7 @@ private fun ImmersiveCardContent(
     item: LibraryEntry,
     style: CardStyle,
     transitionPrefix: String,
+    titleLanguage: TitleLanguage,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     spatialSpec: FiniteAnimationSpec<Rect>?,
@@ -208,7 +214,7 @@ private fun ImmersiveCardContent(
 
         AsyncImage(
             model = imageRequest,
-            contentDescription = item.title,
+            contentDescription = item.getTitle(titleLanguage),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxWidth()
         )
@@ -314,7 +320,7 @@ private fun ImmersiveCardContent(
             }
 
             Text(
-                text = item.title,
+                text = item.getTitle(titleLanguage),
                 color = Color.White,
                 style = when (style) {
                     is CardStyle.Hero -> MaterialTheme.typography.headlineSmall
@@ -374,6 +380,7 @@ private fun ImmersiveCardContent(
 private fun ListItemContent(
     item: LibraryEntry,
     transitionPrefix: String,
+    titleLanguage: TitleLanguage,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     spatialSpec: FiniteAnimationSpec<Rect>?
@@ -437,7 +444,7 @@ private fun ListItemContent(
             }
 
             Text(
-                text = item.title,
+                text = item.getTitle(titleLanguage),
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
@@ -485,7 +492,10 @@ private fun ListItemContent(
 private val previewItem = LibraryEntry(
     id = 1,
     mediaId = 100,
-    title = "Frieren: Beyond Journey's End",
+    titleRomaji = "Frieren: Beyond Journey's End",
+    titleEnglish = "Frieren: Beyond Journey's End",
+    titleNative = "Sousou no Frieren",
+    titleUserPreferred = "Frieren: Beyond Journey's End",
     coverUrl = null,
     progress = 5,
     totalEpisodes = 28,
@@ -554,7 +564,10 @@ private fun GridCardStylePreview() {
                     DiscoverMediaCard(
                         item = previewItem.copy(
                             mediaStatus = "NOT_YET_RELEASED",
-                            title = "Blue Exorcist: Shimane Illuminati Saga"
+                            titleRomaji = "Blue Exorcist: Shimane Illuminati Saga",
+                            titleEnglish = "Blue Exorcist: Shimane Illuminati Saga",
+                            titleNative = "Ao no Exorcist",
+                            titleUserPreferred = "Blue Exorcist: Shimane Illuminati Saga",
                         ),
                         style = CardStyle.Grid(),
                         onClick = {},
@@ -579,7 +592,10 @@ private fun ListItemStylePreview() {
                     DiscoverMediaCard(
                         item = previewItem.copy(
                             format = MediaFormat.MOVIE,
-                            title = "The Ronin",
+                            titleRomaji = "The Ronin",
+                            titleEnglish = "The Ronin",
+                            titleNative = "The Ronin",
+                            titleUserPreferred = "The Ronin",
                             mediaStatus = "FINISHED"
                         ),
                         style = CardStyle.ListItem,

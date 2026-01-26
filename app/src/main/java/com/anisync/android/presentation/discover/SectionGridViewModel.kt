@@ -22,8 +22,11 @@ import javax.inject.Inject
 @HiltViewModel
 class SectionGridViewModel @Inject constructor(
     private val discoverRepository: DiscoverRepository,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val appSettings: com.anisync.android.data.AppSettings
 ) : ViewModel() {
+
+    val titleLanguage = appSettings.titleLanguage
 
     // Section type passed via navigation: "trending", "popular", "upcoming", "tba"
     private val sectionType: String = savedStateHandle["sectionType"] ?: "trending"

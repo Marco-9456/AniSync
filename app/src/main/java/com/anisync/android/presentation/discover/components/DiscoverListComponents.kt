@@ -24,12 +24,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.shimmerEffect
+import com.anisync.android.data.TitleLanguage
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HorizontalMediaList(
     items: List<LibraryEntry>,
     onItemClick: (Int) -> Unit,
+    titleLanguage: TitleLanguage,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -46,6 +48,7 @@ fun HorizontalMediaList(
                 item = item,
                 style = CardStyle.Standard(),
                 onClick = onClick,
+                titleLanguage = titleLanguage,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "discover",
@@ -60,6 +63,7 @@ fun HorizontalMediaList(
 fun SearchResultItem(
     item: LibraryEntry,
     onClick: () -> Unit,
+    titleLanguage: TitleLanguage,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -67,6 +71,7 @@ fun SearchResultItem(
         item = item,
         style = CardStyle.ListItem,
         onClick = onClick,
+        titleLanguage = titleLanguage,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         transitionPrefix = "search"

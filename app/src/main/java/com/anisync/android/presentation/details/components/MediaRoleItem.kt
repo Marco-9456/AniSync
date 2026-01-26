@@ -68,7 +68,7 @@ fun MediaRoleItem(media: CharacterMedia) {
         }
 
         Text(
-            text = media.title,
+            text = media.titleUserPreferred,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

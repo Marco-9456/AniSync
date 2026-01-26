@@ -20,7 +20,7 @@ interface LibraryDao {
      * Observe all library entries by media type.
      * Emits new list whenever data changes.
      */
-    @Query("SELECT * FROM library_entries WHERE mediaType = :type ORDER BY title ASC")
+    @Query("SELECT * FROM library_entries WHERE mediaType = :type ORDER BY titleUserPreferred ASC")
     fun observeByType(type: MediaType): Flow<List<LibraryEntryEntity>>
 
     /**

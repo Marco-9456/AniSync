@@ -4,6 +4,9 @@ query GetMediaBySort($sort: [MediaSort], $type: MediaType, $perPage: Int) {
       id
       title {
         userPreferred
+        romaji
+        english
+        native
       }
       coverImage {
         extraLarge
@@ -22,8 +25,11 @@ query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
   Page(perPage: $perPage) {
     media(status: $status, type: $type, sort: [POPULARITY_DESC]) {
       id
-      title {
+        title {
         userPreferred
+        romaji
+        english
+        native
       }
       coverImage {
         extraLarge
@@ -58,6 +64,9 @@ query GetPaginatedMedia(
       id
       title {
         userPreferred
+        romaji
+        english
+        native
       }
       coverImage {
         extraLarge

@@ -41,6 +41,8 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.util.getTitle
 
 /**
  * A specialized Media Card for the Discover screen.
@@ -57,6 +59,7 @@ import com.anisync.android.ui.theme.StarGold
 fun MediaCard(
     item: LibraryEntry,
     onClick: () -> Unit,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -105,7 +108,7 @@ fun MediaCard(
                 ) {
                     // Title (Bold, Black)
                     Text(
-                        text = item.title,
+                        text = item.getTitle(titleLanguage),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -179,7 +182,10 @@ private fun MediaCardPreview() {
                     item = LibraryEntry(
                         id = 1,
                         mediaId = 100,
-                        title = "Frieren: Beyond Journey's End",
+                        titleRomaji = "Frieren: Beyond Journey's End",
+                        titleEnglish = "Frieren: Beyond Journey's End",
+                        titleNative = "Sousou no Frieren",
+                        titleUserPreferred = "Frieren: Beyond Journey's End",
                         coverUrl = null,
                         type = MediaType.ANIME,
                         averageScore = 95,

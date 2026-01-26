@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.util.getTitle
 
 /**
  * A shared media card component that displays a poster image with a gradient overlay and title.
@@ -54,9 +56,8 @@ import com.anisync.android.presentation.util.bouncyClickable
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PosterCard(
-    title: String,
-    coverUrl: String?,
-    mediaId: Int,
+    item: com.anisync.android.domain.LibraryEntry,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     onClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -79,22 +80,22 @@ fun PosterCard(
                 .fillMaxWidth()
                 .bouncyClickable(onClick = onClick)
                 .sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_cover_${mediaId}"),
+                    sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_cover_${item.mediaId}"),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ -> spatialSpec },
                     clipInOverlayDuringTransition = OverlayClip(shape)
                 )
         ) {
             Box {
-                val cacheKey = "${transitionPrefix}_cover_${mediaId}"
+                val cacheKey = "${transitionPrefix}_cover_${item.mediaId}"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(coverUrl)
+                        .data(item.coverUrl)
                         .crossfade(true)
                         .placeholderMemoryCacheKey(cacheKey)
                         .memoryCacheKey(cacheKey)
                         .build(),
-                    contentDescription = title,
+                    contentDescription = item.getTitle(titleLanguage),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -106,8 +107,9 @@ fun PosterCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(aspectRatio)
+                        .aspectRatio(aspectRatio)
                         .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_gradient_${mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_gradient_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             enter = fadeIn(effectsSpec),
@@ -126,7 +128,7 @@ fun PosterCard(
 
                 // Title at bottom
                 Text(
-                    text = title,
+                    text = item.getTitle(titleLanguage),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -136,7 +138,7 @@ fun PosterCard(
                         .align(Alignment.BottomStart)
                         .padding(8.dp)
                         .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_title_${mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_title_${item.mediaId}"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
@@ -154,10 +156,24 @@ private fun PosterCardPreview() {
     MaterialTheme {
         SharedTransitionLayout {
             AnimatedVisibility(visible = true) {
-                PosterCard(
-                    title = "Attack on Titan",
-                    coverUrl = null,
+                val item = com.anisync.android.domain.LibraryEntry(
+                    id = 1,
                     mediaId = 1,
+                    titleRomaji = "Attack on Titan",
+                    titleEnglish = "Attack on Titan",
+                    titleNative = "Shingeki no Kyojin",
+                    titleUserPreferred = "Attack on Titan",
+                    coverUrl = null,
+                    progress = 0,
+                    totalEpisodes = 25,
+                    totalChapters = null,
+                    totalVolumes = null,
+                    type = com.anisync.android.type.MediaType.ANIME,
+                    format = com.anisync.android.type.MediaFormat.TV,
+                    status = com.anisync.android.domain.LibraryStatus.CURRENT
+                )
+                PosterCard(
+                    item = item,
                     onClick = {},
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,

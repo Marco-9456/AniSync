@@ -63,7 +63,9 @@ class DetailsRepositoryImpl @Inject constructor(
             val characters = media.characters?.edges?.filterNotNull()?.map { edge ->
                 CharacterInfo(
                     id = edge.node?.id ?: 0,
-                    name = edge.node?.name?.userPreferred ?: "Unknown",
+                    nameFull = edge.node?.name?.full ?: "Unknown",
+                    nameNative = edge.node?.name?.native,
+                    nameUserPreferred = edge.node?.name?.userPreferred ?: "Unknown",
                     imageUrl = edge.node?.image?.large,
                     role = edge.role?.name ?: "UNKNOWN"
                 )
@@ -73,7 +75,10 @@ class DetailsRepositoryImpl @Inject constructor(
                 val node = edge.node
                 RelatedMedia(
                     id = node?.id ?: 0,
-                    title = node?.title?.userPreferred ?: "Unknown",
+                    titleRomaji = node?.title?.romaji,
+                    titleEnglish = node?.title?.english,
+                    titleNative = node?.title?.native,
+                    titleUserPreferred = node?.title?.userPreferred ?: "Unknown",
                     coverUrl = node?.coverImage?.large,
                     format = node?.format?.name,
                     status = node?.status?.name,
@@ -102,8 +107,11 @@ class DetailsRepositoryImpl @Inject constructor(
                     )
                 } ?: emptyList()
 
-            // Use english title if available, otherwise romaji
-            val title = media.title?.english ?: media.title?.romaji ?: "Unknown"
+            // Title variants
+            val titleRomaji = media.title?.romaji
+            val titleEnglish = media.title?.english
+            val titleNative = media.title?.native
+            val titleUserPreferred = media.title?.userPreferred ?: "Unknown"
 
             val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
             val monthName = media.startDate?.month?.let { if (it in 1..12) months[it - 1] else null }
@@ -118,7 +126,10 @@ class DetailsRepositoryImpl @Inject constructor(
 
             val details = MediaDetails(
                 id = media.id ?: 0,
-                title = title,
+                titleRomaji = titleRomaji,
+                titleEnglish = titleEnglish,
+                titleNative = titleNative,
+                titleUserPreferred = titleUserPreferred,
                 coverUrl = media.coverImage?.extraLarge,
                 bannerUrl = media.bannerImage,
                 description = media.description?.stripHtml() ?: "",
@@ -239,13 +250,18 @@ class DetailsRepositoryImpl @Inject constructor(
                 
                 CharacterMedia(
                     id = node.id ?: 0,
-                    title = node.title?.userPreferred ?: "Unknown",
+                    titleRomaji = node.title?.romaji,
+                    titleEnglish = node.title?.english,
+                    titleNative = node.title?.native,
+                    titleUserPreferred = node.title?.userPreferred ?: "Unknown",
                     coverUrl = node.coverImage?.large,
                     type = node.type,
                     voiceActor = voiceActorNode?.let { va -> 
                         VoiceActor(
                            id = va.id ?: 0,
-                           name = va.name?.full ?: "Unknown",
+                           nameFull = va.name?.full ?: "Unknown",
+                           nameNative = null, // Not fetching native name for VA list yet to save bandwidth, or add if needed
+                           nameUserPreferred = va.name?.full ?: "Unknown", // Fallback to full
                            imageUrl = va.image?.medium
                         ) 
                     }
