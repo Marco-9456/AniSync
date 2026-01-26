@@ -676,11 +676,18 @@ fun TitleLanguageSelectionDialog(
                             onClick = { onLanguageSelected(language) }
                         )
                         Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = getTitleLanguageLabel(language),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Column {
+                            Text(
+                                text = getTitleLanguageLabel(language),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = getTitleLanguageExample(language),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
@@ -711,5 +718,17 @@ fun getTitleLanguageLabel(language: TitleLanguage): String {
         TitleLanguage.ROMAJI -> "Romaji"
         TitleLanguage.ENGLISH -> "English"
         TitleLanguage.NATIVE -> "Native"
+    }
+}
+
+/**
+ * Returns an example title for a [TitleLanguage] to help the user understand the setting.
+ */
+@Composable
+fun getTitleLanguageExample(language: TitleLanguage): String {
+    return when (language) {
+        TitleLanguage.ROMAJI -> "e.g. Shingeki no Kyojin"
+        TitleLanguage.ENGLISH -> "e.g. Attack on Titan"
+        TitleLanguage.NATIVE -> "e.g. 進撃の巨人"
     }
 }
