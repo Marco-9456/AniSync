@@ -1,0 +1,14 @@
+query GetTrending($season: MediaSeason, $seasonYear: Int, $perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    media(season: $season, seasonYear: $seasonYear, sort: POPULARITY_DESC, type: ANIME) {
+      id
+      title {
+        userPreferred
+      }
+      coverImage {
+        extraLarge
+      }
+      averageScore
+    }
+  }
+}

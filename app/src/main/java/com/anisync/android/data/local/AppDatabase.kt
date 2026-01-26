@@ -9,6 +9,8 @@ import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
 import com.anisync.android.data.local.entity.UserProfileEntity
+import com.anisync.android.data.local.entity.AiringScheduleEntity
+import com.anisync.android.data.local.entity.TrendingEntity
 
 /**
  * Room database for offline caching.
@@ -22,9 +24,11 @@ import com.anisync.android.data.local.entity.UserProfileEntity
     entities = [
         LibraryEntryEntity::class,
         MediaDetailsEntity::class,
-        UserProfileEntity::class
+        UserProfileEntity::class,
+        AiringScheduleEntity::class,
+        TrendingEntity::class
     ],
-    version = 10,
+    version = 12, // Increment version
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -32,4 +36,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
     abstract fun mediaDetailsDao(): MediaDetailsDao
     abstract fun userProfileDao(): UserProfileDao
+    abstract fun airingScheduleDao(): com.anisync.android.data.local.dao.AiringScheduleDao
+    abstract fun trendingDao(): com.anisync.android.data.local.dao.TrendingDao
 }

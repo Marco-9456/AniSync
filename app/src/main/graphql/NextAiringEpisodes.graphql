@@ -1,0 +1,18 @@
+query NextAiringEpisodes($mediaIds: [Int], $airingAtGreater: Int, $perPage: Int) {
+  Page(page: 1, perPage: $perPage) {
+    airingSchedules(mediaId_in: $mediaIds, airingAt_greater: $airingAtGreater, sort: TIME) {
+      id
+      episode
+      airingAt
+      media {
+        id
+        title {
+          userPreferred
+        }
+        coverImage {
+          extraLarge
+        }
+      }
+    }
+  }
+}

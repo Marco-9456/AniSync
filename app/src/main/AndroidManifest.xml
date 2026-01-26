@@ -59,6 +59,66 @@
 
         <!-- BroadcastReceiver for handling "Add to Watching" action from notifications -->
         <receiver
+            android:name=".widget.UpNextWidgetReceiver"
+            android:exported="true"
+            android:label="Up Next">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/up_next_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.QuickUpdateWidgetReceiver"
+            android:exported="true"
+            android:label="Quick Update">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_update_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.AiringTodayWidgetReceiver"
+            android:exported="true"
+            android:label="Airing Today">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/airing_today_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TrendingWidgetReceiver"
+            android:exported="true"
+            android:label="Seasonal Trending">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/trending_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CountdownWidgetReceiver"
+            android:exported="true"
+            android:label="Anime Countdown">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/countdown_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".worker.AddToWatchingReceiver"
             android:exported="false" />
     </application>

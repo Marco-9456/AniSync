@@ -30,6 +30,16 @@ interface LibraryDao {
     suspend fun getByType(type: MediaType): List<LibraryEntryEntity>
 
     /**
+     * Get "Up Next" entries: Watching status and not completed.
+     * Sorted by last updated to show most recently watched first.
+     */
+    @Query("SELECT * FROM library_entries WHERE status = 'CURRENT' AND (totalEpisodes IS NULL OR progress < totalEpisodes) ORDER BY lastUpdated DESC")
+    suspend fun getUpNext(): List<LibraryEntryEntity>
+
+    @Query("SELECT * FROM library_entries WHERE status = 'CURRENT' AND (totalEpisodes IS NULL OR progress < totalEpisodes) ORDER BY lastUpdated DESC LIMIT 1")
+    suspend fun getMostRecentWatching(): LibraryEntryEntity?
+
+    /**
      * Get a single entry by mediaId.
      */
     @Query("SELECT * FROM library_entries WHERE mediaId = :mediaId LIMIT 1")

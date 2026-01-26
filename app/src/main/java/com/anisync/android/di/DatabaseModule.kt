@@ -48,4 +48,14 @@ object DatabaseModule {
     fun provideUserProfileDao(database: AppDatabase): UserProfileDao {
         return database.userProfileDao()
     }
+
+    @Provides
+    fun provideAiringScheduleDao(database: AppDatabase): com.anisync.android.data.local.dao.AiringScheduleDao {
+        return database.airingScheduleDao()
+    }
+
+    @Provides
+    fun provideTrendingDao(database: AppDatabase): com.anisync.android.data.local.dao.TrendingDao {
+        return database.trendingDao()
+    }
 }
