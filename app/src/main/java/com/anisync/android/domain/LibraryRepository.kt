@@ -23,6 +23,12 @@ interface LibraryRepository {
     suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit>
 
     /**
+     * Update progress ONLY in local storage.
+     * Used for immediate UI/Widget updates before network sync.
+     */
+    suspend fun updateProgressLocal(mediaId: Int, progress: Int): Result<Unit>
+
+    /**
      * Update an entire entry (score, status, notes, etc).
      */
     suspend fun updateEntry(entry: LibraryEntry): Result<Unit>

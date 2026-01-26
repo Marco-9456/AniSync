@@ -109,29 +109,21 @@ class LibraryRepositoryImpl @Inject constructor(
      * Automatically changes status to COMPLETED if progress reaches total.
      * Also sets completedAt date when completing.
      */
+    /**
+     * Optimistic local update + network sync.
+     * Automatically changes status to COMPLETED if progress reaches total.
+     * Also sets completedAt date when completing.
+     */
     override suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit> {
-        // 1. Get current entry to check for completion
+        // 1. Update local
+        val localResult = updateProgressLocal(mediaId, progress)
+        if (localResult is Result.Error) return localResult
+
+        // 2. Need to recalculate completion status for Sync parameters
+        // (Refetching entry or duplicating logic - refetching is safer)
         val entry = libraryDao.getEntry(mediaId) ?: return Result.Error("Entry not found")
-        
-        // Determine the total based on media type
-        val total = if (entry.mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-        
-        // Check if this progress update completes the media
-        val isCompleted = total != null && total > 0 && progress >= total
+        val isCompleted = entry.status == LibraryStatus.COMPLETED
         val now = System.currentTimeMillis()
-        
-        // 2. Update local immediately (UI sees change via Flow)
-        if (isCompleted) {
-            // Auto-set completedAt when finishing
-            libraryDao.updateStatusProgressAndCompletedAt(
-                mediaId = mediaId,
-                status = LibraryStatus.COMPLETED,
-                progress = progress,
-                completedAt = now
-            )
-        } else {
-            libraryDao.updateProgress(mediaId, progress)
-        }
 
         // 3. Try sync to network
         return try {
@@ -156,6 +148,30 @@ class LibraryRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.Error("Unexpected error: ${e.message}", e)
         }
+    }
+
+    override suspend fun updateProgressLocal(mediaId: Int, progress: Int): Result<Unit> {
+        val entry = libraryDao.getEntry(mediaId) ?: return Result.Error("Entry not found")
+        
+        // Determine the total based on media type
+        val total = if (entry.mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+        
+        // Check if this progress update completes the media
+        val isCompleted = total != null && total > 0 && progress >= total
+        val now = System.currentTimeMillis()
+        
+        if (isCompleted) {
+            // Auto-set completedAt when finishing
+            libraryDao.updateStatusProgressAndCompletedAt(
+                mediaId = mediaId,
+                status = LibraryStatus.COMPLETED,
+                progress = progress,
+                completedAt = now
+            )
+        } else {
+            libraryDao.updateProgress(mediaId, progress)
+        }
+        return Result.Success(Unit)
     }
 
     override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {

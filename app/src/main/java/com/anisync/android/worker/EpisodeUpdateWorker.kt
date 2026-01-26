@@ -21,23 +21,21 @@ class EpisodeUpdateWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val mediaId = inputData.getInt("mediaId", -1)
+        val amount = inputData.getInt("amount", 1) // Default to +1
         if (mediaId == -1) return Result.failure()
 
         try {
             val entry = libraryDao.getEntry(mediaId) ?: return Result.failure()
-            // Increment progress
-            val newProgress = entry.progress + 1
+            // Update progress
+            val newProgress = (entry.progress + amount).coerceAtLeast(0)
             
-            // Use Repository to update local + sync to network
-            val result = libraryRepository.updateProgress(mediaId, newProgress)
-            
-            if (result is com.anisync.android.domain.Result.Error) {
-                // If sync failed but local might be updated, we proceed to update widgets
-                // But ideally we should match repository behavior.
-                // Repository implementation updates local first then syncs.
+            // 1. Update LOCAL only (Optimistic)
+            val localResult = libraryRepository.updateProgressLocal(mediaId, newProgress)
+            if (localResult is com.anisync.android.domain.Result.Error) {
+                 return Result.failure()
             }
 
-            // Update Widgets
+            // 2. Update Widgets IMMEDIATELY
             val manager = GlanceAppWidgetManager(appContext)
             
             val upNextIds = manager.getGlanceIds(UpNextWidget::class.java)
@@ -49,6 +47,10 @@ class EpisodeUpdateWorker @AssistedInject constructor(
             quickUpdateIds.forEach { glanceId ->
                 QuickUpdateWidget().update(appContext, glanceId)
             }
+
+            // 3. Sync to Network (Background)
+            // We call updateProgress, which will re-do local update (harmless) and then sync
+            libraryRepository.updateProgress(mediaId, newProgress)
 
             return Result.success()
         } catch (e: Exception) {

@@ -2,17 +2,25 @@ package com.anisync.android.widget
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
+import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
@@ -27,10 +35,12 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+
 import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.TrendingDao
@@ -51,6 +61,15 @@ interface TrendingWidgetEntryPoint {
 
 class TrendingWidget : GlanceAppWidget() {
 
+    // Layout Guide: Consistent responsive sizing
+    override val sizeMode = SizeMode.Responsive(
+        setOf(
+            DpSize(100.dp, 100.dp), // 2x1
+            DpSize(250.dp, 100.dp), // 3x1 / 4x1
+            DpSize(250.dp, 200.dp)  // 3x2+
+        )
+    )
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appContext = context.applicationContext
         val entryPoint = EntryPointAccessors.fromApplication(appContext, TrendingWidgetEntryPoint::class.java)
@@ -62,17 +81,19 @@ class TrendingWidget : GlanceAppWidget() {
             emptyList()
         }
 
+        // Prefetch images
         val dataWithBitmaps = coroutineScope {
             trendingList.map { entry ->
                 async {
-                    // Larger images for grid
+                    // Larger images for grid visual quality
                     val bitmap = WidgetImageUtils.loadBitmap(appContext, entry.coverUrl, width = 200, height = 300)
                     entry to bitmap
                 }
             }.awaitAll()
         }
-        
-        // Chunk into rows of 3 for "Grid" effect using LazyColumn
+
+        // Layout Guide: Grid Construction
+        // Chunk into rows of 3 for a balanced grid layout
         val rows = dataWithBitmaps.chunked(3)
 
         provideContent {
@@ -84,58 +105,52 @@ class TrendingWidget : GlanceAppWidget() {
 }
 
 @Composable
-fun TrendingWidgetContent(rows: List<List<Pair<TrendingEntity, android.graphics.Bitmap?>>>) {
+fun TrendingWidgetContent(rows: List<List<Pair<TrendingEntity, Bitmap?>>>) {
+    // Style Guide: System Coherence (Background & Radius)
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp)
+            .appWidgetBackground()
+            .background(GlanceTheme.colors.widgetBackground)
+            .padding(16.dp)
     ) {
-        Text(
-            text = "Trending Now",
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = GlanceModifier.padding(bottom = 12.dp)
-        )
+        val size = LocalSize.current
+        val showHeader = size.height >= 120.dp
+
+        if (showHeader) {
+            TrendingHeader()
+            Spacer(modifier = GlanceModifier.height(12.dp))
+        }
 
         if (rows.isEmpty()) {
-            Box(
-                modifier = GlanceModifier.fillMaxSize(), // This might need weight if inside column
-                contentAlignment = Alignment.Center
-            ) {
-                 Text(
-                    text = "Loading trends...",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant)
-                )
-            }
+            EmptyTrendsState()
         } else {
+            // Layout Guide: "Image Grid" Canonical Layout
             LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
                 items(rows) { rowItems ->
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
                         rowItems.forEachIndexed { index, item ->
                             val (entry, bitmap) = item
-                            
-                            // Item
+
+                            // Grid Item Container
                             Box(
                                 modifier = GlanceModifier
                                     .defaultWeight()
-                                    .height(160.dp) // Fixed height for grid row
+                                    .height(180.dp) // Updated to better match poster aspect ratio (approx 2:3)
                                     .padding(4.dp)
                             ) {
                                 TrendingItem(entry, bitmap)
                             }
                         }
-                        
-                        // Fill empty space if row is incomplete
+
+                        // Fill empty space to maintain column width if row is incomplete
                         if (rowItems.size < 3) {
                             repeat(3 - rowItems.size) {
-                                Spacer(modifier = GlanceModifier.defaultWeight())
+                                Spacer(modifier = GlanceModifier.defaultWeight().padding(4.dp))
                             }
                         }
                     }
-                    Spacer(modifier = GlanceModifier.height(8.dp))
+                    Spacer(modifier = GlanceModifier.height(4.dp))
                 }
             }
         }
@@ -143,22 +158,67 @@ fun TrendingWidgetContent(rows: List<List<Pair<TrendingEntity, android.graphics.
 }
 
 @Composable
-fun TrendingItem(entry: TrendingEntity, bitmap: android.graphics.Bitmap?) {
+fun TrendingHeader() {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            provider = ImageProvider(R.drawable.ic_launcher_foreground),
+            contentDescription = null,
+            modifier = GlanceModifier.size(24.dp)
+        )
+        Spacer(modifier = GlanceModifier.width(8.dp))
+        Text(
+            text = "Trending Now",
+            style = TextStyle(
+                color = GlanceTheme.colors.primary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            modifier = GlanceModifier.defaultWeight()
+        )
+
+        // Quick Access Action
+        val appIntent = Intent(LocalContext.current, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        // Quality Guide: Touch Target 48dp
+        Box(
+            modifier = GlanceModifier
+                .size(48.dp)
+                .clickable(actionStartActivity(appIntent)),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Image(
+                provider = ImageProvider(android.R.drawable.ic_menu_search), // Search/Explore icon
+                contentDescription = "Browse",
+                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurface),
+                modifier = GlanceModifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun TrendingItem(entry: TrendingEntity, bitmap: Bitmap?) {
     val detailsIntent = Intent(
         Intent.ACTION_VIEW,
         "anisync://details/${entry.id}".toUri()
     ).apply {
         component = null
-        setClass(androidx.glance.LocalContext.current, MainActivity::class.java)
+        setClass(LocalContext.current, MainActivity::class.java)
     }
 
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
+            .cornerRadius(12.dp) // Soft rounded corners for images
             .clickable(actionStartActivity(detailsIntent)),
         contentAlignment = Alignment.BottomStart
     ) {
-        // Image
+        // Background / Image
         if (bitmap != null) {
             Image(
                 provider = ImageProvider(bitmap),
@@ -167,26 +227,55 @@ fun TrendingItem(entry: TrendingEntity, bitmap: android.graphics.Bitmap?) {
                 contentScale = ContentScale.Crop
             )
         } else {
-             Box(
+            Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(GlanceTheme.colors.surfaceVariant),
-                content = {}
-            )
+                    .background(GlanceTheme.colors.surfaceVariant)
+            ) {}
         }
-        
+
+        // Gradient overlay for text readability could go here,
+        // but simple badge is cleaner for small widgets.
+
         // Rank Badge
         Box(
             modifier = GlanceModifier
-                .padding(4.dp)
-                .background(GlanceTheme.colors.primaryContainer)
+                .padding(8.dp)
+                .background(GlanceTheme.colors.primaryContainer) // Semi-transparent backing
+                .cornerRadius(8.dp)
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
             Text(
                 text = "#${entry.rank}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onPrimaryContainer,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyTrendsState() {
+    Box(
+        modifier = GlanceModifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                provider = ImageProvider(android.R.drawable.stat_notify_error),
+                contentDescription = null,
+                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+                modifier = GlanceModifier.size(32.dp)
+            )
+            Spacer(modifier = GlanceModifier.height(8.dp))
+            Text(
+                text = "Unable to load trends",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 12.sp
                 )
             )
         }
