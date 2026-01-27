@@ -12,6 +12,7 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.widget.AiringTodayWidget
+import com.anisync.android.widget.WeeklyCalendarWidget
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import dagger.assisted.Assisted
@@ -34,14 +35,15 @@ class AiringScheduleWorker @AssistedInject constructor(
             calendar.set(java.util.Calendar.SECOND, 0)
             calendar.set(java.util.Calendar.MILLISECOND, 0)
             val startOfDaySeconds = calendar.timeInMillis / 1000
-            val endOfDaySeconds = startOfDaySeconds + 86400
+            // Fetch 7 days of data to support WeeklyCalendarWidget
+            val endOfWeekSeconds = startOfDaySeconds + (7 * 86400)
 
             val response = apolloClient.query(
                 AiringScheduleQuery(
                     page = Optional.present(1),
-                    perPage = Optional.present(50),
+                    perPage = Optional.present(100),  // Increased for 7-day range
                     airingAtGreater = Optional.present(startOfDaySeconds.toInt()),
-                    airingAtLesser = Optional.present(endOfDaySeconds.toInt())
+                    airingAtLesser = Optional.present(endOfWeekSeconds.toInt())
                 )
             ).execute()
 
@@ -79,10 +81,13 @@ class AiringScheduleWorker @AssistedInject constructor(
             airingScheduleDao.clearAll() // Simple cache strategy: replace all
             airingScheduleDao.insertAll(entities)
 
-            // Update Widget
+            // Update Widgets
             val manager = GlanceAppWidgetManager(appContext)
             manager.getGlanceIds(AiringTodayWidget::class.java).forEach { id ->
                 AiringTodayWidget().update(appContext, id)
+            }
+            manager.getGlanceIds(WeeklyCalendarWidget::class.java).forEach { id ->
+                WeeklyCalendarWidget().update(appContext, id)
             }
 
             Result.success()

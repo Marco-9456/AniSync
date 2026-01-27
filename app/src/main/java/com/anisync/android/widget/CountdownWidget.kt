@@ -26,6 +26,7 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -42,59 +43,108 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
+import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface CountdownWidgetEntryPoint {
     fun airingScheduleDao(): AiringScheduleDao
+    fun libraryDao(): LibraryDao
 }
 
+/**
+ * Countdown Widget - Redesigned v2.0
+ *
+ * Displays countdown timers for upcoming episodes with a focus on urgency
+ * and visual hierarchy. Uses "time remaining" as the primary visual element.
+ */
 class CountdownWidget : GlanceAppWidget() {
 
-    // Layout Guide: Consistent responsive sizing
     override val sizeMode = SizeMode.Responsive(
         setOf(
-            DpSize(100.dp, 100.dp), // 2x1
-            DpSize(250.dp, 100.dp), // 3x1 / 4x1
-            DpSize(250.dp, 200.dp)  // 3x2+
+            DpSize(110.dp, 100.dp),  // Compact: 2x1 - Single large countdown digits
+            DpSize(250.dp, 100.dp),  // Medium: 3x1/4x1 - Dual countdowns or rich single
+            DpSize(250.dp, 220.dp)   // Expanded: 3x2+ - Hero cards with background images
         )
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appContext = context.applicationContext
-        val entryPoint = EntryPointAccessors.fromApplication(appContext, CountdownWidgetEntryPoint::class.java)
-        val dao = entryPoint.airingScheduleDao()
+        val entryPoint = EntryPointAccessors.fromApplication(
+            appContext,
+            CountdownWidgetEntryPoint::class.java
+        )
+        val airingScheduleDao = entryPoint.airingScheduleDao()
+        val libraryDao = entryPoint.libraryDao()
 
-        // Data Logic: Fetch upcoming airing episodes (next 14 days)
+        // Fetch upcoming (next 14 days), prioritize user's watchlist
         val now = System.currentTimeMillis() / 1000
-        val rangeEnd = now + (14 * 24 * 60 * 60) // 2 weeks
+        val rangeEnd = now + (14 * 24 * 60 * 60)
 
-        val upcomingSchedules = try {
-            dao.getAiringBetween(now, rangeEnd)
-                .filter { it.isWatching } // Only show user's list
-                .sortedBy { it.airingAt }
-                .take(10) // Limit for widget performance
-        } catch (e: Exception) {
-            emptyList()
+        val upcoming = withContext(Dispatchers.IO) {
+            try {
+                // Get upcoming from airing schedule (entries user is watching)
+                val airingScheduleEntries = airingScheduleDao.getAiringBetween(now, rangeEnd)
+                    .filter { it.isWatching }
+                    .sortedBy { it.airingAt }
+
+                // Get library entries with upcoming episodes (timeUntilAiring is in seconds)
+                val libraryEntries = libraryDao.getUpNext()
+                val upcomingFromLibrary = libraryEntries.filter { entry ->
+                    entry.timeUntilAiring != null && entry.timeUntilAiring > 0
+                }.sortedBy { it.timeUntilAiring }
+
+                // Get mediaIds already in airing schedule to avoid duplicates
+                val airingMediaIds = airingScheduleEntries.map { it.mediaId }.toSet()
+
+                // Convert library entries to airing schedule format for unified display
+                val libraryAsAiring = upcomingFromLibrary
+                    .filter { it.mediaId !in airingMediaIds }
+                    .map { entry ->
+                        AiringScheduleEntity(
+                            id = entry.mediaId, // Use mediaId as id for library-derived entries
+                            mediaId = entry.mediaId,
+                            airingAt = now + (entry.timeUntilAiring ?: 0),
+                            episode = entry.nextAiringEpisode ?: (entry.progress + 1),
+                            titleUserPreferred = entry.titleUserPreferred,
+                            coverUrl = entry.coverUrl,
+                            format = entry.mediaStatus, // Use mediaStatus as format fallback
+                            isWatching = true
+                        )
+                    }
+
+                // Merge both sources and sort by airing time
+                (airingScheduleEntries + libraryAsAiring)
+                    .sortedBy { it.airingAt }
+                    .take(10)
+            } catch (e: Exception) {
+                emptyList()
+            }
         }
 
-        // Image Logic: Load bitmaps for the list
-        val dataWithBitmaps = coroutineScope {
-            upcomingSchedules.map { entry ->
+        // Load images for expanded mode (hero cards)
+        val upcomingWithImages = coroutineScope {
+            upcoming.map { entry ->
                 async {
-                    val bitmap = WidgetImageUtils.loadBitmap(appContext, entry.coverUrl, width = 400, height = 300)
+                    val bitmap = WidgetImageUtils.loadBitmap(
+                        appContext,
+                        entry.coverUrl,
+                        width = 400,
+                        height = 300 // Landscape aspect for hero cards
+                    )
                     entry to bitmap
                 }
             }.awaitAll()
@@ -102,15 +152,186 @@ class CountdownWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
-                CountdownWidgetContent(dataWithBitmaps)
+                val size = LocalSize.current
+
+                when {
+                    size.height <= 110.dp -> CountdownCompact(upcoming)
+                    size.height <= 120.dp -> CountdownMedium(upcoming)
+                    else -> CountdownExpanded(upcomingWithImages)
+                }
             }
         }
     }
 }
 
+/**
+ * COMPACT LAYOUT (2x1)
+ * Canonical: "Focus" layout with large typography
+ * Displays one urgent countdown with maximum time visibility
+ */
 @Composable
-fun CountdownWidgetContent(data: List<Pair<AiringScheduleEntity, Bitmap?>>) {
-    // Style Guide: System Coherence
+private fun CountdownCompact(entries: List<AiringScheduleEntity>) {
+    val context = LocalContext.current
+
+    if (entries.isEmpty()) {
+        EmptyStateCompact()
+        return
+    }
+
+    val entry = entries.first()
+    val timeString = formatCountdown(entry.airingAt - (System.currentTimeMillis() / 1000))
+    val detailsIntent = createDetailsIntent(context, entry.mediaId)
+
+    Row(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .appWidgetBackground()
+            .background(GlanceTheme.colors.surface)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Large countdown digits block
+        Box(
+            modifier = GlanceModifier
+                .width(80.dp)
+                .height(64.dp)
+                .cornerRadius(12.dp)
+                .background(GlanceTheme.colors.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = timeString,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onPrimaryContainer,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            )
+        }
+
+        Spacer(modifier = GlanceModifier.width(12.dp))
+
+        Column(
+            modifier = GlanceModifier.defaultWeight()
+        ) {
+            Text(
+                text = entry.titleUserPreferred,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 1
+            )
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            Text(
+                text = "Episode ${entry.episode}",
+                style = TextStyle(
+                    color = GlanceTheme.colors.primary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            Text(
+                text = "until airing",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 10.sp
+                )
+            )
+        }
+
+        Spacer(modifier = GlanceModifier.width(8.dp))
+
+        // Details action
+        Box(
+            modifier = GlanceModifier
+                .size(48.dp)
+                .cornerRadius(16.dp)
+                .background(GlanceTheme.colors.surfaceVariant)
+                .clickable(actionStartActivity(detailsIntent)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                provider = ImageProvider(android.R.drawable.ic_menu_info_details),
+                contentDescription = "Details",
+                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+                modifier = GlanceModifier.size(24.dp)
+            )
+        }
+    }
+}
+
+/**
+ * MEDIUM LAYOUT (3x1/4x1)
+ * Canonical: "Row" with dual emphasis
+ * Shows two countdowns side by side or one rich card
+ */
+@Composable
+private fun CountdownMedium(entries: List<AiringScheduleEntity>) {
+    val context = LocalContext.current
+
+    if (entries.isEmpty()) {
+        EmptyStateMedium()
+        return
+    }
+
+    val primary = entries.first()
+    val secondary = entries.getOrNull(1)
+
+    Row(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .appWidgetBackground()
+            .background(GlanceTheme.colors.surface)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Primary countdown - Large
+        CountdownCompactCard(
+            entry = primary,
+            modifier = GlanceModifier.defaultWeight(),
+            emphasized = true
+        )
+
+        if (secondary != null) {
+            Spacer(modifier = GlanceModifier.width(12.dp))
+
+            // Vertical divider
+            Box(
+                modifier = GlanceModifier
+                    .width(1.dp)
+                    .height(48.dp)
+                    .background(GlanceTheme.colors.outline),
+                contentAlignment = Alignment.Center
+            ) {}
+
+            Spacer(modifier = GlanceModifier.width(12.dp))
+
+            // Secondary countdown - Standard
+            CountdownCompactCard(
+                entry = secondary,
+                modifier = GlanceModifier.defaultWeight(),
+                emphasized = false
+            )
+        }
+    }
+}
+
+/**
+ * EXPANDED LAYOUT (3x2+)
+ * Canonical: "Card" (Hero) with background images
+ * Immersive countdown cards with gradient overlays
+ */
+@Composable
+private fun CountdownExpanded(entries: List<Pair<AiringScheduleEntity, Bitmap?>>) {
+    if (entries.isEmpty()) {
+        EmptyStateExpanded()
+        return
+    }
+
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -118,92 +339,138 @@ fun CountdownWidgetContent(data: List<Pair<AiringScheduleEntity, Bitmap?>>) {
             .background(GlanceTheme.colors.widgetBackground)
             .padding(16.dp)
     ) {
-        val size = LocalSize.current
-        val showHeader = size.height >= 120.dp
-
-        if (showHeader) {
-            CountdownHeader()
-            Spacer(modifier = GlanceModifier.height(12.dp))
+        // Header
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                provider = ImageProvider(R.drawable.ic_launcher_foreground),
+                contentDescription = null,
+                modifier = GlanceModifier.size(24.dp)
+            )
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            Text(
+                text = "Countdown",
+                style = TextStyle(
+                    color = GlanceTheme.colors.primary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = GlanceModifier.defaultWeight()
+            )
+            if (entries.size > 1) {
+                Box(
+                    modifier = GlanceModifier
+                        .cornerRadius(12.dp)
+                        .background(GlanceTheme.colors.surfaceVariant)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${entries.size} upcoming",
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                            fontSize = 12.sp
+                        )
+                    )
+                }
+            }
         }
 
-        if (data.isEmpty()) {
-            EmptyCountdownState()
-        } else {
-            // Layout Guide: Scrollable List of Hero Cards
-            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-                items(data) { (entry, bitmap) ->
-                    CountdownCard(entry, bitmap)
-                    Spacer(modifier = GlanceModifier.height(12.dp))
-                }
+        Spacer(modifier = GlanceModifier.height(12.dp))
+
+        LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+            items(entries) { (entry, bitmap) ->
+                CountdownHeroCard(entry, bitmap)
+                Spacer(modifier = GlanceModifier.height(12.dp))
             }
         }
     }
 }
 
+// -------------------------------------------------------------------------
+// Component Composables
+// -------------------------------------------------------------------------
+
 @Composable
-fun CountdownHeader() {
+private fun CountdownCompactCard(
+    entry: AiringScheduleEntity,
+    modifier: GlanceModifier = GlanceModifier,
+    emphasized: Boolean
+) {
+    val context = LocalContext.current
+    val timeString = formatCountdown(entry.airingAt - (System.currentTimeMillis() / 1000))
+    val detailsIntent = createDetailsIntent(context, entry.mediaId)
+
     Row(
-        modifier = GlanceModifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(GlanceTheme.colors.surfaceVariant)
+            .cornerRadius(12.dp)
+            .clickable(actionStartActivity(detailsIntent))
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            provider = ImageProvider(R.drawable.ic_launcher_foreground),
-            contentDescription = null,
-            modifier = GlanceModifier.size(24.dp)
-        )
-        Spacer(modifier = GlanceModifier.width(8.dp))
-        Text(
-            text = "Countdown",
-            style = TextStyle(
-                color = GlanceTheme.colors.primary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = GlanceModifier.defaultWeight()
-        )
-
-        val appIntent = Intent(LocalContext.current, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-
-        // Quality Guide: Touch Target 48dp
+        // Time digit block
         Box(
             modifier = GlanceModifier
-                .size(48.dp)
-                .clickable(actionStartActivity(appIntent)),
-            contentAlignment = Alignment.CenterEnd
+                .size(if (emphasized) 48.dp else 40.dp)
+                .cornerRadius(10.dp)
+                .background(GlanceTheme.colors.primary),
+            contentAlignment = Alignment.Center
         ) {
-            Image(
-                provider = ImageProvider(android.R.drawable.ic_menu_agenda),
-                contentDescription = "Open Schedule",
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurface),
-                modifier = GlanceModifier.size(24.dp)
+            Text(
+                text = timeString.substringBefore(" "), // Just the number
+                style = TextStyle(
+                    color = GlanceTheme.colors.onPrimary,
+                    fontSize = if (emphasized) 18.sp else 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        }
+
+        Spacer(modifier = GlanceModifier.width(10.dp))
+
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Text(
+                text = entry.titleUserPreferred,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = if (emphasized) 14.sp else 12.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 1
+            )
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            Text(
+                text = "EP ${entry.episode} • ${timeString.substringAfter(" ")}", // Unit (d/h/m)
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 11.sp
+                )
             )
         }
     }
 }
 
 @Composable
-fun CountdownCard(entry: AiringScheduleEntity, bitmap: Bitmap?) {
-    val detailsIntent = Intent(
-        Intent.ACTION_VIEW,
-        "anisync://details/${entry.mediaId}".toUri()
-    ).apply {
-        component = null
-        setClass(LocalContext.current, MainActivity::class.java)
-    }
+private fun CountdownHeroCard(entry: AiringScheduleEntity, bitmap: Bitmap?) {
+    val context = LocalContext.current
+    val timeString = formatCountdown(entry.airingAt - (System.currentTimeMillis() / 1000))
+    val detailsIntent = createDetailsIntent(context, entry.mediaId)
 
-    // Time Calculation
-    val now = System.currentTimeMillis() / 1000
-    val secondsDiff = entry.airingAt - now
-    val timeString = formatCountdown(secondsDiff)
+    // Define colors for overlay
+    val black60 = Color.Black.copy(alpha = 0.6f)
+    val whiteColor = Color.White
+    val white90 = Color.White.copy(alpha = 0.9f)
+    val cyanAccent = Color(0xFF80DEEA) // Cyan 200
 
     Box(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .height(180.dp) // Fixed height for list items
-            .cornerRadius(16.dp)
-            .clickable(actionStartActivity(detailsIntent)),
+            .height(180.dp)
+            .cornerRadius(20.dp),
         contentAlignment = Alignment.BottomStart
     ) {
         // 1. Background Image
@@ -218,68 +485,103 @@ fun CountdownCard(entry: AiringScheduleEntity, bitmap: Bitmap?) {
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(GlanceTheme.colors.primaryContainer)
+                    .background(GlanceTheme.colors.primaryContainer),
+                contentAlignment = Alignment.Center
             ) {}
         }
 
-        // 2. Dark Overlay (Gradient effect for readability)
+        // 2. Gradient Scrim (60% black)
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(ColorProvider(Color.Black.copy(alpha = 0.5f)))
+                .background(ColorProvider(day = black60, night = black60)),
+            contentAlignment = Alignment.Center
         ) {}
 
-        // 3. Content
-        Column(
+        // 3. Clickable overlay
+        Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .clickable(actionStartActivity(detailsIntent)),
+            contentAlignment = Alignment.Center
+        ) {}
+
+        // 4. Content (Bottom-aligned)
+        Column(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .padding(20.dp)
         ) {
-            // Top Section: Info
-            Text(
-                text = entry.titleUserPreferred,
-                style = TextStyle(
-                    color = ColorProvider(Color.White),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center
-                ),
-                maxLines = 2
-            )
-
-            Spacer(modifier = GlanceModifier.height(4.dp))
-
-            Text(
-                text = "Episode ${entry.episode}",
-                style = TextStyle(
-                    color = ColorProvider(Color(0xFF80DEEA)), // Cyan 200 equivalent
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp
-                )
-            )
-
-            Spacer(modifier = GlanceModifier.defaultWeight())
-
-            // Bottom Section: The Timer
-            // Big, bold typography
+            // Large countdown at top of card content area
             Text(
                 text = timeString,
                 style = TextStyle(
-                    color = ColorProvider(Color.White),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    textAlign = TextAlign.Center
+                    color = ColorProvider(day = whiteColor, night = whiteColor),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold
                 )
             )
             Text(
                 text = "REMAINING",
                 style = TextStyle(
-                    color = ColorProvider(Color.LightGray),
-                    fontWeight = FontWeight.Medium,
+                    color = ColorProvider(day = white90, night = white90),
                     fontSize = 10.sp,
-                    textAlign = TextAlign.Center
+                    fontWeight = FontWeight.Medium
+                )
+            )
+
+            Spacer(modifier = GlanceModifier.height(12.dp))
+
+            Text(
+                text = entry.titleUserPreferred,
+                style = TextStyle(
+                    color = ColorProvider(day = whiteColor, night = whiteColor),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 1
+            )
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            Text(
+                text = "Episode ${entry.episode}",
+                style = TextStyle(
+                    color = ColorProvider(day = cyanAccent, night = cyanAccent),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+        }
+    }
+}
+
+// -------------------------------------------------------------------------
+// Empty States
+// -------------------------------------------------------------------------
+
+@Composable
+private fun EmptyStateCompact() {
+    Box(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .appWidgetBackground()
+            .background(GlanceTheme.colors.surfaceVariant)
+            .clickable(actionStartActivity(openMainAppIntent())),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                provider = ImageProvider(android.R.drawable.ic_lock_idle_alarm),
+                contentDescription = null,
+                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
+                modifier = GlanceModifier.size(32.dp)
+            )
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Text(
+                text = "No upcoming",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             )
         }
@@ -287,36 +589,105 @@ fun CountdownCard(entry: AiringScheduleEntity, bitmap: Bitmap?) {
 }
 
 @Composable
-fun EmptyCountdownState() {
-    Box(
-        modifier = GlanceModifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+private fun EmptyStateMedium() {
+    Row(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .appWidgetBackground()
+            .background(GlanceTheme.colors.surface)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = GlanceModifier
+                .size(48.dp)
+                .cornerRadius(16.dp)
+                .background(GlanceTheme.colors.tertiaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
             Image(
-                provider = ImageProvider(android.R.drawable.ic_lock_idle_alarm),
+                provider = ImageProvider(android.R.drawable.ic_menu_recent_history),
                 contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
-                modifier = GlanceModifier.size(32.dp)
+                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
+                modifier = GlanceModifier.size(24.dp)
             )
-            Spacer(modifier = GlanceModifier.height(8.dp))
+        }
+
+        Spacer(modifier = GlanceModifier.width(16.dp))
+
+        Column {
             Text(
-                text = "No upcoming episodes",
+                text = "All caught up!",
                 style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 12.sp
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
                 )
             )
             Text(
-                text = "Add anime to your watchlist",
+                text = "Nothing airing in the next 2 weeks",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 10.sp
+                    fontSize = 13.sp
                 )
             )
         }
     }
 }
+
+@Composable
+private fun EmptyStateExpanded() {
+    Box(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .background(GlanceTheme.colors.surface)
+            .cornerRadius(28.dp)
+            .clickable(actionStartActivity(openMainAppIntent())),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = GlanceModifier
+                    .size(72.dp)
+                    .cornerRadius(24.dp)
+                    .background(GlanceTheme.colors.tertiaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(android.R.drawable.ic_menu_recent_history),
+                    contentDescription = null,
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
+                    modifier = GlanceModifier.size(40.dp)
+                )
+            }
+
+            Spacer(modifier = GlanceModifier.height(16.dp))
+
+            Text(
+                text = "No Upcoming Episodes",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Text(
+                text = "Your watchlist shows are up to date",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                ),
+                modifier = GlanceModifier.padding(horizontal = 24.dp)
+            )
+        }
+    }
+}
+
+// -------------------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------------------
 
 private fun formatCountdown(secondsDiff: Long): String {
     if (secondsDiff < 0) return "Aired"
@@ -326,9 +697,25 @@ private fun formatCountdown(secondsDiff: Long): String {
     val minutes = (secondsDiff % 3600) / 60
 
     return when {
-        days > 1 -> "${days}d ${hours}h"
-        days == 1L -> "${days}d ${hours}h"
+        days > 0 -> "${days}d ${hours}h"
         hours > 0 -> "${hours}h ${minutes}m"
         else -> "${minutes}m"
+    }
+}
+
+private fun createDetailsIntent(context: Context, mediaId: Int): Intent {
+    return Intent(
+        Intent.ACTION_VIEW,
+        "anisync://details/$mediaId".toUri()
+    ).apply {
+        component = null
+        setClass(context, MainActivity::class.java)
+    }
+}
+
+private fun openMainAppIntent(): Intent {
+    return Intent(Intent.ACTION_MAIN).apply {
+        setClassName("com.anisync.android", "com.anisync.android.MainActivity")
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
 }
