@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.worker.NotificationDebugService
+import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
@@ -45,6 +46,7 @@ class ProfileViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
     val hapticEnabled: StateFlow<Boolean> = appSettings.hapticEnabled
     val isNotificationsEnabled: StateFlow<Boolean> = appSettings.notificationsEnabled
+    val preferredStreamingService: StateFlow<StreamingService> = appSettings.preferredStreamingService
 
     // Granular notification settings from NotificationPreferences
     val watchingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.watchingEnabled
@@ -113,6 +115,10 @@ class ProfileViewModel @Inject constructor(
 
     fun setHapticEnabled(enabled: Boolean) {
         appSettings.setHapticEnabled(enabled)
+    }
+    
+    fun setPreferredStreamingService(service: StreamingService) {
+        appSettings.setPreferredStreamingService(service)
     }
 
     fun toggleNotifications(enabled: Boolean) {

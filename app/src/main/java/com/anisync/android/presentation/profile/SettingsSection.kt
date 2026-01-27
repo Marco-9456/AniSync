@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,20 +52,26 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.anisync.android.R
+import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
@@ -85,6 +93,7 @@ fun SettingsSection(
     val themeMode by viewModel.themeMode.collectAsState()
     val titleLanguage by viewModel.titleLanguage.collectAsState()
     val hapticEnabled by viewModel.hapticEnabled.collectAsState()
+    val preferredStreamingService by viewModel.preferredStreamingService.collectAsState()
     
     // Granular notification settings
     val watchingEnabled by viewModel.watchingNotificationsEnabled.collectAsState()
@@ -99,6 +108,7 @@ fun SettingsSection(
 
     var showThemeDialog by rememberSaveable { mutableStateOf(false) }
     var showTitleLanguageDialog by rememberSaveable { mutableStateOf(false) }
+    var showStreamingServiceDialog by rememberSaveable { mutableStateOf(false) }
     
     // Theme selection dialog
     if (showThemeDialog) {
@@ -121,6 +131,18 @@ fun SettingsSection(
                 showTitleLanguageDialog = false
             },
             onDismiss = { showTitleLanguageDialog = false }
+        )
+    }
+    
+    // Streaming Service selection dialog
+    if (showStreamingServiceDialog) {
+        StreamingServiceSelectionDialog(
+            currentService = preferredStreamingService,
+            onServiceSelected = {
+                viewModel.setPreferredStreamingService(it)
+                showStreamingServiceDialog = false
+            },
+            onDismiss = { showStreamingServiceDialog = false }
         )
     }
 
@@ -178,6 +200,23 @@ fun SettingsSection(
                          Text("Title Language") 
                     }
                     Text(getTitleLanguageLabel(titleLanguage), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                // Streaming Service Row
+                Row(
+                    modifier = Modifier
+                        .clickable { showStreamingServiceDialog = true }
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                         Icon(Icons.Default.PlayCircle, null, tint = MaterialTheme.colorScheme.primary)
+                         Spacer(Modifier.width(16.dp))
+                         Text(stringResource(R.string.setting_streaming_service))
+                    }
+                    Text(preferredStreamingService.displayName, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
 
@@ -730,5 +769,121 @@ fun getTitleLanguageExample(language: TitleLanguage): String {
         TitleLanguage.ROMAJI -> "e.g. Shingeki no Kyojin"
         TitleLanguage.ENGLISH -> "e.g. Attack on Titan"
         TitleLanguage.NATIVE -> "e.g. 進撃の巨人"
+    }
+}
+
+/**
+ * Streaming Service selection dialog following Material Design 3 guidelines.
+ * Shows service icons loaded from AniList CDN (same as external links).
+ */
+@Composable
+fun StreamingServiceSelectionDialog(
+    currentService: StreamingService,
+    onServiceSelected: (StreamingService) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                // Title
+                Text(
+                    text = stringResource(R.string.setting_streaming_service),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.padding(top = 8.dp))
+                
+                // Description
+                Text(
+                    text = stringResource(R.string.setting_streaming_service_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.padding(top = 16.dp))
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Spacer(modifier = Modifier.padding(top = 16.dp))
+
+                // Radio options with icons
+                StreamingService.entries.forEach { service ->
+                    val brandColor = remember(service) {
+                        try {
+                            Color(android.graphics.Color.parseColor(service.brandColor))
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onServiceSelected(service) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentService == service,
+                            onClick = { onServiceSelected(service) }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        
+                        // Service icon (from URL or fallback)
+                        if (service.iconUrl != null) {
+                            AsyncImage(
+                                model = service.iconUrl,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                contentScale = ContentScale.Fit,
+                                colorFilter = brandColor?.let { ColorFilter.tint(it) }
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.PlayCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        Spacer(Modifier.width(12.dp))
+                        
+                        Text(
+                            text = service.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.padding(top = 24.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.padding(top = 24.dp))
+                
+                // Dismiss button aligned to end
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            }
+        }
     }
 }

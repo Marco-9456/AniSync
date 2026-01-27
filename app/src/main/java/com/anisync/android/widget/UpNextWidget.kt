@@ -45,8 +45,12 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import com.anisync.android.MainActivity
 import com.anisync.android.R
+import com.anisync.android.data.AppSettings
+import com.anisync.android.data.StreamingService
 import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
+import com.anisync.android.domain.ExternalLinkType
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -61,6 +65,8 @@ import kotlinx.coroutines.withContext
 @InstallIn(SingletonComponent::class)
 interface UpNextWidgetEntryPoint {
     fun libraryDao(): LibraryDao
+    fun mediaDetailsDao(): MediaDetailsDao
+    fun appSettings(): AppSettings
 }
 
 class UpNextWidget : GlanceAppWidget() {
@@ -80,6 +86,11 @@ class UpNextWidget : GlanceAppWidget() {
             UpNextWidgetEntryPoint::class.java
         )
         val dao = entryPoint.libraryDao()
+        val mediaDetailsDao = entryPoint.mediaDetailsDao()
+        val appSettings = entryPoint.appSettings()
+
+        // Get the preferred streaming service
+        val streamingService = appSettings.preferredStreamingService.value
 
         // Fetch prioritized list
         val entries = withContext(Dispatchers.IO) {
@@ -99,8 +110,18 @@ class UpNextWidget : GlanceAppWidget() {
             }
         }
 
-        // Pre-load images for all entries - we'll decide whether to use them based on size inside provideContent
-        // But since we can't call suspend functions inside provideContent, we load them here
+        // Load streaming service icon from URL (with fallback)
+        val streamingIconBitmap = loadStreamingServiceIcon(appContext, streamingService)
+
+        // Fetch streaming URLs for each entry from cached media details
+        val streamingUrls = withContext(Dispatchers.IO) {
+            entries.associate { entry ->
+                val url = findStreamingUrl(mediaDetailsDao, entry.mediaId, streamingService)
+                entry.mediaId to url
+            }
+        }
+
+        // Pre-load cover images for all entries
         val entriesWithImages = coroutineScope {
             entries.map { entry ->
                 async {
@@ -120,17 +141,90 @@ class UpNextWidget : GlanceAppWidget() {
                 val size = LocalSize.current
 
                 when {
-                    size.height <= 110.dp -> UpNextCompact(entries)
-                    size.height <= 120.dp -> UpNextMedium(entries)
-                    else -> UpNextExpanded(entriesWithImages)
+                    size.height <= 110.dp -> UpNextCompact(entries, streamingService, streamingIconBitmap, streamingUrls)
+                    size.height <= 120.dp -> UpNextMedium(entries, streamingService, streamingIconBitmap, streamingUrls)
+                    else -> UpNextExpanded(entriesWithImages, streamingService, streamingIconBitmap, streamingUrls)
                 }
             }
         }
     }
+
+    /**
+     * Load the streaming service icon from its URL.
+     * Falls back to null if loading fails (composables will use fallback drawable).
+     */
+    private suspend fun loadStreamingServiceIcon(
+        context: Context,
+        service: StreamingService
+    ): Bitmap? {
+        if (service == StreamingService.NONE || service.iconUrl == null) {
+            return null
+        }
+        
+        return try {
+            WidgetImageUtils.loadBitmap(
+                context,
+                service.iconUrl,
+                width = 64,
+                height = 64
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    /**
+     * Find the streaming URL for a media entry that matches the user's preferred streaming service.
+     * Returns null if no matching streaming link is found.
+     */
+    private suspend fun findStreamingUrl(
+        mediaDetailsDao: MediaDetailsDao,
+        mediaId: Int,
+        preferredService: StreamingService
+    ): String? {
+        if (preferredService == StreamingService.NONE) {
+            return null
+        }
+        
+        val mediaDetails = mediaDetailsDao.getById(mediaId) ?: return null
+        val externalLinks = mediaDetails.externalLinks
+        
+        // Find a streaming link that matches the preferred service name
+        // The site name in external links should match the display name (e.g., "Crunchyroll", "Netflix")
+        return externalLinks
+            .filter { it.type == ExternalLinkType.STREAMING && it.url != null }
+            .find { link -> 
+                link.site.equals(preferredService.displayName, ignoreCase = true) ||
+                // Handle slight variations (e.g., "Amazon Prime Video" vs "Prime Video")
+                link.site.contains(preferredService.displayName.split(" ").first(), ignoreCase = true)
+            }
+            ?.url
+    }
+}
+
+/**
+ * Creates an ImageProvider for the streaming service icon.
+ * Uses the loaded bitmap if available, otherwise falls back to the service's fallback drawable.
+ */
+@Composable
+private fun getStreamingIconProvider(
+    service: StreamingService,
+    iconBitmap: Bitmap?
+): ImageProvider {
+    return if (iconBitmap != null) {
+        ImageProvider(iconBitmap)
+    } else {
+        ImageProvider(service.fallbackDrawable)
+    }
 }
 
 @Composable
-private fun UpNextCompact(entries: List<LibraryEntryEntity>) {
+private fun UpNextCompact(
+    entries: List<LibraryEntryEntity>,
+    streamingService: StreamingService,
+    streamingIconBitmap: Bitmap?,
+    streamingUrls: Map<Int, String?>
+) {
     val context = LocalContext.current
 
     if (entries.isEmpty()) {
@@ -140,11 +234,11 @@ private fun UpNextCompact(entries: List<LibraryEntryEntity>) {
 
     val entry = entries.first()
     val nextEp = entry.progress + 1
+    val streamingUrl = streamingUrls[entry.mediaId]
+    val playIntent = createStreamingOrDetailsIntent(context, streamingUrl, entry.mediaId)
     val detailsIntent = createDetailsIntent(context, entry.mediaId)
+    val iconProvider = getStreamingIconProvider(streamingService, streamingIconBitmap)
 
-    // TODO: Implement adaptive streaming service icons
-    // Replace generic play icon with user's preferred streaming platform (Crunchyroll, Netflix, etc.)
-    // Fetch preference from DataStore, resolve drawable resource per service, fallback to ic_media_play if unset/unavailable
     Row(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -208,19 +302,21 @@ private fun UpNextCompact(entries: List<LibraryEntryEntity>) {
 
         Spacer(modifier = GlanceModifier.width(8.dp))
 
-        // Play Action - 48dp touch target
+        // Play Action - 48dp touch target with streaming service icon
         Box(
             modifier = GlanceModifier
                 .size(48.dp)
                 .cornerRadius(24.dp)
                 .background(GlanceTheme.colors.primary)
-                .clickable(actionStartActivity(detailsIntent)),
+                .clickable(actionStartActivity(playIntent)),
             contentAlignment = Alignment.Center
         ) {
             Image(
-                provider = ImageProvider(android.R.drawable.ic_media_play),
-                contentDescription = "Watch Episode $nextEp",
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                provider = iconProvider,
+                contentDescription = "Watch Episode $nextEp on ${streamingService.displayName}",
+                colorFilter = if (streamingIconBitmap == null) {
+                    androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary)
+                } else null,
                 modifier = GlanceModifier.size(24.dp)
             )
         }
@@ -228,7 +324,12 @@ private fun UpNextCompact(entries: List<LibraryEntryEntity>) {
 }
 
 @Composable
-private fun UpNextMedium(entries: List<LibraryEntryEntity>) {
+private fun UpNextMedium(
+    entries: List<LibraryEntryEntity>,
+    streamingService: StreamingService,
+    streamingIconBitmap: Bitmap?,
+    streamingUrls: Map<Int, String?>
+) {
     val context = LocalContext.current
 
     if (entries.isEmpty()) {
@@ -238,11 +339,13 @@ private fun UpNextMedium(entries: List<LibraryEntryEntity>) {
 
     val entry = entries.first()
     val nextEp = entry.progress + 1
-    val detailsIntent = createDetailsIntent(context, entry.mediaId)
+    val streamingUrl = streamingUrls[entry.mediaId]
+    val playIntent = createStreamingOrDetailsIntent(context, streamingUrl, entry.mediaId)
     val totalEp = entry.totalEpisodes
     val progressPercent = if (totalEp != null && totalEp > 0) {
         (entry.progress.toFloat() / totalEp.toFloat()).coerceIn(0f, 1f)
     } else 0f
+    val iconProvider = getStreamingIconProvider(streamingService, streamingIconBitmap)
 
     Row(
         modifier = GlanceModifier
@@ -346,19 +449,21 @@ private fun UpNextMedium(entries: List<LibraryEntryEntity>) {
 
         // Action Column: Play + More
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Primary: Watch next
+            // Primary: Watch next with streaming service icon
             Box(
                 modifier = GlanceModifier
                     .size(56.dp, 48.dp)
                     .cornerRadius(16.dp)
                     .background(GlanceTheme.colors.primary)
-                    .clickable(actionStartActivity(detailsIntent)),
+                    .clickable(actionStartActivity(playIntent)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    provider = ImageProvider(android.R.drawable.ic_media_play),
+                    provider = iconProvider,
                     contentDescription = "Play",
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                    colorFilter = if (streamingIconBitmap == null) {
+                        androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary)
+                    } else null,
                     modifier = GlanceModifier.size(24.dp)
                 )
             }
@@ -388,7 +493,12 @@ private fun UpNextMedium(entries: List<LibraryEntryEntity>) {
 }
 
 @Composable
-private fun UpNextExpanded(entriesWithImages: List<Pair<LibraryEntryEntity, Bitmap?>>) {
+private fun UpNextExpanded(
+    entriesWithImages: List<Pair<LibraryEntryEntity, Bitmap?>>,
+    streamingService: StreamingService,
+    streamingIconBitmap: Bitmap?,
+    streamingUrls: Map<Int, String?>
+) {
     if (entriesWithImages.isEmpty()) {
         EmptyStateExpanded()
         return
@@ -445,7 +555,7 @@ private fun UpNextExpanded(entriesWithImages: List<Pair<LibraryEntryEntity, Bitm
         // List
         LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
             items(entriesWithImages) { (entry, bitmap) ->
-                UpNextListItem(entry, bitmap)
+                UpNextListItem(entry, bitmap, streamingService, streamingIconBitmap, streamingUrls)
                 Spacer(modifier = GlanceModifier.height(12.dp))
             }
         }
@@ -453,11 +563,20 @@ private fun UpNextExpanded(entriesWithImages: List<Pair<LibraryEntryEntity, Bitm
 }
 
 @Composable
-private fun UpNextListItem(entry: LibraryEntryEntity, bitmap: Bitmap?) {
+private fun UpNextListItem(
+    entry: LibraryEntryEntity,
+    bitmap: Bitmap?,
+    streamingService: StreamingService,
+    streamingIconBitmap: Bitmap?,
+    streamingUrls: Map<Int, String?>
+) {
     val context = LocalContext.current
     val nextEp = entry.progress + 1
+    val streamingUrl = streamingUrls[entry.mediaId]
+    val playIntent = createStreamingOrDetailsIntent(context, streamingUrl, entry.mediaId)
     val detailsIntent = createDetailsIntent(context, entry.mediaId)
     val totalEp = entry.totalEpisodes?.toString() ?: "?"
+    val iconProvider = getStreamingIconProvider(streamingService, streamingIconBitmap)
 
     Row(
         modifier = GlanceModifier
@@ -548,19 +667,21 @@ private fun UpNextListItem(entry: LibraryEntryEntity, bitmap: Bitmap?) {
 
         Spacer(modifier = GlanceModifier.width(12.dp))
 
-        // Play button
+        // Play button with streaming service icon
         Box(
             modifier = GlanceModifier
                 .size(48.dp)
                 .cornerRadius(16.dp)
                 .background(GlanceTheme.colors.primary)
-                .clickable(actionStartActivity(detailsIntent)),
+                .clickable(actionStartActivity(playIntent)),
             contentAlignment = Alignment.Center
         ) {
             Image(
-                provider = ImageProvider(android.R.drawable.ic_media_play),
+                provider = iconProvider,
                 contentDescription = "Watch",
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                colorFilter = if (streamingIconBitmap == null) {
+                    androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary)
+                } else null,
                 modifier = GlanceModifier.size(24.dp)
             )
         }
@@ -697,6 +818,23 @@ private fun createDetailsIntent(context: Context, mediaId: Int): Intent {
     ).apply {
         component = null
         setClass(context, MainActivity::class.java)
+    }
+}
+
+/**
+ * Create an intent to open the streaming URL if available, otherwise open the details page.
+ * @param streamingUrl The URL to the streaming service (e.g., Crunchyroll page for the anime)
+ * @param mediaId The media ID to fall back to if no streaming URL is available
+ */
+private fun createStreamingOrDetailsIntent(context: Context, streamingUrl: String?, mediaId: Int): Intent {
+    return if (streamingUrl != null) {
+        // Open the streaming service URL in browser/app
+        Intent(Intent.ACTION_VIEW, streamingUrl.toUri()).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+    } else {
+        // Fall back to opening the details page in the app
+        createDetailsIntent(context, mediaId)
     }
 }
 

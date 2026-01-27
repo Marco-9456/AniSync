@@ -122,6 +122,8 @@
     <string name="theme_system">System</string>
     <string name="setting_haptic_feedback">Haptic Feedback</string>
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
+    <string name="setting_streaming_service">Streaming Service</string>
+    <string name="setting_streaming_service_desc">Choose your preferred streaming platform for the Up Next widget icon</string>
     <string name="control_notifications">Notifications</string>
     <string name="notification_watching">Watching List</string>
     <string name="notification_watching_desc">New episodes for shows you\'re watching</string>
