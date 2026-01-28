@@ -88,36 +88,5 @@ class AniSyncApplication : Application(), Configuration.Provider {
              trendingOneTime
         )
 
-        // Schedule Countdown Worker (Every 1 hour)
-        val countdownRequest = androidx.work.PeriodicWorkRequestBuilder<com.anisync.android.worker.CountdownWorker>(
-            1, java.util.concurrent.TimeUnit.HOURS
-        )
-            .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
-        
-        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "CountdownWorker",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-            countdownRequest
-        )
-        
-        // One time immediate for dev
-        val countdownOneTime = androidx.work.OneTimeWorkRequestBuilder<com.anisync.android.worker.CountdownWorker>()
-             .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
-             
-        androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
-            "CountdownWorker_OneTime",
-             androidx.work.ExistingWorkPolicy.REPLACE,
-             countdownOneTime
-        )
     }
 }

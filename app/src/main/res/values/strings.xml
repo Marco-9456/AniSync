@@ -235,5 +235,4 @@
     <string name="widget_up_next_description">Quick access to your next episode</string>
     <string name="widget_quick_update_description">Update episode progress quickly</string>
     <string name="widget_trending_description">See what\'s trending in anime</string>
-    <string name="widget_countdown_description">Countdown to your next episode</string>
 </resources>
