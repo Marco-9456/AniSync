@@ -51,6 +51,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.LocalAppSettings
@@ -60,7 +61,6 @@ import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
-import com.anisync.android.data.TitleLanguage
 import com.anisync.android.util.getTitle
 
 /**

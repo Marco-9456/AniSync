@@ -44,7 +44,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import com.anisync.android.MainActivity
-import com.anisync.android.R
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import dagger.hilt.EntryPoint

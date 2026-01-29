@@ -6,11 +6,11 @@ import androidx.room.TypeConverters
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.dao.UserProfileDao
+import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
-import com.anisync.android.data.local.entity.UserProfileEntity
-import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.local.entity.TrendingEntity
+import com.anisync.android.data.local.entity.UserProfileEntity
 
 /**
  * Room database for offline caching.

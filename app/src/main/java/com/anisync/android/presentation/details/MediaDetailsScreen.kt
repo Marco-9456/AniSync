@@ -62,7 +62,6 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import com.anisync.android.presentation.details.components.ExternalLinksSection
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -97,9 +96,9 @@ import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
+import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.util.getTitle

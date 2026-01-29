@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.bouncyClickable
@@ -58,7 +59,6 @@ import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
-import com.anisync.android.data.TitleLanguage
 import java.util.Locale
 
 /**

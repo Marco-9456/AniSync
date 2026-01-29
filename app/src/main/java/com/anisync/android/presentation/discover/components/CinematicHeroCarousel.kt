@@ -41,10 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
-import com.anisync.android.data.TitleLanguage
 
 /**
  * A cinematic Hero Carousel component rewritten from scratch according to

@@ -42,12 +42,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.discover.components.FormatFilterRow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.anisync.android.data.TitleLanguage
 
 /**
  * Grid screen for displaying all media items from a Discover section.

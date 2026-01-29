@@ -34,8 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.util.getTitle
 
 /**

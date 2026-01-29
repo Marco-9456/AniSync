@@ -22,9 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.shimmerEffect
-import com.anisync.android.data.TitleLanguage
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable

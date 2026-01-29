@@ -5,13 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationPreferences
-import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.worker.NotificationDebugService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
