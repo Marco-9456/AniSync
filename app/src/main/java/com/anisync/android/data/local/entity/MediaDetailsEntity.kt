@@ -23,6 +23,8 @@ data class MediaDetailsEntity(
     val description: String,
     val score: Int?,
     val episodes: Int?,
+    val nextAiringEpisode: Int? = null,
+    val nextAiringEpisodeTime: Long? = null,
     val chapters: Int?,
     val volumes: Int?,
     val mediaType: MediaType?,

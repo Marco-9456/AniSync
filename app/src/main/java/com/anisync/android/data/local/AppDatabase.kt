@@ -28,7 +28,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         AiringScheduleEntity::class,
         TrendingEntity::class
     ],
-    version = 12, // Increment version
+    version = 13, // Increment version
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -38,4 +38,17 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
     abstract fun airingScheduleDao(): com.anisync.android.data.local.dao.AiringScheduleDao
     abstract fun trendingDao(): com.anisync.android.data.local.dao.TrendingDao
+
+    companion object {
+        val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Add nextAiringEpisodeTime to LibraryEntryEntity
+                database.execSQL("ALTER TABLE library_entries ADD COLUMN nextAiringEpisodeTime INTEGER")
+
+                // Add nextAiringEpisode and nextAiringEpisodeTime to MediaDetailsEntity
+                database.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisode INTEGER")
+                database.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisodeTime INTEGER")
+            }
+        }
+    }
 }

@@ -39,6 +39,7 @@ data class LibraryEntryEntity(
     val nextAiringEpisode: Int?,
     val timeUntilAiring: Int?,
     val mediaStatus: String?,
+    val nextAiringEpisodeTime: Long? = null, // Added for absolute airing time
     val score: Double? = 0.0,
     val rewatches: Int = 0,
     val notes: String? = null,
