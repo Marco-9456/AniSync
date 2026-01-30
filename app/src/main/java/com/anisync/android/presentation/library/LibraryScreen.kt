@@ -122,8 +122,8 @@ import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
-import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
+import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 

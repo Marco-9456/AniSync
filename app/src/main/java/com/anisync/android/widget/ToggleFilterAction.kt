@@ -6,6 +6,7 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
+import com.anisync.android.widget.AiringTodayWidget
 
 class ToggleFilterAction : ActionCallback {
     override suspend fun onAction(

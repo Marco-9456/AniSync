@@ -1,11 +1,11 @@
 package com.anisync.android.util
 
 import com.anisync.android.data.TitleLanguage
-import com.anisync.android.data.local.entity.LibraryEntryEntity
-import com.anisync.android.data.local.entity.MediaDetailsEntity
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.data.local.entity.LibraryEntryEntity
+import com.anisync.android.data.local.entity.MediaDetailsEntity
 
 object TitleUtils {
 

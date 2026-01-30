@@ -88,5 +88,7 @@ class AniSyncApplication : Application(), Configuration.Provider {
              trendingOneTime
         )
 
+        // Schedule Widget Refresh Worker (Every 15 minutes for countdown updates)
+        com.anisync.android.worker.WidgetRefreshWorker.schedule(this)
     }
 }

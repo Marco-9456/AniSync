@@ -2,12 +2,12 @@ package com.anisync.android.presentation.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.Result
-import com.anisync.android.type.MediaType
+import com.anisync.android.data.AppSettings
 import com.anisync.android.util.getTitle
+import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow

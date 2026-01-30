@@ -87,6 +87,7 @@ class LibraryRepositoryImpl @Inject constructor(
                         status = status,
                         nextAiringEpisode = media?.nextAiringEpisode?.episode,
                         timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
+                        mediaStatus = media?.status?.name, // Add media airing status
                         score = entry.score,
                         rewatches = entry.repeat ?: 0,
                         notes = entry.notes,

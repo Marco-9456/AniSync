@@ -5,6 +5,7 @@ import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.ToggleFavouriteMutation
+import com.anisync.android.type.MediaType
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.toDomain
@@ -23,7 +24,6 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.VoiceActor
-import com.anisync.android.type.MediaType
 import com.anisync.android.util.stripHtml
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional

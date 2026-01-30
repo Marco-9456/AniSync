@@ -158,6 +158,16 @@ class AppSettings @Inject constructor(
     }
     
     /**
+     * Get the preferred streaming service directly from SharedPreferences.
+     * Use this for widgets to ensure the latest value is always read.
+     */
+    fun getPreferredStreamingServiceDirect(): StreamingService {
+        return StreamingService.entries.getOrElse(
+            prefs.getInt(KEY_PREFERRED_STREAMING_SERVICE, StreamingService.NONE.ordinal)
+        ) { StreamingService.NONE }
+    }
+    
+    /**
      * Refresh all Up Next widget instances.
      * Uses updateAppWidgetState to trigger a state change, ensuring the widget re-renders.
      */
