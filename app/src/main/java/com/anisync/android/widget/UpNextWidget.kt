@@ -520,7 +520,7 @@ private fun UpNextExpanded(
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
