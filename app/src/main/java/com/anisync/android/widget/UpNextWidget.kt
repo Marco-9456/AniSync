@@ -501,7 +501,7 @@ private fun UpNextExpanded(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
+            .background(GlanceTheme.colors.widgetBackground)
             // .padding(16.dp) removed to allow LazyColumn to be full width
     ) {
         Row(
@@ -509,7 +509,7 @@ private fun UpNextExpanded(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                provider = ImageProvider(android.R.drawable.ic_menu_recent_history),
+                provider = ImageProvider(R.drawable.upcoming_24px),
                 contentDescription = null,
                 colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
                 modifier = GlanceModifier.size(24.dp)

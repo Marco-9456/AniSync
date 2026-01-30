@@ -84,6 +84,30 @@
                 android:resource="@xml/airing_today_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.WeeklyCalendarWidgetReceiver"
+            android:exported="true"
+            android:label="Weekly Calendar">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/weekly_calendar_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TrendingWidgetReceiver"
+            android:exported="true"
+            android:label="Top 10 Anime">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/trending_widget_info" />
+        </receiver>
+
 
 
 

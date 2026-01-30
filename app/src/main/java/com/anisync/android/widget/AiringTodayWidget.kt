@@ -3,7 +3,6 @@ package com.anisync.android.widget
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,7 +25,6 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.itemsIndexed
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -52,10 +50,6 @@ import com.anisync.android.widget.core.SizeClass
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntentUtils
 import com.anisync.android.widget.core.toSizeClass
-import com.anisync.android.widget.designsystem.components.MediaPoster
-import com.anisync.android.widget.designsystem.components.TimeBadge
-import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
-import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -263,7 +257,7 @@ private fun AiringMedium(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                provider = ImageProvider(R.drawable.calendar_today_24px),
+                provider = ImageProvider(R.drawable.today_24px),
                 contentDescription = null,
                 modifier = GlanceModifier.size(16.dp),
                 colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary)
@@ -328,19 +322,18 @@ private fun AiringExpanded(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
-            .background(GlanceTheme.colors.surface) // Dark background
-            .padding(16.dp)
+            .background(GlanceTheme.colors.widgetBackground)
     ) {
-        // --- Header Section ---
+        // --- Header Section with Pill Toggle ---
         Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+            modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                provider = ImageProvider(R.drawable.calendar_today_24px), // Replace with your specific calendar icon
+                provider = ImageProvider(R.drawable.today_24px),
                 contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurface),
-                modifier = GlanceModifier.size(20.dp)
+                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
+                modifier = GlanceModifier.size(24.dp)
             )
             Spacer(modifier = GlanceModifier.width(8.dp))
             Text(
@@ -349,75 +342,43 @@ private fun AiringExpanded(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
-                )
+                ),
+                modifier = GlanceModifier.defaultWeight()
             )
-        }
 
-        Spacer(modifier = GlanceModifier.height(16.dp))
-
-        // --- Segmented Control (Toggle) ---
-        // Container
-        Row(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(40.dp)
-                .background(GlanceTheme.colors.surfaceVariant) // Darker grey container
-                .cornerRadius(20.dp)
-                .clickable(actionRunCallback<ToggleFilterAction>())
-                .padding(4.dp)
-        ) {
-            // "All" Option
+            // Filter Toggle Pill (All / My List) - same style as WeeklyCalendarWidget
             Box(
                 modifier = GlanceModifier
-                    .defaultWeight()
-                    .fillMaxHeight()
                     .cornerRadius(16.dp)
                     .background(
-                        if (!isMyList) GlanceTheme.colors.onSurfaceVariant
-                        else ColorProvider(day = Color.Transparent, night = Color.Transparent)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "All",
-                    style = TextStyle(
-                        color = if (!isMyList) GlanceTheme.colors.surfaceVariant else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        if (isMyList) GlanceTheme.colors.primary
+                        else GlanceTheme.colors.surfaceVariant
                     )
-                )
-            }
-
-            // "My List" Option
-            Box(
-                modifier = GlanceModifier
-                    .defaultWeight()
-                    .fillMaxHeight()
-                    .cornerRadius(16.dp)
-                    .background(
-                        if (isMyList) GlanceTheme.colors.onSurfaceVariant
-                        else ColorProvider(day = Color.Transparent, night = Color.Transparent)
-                    ),
+                    .clickable(actionRunCallback<ToggleFilterAction>())
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "My List",
+                    text = if (isMyList) "My List" else "All",
                     style = TextStyle(
-                        color = if (isMyList) GlanceTheme.colors.surfaceVariant else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        color = if (isMyList) GlanceTheme.colors.onPrimary
+                               else GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 )
             }
         }
-
-        Spacer(modifier = GlanceModifier.height(16.dp))
 
         // --- Timeline List ---
         if (entries.isEmpty()) {
             EmptyStateExpanded(isMyList)
         } else {
-            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .padding(start = 16.dp, end = 16.dp) // Padding on both sides to position scrollbar on right
+            ) {
                 itemsIndexed(entries) { index, item ->
                     TimelineItem(
                         item = item,
@@ -442,24 +403,21 @@ private fun TimelineItem(
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val timeString = timeFormat.format(Date(schedule.airingAt * 1000))
 
-    // Height of the item row - giving it a fixed minimum height helps align the lines perfectly
-    val rowHeight = 80.dp
+    // Fixed height for consistent timeline alignment
+    val rowHeight = 88.dp
 
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .height(rowHeight)
-            .clickable(actionStartActivity(detailsIntent)),
+            .height(rowHeight),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // --- Timeline Column (Badge + Line) ---
-        // We use a fixed width Box to contain the line and the badge
+        // --- Timeline Column (Line + Time Badge) ---
         Box(
-            modifier = GlanceModifier.width(70.dp).fillMaxHeight(),
+            modifier = GlanceModifier.width(56.dp).fillMaxHeight(),
             contentAlignment = Alignment.Center
         ) {
-            // The Vertical Line
-            // Using a Column with two boxes to simulate Start/End/Through lines
+            // Vertical line segments
             Column(
                 modifier = GlanceModifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -470,7 +428,7 @@ private fun TimelineItem(
                         .width(2.dp)
                         .defaultWeight()
                         .background(
-                            if (isFirst) ColorProvider(day = Color.Transparent, night = Color.Transparent)
+                            if (isFirst) GlanceTheme.colors.widgetBackground
                             else GlanceTheme.colors.outline
                         )
                 ) {}
@@ -481,16 +439,16 @@ private fun TimelineItem(
                         .width(2.dp)
                         .defaultWeight()
                         .background(
-                            if (isLast) ColorProvider(day = Color.Transparent, night = Color.Transparent)
+                            if (isLast) GlanceTheme.colors.widgetBackground
                             else GlanceTheme.colors.outline
                         )
                 ) {}
             }
 
-            // The Time Badge (Pill) - Sits on top of the line
+            // Time Badge (sits on top of line)
             Box(
                 modifier = GlanceModifier
-                    .background(GlanceTheme.colors.primaryContainer) // Light Purple
+                    .background(GlanceTheme.colors.primaryContainer)
                     .cornerRadius(8.dp)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center
@@ -498,35 +456,47 @@ private fun TimelineItem(
                 Text(
                     text = timeString,
                     style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer, // Dark text
-                        fontSize = 12.sp,
+                        color = GlanceTheme.colors.onPrimaryContainer,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
             }
         }
 
-        Spacer(modifier = GlanceModifier.width(12.dp))
+        Spacer(modifier = GlanceModifier.width(8.dp))
 
-        // --- Content Row ---
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        // --- Card Content with vertical padding for spacing ---
+        Box(
+            modifier = GlanceModifier
+                .defaultWeight()
+                .fillMaxHeight()
+                .padding(vertical = 4.dp), // Creates gap between cards
+            contentAlignment = Alignment.Center
         ) {
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(GlanceTheme.colors.surface)
+                    .cornerRadius(16.dp)
+                    .clickable(actionStartActivity(detailsIntent))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             // Poster Image
             Box(
                 modifier = GlanceModifier
                     .width(48.dp)
                     .height(64.dp)
                     .cornerRadius(8.dp)
-                    .background(GlanceTheme.colors.surfaceVariant), // Placeholder bg
+                    .background(GlanceTheme.colors.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 if (bitmap != null) {
                     Image(
                         provider = ImageProvider(bitmap),
                         contentDescription = null,
-                        modifier = GlanceModifier.fillMaxSize(),
+                        modifier = GlanceModifier.fillMaxSize().cornerRadius(8.dp),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -555,15 +525,15 @@ private fun TimelineItem(
                 )
             }
 
-            // Star Icon
-            // Only show filled star if watching. Do not show empty star.
+            // Star Icon for watching items
             if (schedule.isWatching) {
                 Image(
                     provider = ImageProvider(android.R.drawable.btn_star_big_on),
                     contentDescription = null,
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary), // Yellow/Primary star
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
                     modifier = GlanceModifier.size(20.dp)
                 )
+            }
             }
         }
     }
@@ -621,7 +591,7 @@ private fun EmptyStateExpanded(isMyList: Boolean) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                provider = ImageProvider(R.drawable.calendar_today_24px),
+                provider = ImageProvider(R.drawable.today_24px),
                 contentDescription = null,
                 colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
                 modifier = GlanceModifier.size(48.dp)
