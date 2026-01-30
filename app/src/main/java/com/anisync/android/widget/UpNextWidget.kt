@@ -70,6 +70,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import androidx.core.graphics.toColorInt
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -680,7 +681,7 @@ private fun CountdownCard(
                             )
                         }
                     }
-                } else if (airingTime > 0 && diffSeconds <= 0) {
+                } else if (airingTime > 0) {
                     // Actually airing now or aired recently
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
@@ -906,9 +907,9 @@ private fun CountdownChronometer(
     
     // Use M3 primary color that contrasts well with surfaceVariant background
     val textColor = if (isDarkMode) {
-        android.graphics.Color.parseColor("#D0BCFF") // M3 Primary (dark theme)
+        "#D0BCFF".toColorInt() // M3 Primary (dark theme)
     } else {
-        android.graphics.Color.parseColor("#6750A4") // M3 Primary (light theme)
+        "#6750A4".toColorInt() // M3 Primary (light theme)
     }
     
     // Create RemoteViews with the Chronometer
