@@ -2,7 +2,6 @@ package com.anisync.android.worker
 
 import android.content.Context
 import android.util.Log
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -10,7 +9,6 @@ import com.anisync.android.GetTrendingQuery
 import com.anisync.android.data.local.dao.TrendingDao
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.type.MediaSeason
-import com.anisync.android.widget.TrendingWidget
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import dagger.assisted.Assisted
@@ -74,11 +72,7 @@ class TrendingWorker @AssistedInject constructor(
             trendingDao.clearAll()
             trendingDao.insertAll(entities)
 
-            // Update Widget
-            val manager = GlanceAppWidgetManager(appContext)
-            manager.getGlanceIds(TrendingWidget::class.java).forEach { id ->
-                TrendingWidget().update(appContext, id)
-            }
+            // Note: TrendingWidget was removed, data is kept for future reimplementation
 
             Result.success()
         } catch (e: Exception) {
@@ -87,3 +81,4 @@ class TrendingWorker @AssistedInject constructor(
         }
     }
 }
+

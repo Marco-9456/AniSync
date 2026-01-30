@@ -12,7 +12,6 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.widget.AiringTodayWidget
-import com.anisync.android.widget.WeeklyCalendarWidget
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import dagger.assisted.Assisted
@@ -35,7 +34,7 @@ class AiringScheduleWorker @AssistedInject constructor(
             calendar.set(java.util.Calendar.SECOND, 0)
             calendar.set(java.util.Calendar.MILLISECOND, 0)
             val startOfDaySeconds = calendar.timeInMillis / 1000
-            // Fetch 7 days of data to support WeeklyCalendarWidget
+            // Fetch 7 days of data for future widget support
             val endOfWeekSeconds = startOfDaySeconds + (7 * 86400)
 
             val response = apolloClient.query(
@@ -85,9 +84,6 @@ class AiringScheduleWorker @AssistedInject constructor(
             val manager = GlanceAppWidgetManager(appContext)
             manager.getGlanceIds(AiringTodayWidget::class.java).forEach { id ->
                 AiringTodayWidget().update(appContext, id)
-            }
-            manager.getGlanceIds(WeeklyCalendarWidget::class.java).forEach { id ->
-                WeeklyCalendarWidget().update(appContext, id)
             }
 
             Result.success()

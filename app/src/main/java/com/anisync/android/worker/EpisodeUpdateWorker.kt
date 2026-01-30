@@ -7,7 +7,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.widget.UpNextWidget
-import com.anisync.android.widget.QuickUpdateWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -41,11 +40,6 @@ class EpisodeUpdateWorker @AssistedInject constructor(
             val upNextIds = manager.getGlanceIds(UpNextWidget::class.java)
             upNextIds.forEach { glanceId ->
                 UpNextWidget().update(appContext, glanceId)
-            }
-
-            val quickUpdateIds = manager.getGlanceIds(QuickUpdateWidget::class.java)
-            quickUpdateIds.forEach { glanceId ->
-                QuickUpdateWidget().update(appContext, glanceId)
             }
 
             // 3. Sync to Network (Background)

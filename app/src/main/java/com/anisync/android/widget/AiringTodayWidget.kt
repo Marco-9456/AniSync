@@ -1,14 +1,12 @@
 package com.anisync.android.widget
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -46,10 +44,18 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
+import com.anisync.android.widget.actions.ToggleFilterAction
+import com.anisync.android.widget.core.SizeClass
+import com.anisync.android.widget.core.WidgetImageLoader
+import com.anisync.android.widget.core.WidgetIntentUtils
+import com.anisync.android.widget.core.toSizeClass
+import com.anisync.android.widget.designsystem.components.MediaPoster
+import com.anisync.android.widget.designsystem.components.TimeBadge
+import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
+import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -107,7 +113,7 @@ class AiringTodayWidget : GlanceAppWidget() {
         val schedulesWithImages = coroutineScope {
             allSchedules.take(8).map { entry ->
                 async {
-                    val bitmap = WidgetImageUtils.loadBitmap(
+                    val bitmap = WidgetImageLoader.loadBitmap(
                         appContext,
                         entry.coverUrl,
                         width = 150,
@@ -129,20 +135,20 @@ class AiringTodayWidget : GlanceAppWidget() {
                     schedulesWithImages
                 }
 
-                val size = LocalSize.current
+                val sizeClass = LocalSize.current.toSizeClass()
 
-                when {
-                    size.height <= 110.dp -> AiringCompact(
+                when (sizeClass) {
+                    SizeClass.COMPACT -> AiringCompact(
                         entries = filteredData,
                         isMyList = filterMyList,
                         allCount = allSchedules.size
                     )
-                    size.height <= 120.dp -> AiringMedium(
+                    SizeClass.MEDIUM -> AiringMedium(
                         entries = filteredData,
                         isMyList = filterMyList,
                         allCount = allSchedules.size
                     )
-                    else -> AiringExpanded(
+                    SizeClass.EXPANDED -> AiringExpanded(
                         entries = filteredData,
                         isMyList = filterMyList
                     )
@@ -643,12 +649,5 @@ private fun EmptyStateExpanded(isMyList: Boolean) {
     }
 }
 
-private fun createDetailsIntent(context: Context, mediaId: Int): Intent {
-    return Intent(
-        Intent.ACTION_VIEW,
-        "anisync://details/$mediaId".toUri()
-    ).apply {
-        component = null
-        setClass(context, MainActivity::class.java)
-    }
-}
+private fun createDetailsIntent(context: Context, mediaId: Int) = 
+    WidgetIntentUtils.createDetailsIntent(context, mediaId)

@@ -1,7 +1,6 @@
 package com.anisync.android.worker
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -11,7 +10,6 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.anisync.android.widget.AiringTodayWidget
 import com.anisync.android.widget.UpNextWidget
-import com.anisync.android.widget.WeeklyCalendarWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -34,7 +32,6 @@ class WidgetRefreshWorker @AssistedInject constructor(
             // Update all time-sensitive widgets
             UpNextWidget().updateAll(appContext)
             AiringTodayWidget().updateAll(appContext)
-            WeeklyCalendarWidget().updateAll(appContext)
             
             Result.success()
         } catch (e: Exception) {

@@ -3,6 +3,8 @@ package com.anisync.android.widget
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.SystemClock
+import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -16,6 +18,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
@@ -50,6 +53,13 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.domain.ExternalLinkType
+import com.anisync.android.widget.core.SizeClass
+import com.anisync.android.widget.core.WidgetImageLoader
+import com.anisync.android.widget.core.WidgetIntentUtils
+import com.anisync.android.widget.core.toSizeClass
+import com.anisync.android.widget.designsystem.components.WidgetProgressBar
+import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
+import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -60,9 +70,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
-import android.widget.RemoteViews
-import androidx.glance.appwidget.AndroidRemoteViews
-import android.os.SystemClock
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -150,7 +157,7 @@ class UpNextWidget : GlanceAppWidget() {
         val entriesWithImages = coroutineScope {
             sortedEntries.map { entry ->
                 async {
-                    val bitmap = WidgetImageUtils.loadBitmap(
+                    val bitmap = WidgetImageLoader.loadBitmap(
                         appContext,
                         entry.coverUrl,
                         width = 300,
@@ -163,10 +170,10 @@ class UpNextWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
-                val size = LocalSize.current
+                val sizeClass = LocalSize.current.toSizeClass()
 
-                when {
-                    size.height <= 110.dp -> UpNextCompact(
+                when (sizeClass) {
+                    SizeClass.COMPACT -> UpNextCompact(
                         sortedEntries,
                         streamingService,
                         streamingIconBitmap,
@@ -174,7 +181,7 @@ class UpNextWidget : GlanceAppWidget() {
                         airingTimes
                     )
 
-                    size.height <= 120.dp -> UpNextMedium(
+                    SizeClass.MEDIUM -> UpNextMedium(
                         sortedEntries,
                         streamingService,
                         streamingIconBitmap,
@@ -182,7 +189,7 @@ class UpNextWidget : GlanceAppWidget() {
                         airingTimes
                     )
 
-                    else -> UpNextExpanded(
+                    SizeClass.EXPANDED -> UpNextExpanded(
                         entriesWithImages,
                         streamingService,
                         streamingIconBitmap,
@@ -201,7 +208,7 @@ class UpNextWidget : GlanceAppWidget() {
         if (service == StreamingService.NONE || service.iconUrl == null) return null
         return try {
             // Skip cache to ensure fresh icon when streaming service changes
-            WidgetImageUtils.loadBitmap(context, service.iconUrl, width = 64, height = 64, skipCache = true)
+            WidgetImageLoader.loadBitmap(context, service.iconUrl, width = 64, height = 64, skipCache = true)
         } catch (e: Exception) {
             null
         }
@@ -390,16 +397,10 @@ private fun UpNextMedium(
             )
             if (totalEp != null) {
                 Spacer(modifier = GlanceModifier.height(6.dp))
-                Box(
-                    modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp)
-                        .background(GlanceTheme.colors.surfaceVariant)
-                ) {
-                    val fillWidth = (progressPercent * 100).toInt().dp
-                    if (progressPercent > 0) Box(
-                        modifier = GlanceModifier.width(fillWidth).height(4.dp).cornerRadius(2.dp)
-                            .background(GlanceTheme.colors.primary)
-                    ) {}
-                }
+                WidgetProgressBar(
+                    progress = progressPercent,
+                    height = WidgetDimensions.progressBarHeight
+                )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
                     text = "${entry.progress}/$totalEp watched",
@@ -852,12 +853,8 @@ private fun EmptyStateExpanded() {
     }
 }
 
-private fun createDetailsIntent(context: Context, mediaId: Int): Intent {
-    return Intent(Intent.ACTION_VIEW, "anisync://details/$mediaId".toUri()).apply {
-        component = null
-        setClass(context, MainActivity::class.java)
-    }
-}
+private fun createDetailsIntent(context: Context, mediaId: Int) =
+    WidgetIntentUtils.createDetailsIntent(context, mediaId)
 
 private fun createStreamingOrDetailsIntent(
     context: Context,
