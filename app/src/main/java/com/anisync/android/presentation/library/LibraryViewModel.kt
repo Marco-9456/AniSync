@@ -65,8 +65,8 @@ class LibraryViewModel @Inject constructor(
     private val _mediaType = MutableStateFlow(MediaType.ANIME)
     val mediaType: StateFlow<MediaType> = _mediaType.asStateFlow()
 
-    // Sort Option State (Default: Title)
-    private val _sortOption = MutableStateFlow(LibrarySort.TITLE)
+    // Sort Option State (Default: AIRING_SOON)
+    private val _sortOption = MutableStateFlow(LibrarySort.AIRING_SOON)
     val sortOption: StateFlow<LibrarySort> = _sortOption.asStateFlow()
 
     val titleLanguage = appSettings.titleLanguage
