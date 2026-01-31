@@ -12,6 +12,7 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.widget.AiringTodayWidget
+import com.anisync.android.widget.WeeklyCalendarWidget
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.Optional
 import dagger.assisted.Assisted
@@ -61,9 +62,9 @@ class AiringScheduleWorker @AssistedInject constructor(
                 val sId = schedule.id ?: return@mapNotNull null
                 val mId = media.id ?: return@mapNotNull null
                 
-                // Check if user is watching this anime
+                // Check if user is actively watching this anime (only CURRENT status, not PLANNING)
                 val libraryEntry = libraryDao.getEntry(mId)
-                val isWatching = libraryEntry?.status == LibraryStatus.CURRENT || libraryEntry?.status == LibraryStatus.PLANNING
+                val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
 
                 AiringScheduleEntity(
                     id = sId,
@@ -84,6 +85,9 @@ class AiringScheduleWorker @AssistedInject constructor(
             val manager = GlanceAppWidgetManager(appContext)
             manager.getGlanceIds(AiringTodayWidget::class.java).forEach { id ->
                 AiringTodayWidget().update(appContext, id)
+            }
+            manager.getGlanceIds(WeeklyCalendarWidget::class.java).forEach { id ->
+                WeeklyCalendarWidget().update(appContext, id)
             }
 
             Result.success()

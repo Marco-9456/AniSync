@@ -105,7 +105,7 @@ class AiringTodayWidget : GlanceAppWidget() {
         }
 
         val schedulesWithImages = coroutineScope {
-            allSchedules.take(8).map { entry ->
+            allSchedules.map { entry ->
                 async {
                     val bitmap = WidgetImageLoader.loadBitmap(
                         appContext,
@@ -396,6 +396,7 @@ private fun AiringExpanded(
         }
     }
 }
+
 
 @Composable
 private fun TimelineItem(

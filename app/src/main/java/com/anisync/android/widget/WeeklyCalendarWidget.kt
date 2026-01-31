@@ -48,6 +48,7 @@ import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.widget.actions.ToggleCalendarFilterAction
+import com.anisync.android.widget.actions.ToggleExpandTodayAction
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -118,6 +119,7 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
                 // READ FILTER STATE
                 val prefs = currentState<Preferences>()
                 val filterMyList = prefs[ToggleCalendarFilterAction.CalendarFilterKey] ?: false
+                val expandToday = prefs[ToggleExpandTodayAction.ExpandTodayKey] ?: false
 
                 // FILTER DATA based on mode
                 val filteredGroupedByDay = if (filterMyList) {
@@ -131,7 +133,7 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
                 when {
                     size.height <= 110.dp -> CalendarCompact(filteredGroupedByDay, todayDayOfWeek, filterMyList)
                     size.height <= 120.dp -> CalendarMedium(filteredGroupedByDay, todayDayOfWeek, filterMyList)
-                    else -> CalendarExpanded(filteredGroupedByDay, todayDayOfWeek, filterMyList)
+                    else -> CalendarExpanded(filteredGroupedByDay, todayDayOfWeek, filterMyList, expandToday)
                 }
             }
         }
@@ -390,7 +392,6 @@ private fun CalendarMedium(
         }
     }
 }
-
 /**
  * EXPANDED: Full week view with episode lists per day
  */
@@ -398,7 +399,8 @@ private fun CalendarMedium(
 private fun CalendarExpanded(
     groupedByDay: Map<Int, List<AiringScheduleEntity>>,
     todayDayOfWeek: Int,
-    isMyList: Boolean = false
+    isMyList: Boolean = false,
+    expandToday: Boolean = false
 ) {
     // Only show today and future days (filter out past days)
     val allDays = listOf(
@@ -477,17 +479,20 @@ private fun CalendarExpanded(
                         bottom = if (dayOfWeek != Calendar.SUNDAY) 12.dp else 16.dp
                     )
                 ) {
+                    val isToday = dayOfWeek == todayDayOfWeek
                     DayRowExpanded(
                         dayOfWeek = dayOfWeek,
-                        isToday = dayOfWeek == todayDayOfWeek,
+                        isToday = isToday,
                         episodes = groupedByDay[dayOfWeek] ?: emptyList(),
-                        isMyList = isMyList
+                        isMyList = isMyList,
+                        isExpanded = if (isToday) expandToday else true // Only today can be collapsed
                     )
                 }
             }
         }
     }
 }
+
 
 // -------------------------------------------------------------------------
 // COMPONENTS
@@ -498,9 +503,14 @@ private fun DayRowExpanded(
     dayOfWeek: Int,
     isToday: Boolean,
     episodes: List<AiringScheduleEntity>,
-    isMyList: Boolean = false
+    isMyList: Boolean = false,
+    isExpanded: Boolean = true
 ) {
     val context = LocalContext.current
+    val maxCollapsedItems = 4
+    val hasMoreItems = episodes.size > maxCollapsedItems
+    val displayedEpisodes = if (isExpanded || !hasMoreItems) episodes else episodes.take(maxCollapsedItems)
+    val hiddenCount = episodes.size - maxCollapsedItems
 
     Column(
         modifier = GlanceModifier
@@ -510,7 +520,10 @@ private fun DayRowExpanded(
             .padding(14.dp)
     ) {
         // Day header
-        Row {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = GlanceModifier
                     .width(48.dp)
@@ -558,19 +571,47 @@ private fun DayRowExpanded(
                         style = TextStyle(
                             color = GlanceTheme.colors.onPrimaryContainer,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium
                         )
                     )
                 }
             }
+
+            // Expand/Collapse Button (Header) - Only for Today if more items exist
+            if (isToday && hasMoreItems) {
+                Row(
+                    modifier = GlanceModifier.defaultWeight(),
+                    horizontalAlignment = Alignment.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                   // Clickable area for better touch target
+                   Box(
+                       modifier = GlanceModifier
+                           .cornerRadius(20.dp)
+                           .clickable(actionRunCallback<ToggleExpandTodayAction>())
+                           .padding(8.dp),
+                       contentAlignment = Alignment.Center
+                   ) {
+                       Image(
+                           provider = ImageProvider(
+                               if (isExpanded) R.drawable.expand_all_24px
+                               else R.drawable.collapse_all_24px
+                           ),
+                           contentDescription = "Expand",
+                           colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+                           modifier = GlanceModifier.size(24.dp)
+                       )
+                   }
+                }
+            }
         }
 
-        // ALL episodes - NO truncation
+        // Episodes list (limited when collapsed for today)
         if (episodes.isNotEmpty()) {
             Spacer(modifier = GlanceModifier.height(10.dp))
 
             Column {
-                episodes.forEachIndexed { index, episode ->
+                displayedEpisodes.forEachIndexed { index, episode ->
                     val detailsIntent = createDetailsIntent(context, episode.mediaId)
 
                     Row(
@@ -621,8 +662,8 @@ private fun DayRowExpanded(
                         }
                     }
 
-                    // Divider between episodes (not after last)
-                    if (index < episodes.size - 1) {
+                    // Divider between episodes (not after last displayed item)
+                    if (index < displayedEpisodes.size - 1) {
                         Spacer(modifier = GlanceModifier.height(2.dp))
                         Box(
                             modifier = GlanceModifier
@@ -649,6 +690,7 @@ private fun DayRowExpanded(
         }
     }
 }
+
 
 // -------------------------------------------------------------------------
 // HELPERS
