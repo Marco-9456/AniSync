@@ -735,10 +735,6 @@ private fun getRelativeDay(currentDay: Int, offset: Int): Int {
     }
 }
 
-private fun formatTime(timestamp: Long): String {
-    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return sdf.format(java.util.Date(timestamp * 1000))
-}
 
 private fun formatTimeCompact(timestamp: Long): String {
     val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
