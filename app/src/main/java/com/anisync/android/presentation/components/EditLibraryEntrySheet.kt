@@ -1,34 +1,42 @@
 package com.anisync.android.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.CalendarToday
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Pause
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Remove
-import androidx.compose.material.icons.outlined.Replay
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -36,7 +44,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -46,6 +53,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -55,25 +63,39 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
@@ -82,21 +104,23 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.util.getTitle
-import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
- * A beautiful Material Design 3 Expressive bottom sheet for editing library entries.
+ * A Material Design 3 Expressive bottom sheet for editing library entries.
  * Supports editing status, progress, score, dates, rewatches/rereads, and notes.
  *
  * @param entry The library entry to edit
+ * @param titleLanguage Preferred language for displaying the title
  * @param onDismiss Callback when the sheet is dismissed
  * @param onSave Callback when changes are saved, provides the updated entry
  * @param onDelete Callback when the delete button is clicked
  * @param sheetState Optional sheet state for controlling the bottom sheet
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditLibraryEntrySheet(
     entry: LibraryEntry,
@@ -104,43 +128,59 @@ fun EditLibraryEntrySheet(
     onDismiss: () -> Unit,
     onSave: (LibraryEntry) -> Unit,
     onDelete: () -> Unit,
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    sheetState: SheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { true }
+    )
 ) {
-    // Mutable state for all editable fields
-    var status by remember(entry) { mutableStateOf(entry.status) }
-    var progress by remember(entry) { mutableIntStateOf(entry.progress) }
-    var score by remember(entry) { mutableDoubleStateOf(entry.score ?: 0.0) }
-    var notes by remember(entry) { mutableStateOf(entry.notes ?: "") }
-    var startedAt by remember(entry) { mutableStateOf(entry.startedAt) }
-    var completedAt by remember(entry) { mutableStateOf(entry.completedAt) }
-    var rewatches by remember(entry) { mutableIntStateOf(entry.rewatches) }
+    // State persistence across configuration changes
+    var status by rememberSaveable(entry.id) { mutableStateOf(entry.status) }
+    var progress by rememberSaveable(entry.id) { mutableIntStateOf(entry.progress) }
+    var score by rememberSaveable(entry.id) { mutableDoubleStateOf(entry.score ?: 0.0) }
+    var notes by rememberSaveable(entry.id) { mutableStateOf(entry.notes.orEmpty()) }
+    var startedAt by rememberSaveable(entry.id) { mutableStateOf(entry.startedAt) }
+    var completedAt by rememberSaveable(entry.id) { mutableStateOf(entry.completedAt) }
+    var rewatches by rememberSaveable(entry.id) { mutableIntStateOf(entry.rewatches) }
 
-    // Track if any changes were made
-    val hasChanges by remember {
+    // Track unsaved changes using derived state for performance
+    val hasChanges by remember(entry.id) {
         derivedStateOf {
             status != entry.status ||
                     progress != entry.progress ||
                     score != (entry.score ?: 0.0) ||
-                    notes != (entry.notes ?: "") ||
+                    notes != (entry.notes.orEmpty()) ||
                     startedAt != entry.startedAt ||
                     completedAt != entry.completedAt ||
                     rewatches != entry.rewatches
         }
     }
 
-    // Delete confirmation dialog state
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    // Date picker states
-    var showStartDatePicker by remember { mutableStateOf(false) }
-    var showCompletedDatePicker by remember { mutableStateOf(false) }
-
+    val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
     val isAnime = entry.type == MediaType.ANIME
+
+    // Dialog states
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showStartDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showCompletedDatePicker by rememberSaveable { mutableStateOf(false) }
+
+    // Sync state if entry changes externally
+    LaunchedEffect(entry) {
+        status = entry.status
+        progress = entry.progress
+        score = entry.score ?: 0.0
+        notes = entry.notes.orEmpty()
+        startedAt = entry.startedAt
+        completedAt = entry.completedAt
+        rewatches = entry.rewatches
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Column(
             modifier = Modifier
@@ -149,168 +189,244 @@ fun EditLibraryEntrySheet(
                 .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Header Section
-            HeaderSection(entry = entry, titleLanguage = titleLanguage)
+            HeaderSection(
+                entry = entry,
+                titleLanguage = titleLanguage,
+                hasChanges = hasChanges
+            )
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
 
-            // Status Section
             StatusSection(
                 status = status,
                 mediaType = entry.type,
-                onStatusChange = { status = it }
+                onStatusChange = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    status = it
+                }
             )
 
-            // Progress Section
             ProgressSection(
                 progress = progress,
                 total = entry.totalEpisodes ?: entry.totalChapters,
                 isAnime = isAnime,
-                onProgressChange = { progress = it }
+                onProgressChange = {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                    progress = it.coerceIn(0, entry.totalEpisodes ?: Int.MAX_VALUE)
+                }
             )
 
-            // Score Section
             ScoreSection(
                 score = score,
-                onScoreChange = { score = it }
+                onScoreChange = {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    score = it
+                }
             )
 
-            // Date Section
             DateSection(
                 startedAt = startedAt,
                 completedAt = completedAt,
+                isAnime = isAnime,
                 onStartClick = { showStartDatePicker = true },
                 onCompletedClick = { showCompletedDatePicker = true }
             )
 
-            // Rewatches/Rereads Section
             RewatchSection(
                 rewatches = rewatches,
                 isAnime = isAnime,
-                onRewatchChange = { rewatches = it }
+                onRewatchChange = {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    rewatches = it.coerceAtLeast(0)
+                }
             )
 
-            // Notes Section
             NotesSection(
                 notes = notes,
-                onNotesChange = { notes = it }
+                onNotesChange = { notes = it },
+                modifier = Modifier.heightIn(min = 120.dp, max = 200.dp)
             )
 
-            // Action Buttons
             ActionButtons(
-                onDelete = { showDeleteDialog = true },
+                onDelete = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    showDeleteDialog = true
+                },
                 onSave = {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                     onSave(
                         entry.copy(
                             status = status,
                             progress = progress,
                             score = score.takeIf { it > 0 },
-                            notes = notes.ifBlank { null },
+                            notes = notes.takeIf { it.isNotBlank() },
                             startedAt = startedAt,
                             completedAt = completedAt,
                             rewatches = rewatches
                         )
                     )
                 },
-                saveEnabled = hasChanges
+                saveEnabled = hasChanges,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
     }
 
-    // Delete Confirmation Dialog
+    // Dialogs
     if (showDeleteDialog) {
         DeleteConfirmationDialog(
             onConfirm = {
                 showDeleteDialog = false
                 onDelete()
             },
-            onDismiss = { showDeleteDialog = false }
+            onDismiss = { showDeleteDialog = false },
+            isAnime = isAnime
         )
     }
 
-    // Start Date Picker
     if (showStartDatePicker) {
         DatePickerSheet(
             initialDate = startedAt,
             onDateSelected = { startedAt = it },
-            onDismiss = { showStartDatePicker = false }
+            onDismiss = { showStartDatePicker = false },
+            title = stringResource(
+                if (isAnime) R.string.start_date else R.string.start_date
+            )
         )
     }
 
-    // Completed Date Picker
     if (showCompletedDatePicker) {
         DatePickerSheet(
             initialDate = completedAt,
             onDateSelected = { completedAt = it },
-            onDismiss = { showCompletedDatePicker = false }
+            onDismiss = { showCompletedDatePicker = false },
+            title = stringResource(
+                if (isAnime) R.string.completed_date else R.string.completed_date
+            )
         )
     }
 }
 
-// -------------------------
-// HEADER SECTION
-// -------------------------
+// ================== HEADER SECTION ==================
 
 @Composable
-private fun HeaderSection(entry: LibraryEntry, titleLanguage: TitleLanguage) {
+private fun HeaderSection(
+    entry: LibraryEntry,
+    titleLanguage: TitleLanguage,
+    hasChanges: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val title = entry.getTitle(titleLanguage)
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                stateDescription = if (hasChanges) "Unsaved changes" else "No changes"
+            },
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Cover Image
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(entry.coverUrl)
-                .crossfade(true)
+                .crossfade(200)
                 .build(),
             contentDescription = stringResource(R.string.content_description_cover),
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(width = 70.dp, height = 100.dp)
+                .size(width = 80.dp, height = 113.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentScale = ContentScale.Crop
+            loading = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Loading placeholder
+                }
+            },
+            error = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.errorContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         )
 
         Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = stringResource(R.string.edit_entry),
+                text = stringResource(R.string.edit_entry).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
+
             Text(
-                text = entry.getTitle(titleLanguage),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 28.sp
+                ),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics {
+                    contentDescription = "Editing $title"
+                }
             )
-            // Media type badge
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            ) {
-                Text(
-                    text = if (entry.type == MediaType.ANIME) 
-                        stringResource(R.string.media_type_anime) 
-                    else 
-                        stringResource(R.string.media_type_manga),
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+
+            MediaTypeChip(
+                type = entry.type,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
 
-// -------------------------
-// STATUS SECTION
-// -------------------------
+@Composable
+private fun MediaTypeChip(
+    type: MediaType?,
+    modifier: Modifier = Modifier
+) {
+    val label = if (type == MediaType.ANIME) {
+        stringResource(R.string.media_type_anime)
+    } else {
+        stringResource(R.string.media_type_manga)
+    }
 
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = modifier
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+// ================== STATUS SECTION ==================
+
+@Stable
 private data class StatusOption(
     val status: LibraryStatus,
     val icon: ImageVector,
@@ -330,24 +446,28 @@ private fun StatusSection(
         listOf(
             StatusOption(
                 LibraryStatus.CURRENT,
-                Icons.Outlined.PlayArrow,
+                Icons.Default.PlayArrow,
                 if (isAnime) R.string.status_watching else R.string.status_reading
             ),
-            StatusOption(LibraryStatus.COMPLETED, Icons.Outlined.Check, R.string.status_completed),
-            StatusOption(LibraryStatus.PLANNING, Icons.Outlined.Schedule, R.string.status_planning),
-            StatusOption(LibraryStatus.PAUSED, Icons.Outlined.Pause, R.string.status_paused),
-            StatusOption(LibraryStatus.DROPPED, Icons.Outlined.Close, R.string.status_dropped)
+            StatusOption(LibraryStatus.COMPLETED, Icons.Default.Check, R.string.status_completed),
+            StatusOption(LibraryStatus.PLANNING, Icons.Default.Schedule, R.string.status_planning),
+            StatusOption(LibraryStatus.PAUSED, Icons.Default.Close, R.string.status_paused),
+            StatusOption(LibraryStatus.DROPPED, Icons.Default.Close, R.string.status_dropped)
         )
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.filter_status),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    val currentStatusLabel = stringResource(
+        statusOptions.first { it.status == status }.labelResId
+    )
 
-        // Use horizontally scrollable row with chips for better space efficiency
+    Column(
+        modifier = Modifier.semantics {
+            stateDescription = "Current status: $currentStatusLabel"
+        },
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        SectionTitle(text = stringResource(R.string.filter_status))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -367,20 +487,28 @@ private fun StatusSection(
                             modifier = Modifier.size(18.dp)
                         )
                     },
+                    modifier = Modifier.semantics {
+                        selected = isSelected
+                    },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    ),
+                    border = if (isSelected) null else {
+                        FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = false,
+                            borderColor = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
                 )
             }
         }
     }
 }
 
-// -------------------------
-// PROGRESS SECTION
-// -------------------------
+// ================== PROGRESS SECTION ==================
 
 @Composable
 private fun ProgressSection(
@@ -390,22 +518,29 @@ private fun ProgressSection(
     onProgressChange: (Int) -> Unit
 ) {
     val maxProgress = total ?: 999
-    val sliderValue by animateFloatAsState(
+    val animatedProgress by animateFloatAsState(
         targetValue = progress.toFloat(),
-        label = "progress_slider"
+        label = "progress_animation"
     )
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val unitString = if (isAnime) {
+        stringResource(R.string.stat_episodes)
+    } else {
+        stringResource(R.string.stat_chapters)
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = "Progress $progress of ${total ?: "unknown"}"
+        }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.sort_progress),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            SectionTitle(text = stringResource(R.string.sort_progress))
 
             Text(
                 text = if (total != null) "$progress / $total" else "$progress / ?",
@@ -418,26 +553,34 @@ private fun ProgressSection(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Decrement button
+            val minusInteraction = remember { MutableInteractionSource() }
+            val minusPressed by minusInteraction.collectIsPressedAsState()
+            val minusScale by animateDpAsState(
+                targetValue = if (minusPressed) 32.dp else 40.dp,
+                label = "minus_scale"
+            )
+
             FilledTonalIconButton(
-                onClick = { if (progress > 0) onProgressChange(progress - 1) },
+                onClick = { onProgressChange(progress - 1) },
                 enabled = progress > 0,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(minusScale),
+                interactionSource = minusInteraction
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Remove,
+                    imageVector = Icons.Default.Remove,
                     contentDescription = stringResource(R.string.descending)
                 )
             }
 
-            // Slider
             Slider(
-                value = sliderValue,
-                onValueChange = { onProgressChange(it.toInt()) },
+                value = animatedProgress,
+                onValueChange = { value ->
+                    onProgressChange(value.roundToInt().coerceIn(0, maxProgress))
+                },
                 valueRange = 0f..maxProgress.toFloat(),
-                steps = if (maxProgress > 1) maxProgress - 1 else 0,
+                steps = (maxProgress - 1).coerceAtLeast(0),
                 modifier = Modifier.weight(1f),
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
@@ -446,31 +589,35 @@ private fun ProgressSection(
                 )
             )
 
-            // Increment button
+            val plusInteraction = remember { MutableInteractionSource() }
+            val plusPressed by plusInteraction.collectIsPressedAsState()
+            val plusScale by animateDpAsState(
+                targetValue = if (plusPressed) 32.dp else 40.dp,
+                label = "plus_scale"
+            )
+
             FilledTonalIconButton(
-                onClick = { if (total == null || progress < total) onProgressChange(progress + 1) },
+                onClick = { onProgressChange(progress + 1) },
                 enabled = total == null || progress < total,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(plusScale),
+                interactionSource = plusInteraction
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Add,
+                    imageVector = Icons.Default.Add,
                     contentDescription = stringResource(R.string.ascending)
                 )
             }
         }
 
-        // Episodes/Chapters label
         Text(
-            text = if (isAnime) stringResource(R.string.stat_episodes) else stringResource(R.string.stat_chapters),
+            text = unitString,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
         )
     }
 }
 
-// -------------------------
-// SCORE SECTION
-// -------------------------
+// ================== SCORE SECTION ==================
 
 @Composable
 private fun ScoreSection(
@@ -493,7 +640,12 @@ private fun ScoreSection(
         label = "score_color"
     )
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.semantics {
+            stateDescription = if (score > 0) "Score $score out of 10" else "No score set"
+        }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -503,13 +655,9 @@ private fun ScoreSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.stat_score),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                SectionTitle(text = stringResource(R.string.stat_score))
                 Icon(
-                    imageVector = Icons.Rounded.Star,
+                    imageVector = Icons.Default.Star,
                     contentDescription = null,
                     tint = scoreColor,
                     modifier = Modifier.size(20.dp)
@@ -517,7 +665,8 @@ private fun ScoreSection(
             }
 
             Text(
-                text = if (score > 0) String.format(Locale.US, "%.1f", score) else stringResource(R.string.no_score),
+                text = if (score > 0) String.format(Locale.US, "%.1f", score)
+                else stringResource(R.string.no_score),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = scoreColor
@@ -526,9 +675,12 @@ private fun ScoreSection(
 
         Slider(
             value = animatedScore,
-            onValueChange = { onScoreChange((it * 2).toInt() / 2.0) }, // Round to 0.5
+            onValueChange = {
+                val rounded = (it * 2).roundToInt() / 2.0
+                onScoreChange(rounded.coerceIn(0.0, 10.0))
+            },
             valueRange = 0f..10f,
-            steps = 19, // 0, 0.5, 1, 1.5, ... 10
+            steps = 19, // 0.5 increments
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(
                 thumbColor = scoreColor,
@@ -545,55 +697,63 @@ private fun ScoreSection(
             Text(
                 text = "0",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
             Text(
                 text = "10",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
     }
 }
 
-// -------------------------
-// DATE SECTION
-// -------------------------
+// ================== DATE SECTION ==================
 
 @Composable
 private fun DateSection(
     startedAt: Long?,
     completedAt: Long?,
+    isAnime: Boolean,
     onStartClick: () -> Unit,
     onCompletedClick: () -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
+    val dateFormatter = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.dates),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        SectionTitle(text = stringResource(R.string.dates))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Start Date
+            val startDateStr = startedAt?.let { dateFormatter.format(Date(it)) }
+            val completedDateStr = completedAt?.let { dateFormatter.format(Date(it)) }
+
             DateChip(
                 label = stringResource(R.string.start_date),
-                date = startedAt?.let { dateFormat.format(Date(it)) },
+                date = startDateStr,
                 onClick = onStartClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription = startDateStr?.let {
+                            "Start date set to $it"
+                        } ?: "Start date not set, tap to set"
+                    }
             )
 
-            // Completed Date
             DateChip(
                 label = stringResource(R.string.completed_date),
-                date = completedAt?.let { dateFormat.format(Date(it)) },
+                date = completedDateStr,
                 onClick = onCompletedClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription = completedDateStr?.let {
+                            "Completed date set to $it"
+                        } ?: "Completed date not set, tap to set"
+                    }
             )
         }
     }
@@ -608,24 +768,39 @@ private fun DateChip(
 ) {
     Surface(
         onClick = onClick,
+        enabled = true,
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        color = if (date != null) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        border = if (date == null) {
+            androidx.compose.foundation.BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        } else null
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Outlined.CalendarToday,
+                imageVector = Icons.Default.DateRange,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+                tint = if (date != null) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
             )
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
@@ -634,16 +809,16 @@ private fun DateChip(
                 Text(
                     text = date ?: stringResource(R.string.no_date),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (date != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    fontWeight = if (date != null) FontWeight.Medium else FontWeight.Normal,
+                    color = if (date != null) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
         }
     }
 }
 
-// -------------------------
-// REWATCH SECTION
-// -------------------------
+// ================== REWATCH SECTION ==================
 
 @Composable
 private fun RewatchSection(
@@ -651,12 +826,17 @@ private fun RewatchSection(
     isAnime: Boolean,
     onRewatchChange: (Int) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = if (isAnime) stringResource(R.string.times_rewatched) else stringResource(R.string.times_reread),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    val label = stringResource(
+        if (isAnime) R.string.times_rewatched else R.string.times_reread
+    )
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = "$label: $rewatches"
+        }
+    ) {
+        SectionTitle(text = label)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -664,19 +844,19 @@ private fun RewatchSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             FilledTonalIconButton(
-                onClick = { if (rewatches > 0) onRewatchChange(rewatches - 1) },
+                onClick = { onRewatchChange(rewatches - 1) },
                 enabled = rewatches > 0,
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Remove,
+                    imageVector = Icons.Default.Remove,
                     contentDescription = stringResource(R.string.descending)
                 )
             }
 
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
                 modifier = Modifier.weight(1f)
             ) {
                 Row(
@@ -685,9 +865,9 @@ private fun RewatchSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Replay,
+                        imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -695,7 +875,7 @@ private fun RewatchSection(
                         text = rewatches.toString(),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
@@ -705,7 +885,7 @@ private fun RewatchSection(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Add,
+                    imageVector = Icons.Default.Add,
                     contentDescription = stringResource(R.string.ascending)
                 )
             }
@@ -713,108 +893,166 @@ private fun RewatchSection(
     }
 }
 
-// -------------------------
-// NOTES SECTION
-// -------------------------
+// ================== NOTES SECTION ==================
 
 @Composable
 private fun NotesSection(
     notes: String,
-    onNotesChange: (String) -> Unit
+    onNotesChange: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.notes),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    var isFocused by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
+    ) {
+        SectionTitle(text = stringResource(R.string.notes))
 
         OutlinedTextField(
             value = notes,
             onValueChange = onNotesChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp),
+                .heightIn(min = 100.dp, max = 180.dp)
+                .onFocusChanged {
+                    if (it.isFocused && !isFocused) {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    }
+                    isFocused = it.isFocused
+                }
+                .semantics {
+                    if (notes.isNotEmpty()) {
+                        stateDescription = "${notes.length} characters entered"
+                    }
+                },
             placeholder = {
                 Text(
                     text = stringResource(R.string.notes_placeholder),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            ),
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { /* Handle keyboard done if needed */ }
+            ),
+            maxLines = 5,
+            minLines = 3
         )
+
+        // Character count (optional but good for UX)
+        AnimatedVisibility(
+            visible = notes.isNotEmpty(),
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text(
+                text = "${notes.length} chars",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
     }
 }
 
-// -------------------------
-// ACTION BUTTONS
-// -------------------------
+// ================== ACTION BUTTONS ==================
 
 @Composable
 private fun ActionButtons(
     onDelete: () -> Unit,
     onSave: () -> Unit,
-    saveEnabled: Boolean
+    saveEnabled: Boolean,
+    modifier: Modifier = Modifier
 ) {
+    val deleteInteraction = remember { MutableInteractionSource() }
+    val saveInteraction = remember { MutableInteractionSource() }
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Delete Button
-        FilledTonalButton(
+        // Delete Button - Use TextButton for destructive actions per Material 3
+        TextButton(
             onClick = onDelete,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp),
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
             ),
-            shape = RoundedCornerShape(16.dp)
+            interactionSource = deleteInteraction
         ) {
             Icon(
-                imageVector = Icons.Outlined.Delete,
+                imageVector = Icons.Default.Delete,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = stringResource(R.string.action_remove))
+            Text(
+                text = stringResource(R.string.action_remove),
+                style = MaterialTheme.typography.labelLarge
+            )
         }
 
-        // Save Button - using Button for consistency
+        // Save Button
         Button(
             onClick = onSave,
             enabled = saveEnabled,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1.5f)
+                .height(48.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             ),
-            shape = RoundedCornerShape(16.dp)
+            interactionSource = saveInteraction,
+            shape = RoundedCornerShape(12.dp)
         ) {
             Icon(
-                imageVector = Icons.Outlined.Check,
+                imageVector = Icons.Default.Check,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.save),
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
             )
         }
     }
 }
 
-// -------------------------
-// DELETE CONFIRMATION DIALOG
-// -------------------------
+// ================== DIALOGS ==================
 
 @Composable
 private fun DeleteConfirmationDialog(
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isAnime: Boolean
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
         title = {
             Text(text = stringResource(R.string.action_remove))
         },
@@ -835,23 +1073,22 @@ private fun DeleteConfirmationDialog(
             TextButton(onClick = onDismiss) {
                 Text(text = stringResource(R.string.cancel))
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     )
 }
-
-// -------------------------
-// DATE PICKER DIALOG
-// -------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DatePickerSheet(
     initialDate: Long?,
     onDateSelected: (Long?) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    title: String
 ) {
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDate
+        initialSelectedDateMillis = initialDate,
+        initialDisplayedMonthMillis = initialDate
     )
 
     DatePickerDialog(
@@ -872,76 +1109,81 @@ private fun DatePickerSheet(
             }
         }
     ) {
-        DatePicker(state = datePickerState)
+        DatePicker(
+            state = datePickerState,
+            title = {
+                Text(
+                    text = title,
+                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            },
+            headline = null
+        )
     }
 }
 
-// -------------------------
-// PREVIEWS
-// -------------------------
+// ================== UTILITIES ==================
+
+@Composable
+private fun SectionTitle(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall.copy(
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.5.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.semantics { heading() }
+    )
+}
+
+// ================== PREVIEWS ==================
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview(showBackground = true)
+@Preview(showBackground = true, device = "id:pixel_7_pro")
 @Composable
-private fun PreviewEditLibraryEntrySheet() {
+private fun EditLibraryEntrySheetPreview() {
     AppTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(24.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                val mockEntry = LibraryEntry(
-                    id = 1,
-                    mediaId = 101,
-                    titleRomaji = "Frieren: Beyond Journey's End",
-                    titleEnglish = "Frieren: Beyond Journey's End",
-                    titleNative = "Sousou no Frieren",
-                    titleUserPreferred = "Frieren: Beyond Journey's End",
-                    coverUrl = null,
-                    progress = 12,
-                    totalEpisodes = 28,
-                    totalChapters = null,
-                    totalVolumes = null,
-                    type = MediaType.ANIME,
-                    status = LibraryStatus.CURRENT,
-                    score = 9.5,
-                    startedAt = System.currentTimeMillis() - 86400000L * 30,
-                    completedAt = null,
-                    rewatches = 0,
-                    notes = "Great anime!"
-                )
+        Surface {
+            val mockEntry = LibraryEntry(
+                id = 1,
+                mediaId = 101,
+                titleRomaji = "Sousou no Frieren",
+                titleEnglish = "Frieren: Beyond Journey's End",
+                titleNative = "葬送のフリーレン",
+                titleUserPreferred = "Frieren: Beyond Journey's End",
+                coverUrl = null,
+                progress = 12,
+                totalEpisodes = 28,
+                totalChapters = null,
+                totalVolumes = null,
+                type = MediaType.ANIME,
+                status = LibraryStatus.CURRENT,
+                score = 9.5,
+                startedAt = System.currentTimeMillis() - 86400000L * 30,
+                completedAt = null,
+                rewatches = 0,
+                notes = "Great anime! The pacing is perfect."
+            )
 
-                HeaderSection(entry = mockEntry, titleLanguage = TitleLanguage.ROMAJI)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                StatusSection(
-                    status = mockEntry.status,
-                    mediaType = mockEntry.type,
-                    onStatusChange = {}
-                )
-                ProgressSection(
-                    progress = mockEntry.progress,
-                    total = mockEntry.totalEpisodes,
-                    isAnime = true,
-                    onProgressChange = {}
-                )
-                ScoreSection(score = mockEntry.score ?: 0.0, onScoreChange = {})
-                DateSection(
-                    startedAt = mockEntry.startedAt,
-                    completedAt = mockEntry.completedAt,
-                    onStartClick = {},
-                    onCompletedClick = {}
-                )
-                RewatchSection(rewatches = 0, isAnime = true, onRewatchChange = {})
-                NotesSection(notes = "", onNotesChange = {})
-                ActionButtons(onDelete = {}, onSave = {}, saveEnabled = true)
-            }
+            EditLibraryEntrySheet(
+                entry = mockEntry,
+                onDismiss = {},
+                onSave = {},
+                onDelete = {}
+            )
         }
+    }
+}
+
+@Preview
+@Composable
+private fun DarkModePreview() {
+    AppTheme(darkTheme = true) {
+        EditLibraryEntrySheetPreview()
     }
 }

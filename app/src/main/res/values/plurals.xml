@@ -41,4 +41,14 @@
         <item quantity="one">Day</item>
         <item quantity="other">Days</item>
     </plurals>
+
+    <!-- Plurals for episodes/chapters -->
+    <plurals name="episodes_format">
+        <item quantity="one">%d Episode</item>
+        <item quantity="other">%d Episodes</item>
+    </plurals>
+    <plurals name="chapters_format">
+        <item quantity="one">%d Chapter</item>
+        <item quantity="other">%d Chapters</item>
+    </plurals>
 </resources>
