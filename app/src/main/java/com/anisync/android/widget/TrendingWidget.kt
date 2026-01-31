@@ -294,13 +294,16 @@ private fun TrendingExpanded(entries: List<Pair<TrendingEntity, Bitmap?>>) {
 
         // Grid
         LazyColumn(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp)
+            modifier = GlanceModifier.fillMaxSize()
         ) {
             items(rows) { rowItems ->
-                TrendingGridRowBottomBadges(rowItems)
-                Spacer(modifier = GlanceModifier.height(8.dp))
+                // Wrap each row in Column with padding to prevent scrollbar overlap
+                Column(
+                    modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 12.dp)
+                ) {
+                    TrendingGridRowBottomBadges(rowItems)
+                    Spacer(modifier = GlanceModifier.height(8.dp))
+                }
             }
         }
     }

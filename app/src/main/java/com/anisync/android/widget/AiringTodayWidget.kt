@@ -375,16 +375,22 @@ private fun AiringExpanded(
             EmptyStateExpanded(isMyList)
         } else {
             LazyColumn(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .padding(start = 16.dp, end = 16.dp) // Padding on both sides to position scrollbar on right
+                modifier = GlanceModifier.fillMaxSize()
             ) {
                 itemsIndexed(entries) { index, item ->
-                    TimelineItem(
-                        item = item,
-                        isFirst = index == 0,
-                        isLast = index == entries.lastIndex
-                    )
+                    // Wrap each item in Column with padding to prevent scrollbar overlap
+                    Column(
+                        modifier = GlanceModifier.fillMaxWidth().padding(
+                            start = 16.dp,
+                            end = 16.dp
+                        )
+                    ) {
+                        TimelineItem(
+                            item = item,
+                            isFirst = index == 0,
+                            isLast = index == entries.lastIndex
+                        )
+                    }
                 }
             }
         }
