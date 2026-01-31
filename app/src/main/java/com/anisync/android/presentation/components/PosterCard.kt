@@ -28,12 +28,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.R
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.util.getTitle
@@ -68,6 +71,7 @@ fun PosterCard(
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val title = item.getTitle(titleLanguage)
 
     with(sharedTransitionScope) {
         Card(
@@ -78,7 +82,11 @@ fun PosterCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             modifier = modifier
                 .fillMaxWidth()
-                .bouncyClickable(onClick = onClick)
+                .bouncyClickable(
+                    onClick = onClick,
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                )
                 .sharedElement(
                     sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_cover_${item.mediaId}"),
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -95,7 +103,7 @@ fun PosterCard(
                         .placeholderMemoryCacheKey(cacheKey)
                         .memoryCacheKey(cacheKey)
                         .build(),
-                    contentDescription = item.getTitle(titleLanguage),
+                    contentDescription = stringResource(R.string.a11y_media_poster, title),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -128,7 +136,7 @@ fun PosterCard(
 
                 // Title at bottom
                 Text(
-                    text = item.getTitle(titleLanguage),
+                    text = title,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,

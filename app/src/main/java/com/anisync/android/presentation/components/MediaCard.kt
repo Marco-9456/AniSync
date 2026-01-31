@@ -31,12 +31,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
@@ -65,6 +68,7 @@ fun MediaCard(
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    val title = item.getTitle(titleLanguage)
 
     with(sharedTransitionScope) {
         Card(
@@ -75,7 +79,11 @@ fun MediaCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             modifier = modifier
                 .width(150.dp)
-                .bouncyClickable(onClick = onClick)
+                .bouncyClickable(
+                    onClick = onClick,
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                )
                 .sharedElement(
                     sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -93,7 +101,7 @@ fun MediaCard(
                         .placeholderMemoryCacheKey(cacheKey)
                         .memoryCacheKey(cacheKey)
                         .build(),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_media_poster, title),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -108,7 +116,7 @@ fun MediaCard(
                 ) {
                     // Title (Bold, Black)
                     Text(
-                        text = item.getTitle(titleLanguage),
+                        text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,

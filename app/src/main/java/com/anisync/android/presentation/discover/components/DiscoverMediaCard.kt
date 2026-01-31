@@ -40,6 +40,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.bouncyClickable
@@ -135,6 +138,7 @@ fun DiscoverMediaCard(
     }
 
     val outlineVariant = MaterialTheme.colorScheme.outlineVariant
+    val title = item.getTitle(titleLanguage)
     val baseModifier = modifier
         .then(sizeModifier)
         .clip(cardShape)
@@ -143,7 +147,11 @@ fun DiscoverMediaCard(
             color = outlineVariant.copy(alpha = 0.5f),
             shape = cardShape
         )
-        .bouncyClickable(onClick = onClick)
+        .bouncyClickable(
+            onClick = onClick,
+            role = Role.Button,
+            onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+        )
 
     // Apply shared element transition if scopes are provided
     val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
@@ -385,6 +393,7 @@ private fun ListItemContent(
     animatedVisibilityScope: AnimatedVisibilityScope?,
     spatialSpec: FiniteAnimationSpec<Rect>?
 ) {
+    val title = item.getTitle(titleLanguage)
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -402,7 +411,7 @@ private fun ListItemContent(
         }
         AsyncImage(
             model = imageRequest,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.a11y_media_poster, title),
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .size(width = 60.dp, height = 90.dp)

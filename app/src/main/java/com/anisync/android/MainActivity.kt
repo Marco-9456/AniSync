@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.anisync.android.data.AppSettings
@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
         }
         
         setContent {
-            val themeMode by appSettings.themeMode.collectAsState()
+            val themeMode by appSettings.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val isSystemDark = isSystemInDarkTheme()
             
             // Determine if dark theme should be used based on settings
@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        val isLoggedIn by authRepository.isLoggedIn.collectAsState(initial = false)
+                        val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
                         
                         if (isLoggedIn) {
                             MainScreen()

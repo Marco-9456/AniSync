@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -120,6 +121,7 @@ fun LibraryMediaCard(
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
+    val title = entry.getTitle(titleLanguage)
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
@@ -136,10 +138,17 @@ fun LibraryMediaCard(
                     if (config.showAdjusters && onEdit != null) {
                          Modifier.bouncyCombinedClickable(
                             onClick = onClick,
-                            onLongClick = onEdit
+                            onLongClick = onEdit,
+                            role = Role.Button,
+                            onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                            onLongClickLabel = stringResource(R.string.a11y_action_edit_entry)
                         )
                     } else {
-                        Modifier.bouncyClickable(onClick = onClick)
+                        Modifier.bouncyClickable(
+                            onClick = onClick,
+                            role = Role.Button,
+                            onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                        )
                     }
                 )
                 .sharedBounds(
@@ -157,10 +166,17 @@ fun LibraryMediaCard(
                 if (config.showAdjusters && onEdit != null) {
                     Modifier.bouncyCombinedClickable(
                         onClick = onClick,
-                        onLongClick = onEdit
+                        onLongClick = onEdit,
+                        role = Role.Button,
+                        onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                        onLongClickLabel = stringResource(R.string.a11y_action_edit_entry)
                     )
                 } else {
-                    Modifier.bouncyClickable(onClick = onClick)
+                    Modifier.bouncyClickable(
+                        onClick = onClick,
+                        role = Role.Button,
+                        onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                    )
                 }
             )
     }
@@ -182,7 +198,7 @@ fun LibraryMediaCard(
                         .placeholderMemoryCacheKey(cacheKey)
                         .memoryCacheKey(cacheKey)
                         .build(),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_media_poster, title),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -197,7 +213,7 @@ fun LibraryMediaCard(
                         )
                 )
                 Text(
-                    text = entry.getTitle(titleLanguage),
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
@@ -305,16 +321,25 @@ fun LibraryMediaCard(
                         Surface(
                             modifier = Modifier
                                 .weight(1f) // Fill width like adjusters
-                                .height(36.dp)
-                                .bouncyClickable {
-                                    haptic.click()
-                                    onEdit()
-                                },
+                                .height(48.dp) // Minimum touch target
+                                .bouncyClickable(
+                                    onClick = {
+                                        haptic.click()
+                                        onEdit()
+                                    },
+                                    role = Role.Button,
+                                    onClickLabel = stringResource(R.string.a11y_action_edit_entry)
+                                ),
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                                Icon(
+                                    Icons.Default.Edit, 
+                                    contentDescription = null, // Label is on Surface
+                                    modifier = Modifier.size(18.dp), 
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
                             }
                         }
                     }
@@ -336,31 +361,47 @@ fun LibraryMediaCard(
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .height(36.dp)
-                            .bouncyClickable {
-                                haptic.click()
-                                onDecrement()
-                            },
+                            .height(48.dp) // Minimum touch target
+                            .bouncyClickable(
+                                onClick = {
+                                    haptic.click()
+                                    onDecrement()
+                                },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress)
+                            ),
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.Remove, 
+                                contentDescription = null, // Label is on Surface
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .height(36.dp)
-                            .bouncyClickable {
-                                haptic.click()
-                                onIncrement()
-                            },
+                            .height(48.dp) // Minimum touch target
+                            .bouncyClickable(
+                                onClick = {
+                                    haptic.click()
+                                    onIncrement()
+                                },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_increment_progress)
+                            ),
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.Add, 
+                                contentDescription = null, // Label is on Surface
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }

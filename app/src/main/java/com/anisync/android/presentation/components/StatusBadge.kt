@@ -11,6 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,18 +27,28 @@ import androidx.compose.ui.unit.sp
  * @param containerColor The background color of the badge
  * @param contentColor The text color of the badge
  * @param modifier Modifier for the composable
+ * @param announceChanges If true, announces changes to screen readers via liveRegion
  */
 @Composable
 fun StatusBadge(
     text: String,
     containerColor: Color,
     contentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    announceChanges: Boolean = false
 ) {
     Surface(
         color = containerColor,
         shape = RoundedCornerShape(4.dp),
-        modifier = modifier.height(14.dp)
+        modifier = modifier
+            .height(14.dp)
+            .then(
+                if (announceChanges) {
+                    Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Box(
             contentAlignment = Alignment.Center,

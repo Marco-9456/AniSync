@@ -5,9 +5,9 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.data.AppSettings
 
@@ -122,7 +122,7 @@ class HapticFeedbackHelper(
 @Composable
 fun rememberHapticFeedback(appSettings: AppSettings): HapticFeedbackHelper {
     val context = LocalContext.current
-    val hapticEnabled by appSettings.hapticEnabled.collectAsState()
+    val hapticEnabled by appSettings.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
     
     return remember(context) { 
         HapticFeedbackHelper(
@@ -142,7 +142,7 @@ fun rememberHapticFeedback(): HapticFeedbackHelper {
     val appSettings = LocalAppSettings.current
     // We observe state here to trigger recomposition if setting changes, 
     // ensuring validity of the closure if needed, though provider handles value reading.
-    val hapticEnabled by appSettings.hapticEnabled.collectAsState()
+    val hapticEnabled by appSettings.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
     
     return remember(context, appSettings) { 
         HapticFeedbackHelper(

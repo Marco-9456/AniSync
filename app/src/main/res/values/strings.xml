@@ -235,4 +235,52 @@
     <string name="widget_up_next_description">Quick access to your next episode</string>
     <string name="widget_quick_update_description">Update episode progress quickly</string>
     <string name="widget_trending_description">See what\'s trending in anime</string>
+
+    <!-- ==================== ACCESSIBILITY ==================== -->
+
+    <!-- Accessibility: Actions -->
+    <string name="a11y_action_increment_progress">Increase progress by one</string>
+    <string name="a11y_action_decrement_progress">Decrease progress by one</string>
+    <string name="a11y_action_edit_entry">Edit library entry</string>
+    <string name="a11y_action_open_details">Open details for %1$s</string>
+    <string name="a11y_action_see_all">See all %1$s</string>
+    <string name="a11y_action_see_all_button">See all</string>
+    <string name="a11y_action_add_to_library">Add %1$s to library</string>
+    <string name="a11y_action_toggle_favorite">Toggle favorite</string>
+    <string name="a11y_action_expand_synopsis">Expand synopsis</string>
+    <string name="a11y_action_collapse_synopsis">Collapse synopsis</string>
+    <string name="a11y_action_select_tab">Select %1$s tab</string>
+    <string name="a11y_action_open_search_result">Open %1$s</string>
+
+    <!-- Accessibility: Content Descriptions -->
+    <string name="a11y_media_poster">Poster for %1$s</string>
+    <string name="a11y_character_image">Image of %1$s</string>
+    <string name="a11y_user_avatar">Profile picture for %1$s</string>
+    <string name="a11y_banner_image">Banner image for %1$s</string>
+    <string name="a11y_rating_score">Rating: %1$.1f out of 10</string>
+    <string name="a11y_media_card">%1$s, %2$s, rated %3$.1f</string>
+
+    <!-- Accessibility: State Descriptions -->
+    <string name="a11y_state_progress">Progress: %1$d of %2$s</string>
+    <string name="a11y_state_airing_soon">Next episode airs in %1$s</string>
+    <string name="a11y_state_episodes_behind">%1$d episodes behind</string>
+    <string name="a11y_state_up_to_date">Caught up with latest episode</string>
+    <string name="a11y_state_selected">Selected</string>
+    <string name="a11y_state_not_selected">Not selected</string>
+    <string name="a11y_state_tab_selected">%1$s, selected</string>
+    <string name="a11y_state_tab_not_selected">%1$s</string>
+    <string name="a11y_state_expanded">Expanded</string>
+    <string name="a11y_state_collapsed">Collapsed, double tap to expand</string>
+
+    <!-- Accessibility: Headings -->
+    <string name="a11y_heading_trending">Trending section</string>
+    <string name="a11y_heading_popular">Popular section</string>
+    <string name="a11y_heading_characters">Characters section</string>
+    <string name="a11y_heading_relations">Related media section</string>
+    <string name="a11y_heading_synopsis">Synopsis section</string>
+    <string name="a11y_heading_information">Information section</string>
+
+    <!-- Accessibility: Live Region Announcements -->
+    <string name="a11y_progress_updated">Progress updated to %1$d</string>
+    <string name="a11y_error_occurred">Error: %1$s</string>
 </resources>

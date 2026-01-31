@@ -19,9 +19,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.R
 import com.anisync.android.domain.CharacterDetails
 
 @Composable
@@ -34,6 +36,7 @@ fun CharacterHeaderSection(
             .height(320.dp)
     ) {
         // Banner Background (Using character image cropped/zoomed as banner)
+        // Decorative image - contentDescription null as it duplicates the poster
         AsyncImage(
             model = character.imageUrl,
             contentDescription = null,
@@ -115,7 +118,7 @@ fun CharacterHeaderSection(
                     .data(character.imageUrl)
                     .crossfade(true)
                     .build(),
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_character_image, character.name),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )

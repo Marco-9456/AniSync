@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -108,7 +109,9 @@ fun SectionHeader(
                 Spacer(modifier = Modifier.width(androidx.compose.ui.res.dimensionResource(com.anisync.android.R.dimen.spacing_normal)))
             }
 
-            Column {
+            Column(
+                modifier = Modifier.semantics { heading() }
+            ) {
                 Text(
                     text = title,
                     style = when (level) {

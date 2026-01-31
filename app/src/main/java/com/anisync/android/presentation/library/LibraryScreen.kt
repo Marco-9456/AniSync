@@ -72,7 +72,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +80,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -92,6 +92,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -140,12 +141,12 @@ fun LibraryScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val mediaType by viewModel.mediaType.collectAsState()
-    val sortOption by viewModel.sortOption.collectAsState()
-    val isAscending by viewModel.isAscending.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val titleLanguage by viewModel.titleLanguage.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
+    val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
+    val isAscending by viewModel.isAscending.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -638,13 +639,18 @@ private fun LibrarySearchResultCard(
 ) {
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    val title = entry.getTitle(titleLanguage)
 
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = modifier
             .fillMaxWidth()
-            .bouncyClickable(onClick = onClick)
+            .bouncyClickable(
+                onClick = onClick,
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+            )
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -656,7 +662,7 @@ private fun LibrarySearchResultCard(
                     .data(entry.coverUrl)
                     .crossfade(true)
                     .build(),
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_media_poster, title),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .width(50.dp)
@@ -666,7 +672,7 @@ private fun LibrarySearchResultCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entry.getTitle(titleLanguage),
+                    text = title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -700,6 +706,7 @@ fun NewListCard(
     val haptic = rememberHapticFeedback()
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
+    val title = entry.getTitle(titleLanguage)
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
@@ -715,7 +722,11 @@ fun NewListCard(
             modifier = modifier
                 .fillMaxWidth()
                 .height(110.dp)
-                .bouncyClickable(onClick = onClick)
+                .bouncyClickable(
+                    onClick = onClick,
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                )
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -730,9 +741,9 @@ fun NewListCard(
                         .data(entry.coverUrl)
                         .crossfade(true)
                         .placeholderMemoryCacheKey(cacheKey)
-                        .memoryCacheKey(cacheKey)
+                    .memoryCacheKey(cacheKey)
                         .build(),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_media_poster, title),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .width(80.dp)
@@ -836,14 +847,18 @@ fun NewListCard(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .bouncyClickable { haptic.click(); onIncrement() },
+                            .bouncyClickable(
+                                onClick = { haptic.click(); onIncrement() },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_increment_progress)
+                            ),
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Add,
-                                null,
+                                contentDescription = stringResource(R.string.a11y_action_increment_progress),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -852,14 +867,18 @@ fun NewListCard(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .bouncyClickable { haptic.click(); onDecrement() },
+                            .bouncyClickable(
+                                onClick = { haptic.click(); onDecrement() },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress)
+                            ),
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Remove,
-                                null,
+                                contentDescription = stringResource(R.string.a11y_action_decrement_progress),
                                 modifier = Modifier.size(16.dp)
                             )
                         }

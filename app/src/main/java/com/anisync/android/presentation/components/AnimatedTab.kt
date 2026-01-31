@@ -26,6 +26,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -133,7 +138,12 @@ fun AnimatedTab(
             .background(
                 color = backgroundColor,
                 shape = RoundedCornerShape(50)
-            ),
+            )
+            .clearAndSetSemantics {
+                role = Role.Tab
+                this.selected = isSelected
+                contentDescription = if (isSelected) "$label, selected" else label
+            },
         selected = isSelected,
         onClick = {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)

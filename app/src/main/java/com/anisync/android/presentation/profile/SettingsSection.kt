@@ -49,12 +49,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,16 +89,16 @@ fun SettingsSection(
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
-    val themeMode by viewModel.themeMode.collectAsState()
-    val titleLanguage by viewModel.titleLanguage.collectAsState()
-    val hapticEnabled by viewModel.hapticEnabled.collectAsState()
-    val preferredStreamingService by viewModel.preferredStreamingService.collectAsState()
+    val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
+    val hapticEnabled by viewModel.hapticEnabled.collectAsStateWithLifecycle()
+    val preferredStreamingService by viewModel.preferredStreamingService.collectAsStateWithLifecycle()
     
     // Granular notification settings
-    val watchingEnabled by viewModel.watchingNotificationsEnabled.collectAsState()
-    val planningEnabled by viewModel.planningNotificationsEnabled.collectAsState()
-    val upcomingEnabled by viewModel.upcomingNotificationsEnabled.collectAsState()
+    val watchingEnabled by viewModel.watchingNotificationsEnabled.collectAsStateWithLifecycle()
+    val planningEnabled by viewModel.planningNotificationsEnabled.collectAsStateWithLifecycle()
+    val upcomingEnabled by viewModel.upcomingNotificationsEnabled.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
