@@ -444,19 +444,18 @@ class MediaMapper @Inject constructor() {
 ### Result Wrapper
 
 ```kotlin
-sealed class Result<out T> {
-    data class Success<T>(val data: T) : Result<T>()
+sealed interface Result<out T> {
+    data class Success<T>(val data: T) : Result<T>
     data class Error(
         val message: String,
         val exception: Throwable? = null
-    ) : Result<Nothing>()
-
-    val isSuccess: Boolean get() = this is Success
-    val isError: Boolean get() = this is Error
-
-    fun getOrNull(): T? = (this as? Success)?.data
-    fun getOrDefault(default: @UnsafeVariance T): T = getOrNull() ?: default
+    ) : Result<Nothing>
 }
+
+// Extension functions available in domain/Result.kt:
+// - fold(), map(), getOrNull(), getOrDefault()
+// - onSuccess(), onError(), flatMap()
+// - isSuccess(), isError()
 ```
 
 ### Error Propagation

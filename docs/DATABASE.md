@@ -26,9 +26,9 @@ AniSync uses **Room** (SQLite abstraction) for local data persistence with an of
     entities = [
         LibraryEntryEntity::class,
         MediaDetailsEntity::class,
+        UserProfileEntity::class,
         AiringScheduleEntity::class,
-        TrendingEntity::class,
-        CharacterEntity::class
+        TrendingEntity::class
     ],
     version = 1,
     exportSchema = true  // Enables schema export for migration testing
@@ -37,9 +37,9 @@ AniSync uses **Room** (SQLite abstraction) for local data persistence with an of
 abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
     abstract fun mediaDetailsDao(): MediaDetailsDao
+    abstract fun userProfileDao(): UserProfileDao
     abstract fun airingScheduleDao(): AiringScheduleDao
     abstract fun trendingDao(): TrendingDao
-    abstract fun characterDao(): CharacterDao
 }
 ```
 
@@ -106,19 +106,23 @@ erDiagram
         int rank
     }
 
-    CHARACTER {
+    USER_PROFILE {
         int id PK
         string name
-        string imageUrl
-        string description
-        int mediaId FK
-        string role
-        string voiceActorName
-        string voiceActorImage
+        string avatarUrl
+        string bannerUrl
+        int animeCount
+        int mangaCount
+        int episodesWatched
+        int chaptersRead
+        string favouriteAnime
+        string favouriteManga
+        string favouriteCharacters
+        string recentActivity
+        long cachedAt
     }
 
     LIBRARY_ENTRY ||--o| MEDIA_DETAILS : "has details"
-    MEDIA_DETAILS ||--o{ CHARACTER : "has characters"
     LIBRARY_ENTRY ||--o{ AIRING_SCHEDULE : "has schedule"
 ```
 
@@ -293,9 +297,9 @@ flowchart TB
 |-----------|-----|----------|
 | Library Entries | ∞ | Always fresh (user data) |
 | Media Details | 24 hours | Stale-while-revalidate |
+| User Profile | 1 hour | Stale-while-revalidate |
 | Airing Schedule | 6 hours | Replace on refresh |
 | Trending | 1 hour | Replace on refresh |
-| Characters | 7 days | Cache-first |
 
 ### Implementation
 

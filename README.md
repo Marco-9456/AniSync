@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo-placeholder.png" alt="AniSync Logo" width="120" height="120">
+  <img src="docs/assets/logo.svg" alt="AniSync Logo" width="120" height="120">
 </p>
 
 <h1 align="center">AniSync</h1>
@@ -112,17 +112,11 @@ mindmap
 ## Screenshots
 
 <p align="center">
-  <i>Screenshots coming soon</i>
-</p>
-
-<!-- 
-<p align="center">
   <img src="docs/assets/screenshot-library.png" width="200" alt="Library">
   <img src="docs/assets/screenshot-discover.png" width="200" alt="Discover">
   <img src="docs/assets/screenshot-details.png" width="200" alt="Details">
   <img src="docs/assets/screenshot-profile.png" width="200" alt="Profile">
 </p>
--->
 
 ---
 
@@ -160,7 +154,7 @@ mindmap
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/AniSync.git
+   git clone https://github.com/YOUR_USERNAME/AniSync.git
    cd AniSync
    ```
 

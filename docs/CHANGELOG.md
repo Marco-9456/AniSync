@@ -132,6 +132,6 @@ Before tagging a release:
 
 ## Links
 
-- [GitHub Releases](https://github.com/OWNER/AniSync/releases)
-- [Issue Tracker](https://github.com/OWNER/AniSync/issues)
+- [GitHub Releases](https://github.com/YOUR_USERNAME/AniSync/releases)
+- [Issue Tracker](https://github.com/YOUR_USERNAME/AniSync/issues)
 - [Contributing Guide](CONTRIBUTING.md)

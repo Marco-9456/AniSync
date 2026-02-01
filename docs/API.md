@@ -159,6 +159,10 @@ flowchart TB
 
 ### Key Queries
 
+> **Note:** The queries below show comprehensive field sets for reference. The actual 
+> implementations may use subsets of these fields depending on screen requirements. 
+> See the `.graphql` files in `app/src/main/graphql/` for current implementations.
+
 #### GetViewer (Current User)
 
 ```graphql
@@ -351,13 +355,13 @@ mutation DeleteMediaListEntry($id: Int!) {
 ### Error Handling Implementation
 
 ```kotlin
-sealed class ApiResult<out T> {
-    data class Success<T>(val data: T) : ApiResult<T>()
+sealed interface ApiResult<out T> {
+    data class Success<T>(val data: T) : ApiResult<T>
     data class Error(
         val message: String,
         val code: Int? = null,
         val exception: Throwable? = null
-    ) : ApiResult<Nothing>()
+    ) : ApiResult<Nothing>
 }
 
 suspend fun <T> safeApiCall(

@@ -620,8 +620,8 @@ suspend fun getMedia(id: Int): Result<Media>
 
 If you have questions not covered here:
 
-1. Check existing [Issues](https://github.com/OWNER/AniSync/issues)
-2. Search [Discussions](https://github.com/OWNER/AniSync/discussions)
+1. Check existing [Issues](https://github.com/YOUR_USERNAME/AniSync/issues)
+2. Search [Discussions](https://github.com/YOUR_USERNAME/AniSync/discussions)
 3. Open a new Discussion for questions
 4. Open an Issue for bugs/features
 
