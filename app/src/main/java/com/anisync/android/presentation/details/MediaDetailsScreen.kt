@@ -147,48 +147,48 @@ fun MediaDetailsScreen(
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 topBar = {
                     val state = uiState
-                        // Use standard overlappedFraction for state-based transitions
-                        val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
+                    // Use standard overlappedFraction for state-based transitions
+                    val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
 
-                        TopAppBar(
-                            title = {
-                                // Show title only when scrolled to avoid duplication with the header
-                                AnimatedVisibility(
-                                    visible = isScrolled,
-                                    enter = fadeIn(),
-                                    exit = fadeOut()
-                                ) {
-                                    val title = (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
-                                    Text(
-                                        text = title,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-                                }
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = onBackClick) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(R.string.back),
-                                        // Animate color between White (on image) and OnSurface (on background)
-                                        tint = androidx.compose.animation.animateColorAsState(
-                                            if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                            label = "navIconTint"
-                                        ).value
-                                    )
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
-                                scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            windowInsets = WindowInsets(0),
-                            scrollBehavior = scrollBehavior
-                        )
+                    TopAppBar(
+                        title = {
+                            // Show title only when scrolled to avoid duplication with the header
+                            AnimatedVisibility(
+                                visible = isScrolled,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                val title = (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
+                                Text(
+                                    text = title,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBackClick) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back),
+                                    // Animate color between White (on image) and OnSurface (on background)
+                                    tint = androidx.compose.animation.animateColorAsState(
+                                        if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                        label = "navIconTint"
+                                    ).value
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface,
+                            actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        windowInsets = WindowInsets(0),
+                        scrollBehavior = scrollBehavior
+                    )
                 },
                 floatingActionButton = {
                     val state = uiState

@@ -31,7 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -76,50 +76,35 @@ fun CharacterDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            // Use standard overlappedFraction for state-based transitions
-            val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
-
-            TopAppBar(
+            // Extract name safely for the title
+            val title = (uiState as? CharacterDetailsUiState.Success)?.details?.name ?: ""
+            
+            LargeTopAppBar(
                 title = {
-                    AnimatedVisibility(
-                        visible = isScrolled,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        // Extract name safely
-                        val title = (uiState as? CharacterDetailsUiState.Success)?.details?.name ?: ""
-                        Text(
-                            text = title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
+                    Text(
+                        text = title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = androidx.compose.animation.animateColorAsState(
-                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                label = "navIconTint"
-                            ).value
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 ),
                 windowInsets = WindowInsets(0),
                 scrollBehavior = scrollBehavior
