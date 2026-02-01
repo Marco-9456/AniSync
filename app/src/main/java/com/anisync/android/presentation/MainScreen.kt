@@ -1,7 +1,6 @@
 package com.anisync.android.presentation
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
@@ -20,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -128,32 +126,18 @@ fun MainScreen() {
                     navItems.forEach { item ->
                         val isSelected = currentDestination?.hasRoute(item.routeClass) == true
 
-                        // Cache theme colors for ColorProducer lambda
-                        val selectedColor = MaterialTheme.colorScheme.primary
-                        val unselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-
-                        val iconColor by animateColorAsState(
-                            targetValue = if (isSelected) selectedColor else unselectedColor,
-                            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-                            label = "IconColor"
-                        )
-
                         NavigationBarItem(
                             icon = {
-                                val title = stringResource(item.titleResId)
                                 Icon(
                                     imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = title,
-                                    tint = iconColor
+                                    contentDescription = stringResource(item.titleResId)
                                 )
                             },
                             label = {
                                 Text(
                                     text = stringResource(item.titleResId),
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    // ColorProducer lambda: avoids recomposition when only color changes
-                                    color = { if (isSelected) selectedColor else unselectedColor }
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                             },
                             selected = isSelected,
@@ -165,14 +149,7 @@ fun MainScreen() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
+                            }
                         )
                     }
                 }
