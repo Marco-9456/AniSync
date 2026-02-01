@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,26 +22,34 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -52,10 +59,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import com.anisync.android.R
@@ -67,92 +77,69 @@ import kotlin.math.roundToInt
 
 /**
  * Configuration activity for the UpNext widget.
- * 
+ *
  * This activity is launched when the user adds a new UpNext widget or
  * long-presses an existing widget and selects "Configure" (if supported).
- * 
- * The user can configure:
- * - Maximum number of items to display
- * - Whether to show countdown timers
- * - Whether to include planning entries
- * - Whether to show "Available Now" entries
  */
 @AndroidEntryPoint
 class UpNextWidgetConfigActivity : ComponentActivity() {
-    
+
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
-        // Set the result to CANCELED initially. This way if the user backs out,
-        // the widget host is notified that the configuration was cancelled.
+
         setResult(RESULT_CANCELED)
-        
-        // Get the widget ID from the intent extras
+
         appWidgetId = intent?.extras?.getInt(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
-        
-        // If no valid widget ID, finish immediately
+
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
             finish()
             return
         }
-        
+
         setContent {
             AppTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    WidgetConfigScreen(
-                        onSave = { config -> saveConfiguration(config) },
-                        onCancel = { finish() }
-                    )
-                }
+                WidgetConfigScreen(
+                    onSave = { config -> saveConfiguration(config) },
+                    onCancel = { finish() }
+                )
             }
         }
     }
-    
+
     private fun saveConfiguration(config: WidgetConfigState) {
         val scope = kotlinx.coroutines.MainScope()
         scope.launch {
             try {
-                // Get the GlanceId for this widget
                 val glanceId = GlanceAppWidgetManager(this@UpNextWidgetConfigActivity)
                     .getGlanceIdBy(appWidgetId)
-                
-                // Update the widget state with the configuration
+
                 updateAppWidgetState(this@UpNextWidgetConfigActivity, glanceId) { prefs ->
                     prefs[UpNextWidgetConfig.ShowCountdownKey] = config.showCountdown
                     prefs[UpNextWidgetConfig.MaxItemsKey] = config.maxItems
                     prefs[UpNextWidgetConfig.IncludePlanningKey] = config.includePlanning
                     prefs[UpNextWidgetConfig.ShowAvailableNowKey] = config.showAvailableNow
                 }
-                
-                // Update the widget
+
                 UpNextWidget().update(this@UpNextWidgetConfigActivity, glanceId)
-                
-                // Return success
+
                 val resultIntent = Intent().apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                 }
                 setResult(RESULT_OK, resultIntent)
                 finish()
             } catch (e: Exception) {
-                // If something goes wrong, just finish with cancel
                 finish()
             }
         }
     }
 }
 
-/**
- * State holder for widget configuration
- */
 data class WidgetConfigState(
     val showCountdown: Boolean = UpNextWidgetConfig.DEFAULT_SHOW_COUNTDOWN,
     val maxItems: Int = UpNextWidgetConfig.DEFAULT_MAX_ITEMS,
@@ -160,103 +147,47 @@ data class WidgetConfigState(
     val showAvailableNow: Boolean = UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WidgetConfigScreen(
     onSave: (WidgetConfigState) -> Unit,
     onCancel: () -> Unit
 ) {
+    // State
     var showCountdown by remember { mutableStateOf(UpNextWidgetConfig.DEFAULT_SHOW_COUNTDOWN) }
     var maxItems by remember { mutableFloatStateOf(UpNextWidgetConfig.DEFAULT_MAX_ITEMS.toFloat()) }
     var includePlanning by remember { mutableStateOf(UpNextWidgetConfig.DEFAULT_INCLUDE_PLANNING) }
     var showAvailableNow by remember { mutableStateOf(UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW) }
-    
-    Column(
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
+    Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Header
-        Column {
-            Text(
-                text = stringResource(R.string.widget_config_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.widget_config_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Configuration Options
-        ConfigSection(title = stringResource(R.string.widget_config_section_display)) {
-            // Max Items Slider
-            MaxItemsSlider(
-                value = maxItems,
-                onValueChange = { maxItems = it }
-            )
-            
-            // Show Countdown Toggle
-            ConfigToggle(
-                icon = Icons.Default.Schedule,
-                title = stringResource(R.string.widget_config_show_countdown),
-                description = stringResource(R.string.widget_config_show_countdown_desc),
-                checked = showCountdown,
-                onCheckedChange = { showCountdown = it }
-            )
-            
-            // Show Available Now Toggle
-            ConfigToggle(
-                icon = Icons.Default.Visibility,
-                title = stringResource(R.string.widget_config_show_available),
-                description = stringResource(R.string.widget_config_show_available_desc),
-                checked = showAvailableNow,
-                onCheckedChange = { showAvailableNow = it }
-            )
-        }
-        
-        ConfigSection(title = stringResource(R.string.widget_config_section_content)) {
-            // Include Planning Toggle
-            ConfigToggle(
-                icon = Icons.Default.CalendarMonth,
-                title = stringResource(R.string.widget_config_include_planning),
-                description = stringResource(R.string.widget_config_include_planning_desc),
-                checked = includePlanning,
-                onCheckedChange = { includePlanning = it }
-            )
-        }
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        // Action Buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedButton(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            LargeTopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.widget_config_title),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.cancel))
-            }
-            
-            Button(
-                onClick = {
+            )
+        },
+        bottomBar = {
+            ConfigBottomBar(
+                onSave = {
                     onSave(
                         WidgetConfigState(
                             showCountdown = showCountdown,
@@ -266,8 +197,291 @@ private fun WidgetConfigScreen(
                         )
                     )
                 },
+                onCancel = onCancel
+            )
+        }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = innerPadding,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                // Hero Section: Item Count
+                ItemCountSelector(
+                    value = maxItems,
+                    onValueChange = { maxItems = it }
+                )
+            }
+
+            item {
+                // Section: Content Rules
+                ConfigGroup(title = stringResource(R.string.widget_config_section_content)) {
+                    ConfigOption(
+                        icon = Icons.Default.CalendarMonth,
+                        title = stringResource(R.string.widget_config_include_planning),
+                        description = stringResource(R.string.widget_config_include_planning_desc),
+                        checked = includePlanning,
+                        onCheckedChange = { includePlanning = it }
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    ConfigOption(
+                        icon = Icons.Default.Visibility,
+                        title = stringResource(R.string.widget_config_show_available),
+                        description = stringResource(R.string.widget_config_show_available_desc),
+                        checked = showAvailableNow,
+                        onCheckedChange = { showAvailableNow = it }
+                    )
+                }
+            }
+
+            item {
+                // Section: Display Options
+                ConfigGroup(title = stringResource(R.string.widget_config_section_display)) {
+                    ConfigOption(
+                        icon = Icons.Default.Schedule,
+                        title = stringResource(R.string.widget_config_show_countdown),
+                        description = stringResource(R.string.widget_config_show_countdown_desc),
+                        checked = showCountdown,
+                        onCheckedChange = { showCountdown = it }
+                    )
+                }
+            }
+
+            item {
+                // Bottom padding to ensure content isn't hidden by navigation bars if bottomBar is transparent
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfigGroup(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+        )
+
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfigOption(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium
+            )
+        },
+        supportingContent = {
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        leadingContent = {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (checked) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceContainerHighest
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (checked) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent
+        ),
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun ItemCountSelector(
+    value: Float,
+    onValueChange: (Float) -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        // Hero card using Secondary Container for Tonal emphasis
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            ),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Layers,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = stringResource(R.string.widget_config_max_items).uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = value.roundToInt().toString(),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+
+                Text(
+                    text = "Items visible on widget",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Slider(
+                    value = value,
+                    onValueChange = onValueChange,
+                    valueRange = UpNextWidgetConfig.MIN_ITEMS.toFloat()..UpNextWidgetConfig.MAX_ITEMS.toFloat(),
+                    steps = UpNextWidgetConfig.MAX_ITEMS - UpNextWidgetConfig.MIN_ITEMS - 1,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${UpNextWidgetConfig.MIN_ITEMS}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = "${UpNextWidgetConfig.MAX_ITEMS}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfigBottomBar(
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Column {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(16.dp)
+                .windowInsetsPadding(WindowInsets.safeDrawing), // Handle nav bar insets
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onCancel,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                contentPadding = PaddingValues(vertical = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.cancel))
+            }
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Icon(
                     Icons.Default.Check,
@@ -278,193 +492,5 @@ private fun WidgetConfigScreen(
                 Text(stringResource(R.string.widget_config_add_widget))
             }
         }
-    }
-}
-
-@Composable
-private fun ConfigSection(
-    title: String,
-    content: @Composable () -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                content()
-            }
-        }
-    }
-}
-
-@Composable
-private fun MaxItemsSlider(
-    value: Float,
-    onValueChange: (Float) -> Unit
-) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Outlined.Numbers,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Column {
-                    Text(
-                        text = stringResource(R.string.widget_config_max_items),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = stringResource(R.string.widget_config_max_items_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            // Current value badge
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = value.roundToInt().toString(),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = UpNextWidgetConfig.MIN_ITEMS.toFloat()..UpNextWidgetConfig.MAX_ITEMS.toFloat(),
-            steps = UpNextWidgetConfig.MAX_ITEMS - UpNextWidgetConfig.MIN_ITEMS - 1,
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "${UpNextWidgetConfig.MIN_ITEMS}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "${UpNextWidgetConfig.MAX_ITEMS}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun ConfigToggle(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    val iconBackground by animateColorAsState(
-        targetValue = if (checked) 
-            MaterialTheme.colorScheme.primaryContainer 
-        else 
-            MaterialTheme.colorScheme.surfaceContainerHighest,
-        label = "iconBackground"
-    )
-    val iconTint by animateColorAsState(
-        targetValue = if (checked) 
-            MaterialTheme.colorScheme.onPrimaryContainer 
-        else 
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        label = "iconTint"
-    )
-    
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(iconBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
     }
 }
