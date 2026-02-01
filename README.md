@@ -154,7 +154,7 @@ mindmap
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/AniSync.git
+   git clone https://github.com/Marco-9456/AniSync.git
    cd AniSync
    ```
 

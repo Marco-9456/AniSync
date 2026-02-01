@@ -34,11 +34,11 @@ Before contributing, ensure you have:
 # 1. Fork the repository on GitHub
 
 # 2. Clone your fork
-git clone https://github.com/YOUR_USERNAME/AniSync.git
+git clone https://github.com/YOUR_FORK/AniSync.git
 cd AniSync
 
 # 3. Add upstream remote
-git remote add upstream https://github.com/ORIGINAL_OWNER/AniSync.git
+git remote add upstream https://github.com/Marco-9456/AniSync.git
 
 # 4. Create a feature branch
 git checkout -b feature/your-feature-name
@@ -620,8 +620,8 @@ suspend fun getMedia(id: Int): Result<Media>
 
 If you have questions not covered here:
 
-1. Check existing [Issues](https://github.com/YOUR_USERNAME/AniSync/issues)
-2. Search [Discussions](https://github.com/YOUR_USERNAME/AniSync/discussions)
+1. Check existing [Issues](https://github.com/Marco-9456/AniSync/issues)
+2. Search [Discussions](https://github.com/Marco-9456/AniSync/discussions)
 3. Open a new Discussion for questions
 4. Open an Issue for bugs/features
 
