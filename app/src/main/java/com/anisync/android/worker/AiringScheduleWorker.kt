@@ -13,8 +13,8 @@ import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.widget.AiringTodayWidget
 import com.anisync.android.widget.WeeklyCalendarWidget
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.Optional
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 

@@ -15,8 +15,8 @@ import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.Optional
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
 import javax.inject.Inject
 
 class NotificationRepositoryImpl @Inject constructor(

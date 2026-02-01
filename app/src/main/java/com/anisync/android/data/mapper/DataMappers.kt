@@ -3,7 +3,7 @@ package com.anisync.android.data.mapper
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.FuzzyDateInput
 import com.anisync.android.type.MediaListStatus
-import com.apollographql.apollo3.api.Optional
+import com.apollographql.apollo.api.Optional
 import java.util.Calendar
 
 

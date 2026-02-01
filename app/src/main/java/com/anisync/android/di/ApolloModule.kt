@@ -1,6 +1,6 @@
 package com.anisync.android.di
 
-import com.apollographql.apollo3.ApolloClient
+import com.apollographql.apollo.ApolloClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

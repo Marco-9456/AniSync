@@ -1,7 +1,7 @@
 package com.anisync.android.data.util
 
 import com.anisync.android.domain.Result
-import com.apollographql.apollo3.exception.ApolloException
+import com.apollographql.apollo.exception.ApolloException
 
 /**
  * Executes a network call and catches any exceptions, wrapping the result in [Result].

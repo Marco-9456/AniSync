@@ -25,8 +25,8 @@ import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.VoiceActor
 import com.anisync.android.util.stripHtml
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.Optional
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

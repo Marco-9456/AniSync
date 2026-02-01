@@ -7,9 +7,9 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.type.MediaType
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.Optional
-import com.apollographql.apollo3.exception.ApolloException
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.exception.ApolloException
 import javax.inject.Inject
 
 class SearchRepositoryImpl @Inject constructor(

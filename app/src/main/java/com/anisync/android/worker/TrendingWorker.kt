@@ -9,8 +9,8 @@ import com.anisync.android.GetTrendingQuery
 import com.anisync.android.data.local.dao.TrendingDao
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.type.MediaSeason
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.Optional
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.Calendar

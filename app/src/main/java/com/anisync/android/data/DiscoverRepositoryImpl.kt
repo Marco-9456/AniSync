@@ -12,9 +12,9 @@ import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSort
 import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaType
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.Optional
-import com.apollographql.apollo3.exception.ApolloException
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.exception.ApolloException
 import javax.inject.Inject
 
 class DiscoverRepositoryImpl @Inject constructor(
