@@ -3,9 +3,11 @@ package com.anisync.android.presentation.statistics
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StatisticsRepository
 import com.anisync.android.domain.UserStatistics
+import com.anisync.android.presentation.navigation.Statistics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +25,8 @@ class StatisticsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Get userId from navigation arguments
-    private val userId: Int = savedStateHandle.get<Int>("userId") ?: 0
+    // Get userId from type-safe navigation route
+    private val userId: Int = savedStateHandle.toRoute<Statistics>().userId
 
     private val _uiState = MutableStateFlow<StatisticsUiState>(StatisticsUiState.Loading)
     val uiState: StateFlow<StatisticsUiState> = _uiState.asStateFlow()
