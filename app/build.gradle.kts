@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -91,10 +92,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += "-Xannotation-default-target=param-property"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -103,6 +100,13 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
@@ -144,11 +148,8 @@ dependencies {
     // Apollo GraphQL
     implementation(libs.apollo.runtime)
 
-    // Coil
+// Coil
     implementation(libs.coil.compose)
-
-    // Graphics Shapes for shape morphing animations
-    implementation(libs.androidx.graphics.shapes)
 
     // Security Crypto for encrypted prefs
     implementation(libs.security.crypto)
@@ -181,5 +182,7 @@ apollo {
             endpointUrl.set("https://graphql.anilist.co")
             schemaFile.set(file("src/main/graphql/schema.graphqls"))
         }
+        // Apollo 4 requires explicit opt-in for certain features
+        generateKotlinModels.set(true)
     }
 }
