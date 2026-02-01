@@ -14,19 +14,26 @@
 bin/
 gen/
 out/
-docs/
 build/
 .gradle/
-.TODO/
 .cxx/
 .externalNativeBuild/
+
+# Gradle wrapper (generated, can be recreated with 'gradle wrapper')
+gradlew
+gradlew.bat
+gradle/wrapper/
+
+# Apollo GraphQL generated files (regenerated on build)
+app/build/generated/source/apollo/
 
 # Local configuration file (sdk path, etc)
 local.properties
 
-# Proguard events logs
+# Proguard
 proguard_logs/
 proguard-files/
+mapping/
 
 # Log Files
 *.log
@@ -37,6 +44,9 @@ proguard-files/
 # Android Studio captures folder
 captures/
 
+# Android Studio profiling
+*.hprof
+
 # IntelliJ / Android Studio
 .idea/
 *.iml
@@ -46,20 +56,59 @@ captures/
 .classpath
 .project
 
+# Kotlin
+.kotlin/
+
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
 # Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Environment variables
+# Linux
+*~
+
+# Environment variables & secrets
 .env
-
-# Dex Metadata
-*.dm
-*.salive
+.env.*
+*.env
 
 # Signing keys and credentials
 *.keystore
 *.jks
+*.pk8
+*.pem
 keystore.properties
+signing.properties
+
+# Release & distribution
+/release/
+*.signed.apk
+*.dm
+
+# Crash reports
+crashlytics-build.properties
+fabric.properties
+
+# Google Services (contains API keys)
+google-services.json
+
+# Documentation (if generated)
+docs/
+
+# Personal notes & todos
+.TODO/
+AGENTS.md
+*.todo
+notes.md
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.bak
+*.jar
