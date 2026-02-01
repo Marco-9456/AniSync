@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
+import com.anisync.android.presentation.util.AppMotion
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -104,6 +105,9 @@ fun MediaCharactersGridScreen(
                             )
                         }
                     } else {
+                        val placementSpec = AppMotion.rememberOffsetSpatialSpec()
+                        val fadeSpec = AppMotion.rememberEffectsSpec()
+                        
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 100.dp),
                             contentPadding = PaddingValues(16.dp),
@@ -115,7 +119,11 @@ fun MediaCharactersGridScreen(
                                 CharacterItem(
                                     character = character,
                                     onClick = { onCharacterClick(character.id) },
-                                    modifier = Modifier.animateItem()
+                                    modifier = Modifier.animateItem(
+                                        fadeInSpec = fadeSpec,
+                                        fadeOutSpec = fadeSpec,
+                                        placementSpec = placementSpec
+                                    )
                                 )
                             }
                         }

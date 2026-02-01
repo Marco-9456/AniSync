@@ -50,8 +50,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.formatChaptersCount
@@ -61,7 +64,6 @@ import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
-import com.anisync.android.data.TitleLanguage
 import java.util.Locale
 
 /**
@@ -103,7 +105,7 @@ fun DiscoverMediaCard(
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
-    transitionPrefix: String = "discover"
+    transitionPrefix: String = TransitionKeys.DISCOVER
 ) {
     val cardShape = remember(style) {
         when (style) {
@@ -122,20 +124,15 @@ fun DiscoverMediaCard(
         }
     }
 
-    val motionScheme = MaterialTheme.motionScheme
-    val spatialSpec = remember(motionScheme, sharedTransitionScope) {
-        if (sharedTransitionScope != null) {
-            @Suppress("UNCHECKED_CAST")
-            motionScheme.defaultSpatialSpec<Rect>()
-        } else null
-    }
-
-    val effectsSpec = remember(motionScheme, sharedTransitionScope) {
-        if (sharedTransitionScope != null) {
-            @Suppress("UNCHECKED_CAST")
-            motionScheme.defaultEffectsSpec<Float>()
-        } else null
-    }
+    // Use memoized motion specs from AppMotion (only when shared transition is enabled)
+    val spatialSpec = if (sharedTransitionScope != null) AppMotion.rememberSpatialSpec() else null
+    val effectsSpec = if (sharedTransitionScope != null) AppMotion.rememberEffectsSpec() else null
+    
+    // Use TransitionKeys for consistent key generation
+    val coverKey = TransitionKeys.cover(transitionPrefix, item.mediaId)
+    val gradientKey = TransitionKeys.gradient(transitionPrefix, item.mediaId)
+    val titleKey = TransitionKeys.title(transitionPrefix, item.mediaId)
+    val cacheKey = TransitionKeys.imageCacheKey(transitionPrefix, item.mediaId)
 
     val outlineVariant = MaterialTheme.colorScheme.outlineVariant
     val title = item.getTitle(titleLanguage)
@@ -157,7 +154,7 @@ fun DiscoverMediaCard(
     val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
         with(sharedTransitionScope) {
             baseModifier.sharedElement(
-                sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_cover_${item.mediaId}"),
+                sharedContentState = rememberSharedContentState(key = coverKey),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ -> spatialSpec },
                 clipInOverlayDuringTransition = OverlayClip(cardShape)
@@ -177,6 +174,7 @@ fun DiscoverMediaCard(
                 item = item,
                 transitionPrefix = transitionPrefix,
                 titleLanguage = titleLanguage,
+                titleKey = titleKey,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 spatialSpec = spatialSpec
@@ -186,6 +184,9 @@ fun DiscoverMediaCard(
                 style = style,
                 transitionPrefix = transitionPrefix,
                 titleLanguage = titleLanguage,
+                cacheKey = cacheKey,
+                gradientKey = gradientKey,
+                titleKey = titleKey,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 spatialSpec = spatialSpec,
@@ -202,6 +203,9 @@ private fun ImmersiveCardContent(
     style: CardStyle,
     transitionPrefix: String,
     titleLanguage: TitleLanguage,
+    cacheKey: String,
+    gradientKey: String,
+    titleKey: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     spatialSpec: FiniteAnimationSpec<Rect>?,
@@ -210,7 +214,6 @@ private fun ImmersiveCardContent(
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Background Image
         val context = LocalContext.current
-        val cacheKey = remember(transitionPrefix, item.mediaId) { "${transitionPrefix}_cover_${item.mediaId}" }
         val imageRequest = remember(item.coverUrl, cacheKey) {
             ImageRequest.Builder(context)
                 .data(item.coverUrl)
@@ -233,7 +236,7 @@ private fun ImmersiveCardContent(
                 Modifier
                     .fillMaxSize()
                     .sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_gradient_${item.mediaId}"),
+                        sharedContentState = rememberSharedContentState(key = gradientKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
                         enter = fadeIn(effectsSpec),
@@ -317,7 +320,7 @@ private fun ImmersiveCardContent(
             val titleModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
                 with(sharedTransitionScope) {
                     Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_title_${item.mediaId}"),
+                        sharedContentState = rememberSharedContentState(key = titleKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
                         resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
@@ -389,6 +392,7 @@ private fun ListItemContent(
     item: LibraryEntry,
     transitionPrefix: String,
     titleLanguage: TitleLanguage,
+    titleKey: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     spatialSpec: FiniteAnimationSpec<Rect>?
@@ -442,7 +446,7 @@ private fun ListItemContent(
             val titleModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
                 with(sharedTransitionScope) {
                     Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_title_${item.mediaId}"),
+                        sharedContentState = rememberSharedContentState(key = titleKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
                         resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()

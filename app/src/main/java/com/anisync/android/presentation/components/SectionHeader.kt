@@ -136,7 +136,10 @@ fun SectionHeader(
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .bouncyClickable(onClick = onActionClick)
+                    .bouncyClickable(
+                        onClick = onActionClick,
+                        clipShape = RoundedCornerShape(50)
+                    )
                     .semantics {
                         role = Role.Button
                         contentDescription = actionLabel ?: "See all $title"

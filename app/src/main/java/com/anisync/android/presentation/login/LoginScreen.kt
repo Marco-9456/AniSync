@@ -283,6 +283,10 @@ private fun LoginCard(onLoginClick: () -> Unit) {
 @Composable
 private fun AnimatedMeshBackground() {
     val infiniteTransition = rememberInfiniteTransition(label = "background_anim")
+    
+    // Capture theme colors outside Canvas scope
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
 
     // Animate two "blobs" moving slowly
     val offset1 by infiniteTransition.animateFloat(
@@ -334,7 +338,7 @@ private fun AnimatedMeshBackground() {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF4C662B).copy(alpha = 0.4f), // Primary from theme
+                        primaryColor.copy(alpha = 0.4f),
                         Color.Transparent
                     ),
                     center = Offset(size.width / 2, size.height / 2),
@@ -361,7 +365,7 @@ private fun AnimatedMeshBackground() {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF386663).copy(alpha = 0.3f), // Tertiary from theme
+                        tertiaryColor.copy(alpha = 0.3f),
                         Color.Transparent
                     ),
                     center = Offset(size.width / 2, size.height / 2),

@@ -62,7 +62,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
@@ -100,7 +100,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
@@ -224,19 +224,13 @@ fun LibraryScreen(
         }
     }
 
-    // Per-page scroll states using key-based rememberSaveable
+    // Per-page scroll states
     // Each status tab maintains its own scroll position
     val gridScrollStates = statuses.associateWith { status ->
-        rememberSaveable(
-            key = "grid_${status.name}",
-            saver = LazyGridState.Saver
-        ) { LazyGridState() }
+        rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
     }
     val listScrollStates = statuses.associateWith { status ->
-        rememberSaveable(
-            key = "list_${status.name}",
-            saver = LazyListState.Saver
-        ) { LazyListState() }
+        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     }
 
     // Optimization: Memoize inputField to avoid recreating the lambda on every recomposition.
@@ -341,8 +335,8 @@ fun LibraryScreen(
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                 )
 
-                // Status tabs with ScrollableTabRow
-                ScrollableTabRow(
+                // Status tabs with PrimaryScrollableTabRow
+                PrimaryScrollableTabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -649,7 +643,8 @@ private fun LibrarySearchResultCard(
             .bouncyClickable(
                 onClick = onClick,
                 role = Role.Button,
-                onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                clipShape = RoundedCornerShape(12.dp)
             )
     ) {
         Row(
@@ -725,7 +720,8 @@ fun NewListCard(
                 .bouncyClickable(
                     onClick = onClick,
                     role = Role.Button,
-                    onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                    onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                    clipShape = RoundedCornerShape(16.dp)
                 )
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
@@ -850,7 +846,8 @@ fun NewListCard(
                             .bouncyClickable(
                                 onClick = { haptic.click(); onIncrement() },
                                 role = Role.Button,
-                                onClickLabel = stringResource(R.string.a11y_action_increment_progress)
+                                onClickLabel = stringResource(R.string.a11y_action_increment_progress),
+                                clipShape = RoundedCornerShape(8.dp)
                             ),
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
@@ -870,7 +867,8 @@ fun NewListCard(
                             .bouncyClickable(
                                 onClick = { haptic.click(); onDecrement() },
                                 role = Role.Button,
-                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress)
+                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress),
+                                clipShape = RoundedCornerShape(8.dp)
                             ),
                         shape = RoundedCornerShape(8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh

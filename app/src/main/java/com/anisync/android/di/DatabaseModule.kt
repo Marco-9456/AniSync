@@ -31,7 +31,7 @@ object DatabaseModule {
             // During development, destroy and recreate database on schema changes
             // TODO: Replace with proper migrations before production release
             .addMigrations(AppDatabase.MIGRATION_12_13)
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

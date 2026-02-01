@@ -61,17 +61,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import com.anisync.android.presentation.details.components.ExternalLinksSection
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -85,6 +82,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
@@ -97,9 +95,13 @@ import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
+import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.RelationItem
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.TransitionShapes
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.toIcon
+import com.anisync.android.presentation.util.sharedBoundsWithShapeMorph
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.util.getTitle
@@ -127,7 +129,12 @@ fun MediaDetailsScreen(
         viewModel.loadMedia(mediaId)
     }
 
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    // Use memoized motion specs from AppMotion
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+    
+    // Use TransitionKeys for consistent key generation
+    val containerKey = TransitionKeys.container(sourceScreen, mediaId)
+    
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     
@@ -271,7 +278,7 @@ fun MediaDetailsScreen(
                         // Apply only bottom padding to keep banner at top
                         .padding(bottom = paddingValues.calculateBottomPadding())
                         .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "${sourceScreen}_container_${mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = containerKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
@@ -520,7 +527,13 @@ fun PageHeaderSection(
     animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: com.anisync.android.data.TitleLanguage
 ) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    // Use memoized motion specs from AppMotion
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+    
+    // Use TransitionKeys for consistent key generation
+    val coverKey = TransitionKeys.cover(sourceScreen, details.id)
+    val titleKey = TransitionKeys.title(sourceScreen, details.id)
+    val cacheKey = TransitionKeys.imageCacheKey(sourceScreen, details.id)
     
     Box(
         modifier = Modifier
@@ -567,18 +580,20 @@ fun PageHeaderSection(
                     modifier = Modifier
                         .width(110.dp)
                         .height(160.dp)
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_cover_${details.id}"),
+                        .sharedBoundsWithShapeMorph(
+                            sharedContentState = rememberSharedContentState(key = coverKey),
+                            sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            zIndexInOverlay = 1f,
-                            placeholderSize = SharedTransitionScope.PlaceholderSize.AnimatedSize
+                            // On detail screen, we use expanded as resting and card as target
+                            // This creates the reverse morph when navigating back
+                            restingShape = TransitionShapes.cardExpanded(),
+                            targetShape = TransitionShapes.cardResting(),
+                            boundsTransform = { _, _ -> spatialSpec }
                         ),
                     shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
                     elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    val cacheKey = "${sourceScreen}_cover_${details.id}"
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(details.coverUrl)
@@ -611,7 +626,7 @@ fun PageHeaderSection(
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "${sourceScreen}_media_title_${details.id}"),
+                            sharedContentState = rememberSharedContentState(key = titleKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()

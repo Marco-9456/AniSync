@@ -35,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -52,16 +51,18 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
-import com.anisync.android.data.TitleLanguage
 import com.anisync.android.util.getTitle
 
 /**
@@ -115,9 +116,13 @@ fun LibraryMediaCard(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    // Note: unused variable effectsSpec removed or can be used if needed
-    // val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    // Use memoized motion specs from AppMotion
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+    val effectsSpec = AppMotion.rememberSlowEffectsSpec()
+    
+    // Use TransitionKeys for consistent key generation
+    val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.id)
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.id)
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
@@ -125,7 +130,7 @@ fun LibraryMediaCard(
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+        animationSpec = effectsSpec,
         label = "Progress"
     )
 
@@ -141,18 +146,20 @@ fun LibraryMediaCard(
                             onLongClick = onEdit,
                             role = Role.Button,
                             onClickLabel = stringResource(R.string.a11y_action_open_details, title),
-                            onLongClickLabel = stringResource(R.string.a11y_action_edit_entry)
+                            onLongClickLabel = stringResource(R.string.a11y_action_edit_entry),
+                            clipShape = RoundedCornerShape(16.dp)
                         )
                     } else {
                         Modifier.bouncyClickable(
                             onClick = onClick,
                             role = Role.Button,
-                            onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                            onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                            clipShape = RoundedCornerShape(16.dp)
                         )
                     }
                 )
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.id}"),
+                    sharedContentState = rememberSharedContentState(key = containerKey),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ -> spatialSpec },
                     clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
@@ -169,13 +176,15 @@ fun LibraryMediaCard(
                         onLongClick = onEdit,
                         role = Role.Button,
                         onClickLabel = stringResource(R.string.a11y_action_open_details, title),
-                        onLongClickLabel = stringResource(R.string.a11y_action_edit_entry)
+                        onLongClickLabel = stringResource(R.string.a11y_action_edit_entry),
+                        clipShape = RoundedCornerShape(16.dp)
                     )
                 } else {
                     Modifier.bouncyClickable(
                         onClick = onClick,
                         role = Role.Button,
-                        onClickLabel = stringResource(R.string.a11y_action_open_details, title)
+                        onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                        clipShape = RoundedCornerShape(16.dp)
                     )
                 }
             )
@@ -190,7 +199,6 @@ fun LibraryMediaCard(
         Column(modifier = Modifier.fillMaxSize()) {
             // Image section
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                val cacheKey = "library_cover_${entry.id}"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(entry.coverUrl)
@@ -328,7 +336,8 @@ fun LibraryMediaCard(
                                         onEdit()
                                     },
                                     role = Role.Button,
-                                    onClickLabel = stringResource(R.string.a11y_action_edit_entry)
+                                    onClickLabel = stringResource(R.string.a11y_action_edit_entry),
+                                    clipShape = RoundedCornerShape(12.dp)
                                 ),
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -368,7 +377,8 @@ fun LibraryMediaCard(
                                     onDecrement()
                                 },
                                 role = Role.Button,
-                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress)
+                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress),
+                                clipShape = RoundedCornerShape(12.dp)
                             ),
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -391,7 +401,8 @@ fun LibraryMediaCard(
                                     onIncrement()
                                 },
                                 role = Role.Button,
-                                onClickLabel = stringResource(R.string.a11y_action_increment_progress)
+                                onClickLabel = stringResource(R.string.a11y_action_increment_progress),
+                                clipShape = RoundedCornerShape(12.dp)
                             ),
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primaryContainer,

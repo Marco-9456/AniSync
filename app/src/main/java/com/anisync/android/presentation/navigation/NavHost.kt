@@ -66,18 +66,14 @@ fun AniSyncNavHost(
     modifier: Modifier = Modifier
 ) {
     // =============================================================================
-    // MATERIAL 3 MOTION SPECS
+    // MATERIAL 3 MOTION SPECS (Memoized)
     // =============================================================================
     val motionScheme = MaterialTheme.motionScheme
     
-    // Spatial spec for movement (translation)
-    val spatialSpec = motionScheme.defaultSpatialSpec<IntOffset>()
-    
-    // Scale spec for zooming effects
-    val scaleSpec = motionScheme.defaultSpatialSpec<Float>()
-    
-    // Effects spec for opacity/fade
-    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+    // Memoize specs to avoid recreation on each recomposition
+    val spatialSpec = remember(motionScheme) { motionScheme.defaultSpatialSpec<IntOffset>() }
+    val scaleSpec = remember(motionScheme) { motionScheme.defaultSpatialSpec<Float>() }
+    val effectsSpec = remember(motionScheme) { motionScheme.defaultEffectsSpec<Float>() }
 
     // Constants for transitions
     val sharedAxisOffsetFraction = 0.20f

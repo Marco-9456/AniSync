@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.util.AppMotion
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -35,6 +36,9 @@ fun HorizontalMediaList(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
+    val placementSpec = AppMotion.rememberOffsetSpatialSpec()
+    val fadeSpec = AppMotion.rememberEffectsSpec()
+    
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -52,7 +56,11 @@ fun HorizontalMediaList(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "discover",
-                modifier = Modifier.animateItem()
+                modifier = Modifier.animateItem(
+                    fadeInSpec = fadeSpec,
+                    fadeOutSpec = fadeSpec,
+                    placementSpec = placementSpec
+                )
             )
         }
     }

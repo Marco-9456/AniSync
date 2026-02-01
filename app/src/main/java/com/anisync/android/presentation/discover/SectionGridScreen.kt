@@ -48,6 +48,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.discover.components.FormatFilterRow
+import com.anisync.android.presentation.util.AppMotion
 
 /**
  * Grid screen for displaying all media items from a Discover section.
@@ -234,6 +235,9 @@ fun SectionGridScreen(
                         }
                     }
                     else -> {
+                        val placementSpec = AppMotion.rememberOffsetSpatialSpec()
+                        val fadeSpec = AppMotion.rememberEffectsSpec()
+                        
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 150.dp),
                             contentPadding = PaddingValues(16.dp),
@@ -251,7 +255,11 @@ fun SectionGridScreen(
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope,
                                     transitionPrefix = "sectiongrid",
-                                    modifier = Modifier.animateItem()
+                                    modifier = Modifier.animateItem(
+                                        fadeInSpec = fadeSpec,
+                                        fadeOutSpec = fadeSpec,
+                                        placementSpec = placementSpec
+                                    )
                                 )
                             }
                             

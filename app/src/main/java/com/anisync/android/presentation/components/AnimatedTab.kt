@@ -1,9 +1,9 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package com.anisync.android.presentation.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -69,16 +71,19 @@ fun AnimatedTab(
     // Neighbor displacement
     val offsetX = remember { Animatable(0f) }
     
-    val animationSpec = tween<Float>(durationMillis = 250, easing = FastOutSlowInEasing)
+    // Use M3 Expressive motion specs instead of hardcoded tween
+    val motionScheme = MaterialTheme.motionScheme
+    val scaleAnimationSpec = remember(motionScheme) { motionScheme.fastSpatialSpec<Float>() }
+    val colorAnimationSpec = remember(motionScheme) { motionScheme.defaultEffectsSpec<Color>() }
     
-    // Color transitions
+    // Color transitions using M3 Expressive effects spec
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         },
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = colorAnimationSpec,
         label = "TabBackground"
     )
     
@@ -88,7 +93,7 @@ fun AnimatedTab(
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = colorAnimationSpec,
         label = "TabContent"
     )
     
@@ -96,8 +101,8 @@ fun AnimatedTab(
     LaunchedEffect(isSelected) {
         if (isSelected) {
             launch {
-                scale.animateTo(1.15f, animationSpec = animationSpec)
-                scale.animateTo(1f, animationSpec = animationSpec)
+                scale.animateTo(1.15f, animationSpec = scaleAnimationSpec)
+                scale.animateTo(1f, animationSpec = scaleAnimationSpec)
             }
         } else {
             // Instantly reset scale for non-selected tabs
@@ -114,8 +119,8 @@ fun AnimatedTab(
                 val direction = if (distance > 0) 1 else -1
                 val offsetValue = 12f * direction
                 launch {
-                    offsetX.animateTo(offsetValue, animationSpec = animationSpec)
-                    offsetX.animateTo(0f, animationSpec = animationSpec)
+                    offsetX.animateTo(offsetValue, animationSpec = scaleAnimationSpec)
+                    offsetX.animateTo(0f, animationSpec = scaleAnimationSpec)
                 }
             } else {
                 // Instantly reset offset for non-neighbor tabs

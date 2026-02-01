@@ -58,3 +58,8 @@ Thumbs.db
 # Dex Metadata
 *.dm
 *.salive
+
+# Signing keys and credentials
+*.keystore
+*.jks
+keystore.properties

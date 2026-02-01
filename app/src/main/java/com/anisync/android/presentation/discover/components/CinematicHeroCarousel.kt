@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -41,10 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
-import com.anisync.android.data.TitleLanguage
 
 /**
  * A cinematic Hero Carousel component rewritten from scratch according to
@@ -86,7 +89,7 @@ fun CinematicHeroCarousel(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun HeroCarouselItem(
     item: LibraryEntry,
@@ -97,6 +100,14 @@ private fun HeroCarouselItem(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
+    // Use memoized motion specs from AppMotion
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+    
+    // Use TransitionKeys for consistent key generation
+    val artKey = "hero_art_${item.mediaId}"
+    val titleKey = "hero_title_${item.mediaId}"
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.HERO, item.mediaId)
+    
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxSize(),
@@ -104,7 +115,6 @@ private fun HeroCarouselItem(
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val cacheKey = remember(item.mediaId) { "hero_cover_${item.mediaId}" }
             val imageRequest = remember(item.coverUrl, cacheKey) {
                 ImageRequest.Builder(context)
                     .data(item.coverUrl)
@@ -122,8 +132,9 @@ private fun HeroCarouselItem(
                     modifier = Modifier
                         .fillMaxSize()
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "hero_art_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope
+                            sharedContentState = rememberSharedContentState(key = artKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec }
                         )
                 )
             }
@@ -202,8 +213,9 @@ private fun HeroCarouselItem(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "hero_title_${item.mediaId}"),
-                            animatedVisibilityScope = animatedVisibilityScope
+                            sharedContentState = rememberSharedContentState(key = titleKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec }
                         )
                     )
                 }

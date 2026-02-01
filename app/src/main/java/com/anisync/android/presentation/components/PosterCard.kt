@@ -22,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -37,8 +36,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
-import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.util.getTitle
 
 /**
@@ -65,13 +66,20 @@ fun PosterCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
-    transitionPrefix: String = "poster",
+    transitionPrefix: String = TransitionKeys.POSTER,
     aspectRatio: Float = 0.7f,
     shape: Shape = RoundedCornerShape(12.dp)
 ) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    // Use memoized motion specs from AppMotion
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+    val effectsSpec = AppMotion.rememberEffectsSpec()
     val title = item.getTitle(titleLanguage)
+    
+    // Use TransitionKeys for consistent key generation
+    val coverKey = TransitionKeys.cover(transitionPrefix, item.mediaId)
+    val gradientKey = TransitionKeys.gradient(transitionPrefix, item.mediaId)
+    val titleKey = TransitionKeys.title(transitionPrefix, item.mediaId)
+    val cacheKey = TransitionKeys.imageCacheKey(transitionPrefix, item.mediaId)
 
     with(sharedTransitionScope) {
         Card(
@@ -88,14 +96,13 @@ fun PosterCard(
                     onClickLabel = stringResource(R.string.a11y_action_open_details, title)
                 )
                 .sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_cover_${item.mediaId}"),
+                    sharedContentState = rememberSharedContentState(key = coverKey),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ -> spatialSpec },
                     clipInOverlayDuringTransition = OverlayClip(shape)
                 )
         ) {
             Box {
-                val cacheKey = "${transitionPrefix}_cover_${item.mediaId}"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(item.coverUrl)
@@ -115,9 +122,8 @@ fun PosterCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(aspectRatio)
-                        .aspectRatio(aspectRatio)
                         .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_gradient_${item.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = gradientKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             enter = fadeIn(effectsSpec),
@@ -146,7 +152,7 @@ fun PosterCard(
                         .align(Alignment.BottomStart)
                         .padding(8.dp)
                         .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "${transitionPrefix}_media_title_${item.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = titleKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()

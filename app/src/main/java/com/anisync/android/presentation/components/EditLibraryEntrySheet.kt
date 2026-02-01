@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,6 +20,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -182,10 +182,16 @@ fun EditLibraryEntrySheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
+        val scrollState = rememberScrollState()
+        val overscrollEffect = rememberOverscrollEffect()
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    state = scrollState,
+                    overscrollEffect = overscrollEffect
+                )
                 .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -468,10 +474,16 @@ private fun StatusSection(
     ) {
         SectionTitle(text = stringResource(R.string.filter_status))
 
+        val statusScrollState = rememberScrollState()
+        val statusOverscrollEffect = rememberOverscrollEffect()
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+                .horizontalScroll(
+                    state = statusScrollState,
+                    overscrollEffect = statusOverscrollEffect
+                ),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             statusOptions.forEach { option ->
@@ -518,10 +530,6 @@ private fun ProgressSection(
     onProgressChange: (Int) -> Unit
 ) {
     val maxProgress = total ?: 999
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress.toFloat(),
-        label = "progress_animation"
-    )
 
     val unitString = if (isAnime) {
         stringResource(R.string.stat_episodes)
@@ -575,7 +583,7 @@ private fun ProgressSection(
             }
 
             Slider(
-                value = animatedProgress,
+                value = progress.toFloat(),
                 onValueChange = { value ->
                     onProgressChange(value.roundToInt().coerceIn(0, maxProgress))
                 },
@@ -624,11 +632,6 @@ private fun ScoreSection(
     score: Double,
     onScoreChange: (Double) -> Unit
 ) {
-    val animatedScore by animateFloatAsState(
-        targetValue = score.toFloat(),
-        label = "score_animation"
-    )
-
     val scoreColor by animateColorAsState(
         targetValue = when {
             score >= 8.0 -> MaterialTheme.colorScheme.primary
@@ -674,7 +677,7 @@ private fun ScoreSection(
         }
 
         Slider(
-            value = animatedScore,
+            value = score.toFloat(),
             onValueChange = {
                 val rounded = (it * 2).roundToInt() / 2.0
                 onScoreChange(rounded.coerceIn(0.0, 10.0))

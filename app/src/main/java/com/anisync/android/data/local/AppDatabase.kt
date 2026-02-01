@@ -41,13 +41,13 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
-            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Add nextAiringEpisodeTime to LibraryEntryEntity
-                database.execSQL("ALTER TABLE library_entries ADD COLUMN nextAiringEpisodeTime INTEGER")
+                db.execSQL("ALTER TABLE library_entries ADD COLUMN nextAiringEpisodeTime INTEGER")
 
                 // Add nextAiringEpisode and nextAiringEpisodeTime to MediaDetailsEntity
-                database.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisode INTEGER")
-                database.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisodeTime INTEGER")
+                db.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisode INTEGER")
+                db.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisodeTime INTEGER")
             }
         }
     }

@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -40,11 +39,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.TransitionShapes
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.sharedBoundsWithShapeMorph
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
-import com.anisync.android.data.TitleLanguage
 import com.anisync.android.util.getTitle
 
 /**
@@ -67,8 +70,14 @@ fun MediaCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
+    // Use memoized motion specs from AppMotion
+    val spatialSpec = AppMotion.rememberSpatialSpec()
     val title = item.getTitle(titleLanguage)
+    
+    // Use TransitionKeys for consistent key generation
+    val coverKey = TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId)
+    val titleKey = TransitionKeys.title(TransitionKeys.DISCOVER, item.mediaId)
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId)
 
     with(sharedTransitionScope) {
         Card(
@@ -84,16 +93,17 @@ fun MediaCard(
                     role = Role.Button,
                     onClickLabel = stringResource(R.string.a11y_action_open_details, title)
                 )
-                .sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "discover_media_cover_${item.mediaId}"),
+                .sharedBoundsWithShapeMorph(
+                    sharedContentState = rememberSharedContentState(key = coverKey),
+                    sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+                    restingShape = TransitionShapes.cardResting(),
+                    targetShape = TransitionShapes.cardExpanded(),
+                    boundsTransform = { _, _ -> spatialSpec }
                 )
         ) {
             Column {
                 // Image Container
-                val cacheKey = "discover_cover_${item.mediaId}"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(item.coverUrl)
@@ -123,7 +133,7 @@ fun MediaCard(
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "discover_media_title_${item.mediaId}"),
+                            sharedContentState = rememberSharedContentState(key = titleKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
