@@ -124,8 +124,8 @@ fun StatisticsScreen(
     val canRefresh by remember(selectedTabIndex) {
         derivedStateOf {
             scrollBehavior.state.collapsedFraction == 0f &&
-                currentListState.firstVisibleItemIndex == 0 &&
-                currentListState.firstVisibleItemScrollOffset == 0
+                    currentListState.firstVisibleItemIndex == 0 &&
+                    currentListState.firstVisibleItemScrollOffset == 0
         }
     }
 
@@ -299,7 +299,7 @@ private fun AnimeStatisticsContent(
         // 4. Formats Breakdown
         if (stats.formatDistribution.isNotEmpty()) {
             item {
-                FormatsGridSection(stats.formatDistribution)
+                FormatsSection(stats.formatDistribution)
             }
         }
 
@@ -720,7 +720,7 @@ private fun ReleaseYearsHistogramSection(years: List<ReleaseYearStat>) {
 }
 
 @Composable
-private fun FormatsGridSection(formats: List<FormatStat>) {
+private fun FormatsSection(formats: List<FormatStat>) {
     Column {
         SectionHeader(
             title = stringResource(R.string.statistics_formats),
@@ -729,71 +729,75 @@ private fun FormatsGridSection(formats: List<FormatStat>) {
         )
 
         Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.padding(horizontal = 16.dp)
+            shape = RoundedCornerShape(24.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                formats.chunked(2).forEachIndexed { index, pair ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        pair.forEach { format ->
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .background(
-                                        MaterialTheme.colorScheme.surface,
-                                        RoundedCornerShape(12.dp)
-                                    )
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.secondaryContainer,
-                                            CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = getFormatIcon(format.format),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = formatDisplayName(format.format),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = format.count.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                        }
-                        // Fill empty space if odd number
-                        if (pair.size < 2) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-                    if (index < formats.chunked(2).lastIndex) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                formats.forEachIndexed { index, format ->
+                    FormatRow(format)
+
+                    if (index < formats.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .align(Alignment.CenterHorizontally)
+                                .padding(vertical = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            thickness = 1.dp
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FormatRow(format: FormatStat) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getFormatIcon(format.format),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = formatDisplayName(format.format),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${format.count}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            RatingBadge(meanScore = format.meanScore, size = RatingBadgeSize.Small)
         }
     }
 }
@@ -952,6 +956,54 @@ private fun StudioCardModern(studio: StudioStat) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+private enum class RatingBadgeSize {
+    Default,
+    Small
+}
+
+@Composable
+private fun RatingBadge(
+    meanScore: Float,
+    size: RatingBadgeSize = RatingBadgeSize.Default
+) {
+    val hasRating = meanScore > 0.0f
+
+    val (iconSize, textStyle, verticalPadding) = when (size) {
+        RatingBadgeSize.Default -> Triple(12.dp, MaterialTheme.typography.labelMedium, 4.dp)
+        RatingBadgeSize.Small -> Triple(10.dp, MaterialTheme.typography.labelSmall, 2.dp)
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50)) // Pill shape
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(horizontal = 8.dp, vertical = verticalPadding)
+    ) {
+        Icon(
+            Icons.Default.Star,
+            contentDescription = null,
+            modifier = Modifier.size(iconSize),
+            tint = if (hasRating) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            }
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = if (hasRating) formatDecimal(meanScore) else stringResource(R.string.not_available),
+            style = textStyle,
+            fontWeight = FontWeight.Bold,
+            color = if (hasRating) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            }
+        )
     }
 }
 
