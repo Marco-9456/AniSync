@@ -269,6 +269,18 @@
     <string name="statistics_manga">Manga</string>
     <string name="statistics_total_manga">Total Manga</string>
     <string name="statistics_chapters">Chapters</string>
+    <string name="statistics_volumes_read">Volumes Read</string>
+    <string name="statistics_no_manga_stats">No manga statistics available</string>
+    <string name="statistics_entries">%d entries</string>
+    <string name="statistics_no_data">No statistics data available</string>
+
+    <!-- Accessibility: Statistics -->
+    <string name="a11y_stat_card">%1$s: %2$s</string>
+    <string name="a11y_score_bar">Score %1$d: %2$d entries</string>
+    <string name="a11y_genre_stat">%1$s genre: %2$d entries, average score %3$.1f</string>
+    <string name="a11y_studio_stat">%1$s studio: %2$d anime, average score %3$.1f</string>
+    <string name="a11y_format_stat">%1$s format: %2$d entries, average score %3$.1f</string>
+    <string name="a11y_year_stat">Year %1$d: %2$d entries</string>
 
     <!-- ==================== ACCESSIBILITY ==================== -->
 

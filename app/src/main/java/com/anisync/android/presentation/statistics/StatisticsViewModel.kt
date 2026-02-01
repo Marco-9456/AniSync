@@ -29,11 +29,14 @@ class StatisticsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<StatisticsUiState>(StatisticsUiState.Loading)
     val uiState: StateFlow<StatisticsUiState> = _uiState.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         loadStatistics()
     }
 
-    fun loadStatistics() {
+    private fun loadStatistics() {
         viewModelScope.launch {
             _uiState.value = StatisticsUiState.Loading
             
@@ -45,6 +48,26 @@ class StatisticsViewModel @Inject constructor(
                     _uiState.value = StatisticsUiState.Error(result.message)
                 }
             }
+        }
+    }
+
+    /**
+     * Refresh statistics data with pull-to-refresh indicator.
+     */
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            
+            when (val result = statisticsRepository.getUserStatistics(userId)) {
+                is Result.Success -> {
+                    _uiState.value = StatisticsUiState.Success(result.data)
+                }
+                is Result.Error -> {
+                    _uiState.value = StatisticsUiState.Error(result.message)
+                }
+            }
+            
+            _isRefreshing.value = false
         }
     }
 
