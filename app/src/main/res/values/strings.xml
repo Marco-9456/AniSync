@@ -236,6 +236,35 @@
     <string name="widget_quick_update_description">Update episode progress quickly</string>
     <string name="widget_trending_description">See what\'s trending in anime</string>
 
+    <!-- Widget Configuration -->
+    <string name="widget_config_title">Configure Widget</string>
+    <string name="widget_config_subtitle">Customize how your Up Next widget looks and behaves</string>
+    <string name="widget_config_section_display">Display Options</string>
+    <string name="widget_config_section_content">Content Options</string>
+    <string name="widget_config_max_items">Maximum Items</string>
+    <string name="widget_config_max_items_desc">Number of entries shown in expanded view</string>
+    <string name="widget_config_show_countdown">Show Countdown</string>
+    <string name="widget_config_show_countdown_desc">Display countdown timer for upcoming episodes</string>
+    <string name="widget_config_show_available">Show Available Now</string>
+    <string name="widget_config_show_available_desc">Include episodes that have already aired</string>
+    <string name="widget_config_include_planning">Include Planning</string>
+    <string name="widget_config_include_planning_desc">Show entries from your Planning list</string>
+    <string name="widget_config_add_widget">Add Widget</string>
+
+    <!-- Statistics Screen -->
+    <string name="statistics_title">Statistics</string>
+    <string name="statistics_total_anime">Total Anime</string>
+    <string name="statistics_episodes">Episodes</string>
+    <string name="statistics_days_watched">Days Watched</string>
+    <string name="statistics_mean_score">Mean Score</string>
+    <string name="statistics_score_distribution">Score Distribution</string>
+    <string name="statistics_top_genres">Top Genres</string>
+    <string name="statistics_formats">Formats</string>
+    <string name="statistics_top_studios">Top Studios</string>
+    <string name="statistics_by_year">By Release Year</string>
+    <string name="statistics_anime_label">anime</string>
+    <string name="statistics_view">View Statistics</string>
+
     <!-- ==================== ACCESSIBILITY ==================== -->
 
     <!-- Accessibility: Actions -->

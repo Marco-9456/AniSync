@@ -82,3 +82,12 @@ data class CharacterMediaGrid(
     val characterId: Int,
     val characterName: String
 )
+
+/**
+ * Statistics screen route for displaying user anime/manga statistics.
+ * @param userId The AniList user ID
+ */
+@Serializable
+data class Statistics(
+    val userId: Int
+)

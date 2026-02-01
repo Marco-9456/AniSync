@@ -6,7 +6,7 @@ schema {
 type Query {
   MediaListCollection(userName: String, type: MediaType): MediaListCollection
   Page(page: Int, perPage: Int): Page
-  User(name: String): User
+  User(id: Int, name: String): User
   Media(id: Int): Media
   Character(id: Int): Character
   Viewer: User
@@ -307,7 +307,59 @@ type UserAnimeStatistics {
   count: Int
   minutesWatched: Int
   meanScore: Float
+  episodesWatched: Int
   statuses: [UserStatusStatistic]
+  genres(limit: Int, sort: [UserStatisticsSort]): [UserGenreStatistic]
+  scores(limit: Int, sort: [UserStatisticsSort]): [UserScoreStatistic]
+  formats(limit: Int, sort: [UserStatisticsSort]): [UserFormatStatistic]
+  releaseYears(limit: Int, sort: [UserStatisticsSort]): [UserReleaseYearStatistic]
+  studios(limit: Int, sort: [UserStatisticsSort]): [UserStudioStatistic]
+}
+
+type UserGenreStatistic {
+  genre: String
+  count: Int!
+  meanScore: Float
+  minutesWatched: Int
+}
+
+type UserScoreStatistic {
+  score: Int
+  count: Int!
+  meanScore: Float
+  minutesWatched: Int
+}
+
+type UserFormatStatistic {
+  format: MediaFormat
+  count: Int!
+  meanScore: Float
+  minutesWatched: Int
+}
+
+type UserReleaseYearStatistic {
+  releaseYear: Int
+  count: Int!
+  meanScore: Float
+  minutesWatched: Int
+}
+
+type UserStudioStatistic {
+  studio: Studio
+  count: Int!
+  meanScore: Float
+  minutesWatched: Int
+}
+
+enum UserStatisticsSort {
+  ID
+  ID_DESC
+  COUNT
+  COUNT_DESC
+  PROGRESS
+  PROGRESS_DESC
+  MEAN_SCORE
+  MEAN_SCORE_DESC
 }
 
 type UserStatusStatistic {

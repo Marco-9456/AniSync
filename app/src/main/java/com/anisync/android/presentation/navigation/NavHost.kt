@@ -31,6 +31,7 @@ import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
+import com.anisync.android.presentation.statistics.StatisticsScreen
 
 // =============================================================================
 // TAB ORDER HELPER
@@ -264,11 +265,15 @@ fun AniSyncNavHost(
                 val onFavorites = remember(navController) {
                     { navController.navigate(SectionGrid("Favorites", "favorites")) }
                 }
+                val onStatistics = remember(navController) {
+                    { userId: Int -> navController.navigate(Statistics(userId)) }
+                }
 
                 ProfileScreen(
                     onMediaClick = onProfileMediaClick,
                     onLogoutClick = onLogout,
                     onFavoritesClick = onFavorites,
+                    onStatisticsClick = onStatistics,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -428,6 +433,20 @@ fun AniSyncNavHost(
                 CharacterMediaGridScreen(
                     characterId = grid.characterId,
                     characterName = grid.characterName,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // STATISTICS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            composable<Statistics>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                StatisticsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

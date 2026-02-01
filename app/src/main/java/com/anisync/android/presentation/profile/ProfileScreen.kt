@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -77,6 +78,7 @@ fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
     onLogoutClick: () -> Unit,
     onFavoritesClick: () -> Unit = {},
+    onStatisticsClick: (userId: Int) -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -129,6 +131,7 @@ fun ProfileScreen(
                         onEditProfileClick = onShowEditProfile,
                         onMediaClick = onMediaClick,
                         onFavoritesClick = onFavoritesClick,
+                        onStatisticsClick = { onStatisticsClick(state.profile.id) },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
                         titleLanguage = titleLanguage
@@ -179,6 +182,7 @@ fun ProfileScreenContent(
     onEditProfileClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
     onFavoritesClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI
@@ -193,7 +197,8 @@ fun ProfileScreenContent(
             ProfileTopSection(
                 profile = profile,
                 onSettingsClick = onSettingsClick,
-                onEditProfileClick = onEditProfileClick
+                onEditProfileClick = onEditProfileClick,
+                onStatisticsClick = onStatisticsClick
             )
         }
 
@@ -236,7 +241,8 @@ fun ProfileScreenContent(
 fun ProfileTopSection(
     profile: UserProfile,
     onSettingsClick: () -> Unit,
-    onEditProfileClick: () -> Unit
+    onEditProfileClick: () -> Unit,
+    onStatisticsClick: () -> Unit
 ) {
     val context = LocalContext.current
     
@@ -366,6 +372,23 @@ fun ProfileTopSection(
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         )
+                    )
+                }
+
+                // Statistics Icon Button
+                FilledTonalIconButton(
+                    onClick = onStatisticsClick,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BarChart,
+                        contentDescription = stringResource(R.string.statistics_view),
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
