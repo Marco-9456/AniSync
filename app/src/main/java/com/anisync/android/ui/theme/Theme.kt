@@ -287,6 +287,7 @@ fun AppTheme(
   MaterialTheme(
     colorScheme = colorScheme,
     typography = AppTypography,
+    shapes = AppShapes,
     motionScheme = MotionScheme.expressive(),
     content = content
   )

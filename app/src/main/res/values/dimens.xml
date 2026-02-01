@@ -51,6 +51,13 @@
     <dimen name="skeleton_text_width_small">60dp</dimen>
 
     <dimen name="skeleton_stats_height">80dp</dimen>
+    
+    <!-- Statistics Screen -->
+    <dimen name="statistics_section_spacing">24dp</dimen>
+    <dimen name="statistics_score_label_width">36dp</dimen>
+    <dimen name="statistics_score_count_width">44dp</dimen>
+    <dimen name="statistics_score_bar_vertical_padding">8dp</dimen>
+    <dimen name="statistics_horizontal_card_spacing">16dp</dimen>
     <dimen name="skeleton_cast_item_width">80dp</dimen>
     
     <dimen name="studio_name_max_width">120dp</dimen>

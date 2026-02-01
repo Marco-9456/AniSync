@@ -20,6 +20,7 @@
     <string name="off">Off</string>
     <string name="error_oops">Oops!</string>
     <string name="feature_coming_soon">Soon</string>
+    <string name="not_available">N/A</string>
 
     <!-- Media Types -->
     <string name="media_type_anime">Anime</string>
