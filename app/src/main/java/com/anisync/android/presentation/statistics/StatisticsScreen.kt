@@ -1,3 +1,4 @@
+
 package com.anisync.android.presentation.statistics
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -23,9 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
@@ -42,6 +42,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -67,6 +70,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.MangaStatistics
 import com.anisync.android.domain.ReleaseYearStat
 import com.anisync.android.domain.ScoreStat
 import com.anisync.android.domain.StudioStat
@@ -76,6 +80,10 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.shimmerEffect
 
+enum class StatisticsType {
+    ANIME, MANGA
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatisticsScreen(
@@ -84,6 +92,7 @@ fun StatisticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var selectedType by remember { mutableStateOf(StatisticsType.ANIME) }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -122,11 +131,57 @@ fun StatisticsScreen(
             }
 
             is StatisticsUiState.Success -> {
-                StatisticsContent(
-                    statistics = state.statistics,
-                    modifier = Modifier.padding(innerPadding)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    StatisticsTypeTabs(
+                        selectedType = selectedType,
+                        onTypeSelected = { selectedType = it }
+                    )
+                    
+                    StatisticsContent(
+                        statistics = state.statistics,
+                        type = selectedType
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun StatisticsTypeTabs(
+    selectedType: StatisticsType,
+    onTypeSelected: (StatisticsType) -> Unit
+) {
+    TabRow(
+        selectedTabIndex = selectedType.ordinal,
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary,
+        divider = {},
+        indicator = { tabPositions ->
+             androidx.compose.material3.TabRowDefaults.SecondaryIndicator(
+                 Modifier.tabIndicatorOffset(tabPositions[selectedType.ordinal]),
+                 color = MaterialTheme.colorScheme.primary
+             )
+        }
+    ) {
+        StatisticsType.values().forEach { type ->
+            Tab(
+                selected = selectedType == type,
+                onClick = { onTypeSelected(type) },
+                text = {
+                    Text(
+                        text = when (type) {
+                            StatisticsType.ANIME -> stringResource(R.string.statistics_anime)
+                            StatisticsType.MANGA -> stringResource(R.string.statistics_manga)
+                        },
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                }
+            )
         }
     }
 }
@@ -134,53 +189,78 @@ fun StatisticsScreen(
 @Composable
 private fun StatisticsContent(
     statistics: UserStatistics,
+    type: StatisticsType,
     modifier: Modifier = Modifier
 ) {
-    val animeStats = statistics.animeStats
-
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 24.dp, top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Overview Cards
-        item {
-            OverviewSection(animeStats)
-        }
-
-        // Score Distribution
-        if (animeStats.scoreDistribution.isNotEmpty()) {
+        if (type == StatisticsType.ANIME) {
+            val animeStats = statistics.animeStats
+            // Overview Cards
             item {
-                ScoreDistributionSection(animeStats.scoreDistribution)
+                OverviewSection(animeStats)
             }
-        }
 
-        // Top Genres
-        if (animeStats.genreDistribution.isNotEmpty()) {
-            item {
-                GenresSection(animeStats.genreDistribution)
+            // Score Distribution
+            if (animeStats.scoreDistribution.isNotEmpty()) {
+                item {
+                    ScoreDistributionSection(animeStats.scoreDistribution)
+                }
             }
-        }
 
-        // Formats
-        if (animeStats.formatDistribution.isNotEmpty()) {
-            item {
-                FormatsSection(animeStats.formatDistribution)
+            // Top Genres
+            if (animeStats.genreDistribution.isNotEmpty()) {
+                item {
+                    GenresSection(animeStats.genreDistribution)
+                }
             }
-        }
 
-        // Top Studios
-        if (animeStats.studioDistribution.isNotEmpty()) {
-            item {
-                StudiosSection(animeStats.studioDistribution)
+            // Formats
+            if (animeStats.formatDistribution.isNotEmpty()) {
+                item {
+                    FormatsSection(animeStats.formatDistribution)
+                }
             }
-        }
 
-        // Release Years
-        if (animeStats.releaseYearDistribution.isNotEmpty()) {
-            item {
-                ReleaseYearsSection(animeStats.releaseYearDistribution)
+            // Top Studios
+            if (animeStats.studioDistribution.isNotEmpty()) {
+                item {
+                    StudiosSection(animeStats.studioDistribution)
+                }
             }
+
+            // Release Years
+            if (animeStats.releaseYearDistribution.isNotEmpty()) {
+                item {
+                    ReleaseYearsSection(animeStats.releaseYearDistribution)
+                }
+            }
+        } else {
+             // Manga
+             val mangaStats = statistics.mangaStats
+             if (mangaStats != null) {
+                 item {
+                     MangaOverviewSection(mangaStats)
+                 }
+             } else {
+                 item {
+                     Box(
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .padding(32.dp),
+                         contentAlignment = Alignment.Center
+                     ) {
+                         Text(
+                             text = "No manga statistics available",
+                             style = MaterialTheme.typography.bodyLarge,
+                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                         )
+                     }
+                 }
+             }
         }
     }
 }
@@ -226,6 +306,46 @@ private fun OverviewSection(stats: AnimeStatistics) {
                 modifier = Modifier.weight(1f),
                 valueColor = MaterialTheme.colorScheme.primary
             )
+        }
+    }
+}
+
+@Composable
+private fun MangaOverviewSection(stats: MangaStatistics) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatCard(
+                icon = Icons.Default.Book,
+                label = stringResource(R.string.statistics_total_manga),
+                value = stats.totalCount.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                icon = Icons.AutoMirrored.Filled.MenuBook,
+                label = stringResource(R.string.statistics_chapters),
+                value = stats.chaptersRead.toString(),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+             StatCard(
+                icon = Icons.Default.Star,
+                label = stringResource(R.string.statistics_mean_score),
+                value = "%.1f".format(stats.meanScore),
+                modifier = Modifier.weight(1f),
+                valueColor = MaterialTheme.colorScheme.primary
+            )
+             Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

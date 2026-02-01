@@ -45,6 +45,11 @@ query GetUserStatistics($userId: Int) {
           minutesWatched
         }
       }
+      manga {
+        count
+        chaptersRead
+        meanScore
+      }
     }
   }
 }

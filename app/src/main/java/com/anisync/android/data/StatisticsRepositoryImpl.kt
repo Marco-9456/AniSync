@@ -4,6 +4,7 @@ import com.anisync.android.GetUserStatisticsQuery
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.MangaStatistics
 import com.anisync.android.domain.ReleaseYearStat
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreStat
@@ -33,6 +34,8 @@ class StatisticsRepositoryImpl @Inject constructor(
 
             val animeStats = user.statistics?.anime
                 ?: return Result.Error("No anime statistics available")
+
+            val mangaStats = user.statistics?.manga
 
             val minutesWatched = animeStats.minutesWatched ?: 0
             val daysWatched = minutesWatched / 1440f // Convert minutes to days
@@ -104,7 +107,14 @@ class StatisticsRepositoryImpl @Inject constructor(
                             )
                         }
                     } ?: emptyList()
-                )
+                ),
+                mangaStats = mangaStats?.let {
+                    MangaStatistics(
+                        totalCount = it.count ?: 0,
+                        chaptersRead = it.chaptersRead ?: 0,
+                        meanScore = (it.meanScore ?: 0.0).toFloat()
+                    )
+                }
             )
 
             Result.Success(userStatistics)

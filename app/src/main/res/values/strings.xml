@@ -265,6 +265,11 @@
     <string name="statistics_anime_label">anime</string>
     <string name="statistics_view">View Statistics</string>
 
+    <string name="statistics_anime">Anime</string>
+    <string name="statistics_manga">Manga</string>
+    <string name="statistics_total_manga">Total Manga</string>
+    <string name="statistics_chapters">Chapters</string>
+
     <!-- ==================== ACCESSIBILITY ==================== -->
 
     <!-- Accessibility: Actions -->

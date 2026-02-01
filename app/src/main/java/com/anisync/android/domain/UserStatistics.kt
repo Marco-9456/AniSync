@@ -10,7 +10,8 @@ import androidx.compose.runtime.Immutable
 data class UserStatistics(
     val userId: Int,
     val userName: String,
-    val animeStats: AnimeStatistics
+    val animeStats: AnimeStatistics,
+    val mangaStats: MangaStatistics?
 )
 
 /**
@@ -29,6 +30,16 @@ data class AnimeStatistics(
     val formatDistribution: List<FormatStat>,
     val releaseYearDistribution: List<ReleaseYearStat>,
     val studioDistribution: List<StudioStat>
+)
+
+/**
+ * Manga-specific statistics.
+ */
+@Immutable
+data class MangaStatistics(
+    val totalCount: Int,
+    val chaptersRead: Int,
+    val meanScore: Float
 )
 
 /**
