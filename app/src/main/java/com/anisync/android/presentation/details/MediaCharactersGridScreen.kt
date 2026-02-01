@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,14 +40,16 @@ import com.anisync.android.presentation.details.components.CharacterItem
  * Grid screen displaying all characters from a media's cast.
  * Used when "See All" is clicked on the Cast section in MediaDetailsScreen.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun MediaCharactersGridScreen(
     mediaId: Int,
     mediaTitle: String,
     onBackClick: () -> Unit,
     onCharacterClick: (Int) -> Unit,
-    viewModel: MediaDetailsViewModel = hiltViewModel()
+    viewModel: MediaDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -123,7 +128,9 @@ fun MediaCharactersGridScreen(
                                         fadeInSpec = fadeSpec,
                                         fadeOutSpec = fadeSpec,
                                         placementSpec = placementSpec
-                                    )
+                                    ),
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
                                 )
                             }
                         }

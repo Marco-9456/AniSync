@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.details
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,14 +40,16 @@ import com.anisync.android.presentation.details.components.RelationItem
  * Grid screen displaying all related media.
  * Used when "See All" is clicked on the Related section in MediaDetailsScreen.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun MediaRelationsGridScreen(
     mediaId: Int,
     mediaTitle: String,
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit,
-    viewModel: MediaDetailsViewModel = hiltViewModel()
+    viewModel: MediaDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -123,7 +128,9 @@ fun MediaRelationsGridScreen(
                                         fadeInSpec = fadeSpec,
                                         fadeOutSpec = fadeSpec,
                                         placementSpec = placementSpec
-                                    )
+                                    ),
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
                                 )
                             }
                         }

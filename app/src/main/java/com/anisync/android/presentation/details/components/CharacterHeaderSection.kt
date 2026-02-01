@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.details.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,11 +28,18 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterDetails
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterHeaderSection(
-    character: CharacterDetails
+    character: CharacterDetails,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
+    val posterShape = RoundedCornerShape(12.dp)
+    
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,14 +112,33 @@ fun CharacterHeaderSection(
 
 
 
-        // Cover Image (Poster)
-        Card(
-            modifier = Modifier
+        // Cover Image (Poster) with shared element transition
+        val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+            val spatialSpec = AppMotion.rememberSpatialSpec()
+            with(sharedTransitionScope) {
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 24.dp)
+                    .width(130.dp)
+                    .height(190.dp)
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = TransitionKeys.characterImage(character.id)),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec },
+                        clipInOverlayDuringTransition = OverlayClip(posterShape)
+                    )
+            }
+        } else {
+            Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 24.dp)
                 .width(130.dp)
-                .height(190.dp),
-            shape = RoundedCornerShape(12.dp),
+                .height(190.dp)
+        }
+        
+        Card(
+            modifier = cardModifier,
+            shape = posterShape,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {

@@ -1,6 +1,9 @@
 package com.anisync.android.presentation.details
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
@@ -61,13 +64,15 @@ import com.anisync.android.presentation.details.components.NameSection
 // Custom stagger delay for character details (faster reveal)
 private const val CharacterStaggerDelay = 10
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterDetailsScreen(
     characterId: Int,
     onBackClick: () -> Unit,
     onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    viewModel: CharacterDetailsViewModel = hiltViewModel()
+    viewModel: CharacterDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -134,7 +139,9 @@ fun CharacterDetailsScreen(
                     CharacterDetailsContent(
                         character = state.details,
                         // onBackClick handled by Scaffold
-                        onMediaSeeAllClick = { onMediaSeeAllClick(state.details.id, state.details.name) }
+                        onMediaSeeAllClick = { onMediaSeeAllClick(state.details.id, state.details.name) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
                 is CharacterDetailsUiState.Error -> {
@@ -149,10 +156,13 @@ fun CharacterDetailsScreen(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CharacterDetailsContent(
     character: CharacterDetails,
-    onMediaSeeAllClick: () -> Unit
+    onMediaSeeAllClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val listState = rememberLazyListState()
 
@@ -173,7 +183,11 @@ private fun CharacterDetailsContent(
             contentPadding = PaddingValues(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
         ) {
             item {
-                CharacterHeaderSection(character)
+                CharacterHeaderSection(
+                    character = character,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
             }
 
             item {

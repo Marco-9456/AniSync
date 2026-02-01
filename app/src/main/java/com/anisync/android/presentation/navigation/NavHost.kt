@@ -329,7 +329,9 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onMediaSeeAllClick = { characterId, characterName ->
                         navController.navigate(CharacterMediaGrid(characterId, characterName))
-                    }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 
@@ -385,7 +387,9 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onCharacterClick = { characterId ->
                         navController.navigate(CharacterDetails(characterId))
-                    }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 
@@ -405,7 +409,9 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onRelationClick = { relationMediaId ->
                         navController.navigate(MediaDetails(relationMediaId, "relations_grid"))
-                    }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 

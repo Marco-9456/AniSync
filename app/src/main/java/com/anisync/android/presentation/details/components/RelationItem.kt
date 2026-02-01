@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.details.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -21,30 +24,57 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RelationItem(
     relation: RelatedMedia,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
+    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    
     Column(
         modifier = modifier
             .width(dimensionResource(R.dimen.character_item_width))
-            .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
+            .clip(imageShape)
             .clickable(onClick = onClick)
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
     ) {
+        // Apply shared element transition if scopes are provided
+        val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+            val spatialSpec = AppMotion.rememberSpatialSpec()
+            with(sharedTransitionScope) {
+                Modifier
+                    .height(dimensionResource(R.dimen.character_image_height))
+                    .fillMaxWidth()
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = TransitionKeys.relationCover(relation.id)),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec },
+                        clipInOverlayDuringTransition = OverlayClip(imageShape)
+                    )
+                    .clip(imageShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            }
+        } else {
+            Modifier
+                .height(dimensionResource(R.dimen.character_image_height))
+                .fillMaxWidth()
+                .clip(imageShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        }
+        
         AsyncImage(
             model = relation.coverUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier = imageModifier
         )
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
