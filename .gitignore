@@ -97,8 +97,10 @@ fabric.properties
 # Google Services (contains API keys)
 google-services.json
 
-# Documentation (if generated)
-docs/
+# Generated documentation (Dokka, etc.)
+# Note: docs/*.md files ARE tracked for project documentation
+docs/api/
+docs/generated/
 
 # Personal notes & todos
 .TODO/

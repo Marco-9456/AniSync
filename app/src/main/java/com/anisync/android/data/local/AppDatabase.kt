@@ -14,11 +14,24 @@ import com.anisync.android.data.local.entity.UserProfileEntity
 
 /**
  * Room database for offline caching.
- * 
+ *
  * Version History:
- * - v1: Initial schema
- * - v2: Added indices for LibraryEntryEntity (mediaType, status)
- * - v7: Added animeStatusCounts to UserProfileEntity
+ * ─────────────────────────────────────────────────────────────────────────────
+ * v1 (Fresh Start - June 2025):
+ *   - Initial production schema (reset from development iterations)
+ *   - Tables:
+ *     • library_entries - User's anime/manga library with 9 indices for sorting/filtering
+ *     • media_details - Cached media details with characters, relations, external links
+ *     • user_profile - User profile with stats, favorites, and activity
+ *     • airing_schedule - Airing schedule items with watching status
+ *     • trending_media - Trending media for home screen
+ *   - TypeConverters: JSON-based serialization for complex types (Converters.kt)
+ *
+ * Migration Guidelines:
+ *   - Auto-migrations: Use for simple changes (add columns, tables, indices)
+ *   - Manual migrations: Use for complex changes (see Migrations.kt)
+ *   - Always test migrations before release (see MigrationTest.kt)
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 @Database(
     entities = [
@@ -28,8 +41,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         AiringScheduleEntity::class,
         TrendingEntity::class
     ],
-    version = 14, // Increment version
-    exportSchema = false
+    version = 1,
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -38,17 +51,4 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
     abstract fun airingScheduleDao(): com.anisync.android.data.local.dao.AiringScheduleDao
     abstract fun trendingDao(): com.anisync.android.data.local.dao.TrendingDao
-
-    companion object {
-        val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // Add nextAiringEpisodeTime to LibraryEntryEntity
-                db.execSQL("ALTER TABLE library_entries ADD COLUMN nextAiringEpisodeTime INTEGER")
-
-                // Add nextAiringEpisode and nextAiringEpisodeTime to MediaDetailsEntity
-                db.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisode INTEGER")
-                db.execSQL("ALTER TABLE media_details ADD COLUMN nextAiringEpisodeTime INTEGER")
-            }
-        }
-    }
 }

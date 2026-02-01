@@ -3,6 +3,7 @@ package com.anisync.android.di
 import android.content.Context
 import androidx.room.Room
 import com.anisync.android.data.local.AppDatabase
+import com.anisync.android.data.local.Migrations
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.dao.UserProfileDao
@@ -28,9 +29,18 @@ object DatabaseModule {
             AppDatabase::class.java,
             "anisync.db"
         )
-            // During development, destroy and recreate database on schema changes
-            // TODO: Replace with proper migrations before production release
-            .addMigrations(AppDatabase.MIGRATION_12_13)
+            .addMigrations(*Migrations.ALL_MIGRATIONS)
+            // ┌─────────────────────────────────────────────────────────────────┐
+            // │  ⚠️  DEVELOPMENT ONLY - REMOVE BEFORE PRODUCTION RELEASE  ⚠️   │
+            // ├─────────────────────────────────────────────────────────────────┤
+            // │  This allows destructive recreation when migrations are missing │
+            // │                                                                 │
+            // │  Before publishing to Play Store:                               │
+            // │  1. Remove the .fallbackToDestructiveMigration() call below     │
+            // │  2. Ensure all migrations are defined in Migrations.kt          │
+            // │  3. Test upgrade paths from version 1 to current                │
+            // │  4. Run MigrationTest.kt to verify all migrations               │
+            // └─────────────────────────────────────────────────────────────────┘
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
