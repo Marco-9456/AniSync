@@ -8,4 +8,6 @@
     android:updatePeriodMillis="1800000"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:configure="com.anisync.android.widget.config.UpNextWidgetConfigActivity"
+    android:widgetFeatures="reconfigurable" />

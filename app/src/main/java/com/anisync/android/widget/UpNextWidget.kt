@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -28,6 +29,7 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.itemsIndexed
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -53,6 +55,7 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.domain.ExternalLinkType
+import com.anisync.android.widget.config.UpNextWidgetConfig
 import com.anisync.android.widget.core.SizeClass
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntentUtils
@@ -220,24 +223,44 @@ class UpNextWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 val sizeClass = LocalSize.current.toSizeClass()
+                
+                // Read configuration from widget state
+                val prefs = currentState<Preferences>()
+                val showCountdown = prefs[UpNextWidgetConfig.ShowCountdownKey] 
+                    ?: UpNextWidgetConfig.DEFAULT_SHOW_COUNTDOWN
+                val maxItems = prefs[UpNextWidgetConfig.MaxItemsKey] 
+                    ?: UpNextWidgetConfig.DEFAULT_MAX_ITEMS
+                val showAvailableNow = prefs[UpNextWidgetConfig.ShowAvailableNowKey]
+                    ?: UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW
+                
+                // Filter items based on configuration
+                val displayItems = if (showAvailableNow) {
+                    finalDisplayItems.take(maxItems)
+                } else {
+                    val currentTime = System.currentTimeMillis() / 1000
+                    finalDisplayItems
+                        .filter { it.airingTime == 0L || it.airingTime > currentTime }
+                        .take(maxItems)
+                }
 
                 when (sizeClass) {
                     SizeClass.COMPACT -> UpNextCompact(
-                        finalDisplayItems,
+                        displayItems,
                         streamingService,
                         streamingIconBitmap
                     )
 
                     SizeClass.MEDIUM -> UpNextMedium(
-                        finalDisplayItems,
+                        displayItems,
                         streamingService,
                         streamingIconBitmap
                     )
 
                     SizeClass.EXPANDED -> UpNextExpanded(
-                        finalDisplayItems,
+                        displayItems,
                         streamingService,
-                        streamingIconBitmap
+                        streamingIconBitmap,
+                        showCountdown = showCountdown
                     )
                 }
             }
@@ -490,7 +513,8 @@ private fun UpNextMedium(
 private fun UpNextExpanded(
     items: List<UpNextDisplayItem>,
     streamingService: StreamingService,
-    streamingIconBitmap: Bitmap?
+    streamingIconBitmap: Bitmap?,
+    showCountdown: Boolean = true
 ) {
     if (items.isEmpty()) {
         EmptyStateExpanded()
@@ -550,7 +574,8 @@ private fun UpNextExpanded(
                         item = item,
                         isHero = isHero,
                         streamingService = streamingService,
-                        streamingIconBitmap = streamingIconBitmap
+                        streamingIconBitmap = streamingIconBitmap,
+                        showCountdown = showCountdown
                     )
                 }
             }
@@ -563,7 +588,8 @@ private fun CountdownCard(
     item: UpNextDisplayItem,
     isHero: Boolean,
     streamingService: StreamingService,
-    streamingIconBitmap: Bitmap?
+    streamingIconBitmap: Bitmap?,
+    showCountdown: Boolean = true
 ) {
     val context = LocalContext.current
     val detailsIntent = createDetailsIntent(context, item.entry.mediaId)
@@ -676,60 +702,63 @@ private fun CountdownCard(
 
                 Spacer(modifier = GlanceModifier.height(8.dp))
 
-                // FIX: Check if airingTime is valid (greater than 0)
-                if (item.airingTime > 0) {
-                    if (diffSeconds > 0) {
-                        // Future: Episode is airing in the future
-                        val days = TimeUnit.SECONDS.toDays(diffSeconds)
+                // Show time/countdown information if enabled
+                if (showCountdown) {
+                    // FIX: Check if airingTime is valid (greater than 0)
+                    if (item.airingTime > 0) {
+                        if (diffSeconds > 0) {
+                            // Future: Episode is airing in the future
+                            val days = TimeUnit.SECONDS.toDays(diffSeconds)
 
-                        if (days > 0) {
-                            // Show formatted date for > 24 hours
-                            val date = Date(item.airingTime * 1000L)
-                            val format = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+                            if (days > 0) {
+                                // Show formatted date for > 24 hours
+                                val date = Date(item.airingTime * 1000L)
+                                val format = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = format.format(date),
+                                        style = TextStyle(
+                                            color = GlanceTheme.colors.primary,
+                                            fontSize = if (isHero) 16.sp else 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                }
+                            } else {
+                                // < 1 day: Use real-time Chronometer for HH:MM:SS countdown
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CountdownChronometer(
+                                        targetEpochSeconds = item.airingTime
+                                    )
+                                }
+                            }
+                        } else {
+                            // Past: Episode has already aired.
+                            // Since we filtered "stale" episodes in provideGlance,
+                            // if we are here, it means the episode aired within the last 30 minutes.
+                            // Display "AVAILABLE NOW".
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = format.format(date),
+                                    text = "AVAILABLE NOW",
                                     style = TextStyle(
                                         color = GlanceTheme.colors.primary,
-                                        fontSize = if (isHero) 16.sp else 14.sp,
+                                        fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
                             }
-                        } else {
-                            // < 1 day: Use real-time Chronometer for HH:MM:SS countdown
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CountdownChronometer(
-                                    targetEpochSeconds = item.airingTime
-                                )
-                            }
                         }
                     } else {
-                        // Past: Episode has already aired.
-                        // Since we filtered "stale" episodes in provideGlance,
-                        // if we are here, it means the episode aired within the last 30 minutes.
-                        // Display "AVAILABLE NOW".
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "AVAILABLE NOW",
-                                style = TextStyle(
-                                    color = GlanceTheme.colors.primary,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                        // No airing time available? Check if we have *any* date
+                        Text(
+                            text = "Unknown Date",
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
                             )
-                        }
-                    }
-                } else {
-                    // No airing time available? Check if we have *any* date
-                    Text(
-                        text = "Unknown Date",
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
                         )
-                    )
+                    }
                 }
             }
 
