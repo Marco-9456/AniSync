@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionScope.OverlayClip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -131,10 +132,11 @@ private fun HeroCarouselItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .sharedElement(
+                        .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = artKey),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec }
+                            boundsTransform = { _, _ -> spatialSpec },
+                            clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge)
                         )
                 )
             }

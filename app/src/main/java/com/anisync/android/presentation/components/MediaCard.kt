@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionScope.OverlayClip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,9 +44,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
-import com.anisync.android.presentation.util.TransitionShapes
 import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.presentation.util.sharedBoundsWithShapeMorph
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
@@ -93,13 +92,11 @@ fun MediaCard(
                     role = Role.Button,
                     onClickLabel = stringResource(R.string.a11y_action_open_details, title)
                 )
-                .sharedBoundsWithShapeMorph(
+                .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = coverKey),
-                    sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
-                    restingShape = TransitionShapes.cardResting(),
-                    targetShape = TransitionShapes.cardExpanded(),
-                    boundsTransform = { _, _ -> spatialSpec }
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                 )
         ) {
             Column {

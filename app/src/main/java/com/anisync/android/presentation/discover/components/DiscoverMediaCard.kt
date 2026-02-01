@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionScope.OverlayClip
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -153,7 +154,7 @@ fun DiscoverMediaCard(
     // Apply shared element transition if scopes are provided
     val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
         with(sharedTransitionScope) {
-            baseModifier.sharedElement(
+            baseModifier.sharedBounds(
                 sharedContentState = rememberSharedContentState(key = coverKey),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ -> spatialSpec },

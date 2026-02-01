@@ -99,9 +99,7 @@ import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
-import com.anisync.android.presentation.util.TransitionShapes
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.sharedBoundsWithShapeMorph
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.util.getTitle
@@ -459,7 +457,7 @@ fun DetailsPageContent(
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
-                                items(
+                            items(
                                     items = details.characters.take(10),
                                     key = { it.id }
                                 ) { character ->
@@ -471,7 +469,9 @@ fun DetailsPageContent(
                                             com.anisync.android.data.TitleLanguage.NATIVE -> character.nameNative ?: character.nameUserPreferred
                                         }),
                                         onClick = { onCharacterClick(character.id) },
-                                        modifier = Modifier.animateItem()
+                                        modifier = Modifier.animateItem(),
+                                        sharedTransitionScope = sharedTransitionScope,
+                                        animatedVisibilityScope = animatedVisibilityScope
                                     )
                                 }
                             }
@@ -498,7 +498,7 @@ fun DetailsPageContent(
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
-                                items(
+                            items(
                                     items = uniqueRelations,
                                     key = { "${it.id}_${it.relationType}" }
                                 ) { relation ->
@@ -506,7 +506,9 @@ fun DetailsPageContent(
                                     RelationItem(
                                         relation = relation.copy(titleUserPreferred = relation.getTitle(titleLanguage)), // Helper update
                                         onClick = { onRelationClick(relation.id) },
-                                        modifier = Modifier.animateItem()
+                                        modifier = Modifier.animateItem(),
+                                        sharedTransitionScope = sharedTransitionScope,
+                                        animatedVisibilityScope = animatedVisibilityScope
                                     )
                                 }
                             }
@@ -534,6 +536,9 @@ fun PageHeaderSection(
     val coverKey = TransitionKeys.cover(sourceScreen, details.id)
     val titleKey = TransitionKeys.title(sourceScreen, details.id)
     val cacheKey = TransitionKeys.imageCacheKey(sourceScreen, details.id)
+    
+    // Standard rounded corner shape for cover image clip
+    val coverShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
     
     Box(
         modifier = Modifier
@@ -580,17 +585,13 @@ fun PageHeaderSection(
                     modifier = Modifier
                         .width(110.dp)
                         .height(160.dp)
-                        .sharedBoundsWithShapeMorph(
+                        .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = coverKey),
-                            sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
-                            // On detail screen, we use expanded as resting and card as target
-                            // This creates the reverse morph when navigating back
-                            restingShape = TransitionShapes.cardExpanded(),
-                            targetShape = TransitionShapes.cardResting(),
-                            boundsTransform = { _, _ -> spatialSpec }
+                            boundsTransform = { _, _ -> spatialSpec },
+                            clipInOverlayDuringTransition = OverlayClip(coverShape)
                         ),
-                    shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
+                    shape = coverShape,
                     elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {

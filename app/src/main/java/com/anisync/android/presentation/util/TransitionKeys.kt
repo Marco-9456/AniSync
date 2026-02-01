@@ -45,6 +45,12 @@ object TransitionKeys {
     /** Relations grid screen prefix */
     const val RELATIONS_GRID = "relations_grid"
     
+    /** Cast section prefix */
+    const val CAST = "cast"
+    
+    /** Relations section prefix */
+    const val RELATIONS = "relations"
+    
     /** Poster card generic prefix */
     const val POSTER = "poster"
     
@@ -115,4 +121,12 @@ object TransitionKeys {
      * @return Key in format: "{prefix}_cover_{mediaId}"
      */
     fun imageCacheKey(prefix: String, mediaId: Int): String = "${prefix}_cover_$mediaId"
+    
+    /**
+     * Creates a shared element key for relation/related media covers.
+     * 
+     * @param relationId The unique relation media identifier
+     * @return Key in format: "relation_cover_{relationId}"
+     */
+    fun relationCover(relationId: Int): String = "relation_cover_$relationId"
 }

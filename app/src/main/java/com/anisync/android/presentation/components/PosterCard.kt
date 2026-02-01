@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SharedTransitionScope.OverlayClip
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -95,7 +96,7 @@ fun PosterCard(
                     role = Role.Button,
                     onClickLabel = stringResource(R.string.a11y_action_open_details, title)
                 )
-                .sharedElement(
+                .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = coverKey),
                     animatedVisibilityScope = animatedVisibilityScope,
                     boundsTransform = { _, _ -> spatialSpec },
