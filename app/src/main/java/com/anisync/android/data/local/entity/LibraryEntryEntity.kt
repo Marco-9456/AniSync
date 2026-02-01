@@ -13,13 +13,20 @@ import com.anisync.android.type.MediaType
  * - mediaType: Used for filtering Anime vs Manga
  * - status: Used for filtering by library status (Watching, Completed, etc.)
  * - Composite index for combined queries
+ * - Sorting indexes for updatedAt, timeUntilAiring, score for sort performance
  */
 @Entity(
     tableName = "library_entries",
     indices = [
         Index(value = ["mediaType"]),
         Index(value = ["status"]),
-        Index(value = ["mediaType", "status"])
+        Index(value = ["mediaType", "status"]),
+        Index(value = ["updatedAt"]),           // For "Last Updated" sort
+        Index(value = ["createdAt"]),           // For "Last Added" sort
+        Index(value = ["timeUntilAiring"]),     // For "Airing Soon" sort
+        Index(value = ["score"]),               // For "Score" sort
+        Index(value = ["progress"]),            // For "Progress" sort
+        Index(value = ["mediaStartDate"])       // For "Release Date" sort
     ]
 )
 data class LibraryEntryEntity(

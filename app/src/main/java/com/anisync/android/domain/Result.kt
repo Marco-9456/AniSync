@@ -43,3 +43,39 @@ fun <T> Result<T>.getOrDefault(default: T): T = when (this) {
     is Result.Success -> data
     is Result.Error -> default
 }
+
+/**
+ * Performs the given action on the data if this is a Success.
+ * Returns the original Result unchanged.
+ */
+inline fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
+    if (this is Result.Success) action(data)
+    return this
+}
+
+/**
+ * Performs the given action on the error if this is an Error.
+ * Returns the original Result unchanged.
+ */
+inline fun <T> Result<T>.onError(action: (message: String, exception: Throwable?) -> Unit): Result<T> {
+    if (this is Result.Error) action(message, exception)
+    return this
+}
+
+/**
+ * FlatMaps a successful result to another Result.
+ */
+inline fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> = when (this) {
+    is Result.Success -> transform(data)
+    is Result.Error -> this
+}
+
+/**
+ * Returns true if this is a Success.
+ */
+fun <T> Result<T>.isSuccess(): Boolean = this is Result.Success
+
+/**
+ * Returns true if this is an Error.
+ */
+fun <T> Result<T>.isError(): Boolean = this is Result.Error
