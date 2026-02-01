@@ -28,7 +28,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         AiringScheduleEntity::class,
         TrendingEntity::class
     ],
-    version = 13, // Increment version
+    version = 14, // Increment version
     exportSchema = false
 )
 @TypeConverters(Converters::class)
