@@ -1,7 +1,6 @@
 package com.anisync.android.widget.designsystem.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.CircularProgressIndicator

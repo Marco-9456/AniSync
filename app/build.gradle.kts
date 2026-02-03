@@ -1,6 +1,6 @@
-import java.util.Properties
-import java.io.FileInputStream
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)

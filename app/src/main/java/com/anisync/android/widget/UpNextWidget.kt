@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
@@ -62,7 +63,6 @@ import com.anisync.android.widget.core.WidgetIntentUtils
 import com.anisync.android.widget.core.toSizeClass
 import com.anisync.android.widget.designsystem.components.WidgetProgressBar
 import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
-import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -72,11 +72,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import java.util.concurrent.TimeUnit
-import androidx.core.graphics.toColorInt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)

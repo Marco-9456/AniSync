@@ -1,7 +1,7 @@
 package com.anisync.android.widget.core
 
-import android.content.Intent
 import android.content.Context
+import android.content.Intent
 import androidx.core.net.toUri
 import com.anisync.android.MainActivity
 

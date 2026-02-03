@@ -5,9 +5,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.background
 import androidx.glance.appwidget.cornerRadius
-import androidx.glance.color.ColorProvider
+import androidx.glance.background
 import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height

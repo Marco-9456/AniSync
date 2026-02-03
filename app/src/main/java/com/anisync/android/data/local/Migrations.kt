@@ -1,7 +1,6 @@
 package com.anisync.android.data.local
 
 import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Database migrations for AniSync.

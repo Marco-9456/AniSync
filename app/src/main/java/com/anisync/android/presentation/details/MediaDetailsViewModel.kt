@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.data.AppSettings
+import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
