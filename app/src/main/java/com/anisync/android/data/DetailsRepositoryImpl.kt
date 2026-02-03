@@ -179,8 +179,49 @@ class DetailsRepositoryImpl @Inject constructor(
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
                 // Refresh cache to get updated list entry
                 refreshMediaDetails(mediaId)
-                // Also update the library cache so LibraryScreen reflects the change immediately
-                libraryDao.updateStatusAndProgress(mediaId, status, progress)
+                
+                // Check if entry already exists in library
+                val existingEntry = libraryDao.getEntry(mediaId)
+                
+                if (existingEntry != null) {
+                    // Update existing entry
+                    libraryDao.updateStatusAndProgress(mediaId, status, progress)
+                } else {
+                    // Create new entry from cached media details
+                    val savedEntry = response.data?.SaveMediaListEntry
+                    val cachedMedia = mediaDetailsDao.getById(mediaId)
+                    
+                    if (cachedMedia != null) {
+                        val newEntry = com.anisync.android.data.local.entity.LibraryEntryEntity(
+                            id = savedEntry?.id ?: 0,
+                            mediaId = mediaId,
+                            titleRomaji = cachedMedia.titleRomaji,
+                            titleEnglish = cachedMedia.titleEnglish,
+                            titleNative = cachedMedia.titleNative,
+                            titleUserPreferred = cachedMedia.titleUserPreferred,
+                            coverUrl = cachedMedia.coverUrl,
+                            progress = progress,
+                            totalEpisodes = cachedMedia.episodes,
+                            totalChapters = cachedMedia.chapters,
+                            totalVolumes = cachedMedia.volumes,
+                            mediaType = cachedMedia.mediaType,
+                            status = status,
+                            nextAiringEpisode = cachedMedia.nextAiringEpisode,
+                            timeUntilAiring = null, // Not available from cached details
+                            mediaStatus = cachedMedia.status,
+                            nextAiringEpisodeTime = cachedMedia.nextAiringEpisodeTime,
+                            score = 0.0,
+                            rewatches = 0,
+                            notes = null,
+                            startedAt = if (status == LibraryStatus.CURRENT) System.currentTimeMillis() else null,
+                            completedAt = null,
+                            updatedAt = System.currentTimeMillis(),
+                            createdAt = System.currentTimeMillis(),
+                            mediaStartDate = null
+                        )
+                        libraryDao.insertOrReplace(newEntry)
+                    }
+                }
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Update failed"
                 throw Exception(errorMessage)

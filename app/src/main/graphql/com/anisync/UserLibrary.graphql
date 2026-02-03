@@ -23,6 +23,7 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
           nextAiringEpisode {
             episode
             timeUntilAiring
+            airingAt
           }
           startDate {
             year

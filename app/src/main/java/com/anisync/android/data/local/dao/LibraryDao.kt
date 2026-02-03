@@ -52,6 +52,13 @@ interface LibraryDao {
     suspend fun insertAll(entries: List<LibraryEntryEntity>)
 
     /**
+     * Insert or replace a single entry.
+     * Used when adding new media to library from details screen.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrReplace(entry: LibraryEntryEntity)
+
+    /**
      * Delete all entries by media type.
      */
     @Query("DELETE FROM library_entries WHERE mediaType = :type")

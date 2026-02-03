@@ -110,7 +110,7 @@ class LibraryViewModel @Inject constructor(
                         .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.AIRING_SOON -> entries.sortedWith(
-                    compareBy<LibraryEntry, Int?>(nullsLast()) { it.timeUntilAiring }
+                    compareBy<LibraryEntry, Long?>(nullsLast()) { it.nextAiringEpisodeTime }
                         .thenBy { it.getTitle(titleLanguage).lowercase() }
                 )
                 LibrarySort.SCORE -> entries.sortedWith(

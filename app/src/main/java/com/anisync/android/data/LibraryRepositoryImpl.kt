@@ -88,6 +88,8 @@ class LibraryRepositoryImpl @Inject constructor(
                         nextAiringEpisode = media?.nextAiringEpisode?.episode,
                         timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
                         mediaStatus = media?.status?.name, // Add media airing status
+                        // Use airingAt directly - absolute Unix timestamp from API
+                        nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
                         score = entry.score,
                         rewatches = entry.repeat ?: 0,
                         notes = entry.notes,

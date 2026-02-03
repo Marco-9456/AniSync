@@ -30,6 +30,7 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     status = status,
     nextAiringEpisode = nextAiringEpisode,
     timeUntilAiring = timeUntilAiring,
+    nextAiringEpisodeTime = nextAiringEpisodeTime,
     mediaStatus = mediaStatus,
     score = score,
     rewatches = rewatches,
@@ -58,7 +59,9 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     nextAiringEpisode = nextAiringEpisode,
     timeUntilAiring = timeUntilAiring,
     mediaStatus = mediaStatus,
-    nextAiringEpisodeTime = if (timeUntilAiring != null) (System.currentTimeMillis() / 1000) + timeUntilAiring else null,
+    // Use domain value if present, otherwise calculate from relative time
+    nextAiringEpisodeTime = nextAiringEpisodeTime 
+        ?: (if (timeUntilAiring != null) (System.currentTimeMillis() / 1000) + timeUntilAiring else null),
     score = score,
     rewatches = rewatches,
     notes = notes,

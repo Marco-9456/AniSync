@@ -34,6 +34,7 @@ data class LibraryEntry(
     val status: LibraryStatus,
     val nextAiringEpisode: Int? = null,
     val timeUntilAiring: Int? = null,
+    val nextAiringEpisodeTime: Long? = null, // Absolute timestamp (seconds since epoch)
     val mediaStatus: String? = null,
     val averageScore: Int? = null,
     val score: Double? = 0.0,
