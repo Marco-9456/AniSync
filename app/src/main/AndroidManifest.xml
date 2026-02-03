@@ -45,6 +45,20 @@
                     android:scheme="anisync"
                     android:host="details" />
             </intent-filter>
+            <!-- AniList URL deep links for sharing -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/anime/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/manga/" />
+            </intent-filter>
         </activity>
 
         <!-- Widget Configuration Activity -->

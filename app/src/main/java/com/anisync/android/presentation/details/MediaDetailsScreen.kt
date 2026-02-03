@@ -285,6 +285,7 @@ fun MediaDetailsScreen(
                     when (val state = uiState) {
                         is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
                         is DetailsUiState.Success -> {
+                            val context = LocalContext.current
                             DetailsPageContent(
                                 details = state.details,
                                 sourceScreen = sourceScreen,
@@ -294,6 +295,7 @@ fun MediaDetailsScreen(
                                 onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.getTitle(titleLanguage)) },
                                 onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.getTitle(titleLanguage)) },
                                 onFavouriteClick = { viewModel.toggleFavourite() },
+                                onShareClick = { viewModel.shareMedia(context) },
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 titleLanguage = titleLanguage
@@ -353,6 +355,7 @@ fun DetailsPageContent(
     onCastSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
     onFavouriteClick: () -> Unit,
+    onShareClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: com.anisync.android.data.TitleLanguage
@@ -375,7 +378,8 @@ fun DetailsPageContent(
                     StaggeredAnimatedVisibility(key = "media_action_buttons", index = 0, delayPerItem = MediaStaggerDelay) {
                         ActionButtonsRow(
                             isFavorite = details.isFavourite,
-                            onFavoriteClick = onFavouriteClick
+                            onFavoriteClick = onFavouriteClick,
+                            onShareClick = onShareClick
                         )
                     }
 

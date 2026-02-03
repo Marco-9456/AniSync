@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.Result
+import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -148,5 +150,22 @@ class MediaDetailsViewModel @Inject constructor(
             
             _isSaving.value = false
         }
+    }
+
+    /**
+     * Share the current media via Android's share sheet.
+     * Generates an AniList URL (e.g., https://anilist.co/anime/16498) for the media.
+     *
+     * @param context The context required to start the share activity
+     */
+    fun shareMedia(context: Context) {
+        val details = (uiState.value as? DetailsUiState.Success)?.details ?: return
+        
+        ShareUtils.shareMedia(
+            context = context,
+            title = details.titleUserPreferred,
+            mediaId = details.id,
+            mediaType = details.type
+        )
     }
 }

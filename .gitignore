@@ -104,6 +104,7 @@ docs/generated/
 
 # Personal notes & todos
 .TODO/
+todo/
 AGENTS.md
 *.todo
 notes.md

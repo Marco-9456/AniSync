@@ -289,7 +289,16 @@ fun AniSyncNavHost(
             // Navigating to detail view uses scale+fade for depth perception
             composable<MediaDetails>(
                 deepLinks = listOf(
-                    navDeepLink<MediaDetails>(basePath = "anisync://details")
+                    // Custom app scheme (for widgets, internal links)
+                    navDeepLink<MediaDetails>(basePath = "anisync://details"),
+                    // AniList anime URLs (e.g., https://anilist.co/anime/16498)
+                    navDeepLink { uriPattern = "https://anilist.co/anime/{mediaId}" },
+                    // AniList anime URLs with slug (e.g., https://anilist.co/anime/16498/attack-on-titan)
+                    navDeepLink { uriPattern = "https://anilist.co/anime/{mediaId}/{slug}" },
+                    // AniList manga URLs (e.g., https://anilist.co/manga/30002)
+                    navDeepLink { uriPattern = "https://anilist.co/manga/{mediaId}" },
+                    // AniList manga URLs with slug (e.g., https://anilist.co/manga/30002/berserk)
+                    navDeepLink { uriPattern = "https://anilist.co/manga/{mediaId}/{slug}" }
                 ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
