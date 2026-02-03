@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -215,7 +219,10 @@ fun DiscoverScreen(
             isRefreshing = isRefreshing,
             mainListState = mainListState,
             pullToRefreshState = pullToRefreshState,
-            paddingValues = paddingValues,
+            paddingValues = PaddingValues(
+                top = paddingValues.calculateTopPadding(),
+                bottom = 80.dp // Padding for bottom navigation bar
+            ),
             trendingTitle = trendingTitle,
             popularTitle = popularTitle,
             upcomingTitle = upcomingTitle,
@@ -258,7 +265,9 @@ private fun DiscoverTopBar(
     onMediaTypeChange: (MediaType) -> Unit,
     onShowFilterDialog: () -> Unit
 ) {
-    Column {
+    Column(
+        modifier = Modifier.statusBarsPadding() // Protect entire top bar from status bar
+    ) {
         AppBarWithSearch(
             scrollBehavior = scrollBehavior,
             state = searchBarState,
@@ -274,7 +283,6 @@ private fun DiscoverTopBar(
                     onShowFilterDialog = onShowFilterDialog
                 )
             },
-            windowInsets = WindowInsets(0),
             colors = SearchBarDefaults.appBarWithSearchColors(
                 appBarContainerColor = Color.Transparent,
                 scrolledAppBarContainerColor = Color.Transparent

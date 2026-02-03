@@ -147,7 +147,6 @@ fun StatisticsScreen(
                             )
                         }
                     },
-                    windowInsets = WindowInsets(0),
                     scrollBehavior = scrollBehavior
                 )
 

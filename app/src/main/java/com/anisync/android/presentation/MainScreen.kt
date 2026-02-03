@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
@@ -155,13 +156,13 @@ fun MainScreen() {
                 }
             }
         }
-    ) { innerPadding ->
+    ) { _ ->
         AniSyncNavHost(
             navController = navController,
             onMediaClick = { mediaId, sourceScreen ->
                 navController.navigate(MediaDetails(mediaId, sourceScreen))
             },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         )
     }
 }

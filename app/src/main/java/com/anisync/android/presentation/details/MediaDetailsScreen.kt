@@ -186,7 +186,6 @@ fun MediaDetailsScreen(
                             titleContentColor = MaterialTheme.colorScheme.onSurface,
                             actionIconContentColor = MaterialTheme.colorScheme.onSurface
                         ),
-                        windowInsets = WindowInsets(0),
                         scrollBehavior = scrollBehavior
                     )
                 },

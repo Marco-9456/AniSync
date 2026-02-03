@@ -12,11 +12,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -113,6 +116,8 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .windowInsetsPadding(WindowInsets.statusBars) // Handle status bar
+                .padding(bottom = 80.dp) // Padding for bottom navigation bar
         ) {
             when (val state = uiState) {
                 is ProfileUiState.Loading -> {
@@ -248,10 +253,11 @@ fun ProfileTopSection(
     
     Box(modifier = Modifier.fillMaxWidth()) {
         // User Banner with Overlay
+        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(200.dp + statusBarHeight)
         ) {
             if (profile.bannerUrl != null) {
                 AsyncImage(
@@ -289,7 +295,7 @@ fun ProfileTopSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(top = 140.dp)
+                .padding(top = 140.dp + statusBarHeight)
         ) {
             // Avatar
             Box(
