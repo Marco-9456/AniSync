@@ -88,6 +88,7 @@ fun MediaCharactersGridScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+
             when (val state = uiState) {
                 is DetailsUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -114,7 +115,7 @@ fun MediaCharactersGridScreen(
                         
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 100.dp),
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()

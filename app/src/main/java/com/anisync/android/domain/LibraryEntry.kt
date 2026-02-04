@@ -45,4 +45,16 @@ data class LibraryEntry(
     val updatedAt: Long? = null,
     val createdAt: Long? = null,
     val mediaStartDate: Long? = null
-)
+) {
+    /**
+     * Computes the dynamic time until airing based on the absolute timestamp.
+     * Returns null if no airing scheduled or already aired.
+     */
+    val dynamicTimeUntilAiring: Int?
+        get() {
+            val airingTime = nextAiringEpisodeTime ?: return timeUntilAiring
+            val now = System.currentTimeMillis() / 1000
+            val remaining = (airingTime - now).toInt()
+            return if (remaining > 0) remaining else null
+        }
+}

@@ -14,6 +14,8 @@ import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.exception.ApolloException
 import javax.inject.Inject
 
@@ -37,7 +39,9 @@ class DiscoverRepositoryImpl @Inject constructor(
                     type = Optional.present(type),
                     status = Optional.present(MediaStatus.NOT_YET_RELEASED)
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val entries = response.data?.Page?.media?.filterNotNull()
                 ?.filter { it.season != null } // Upcoming = has confirmed season
@@ -60,7 +64,9 @@ class DiscoverRepositoryImpl @Inject constructor(
                     type = Optional.present(type),
                     status = Optional.present(MediaStatus.NOT_YET_RELEASED)
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val entries = response.data?.Page?.media?.filterNotNull()
                 ?.filter { it.season == null } // TBA = no confirmed season
@@ -100,7 +106,9 @@ class DiscoverRepositoryImpl @Inject constructor(
                     status = status?.let { Optional.present(it) } ?: Optional.absent(),
                     format = format?.let { Optional.present(it) } ?: Optional.absent()
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val pageInfo = response.data?.Page?.pageInfo
             val allMedia = response.data?.Page?.media?.filterNotNull() ?: emptyList()
@@ -161,7 +169,9 @@ class DiscoverRepositoryImpl @Inject constructor(
                     type = Optional.present(type),
                     perPage = Optional.present(10)
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val entries = response.data?.Page?.media?.filterNotNull()?.map { media ->
                 LibraryEntry(

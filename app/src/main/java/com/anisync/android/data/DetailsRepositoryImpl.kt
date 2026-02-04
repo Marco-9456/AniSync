@@ -25,6 +25,8 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.VoiceActor
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.stripHtml
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import kotlinx.coroutines.flow.Flow
@@ -52,7 +54,9 @@ class DetailsRepositoryImpl @Inject constructor(
         return safeApiCall {
             val response = apolloClient.query(
                 GetMediaDetailsQuery(id = Optional.present(id))
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val media = response.data?.Media
                 ?: throw Exception("Media not found")
@@ -191,6 +195,8 @@ class DetailsRepositoryImpl @Inject constructor(
                     val savedEntry = response.data?.SaveMediaListEntry
                     val cachedMedia = mediaDetailsDao.getById(mediaId)
                     
+                    android.util.Log.d("DetailsRepo", "Creating new library entry: mediaId=$mediaId, savedEntryId=${savedEntry?.id}, cachedMedia=${cachedMedia != null}")
+                    
                     if (cachedMedia != null) {
                         val newEntry = com.anisync.android.data.local.entity.LibraryEntryEntity(
                             id = savedEntry?.id ?: 0,
@@ -219,7 +225,11 @@ class DetailsRepositoryImpl @Inject constructor(
                             createdAt = System.currentTimeMillis(),
                             mediaStartDate = null
                         )
+                        android.util.Log.d("DetailsRepo", "Inserting entry: id=${newEntry.id}, mediaId=${newEntry.mediaId}, type=${newEntry.mediaType}, createdAt=${newEntry.createdAt}")
                         libraryDao.insertOrReplace(newEntry)
+                        android.util.Log.d("DetailsRepo", "Entry inserted successfully")
+                    } else {
+                        android.util.Log.w("DetailsRepo", "No cached media found for mediaId=$mediaId, entry NOT created")
                     }
                 }
             } else {

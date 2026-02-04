@@ -202,12 +202,12 @@ private fun AiringStatusRow(
             }
         }
         
-        if (entry.timeUntilAiring != null && entry.nextAiringEpisode != null) {
+        if (entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
             Text(
                 text = stringResource(
                     R.string.airing_episode_in,
                     entry.nextAiringEpisode,
-                    formatTimeUntilAiring(entry.timeUntilAiring)
+                    formatTimeUntilAiring(entry.dynamicTimeUntilAiring!!)
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 fontSize = 10.sp,

@@ -9,6 +9,8 @@ import com.anisync.android.domain.SearchRepository
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.exception.ApolloException
 import javax.inject.Inject
 
@@ -34,7 +36,9 @@ class SearchRepositoryImpl @Inject constructor(
                     seasonYear = filters.year?.let { Optional.present(it) } ?: Optional.absent(),
                     season = filters.season?.let { Optional.present(it) } ?: Optional.absent()
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val entries = response.data?.Page?.media?.filterNotNull()?.map { media ->
                 LibraryEntry(

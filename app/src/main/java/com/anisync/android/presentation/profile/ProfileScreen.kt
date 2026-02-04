@@ -63,6 +63,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.runtime.DisposableEffect
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
@@ -94,6 +98,20 @@ fun ProfileScreen(
     SideEffect {
         recomposeCount.intValue++
         Log.d("ProfilePerf", "ProfileScreen recomposed: ${recomposeCount.intValue} times")
+    }
+
+    // Refresh profile on resume to ensure favorites are up to date
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
     
     // Settings Sheet State

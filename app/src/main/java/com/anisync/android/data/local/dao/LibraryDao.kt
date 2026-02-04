@@ -73,11 +73,52 @@ interface LibraryDao {
     /**
      * Atomic transaction: delete old entries and insert new ones.
      * Prevents UI flicker from empty state between delete and insert.
+     * @deprecated Use smartMergeByType instead to preserve locally-added entries
      */
     @Transaction
     suspend fun replaceByType(type: MediaType, entries: List<LibraryEntryEntity>) {
         deleteByType(type)
         insertAll(entries)
+    }
+
+    /**
+     * Smart merge: preserves locally-added entries while syncing with API.
+     * - Upserts all entries from API (updates existing, inserts new)
+     * - Removes entries that were deleted externally (not in API response)
+     * - Preserves recent local entries (added within last 5 minutes) that API may not have yet
+     */
+    @Transaction
+    suspend fun smartMergeByType(type: MediaType, apiEntries: List<LibraryEntryEntity>) {
+        val localEntries = getByType(type)
+        val apiMediaIds = apiEntries.map { it.mediaId }.toSet()
+        val now = System.currentTimeMillis()
+        val recentThreshold = 5 * 60 * 1000L // 5 minutes grace period for API sync delay
+        
+        android.util.Log.d("LibraryDao", "smartMergeByType: type=$type, localCount=${localEntries.size}, apiCount=${apiEntries.size}")
+        
+        // Find entries to preserve (added recently and not in API yet)
+        val toPreserve = localEntries.filter { local ->
+            local.mediaId !in apiMediaIds && 
+            local.createdAt != null && (now - local.createdAt) <= recentThreshold
+        }
+        android.util.Log.d("LibraryDao", "Entries to preserve: ${toPreserve.map { "${it.mediaId}:${it.titleUserPreferred}" }}")
+        
+        // Delete entries that are no longer in API, unless they were added very recently
+        val toDelete = localEntries.filter { local ->
+            local.mediaId !in apiMediaIds && 
+            (local.createdAt == null || (now - local.createdAt) > recentThreshold)
+        }
+        android.util.Log.d("LibraryDao", "Entries to delete: ${toDelete.map { "${it.mediaId}:${it.titleUserPreferred}" }}")
+        toDelete.forEach { deleteByMediaId(it.mediaId) }
+        
+        // Upsert all API entries (REPLACE strategy handles updates)
+        insertAll(apiEntries)
+        
+        // Re-insert preserved entries to ensure they aren't overwritten
+        if (toPreserve.isNotEmpty()) {
+            android.util.Log.d("LibraryDao", "Re-inserting preserved entries")
+            insertAll(toPreserve)
+        }
     }
 
     /**

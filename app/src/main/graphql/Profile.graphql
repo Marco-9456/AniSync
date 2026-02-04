@@ -25,9 +25,25 @@ query GetUserProfile($name: String) {
       }
     }
     favourites {
-      anime {
+      anime(page: 1, perPage: 25) {
+        pageInfo {
+          hasNextPage
+          total
+        }
         nodes {
           id
+          type
+          status
+          format
+          episodes
+          chapters
+          volumes
+          averageScore
+          nextAiringEpisode {
+            episode
+            timeUntilAiring
+            airingAt
+          }
           title {
             userPreferred
             romaji
@@ -35,7 +51,47 @@ query GetUserProfile($name: String) {
             native
           }
           coverImage {
-            large
+             large
+             extraLarge
+          }
+        }
+      }
+    }
+  }
+}
+
+query GetUserFavorites($userId: Int, $page: Int) {
+  User(id: $userId) {
+    favourites {
+      anime(page: $page, perPage: 50) {
+        pageInfo {
+          hasNextPage
+          total
+          lastPage
+        }
+        nodes {
+          id
+          type
+          status
+          format
+          episodes
+          chapters
+          volumes
+          averageScore
+          nextAiringEpisode {
+            episode
+            timeUntilAiring
+            airingAt
+          }
+          title {
+            userPreferred
+            romaji
+            english
+            native
+          }
+          coverImage {
+             large
+             extraLarge
           }
         }
       }

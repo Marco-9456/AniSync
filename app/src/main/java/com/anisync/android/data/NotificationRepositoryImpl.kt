@@ -17,6 +17,8 @@ import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
 class NotificationRepositoryImpl @Inject constructor(
@@ -36,7 +38,9 @@ class NotificationRepositoryImpl @Inject constructor(
                     page = Optional.present(page),
                     perPage = Optional.present(20)
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             response.data?.Page?.notifications?.filterNotNull()?.mapNotNull { notification ->
                 when {
@@ -126,7 +130,9 @@ class NotificationRepositoryImpl @Inject constructor(
                     airingBefore = currentTime,
                     airingAfter = recencyThreshold
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             // Server now filters by recency, but we still need to verify it's in the past
             // to avoid race conditions with episodes airing exactly now
@@ -168,7 +174,9 @@ class NotificationRepositoryImpl @Inject constructor(
                     mediaIds = Optional.present(mediaIds),
                     airingBefore = maxAiringTime
                 )
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             // Server now handles time filtering, results are already sorted by TIME
             response.data?.Page?.airingSchedules?.mapNotNull { airing ->

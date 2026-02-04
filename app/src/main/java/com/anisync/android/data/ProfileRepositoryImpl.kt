@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetUserActivitiesQuery
+import com.anisync.android.GetUserFavoritesQuery
 import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.local.dao.UserProfileDao
@@ -14,6 +15,8 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,17 +34,19 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun refreshProfile(username: String): Result<Unit> {
         return try {
-            val actualUsername = if (username.isBlank()) {
-                val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
+            val actualUsername = username.ifBlank {
+                val viewerResponse = apolloClient.query(GetViewerQuery())
+                    .fetchPolicy(FetchPolicy.NetworkOnly)
+                    .execute()
                 viewerResponse.data?.Viewer?.name
                     ?: return Result.Error("Unable to get current user")
-            } else {
-                username
             }
 
             val response = apolloClient.query(
                 GetUserProfileQuery(name = Optional.present(actualUsername))
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val user = response.data?.User
                 ?: return Result.Error("User not found")
@@ -49,7 +54,9 @@ class ProfileRepositoryImpl @Inject constructor(
             // Fetch Activities
             val activitiesResponse = apolloClient.query(
                 GetUserActivitiesQuery(userId = Optional.present(user.id))
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
 
             val activities = activitiesResponse.data?.Page?.activities?.filterNotNull()?.mapNotNull { it.onListActivity }?.map { activity ->
                 com.anisync.android.domain.UserActivity(
@@ -81,23 +88,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 planning = statusCounts[com.anisync.android.type.MediaListStatus.PLANNING] ?: 0
             )
 
-            val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { media ->
-                LibraryEntry(
-                    id = 0,
-                    mediaId = media.id ?: 0,
-                    titleRomaji = media.title?.romaji,
-                    titleEnglish = media.title?.english,
-                    titleNative = media.title?.native,
-                    titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                    coverUrl = media.coverImage?.large,
-                    progress = 0,
-                    totalEpisodes = null,
-                    totalChapters = null,
-                    totalVolumes = null,
-                    type = null,
-                    status = LibraryStatus.UNKNOWN
-                )
-            } ?: emptyList()
+            // Fetch all favorites recursively
+            val favorites = fetchFavorites(user.id ?: 0)
 
             val profile = UserProfile(
                 id = user.id ?: 0,
@@ -138,5 +130,53 @@ class ProfileRepositoryImpl @Inject constructor(
             // Refresh profile to update local cache
             refreshProfile("")
         }
+    }
+
+    private suspend fun fetchFavorites(userId: Int): List<LibraryEntry> {
+        val allFavorites = mutableListOf<LibraryEntry>()
+        var page = 1
+        var hasNextPage = true
+
+        try {
+            while (hasNextPage) {
+                val response = apolloClient.query(
+                    GetUserFavoritesQuery(userId = Optional.present(userId), page = Optional.present(page))
+                )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+                val data = response.data?.User?.favourites?.anime
+                val nodes = data?.nodes?.filterNotNull() ?: emptyList()
+                val pageInfo = data?.pageInfo
+
+                val entries = nodes.map { media ->
+                    LibraryEntry(
+                        id = 0, // Not a full library entry, just a favorite
+                        mediaId = media.id ?: 0,
+                        titleRomaji = media.title?.romaji,
+                        titleEnglish = media.title?.english,
+                        titleNative = media.title?.native,
+                        titleUserPreferred = media.title?.userPreferred ?: "Unknown",
+                        coverUrl = media.coverImage?.large,
+                        progress = 0,
+                        totalEpisodes = media.episodes,
+                        totalChapters = media.chapters,
+                        totalVolumes = media.volumes,
+                        type = media.type,
+                        status = LibraryStatus.UNKNOWN
+                    )
+                }
+                
+                allFavorites.addAll(entries)
+                
+                hasNextPage = pageInfo?.hasNextPage == true
+                page++
+            }
+        } catch (e: Exception) {
+            // Log error but return what we have so far
+            android.util.Log.e("ProfileRepository", "Error fetching favorites page $page", e)
+        }
+
+        return allFavorites
     }
 }

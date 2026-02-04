@@ -18,6 +18,8 @@ import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -55,7 +57,9 @@ class LibraryRepositoryImpl @Inject constructor(
             
             val response = apolloClient.query(
                 GetUserLibraryQuery(username = actualUsername, type = type)
-            ).execute()
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
             
             if (response.hasErrors()) {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Unknown error"
@@ -102,8 +106,8 @@ class LibraryRepositoryImpl @Inject constructor(
                 } ?: emptyList()
             }
             
-            // Atomic update to prevent UI flicker
-            libraryDao.replaceByType(type, entries.map { it.toEntity(type) })
+            // Smart merge to preserve locally-added entries during API sync delay
+            libraryDao.smartMergeByType(type, entries.map { it.toEntity(type) })
         }
     }
 

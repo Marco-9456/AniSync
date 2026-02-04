@@ -374,12 +374,13 @@ type UserMangaStatistics {
 }
 
 type Favourites {
-  anime: MediaConnection
+  anime(page: Int, perPage: Int): MediaConnection
 }
 
 type MediaConnection {
   nodes: [Media]
   edges: [MediaEdge]
+  pageInfo: PageInfo
 }
 
 enum MediaStatus {
