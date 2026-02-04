@@ -111,7 +111,11 @@ class SectionGridViewModel @Inject constructor(
                 format = _selectedFormat.value
             )) {
                 is Result.Success -> {
-                    _items.value = _items.value + result.data.items
+                    // Deduplicate by mediaId to prevent duplicate key crashes
+                    // API can return overlapping items across pages due to ranking changes
+                    val existingIds = _items.value.map { it.mediaId }.toSet()
+                    val newItems = result.data.items.filter { it.mediaId !in existingIds }
+                    _items.value = _items.value + newItems
                     _hasNextPage.value = result.data.hasNextPage
                     currentPage = result.data.currentPage
                 }

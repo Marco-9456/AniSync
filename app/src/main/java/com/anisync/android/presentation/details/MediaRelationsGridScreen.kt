@@ -119,7 +119,7 @@ fun MediaRelationsGridScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(relations, key = { it.id }) { relation ->
+                            items(relations, key = { "${it.id}_${it.relationType}" }) { relation ->
                                 RelationItem(
                                     relation = relation,
                                     onClick = { onRelationClick(relation.id) },

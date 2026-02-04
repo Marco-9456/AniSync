@@ -34,7 +34,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -158,7 +160,15 @@ fun SectionGridScreen(
     val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
     
+    // Grid state - we'll reset it manually when filter changes
+    // This prevents duplicate key crashes when switching between filters during fling animations
     val gridState = rememberLazyGridState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Reset scroll position when filter changes to prevent key conflicts
+    LaunchedEffect(selectedFormat) {
+        gridState.scrollToItem(0, 0)
+    }
     
     // Infinite scroll detection using snapshotFlow for proper reactivity
     LaunchedEffect(gridState) {
@@ -211,7 +221,14 @@ fun SectionGridScreen(
             FormatFilterRow(
                 mediaType = mediaType,
                 selectedFormat = selectedFormat,
-                onFormatSelected = { viewModel.setFormatFilter(it) },
+                onFormatSelected = { format ->
+                    // Stop any ongoing scroll/fling animation before changing filter
+                    // This prevents race conditions where animation tries to use stale keys
+                    coroutineScope.launch {
+                        gridState.scrollToItem(0, 0) // Reset scroll to stop ongoing animations
+                        viewModel.setFormatFilter(format)
+                    }
+                },
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             
