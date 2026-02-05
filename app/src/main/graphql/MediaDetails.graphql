@@ -1,88 +1,91 @@
 query GetMediaDetails($id: Int) {
-  Media(id: $id) {
-    id
-    title {
-      romaji
-      english
-      native
-      userPreferred
-    }
-    coverImage {
-      extraLarge
-    }
-    bannerImage
-    description(asHtml: true)
-    averageScore
-    episodes
-    chapters
-    volumes
-    type
-    status
-    format
-    genres
-    studios(isMain: true) {
-      nodes {
-        name
-      }
-    }
-    season
-    startDate {
-      year
-      month
-      day
-    }
-    mediaListEntry {
-      id
-      status
-      progress
-      score
-    }
-    characters(sort: [ROLE, RELEVANCE], perPage: 25) {
-      edges {
-        role
-        node {
-          id
-          name {
-            userPreferred
-            full
-            native
-          }
-          image {
-            large
-          }
-        }
-      }
-    }
-    relations {
-      edges {
-        relationType
-        node {
-          id
-          title {
-            userPreferred
+    Media(id: $id) {
+        id
+        title {
             romaji
             english
             native
-          }
-          format
-          status
-          coverImage {
-            large
-          }
+            userPreferred
         }
-      }
+        coverImage {
+            extraLarge
+        }
+        bannerImage
+        description(asHtml: true)
+        averageScore
+        episodes
+        nextAiringEpisode {
+            episode
+        }
+        chapters
+        volumes
+        type
+        status
+        format
+        genres
+        studios(isMain: true) {
+            nodes {
+                name
+            }
+        }
+        season
+        startDate {
+            year
+            month
+            day
+        }
+        mediaListEntry {
+            id
+            status
+            progress
+            score
+        }
+        characters(sort: [ROLE, RELEVANCE], perPage: 25) {
+            edges {
+                role
+                node {
+                    id
+                    name {
+                        userPreferred
+                        full
+                        native
+                    }
+                    image {
+                        large
+                    }
+                }
+            }
+        }
+        relations {
+            edges {
+                relationType
+                node {
+                    id
+                    title {
+                        userPreferred
+                        romaji
+                        english
+                        native
+                    }
+                    format
+                    status
+                    coverImage {
+                        large
+                    }
+                }
+            }
+        }
+        externalLinks {
+            id
+            url
+            site
+            type
+            color
+            icon
+            language
+            notes
+            isDisabled
+        }
+        isFavourite
     }
-    externalLinks {
-      id
-      url
-      site
-      type
-      color
-      icon
-      language
-      notes
-      isDisabled
-    }
-    isFavourite
-  }
 }

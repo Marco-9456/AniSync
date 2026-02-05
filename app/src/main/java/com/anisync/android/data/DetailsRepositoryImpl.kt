@@ -139,6 +139,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 description = media.description?.stripHtml() ?: "",
                 score = media.averageScore,
                 episodes = media.episodes,
+                nextAiringEpisode = media.nextAiringEpisode?.episode,
                 chapters = media.chapters,
                 volumes = media.volumes,
                 type = media.type,

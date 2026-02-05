@@ -105,6 +105,8 @@
     <string name="action_favorite">Favorite</string>
     <string name="action_share">Share</string>
     <string name="stat_season">Season</string>
+    <string name="episodes_tba">TBA</string>
+    <string name="media_status_upcoming">Upcoming</string>
 
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>

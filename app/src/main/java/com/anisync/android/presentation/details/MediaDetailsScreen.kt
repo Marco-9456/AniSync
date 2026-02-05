@@ -693,19 +693,41 @@ fun InfoCardsSection(details: MediaDetails) {
     } else {
         stringResource(R.string.stat_episodes)
     }
-    
+
+    // Episode count with fallback logic
     val episodesValue = if (details.type == com.anisync.android.type.MediaType.MANGA) {
         details.chapters?.let { "$it Chs" } ?: stringResource(R.string.unknown)
     } else {
-        details.episodes?.let { "$it Eps" } ?: stringResource(R.string.unknown)
+        when {
+            // Case 1: Known episode count
+            details.episodes != null -> "${details.episodes} Eps"
+            // Case 2: Ongoing series - show aired episodes (nextAiringEpisode - 1)
+            details.nextAiringEpisode != null -> {
+                val airedEpisodes = details.nextAiringEpisode - 1
+                "$airedEpisodes Eps"
+            }
+            // Case 3: Not yet released - show TBA
+            details.status.equals("NOT_YET_RELEASED", ignoreCase = true) -> {
+                stringResource(R.string.episodes_tba)
+            }
+            // Case 4: Unknown
+            else -> stringResource(R.string.unknown)
+        }
     }
-    
+
+    // Status display with "Upcoming" for NOT_YET_RELEASED
+    val statusValue = if (details.status.equals("NOT_YET_RELEASED", ignoreCase = true)) {
+        stringResource(R.string.media_status_upcoming)
+    } else {
+        details.status.formatAsTitle() ?: stringResource(R.string.unknown)
+    }
+
     val seasonValue = if (details.season != null && details.seasonYear != null) {
         "${details.season.lowercase().replaceFirstChar { it.uppercase() }} ${details.seasonYear}"
     } else {
         details.seasonYear?.toString() ?: stringResource(R.string.unknown)
     }
-    
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
@@ -720,7 +742,7 @@ fun InfoCardsSection(details: MediaDetails) {
                 modifier = Modifier.weight(1f),
                 icon = MediaDetailsIcons.getStatusIcon(details.status),
                 label = stringResource(R.string.stat_status),
-                value = details.status.formatAsTitle() ?: stringResource(R.string.unknown),
+                value = statusValue,
                 iconTint = MediaDetailsIcons.getStatusColor(details.status),
                 isStatus = true
             )

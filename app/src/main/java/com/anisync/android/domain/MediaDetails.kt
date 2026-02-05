@@ -38,6 +38,7 @@ data class MediaDetails(
     val description: String,
     val score: Int?,
     val episodes: Int?,
+    val nextAiringEpisode: Int? = null,
     val chapters: Int?,
     val volumes: Int?,
     val type: MediaType?,
