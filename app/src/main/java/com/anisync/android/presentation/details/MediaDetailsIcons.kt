@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.anisync.android.R
 import com.anisync.android.type.MediaType
 
 object MediaDetailsIcons {
@@ -81,10 +82,20 @@ object MediaDetailsIcons {
     fun getSeasonColor(season: String?): Color {
         return when (season?.uppercase()) {
             "FALL" -> Color(0xFFFF9800)   // Orange
-            "SUMMER" -> Color(0xFFFFEB3B) // Yellow
+            "SUMMER" -> Color(0xFFFFA000) // Amber 700
             "SPRING" -> Color(0xFF4CAF50) // Green
             "WINTER" -> Color(0xFF03A9F4) // Light Blue
             else -> Color.Gray
+        }
+    }
+
+    fun getSeasonContentDescriptionResId(season: String?): Int? {
+        return when (season?.uppercase()) {
+            "FALL" -> R.string.season_fall
+            "SUMMER" -> R.string.season_summer
+            "SPRING" -> R.string.season_spring
+            "WINTER" -> R.string.season_winter
+            else -> null
         }
     }
 

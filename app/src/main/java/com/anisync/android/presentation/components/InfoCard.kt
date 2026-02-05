@@ -39,6 +39,7 @@ fun InfoCard(
     label: String,
     value: String,
     iconTint: Color,
+    iconContentDescription: String? = null,
     isStatus: Boolean = false
 ) {
     InfoCardContent(
@@ -50,7 +51,7 @@ fun InfoCard(
     ) {
         Icon(
             imageVector = icon, 
-            contentDescription = null, 
+            contentDescription = iconContentDescription,
             tint = iconTint, 
             modifier = Modifier.size(20.dp)
         )
@@ -67,6 +68,7 @@ fun InfoCard(
     label: String,
     value: String,
     iconTint: Color,
+    iconContentDescription: String? = null,
     isStatus: Boolean = false
 ) {
     InfoCardContent(
@@ -78,7 +80,7 @@ fun InfoCard(
     ) {
         Icon(
             painter = painterResource(id = iconResId), 
-            contentDescription = null, 
+            contentDescription = iconContentDescription,
             tint = iconTint, 
             modifier = Modifier.size(20.dp)
         )

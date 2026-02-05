@@ -106,7 +106,11 @@ import com.anisync.android.util.getTitle
 
 private const val MediaStaggerDelay = 10
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun MediaDetailsScreen(
     mediaId: Int,
@@ -129,16 +133,16 @@ fun MediaDetailsScreen(
 
     // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()
-    
+
     // Use TransitionKeys for consistent key generation
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
-    
+
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    
+
     // Setup ScrollBehavior for the TopAppBar
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    
+
     with(sharedTransitionScope) {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -158,7 +162,9 @@ fun MediaDetailsScreen(
                                 enter = fadeIn(),
                                 exit = fadeOut()
                             ) {
-                                val title = (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
+                                val title = (state as? DetailsUiState.Success)?.details?.getTitle(
+                                    titleLanguage
+                                ) ?: ""
                                 Text(
                                     text = title,
                                     maxLines = 1,
@@ -205,7 +211,10 @@ fun MediaDetailsScreen(
                             expanded = fabMenuExpanded,
                             modifier = Modifier
                                 .padding(dimensionResource(R.dimen.fab_menu_padding))
-                                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                                .padding(
+                                    bottom = WindowInsets.navigationBars.asPaddingValues()
+                                        .calculateBottomPadding()
+                                ),
                             button = {
                                 ToggleFloatingActionButton(
                                     checked = fabMenuExpanded,
@@ -220,7 +229,9 @@ fun MediaDetailsScreen(
                                     }
                                     Icon(
                                         painter = rememberVectorPainter(imageVector),
-                                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(R.string.fab_open_menu),
+                                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(
+                                            R.string.fab_open_menu
+                                        ),
                                         modifier = Modifier.animateIcon({ checkedProgress })
                                     )
                                 }
@@ -257,12 +268,21 @@ fun MediaDetailsScreen(
                                         fabMenuExpanded = false
                                     },
                                     icon = {
-                                        Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
                                     },
                                     text = {
-                                        Text(stringResource(R.string.action_remove), color = MaterialTheme.colorScheme.error)
+                                        Text(
+                                            stringResource(R.string.action_remove),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
                                     },
-                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                                        alpha = 0.3f
+                                    )
                                 )
                             }
                         }
@@ -291,8 +311,18 @@ fun MediaDetailsScreen(
                                 listState = listState,
                                 onRelationClick = onRelationClick,
                                 onCharacterClick = onCharacterClick,
-                                onCastSeeAllClick = { onCastSeeAllClick(state.details.id, state.details.getTitle(titleLanguage)) },
-                                onRelatedSeeAllClick = { onRelatedSeeAllClick(state.details.id, state.details.getTitle(titleLanguage)) },
+                                onCastSeeAllClick = {
+                                    onCastSeeAllClick(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage)
+                                    )
+                                },
+                                onRelatedSeeAllClick = {
+                                    onRelatedSeeAllClick(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage)
+                                    )
+                                },
                                 onFavouriteClick = { viewModel.toggleFavourite() },
                                 onShareClick = { viewModel.shareMedia(context) },
                                 sharedTransitionScope = sharedTransitionScope,
@@ -300,7 +330,11 @@ fun MediaDetailsScreen(
                                 titleLanguage = titleLanguage
                             )
                         }
-                        is DetailsUiState.Error -> ErrorStateContent(message = state.message, onBackClick = onBackClick)
+
+                        is DetailsUiState.Error -> ErrorStateContent(
+                            message = state.message,
+                            onBackClick = onBackClick
+                        )
                     }
                 }
             }
@@ -366,7 +400,13 @@ fun DetailsPageContent(
             contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab))
         ) {
             item {
-                PageHeaderSection(details, sourceScreen, sharedTransitionScope, animatedVisibilityScope, titleLanguage)
+                PageHeaderSection(
+                    details,
+                    sourceScreen,
+                    sharedTransitionScope,
+                    animatedVisibilityScope,
+                    titleLanguage
+                )
             }
 
             item {
@@ -374,7 +414,11 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Action Buttons (Favorite, Share)
-                    StaggeredAnimatedVisibility(key = "media_action_buttons", index = 0, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_action_buttons",
+                        index = 0,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
                         ActionButtonsRow(
                             isFavorite = details.isFavourite,
                             onFavoriteClick = onFavouriteClick,
@@ -385,7 +429,11 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Genres (LazyRow)
-                    StaggeredAnimatedVisibility(key = "media_genres", index = 1, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_genres",
+                        index = 1,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
                         ) {
@@ -408,7 +456,11 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Info Cards (Status, Episodes, Season, Source)
-                    StaggeredAnimatedVisibility(key = "media_info_cards", index = 2, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_info_cards",
+                        index = 2,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
                         InfoCardsSection(details)
                     }
                 }
@@ -438,7 +490,11 @@ fun DetailsPageContent(
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
                     // Synopsis
-                    StaggeredAnimatedVisibility(key = "media_synopsis", index = 3, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_synopsis",
+                        index = 3,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
                         ExpandableSynopsis(details.description)
                     }
                 }
@@ -446,7 +502,11 @@ fun DetailsPageContent(
 
             item {
                 if (details.characters.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(key = "media_cast", index = 4, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_cast",
+                        index = 4,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
@@ -460,17 +520,20 @@ fun DetailsPageContent(
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
-                            items(
+                                items(
                                     items = details.characters.take(10),
                                     key = { it.id }
                                 ) { character ->
                                     // Optimization: onCharacterClick is stable from parent
                                     CharacterItem(
-                                        character = character.copy(nameUserPreferred = when(titleLanguage) {
-                                            com.anisync.android.data.TitleLanguage.ROMAJI -> character.nameUserPreferred // Default fallback
-                                            com.anisync.android.data.TitleLanguage.ENGLISH -> character.nameUserPreferred // No separate English name for chars usually
-                                            com.anisync.android.data.TitleLanguage.NATIVE -> character.nameNative ?: character.nameUserPreferred
-                                        }),
+                                        character = character.copy(
+                                            nameUserPreferred = when (titleLanguage) {
+                                                com.anisync.android.data.TitleLanguage.ROMAJI -> character.nameUserPreferred // Default fallback
+                                                com.anisync.android.data.TitleLanguage.ENGLISH -> character.nameUserPreferred // No separate English name for chars usually
+                                                com.anisync.android.data.TitleLanguage.NATIVE -> character.nameNative
+                                                    ?: character.nameUserPreferred
+                                            }
+                                        ),
                                         onClick = { onCharacterClick(character.id) },
                                         modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
@@ -485,7 +548,11 @@ fun DetailsPageContent(
 
             item {
                 if (details.relations.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(key = "media_related", index = 5, delayPerItem = MediaStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "media_related",
+                        index = 5,
+                        delayPerItem = MediaStaggerDelay
+                    ) {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                             SectionHeader(
@@ -501,13 +568,17 @@ fun DetailsPageContent(
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
-                            items(
+                                items(
                                     items = uniqueRelations,
                                     key = { "${it.id}_${it.relationType}" }
                                 ) { relation ->
                                     // Optimization: onRelationClick is stable from parent
                                     RelationItem(
-                                        relation = relation.copy(titleUserPreferred = relation.getTitle(titleLanguage)), // Helper update
+                                        relation = relation.copy(
+                                            titleUserPreferred = relation.getTitle(
+                                                titleLanguage
+                                            )
+                                        ), // Helper update
                                         onClick = { onRelationClick(relation.id) },
                                         modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
@@ -534,15 +605,15 @@ fun PageHeaderSection(
 ) {
     // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()
-    
+
     // Use TransitionKeys for consistent key generation
     val coverKey = TransitionKeys.cover(sourceScreen, details.id)
     val titleKey = TransitionKeys.title(sourceScreen, details.id)
     val cacheKey = TransitionKeys.imageCacheKey(sourceScreen, details.id)
-    
+
     // Standard rounded corner shape for cover image clip
     val coverShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
-    
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -559,7 +630,7 @@ fun PageHeaderSection(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
-         // Gradient Overlay
+        // Gradient Overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -584,7 +655,7 @@ fun PageHeaderSection(
         ) {
             // Cover Image (Poster)
             with(sharedTransitionScope) {
-                 Card(
+                Card(
                     modifier = Modifier
                         .width(110.dp)
                         .height(160.dp)
@@ -611,16 +682,16 @@ fun PageHeaderSection(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_medium)))
-            
+
             // Title and Metadata
             Column(
                 modifier = Modifier
                     .align(Alignment.Bottom)
                     .padding(bottom = 8.dp) // Adjust to align with the bottom of the visible section text
             ) {
-                 with(sharedTransitionScope) {
+                with(sharedTransitionScope) {
                     Text(
                         text = details.getTitle(titleLanguage),
                         style = MaterialTheme.typography.titleLarge.copy(
@@ -637,9 +708,9 @@ fun PageHeaderSection(
                         )
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
-                
+
                 // Metadata chips row (Format, Year, Score)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
@@ -649,12 +720,12 @@ fun PageHeaderSection(
                     details.format?.formatAsTitle()?.let { formattedFormat ->
                         MetadataChip(text = formattedFormat)
                     }
-                    
+
                     // Year chip
                     details.seasonYear?.let { year ->
                         MetadataChip(text = year.toString())
                     }
-                    
+
                     // Score chip with star icon
                     details.score?.let { score ->
                         Row(
@@ -755,29 +826,40 @@ fun InfoCardsSection(details: MediaDetails) {
                 iconTint = MaterialTheme.colorScheme.primary
             )
         }
-        
+
         // Row 2: Season, Source
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
         ) {
-            // Season Card - uses custom drawables for Fall/Spring
-            if (MediaDetailsIcons.useCustomSeasonIcon(details.season)) {
-                InfoCard(
-                    modifier = Modifier.weight(1f),
-                    iconResId = MediaDetailsIcons.getSeasonIconResId(details.season),
-                    label = stringResource(R.string.stat_season),
-                    value = seasonValue,
-                    iconTint = MediaDetailsIcons.getSeasonColor(details.season)
-                )
-            } else {
-                InfoCard(
-                    modifier = Modifier.weight(1f),
-                    icon = MediaDetailsIcons.getSeasonIcon(details.season)!!,
-                    label = stringResource(R.string.stat_season),
-                    value = seasonValue,
-                    iconTint = MediaDetailsIcons.getSeasonColor(details.season)
-                )
+            details.seasonYear?.let { year ->
+                // Show only year for cleaner display, icon represents season visually
+                val seasonValue = year.toString()
+
+                // Get accessibility description for the icon (e.g., "Summer")
+                val seasonDescriptionResId =
+                    MediaDetailsIcons.getSeasonContentDescriptionResId(details.season)
+                val seasonDescription = seasonDescriptionResId?.let { stringResource(it) }
+
+                if (MediaDetailsIcons.useCustomSeasonIcon(details.season)) {
+                    InfoCard(
+                        modifier = Modifier.weight(1f),
+                        iconResId = MediaDetailsIcons.getSeasonIconResId(details.season),
+                        label = stringResource(R.string.stat_season),
+                        value = seasonValue,
+                        iconTint = MediaDetailsIcons.getSeasonColor(details.season),
+                        iconContentDescription = seasonDescription  // NEW: Accessibility label
+                    )
+                } else {
+                    InfoCard(
+                        modifier = Modifier.weight(1f),
+                        icon = MediaDetailsIcons.getSeasonIcon(details.season)!!,
+                        label = stringResource(R.string.stat_season),
+                        value = seasonValue,
+                        iconTint = MediaDetailsIcons.getSeasonColor(details.season),
+                        iconContentDescription = seasonDescription  // NEW: Accessibility label
+                    )
+                }
             }
             // Source Card
             InfoCard(
@@ -836,13 +918,13 @@ fun ActionButtonsRow(
             onClick = onFavoriteClick,
             modifier = Modifier.size(48.dp),
             colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
-                containerColor = if (isFavorite) 
-                    Color(0xFFE91E63) 
-                else 
+                containerColor = if (isFavorite)
+                    Color(0xFFE91E63)
+                else
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = if (isFavorite) 
-                    Color.White 
-                else 
+                contentColor = if (isFavorite)
+                    Color.White
+                else
                     Color(0xFFE91E63)
             )
         ) {
@@ -852,7 +934,7 @@ fun ActionButtonsRow(
                 modifier = Modifier.size(24.dp)
             )
         }
-        
+
         // Share Button - Outlined with label
         OutlinedButton(
             onClick = onShareClick,
