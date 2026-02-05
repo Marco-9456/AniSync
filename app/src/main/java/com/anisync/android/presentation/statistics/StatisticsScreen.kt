@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -245,10 +244,6 @@ fun StatisticsScreen(
         }
     }
 }
-
-// Simple clickable wrapper
-@Composable
-private fun Modifier.clickableWithRipple(onClick: () -> Unit) = this.clickable(onClick = onClick)
 
 @Composable
 private fun AnimeStatisticsContent(
