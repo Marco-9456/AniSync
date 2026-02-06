@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -72,11 +73,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -207,6 +212,16 @@ fun MediaDetailsScreen(
                             LibraryStatus.DROPPED
                         )
 
+                        val haptic = LocalHapticFeedback.current
+                        val context = LocalContext.current
+
+                        // Handle back button to close menu
+                        BackHandler(enabled = fabMenuExpanded) {
+                            fabMenuExpanded = false
+                        }
+
+                        val selectedPrefix = stringResource(R.string.a11y_state_selected)
+                        
                         FloatingActionButtonMenu(
                             expanded = fabMenuExpanded,
                             modifier = Modifier
@@ -229,9 +244,11 @@ fun MediaDetailsScreen(
                                     }
                                     Icon(
                                         painter = rememberVectorPainter(imageVector),
-                                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(
-                                            R.string.fab_open_menu
-                                        ),
+                                        contentDescription = if (fabMenuExpanded) {
+                                            stringResource(R.string.fab_close_menu)
+                                        } else {
+                                            stringResource(R.string.fab_open_menu_library)
+                                        },
                                         modifier = Modifier.animateIcon({ checkedProgress })
                                     )
                                 }
@@ -239,8 +256,13 @@ fun MediaDetailsScreen(
                         ) {
                             statuses.forEach { status ->
                                 val isSelected = status == details.listStatus
+                                val statusLabel = status.toLabel(details.type)
+                                val itemStateDescription = if (isSelected) {
+                                    "$selectedPrefix: $statusLabel"
+                                } else null
                                 FloatingActionButtonMenuItem(
                                     onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                                         val progress = details.listProgress ?: 0
                                         viewModel.saveMediaListEntry(status, progress)
                                         fabMenuExpanded = false
@@ -248,29 +270,40 @@ fun MediaDetailsScreen(
                                     icon = {
                                         Icon(
                                             imageVector = status.toIcon(details.type),
-                                            contentDescription = null,
-                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            contentDescription = statusLabel,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     },
                                     text = {
                                         Text(
-                                            text = status.toLabel(details.type),
+                                            text = statusLabel,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = itemStateDescription?.let { desc ->
+                                                Modifier.semantics {
+                                                    stateDescription = desc
+                                                }
+                                            } ?: Modifier
                                         )
+                                    },
+                                    containerColor = if (isSelected) {
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
                                     }
                                 )
                             }
                             if (details.listEntryId != null) {
                                 FloatingActionButtonMenuItem(
                                     onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
                                         viewModel.deleteMediaListEntry()
                                         fabMenuExpanded = false
                                     },
                                     icon = {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
-                                            contentDescription = null,
+                                            contentDescription = stringResource(R.string.a11y_remove_from_library),
                                             tint = MaterialTheme.colorScheme.error
                                         )
                                     },
@@ -280,9 +313,7 @@ fun MediaDetailsScreen(
                                             color = MaterialTheme.colorScheme.error
                                         )
                                     },
-                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                                        alpha = 0.3f
-                                    )
+                                    containerColor = MaterialTheme.colorScheme.errorContainer
                                 )
                             }
                         }

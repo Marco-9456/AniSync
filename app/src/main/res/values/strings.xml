@@ -94,7 +94,11 @@
     <string name="synopsis_read_more">Read more</string>
     <string name="fab_close_menu">Close menu</string>
     <string name="fab_open_menu">Open menu</string>
+    <string name="fab_open_menu_library">Open menu to manage library status</string>
     <string name="action_remove">Remove</string>
+    <string name="a11y_remove_from_library">Remove from library</string>
+    <string name="a11y_status_updated">Status changed to %1$s</string>
+    <string name="a11y_entry_removed">Entry removed from library</string>
     <string name="content_description_cover">Cover</string>
     <string name="section_information">Information</string>
     <string name="stat_score">Score</string>
