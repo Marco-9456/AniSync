@@ -88,6 +88,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.InfoCard
 import com.anisync.android.presentation.components.SectionHeader
@@ -898,7 +899,7 @@ fun MetadataChip(
 
 /**
  * Row containing Favorite and Share action buttons.
- * Favorite is a larger filled icon-only button, Share is smaller outlined with label.
+ * Favorite is a larger filled icon-only button with animation, Share is smaller outlined with label.
  */
 @Composable
 fun ActionButtonsRow(
@@ -912,7 +913,7 @@ fun ActionButtonsRow(
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Favorite Button - Filled, icon-only, larger
+        // Favorite Button - Filled container with animated icon
         androidx.compose.material3.FilledIconButton(
             onClick = onFavoriteClick,
             modifier = Modifier.size(48.dp),
@@ -927,10 +928,11 @@ fun ActionButtonsRow(
                     MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(
-                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = stringResource(R.string.action_favorite),
-                modifier = Modifier.size(24.dp)
+            AnimatedFavoriteButton(
+                isFavorite = isFavorite,
+                onClick = onFavoriteClick,
+                iconSize = 24.dp,
+                activeColor = if (isFavorite) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
             )
         }
 
