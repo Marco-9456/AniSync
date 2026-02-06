@@ -167,8 +167,8 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
 
     // Glance Widgets
-    implementation(libs.androidx.glance.appwidget)
-    implementation(libs.androidx.glance.material3)
+    implementation("androidx.glance:glance:1.2.0-rc01")
+    implementation("androidx.glance:glance-appwidget:1.2.0-rc01")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -5,6 +5,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -198,7 +200,10 @@ fun LibraryMediaCard(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Image section
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            Box(modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(entry.coverUrl)
@@ -310,6 +315,7 @@ fun LibraryMediaCard(
                                 total?.toString() ?: stringResource(R.string.progress_unknown)
                             ),
                             style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 10.sp
                         )
@@ -386,7 +392,7 @@ fun LibraryMediaCard(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Remove, 
-                                contentDescription = null, // Label is on Surface
+                                contentDescription = stringResource(R.string.a11y_action_decrement_progress),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
