@@ -178,7 +178,6 @@ fun MediaDetailsScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.back),
-                                    // Animate color between White (on image) and OnSurface (on background)
                                     tint = androidx.compose.animation.animateColorAsState(
                                         if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
                                         label = "navIconTint"
@@ -919,13 +918,13 @@ fun ActionButtonsRow(
             modifier = Modifier.size(48.dp),
             colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
                 containerColor = if (isFavorite)
-                    Color(0xFFE91E63)
+                    MaterialTheme.colorScheme.primary
                 else
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = if (isFavorite)
-                    Color.White
+                    MaterialTheme.colorScheme.onPrimary
                 else
-                    Color(0xFFE91E63)
+                    MaterialTheme.colorScheme.primary
             )
         ) {
             Icon(
