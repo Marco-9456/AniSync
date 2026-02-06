@@ -271,7 +271,7 @@ fun LibraryMediaCard(
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -416,7 +416,7 @@ fun LibraryMediaCard(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Add, 
-                                contentDescription = null, // Label is on Surface
+                                contentDescription = stringResource(R.string.a11y_action_increment_progress),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
