@@ -62,27 +62,37 @@ private class CloverShape(
         val path = Path()
         val centerX = size.width / 2f
         val centerY = size.height / 2f
-        val radius = minOf(centerX, centerY)
-        
+        val maxRadius = minOf(centerX, centerY)
+
         val points = 360
-        
+
+        val lowCount = kotlin.math.floor(petalCount)
+        val highCount = kotlin.math.ceil(petalCount)
+
+        val fraction = petalCount - lowCount
+
         for (i in 0..points) {
             val angle = (i.toFloat() / points) * 2 * PI
-            // Use petalCount directly as a float for smooth interpolation
-            val petalEffect = 1f - petalDepth * (1 - cos(petalCount * angle).toFloat()) / 2f
-            val r = radius * petalEffect
-            
+
+            val effectLow = 1f - petalDepth * (1 - cos(lowCount * angle).toFloat()) / 2f
+
+            val effectHigh = 1f - petalDepth * (1 - cos(highCount * angle).toFloat()) / 2f
+
+            val currentEffect = effectLow + (effectHigh - effectLow) * fraction
+
+            val r = maxRadius * currentEffect
+
             val x = centerX + r * cos(angle).toFloat()
             val y = centerY + r * sin(angle).toFloat()
-            
+
             if (i == 0) {
-                path.moveTo(x, y)
+                path.moveTo(y, x)
             } else {
-                path.lineTo(x, y)
+                path.lineTo(y, x)
             }
         }
         path.close()
-        
+
         return Outline.Generic(path)
     }
 }
@@ -99,18 +109,18 @@ fun AboutScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
+
     // State for clover morphing animation
     var isPressed by remember { mutableStateOf(false) }
     var isLongPressed by remember { mutableStateOf(false) }
-    
+
     // Animate petal count: 4 -> 8 on press/long press
     val targetPetalCount = when {
         isLongPressed -> 8f
         isPressed -> 6f
         else -> 4f
     }
-    
+
     val animatedPetalCount by animateFloatAsState(
         targetValue = targetPetalCount,
         animationSpec = spring(
@@ -119,7 +129,7 @@ fun AboutScreen(
         ),
         label = "petalCount"
     )
-    
+
     // Scale animation for long press
     val scale by animateFloatAsState(
         targetValue = if (isLongPressed) 1.15f else if (isPressed) 1.05f else 1f,
@@ -196,7 +206,8 @@ fun AboutScreen(
             SettingsItem(
                 title = stringResource(R.string.settings_privacy_policy),
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://anisync.app/privacy"))
+                    val intent =
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://anisync.app/privacy"))
                     context.startActivity(intent)
                 }
             )
