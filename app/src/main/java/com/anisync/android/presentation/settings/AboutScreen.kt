@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -48,7 +46,8 @@ import kotlin.math.sin
 
 /**
  * Custom clover shape that can morph between different petal counts.
- * @param petalCount Number of petals (4 for 4-leaf clover, 8 for 8-leaf clover)
+ * Uses smooth float interpolation for fluid animation between petal counts.
+ * @param petalCount Number of petals (supports fractional values for smooth animation)
  * @param petalDepth How deep the indentations are (0 = circle, 1 = very deep)
  */
 private class CloverShape(
@@ -66,12 +65,11 @@ private class CloverShape(
         val radius = minOf(centerX, centerY)
         
         val points = 360
-        val actualPetalCount = petalCount.toInt().coerceIn(4, 8)
         
         for (i in 0..points) {
             val angle = (i.toFloat() / points) * 2 * PI
-            // Create petal effect using sine wave
-            val petalEffect = 1f - petalDepth * (1 - cos(actualPetalCount * angle).toFloat()) / 2f
+            // Use petalCount directly as a float for smooth interpolation
+            val petalEffect = 1f - petalDepth * (1 - cos(petalCount * angle).toFloat()) / 2f
             val r = radius * petalEffect
             
             val x = centerX + r * cos(angle).toFloat()
@@ -97,6 +95,7 @@ private class CloverShape(
 fun AboutScreen(
     onBackClick: () -> Unit,
     onNavigateToOpenSourceLicenses: () -> Unit,
+    onNavigateToAcknowledgments: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -170,7 +169,7 @@ fun AboutScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_foreground),
-                    contentDescription = stringResource(R.string.app_name),
+                    contentDescription = stringResource(R.string.a11y_app_icon),
                     modifier = Modifier.size(96.dp)
                 )
             }
@@ -223,7 +222,7 @@ fun AboutScreen(
             SettingsItem(
                 title = stringResource(R.string.settings_acknowledgments),
                 subtitle = stringResource(R.string.settings_acknowledgments_desc),
-                onClick = { /* Show acknowledgments */ }
+                onClick = onNavigateToAcknowledgments
             )
             SettingsDivider(startPadding = 20.dp)
             SettingsItem(

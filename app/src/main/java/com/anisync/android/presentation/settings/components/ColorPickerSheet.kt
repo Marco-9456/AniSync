@@ -282,14 +282,14 @@ private fun ColorSwatch(
             .bouncyClickable(
                 onClick = onClick,
                 role = Role.Button,
-                onClickLabel = "Select color"
+                onClickLabel = stringResource(R.string.custom_color)
             ),
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Selected",
+                contentDescription = stringResource(R.string.a11y_settings_selected),
                 tint = if (isLightColor(color)) Color.Black else Color.White,
                 modifier = Modifier.size(20.dp)
             )

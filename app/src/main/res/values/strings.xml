@@ -196,6 +196,46 @@
     <string name="settings_oss_description">AniSync is built with the following open source libraries:</string>
     <string name="settings_oss_footer">All libraries are used in accordance with their respective licenses.</string>
 
+    <!-- Logout Dialog -->
+    <string name="logout_dialog_title">Log Out</string>
+    <string name="logout_dialog_message">Are you sure you want to log out?</string>
+    <string name="logout_dialog_confirm">Log Out</string>
+
+    <!-- Settings Accessibility -->
+    <string name="a11y_settings_search">Search settings</string>
+    <string name="a11y_settings_clear_search">Clear search</string>
+    <string name="a11y_settings_theme_preview">Theme preview</string>
+    <string name="a11y_settings_color_selected">Selected color scheme</string>
+    <string name="a11y_settings_cache_clear">Clear cache</string>
+    <string name="a11y_settings_notification_warning">Notification settings warning</string>
+    <string name="a11y_settings_account_anilist">Open AniList profile in browser</string>
+    <string name="a11y_settings_app_icon">App icon, tap to animate</string>
+    <string name="a11y_settings_selected">Selected</string>
+    <string name="a11y_back_button">Go back</string>
+    <string name="a11y_app_icon">App icon</string>
+
+    <!-- Theme Mode Dialog -->
+    <string name="theme_mode_dialog_title">Theme</string>
+
+    <!-- Acknowledgments Screen -->
+    <string name="settings_acknowledgments_description">AniSync wouldn\'t be possible without the amazing open source community and the following contributors:</string>
+    <string name="acknowledgments_section_data">Data Providers</string>
+    <string name="acknowledgments_anilist">AniList</string>
+    <string name="acknowledgments_anilist_desc">The anime and manga database that powers this app</string>
+    <string name="acknowledgments_section_libraries">Core Libraries</string>
+    <string name="acknowledgments_android_jetpack">Android Jetpack</string>
+    <string name="acknowledgments_android_jetpack_desc">Modern Android development components by Google</string>
+    <string name="acknowledgments_kotlin">Kotlin</string>
+    <string name="acknowledgments_kotlin_desc">The programming language that makes Android development a joy</string>
+    <string name="acknowledgments_materialkolor">MaterialKolor</string>
+    <string name="acknowledgments_materialkolor_desc">Beautiful Material You color generation</string>
+    <string name="acknowledgments_section_community">Community</string>
+    <string name="acknowledgments_contributors">Open Source Contributors</string>
+    <string name="acknowledgments_contributors_desc">All the developers who maintain the libraries we use</string>
+    <string name="acknowledgments_users">Our Users</string>
+    <string name="acknowledgments_users_desc">Thank you for using AniSync and providing valuable feedback</string>
+    <string name="acknowledgments_footer">Made with love for anime fans everywhere.</string>
+
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">Developer</string>
     <string name="debug_notifications">Notification Debug</string>

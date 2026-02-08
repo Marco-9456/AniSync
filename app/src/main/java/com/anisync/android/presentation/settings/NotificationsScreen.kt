@@ -127,7 +127,7 @@ fun NotificationsScreen(
             ) {
                 Icon(
                     Icons.Default.Warning,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_settings_notification_warning),
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(Modifier.width(12.dp))
@@ -162,7 +162,7 @@ fun NotificationsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Notifications,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.control_notifications),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.width(16.dp))

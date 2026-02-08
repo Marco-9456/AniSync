@@ -29,7 +29,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -118,19 +117,20 @@ fun SettingsItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    enabled: Boolean = true
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 16.dp, horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_settings_selected),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.width(16.dp))

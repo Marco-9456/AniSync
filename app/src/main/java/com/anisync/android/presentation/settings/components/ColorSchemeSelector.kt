@@ -29,8 +29,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.ThemePalette
 import com.materialkolor.PaletteStyle
@@ -167,7 +169,7 @@ private fun ColorSchemeItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Selected",
+                            contentDescription = stringResource(R.string.a11y_settings_selected),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )

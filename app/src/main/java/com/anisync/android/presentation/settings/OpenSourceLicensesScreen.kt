@@ -1,12 +1,14 @@
 package com.anisync.android.presentation.settings
 
-import androidx.compose.foundation.layout.Column
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -108,6 +110,8 @@ fun OpenSourceLicensesScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_open_source_licenses),
         onBackClick = onBackClick,
@@ -126,7 +130,12 @@ fun OpenSourceLicensesScreen(
                 SettingsItem(
                     title = library.name,
                     subtitle = "${library.version} - ${library.license}",
-                    onClick = { /* Could open URL in browser */ }
+                    onClick = {
+                        library.url?.let { url ->
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.startActivity(intent)
+                        }
+                    }
                 )
                 if (index < libraries.lastIndex) {
                     SettingsDivider(startPadding = 20.dp)

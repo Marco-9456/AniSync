@@ -1,10 +1,5 @@
 package com.anisync.android.presentation.settings
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -198,7 +193,7 @@ fun SettingsScreen(
                     leadingIcon = {
                         Icon(
                             Icons.Outlined.Search,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.a11y_settings_search),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },

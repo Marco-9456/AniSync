@@ -159,22 +159,38 @@ class SettingsViewModel @Inject constructor(
     // STORAGE SETTINGS
     // ==========================================================================
 
-    private val _cacheSize = MutableStateFlow(calculateCacheSize())
+    private val _cacheSize = MutableStateFlow("0 B")
     val cacheSize: StateFlow<String> = _cacheSize.asStateFlow()
 
     private val _isCacheCleared = MutableStateFlow(false)
     val isCacheCleared: StateFlow<Boolean> = _isCacheCleared.asStateFlow()
+
+    private val _isCacheLoading = MutableStateFlow(false)
+    val isCacheLoading: StateFlow<Boolean> = _isCacheLoading.asStateFlow()
+
+    private val _isCacheClearing = MutableStateFlow(false)
+    val isCacheClearing: StateFlow<Boolean> = _isCacheClearing.asStateFlow()
+
+    init {
+        // Calculate cache size off the main thread on init
+        refreshCacheSize()
+    }
 
     /**
      * Refreshes the cache size calculation.
      * Call this when returning to the main Settings screen.
      */
     fun refreshCacheSize() {
-        _cacheSize.value = calculateCacheSize()
+        viewModelScope.launch {
+            _isCacheLoading.value = true
+            _cacheSize.value = calculateCacheSizeAsync()
+            _isCacheLoading.value = false
+        }
     }
 
     fun clearCache() {
         viewModelScope.launch {
+            _isCacheClearing.value = true
             try {
                 context.cacheDir.deleteRecursively()
                 context.externalCacheDir?.deleteRecursively()
@@ -182,6 +198,8 @@ class SettingsViewModel @Inject constructor(
                 _isCacheCleared.value = true
             } catch (e: Exception) {
                 // Silently fail - cache might be in use
+            } finally {
+                _isCacheClearing.value = false
             }
         }
     }
@@ -190,11 +208,13 @@ class SettingsViewModel @Inject constructor(
         _isCacheCleared.value = false
     }
 
-    private fun calculateCacheSize(): String {
-        val internalCacheSize = context.cacheDir.walkTopDown().sumOf { it.length() }
-        val externalCacheSize = context.externalCacheDir?.walkTopDown()?.sumOf { it.length() } ?: 0L
-        val totalSize = internalCacheSize + externalCacheSize
-        return formatFileSize(totalSize)
+    private suspend fun calculateCacheSizeAsync(): String {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val internalCacheSize = context.cacheDir.walkTopDown().sumOf { it.length() }
+            val externalCacheSize = context.externalCacheDir?.walkTopDown()?.sumOf { it.length() } ?: 0L
+            val totalSize = internalCacheSize + externalCacheSize
+            formatFileSize(totalSize)
+        }
     }
 
     private fun formatFileSize(bytes: Long): String {

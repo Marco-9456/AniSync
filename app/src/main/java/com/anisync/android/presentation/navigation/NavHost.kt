@@ -31,10 +31,9 @@ import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
-import com.anisync.android.presentation.profile.ProfileUiState
-import com.anisync.android.presentation.profile.ProfileViewModel
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
+import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
@@ -556,7 +555,8 @@ fun AniSyncNavHost(
             ) {
                 AboutScreen(
                     onBackClick = { navController.popBackStack() },
-                    onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) }
+                    onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) },
+                    onNavigateToAcknowledgments = { navController.navigate(SettingsAcknowledgments) }
                 )
             }
 
@@ -568,6 +568,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 OpenSourceLicensesScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Acknowledgments
+            composable<SettingsAcknowledgments>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                AcknowledgmentsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

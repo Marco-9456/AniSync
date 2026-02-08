@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,16 +12,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,7 +36,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
-import com.anisync.android.domain.UserProfile
 
 /**
  * Account settings screen.
@@ -41,7 +48,36 @@ fun AccountScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Logout confirmation dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text(stringResource(R.string.logout_dialog_title)) },
+            text = { Text(stringResource(R.string.logout_dialog_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.logout { onLogout() }
+                    }
+                ) {
+                    Text(
+                        stringResource(R.string.logout_dialog_confirm),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_account),
@@ -105,7 +141,13 @@ fun AccountScreen(
             SettingsItem(
                 title = stringResource(R.string.settings_view_on_anilist),
                 subtitle = stringResource(R.string.settings_view_on_anilist_desc),
-                onClick = { /* Open AniList profile in browser */ }
+                onClick = {
+                    val username = userProfile?.name
+                    if (username != null) {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://anilist.co/user/$username"))
+                        context.startActivity(intent)
+                    }
+                }
             )
         }
 
@@ -113,11 +155,7 @@ fun AccountScreen(
 
         // Logout button
         OutlinedButton(
-            onClick = {
-                viewModel.logout {
-                    onLogout()
-                }
-            },
+            onClick = { showLogoutDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),

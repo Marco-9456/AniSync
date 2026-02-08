@@ -80,6 +80,7 @@ fun LookAndFeelScreen(
     var showTitleLanguageDialog by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceDialog by rememberSaveable { mutableStateOf(false) }
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
+    var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
     
     // Determine dark mode for preview rendering
     val isDarkMode = when (themeMode) {
@@ -130,6 +131,18 @@ fun LookAndFeelScreen(
                 showStreamingServiceDialog = false
             },
             onDismiss = { showStreamingServiceDialog = false }
+        )
+    }
+
+    // Theme Mode selection dialog
+    if (showThemeModeDialog) {
+        ThemeModeSelectionDialog(
+            currentMode = themeMode,
+            onModeSelected = {
+                viewModel.setThemeMode(it)
+                showThemeModeDialog = false
+            },
+            onDismiss = { showThemeModeDialog = false }
         )
     }
 
@@ -203,7 +216,7 @@ fun LookAndFeelScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Palette,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.custom_color),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
@@ -229,21 +242,16 @@ fun LookAndFeelScreen(
         // =================================================================
         
         SettingsGroup {
-            // Dark Mode Toggle
-            SwitchSettingsItem(
+            // Theme Mode Selection
+            SelectionSettingsItem(
                 icon = Icons.Default.DarkMode,
-                title = stringResource(R.string.dark_mode),
-                subtitle = when (themeMode) {
-                    ThemeMode.LIGHT -> stringResource(R.string.off)
-                    ThemeMode.DARK -> stringResource(R.string.on)
+                title = stringResource(R.string.setting_theme),
+                currentValue = when (themeMode) {
+                    ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                    ThemeMode.DARK -> stringResource(R.string.theme_dark)
                     ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
                 },
-                checked = themeMode == ThemeMode.DARK,
-                onCheckedChange = { isDark ->
-                    viewModel.setThemeMode(
-                        if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
-                    )
-                }
+                onClick = { showThemeModeDialog = true }
             )
         }
         
@@ -456,6 +464,82 @@ fun StreamingServiceSelectionDialog(
 
                         Text(
                             text = service.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Theme Mode selection dialog.
+ */
+@Composable
+fun ThemeModeSelectionDialog(
+    currentMode: ThemeMode,
+    onModeSelected: (ThemeMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = stringResource(R.string.theme_mode_dialog_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ThemeMode.entries.forEach { mode ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onModeSelected(mode) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentMode == mode,
+                            onClick = { onModeSelected(mode) }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = when (mode) {
+                                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                                ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )

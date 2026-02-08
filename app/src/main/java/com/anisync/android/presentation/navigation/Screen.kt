@@ -137,3 +137,9 @@ object SettingsAbout
  */
 @Serializable
 object SettingsOpenSourceLicenses
+
+/**
+ * Acknowledgments screen (credits to contributors and libraries).
+ */
+@Serializable
+object SettingsAcknowledgments

@@ -1,14 +1,15 @@
 package com.anisync.android.presentation.settings
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -18,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +38,8 @@ fun StorageScreen(
 ) {
     val cacheSize by viewModel.cacheSize.collectAsStateWithLifecycle()
     val isCacheCleared by viewModel.isCacheCleared.collectAsStateWithLifecycle()
+    val isCacheLoading by viewModel.isCacheLoading.collectAsStateWithLifecycle()
+    val isCacheClearing by viewModel.isCacheClearing.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val cacheClearedMessage = stringResource(R.string.settings_cache_cleared)
@@ -63,11 +65,23 @@ fun StorageScreen(
                 .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = cacheSize,
-                fontSize = 48.sp,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Box(
+                modifier = Modifier.height(64.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCacheLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = cacheSize,
+                        fontSize = 48.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
             Text(
                 stringResource(R.string.settings_cache_label),
                 style = MaterialTheme.typography.bodyMedium,
@@ -81,7 +95,8 @@ fun StorageScreen(
                 icon = Icons.Outlined.Delete,
                 title = stringResource(R.string.settings_clear_cache),
                 subtitle = stringResource(R.string.settings_cache_description, cacheSize),
-                onClick = { viewModel.clearCache() }
+                onClick = { viewModel.clearCache() },
+                enabled = !isCacheClearing
             )
         }
 
