@@ -140,6 +140,49 @@
     <string name="notification_upcoming_desc">Advance notice before episodes air</string>
     <string name="notification_permission_revoked">Notification permission was revoked. Tap to open settings.</string>
 
+    <!-- Settings Screens -->
+    <string name="navigate_back">Go back</string>
+    <string name="settings_look_and_feel">Look and Feel</string>
+    <string name="settings_look_and_feel_desc">Theme, language, streaming service</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_desc">Episode alerts, planning reminders</string>
+    <string name="settings_storage">Storage</string>
+    <string name="settings_storage_subtitle">Cache: %1$s</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_account_desc">Profile, logout</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_title_language">Title Language</string>
+    <string name="title_language_romaji">Romaji</string>
+    <string name="title_language_english">English</string>
+    <string name="title_language_native">Native</string>
+    <string name="title_language_romaji_example">e.g. Shingeki no Kyojin</string>
+    <string name="title_language_english_example">e.g. Attack on Titan</string>
+    <string name="title_language_native_example">e.g. 進撃の巨人</string>
+    <string name="settings_allow_notifications">Allow Notifications</string>
+    <string name="settings_allow_notifications_desc">Get alerts for new episodes</string>
+    <string name="settings_cache_label">Cached Data</string>
+    <string name="settings_clear_cache">Clear Cache</string>
+    <string name="settings_cache_description">Temporary files (%1$s)</string>
+    <string name="settings_cache_info">Clearing cache will remove cached images and temporary data. Your library and settings will not be affected.</string>
+    <string name="settings_cache_cleared">Cache cleared</string>
+    <string name="settings_account_unknown">Unknown User</string>
+    <string name="settings_account_anilist">Signed in with AniList</string>
+    <string name="settings_view_on_anilist">View on AniList</string>
+    <string name="settings_view_on_anilist_desc">Open your profile on AniList</string>
+    <string name="settings_logout_warning">Logging out will remove your session. You can sign in again at any time.</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_terms_of_service">Terms of Service</string>
+    <string name="settings_open_source_licenses">Open Source Licenses</string>
+    <string name="settings_acknowledgments">Acknowledgments</string>
+    <string name="settings_acknowledgments_desc">Thanks to contributors and libraries</string>
+    <string name="settings_anilist_api">Powered by AniList</string>
+    <string name="settings_anilist_api_desc">Data provided by AniList GraphQL API</string>
+    <string name="settings_made_with_love">Made with love for anime fans</string>
+    <string name="settings_search_placeholder">Search settings</string>
+    <string name="settings_oss_description">AniSync is built with the following open source libraries:</string>
+    <string name="settings_oss_footer">All libraries are used in accordance with their respective licenses.</string>
+
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">Developer</string>
     <string name="debug_notifications">Notification Debug</string>

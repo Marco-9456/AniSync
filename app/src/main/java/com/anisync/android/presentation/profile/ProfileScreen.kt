@@ -32,22 +32,18 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,7 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -77,15 +73,15 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.ui.theme.StarGold
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
     onLogoutClick: () -> Unit,
     onFavoritesClick: () -> Unit = {},
     onStatisticsClick: (userId: Int) -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -114,15 +110,10 @@ fun ProfileScreen(
         }
     }
     
-    // Settings Sheet State
-    var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    // Edit Profile Dialog State
     var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
     
     // PERF: Stabilize callbacks with remember to prevent unnecessary recompositions
-    // When lambdas capture state, wrapping them prevents child composables from recomposing
-    val onShowSettings = remember { { showSettingsSheet = true } }
     val onShowEditProfile = remember { { showEditProfileDialog = true } }
     val onHideEditProfile = remember { { showEditProfileDialog = false } }
 
@@ -149,8 +140,8 @@ fun ProfileScreen(
                 is ProfileUiState.Success -> {
                     ProfileScreenContent(
                         profile = state.profile,
-                        // PERF: Use remembered callbacks instead of inline lambdas
-                        onSettingsClick = onShowSettings,
+                        // Use navigation callback for settings
+                        onSettingsClick = onNavigateToSettings,
                         onEditProfileClick = onShowEditProfile,
                         onMediaClick = onMediaClick,
                         onFavoritesClick = onFavoritesClick,
@@ -174,24 +165,6 @@ fun ProfileScreen(
                         )
                     }
                 }
-            }
-        }
-        
-        if (showSettingsSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showSettingsSheet = false },
-                sheetState = sheetState
-            ) {
-                 SettingsSection(
-                    viewModel = viewModel,
-                    onLogoutClick = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                             onLogoutClick()
-                             showSettingsSheet = false
-                        }
-                    },
-                    modifier = Modifier.padding(bottom = 32.dp).padding(horizontal = 16.dp)
-                )
             }
         }
     }

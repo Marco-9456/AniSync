@@ -31,6 +31,15 @@ import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
+import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.ProfileViewModel
+import com.anisync.android.presentation.settings.AboutScreen
+import com.anisync.android.presentation.settings.AccountScreen
+import com.anisync.android.presentation.settings.LookAndFeelScreen
+import com.anisync.android.presentation.settings.NotificationsScreen
+import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
+import com.anisync.android.presentation.settings.SettingsScreen
+import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.statistics.StatisticsScreen
 
 // =============================================================================
@@ -268,12 +277,16 @@ fun AniSyncNavHost(
                 val onStatistics = remember(navController) {
                     { userId: Int -> navController.navigate(Statistics(userId)) }
                 }
+                val onNavigateToSettings = remember(navController) {
+                    { navController.navigate(Settings) }
+                }
 
                 ProfileScreen(
                     onMediaClick = onProfileMediaClick,
                     onLogoutClick = onLogout,
                     onFavoritesClick = onFavorites,
                     onStatisticsClick = onStatistics,
+                    onNavigateToSettings = onNavigateToSettings,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -456,6 +469,105 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 StatisticsScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // SETTINGS SCREENS - Shared Axis Z (Depth)
+            // =================================================================
+
+            // Settings Hub
+            composable<Settings>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                SettingsScreen(
+                    onNavigateToLookAndFeel = { navController.navigate(SettingsLookAndFeel) },
+                    onNavigateToNotifications = { navController.navigate(SettingsNotifications) },
+                    onNavigateToStorage = { navController.navigate(SettingsStorage) },
+                    onNavigateToAccount = { navController.navigate(SettingsAccount) },
+                    onNavigateToAbout = { navController.navigate(SettingsAbout) },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Look and Feel Settings
+            composable<SettingsLookAndFeel>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                LookAndFeelScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Notifications Settings
+            composable<SettingsNotifications>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                NotificationsScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Storage Settings
+            composable<SettingsStorage>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                StorageScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Account Settings
+            composable<SettingsAccount>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                AccountScreen(
+                    onLogout = {
+                        navController.navigate(Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // About Settings
+            composable<SettingsAbout>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                AboutScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) }
+                )
+            }
+
+            // Open Source Licenses
+            composable<SettingsOpenSourceLicenses>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                OpenSourceLicensesScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

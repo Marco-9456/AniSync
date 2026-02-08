@@ -91,3 +91,49 @@ data class CharacterMediaGrid(
 data class Statistics(
     val userId: Int
 )
+
+// =============================================================================
+// SETTINGS ROUTES
+// =============================================================================
+
+/**
+ * Main settings hub screen.
+ */
+@Serializable
+object Settings
+
+/**
+ * Look and Feel settings (theme, colors, title language, streaming service, haptic).
+ */
+@Serializable
+object SettingsLookAndFeel
+
+/**
+ * Notification settings with master toggle and granular controls.
+ */
+@Serializable
+object SettingsNotifications
+
+/**
+ * Storage management (cache size, clear cache).
+ */
+@Serializable
+object SettingsStorage
+
+/**
+ * Account settings (user info, logout).
+ */
+@Serializable
+object SettingsAccount
+
+/**
+ * About app (version, licenses, acknowledgments).
+ */
+@Serializable
+object SettingsAbout
+
+/**
+ * Open source licenses screen.
+ */
+@Serializable
+object SettingsOpenSourceLicenses
