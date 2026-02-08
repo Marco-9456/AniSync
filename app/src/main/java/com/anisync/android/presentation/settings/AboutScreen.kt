@@ -2,9 +2,14 @@ package com.anisync.android.presentation.settings
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -18,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
@@ -40,6 +47,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -140,6 +148,27 @@ fun AboutScreen(
         label = "scale"
     )
 
+    // 1. Create a variable to hold the rotation value (starts at 0f)
+    val rotation = remember { Animatable(0f) }
+
+    // 2. Listen for the 'isLongPressed' state change
+    LaunchedEffect(isLongPressed) {
+        if (isLongPressed) {
+            delay(600)
+            // If long pressed, spin forever (0 -> 360)
+            rotation.animateTo(
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing), // 2 seconds per full spin
+                    repeatMode = RepeatMode.Restart
+                )
+            )
+        } else {
+            // If released, snap back to 0 (or you could animateTo(0f) for a smooth stop)
+            rotation.snapTo(0f)
+        }
+    }
+
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
         onBackClick = onBackClick,
@@ -157,6 +186,7 @@ fun AboutScreen(
                 modifier = Modifier
                     .size(96.dp)
                     .scale(scale)
+                    .rotate(rotation.value)
                     .clip(CloverShape(petalCount = animatedPetalCount, petalDepth = 0.15f))
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .pointerInput(Unit) {
@@ -180,7 +210,9 @@ fun AboutScreen(
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_foreground),
                     contentDescription = stringResource(R.string.a11y_app_icon),
-                    modifier = Modifier.size(96.dp)
+                    modifier = Modifier
+                        .size(96.dp)
+                        .rotate(-rotation.value)
                 )
             }
 
