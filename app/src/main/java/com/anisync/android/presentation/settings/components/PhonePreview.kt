@@ -148,13 +148,13 @@ private fun StatusBarWithNotch() {
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        // Dynamic island / notch pill
+        // "Search bar"
         Box(
             modifier = Modifier
-                .width(60.dp)
+                .width(150.dp)
                 .height(16.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
         )
     }
 }
@@ -305,7 +305,7 @@ private fun BottomNavBar() {
                     .background(MaterialTheme.colorScheme.primary)
             )
             // Inactive nav items (outline circles)
-            repeat(3) {
+            repeat(2) {
                 Box(
                     modifier = Modifier
                         .size(14.dp)
