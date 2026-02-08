@@ -158,6 +158,9 @@ dependencies {
 // Coil
     implementation(libs.coil.compose)
 
+    // MaterialKolor for dynamic M3 color schemes
+    implementation(libs.materialkolor)
+
     // Security Crypto for encrypted prefs
     implementation(libs.security.crypto)
 

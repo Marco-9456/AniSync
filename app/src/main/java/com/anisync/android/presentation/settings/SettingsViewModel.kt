@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.settings
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
@@ -13,6 +14,7 @@ import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
+import com.materialkolor.PaletteStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,6 +77,26 @@ class SettingsViewModel @Inject constructor(
 
     fun setPreferredStreamingService(service: StreamingService) {
         appSettings.setPreferredStreamingService(service)
+    }
+
+    // ==========================================================================
+    // THEME PALETTE SETTINGS
+    // ==========================================================================
+
+    val selectedPaletteId: StateFlow<String> = appSettings.selectedPaletteId
+    val customSeedColor: StateFlow<Color?> = appSettings.customSeedColor
+    val paletteStyle: StateFlow<PaletteStyle> = appSettings.paletteStyle
+
+    fun setSelectedPalette(paletteId: String) {
+        appSettings.setSelectedPalette(paletteId)
+    }
+
+    fun setCustomSeedColor(color: Color?) {
+        appSettings.setCustomSeedColor(color)
+    }
+
+    fun setPaletteStyle(style: PaletteStyle) {
+        appSettings.setPaletteStyle(style)
     }
 
     // ==========================================================================

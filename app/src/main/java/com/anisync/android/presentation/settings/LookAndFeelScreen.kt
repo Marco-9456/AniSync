@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
@@ -21,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,10 +49,17 @@ import com.anisync.android.R
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.settings.components.ColorPickerSheet
+import com.anisync.android.presentation.settings.components.ColorSchemeSelector
+import com.anisync.android.presentation.settings.components.PaletteStyleSelector
+import com.anisync.android.presentation.settings.components.PhonePreview
+import com.anisync.android.ui.theme.PresetPalettes
+import com.anisync.android.ui.theme.ThemePalette
 
 /**
  * Look and Feel settings screen.
- * Contains theme, title language, streaming service, and haptic feedback settings.
+ * Contains visual theme selector with mini-app previews, title language,
+ * streaming service, and haptic feedback settings.
  */
 @Composable
 fun LookAndFeelScreen(
@@ -61,20 +71,41 @@ fun LookAndFeelScreen(
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val preferredStreamingService by viewModel.preferredStreamingService.collectAsStateWithLifecycle()
     val hapticEnabled by viewModel.hapticEnabled.collectAsStateWithLifecycle()
+    
+    // Theme palette settings
+    val selectedPaletteId by viewModel.selectedPaletteId.collectAsStateWithLifecycle()
+    val customSeedColor by viewModel.customSeedColor.collectAsStateWithLifecycle()
+    val paletteStyle by viewModel.paletteStyle.collectAsStateWithLifecycle()
 
-    var showThemeDialog by rememberSaveable { mutableStateOf(false) }
     var showTitleLanguageDialog by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceDialog by rememberSaveable { mutableStateOf(false) }
-
-    // Theme selection dialog
-    if (showThemeDialog) {
-        ThemeSelectionDialog(
-            currentTheme = themeMode,
-            onThemeSelected = {
-                viewModel.setThemeMode(it)
-                showThemeDialog = false
+    var showColorPicker by rememberSaveable { mutableStateOf(false) }
+    
+    // Determine dark mode for preview rendering
+    val isDarkMode = when (themeMode) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+    
+    // Build palette list including custom color if set
+    val palettes = remember(customSeedColor) {
+        if (customSeedColor != null) {
+            listOf(ThemePalette("custom", "Custom", customSeedColor!!)) + PresetPalettes.all
+        } else {
+            PresetPalettes.all
+        }
+    }
+    
+    // Color picker bottom sheet
+    if (showColorPicker) {
+        ColorPickerSheet(
+            currentColor = customSeedColor,
+            onColorSelected = { color ->
+                viewModel.setCustomSeedColor(color)
+                viewModel.setSelectedPalette("custom")
             },
-            onDismiss = { showThemeDialog = false }
+            onDismiss = { showColorPicker = false }
         )
     }
 
@@ -107,15 +138,122 @@ fun LookAndFeelScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        // Theme & Display Group
+        // Note: SettingsScreenScaffold already provides vertical scroll
+        
+        // =================================================================
+        // PREVIEW SECTION
+        // =================================================================
+        
+        Text(
+            text = stringResource(R.string.preview),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        
+        // Get the seed color for the currently selected palette
+        val selectedPalette = palettes.find { it.id == selectedPaletteId }
+        val seedColor = if (selectedPalette?.isDynamic == true) null else selectedPalette?.seedColor
+        
+        // Phone mockup preview
+        PhonePreview(
+            seedColor = seedColor,
+            isDarkMode = isDarkMode,
+            paletteStyle = paletteStyle,
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // =================================================================
+        // COLOR SCHEME SECTION
+        // =================================================================
+        
+        Text(
+            text = stringResource(R.string.color_scheme),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        
+        // Color scheme selector with palette circles
+        ColorSchemeSelector(
+            palettes = palettes,
+            selectedPaletteId = selectedPaletteId,
+            isDarkMode = isDarkMode,
+            paletteStyle = paletteStyle,
+            onPaletteSelected = { palette ->
+                viewModel.setSelectedPalette(palette.id)
+            }
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Custom Color & Palette Style Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Custom Color Button
+            OutlinedButton(
+                onClick = { showColorPicker = true },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.custom_color))
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Palette Style Selector
+        PaletteStyleSelector(
+            selectedStyle = paletteStyle,
+            onStyleSelected = { viewModel.setPaletteStyle(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // =================================================================
+        // APPEARANCE SECTION
+        // =================================================================
+        
         SettingsGroup {
-            SelectionSettingsItem(
-                icon = Icons.Default.Palette,
-                title = stringResource(R.string.setting_theme),
-                currentValue = getThemeLabel(themeMode),
-                onClick = { showThemeDialog = true }
+            // Dark Mode Toggle
+            SwitchSettingsItem(
+                icon = Icons.Default.DarkMode,
+                title = stringResource(R.string.dark_mode),
+                subtitle = when (themeMode) {
+                    ThemeMode.LIGHT -> stringResource(R.string.off)
+                    ThemeMode.DARK -> stringResource(R.string.on)
+                    ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                },
+                checked = themeMode == ThemeMode.DARK,
+                onCheckedChange = { isDark ->
+                    viewModel.setThemeMode(
+                        if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
+                    )
+                }
             )
-            SettingsDivider()
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // =================================================================
+        // DISPLAY & CONTENT SECTION
+        // =================================================================
+        
+        SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.Language,
                 title = stringResource(R.string.settings_title_language),
@@ -123,8 +261,13 @@ fun LookAndFeelScreen(
                 onClick = { showTitleLanguageDialog = true }
             )
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Streaming & Interaction Group
+        // =================================================================
+        // STREAMING & INTERACTION SECTION
+        // =================================================================
+        
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.PlayCircle,
@@ -140,84 +283,14 @@ fun LookAndFeelScreen(
                 onCheckedChange = { viewModel.setHapticEnabled(it) }
             )
         }
+        
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
 // =============================================================================
 // SELECTION DIALOGS
 // =============================================================================
-
-/**
- * Theme selection dialog following Material Design 3 guidelines.
- */
-@Composable
-fun ThemeSelectionDialog(
-    currentTheme: ThemeMode,
-    onThemeSelected: (ThemeMode) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = stringResource(R.string.setting_theme),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                ThemeMode.entries.forEach { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onThemeSelected(mode) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = currentTheme == mode,
-                            onClick = { onThemeSelected(mode) }
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = getThemeLabel(mode),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                }
-            }
-        }
-    }
-}
 
 /**
  * Title Language selection dialog.
@@ -409,15 +482,6 @@ fun StreamingServiceSelectionDialog(
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
-
-@Composable
-fun getThemeLabel(mode: ThemeMode): String {
-    return when (mode) {
-        ThemeMode.LIGHT -> stringResource(R.string.theme_light)
-        ThemeMode.DARK -> stringResource(R.string.theme_dark)
-        ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
-    }
-}
 
 @Composable
 fun getTitleLanguageLabel(language: TitleLanguage): String {

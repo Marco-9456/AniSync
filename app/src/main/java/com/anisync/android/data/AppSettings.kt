@@ -3,12 +3,15 @@ package com.anisync.android.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.DrawableRes
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.anisync.android.R
 import com.anisync.android.widget.UpNextWidget
+import com.materialkolor.PaletteStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -105,11 +108,33 @@ class AppSettings @Inject constructor(
     )
     val titleLanguage: StateFlow<TitleLanguage> = _titleLanguage.asStateFlow()
     
-    // Preferred streaming service setting
+// Preferred streaming service setting
     private val _preferredStreamingService = MutableStateFlow(
         StreamingService.entries.getOrElse(prefs.getInt(KEY_PREFERRED_STREAMING_SERVICE, StreamingService.NONE.ordinal)) { StreamingService.NONE }
     )
     val preferredStreamingService: StateFlow<StreamingService> = _preferredStreamingService.asStateFlow()
+    
+    // ==========================================================================
+    // THEME PALETTE SETTINGS
+    // ==========================================================================
+    
+    // Selected palette ID (e.g., "dynamic", "pink", "blue", or "custom")
+    private val _selectedPaletteId = MutableStateFlow(
+        prefs.getString(KEY_SELECTED_PALETTE, "dynamic") ?: "dynamic"
+    )
+    val selectedPaletteId: StateFlow<String> = _selectedPaletteId.asStateFlow()
+    
+    // Custom seed color (when user picks their own color)
+    private val _customSeedColor = MutableStateFlow<Color?>(
+        prefs.getInt(KEY_CUSTOM_SEED_COLOR, 0).takeIf { it != 0 }?.let { Color(it) }
+    )
+    val customSeedColor: StateFlow<Color?> = _customSeedColor.asStateFlow()
+    
+    // Palette style for color generation
+    private val _paletteStyle = MutableStateFlow(
+        PaletteStyle.entries.getOrElse(prefs.getInt(KEY_PALETTE_STYLE, 0)) { PaletteStyle.TonalSpot }
+    )
+    val paletteStyle: StateFlow<PaletteStyle> = _paletteStyle.asStateFlow()
 
     /**
      * Set the app theme mode.
@@ -143,7 +168,7 @@ class AppSettings @Inject constructor(
         prefs.edit().putInt(KEY_TITLE_LANGUAGE, language.ordinal).apply()
     }
     
-    /**
+/**
      * Set the preferred streaming service for widget icons.
      * Automatically refreshes the Up Next widget to reflect the change.
      */
@@ -155,6 +180,41 @@ class AppSettings @Inject constructor(
         scope.launch {
             refreshUpNextWidget()
         }
+    }
+    
+    // ==========================================================================
+    // THEME PALETTE SETTERS
+    // ==========================================================================
+    
+    /**
+     * Set the selected theme palette by ID.
+     */
+    fun setSelectedPalette(paletteId: String) {
+        _selectedPaletteId.value = paletteId
+        prefs.edit().putString(KEY_SELECTED_PALETTE, paletteId).apply()
+    }
+    
+    /**
+     * Set a custom seed color for theme generation.
+     * Pass null to clear the custom color.
+     */
+    fun setCustomSeedColor(color: Color?) {
+        _customSeedColor.value = color
+        prefs.edit().apply {
+            if (color != null) {
+                putInt(KEY_CUSTOM_SEED_COLOR, color.toArgb())
+            } else {
+                remove(KEY_CUSTOM_SEED_COLOR)
+            }
+        }.apply()
+    }
+    
+    /**
+     * Set the palette style for MaterialKolor color generation.
+     */
+    fun setPaletteStyle(style: PaletteStyle) {
+        _paletteStyle.value = style
+        prefs.edit().putInt(KEY_PALETTE_STYLE, style.ordinal).apply()
     }
     
     /**
@@ -193,13 +253,16 @@ class AppSettings @Inject constructor(
         }
     }
     
-    companion object {
+companion object {
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
         private const val KEY_PREFERRED_STREAMING_SERVICE = "preferred_streaming_service"
+        private const val KEY_SELECTED_PALETTE = "selected_palette"
+        private const val KEY_CUSTOM_SEED_COLOR = "custom_seed_color"
+        private const val KEY_PALETTE_STYLE = "palette_style"
     }
 }
 

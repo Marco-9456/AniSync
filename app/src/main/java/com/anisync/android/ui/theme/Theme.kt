@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.materialkolor.PaletteStyle
+import com.materialkolor.rememberDynamicColorScheme
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -261,35 +263,51 @@ fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
-    content: @Composable() () -> Unit
+    // Custom seed color for MaterialKolor-generated schemes
+    seedColor: Color? = null,
+    // Palette style for MaterialKolor color generation
+    paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
+    content: @Composable () -> Unit
 ) {
-  val colorScheme = when {
-      dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-          val context = LocalContext.current
-          if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-      }
-      
-      darkTheme -> darkScheme
-      else -> lightScheme
-  }
+    // Priority order for color scheme selection:
+    // 1. Custom seed color (user-selected palette)
+    // 2. Android 12+ dynamic colors (wallpaper-based)
+    // 3. Static fallback scheme
+    val colorScheme = when {
+        // Priority 1: Custom seed color from user selection
+        seedColor != null -> rememberDynamicColorScheme(
+            seedColor = seedColor,
+            isDark = darkTheme,
+            isAmoled = false,
+            style = paletteStyle
+        )
+        // Priority 2: Dynamic color (Android 12+)
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        // Priority 3: Static fallback
+        darkTheme -> darkScheme
+        else -> lightScheme
+    }
 
-  // Set status bar icons color based on theme
-  val view = androidx.compose.ui.platform.LocalView.current
-  if (!view.isInEditMode) {
-      androidx.compose.runtime.SideEffect {
-          val window = (view.context as android.app.Activity).window
-          val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
-          // In light mode, use dark status bar icons; in dark mode, use light icons
-          insetsController.isAppearanceLightStatusBars = !darkTheme
-      }
-  }
+    // Set status bar icons color based on theme
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val window = (view.context as android.app.Activity).window
+            val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+            // In light mode, use dark status bar icons; in dark mode, use light icons
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+        }
+    }
 
-  MaterialTheme(
-    colorScheme = colorScheme,
-    typography = AppTypography,
-    shapes = AppShapes,
-    motionScheme = MotionScheme.expressive(),
-    content = content
-  )
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = AppTypography,
+        shapes = AppShapes,
+        motionScheme = MotionScheme.expressive(),
+        content = content
+    )
 }
 

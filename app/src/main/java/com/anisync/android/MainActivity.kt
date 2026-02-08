@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +22,7 @@ import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.AppTheme
+import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -58,8 +60,11 @@ class MainActivity : ComponentActivity() {
             }.collect {}
         }
         
-        setContent {
+setContent {
             val themeMode by appSettings.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
+            val selectedPaletteId by appSettings.selectedPaletteId.collectAsStateWithLifecycle(initialValue = "dynamic")
+            val customSeedColor by appSettings.customSeedColor.collectAsStateWithLifecycle(initialValue = null)
+            val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle(initialValue = com.materialkolor.PaletteStyle.TonalSpot)
             val isSystemDark = isSystemInDarkTheme()
             
             // Determine if dark theme should be used based on settings
@@ -69,9 +74,26 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.SYSTEM -> isSystemDark
             }
             
+            // Resolve seed color from selection
+            val seedColor = remember(selectedPaletteId, customSeedColor) {
+                when (selectedPaletteId) {
+                    "dynamic" -> null  // Use system dynamic colors
+                    "custom" -> customSeedColor
+                    else -> PresetPalettes.findById(selectedPaletteId)?.seedColor
+                }
+            }
+            
+            // Determine if we should use dynamic color
+            val useDynamicColor = selectedPaletteId == "dynamic"
+            
             // Provide AppSettings to the entire Compose tree via CompositionLocal
             CompositionLocalProvider(LocalAppSettings provides appSettings) {
-                AppTheme(darkTheme = useDarkTheme) {
+                AppTheme(
+                    darkTheme = useDarkTheme,
+                    dynamicColor = useDynamicColor,
+                    seedColor = seedColor,
+                    paletteStyle = paletteStyle
+                ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background

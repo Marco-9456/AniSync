@@ -123,10 +123,23 @@
     <string name="section_settings">Settings</string>
     <string name="section_look_and_feel">Look and Feel</string>
     <string name="section_account">Account</string>
-    <string name="setting_theme">Theme</string>
+<string name="setting_theme">Theme</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
+
+    <!-- Theme Palette Selection -->
+    <string name="color_and_style">Color &amp; Style</string>
+    <string name="palette_style">Palette Style</string>
+    <string name="custom_color">Custom Color</string>
+    <string name="custom_color_description">Pick a seed color to generate your unique theme palette.</string>
+    <string name="quick_pick">Quick Pick</string>
+    <string name="hue_slider">Fine Tune</string>
+    <string name="preview">Preview</string>
+    <string name="color_scheme">Color Scheme</string>
+    <string name="apply">Apply</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="dark_mode_override">Override system setting</string>
     <string name="setting_haptic_feedback">Haptic Feedback</string>
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
     <string name="setting_streaming_service">Streaming Service</string>
