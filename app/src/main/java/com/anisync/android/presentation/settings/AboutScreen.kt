@@ -80,23 +80,18 @@ private class CloverShape(
         val fraction = petalCount - lowCount
 
         for (i in 0..points) {
-            val angle = (i.toFloat() / points) * 2 * PI
-
+            val angle = 2 * PI * i / points
             val effectLow = 1f - petalDepth * (1 - cos(lowCount * angle).toFloat()) / 2f
-
             val effectHigh = 1f - petalDepth * (1 - cos(highCount * angle).toFloat()) / 2f
-
             val currentEffect = effectLow + (effectHigh - effectLow) * fraction
-
             val r = maxRadius * currentEffect
-
             val x = centerX + r * cos(angle).toFloat()
             val y = centerY + r * sin(angle).toFloat()
 
             if (i == 0) {
-                path.moveTo(y, x)
+                path.moveTo(x, y)
             } else {
-                path.lineTo(y, x)
+                path.lineTo(x, y)
             }
         }
         path.close()
