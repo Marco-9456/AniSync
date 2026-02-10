@@ -131,6 +131,7 @@ mindmap
 | **Navigation** | Navigation Compose (Type-safe routes) |
 | **Networking** | Apollo GraphQL 4.x |
 | **Local Database** | Room with KSP |
+| **Theming** | MaterialKolor (dynamic palette styles & seed colors) |
 | **Image Loading** | Coil |
 | **Background Work** | WorkManager |
 | **Widgets** | Jetpack Glance |

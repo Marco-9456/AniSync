@@ -60,7 +60,17 @@ AniSync/
 │   │   │   │   ├── di/            # Dependency injection
 │   │   │   │   ├── domain/        # Domain layer
 │   │   │   │   ├── presentation/  # UI layer
-│   │   │   │   ├── ui/theme/      # Design system
+│   │   │   │   │   ├── components/    # Shared UI components
+│   │   │   │   │   ├── details/       # Media details screen
+│   │   │   │   │   ├── discover/      # Discover/browse screen
+│   │   │   │   │   ├── library/       # Library management screen
+│   │   │   │   │   ├── login/         # Authentication screen
+│   │   │   │   │   ├── navigation/    # Nav graph & routes
+│   │   │   │   │   ├── profile/       # User profile screen
+│   │   │   │   │   ├── settings/      # Settings screens & components
+│   │   │   │   │   ├── statistics/    # User statistics screen
+│   │   │   │   │   └── util/          # Presentation utilities
+│   │   │   │   ├── ui/theme/      # Design system (MaterialKolor)
 │   │   │   │   ├── widget/        # Glance widgets
 │   │   │   │   └── worker/        # Background workers
 │   │   │   ├── graphql/           # GraphQL operations
@@ -162,12 +172,12 @@ class MyViewModel @Inject constructor(
 @Composable
 fun MediaCard(media: Media, onClick: () -> Unit) { ... }
 
-// Composable modifiers: Always first parameter with default
+// Composable modifiers: Always last parameter with default
 @Composable
 fun MediaCard(
-    modifier: Modifier = Modifier,  // First, with default
     media: Media,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier   // Last, with default
 ) { ... }
 
 // State hoisting: Prefer stateless composables

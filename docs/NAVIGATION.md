@@ -20,8 +20,9 @@ This document covers AniSync's navigation architecture, screen flows, routes, an
 AniSync uses **Navigation Compose** with type-safe routes for all navigation:
 
 - **Type-safe routes** using Kotlin serialization
-- **Bottom navigation** for main destinations
-- **Nested navigation graphs** for feature modules
+- **Bottom navigation** for main destinations (Library, Discover, Profile)
+- **Flat route structure** with `@Serializable` objects and data classes
+- **Shared Axis transitions** (X-axis for tabs, Z-axis for detail/settings screens)
 - **Deep link support** for external entry points
 
 ---
@@ -33,40 +34,68 @@ AniSync uses **Navigation Compose** with type-safe routes for all navigation:
 ```mermaid
 flowchart TB
     subgraph "Root NavHost"
-        AUTH[Auth Graph]
-        MAIN[Main Graph]
+        LOGIN[Login]
+        MAIN[Main App]
     end
 
-    subgraph "Auth Graph"
-        LOGIN[Login Screen]
-        CALLBACK[Auth Callback]
+    subgraph "Bottom Nav Tabs"
+        LIB[Library]
+        DISC[Discover]
+        PROF[Profile]
+    end
+    
+    subgraph "Detail Screens"
+        DETAILS[MediaDetails]
+        CHAR[CharacterDetails]
+        SECTION[SectionGrid]
+        MCHARS[MediaCharactersGrid]
+        MRELS[MediaRelationsGrid]
+        CMEDIA[CharacterMediaGrid]
     end
 
-    subgraph "Main Graph"
-        subgraph "Bottom Nav"
-            LIB[Library]
-            DISC[Discover]
-            PROF[Profile]
-        end
-        
-        subgraph "Shared Destinations"
-            DETAILS[Media Details]
-            CHAR[Character Details]
-            SEARCH[Search]
-            SETTINGS[Settings]
-        end
+    subgraph "Profile Sub-screens"
+        STATS[Statistics]
+        SETTINGS[Settings Hub]
     end
 
-    AUTH --> |Authenticated| MAIN
-    LOGIN --> CALLBACK
-    CALLBACK --> |Success| MAIN
+    subgraph "Settings Sub-screens"
+        LOOK[SettingsLookAndFeel]
+        NOTIF[SettingsNotifications]
+        STORAGE[SettingsStorage]
+        ACCOUNT[SettingsAccount]
+        ABOUT[SettingsAbout]
+    end
+
+    subgraph "About Sub-screens"
+        LICENSES[SettingsOpenSourceLicenses]
+        ACKS[SettingsAcknowledgments]
+    end
+
+    LOGIN --> |Authenticated| MAIN
+    MAIN --> LIB & DISC & PROF
     
     LIB --> DETAILS
     DISC --> DETAILS
+    DISC --> SECTION
+    SECTION --> DETAILS
+    
     DETAILS --> CHAR
+    DETAILS --> MCHARS
+    DETAILS --> MRELS
+    CHAR --> CMEDIA
+    CMEDIA --> DETAILS
+    
+    PROF --> STATS
     PROF --> SETTINGS
     
-    DISC --> SEARCH
+    SETTINGS --> LOOK
+    SETTINGS --> NOTIF
+    SETTINGS --> STORAGE
+    SETTINGS --> ACCOUNT
+    SETTINGS --> ABOUT
+    
+    ABOUT --> LICENSES
+    ABOUT --> ACKS
 ```
 
 ### Complete Navigation Flow
@@ -99,7 +128,7 @@ flowchart LR
             TRENDING[Trending]
             POPULAR[Popular]
             UPCOMING[Upcoming]
-            SEARCH[Search]
+            SECTIONGRID[Section Grid]
         end
         
         subgraph "Profile Tab"
@@ -110,9 +139,21 @@ flowchart LR
         
         subgraph "Detail Screens"
             MEDIA[Media Details]
-            CHARS[Characters]
-            RELATED[Related Media]
-            STREAMING[Streaming Links]
+            CHARS[Character Details]
+            MCHARS[Characters Grid]
+            MRELS[Relations Grid]
+            CMEDIA[Character Media Grid]
+        end
+
+        subgraph "Settings Flow"
+            SETTINGS[Settings Hub]
+            LOOK[Look & Feel]
+            NOTIFS[Notifications]
+            STORAGE[Storage]
+            ACCOUNT[Account]
+            ABOUT[About]
+            LICENSES[Open Source Licenses]
+            ACKS[Acknowledgments]
         end
     end
 
@@ -123,15 +164,21 @@ flowchart LR
     OAUTH --> HOME
 
     DEEP --> |anisync://details/ID| MEDIA
-    DEEP --> |anisync://search| SEARCH
     WIDGET --> MEDIA
     NOTIF --> MEDIA
 
     HOME --> WATCHING & PLANNING & COMPLETED
     WATCHING & PLANNING & COMPLETED --> MEDIA
     TRENDING & POPULAR & UPCOMING --> MEDIA
-    SEARCH --> MEDIA
-    MEDIA --> CHARS & RELATED & STREAMING
+    TRENDING & POPULAR & UPCOMING --> SECTIONGRID
+    SECTIONGRID --> MEDIA
+    MEDIA --> CHARS & MCHARS & MRELS
+    CHARS --> CMEDIA
+    CMEDIA --> MEDIA
+
+    STATS --> |User stats| STATS
+    SETTINGS --> LOOK & NOTIFS & STORAGE & ACCOUNT & ABOUT
+    ABOUT --> LICENSES & ACKS
 ```
 
 ---
@@ -192,42 +239,30 @@ flowchart TB
 
 ```kotlin
 // Navigation routes using Kotlin serialization
-@Serializable
-sealed interface Route {
-    
-    @Serializable
-    data object Auth : Route {
-        @Serializable
-        data object Login : Route
-        
-        @Serializable
-        data object Callback : Route
-    }
-    
-    @Serializable
-    data object Main : Route {
-        @Serializable
-        data object Library : Route
-        
-        @Serializable
-        data object Discover : Route
-        
-        @Serializable
-        data object Profile : Route
-    }
-    
-    @Serializable
-    data class MediaDetails(val id: Int) : Route
-    
-    @Serializable
-    data class CharacterDetails(val id: Int) : Route
-    
-    @Serializable
-    data object Search : Route
-    
-    @Serializable
-    data object Settings : Route
-}
+// All routes are flat top-level @Serializable objects/data classes (no sealed interface hierarchy)
+
+// Simple destinations (no arguments)
+@Serializable data object Login
+@Serializable data object Library
+@Serializable data object Discover
+@Serializable data object Profile
+@Serializable data object Statistics { val userId: Int }
+@Serializable data object Settings
+@Serializable data object SettingsLookAndFeel
+@Serializable data object SettingsNotifications
+@Serializable data object SettingsStorage
+@Serializable data object SettingsAccount
+@Serializable data object SettingsAbout
+@Serializable data object SettingsOpenSourceLicenses
+@Serializable data object SettingsAcknowledgments
+
+// Parameterized destinations
+@Serializable data class MediaDetails(val mediaId: Int, val sourceScreen: String = "unknown")
+@Serializable data class CharacterDetails(val characterId: Int)
+@Serializable data class SectionGrid(val sectionTitle: String, val sectionType: String, val mediaType: String = "ANIME")
+@Serializable data class MediaCharactersGrid(val mediaId: Int, val mediaTitle: String)
+@Serializable data class MediaRelationsGrid(val mediaId: Int, val mediaTitle: String)
+@Serializable data class CharacterMediaGrid(val characterId: Int, val characterName: String)
 ```
 
 ### Navigation Setup
@@ -236,87 +271,99 @@ sealed interface Route {
 @Composable
 fun AniSyncNavHost(
     navController: NavHostController,
-    startDestination: Route
+    startDestination: Any
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        // Auth flow
-        navigation<Route.Auth>(startDestination = Route.Auth.Login) {
-            composable<Route.Auth.Login> {
-                LoginScreen(
-                    onLoginClick = { /* Open OAuth */ },
-                    onLoginSuccess = {
-                        navController.navigate(Route.Main) {
-                            popUpTo(Route.Auth) { inclusive = true }
-                        }
+        // Auth
+        composable<Login> {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Library) {
+                        popUpTo(Login) { inclusive = true }
                     }
-                )
-            }
-        }
-        
-        // Main app
-        navigation<Route.Main>(startDestination = Route.Main.Library) {
-            composable<Route.Main.Library> {
-                LibraryScreen(
-                    onMediaClick = { id ->
-                        navController.navigate(Route.MediaDetails(id))
-                    }
-                )
-            }
-            
-            composable<Route.Main.Discover> {
-                DiscoverScreen(
-                    onMediaClick = { id ->
-                        navController.navigate(Route.MediaDetails(id))
-                    },
-                    onSearchClick = {
-                        navController.navigate(Route.Search)
-                    }
-                )
-            }
-            
-            composable<Route.Main.Profile> {
-                ProfileScreen(
-                    onSettingsClick = {
-                        navController.navigate(Route.Settings)
-                    }
-                )
-            }
-        }
-        
-        // Shared destinations
-        composable<Route.MediaDetails>(
-            deepLinks = listOf(
-                navDeepLink { uriPattern = "anisync://details/{id}" }
+                }
             )
-        ) { backStackEntry ->
-            val route = backStackEntry.toRoute<Route.MediaDetails>()
+        }
+        
+        // Bottom nav tabs
+        composable<Library> {
+            LibraryScreen(
+                onMediaClick = { id ->
+                    navController.navigate(MediaDetails(mediaId = id))
+                }
+            )
+        }
+        
+        composable<Discover> {
+            DiscoverScreen(
+                onMediaClick = { id ->
+                    navController.navigate(MediaDetails(mediaId = id))
+                },
+                onSectionClick = { title, type ->
+                    navController.navigate(SectionGrid(title, type))
+                }
+            )
+        }
+        
+        composable<Profile> {
+            ProfileScreen(
+                onSettingsClick = {
+                    navController.navigate(Settings)
+                },
+                onStatisticsClick = { userId ->
+                    navController.navigate(Statistics(userId))
+                }
+            )
+        }
+        
+        // Detail screens
+        composable<MediaDetails> { backStackEntry ->
+            val route = backStackEntry.toRoute<MediaDetails>()
             MediaDetailsScreen(
-                mediaId = route.id,
+                mediaId = route.mediaId,
                 onCharacterClick = { charId ->
-                    navController.navigate(Route.CharacterDetails(charId))
+                    navController.navigate(CharacterDetails(charId))
                 },
                 onRelatedMediaClick = { mediaId ->
-                    navController.navigate(Route.MediaDetails(mediaId))
+                    navController.navigate(MediaDetails(mediaId))
                 },
                 onBackClick = { navController.popBackStack() }
             )
         }
         
-        composable<Route.Search>(
-            deepLinks = listOf(
-                navDeepLink { uriPattern = "anisync://search" }
-            )
-        ) {
-            SearchScreen(
-                onMediaClick = { id ->
-                    navController.navigate(Route.MediaDetails(id))
-                },
-                onBackClick = { navController.popBackStack() }
+        composable<CharacterDetails> { ... }
+        composable<SectionGrid> { ... }
+        composable<MediaCharactersGrid> { ... }
+        composable<MediaRelationsGrid> { ... }
+        composable<CharacterMediaGrid> { ... }
+        composable<Statistics> { ... }
+        
+        // Settings flow
+        composable<Settings> {
+            SettingsScreen(
+                onNavigateToLookAndFeel = { navController.navigate(SettingsLookAndFeel) },
+                onNavigateToNotifications = { navController.navigate(SettingsNotifications) },
+                onNavigateToStorage = { navController.navigate(SettingsStorage) },
+                onNavigateToAccount = { navController.navigate(SettingsAccount) },
+                onNavigateToAbout = { navController.navigate(SettingsAbout) }
             )
         }
+        
+        composable<SettingsLookAndFeel> { ... }
+        composable<SettingsNotifications> { ... }
+        composable<SettingsStorage> { ... }
+        composable<SettingsAccount> { ... }
+        composable<SettingsAbout> {
+            SettingsAboutScreen(
+                onOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) },
+                onAcknowledgments = { navController.navigate(SettingsAcknowledgments) }
+            )
+        }
+        composable<SettingsOpenSourceLicenses> { ... }
+        composable<SettingsAcknowledgments> { ... }
     }
 }
 ```
@@ -379,38 +426,37 @@ object WidgetIntentUtils {
 
 ### Default Transitions
 
+AniSync uses **Material Design Shared Axis** transitions:
+- **X-axis** transitions for bottom navigation tab switches
+- **Z-axis** transitions for detail and settings screen navigation
+
 ```kotlin
 @Composable
 fun AniSyncNavHost(...) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        // X-axis shared axis for tab navigation
         enterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300)
-            )
+            materialSharedAxisXIn(forward = true, durationMillis = 300)
         },
         exitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300)
-            )
+            materialSharedAxisXOut(forward = true, durationMillis = 300)
         },
         popEnterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300)
-            )
+            materialSharedAxisXIn(forward = false, durationMillis = 300)
         },
         popExitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300)
-            )
+            materialSharedAxisXOut(forward = false, durationMillis = 300)
         }
     ) {
-        // ...
+        // Detail/Settings screens override with Z-axis transitions
+        composable<MediaDetails>(
+            enterTransition = { materialSharedAxisZIn(forward = true) },
+            exitTransition = { materialSharedAxisZOut(forward = true) },
+            popEnterTransition = { materialSharedAxisZIn(forward = false) },
+            popExitTransition = { materialSharedAxisZOut(forward = false) }
+        ) { ... }
     }
 }
 ```
@@ -424,7 +470,7 @@ SharedTransitionLayout {
 }
 
 // Media details header
-composable<Route.MediaDetails> {
+composable<MediaDetails> {
     SharedTransitionScope {
         MediaDetailsScreen(
             sharedTransitionScope = this,
@@ -444,23 +490,23 @@ composable<Route.MediaDetails> {
 @Composable
 fun MainBottomNavBar(
     navController: NavHostController,
-    currentRoute: Route?
+    currentRoute: Any?
 ) {
     val items = listOf(
         BottomNavItem(
-            route = Route.Main.Library,
+            route = Library,
             icon = Icons.Outlined.VideoLibrary,
             selectedIcon = Icons.Filled.VideoLibrary,
             label = "Library"
         ),
         BottomNavItem(
-            route = Route.Main.Discover,
+            route = Discover,
             icon = Icons.Outlined.Explore,
             selectedIcon = Icons.Filled.Explore,
             label = "Discover"
         ),
         BottomNavItem(
-            route = Route.Main.Profile,
+            route = Profile,
             icon = Icons.Outlined.Person,
             selectedIcon = Icons.Filled.Person,
             label = "Profile"

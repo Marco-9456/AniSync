@@ -361,6 +361,11 @@ flowchart TB
         EUW[EpisodeUpdateWorker]
     end
 
+    subgraph "Support Components"
+        ATWR[AddToWatchingReceiver]
+        NDS[NotificationDebugService]
+    end
+
     subgraph "Triggers"
         APP[App Launch]
         BOOT[Device Boot]
@@ -391,6 +396,8 @@ flowchart TB
     ASW --> WIDGET
     TW --> DB
     EUW --> DB
+    ATWR --> DB
+    NDS --> NOTIF
 ```
 
 ### Worker Details
@@ -402,6 +409,8 @@ flowchart TB
 | `AiringScheduleWorker` | On-demand | Network | Fetch 7-day airing schedule |
 | `TrendingWorker` | On-demand | Network | Fetch trending anime |
 | `EpisodeUpdateWorker` | On-demand | Network | Sync episode progress |
+| `AddToWatchingReceiver` | On-demand | Network | Handle "Add to Watching" action from notifications |
+| `NotificationDebugService` | Manual | None | Debug tool for testing notification delivery |
 
 ### NotificationScheduler
 

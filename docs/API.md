@@ -86,19 +86,28 @@ class AuthRepository @Inject constructor(
 ```kotlin
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+object ApolloModule {
     
     @Provides
     @Singleton
-    fun provideApolloClient(authRepository: AuthRepository): ApolloClient {
+    fun provideApolloClient(
+        authorizationInterceptor: AuthorizationInterceptor,
+        @ApplicationContext context: Context
+    ): ApolloClient {
+        // Two-tier normalized cache: Memory (10 MB) → SQLite
+        val sqlNormalizedCacheFactory = SqlNormalizedCacheFactory(context, "apollo_cache.db")
+        val memoryFirstThenSqlCacheFactory = MemoryCacheFactory(maxSizeBytes = 10 * 1024 * 1024)
+            .chain(sqlNormalizedCacheFactory)
+
         return ApolloClient.Builder()
             .serverUrl("https://graphql.anilist.co")
-            .addHttpInterceptor(AuthInterceptor(authRepository))
+            .addHttpInterceptor(authorizationInterceptor)
+            .normalizedCache(memoryFirstThenSqlCacheFactory)
             .build()
     }
 }
 
-class AuthInterceptor(
+class AuthorizationInterceptor @Inject constructor(
     private val authRepository: AuthRepository
 ) : HttpInterceptor {
     
@@ -129,22 +138,32 @@ class AuthInterceptor(
 
 ```mermaid
 flowchart TB
-    subgraph "Queries (Read)"
+    subgraph "Queries (18)"
         Q1[GetViewer]
         Q2[GetMediaDetails]
-        Q3[GetMediaList]
+        Q3[GetUserLibrary]
         Q4[SearchMedia]
         Q5[GetTrending]
         Q6[AiringSchedule]
         Q7[GetNotifications]
-        Q8[GetCharacters]
+        Q8[GetCharacterDetails]
+        Q9[GetUserProfile]
+        Q10[GetUserFavorites]
+        Q11[GetUserActivities]
+        Q12[GetUserStatistics]
+        Q13[NextAiringEpisodes]
+        Q14[GetPlanningUpcomingEpisodes]
+        Q15[GetPlanningFirstEpisodes]
+        Q16[GetMediaBySort]
+        Q17[GetUpcomingMedia]
+        Q18[GetPaginatedMedia]
     end
 
-    subgraph "Mutations (Write)"
+    subgraph "Mutations (4)"
         M1[SaveMediaListEntry]
         M2[DeleteMediaListEntry]
-        M3[UpdateProgress]
-        M4[UpdateScore]
+        M3[ToggleFavourite]
+        M4[UpdateAbout]
     end
 
     subgraph "Data Flow"
@@ -152,7 +171,7 @@ flowchart TB
         CACHE[(Local Cache)]
     end
 
-    Q1 & Q2 & Q3 & Q4 & Q5 & Q6 & Q7 & Q8 --> API
+    Q1 & Q2 & Q3 & Q4 & Q5 & Q6 & Q7 & Q8 & Q9 & Q10 & Q11 & Q12 & Q13 & Q14 & Q15 & Q16 & Q17 & Q18 --> API
     M1 & M2 & M3 & M4 --> API
     API --> CACHE
 ```

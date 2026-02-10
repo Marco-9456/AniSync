@@ -71,7 +71,7 @@ flowchart TB
     subgraph "External"
         ROOM[(Room Database)]
         APOLLO[Apollo GraphQL]
-        PREFS[DataStore/Prefs]
+        PREFS[SharedPreferences]
     end
 
     UI --> VM
@@ -138,14 +138,17 @@ com.anisync.android/
 │   ├── repository/         # Repository interfaces
 │   └── usecase/            # Business logic
 ├── presentation/
-│   ├── common/             # Shared UI components
-│   ├── screens/            # Feature screens
-│   │   ├── library/
-│   │   ├── details/
-│   │   ├── discover/
-│   │   └── profile/
-│   └── navigation/         # Nav graph & routes
-├── ui/theme/               # Material 3 theming
+│   ├── components/         # Shared UI components
+│   ├── details/            # Media details screen
+│   ├── discover/           # Discover/browse screen
+│   ├── library/            # Library management screen
+│   ├── login/              # Authentication screen
+│   ├── navigation/         # Nav graph & routes
+│   ├── profile/            # User profile screen
+│   ├── settings/           # Settings screens & components
+│   ├── statistics/         # User statistics screen
+│   └── util/               # Presentation utilities
+├── ui/theme/               # Material 3 theming (MaterialKolor)
 ├── util/                   # Extensions & helpers
 ├── widget/                 # Glance widgets
 └── worker/                 # WorkManager jobs
@@ -293,33 +296,38 @@ sealed interface MediaListAction {
 ```mermaid
 flowchart TB
     subgraph "SingletonComponent"
-        NM[NetworkModule]
+        AM[ApolloModule]
         DBM[DatabaseModule]
         RM[RepositoryModule]
-    end
-
-    subgraph "ViewModelComponent"
-        UCM[UseCaseModule]
+        ILM[ImageLoaderModule]
     end
 
     subgraph "Provided Dependencies"
-        AC[ApolloClient]
+        AC[ApolloClient<br/>+ Normalized Cache<br/>+ AuthorizationInterceptor]
         DB[(AppDatabase)]
-        DAOs[DAOs]
-        REPOS[Repositories]
-        UCs[UseCases]
+        DAOs[5 DAOs<br/>Library · MediaDetails<br/>UserProfile · AiringSchedule · Trending]
+        REPOS[8 Repositories<br/>Library · Discover · Profile<br/>Details · Search · Notification<br/>Preferences · Statistics]
+        IL[Coil ImageLoader<br/>50 MB disk · 25% heap]
     end
 
-    NM --> AC
+    AM --> AC
     DBM --> DB
     DBM --> DAOs
     RM --> REPOS
-    UCM --> UCs
+    ILM --> IL
 
     REPOS --> DAOs
     REPOS --> AC
-    UCs --> REPOS
 ```
+
+### Module Details
+
+| Module | Scope | Provides |
+|--------|-------|----------|
+| `ApolloModule` | Singleton | `ApolloClient` with two-tier normalized cache (Memory 10 MB + SQLite) and `AuthorizationInterceptor` |
+| `DatabaseModule` | Singleton | `AppDatabase` (Room) + 5 DAOs: `LibraryDao`, `MediaDetailsDao`, `UserProfileDao`, `AiringScheduleDao`, `TrendingDao` |
+| `RepositoryModule` | Singleton | 8 repository bindings: Library, Discover, Profile, Details, Search, Notification, Preferences, Statistics |
+| `ImageLoaderModule` | Singleton | Coil `ImageLoader` with 50 MB disk cache, 25% heap memory cache, 200ms crossfade |
 
 ### Module Examples
 
@@ -331,20 +339,24 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "anisync.db")
-            .fallbackToDestructiveMigration() // ⚠️ Remove before production!
+            .addMigrations(*Migrations.ALL_MIGRATIONS)
+            .fallbackToDestructiveMigration(dropAllTables = true) // ⚠️ Remove before production!
             .build()
     }
 
     @Provides
     fun provideLibraryDao(db: AppDatabase): LibraryDao = db.libraryDao()
+    // + MediaDetailsDao, UserProfileDao, AiringScheduleDao, TrendingDao
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-    @Binds
-    @Singleton
-    abstract fun bindMediaRepository(impl: MediaRepositoryImpl): MediaRepository
+    @Binds @Singleton
+    abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
+    @Binds @Singleton
+    abstract fun bindDiscoverRepository(impl: DiscoverRepositoryImpl): DiscoverRepository
+    // + Profile, Details, Search, Notification, Preferences, Statistics
 }
 ```
 

@@ -19,7 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enabled Room schema export for version tracking
 
 ### Fixed
-- (None yet)
+- Custom seed color `Color(0x00000000)` (transparent black) was incorrectly treated as "no color set" due to 0-value collision in `AppSettings`
+- Orphaned palette state when clearing custom seed color while `selectedPaletteId` is `"custom"` -- now auto-resets to `"dynamic"`
+- `PaletteStyleSelector` could be interacted with in disabled contexts -- added `enabled` parameter gating expand and input
+- Dynamic palette preview in `ColorSchemeSelector` ignored dark mode -- now uses `dynamicDarkColorScheme`/`dynamicLightColorScheme` on Android 12+
+- Color picker hue slider state lost on configuration change -- changed from `remember` to `rememberSaveable`
+- Dynamic palette option was shown on pre-Android 12 devices where it is unsupported -- now filtered out
+- Orphaned palette state when device conditions change (e.g., restored backup from Android 12+ device to pre-12) -- added `LaunchedEffect` auto-reset
+- `PaletteStyleSelector` was interactive when Dynamic palette was selected (palette style has no effect on dynamic colors) -- now disabled
+- `getTitleLanguageLabel()` and `getTitleLanguageExample()` in `LookAndFeelScreen` were unnecessarily public -- made `private`
 
 ### Removed
 - Legacy migration code (MIGRATION_12_13)
