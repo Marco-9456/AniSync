@@ -47,8 +47,10 @@ import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.TrendingDao
 import com.anisync.android.data.local.entity.TrendingEntity
+import com.anisync.android.widget.core.SizeClass
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntentUtils
+import com.anisync.android.widget.core.toSizeClass
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -112,12 +114,12 @@ class TrendingWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
-                val size = LocalSize.current
+                val sizeClass = LocalSize.current.toSizeClass()
 
-                when {
-                    size.height <= 110.dp -> TrendingCompact(trendingWithImages)
-                    size.height <= 120.dp -> TrendingMedium(trendingWithImages)
-                    else -> TrendingExpanded(trendingWithImages)
+                when (sizeClass) {
+                    SizeClass.COMPACT -> TrendingCompact(trendingWithImages)
+                    SizeClass.MEDIUM -> TrendingMedium(trendingWithImages)
+                    SizeClass.EXPANDED -> TrendingExpanded(trendingWithImages)
                 }
             }
         }
@@ -284,7 +286,7 @@ private fun TrendingExpanded(entries: List<Pair<TrendingEntity, Bitmap?>>) {
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    provider = ImageProvider(android.R.drawable.ic_menu_search),
+                    provider = ImageProvider(R.drawable.ic_search_24px),
                     contentDescription = "Search",
                     colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
                     modifier = GlanceModifier.size(20.dp)
@@ -464,12 +466,13 @@ private fun TrendingGridRowBottomBadges(rowItems: List<Pair<TrendingEntity, Bitm
 
 @Composable
 private fun EmptyStateCompact() {
+    val context = LocalContext.current
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
             .background(GlanceTheme.colors.surfaceVariant)
-            .clickable(actionStartActivity(openMainAppIntent())),
+            .clickable(actionStartActivity(WidgetIntentUtils.openMainAppIntent(context))),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -523,12 +526,13 @@ private fun EmptyStateMedium() {
 
 @Composable
 private fun EmptyStateExpanded() {
+    val context = LocalContext.current
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
             .background(GlanceTheme.colors.widgetBackground)
-            .clickable(actionStartActivity(openMainAppIntent())),
+            .clickable(actionStartActivity(WidgetIntentUtils.openMainAppIntent(context))),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -573,13 +577,6 @@ private fun createSearchIntent(context: Context): Intent {
         "anisync://search".toUri()
     ).apply {
         setClass(context, MainActivity::class.java)
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    }
-}
-
-private fun openMainAppIntent(): Intent {
-    return Intent(Intent.ACTION_MAIN).apply {
-        setClassName("com.anisync.android", "com.anisync.android.MainActivity")
         flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
 }

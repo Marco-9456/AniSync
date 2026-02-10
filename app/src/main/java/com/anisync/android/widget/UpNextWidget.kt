@@ -87,7 +87,7 @@ interface UpNextWidgetEntryPoint {
 }
 
 // Helper class to hold calculated display data
-data class UpNextDisplayItem(
+private data class UpNextDisplayItem(
     val entry: LibraryEntryEntity,
     val displayEpisode: Int,
     val airingTime: Long,
@@ -133,11 +133,12 @@ class UpNextWidget : GlanceAppWidget() {
             }
         }
 
-        // Get entries and filter to only currently airing shows (RELEASING status)
+        // Get all entries from the up next list
+        // Filtering by mediaStatus/includePlanning happens in provideContent
+        // where we can read widget configuration preferences
         val entries = withContext(Dispatchers.IO) {
             try {
                 dao.getUpNext()
-                    .filter { it.mediaStatus == null || it.mediaStatus == "RELEASING" }
             } catch (e: Exception) {
                 emptyList()
             }
@@ -231,13 +232,24 @@ class UpNextWidget : GlanceAppWidget() {
                     ?: UpNextWidgetConfig.DEFAULT_MAX_ITEMS
                 val showAvailableNow = prefs[UpNextWidgetConfig.ShowAvailableNowKey]
                     ?: UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW
-                
+                val includePlanning = prefs[UpNextWidgetConfig.IncludePlanningKey]
+                    ?: UpNextWidgetConfig.DEFAULT_INCLUDE_PLANNING
+
                 // Filter items based on configuration
+                val filteredByPlanning = if (includePlanning) {
+                    finalDisplayItems
+                } else {
+                    finalDisplayItems.filter { item ->
+                        val status = item.entry.mediaStatus
+                        status == null || status == "RELEASING"
+                    }
+                }
+
                 val displayItems = if (showAvailableNow) {
-                    finalDisplayItems.take(maxItems)
+                    filteredByPlanning.take(maxItems)
                 } else {
                     val currentTime = System.currentTimeMillis() / 1000
-                    finalDisplayItems
+                    filteredByPlanning
                         .filter { it.airingTime == 0L || it.airingTime > currentTime }
                         .take(maxItems)
                 }
@@ -549,8 +561,6 @@ private fun UpNextExpanded(
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(0.dp)) // Header padding handles it
-
         val currentTimeSeconds = System.currentTimeMillis() / 1000
         val firstFutureIndex = items.indexOfFirst { it.airingTime > currentTimeSeconds }
         // If no future items, no hero (or fall back to 0 if preferred, but user dislikes available now being hero)
@@ -614,17 +624,10 @@ private fun CountdownCard(
         if (isHero) GlanceTheme.colors.onPrimary else GlanceTheme.colors.onTertiaryContainer
 
     // Both hero and non-hero cards use dark background for consistency
-    val cardModifier = if (isHero) {
-        GlanceModifier
-            .fillMaxWidth()
-            .background(GlanceTheme.colors.surfaceVariant)
-            .cornerRadius(16.dp)
-    } else {
-        GlanceModifier
-            .fillMaxWidth()
-            .background(GlanceTheme.colors.surfaceVariant)
-            .cornerRadius(16.dp)
-    }
+    val cardModifier = GlanceModifier
+        .fillMaxWidth()
+        .background(GlanceTheme.colors.surfaceVariant)
+        .cornerRadius(16.dp)
 
     val padding = if (isHero) 16.dp else 12.dp
     val crButtonSize = if (isHero) 44.dp else 36.dp
@@ -815,7 +818,7 @@ private fun EmptyStateCompact() {
         contentAlignment = Alignment.Center
     ) {
         Image(
-            provider = ImageProvider(android.R.drawable.ic_menu_close_clear_cancel),
+            provider = ImageProvider(R.drawable.ic_check_circle_24px),
             contentDescription = "All caught up",
             colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
             modifier = GlanceModifier.size(32.dp)
@@ -838,48 +841,48 @@ private fun EmptyStateMedium() {
             contentAlignment = Alignment.Center
         ) {
             Image(
-                provider = ImageProvider(android.R.drawable.ic_menu_recent_history),
-                contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
-                modifier = GlanceModifier.size(24.dp)
-            )
-        }
-        Spacer(modifier = GlanceModifier.width(16.dp))
-        Column {
-            Text(
-                text = "All Caught Up!",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    provider = ImageProvider(R.drawable.upcoming_24px),
+                    contentDescription = null,
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
+                    modifier = GlanceModifier.size(24.dp)
                 )
-            )
-            Text(
-                text = "You're up to date with your watchlist",
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                maxLines = 2
-            )
+            }
+            Spacer(modifier = GlanceModifier.width(16.dp))
+            Column {
+                Text(
+                    text = "All Caught Up!",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = "You're up to date with your watchlist",
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                    maxLines = 2
+                )
+            }
         }
     }
-}
 
-@Composable
-private fun EmptyStateExpanded() {
-    val context = LocalContext.current
-    Box(
-        modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
-            .background(GlanceTheme.colors.surface).cornerRadius(28.dp)
-            .clickable(actionStartActivity(openMainAppIntent(context))),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = GlanceModifier.size(72.dp).cornerRadius(24.dp)
-                    .background(GlanceTheme.colors.tertiaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    provider = ImageProvider(android.R.drawable.ic_menu_recent_history),
+    @Composable
+    private fun EmptyStateExpanded() {
+        val context = LocalContext.current
+        Box(
+            modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
+                .background(GlanceTheme.colors.surface).cornerRadius(28.dp)
+                .clickable(actionStartActivity(openMainAppIntent(context))),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = GlanceModifier.size(72.dp).cornerRadius(24.dp)
+                        .background(GlanceTheme.colors.tertiaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        provider = ImageProvider(R.drawable.upcoming_24px),
                     contentDescription = null,
                     colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
                     modifier = GlanceModifier.size(40.dp)
@@ -950,16 +953,22 @@ private fun CountdownChronometer(
     val diffMs = targetTimeMs - currentTimeMs
     val base = elapsedNow + diffMs
 
-    // Detect dark mode for theme-aware color
-    val isDarkMode = (context.resources.configuration.uiMode and
-            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
-
-    // Use M3 primary color that contrasts well with surfaceVariant background
-    val textColor = if (isDarkMode) {
-        "#D0BCFF".toColorInt() // M3 Primary (dark theme)
-    } else {
-        "#6750A4".toColorInt() // M3 Primary (light theme)
+    // Resolve the primary color from the context's theme at runtime
+    // to correctly match the user's chosen MaterialKolor seed color
+    val textColor = run {
+        val typedValue = android.util.TypedValue()
+        context.theme.resolveAttribute(android.R.attr.colorPrimary, typedValue, true)
+        if (typedValue.resourceId != 0) {
+            context.getColor(typedValue.resourceId)
+        } else if (typedValue.data != 0) {
+            typedValue.data
+        } else {
+            // Fallback: detect dark mode and use reasonable M3 defaults
+            val isDarkMode = (context.resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES
+            if (isDarkMode) "#D0BCFF".toColorInt() else "#6750A4".toColorInt()
+        }
     }
 
     // Create RemoteViews with the Chronometer

@@ -1,13 +1,11 @@
 package com.anisync.android.widget
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -43,12 +41,14 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.widget.actions.ToggleCalendarFilterAction
 import com.anisync.android.widget.actions.ToggleExpandTodayAction
+import com.anisync.android.widget.core.SizeClass
+import com.anisync.android.widget.core.WidgetIntentUtils
+import com.anisync.android.widget.core.toSizeClass
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -113,7 +113,6 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
-                val size = LocalSize.current
                 val todayDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
 
                 // READ FILTER STATE
@@ -130,10 +129,12 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
                     groupedByDay
                 }
 
-                when {
-                    size.height <= 110.dp -> CalendarCompact(filteredGroupedByDay, todayDayOfWeek, filterMyList)
-                    size.height <= 120.dp -> CalendarMedium(filteredGroupedByDay, todayDayOfWeek, filterMyList)
-                    else -> CalendarExpanded(filteredGroupedByDay, todayDayOfWeek, filterMyList, expandToday)
+                val sizeClass = LocalSize.current.toSizeClass()
+
+                when (sizeClass) {
+                    SizeClass.COMPACT -> CalendarCompact(filteredGroupedByDay, todayDayOfWeek, filterMyList)
+                    SizeClass.MEDIUM -> CalendarMedium(filteredGroupedByDay, todayDayOfWeek, filterMyList)
+                    SizeClass.EXPANDED -> CalendarExpanded(filteredGroupedByDay, todayDayOfWeek, filterMyList, expandToday)
                 }
             }
         }
@@ -476,7 +477,7 @@ private fun CalendarExpanded(
                     modifier = GlanceModifier.fillMaxWidth().padding(
                         start = 16.dp,
                         end = 16.dp,
-                        bottom = if (dayOfWeek != Calendar.SUNDAY) 12.dp else 16.dp
+                        bottom = if (dayOfWeek != days.last()) 12.dp else 16.dp
                     )
                 ) {
                     val isToday = dayOfWeek == todayDayOfWeek
@@ -698,13 +699,13 @@ private fun DayRowExpanded(
 
 private fun getDayAbbreviation(dayOfWeek: Int): String {
     return when (dayOfWeek) {
-        Calendar.MONDAY -> "M"
-        Calendar.TUESDAY -> "T"
-        Calendar.WEDNESDAY -> "W"
-        Calendar.THURSDAY -> "T"
-        Calendar.FRIDAY -> "F"
-        Calendar.SATURDAY -> "S"
-        Calendar.SUNDAY -> "S"
+        Calendar.MONDAY -> "Mo"
+        Calendar.TUESDAY -> "Tu"
+        Calendar.WEDNESDAY -> "We"
+        Calendar.THURSDAY -> "Th"
+        Calendar.FRIDAY -> "Fr"
+        Calendar.SATURDAY -> "Sa"
+        Calendar.SUNDAY -> "Su"
         else -> "?"
     }
 }
@@ -741,12 +742,5 @@ private fun formatTimeCompact(timestamp: Long): String {
     return sdf.format(java.util.Date(timestamp * 1000))
 }
 
-private fun createDetailsIntent(context: Context, mediaId: Int): Intent {
-    return Intent(
-        Intent.ACTION_VIEW,
-        "anisync://details/$mediaId".toUri()
-    ).apply {
-        component = null
-        setClass(context, MainActivity::class.java)
-    }
-}
+private fun createDetailsIntent(context: Context, mediaId: Int) =
+    WidgetIntentUtils.createDetailsIntent(context, mediaId)

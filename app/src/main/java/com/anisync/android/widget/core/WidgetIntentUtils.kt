@@ -30,13 +30,15 @@ object WidgetIntentUtils {
 
     /**
      * Creates an intent to open the main app.
-     * 
+     * Uses explicit intent with context to correctly target debug/release builds.
+     *
+     * @param context Application context
      * @return Intent configured to launch MainActivity
      */
-    fun openMainAppIntent(): Intent {
-        return Intent(Intent.ACTION_MAIN).apply {
-            setClassName("com.anisync.android", "com.anisync.android.MainActivity")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    fun openMainAppIntent(context: Context): Intent {
+        return Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_MAIN
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
     }
 }

@@ -66,8 +66,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.lifecycle.lifecycleScope
 import com.anisync.android.R
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.widget.UpNextWidget
@@ -102,19 +106,44 @@ class UpNextWidgetConfigActivity : ComponentActivity() {
             return
         }
 
-        setContent {
-            AppTheme {
-                WidgetConfigScreen(
-                    onSave = { config -> saveConfiguration(config) },
-                    onCancel = { finish() }
+        // Load existing configuration if reconfiguring an existing widget
+        lifecycleScope.launch {
+            val initialConfig = try {
+                val glanceId = GlanceAppWidgetManager(this@UpNextWidgetConfigActivity)
+                    .getGlanceIdBy(appWidgetId)
+                val prefs = getAppWidgetState<Preferences>(
+                    this@UpNextWidgetConfigActivity,
+                    PreferencesGlanceStateDefinition,
+                    glanceId
                 )
+                WidgetConfigState(
+                    showCountdown = prefs[UpNextWidgetConfig.ShowCountdownKey]
+                        ?: UpNextWidgetConfig.DEFAULT_SHOW_COUNTDOWN,
+                    maxItems = prefs[UpNextWidgetConfig.MaxItemsKey]
+                        ?: UpNextWidgetConfig.DEFAULT_MAX_ITEMS,
+                    includePlanning = prefs[UpNextWidgetConfig.IncludePlanningKey]
+                        ?: UpNextWidgetConfig.DEFAULT_INCLUDE_PLANNING,
+                    showAvailableNow = prefs[UpNextWidgetConfig.ShowAvailableNowKey]
+                        ?: UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW
+                )
+            } catch (_: Exception) {
+                WidgetConfigState() // Use defaults for new widgets
+            }
+
+            setContent {
+                AppTheme {
+                    WidgetConfigScreen(
+                        initialConfig = initialConfig,
+                        onSave = { config -> saveConfiguration(config) },
+                        onCancel = { finish() }
+                    )
+                }
             }
         }
     }
 
     private fun saveConfiguration(config: WidgetConfigState) {
-        val scope = kotlinx.coroutines.MainScope()
-        scope.launch {
+        lifecycleScope.launch {
             try {
                 val glanceId = GlanceAppWidgetManager(this@UpNextWidgetConfigActivity)
                     .getGlanceIdBy(appWidgetId)
@@ -150,14 +179,15 @@ data class WidgetConfigState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WidgetConfigScreen(
+    initialConfig: WidgetConfigState = WidgetConfigState(),
     onSave: (WidgetConfigState) -> Unit,
     onCancel: () -> Unit
 ) {
-    // State
-    var showCountdown by remember { mutableStateOf(UpNextWidgetConfig.DEFAULT_SHOW_COUNTDOWN) }
-    var maxItems by remember { mutableFloatStateOf(UpNextWidgetConfig.DEFAULT_MAX_ITEMS.toFloat()) }
-    var includePlanning by remember { mutableStateOf(UpNextWidgetConfig.DEFAULT_INCLUDE_PLANNING) }
-    var showAvailableNow by remember { mutableStateOf(UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW) }
+    // State - initialized from existing config values
+    var showCountdown by remember { mutableStateOf(initialConfig.showCountdown) }
+    var maxItems by remember { mutableFloatStateOf(initialConfig.maxItems.toFloat()) }
+    var includePlanning by remember { mutableStateOf(initialConfig.includePlanning) }
+    var showAvailableNow by remember { mutableStateOf(initialConfig.showAvailableNow) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
@@ -405,7 +435,7 @@ private fun ItemCountSelector(
                 )
 
                 Text(
-                    text = "Items visible on widget",
+                    text = stringResource(R.string.widget_config_items_visible),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )

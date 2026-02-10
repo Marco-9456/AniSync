@@ -14,7 +14,21 @@ import kotlinx.coroutines.withContext
  * Part of the core package for shared widget infrastructure.
  */
 object WidgetImageLoader {
-    
+
+    /**
+     * Lazily-initialized singleton ImageLoader for widgets.
+     * Reuses Coil's disk cache across all widget image loads,
+     * avoiding the overhead of creating a new ImageLoader per call.
+     */
+    private var imageLoader: ImageLoader? = null
+
+    @Synchronized
+    private fun getImageLoader(context: Context): ImageLoader {
+        return imageLoader ?: ImageLoader.Builder(context.applicationContext)
+            .build()
+            .also { imageLoader = it }
+    }
+
     /**
      * Load a bitmap from a URL for use in widgets.
      *
@@ -36,7 +50,7 @@ object WidgetImageLoader {
 
         return withContext(Dispatchers.IO) {
             try {
-                val loader = ImageLoader(context)
+                val loader = getImageLoader(context)
                 val request = ImageRequest.Builder(context)
                     .data(url)
                     .size(width, height)

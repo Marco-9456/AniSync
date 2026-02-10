@@ -88,7 +88,6 @@ flowchart TB
     end
 
     subgraph "Data Layer"
-        WR[WidgetRepository]
         WIL[WidgetImageLoader]
         DS[(DataStore)]
     end
@@ -111,15 +110,16 @@ flowchart TB
     WCR --> WCW
     TR --> TW
 
-    UNW --> WR
-    ATW --> WR
+    UNW --> LD
+    UNW --> ASD
+    UNW --> MDD
+    ATW --> ASD
     WCW --> ASD
     TW --> TD
 
-    WR --> LD
-    WR --> ASD
-    WR --> MDD
-    WR --> WIL
+    UNW --> WIL
+    ATW --> WIL
+    TW --> WIL
 
     TFA --> DS
     TCFA --> DS
@@ -131,6 +131,7 @@ flowchart TB
     TRW --> TD
     WRW --> UNW
     WRW --> ATW
+    WRW --> WCW
 ```
 
 ### Data Flow Sequence
@@ -232,15 +233,19 @@ Shows upcoming episodes from the user's watching list with real-time countdown t
 object UpNextWidgetConfig {
     val ShowCountdownKey = booleanPreferencesKey("show_countdown")
     val MaxItemsKey = intPreferencesKey("max_items")
+    val IncludePlanningKey = booleanPreferencesKey("include_planning")
     val ShowAvailableNowKey = booleanPreferencesKey("show_available_now")
     
     const val DEFAULT_SHOW_COUNTDOWN = true
     const val DEFAULT_MAX_ITEMS = 5
+    const val DEFAULT_INCLUDE_PLANNING = false
     const val DEFAULT_SHOW_AVAILABLE_NOW = true
 }
 ```
 
 #### Data Sources
+
+Widgets access DAOs directly via Hilt `@EntryPoint` interfaces (not via a repository layer):
 
 | Source | Purpose |
 |--------|---------|
@@ -405,7 +410,7 @@ flowchart TB
 | Worker | Interval | Constraints | Purpose |
 |--------|----------|-------------|---------|
 | `NotificationWorker` | 15 min | Network | Check for new airing notifications |
-| `WidgetRefreshWorker` | 15 min | None | Update countdown timers |
+| `WidgetRefreshWorker` | 15 min | None | Update countdown timers (UpNext, AiringToday, WeeklyCalendar) |
 | `AiringScheduleWorker` | On-demand | Network | Fetch 7-day airing schedule |
 | `TrendingWorker` | On-demand | Network | Fetch trending anime |
 | `EpisodeUpdateWorker` | On-demand | Network | Sync episode progress |
@@ -583,12 +588,45 @@ class NotificationPreferences @Inject constructor(...) {
 ```kotlin
 // WidgetDimensions.kt
 object WidgetDimensions {
-    val cardCornerRadius = 16.dp
-    val posterCornerRadius = 8.dp
-    val badgeCornerRadius = 8.dp
+    // Padding
+    val paddingSmall = 8.dp
+    val paddingMedium = 12.dp
+    val paddingLarge = 16.dp
+
+    // Corner Radius
+    val cornerRadiusSmall = 8.dp
+    val cornerRadiusMedium = 12.dp
+    val cornerRadiusLarge = 16.dp
+
+    // Nested objects for organized sizing
+    object Poster {
+        val widthCompact = 40.dp
+        val widthMedium = 48.dp
+        val widthExpanded = 80.dp
+        val heightCompact = 56.dp
+        val heightMedium = 64.dp
+        val heightExpanded = 110.dp
+    }
+
+    object Icon {
+        val small = 16.dp
+        val medium = 20.dp
+        val large = 24.dp
+    }
+
+    // Component Heights
     val progressBarHeight = 4.dp
-    val iconSize = 24.dp
-    val smallIconSize = 16.dp
+
+    object Badge {
+        val paddingHorizontal = 8.dp
+        val paddingVertical = 4.dp
+        val cornerRadius = 8.dp
+    }
+
+    object Timeline {
+        val lineWidth = 2.dp
+        val columnWidth = 70.dp
+    }
 }
 
 // WidgetTypography.kt
@@ -614,7 +652,7 @@ enum class SizeClass {
 
 fun DpSize.toSizeClass(): SizeClass = when {
     height <= 110.dp -> SizeClass.COMPACT
-    height <= 220.dp -> SizeClass.MEDIUM
+    height <= 200.dp -> SizeClass.MEDIUM
     else -> SizeClass.EXPANDED
 }
 ```

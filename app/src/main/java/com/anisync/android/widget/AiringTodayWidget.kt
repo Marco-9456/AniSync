@@ -276,8 +276,8 @@ private fun AiringMedium(
         Spacer(modifier = GlanceModifier.height(8.dp))
 
         // Show first 1-2 items
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         entries.take(2).forEach { (schedule, _) ->
-            val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
             val timeStr = timeFormat.format(Date(schedule.airingAt * 1000))
 
             Row(
@@ -535,7 +535,7 @@ private fun TimelineItem(
             // Star Icon for watching items
             if (schedule.isWatching) {
                 Image(
-                    provider = ImageProvider(android.R.drawable.btn_star_big_on),
+                    provider = ImageProvider(R.drawable.ic_bookmark_24px),
                     contentDescription = null,
                     colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
                     modifier = GlanceModifier.size(20.dp)
