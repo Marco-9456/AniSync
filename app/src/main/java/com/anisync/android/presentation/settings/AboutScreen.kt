@@ -53,14 +53,22 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Custom clover shape that can morph between different petal counts.
- * Uses smooth float interpolation for fluid animation between petal counts.
- * @param petalCount Number of petals (supports fractional values for smooth animation)
- * @param petalDepth How deep the indentations are (0 = circle, 1 = very deep)
+ * A Jetpack Compose [Shape] that draws a clover-like or flower-like figure.
+ *
+ * This shape is created by modulating the radius of a circle using a cosine function.
+ * It supports a fractional number of "petals", allowing for smooth morphing animations
+ * between different petal counts. The interpolation between two integer petal counts
+ * (e.g., from 4 to 5) is handled by blending the shapes of the lower and higher counts.
+ *
+ * @param petalCount The number of petals for the shape. Can be a fractional value (e.g., 4.5f)
+ *                   to facilitate smooth animations between integer counts.
+ * @param petalDepth A value from 0.0 to 1.0 that controls the depth of the indentations
+ *                   between petals. A value of 0.0 results in a perfect circle, while a
+ *                   value of 1.0 creates very deep indentations. Defaults to 0.3f.
  */
 private class CloverShape(
     private val petalCount: Float,
-    private val petalDepth: Float = 0.3f
+    private val petalDepth: Float = 3.0f
 ) : Shape {
     override fun createOutline(
         size: Size,

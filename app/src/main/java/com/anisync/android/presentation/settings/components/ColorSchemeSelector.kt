@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.settings.components
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -90,13 +93,35 @@ private fun ColorSchemeItem(
     // Generate the color scheme for this palette to extract the 4 colors
     val paletteColors = remember(palette, isDarkMode, paletteStyle) {
         if (palette.isDynamic) {
-            // For dynamic, use a neutral color scheme preview
-            PaletteColors(
-                topLeft = Color(0xFFE8DEF8),
-                topRight = Color(0xFFF3EDF7),
-                bottomLeft = Color(0xFFD0BCFF),
-                bottomRight = Color(0xFFCCC2DC)
-            )
+            // Use actual wallpaper-derived dynamic colors on Android 12+,
+            // with dark/light mode-aware fallbacks for older devices
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val dynamicScheme = if (isDarkMode) {
+                    dynamicDarkColorScheme(context)
+                } else {
+                    dynamicLightColorScheme(context)
+                }
+                PaletteColors(
+                    topLeft = dynamicScheme.primaryContainer,
+                    topRight = dynamicScheme.secondaryContainer,
+                    bottomLeft = dynamicScheme.primary,
+                    bottomRight = dynamicScheme.tertiary
+                )
+            } else if (isDarkMode) {
+                PaletteColors(
+                    topLeft = Color(0xFF4F378B),
+                    topRight = Color(0xFF332D41),
+                    bottomLeft = Color(0xFFD0BCFF),
+                    bottomRight = Color(0xFFCCC2DC)
+                )
+            } else {
+                PaletteColors(
+                    topLeft = Color(0xFFE8DEF8),
+                    topRight = Color(0xFFF3EDF7),
+                    bottomLeft = Color(0xFF6750A4),
+                    bottomRight = Color(0xFF7D5260)
+                )
+            }
         } else {
             try {
                 val colorScheme = dynamicColorScheme(

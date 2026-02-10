@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,8 +89,8 @@ fun ColorPickerSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
-    // Track the current hue (0-360)
-    var hue by remember { 
+    // Track the current hue (0-360), survives configuration changes
+    var hue by rememberSaveable { 
         mutableFloatStateOf(
             currentColor?.let { extractHue(it) } ?: 0f
         )

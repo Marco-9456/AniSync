@@ -125,8 +125,9 @@ class AppSettings @Inject constructor(
     val selectedPaletteId: StateFlow<String> = _selectedPaletteId.asStateFlow()
     
     // Custom seed color (when user picks their own color)
+    // Use prefs.contains() instead of sentinel value to avoid collision with Color(0x00000000)
     private val _customSeedColor = MutableStateFlow<Color?>(
-        prefs.getInt(KEY_CUSTOM_SEED_COLOR, 0).takeIf { it != 0 }?.let { Color(it) }
+        if (prefs.contains(KEY_CUSTOM_SEED_COLOR)) Color(prefs.getInt(KEY_CUSTOM_SEED_COLOR, 0)) else null
     )
     val customSeedColor: StateFlow<Color?> = _customSeedColor.asStateFlow()
     
@@ -207,6 +208,11 @@ class AppSettings @Inject constructor(
                 remove(KEY_CUSTOM_SEED_COLOR)
             }
         }.apply()
+        // Auto-reset palette if clearing custom color while "custom" is selected,
+        // to prevent an orphaned state where no palette circle is highlighted
+        if (color == null && _selectedPaletteId.value == "custom") {
+            setSelectedPalette("dynamic")
+        }
     }
     
     /**

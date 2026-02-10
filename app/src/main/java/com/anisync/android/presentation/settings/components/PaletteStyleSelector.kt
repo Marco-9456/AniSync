@@ -41,19 +41,21 @@ import com.materialkolor.PaletteStyle
 fun PaletteStyleSelector(
     selectedStyle: PaletteStyle,
     onStyleSelected: (PaletteStyle) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it },
+        onExpandedChange = { if (enabled) expanded = it },
         modifier = modifier
     ) {
         OutlinedTextField(
             value = selectedStyle.toDisplayName(),
             onValueChange = {},
             readOnly = true,
+            enabled = enabled,
             label = { Text(stringResource(R.string.palette_style)) },
             supportingText = {
                 Text(

@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.settings
 
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +29,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,12 +91,27 @@ fun LookAndFeelScreen(
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
     
-    // Build palette list including custom color if set
-    val palettes = remember(customSeedColor) {
-        if (customSeedColor != null) {
-            listOf(ThemePalette("custom", "Custom", customSeedColor!!)) + PresetPalettes.all
-        } else {
+    // Build palette list: filter out Dynamic on pre-Android 12, include custom if set
+    val supportseDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val palettes = remember(customSeedColor, supportseDynamicColor) {
+        val presets = if (supportseDynamicColor) {
             PresetPalettes.all
+        } else {
+            PresetPalettes.all.filter { !it.isDynamic }
+        }
+        if (customSeedColor != null) {
+            listOf(ThemePalette("custom", "Custom", customSeedColor!!)) + presets
+        } else {
+            presets
+        }
+    }
+    
+    // Auto-reset orphaned "custom" palette state: if selected palette ID doesn't
+    // exist in the current palette list (e.g., custom cleared, or dynamic on pre-12),
+    // reset to the first available palette.
+    LaunchedEffect(selectedPaletteId, palettes) {
+        if (palettes.none { it.id == selectedPaletteId }) {
+            viewModel.setSelectedPalette(palettes.firstOrNull()?.id ?: "dynamic")
         }
     }
     
@@ -226,10 +243,12 @@ fun LookAndFeelScreen(
         
         Spacer(modifier = Modifier.height(12.dp))
         
-        // Palette Style Selector
+        // Palette Style Selector (disabled when Dynamic palette is selected,
+        // since dynamic colors ignore PaletteStyle)
         PaletteStyleSelector(
             selectedStyle = paletteStyle,
             onStyleSelected = { viewModel.setPaletteStyle(it) },
+            enabled = selectedPaletteId != "dynamic",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -568,7 +587,7 @@ fun ThemeModeSelectionDialog(
 // =============================================================================
 
 @Composable
-fun getTitleLanguageLabel(language: TitleLanguage): String {
+private fun getTitleLanguageLabel(language: TitleLanguage): String {
     return when (language) {
         TitleLanguage.ROMAJI -> stringResource(R.string.title_language_romaji)
         TitleLanguage.ENGLISH -> stringResource(R.string.title_language_english)
@@ -577,7 +596,7 @@ fun getTitleLanguageLabel(language: TitleLanguage): String {
 }
 
 @Composable
-fun getTitleLanguageExample(language: TitleLanguage): String {
+private fun getTitleLanguageExample(language: TitleLanguage): String {
     return when (language) {
         TitleLanguage.ROMAJI -> stringResource(R.string.title_language_romaji_example)
         TitleLanguage.ENGLISH -> stringResource(R.string.title_language_english_example)
