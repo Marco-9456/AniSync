@@ -137,6 +137,12 @@ class AppSettings @Inject constructor(
     )
     val paletteStyle: StateFlow<PaletteStyle> = _paletteStyle.asStateFlow()
 
+    // App locale setting for in-app language switching
+    private val _appLocale = MutableStateFlow(
+        AppLocale.entries.getOrElse(prefs.getInt(KEY_APP_LOCALE, AppLocale.SYSTEM.ordinal)) { AppLocale.SYSTEM }
+    )
+    val appLocale: StateFlow<AppLocale> = _appLocale.asStateFlow()
+
     /**
      * Set the app theme mode.
      */
@@ -222,6 +228,15 @@ class AppSettings @Inject constructor(
         _paletteStyle.value = style
         prefs.edit().putInt(KEY_PALETTE_STYLE, style.ordinal).apply()
     }
+
+    /**
+     * Set the app locale for in-app language switching.
+     * The caller is responsible for applying the locale via AppCompatDelegate.
+     */
+    fun setAppLocale(locale: AppLocale) {
+        _appLocale.value = locale
+        prefs.edit().putInt(KEY_APP_LOCALE, locale.ordinal).apply()
+    }
     
     /**
      * Get the preferred streaming service directly from SharedPreferences.
@@ -269,6 +284,7 @@ companion object {
         private const val KEY_SELECTED_PALETTE = "selected_palette"
         private const val KEY_CUSTOM_SEED_COLOR = "custom_seed_color"
         private const val KEY_PALETTE_STYLE = "palette_style"
+        private const val KEY_APP_LOCALE = "app_locale"
     }
 }
 
@@ -279,4 +295,16 @@ enum class TitleLanguage {
     ROMAJI,
     ENGLISH,
     NATIVE
+}
+
+/**
+ * App UI locale options for in-app language switching.
+ * Each entry maps to a BCP 47 language tag.
+ * [displayName] is shown in native script so users can always identify their language.
+ */
+enum class AppLocale(val tag: String, val displayName: String) {
+    SYSTEM("", "System Default"),
+    ENGLISH("en", "English"),
+    GERMAN("de", "Deutsch"),
+    ARABIC("ar", "العربية")
 }

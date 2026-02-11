@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.AppLocale
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
@@ -73,7 +75,8 @@ fun LookAndFeelScreen(
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val preferredStreamingService by viewModel.preferredStreamingService.collectAsStateWithLifecycle()
     val hapticEnabled by viewModel.hapticEnabled.collectAsStateWithLifecycle()
-    
+    val appLocale by viewModel.appLocale.collectAsStateWithLifecycle()
+
     // Theme palette settings
     val selectedPaletteId by viewModel.selectedPaletteId.collectAsStateWithLifecycle()
     val customSeedColor by viewModel.customSeedColor.collectAsStateWithLifecycle()
@@ -83,6 +86,7 @@ fun LookAndFeelScreen(
     var showStreamingServiceDialog by rememberSaveable { mutableStateOf(false) }
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
+    var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
     
     // Determine dark mode for preview rendering
     val isDarkMode = when (themeMode) {
@@ -160,6 +164,18 @@ fun LookAndFeelScreen(
                 showThemeModeDialog = false
             },
             onDismiss = { showThemeModeDialog = false }
+        )
+    }
+
+    // App Language selection dialog
+    if (showAppLanguageDialog) {
+        AppLanguageSelectionDialog(
+            currentLocale = appLocale,
+            onLocaleSelected = {
+                viewModel.setAppLocale(it)
+                showAppLanguageDialog = false
+            },
+            onDismiss = { showAppLanguageDialog = false }
         )
     }
 
@@ -281,6 +297,13 @@ fun LookAndFeelScreen(
         // =================================================================
         
         SettingsGroup {
+            SelectionSettingsItem(
+                icon = Icons.Default.Translate,
+                title = stringResource(R.string.settings_app_language),
+                currentValue = appLocale.displayName,
+                onClick = { showAppLanguageDialog = true }
+            )
+            SettingsDivider()
             SelectionSettingsItem(
                 icon = Icons.Default.Language,
                 title = stringResource(R.string.settings_title_language),
@@ -584,6 +607,92 @@ fun ThemeModeSelectionDialog(
 
 // =============================================================================
 // HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * App Language selection dialog.
+ * Shows language names in their native script so users can always identify their language.
+ */
+@Composable
+fun AppLanguageSelectionDialog(
+    currentLocale: AppLocale,
+    onLocaleSelected: (AppLocale) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_app_language),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                AppLocale.entries.forEach { locale ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onLocaleSelected(locale) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentLocale == locale,
+                            onClick = { onLocaleSelected(locale) }
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = locale.displayName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (locale == AppLocale.SYSTEM) {
+                                Text(
+                                    text = stringResource(R.string.settings_app_language_system_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// TITLE LANGUAGE HELPER FUNCTIONS
 // =============================================================================
 
 @Composable

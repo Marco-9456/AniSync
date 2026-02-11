@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Episode counts: "1 Ep" / "12 Eps" -->
+    <plurals name="episodes_count">
+        <item quantity="one">%d Ep</item>
+        <item quantity="other">%d Eps</item>
+    </plurals>
+
+    <!-- Chapter counts: "1 Kap" / "10 Kap" -->
+    <plurals name="chapters_count">
+        <item quantity="one">%d Kap</item>
+        <item quantity="other">%d Kap</item>
+    </plurals>
+
+    <!-- Episodes behind: "1 EP IM RÜCKSTAND" / "3 EPS IM RÜCKSTAND" -->
+    <plurals name="episodes_behind">
+        <item quantity="one">%d EP IM RÜCKSTAND</item>
+        <item quantity="other">%d EPS IM RÜCKSTAND</item>
+    </plurals>
+
+    <!-- Time formatting - days -->
+    <plurals name="time_days">
+        <item quantity="one">%dT</item>
+        <item quantity="other">%dT</item>
+    </plurals>
+
+    <!-- Time formatting - hours -->
+    <plurals name="time_hours">
+        <item quantity="one">%dStd</item>
+        <item quantity="other">%dStd</item>
+    </plurals>
+
+    <!-- Time formatting - minutes -->
+    <plurals name="time_minutes">
+        <item quantity="one">%dMin</item>
+        <item quantity="other">%dMin</item>
+    </plurals>
+
+    <!-- Days unit for profile: "Tag" / "Tage" -->
+    <plurals name="days_unit">
+        <item quantity="one">Tag</item>
+        <item quantity="other">Tage</item>
+    </plurals>
+
+    <!-- Plurals for episodes/chapters -->
+    <plurals name="episodes_format">
+        <item quantity="one">%d Episode</item>
+        <item quantity="other">%d Episoden</item>
+    </plurals>
+    <plurals name="chapters_format">
+        <item quantity="one">%d Kapitel</item>
+        <item quantity="other">%d Kapitel</item>
+    </plurals>
+</resources>

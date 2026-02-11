@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name is defined in build.gradle.kts per build type -->
+
+    <!-- Navigation -->
+    <string name="nav_library">Bibliothek</string>
+    <string name="nav_discover">Entdecken</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Common -->
+    <string name="back">Zurück</string>
+    <string name="search">Suchen</string>
+    <string name="clear">Löschen</string>
+    <string name="more">Mehr</string>
+    <string name="unknown">Unbekannt</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="settings">Einstellungen</string>
+    <string name="on">An</string>
+    <string name="off">Aus</string>
+    <string name="error_oops">Hoppla!</string>
+    <string name="feature_coming_soon">Bald</string>
+    <string name="not_available">k. A.</string>
+
+    <!-- Media Types -->
+    <string name="media_type_anime">Anime</string>
+    <string name="media_type_manga">Manga</string>
+    <string name="media_type_tv">TV</string>
+    <string name="media_type_media">MEDIEN</string>
+    <string name="format_tv_series">TV-Serie</string>
+
+    <!-- Status Labels -->
+    <string name="status_watching">Schaue ich</string>
+    <string name="status_reading">Lese ich</string>
+    <string name="status_planning">Geplant</string>
+    <string name="status_completed">Abgeschlossen</string>
+    <string name="status_paused">Pausiert</string>
+    <string name="status_dropped">Abgebrochen</string>
+    <string name="status_repeating">Wiederholung</string>
+    <string name="status_rewatching">Erneut schauen</string>
+    <string name="status_rereading">Erneut lesen</string>
+
+    <!-- Discover Screen -->
+    <string name="search_anime_placeholder">Anime suchen…</string>
+    <string name="search_manga_placeholder">Manga suchen…</string>
+    <string name="section_trending_now">Gerade im Trend</string>
+    <string name="section_all_time_popular">Allzeit beliebt</string>
+    <string name="section_upcoming_season">Kommende Saison</string>
+    <string name="section_tba">TBA</string>
+    <string name="error_failed_to_load">Inhalte konnten nicht geladen werden</string>
+    <string name="search_no_results">Keine Ergebnisse gefunden.</string>
+
+    <!-- Library Screen -->
+    <string name="library_title">Bibliothek</string>
+    <string name="search_library_placeholder">Bibliothek durchsuchen…</string>
+    <string name="loading">Wird geladen…</string>
+    <string name="sort">Sortieren</string>
+    <string name="sort_by">Sortieren nach</string>
+    <string name="selected">Ausgewählt</string>
+    <string name="toggle_view">Ansicht wechseln</string>
+    <string name="sort_title_az">Titel</string>
+    <string name="sort_progress">Fortschritt</string>
+    <string name="sort_airing_soon">Bald ausgestrahlt</string>
+    <string name="sort_score">Bewertung</string>
+    <string name="sort_last_updated">Zuletzt aktualisiert</string>
+    <string name="sort_last_added">Zuletzt hinzugefügt</string>
+    <string name="sort_start_date">Startdatum</string>
+    <string name="sort_release_date">Erscheinungsdatum</string>
+    <string name="ascending">Aufsteigend</string>
+    <string name="descending">Absteigend</string>
+    <string name="airing_episode_in">Ep %1$d in %2$s</string>
+    <string name="progress_format">%1$d / %2$s</string>
+    <string name="progress_unknown">?</string>
+
+    <!-- Library Empty States -->
+    <string name="empty_watching">Du schaust gerade nichts.</string>
+    <string name="empty_reading">Du liest gerade nichts.</string>
+    <string name="empty_planning">Deine Merkliste ist leer.</string>
+    <string name="empty_completed">Noch keine abgeschlossenen Einträge.</string>
+    <string name="empty_default">Hier gibt es nichts anzuzeigen.</string>
+
+    <!-- Details Screen -->
+    <string name="section_cast">Besetzung</string>
+    <string name="section_related">Verwandt</string>
+    <string name="section_synopsis">ZUSAMMENFASSUNG</string>
+    <string name="stat_episodes">Episoden</string>
+    <string name="stat_chapters">Kapitel</string>
+    <string name="stat_status">Status</string>
+    <string name="stat_source">Quelle</string>
+    <string name="source_original">Original</string>
+    <string name="error_something_went_wrong">Etwas ist schiefgelaufen</string>
+    <string name="action_go_back">Zurück</string>
+    <string name="synopsis_show_less">Weniger anzeigen</string>
+    <string name="synopsis_read_more">Mehr lesen</string>
+    <string name="fab_close_menu">Menü schließen</string>
+    <string name="fab_open_menu">Menü öffnen</string>
+    <string name="fab_open_menu_library">Menü öffnen, um Bibliotheksstatus zu verwalten</string>
+    <string name="action_remove">Entfernen</string>
+    <string name="a11y_remove_from_library">Aus Bibliothek entfernen</string>
+    <string name="a11y_status_updated">Status geändert zu %1$s</string>
+    <string name="a11y_entry_removed">Eintrag aus Bibliothek entfernt</string>
+    <string name="content_description_cover">Cover</string>
+    <string name="section_information">Informationen</string>
+    <string name="stat_score">Bewertung</string>
+    <string name="stat_format">Format</string>
+    <string name="badge_up_to_date">Aktuell</string>
+    <string name="empty_no_characters">Keine Charaktere gefunden</string>
+    <string name="empty_no_related">Keine verwandten Medien gefunden</string>
+    <string name="action_favorite">Favorit</string>
+    <string name="action_share">Teilen</string>
+    <string name="stat_season">Saison</string>
+    <string name="episodes_tba">TBA</string>
+    <string name="media_status_upcoming">Demnächst</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_id">ID: %1$d</string>
+    <string name="stat_time_watched">Geschaute Zeit</string>
+    <string name="stat_days">Tage</string>
+    <string name="stat_mean_score">DURCHSCHNITT</string>
+    <string name="stat_anime_completed">Anime abgeschlossen</string>
+    <string name="stat_chapters_read">Kapitel gelesen</string>
+    <string name="section_favorites">Favoriten</string>
+    <string name="section_settings">Einstellungen</string>
+    <string name="section_look_and_feel">Erscheinungsbild</string>
+    <string name="section_account">Konto</string>
+    <string name="setting_theme">Design</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_system">System</string>
+
+    <!-- Theme Palette Selection -->
+    <string name="color_and_style">Farbe &amp; Stil</string>
+    <string name="palette_style">Palettenstil</string>
+    <string name="custom_color">Eigene Farbe</string>
+    <string name="custom_color_description">Wähle eine Grundfarbe, um deine einzigartige Farbpalette zu erstellen.</string>
+    <string name="quick_pick">Schnellauswahl</string>
+    <string name="hue_slider">Feinanpassung</string>
+    <string name="preview">Vorschau</string>
+    <string name="color_scheme">Farbschema</string>
+    <string name="apply">Übernehmen</string>
+    <string name="dark_mode">Dunkelmodus</string>
+    <string name="dark_mode_override">Systemeinstellung überschreiben</string>
+    <string name="setting_haptic_feedback">Haptisches Feedback</string>
+    <string name="setting_haptic_description">Vibration bei Berührungsinteraktionen</string>
+    <string name="setting_streaming_service">Streaming-Dienst</string>
+    <string name="setting_streaming_service_desc">Wähle deine bevorzugte Streaming-Plattform für das Gleich-Ansehen-Widget-Symbol</string>
+    <string name="control_notifications">Benachrichtigungen</string>
+    <string name="notification_watching">Schauliste</string>
+    <string name="notification_watching_desc">Neue Episoden für Serien, die du schaust</string>
+    <string name="notification_planning">Merkliste</string>
+    <string name="notification_planning_desc">Benachrichtigung, wenn Episode 1 einer geplanten Serie ausgestrahlt wird</string>
+    <string name="notification_upcoming">Kommende Premieren</string>
+    <string name="notification_upcoming_desc">Vorab-Benachrichtigung vor Episodenausstrahlung</string>
+    <string name="notification_permission_revoked">Benachrichtigungsberechtigung wurde entzogen. Tippe, um die Einstellungen zu öffnen.</string>
+
+    <!-- Settings Screens -->
+    <string name="navigate_back">Zurück</string>
+    <string name="settings_look_and_feel">Erscheinungsbild</string>
+    <string name="settings_look_and_feel_desc">Design, Sprache, Streaming-Dienst</string>
+    <string name="settings_notifications">Benachrichtigungen</string>
+    <string name="settings_notifications_desc">Episodenhinweise, Planungserinnerungen</string>
+    <string name="settings_storage">Speicher</string>
+    <string name="settings_storage_subtitle">Cache: %1$s</string>
+    <string name="settings_account">Konto</string>
+    <string name="settings_account_desc">Profil, Abmelden</string>
+    <string name="settings_about">Über</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_title_language">Titelsprache</string>
+    <string name="settings_app_language">App-Sprache</string>
+    <string name="settings_app_language_system_desc">Verwendet die Spracheinstellung deines Geräts</string>
+    <string name="title_language_romaji">Romaji</string>
+    <string name="title_language_english">Englisch</string>
+    <string name="title_language_native">Originalsprache</string>
+    <string name="title_language_romaji_example">z. B. Shingeki no Kyojin</string>
+    <string name="title_language_english_example">z. B. Attack on Titan</string>
+    <string name="title_language_native_example">z. B. 進撃の巨人</string>
+    <string name="settings_allow_notifications">Benachrichtigungen erlauben</string>
+    <string name="settings_allow_notifications_desc">Benachrichtigungen über neue Episoden erhalten</string>
+    <string name="settings_cache_label">Zwischengespeicherte Daten</string>
+    <string name="settings_clear_cache">Cache leeren</string>
+    <string name="settings_cache_description">Temporäre Dateien (%1$s)</string>
+    <string name="settings_cache_info">Beim Leeren des Caches werden zwischengespeicherte Bilder und temporäre Daten entfernt. Deine Bibliothek und Einstellungen sind davon nicht betroffen.</string>
+    <string name="settings_cache_cleared">Cache geleert</string>
+    <string name="settings_account_unknown">Unbekannter Benutzer</string>
+    <string name="settings_account_anilist">Angemeldet mit AniList</string>
+    <string name="settings_view_on_anilist">Auf AniList ansehen</string>
+    <string name="settings_view_on_anilist_desc">Dein Profil auf AniList öffnen</string>
+    <string name="settings_logout_warning">Beim Abmelden wird deine Sitzung entfernt. Du kannst dich jederzeit wieder anmelden.</string>
+    <string name="settings_privacy_policy">Datenschutzrichtlinie</string>
+    <string name="settings_terms_of_service">Nutzungsbedingungen</string>
+    <string name="settings_open_source_licenses">Open-Source-Lizenzen</string>
+    <string name="settings_acknowledgments">Danksagungen</string>
+    <string name="settings_acknowledgments_desc">Dank an Mitwirkende und Bibliotheken</string>
+    <string name="settings_anilist_api">Unterstützt von AniList</string>
+    <string name="settings_anilist_api_desc">Daten bereitgestellt durch die AniList GraphQL API</string>
+    <string name="settings_made_with_love">Mit Liebe für Anime-Fans gemacht</string>
+    <string name="settings_search_placeholder">Einstellungen durchsuchen</string>
+    <string name="settings_oss_description">AniSync wurde mit den folgenden Open-Source-Bibliotheken erstellt:</string>
+    <string name="settings_oss_footer">Alle Bibliotheken werden gemäß ihren jeweiligen Lizenzen verwendet.</string>
+
+    <!-- Logout Dialog -->
+    <string name="logout_dialog_title">Abmelden</string>
+    <string name="logout_dialog_message">Möchtest du dich wirklich abmelden?</string>
+    <string name="logout_dialog_confirm">Abmelden</string>
+
+    <!-- Settings Accessibility -->
+    <string name="a11y_settings_search">Einstellungen durchsuchen</string>
+    <string name="a11y_settings_clear_search">Suche löschen</string>
+    <string name="a11y_settings_theme_preview">Designvorschau</string>
+    <string name="a11y_settings_color_selected">Ausgewähltes Farbschema</string>
+    <string name="a11y_settings_cache_clear">Cache leeren</string>
+    <string name="a11y_settings_notification_warning">Warnung zu Benachrichtigungseinstellungen</string>
+    <string name="a11y_settings_account_anilist">AniList-Profil im Browser öffnen</string>
+    <string name="a11y_settings_app_icon">App-Symbol, tippen zum Animieren</string>
+    <string name="a11y_settings_selected">Ausgewählt</string>
+    <string name="a11y_back_button">Zurück</string>
+    <string name="a11y_app_icon">App-Symbol</string>
+
+    <!-- Theme Mode Dialog -->
+    <string name="theme_mode_dialog_title">Design</string>
+
+    <!-- Acknowledgments Screen -->
+    <string name="settings_acknowledgments_description">AniSync wäre ohne die großartige Open-Source-Community und die folgenden Mitwirkenden nicht möglich:</string>
+    <string name="acknowledgments_section_data">Datenanbieter</string>
+    <string name="acknowledgments_anilist">AniList</string>
+    <string name="acknowledgments_anilist_desc">Die Anime- und Manga-Datenbank, die diese App antreibt</string>
+    <string name="acknowledgments_section_libraries">Kernbibliotheken</string>
+    <string name="acknowledgments_android_jetpack">Android Jetpack</string>
+    <string name="acknowledgments_android_jetpack_desc">Moderne Android-Entwicklungskomponenten von Google</string>
+    <string name="acknowledgments_kotlin">Kotlin</string>
+    <string name="acknowledgments_kotlin_desc">Die Programmiersprache, die Android-Entwicklung zur Freude macht</string>
+    <string name="acknowledgments_materialkolor">MaterialKolor</string>
+    <string name="acknowledgments_materialkolor_desc">Wunderschöne Material You Farbgenerierung</string>
+    <string name="acknowledgments_section_community">Community</string>
+    <string name="acknowledgments_contributors">Open-Source-Mitwirkende</string>
+    <string name="acknowledgments_contributors_desc">Alle Entwickler, die die von uns genutzten Bibliotheken pflegen</string>
+    <string name="acknowledgments_users">Unsere Nutzer</string>
+    <string name="acknowledgments_users_desc">Danke, dass ihr AniSync nutzt und wertvolles Feedback gebt</string>
+    <string name="acknowledgments_footer">Mit Liebe für Anime-Fans überall gemacht.</string>
+
+    <!-- Developer Debug (debug builds only) -->
+    <string name="section_developer">Entwickler</string>
+    <string name="debug_notifications">Benachrichtigungs-Debug</string>
+    <string name="debug_test_watching">Test Schauliste</string>
+    <string name="debug_test_planning">Test Merkliste</string>
+    <string name="debug_test_advance">Test Vorab (12 Std.)</string>
+    <string name="debug_test_imminent">Test Bevorstehend (2 Std.)</string>
+    <string name="debug_clear_all">Alle löschen</string>
+
+    <string name="control_log_out">Abmelden</string>
+    <string name="content_description_avatar">Avatar</string>
+    <string name="profile_level">Level %1$d</string>
+    <string name="profile_active">Aktiv %1$s</string>
+    <string name="profile_edit">Profil bearbeiten</string>
+    <string name="stat_days_watched">Tage geschaut</string>
+    <string name="stat_manga_read">Manga gelesen</string>
+    <string name="section_anime_status">Anime-Status</string>
+    <string name="section_recent_updates">Letzte Aktualisierungen</string>
+    <string name="status_watching_count">Schaue ich %1$d</string>
+    <string name="status_completed_count">Abgeschlossen %1$d</string>
+    <string name="status_on_hold">Pausiert</string>
+    <string name="status_on_hold_count">Pausiert %1$d</string>
+    <string name="status_dropped_count">Abgebrochen %1$d</string>
+    <string name="content_description_profile_avatar">Profilavatar</string>
+    <string name="content_description_media_cover">Cover von %1$s</string>
+
+    <!-- Notification Dialog -->
+    <string name="dialog_enable_notifications_title">Benachrichtigungen aktivieren</string>
+    <string name="dialog_enable_notifications_message">Bitte aktiviere Benachrichtigungen in den Systemeinstellungen.</string>
+
+    <!-- External Links -->
+    <string name="section_external_links">Externe &amp; Streaming-Links</string>
+    <string name="subsection_streaming">Ansehen auf</string>
+    <string name="subsection_reading">Lesen auf</string>
+    <string name="subsection_external">Externe Links</string>
+
+    <!-- Edit Library Entry -->
+    <string name="edit_entry">Eintrag bearbeiten</string>
+    <string name="no_score">Keine Bewertung</string>
+    <string name="dates">Daten</string>
+    <string name="start_date">Startdatum</string>
+    <string name="completed_date">Abschlussdatum</string>
+    <string name="no_date">Nicht festgelegt</string>
+    <string name="times_rewatched">Erneut geschaut</string>
+    <string name="times_reread">Erneut gelesen</string>
+    <string name="notes">Notizen</string>
+    <string name="notes_placeholder">Füge hier deine Notizen hinzu…</string>
+    <string name="save">Speichern</string>
+    <string name="delete_entry_confirm">Diesen Eintrag aus deiner Bibliothek entfernen?</string>
+    <string name="entry_saved">Eintrag gespeichert</string>
+    <string name="entry_deleted">Eintrag entfernt</string>
+
+    <!-- Login Screen -->
+    <string name="login_sync_your">Synchronisiere deine </string>
+    <string name="login_world">Welt</string>
+    <string name="login_tagline">Der ultimative Begleiter für Anime- &amp; Manga-Tracking, unterstützt von AniList.</string>
+    <string name="login_get_started">Los geht\'s</string>
+    <string name="login_description">Melde dich an, um auf deine Bibliothek zuzugreifen und neue Favoriten zu entdecken.</string>
+    <string name="login_continue_with_anilist">Weiter mit AniList</string>
+    <string name="login_terms">Durch Fortfahren stimmst du unseren Nutzungsbedingungen zu.</string>
+
+    <!-- Search Filters -->
+    <string name="filter">Filter</string>
+    <string name="filter_clear_all">Alle löschen</string>
+    <string name="filter_genres">Genres</string>
+    <string name="filter_year">Jahr</string>
+    <string name="filter_season">Saison</string>
+    <string name="filter_format">Format</string>
+    <string name="filter_status">Status</string>
+
+    <!-- Seasons -->
+    <string name="season_winter">Winter</string>
+    <string name="season_spring">Frühling</string>
+    <string name="season_summer">Sommer</string>
+    <string name="season_fall">Herbst</string>
+
+    <!-- Media Status (for search filter) -->
+    <string name="media_status_airing">Laufend</string>
+    <string name="media_status_finished">Abgeschlossen</string>
+    <string name="media_status_not_yet_released">Noch nicht erschienen</string>
+    <string name="media_status_cancelled">Eingestellt</string>
+    <string name="media_status_hiatus">Pause</string>
+
+    <!-- Media Formats -->
+    <string name="format_tv">TV</string>
+    <string name="format_tv_short">TV-Kurzfilm</string>
+    <string name="format_movie">Film</string>
+    <string name="format_special">Special</string>
+    <string name="format_ova">OVA</string>
+    <string name="format_ona">ONA</string>
+    <string name="format_music">Musik</string>
+    <string name="format_novel">Roman</string>
+    <string name="format_one_shot">One Shot</string>
+    <string name="separator_bullet">•</string>
+
+    <!-- Widget Descriptions -->
+    <string name="widget_weekly_calendar_description">Sieh deinen 7-Tage-Anime-Zeitplan auf einen Blick</string>
+    <string name="widget_airing_today_description">Zeigt heute ausgestrahlte Anime-Episoden</string>
+    <string name="widget_up_next_description">Schnellzugriff auf deine nächste Episode</string>
+    <string name="widget_quick_update_description">Episodenfortschritt schnell aktualisieren</string>
+    <string name="widget_trending_description">Sieh, was gerade im Anime-Bereich angesagt ist</string>
+
+    <!-- Widget Configuration -->
+    <string name="widget_config_title">Widget konfigurieren</string>
+    <string name="widget_config_subtitle">Passe Aussehen und Verhalten deines Gleich-Ansehen-Widgets an</string>
+    <string name="widget_config_section_display">Anzeigeoptionen</string>
+    <string name="widget_config_section_content">Inhaltsoptionen</string>
+    <string name="widget_config_max_items">Maximale Einträge</string>
+    <string name="widget_config_max_items_desc">Anzahl der Einträge in der erweiterten Ansicht</string>
+    <string name="widget_config_show_countdown">Countdown anzeigen</string>
+    <string name="widget_config_show_countdown_desc">Countdown-Timer für kommende Episoden anzeigen</string>
+    <string name="widget_config_show_available">Jetzt verfügbar anzeigen</string>
+    <string name="widget_config_show_available_desc">Bereits ausgestrahlte Episoden einbeziehen</string>
+    <string name="widget_config_include_planning">Merkliste einbeziehen</string>
+    <string name="widget_config_include_planning_desc">Einträge aus deiner Merkliste anzeigen</string>
+    <string name="widget_config_add_widget">Widget hinzufügen</string>
+    <string name="widget_config_items_visible">Sichtbare Einträge im Widget</string>
+
+    <!-- Statistics Screen -->
+    <string name="statistics_title">Statistiken</string>
+    <string name="statistics_total_anime">Anime gesamt</string>
+    <string name="statistics_episodes">Episoden</string>
+    <string name="statistics_days_watched">Tage geschaut</string>
+    <string name="statistics_mean_score">Durchschnittsbewertung</string>
+    <string name="statistics_score_distribution">Bewertungsverteilung</string>
+    <string name="statistics_top_genres">Top-Genres</string>
+    <string name="statistics_formats">Formate</string>
+    <string name="statistics_top_studios">Top-Studios</string>
+    <string name="statistics_by_year">Nach Erscheinungsjahr</string>
+    <string name="statistics_anime_label">Anime</string>
+    <string name="statistics_view">Statistiken ansehen</string>
+
+    <string name="statistics_anime">Anime</string>
+    <string name="statistics_manga">Manga</string>
+    <string name="statistics_total_manga">Manga gesamt</string>
+    <string name="statistics_chapters">Kapitel</string>
+    <string name="statistics_volumes_read">Bände gelesen</string>
+    <string name="statistics_no_manga_stats">Keine Manga-Statistiken verfügbar</string>
+    <string name="statistics_entries">%d Einträge</string>
+    <string name="statistics_no_data">Keine Statistikdaten verfügbar</string>
+
+    <!-- Accessibility: Statistics -->
+    <string name="a11y_stat_card">%1$s: %2$s</string>
+    <string name="a11y_score_bar">Bewertung %1$d: %2$d Einträge</string>
+    <string name="a11y_genre_stat">Genre %1$s: %2$d Einträge, Durchschnittsbewertung %3$.1f</string>
+    <string name="a11y_studio_stat">Studio %1$s: %2$d Anime, Durchschnittsbewertung %3$.1f</string>
+    <string name="a11y_format_stat">Format %1$s: %2$d Einträge, Durchschnittsbewertung %3$.1f</string>
+    <string name="a11y_year_stat">Jahr %1$d: %2$d Einträge</string>
+
+    <!-- Accessibility: Actions -->
+    <string name="a11y_action_increment_progress">Fortschritt um eins erhöhen</string>
+    <string name="a11y_action_decrement_progress">Fortschritt um eins verringern</string>
+    <string name="a11y_action_edit_entry">Bibliothekseintrag bearbeiten</string>
+    <string name="a11y_action_open_details">Details öffnen für %1$s</string>
+    <string name="a11y_action_see_all">Alle %1$s anzeigen</string>
+    <string name="a11y_action_see_all_button">Alle anzeigen</string>
+    <string name="a11y_action_add_to_library">%1$s zur Bibliothek hinzufügen</string>
+    <string name="a11y_action_toggle_favorite">Favorit umschalten</string>
+    <string name="a11y_action_expand_synopsis">Zusammenfassung ausklappen</string>
+    <string name="a11y_action_collapse_synopsis">Zusammenfassung einklappen</string>
+    <string name="a11y_action_select_tab">Tab %1$s auswählen</string>
+    <string name="a11y_action_open_search_result">%1$s öffnen</string>
+
+    <!-- Accessibility: Content Descriptions -->
+    <string name="a11y_media_poster">Poster von %1$s</string>
+    <string name="a11y_character_image">Bild von %1$s</string>
+    <string name="a11y_user_avatar">Profilbild von %1$s</string>
+    <string name="a11y_banner_image">Bannerbild von %1$s</string>
+    <string name="a11y_rating_score">Bewertung: %1$.1f von 10</string>
+    <string name="a11y_media_card">%1$s, %2$s, bewertet mit %3$.1f</string>
+
+    <!-- Accessibility: State Descriptions -->
+    <string name="a11y_state_progress">Fortschritt: %1$d von %2$s</string>
+    <string name="a11y_state_airing_soon">Nächste Episode wird ausgestrahlt in %1$s</string>
+    <string name="a11y_state_episodes_behind">%1$d Episoden im Rückstand</string>
+    <string name="a11y_state_up_to_date">Auf dem neuesten Stand</string>
+    <string name="a11y_state_selected">Ausgewählt</string>
+    <string name="a11y_state_not_selected">Nicht ausgewählt</string>
+    <string name="a11y_state_tab_selected">%1$s, ausgewählt</string>
+    <string name="a11y_state_tab_not_selected">%1$s</string>
+    <string name="a11y_state_expanded">Ausgeklappt</string>
+    <string name="a11y_state_collapsed">Eingeklappt, doppeltippen zum Ausklappen</string>
+
+    <!-- Accessibility: Headings -->
+    <string name="a11y_heading_trending">Bereich Trends</string>
+    <string name="a11y_heading_popular">Bereich Beliebt</string>
+    <string name="a11y_heading_characters">Bereich Charaktere</string>
+    <string name="a11y_heading_relations">Bereich Verwandte Medien</string>
+    <string name="a11y_heading_synopsis">Bereich Zusammenfassung</string>
+    <string name="a11y_heading_information">Bereich Informationen</string>
+
+    <!-- Accessibility: Live Region Announcements -->
+    <string name="a11y_progress_updated">Fortschritt aktualisiert auf %1$d</string>
+    <string name="a11y_error_occurred">Fehler: %1$s</string>
+</resources>

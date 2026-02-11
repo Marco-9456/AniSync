@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.NotificationPreferences
@@ -15,6 +16,8 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
 import com.materialkolor.PaletteStyle
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -77,6 +80,26 @@ class SettingsViewModel @Inject constructor(
 
     fun setPreferredStreamingService(service: StreamingService) {
         appSettings.setPreferredStreamingService(service)
+    }
+
+    // ==========================================================================
+    // APP LANGUAGE SETTINGS
+    // ==========================================================================
+
+    val appLocale: StateFlow<AppLocale> = appSettings.appLocale
+
+    /**
+     * Set the app locale. Persists the choice and applies it via AppCompatDelegate
+     * which triggers an activity recreation to reload resources in the new language.
+     */
+    fun setAppLocale(locale: AppLocale) {
+        appSettings.setAppLocale(locale)
+        val localeList = if (locale == AppLocale.SYSTEM) {
+            LocaleListCompat.getEmptyLocaleList()
+        } else {
+            LocaleListCompat.forLanguageTags(locale.tag)
+        }
+        AppCompatDelegate.setApplicationLocales(localeList)
     }
 
     // ==========================================================================

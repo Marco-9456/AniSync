@@ -2,9 +2,10 @@ package com.anisync.android
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -13,8 +14,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.ThemeMode
@@ -28,7 +31,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
@@ -44,6 +47,14 @@ class MainActivity : ComponentActivity() {
         
         // Enable edge-to-edge display
         enableEdgeToEdge()
+
+        // Apply saved locale on startup
+        val savedLocale = appSettings.appLocale.value
+        if (savedLocale != AppLocale.SYSTEM) {
+            AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags(savedLocale.tag)
+            )
+        }
         
         // Handle initial intent (when app first opens with redirect)
         handleAuthRedirect(intent)

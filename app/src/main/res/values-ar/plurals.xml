@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Episode counts -->
+    <plurals name="episodes_count">
+        <item quantity="zero">%d حلقة</item>
+        <item quantity="one">حلقة %d</item>
+        <item quantity="two">حلقتان %d</item>
+        <item quantity="few">%d حلقات</item>
+        <item quantity="many">%d حلقة</item>
+        <item quantity="other">%d حلقة</item>
+    </plurals>
+
+    <!-- Chapter counts -->
+    <plurals name="chapters_count">
+        <item quantity="zero">%d فصل</item>
+        <item quantity="one">فصل %d</item>
+        <item quantity="two">فصلان %d</item>
+        <item quantity="few">%d فصول</item>
+        <item quantity="many">%d فصلاً</item>
+        <item quantity="other">%d فصل</item>
+    </plurals>
+
+    <!-- Episodes behind -->
+    <plurals name="episodes_behind">
+        <item quantity="zero">لا حلقات متأخرة</item>
+        <item quantity="one">متأخر حلقة %d</item>
+        <item quantity="two">متأخر حلقتين %d</item>
+        <item quantity="few">متأخر %d حلقات</item>
+        <item quantity="many">متأخر %d حلقة</item>
+        <item quantity="other">متأخر %d حلقة</item>
+    </plurals>
+
+    <!-- Time formatting - days -->
+    <plurals name="time_days">
+        <item quantity="zero">%dي</item>
+        <item quantity="one">%dي</item>
+        <item quantity="two">%dي</item>
+        <item quantity="few">%dي</item>
+        <item quantity="many">%dي</item>
+        <item quantity="other">%dي</item>
+    </plurals>
+
+    <!-- Time formatting - hours -->
+    <plurals name="time_hours">
+        <item quantity="zero">%dس</item>
+        <item quantity="one">%dس</item>
+        <item quantity="two">%dس</item>
+        <item quantity="few">%dس</item>
+        <item quantity="many">%dس</item>
+        <item quantity="other">%dس</item>
+    </plurals>
+
+    <!-- Time formatting - minutes -->
+    <plurals name="time_minutes">
+        <item quantity="zero">%dد</item>
+        <item quantity="one">%dد</item>
+        <item quantity="two">%dد</item>
+        <item quantity="few">%dد</item>
+        <item quantity="many">%dد</item>
+        <item quantity="other">%dد</item>
+    </plurals>
+
+    <!-- Days unit for profile -->
+    <plurals name="days_unit">
+        <item quantity="zero">أيام</item>
+        <item quantity="one">يوم</item>
+        <item quantity="two">يومان</item>
+        <item quantity="few">أيام</item>
+        <item quantity="many">يومًا</item>
+        <item quantity="other">يوم</item>
+    </plurals>
+
+    <!-- Plurals for episodes/chapters -->
+    <plurals name="episodes_format">
+        <item quantity="zero">%d حلقة</item>
+        <item quantity="one">حلقة %d</item>
+        <item quantity="two">حلقتان %d</item>
+        <item quantity="few">%d حلقات</item>
+        <item quantity="many">%d حلقة</item>
+        <item quantity="other">%d حلقة</item>
+    </plurals>
+    <plurals name="chapters_format">
+        <item quantity="zero">%d فصل</item>
+        <item quantity="one">فصل %d</item>
+        <item quantity="two">فصلان %d</item>
+        <item quantity="few">%d فصول</item>
+        <item quantity="many">%d فصلاً</item>
+        <item quantity="other">%d فصل</item>
+    </plurals>
+</resources>

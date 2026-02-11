@@ -166,6 +166,8 @@
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
     <string name="settings_title_language">Title Language</string>
+    <string name="settings_app_language">App Language</string>
+    <string name="settings_app_language_system_desc">Uses your device language setting</string>
     <string name="title_language_romaji">Romaji</string>
     <string name="title_language_english">English</string>
     <string name="title_language_native">Native</string>
