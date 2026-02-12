@@ -142,7 +142,9 @@ setContent {
 
                 val accessToken = params["access_token"]
                 if (accessToken != null) {
-                    authRepository.saveToken(accessToken)
+                    lifecycleScope.launch {
+                        authRepository.saveToken(accessToken)
+                    }
                 }
             }
         }

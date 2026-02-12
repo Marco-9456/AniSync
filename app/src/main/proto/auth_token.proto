@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_package = "com.anisync.android.data.proto";
+option java_multiple_files = true;
+
+/**
+ * AuthToken message for securely storing authentication credentials.
+ * Stored in an encrypted Proto DataStore using Google Tink.
+ */
+message AuthToken {
+  // The OAuth/JWT access token for API authentication
+  string access_token = 1;
+  
+  // Unix timestamp (milliseconds) when the token was issued
+  int64 issued_at = 2;
+  
+  // Unix timestamp (milliseconds) when the token expires
+  // 0 if the token doesn't expire or expiry is unknown
+  int64 expires_at = 3;
+}

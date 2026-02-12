@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.apollo)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+    id("com.google.protobuf") version "0.9.4"
 }
 
 android {
@@ -115,6 +116,22 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// Protobuf configuration
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -162,8 +179,14 @@ dependencies {
     // MaterialKolor for dynamic M3 color schemes
     implementation(libs.materialkolor)
 
-    // Security Crypto for encrypted prefs
-    implementation(libs.security.crypto)
+    // DataStore for secure token storage
+    implementation(libs.androidx.datastore)
+    
+    // Google Tink for encryption
+    implementation(libs.tink.android)
+    
+    // Protocol Buffers for type-safe serialization
+    implementation(libs.protobuf.javalite)
 
     // WorkManager & Hilt Work
     implementation(libs.androidx.work.runtime.ktx)
