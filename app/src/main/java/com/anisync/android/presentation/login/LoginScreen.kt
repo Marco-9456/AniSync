@@ -67,10 +67,9 @@ import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import kotlinx.coroutines.delay
 
-// Constants for AniList OAuth
+// Constants for AniList OAuth (Implicit Grant)
 private const val CLIENT_ID = "32893"
-private const val REDIRECT_URI = "anisync://auth"
-private const val AUTH_URL = "https://anilist.co/api/v2/oauth/authorize?client_id=$CLIENT_ID&redirect_uri=$REDIRECT_URI&response_type=code"
+private const val AUTH_URL = "https://anilist.co/api/v2/oauth/authorize?client_id=$CLIENT_ID&response_type=token"
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

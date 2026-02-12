@@ -129,30 +129,17 @@ setContent {
 
     private fun handleAuthRedirect(intent: Intent?) {
         val uri = intent?.data ?: return
-        
+
         // Check if this is our auth redirect
         if (uri.scheme == "anisync" && uri.host == "auth") {
-            // Authorization Code flow: code is in query parameter
-            val code = uri.getQueryParameter("code")
-            if (code != null) {
-                // Exchange code for token
-                lifecycleScope.launch {
-                    val success = authRepository.exchangeCodeForToken(code)
-                    if (!success) {
-                        android.util.Log.e("MainActivity", "Failed to exchange code for token")
-                    }
-                }
-                return
-            }
-            
-            // Fallback: Check for token in fragment (Implicit Grant - legacy)
+            // Implicit Grant: token is in URL fragment
             val fragment = uri.fragment
             if (fragment != null) {
                 val params = fragment.split("&").associate { part ->
                     val parts = part.split("=", limit = 2)
                     if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
                 }
-                
+
                 val accessToken = params["access_token"]
                 if (accessToken != null) {
                     authRepository.saveToken(accessToken)
