@@ -2,41 +2,71 @@ package com.anisync.android.presentation.settings.components
 
 import android.os.Build
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.anisync.android.data.AppSettings
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.CompletedCardConfig
+import com.anisync.android.presentation.components.LibraryMediaCard
+import com.anisync.android.presentation.components.WatchingCardConfig
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.type.MediaFormat
+import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.PreviewTheme
 import com.materialkolor.PaletteStyle
 
 /**
- * A phone mockup frame containing a mini app preview.
- * 
- * Displays a realistic phone outline with the theme preview content inside,
- * including a dynamic island/notch at the top.
+ * A horizontal component showcase preview for the Look and Feel settings screen.
+ *
+ * Displays actual UI components from the app in a realistic "Dashboard" layout.
+ * Redesigned to be compact and non-scrollable vertically to fit Settings screens.
  */
 @Composable
 fun PhonePreview(
@@ -46,59 +76,235 @@ fun PhonePreview(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
+    val appSettings = remember { AppSettings(context) }
+
     Box(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        // Phone frame
-        Box(
+        val themeContent = @Composable {
+            CompositionLocalProvider(LocalAppSettings provides appSettings) {
+                // Outer container imitating a phone screen surface or card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    ComponentPreviewContent()
+                }
+            }
+        }
+
+        if (seedColor != null) {
+            PreviewTheme(
+                seedColor = seedColor,
+                isDark = isDarkMode,
+                style = paletteStyle,
+                content = themeContent
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val dynamicColorScheme = if (isDarkMode) {
+                dynamicDarkColorScheme(context)
+            } else {
+                dynamicLightColorScheme(context)
+            }
+            PreviewTheme(colorScheme = dynamicColorScheme, content = themeContent)
+        } else {
+            PreviewTheme(
+                seedColor = Color(0xFF6750A4),
+                isDark = isDarkMode,
+                style = paletteStyle,
+                content = themeContent
+            )
+        }
+    }
+}
+
+/**
+ * Main content showing a realistic library screen fragment.
+ */
+@Composable
+private fun ComponentPreviewContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Section 1: Header
+        // Separate Row for header text to maintain alignment while allowing tabs to scroll edge-to-edge
+        Row(
             modifier = Modifier
-                .width(180.dp)
-                .aspectRatio(0.48f)
-                .border(
-                    width = 3.dp,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                    shape = RoundedCornerShape(28.dp)
-                )
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color.Black)
-                .padding(4.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Screen content area
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(24.dp))
-            ) {
-                if (seedColor != null) {
-                    // Use PreviewTheme with seed color
-                    PreviewTheme(
-                        seedColor = seedColor,
-                        isDark = isDarkMode,
-                        style = paletteStyle
-                    ) {
-                        PhoneScreenContent()
-                    }
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    // Use dynamic color scheme for "Dynamic" option
-                    val dynamicColorScheme = if (isDarkMode) {
-                        dynamicDarkColorScheme(context)
+            Text(
+                text = "Library",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // Section 2: Status Tabs
+        // Changed to LazyRow to fix clipping/missing tabs issue.
+        // Moved out of the padded column to allow edge-to-edge scrolling.
+        var selectedTabIndex by remember { mutableIntStateOf(0) }
+        val statuses = listOf(
+            LibraryStatus.CURRENT to Icons.Default.PlayArrow,
+            LibraryStatus.COMPLETED to Icons.Default.Done,
+            LibraryStatus.PLANNING to Icons.Default.Schedule
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            itemsIndexed(statuses) { index, (status, icon) ->
+                AnimatedTab(
+                    index = index,
+                    selectedIndex = selectedTabIndex,
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    icon = icon,
+                    label = status.name.lowercase().replaceFirstChar { it.uppercase() }
+                )
+            }
+        }
+
+        // Section 3: Library Cards Carousel
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(mockLibraryEntries) { entry ->
+                LibraryMediaCard(
+                    entry = entry,
+                    mediaType = entry.type ?: MediaType.ANIME,
+                    titleLanguage = TitleLanguage.ROMAJI,
+                    onClick = { },
+                    modifier = Modifier.width(150.dp), // Slightly more compact width
+                    config = if (entry.status == LibraryStatus.COMPLETED) {
+                        CompletedCardConfig
                     } else {
-                        dynamicLightColorScheme(context)
+                        WatchingCardConfig
+                    },
+                    onIncrement = { },
+                    onDecrement = { }
+                )
+            }
+        }
+
+        // Section 4: Statistics Carousel
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Stat Card
+            item {
+                PreviewStatCard()
+            }
+
+            // Formats Card
+            item {
+                PreviewFormatsCard()
+            }
+        }
+    }
+}
+
+/**
+ * Mini stat card showing total count and key metrics.
+ */
+@Composable
+private fun PreviewStatCard() {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.width(170.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Main count
+            Text(
+                text = "42",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = "Total Anime",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            )
+
+            Spacer(modifier = Modifier.size(12.dp))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f)
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+
+            // Sub stats row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Days watched
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "120",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
-                    PreviewTheme(colorScheme = dynamicColorScheme) {
-                        PhoneScreenContent()
+                    Text(
+                        text = "Days",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+
+                // Mean score
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "8.4",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
-                } else {
-                    // Fallback for pre-Android 12 devices - use default purple
-                    PreviewTheme(
-                        seedColor = Color(0xFF6750A4),
-                        isDark = isDarkMode,
-                        style = paletteStyle
-                    ) {
-                        PhoneScreenContent()
-                    }
+                    Text(
+                        text = "Score",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
                 }
             }
         }
@@ -106,216 +312,181 @@ fun PhonePreview(
 }
 
 /**
- * The content rendered inside the phone screen.
- * Matches the screenshot: notch, two tabs, filter chips, 2x2 grid, bottom nav.
+ * Mini formats card showing format breakdown.
  */
 @Composable
-private fun PhoneScreenContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Status bar with dynamic island/notch
-        StatusBarWithNotch()
-        
-        // Two pill tabs
-        TabRow()
-        
-        Spacer(modifier = Modifier.height(6.dp))
-        
-        // Two filter chips
-        FilterChipsRow()
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // 2x2 card grid
-        CardGrid(modifier = Modifier.weight(1f))
-        
-        Spacer(modifier = Modifier.height(6.dp))
-        
-        // Bottom navigation
-        BottomNavBar()
-    }
-}
-
-@Composable
-private fun StatusBarWithNotch() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(24.dp)
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        // "Search bar"
-        Box(
-            modifier = Modifier
-                .width(150.dp)
-                .height(16.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        )
-    }
-}
-
-@Composable
-private fun TabRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Active tab
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(24.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary)
-        )
-        // Inactive tab
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(24.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-    }
-}
-
-@Composable
-private fun FilterChipsRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        // Two filter chips
-        Box(
-            modifier = Modifier
-                .width(28.dp)
-                .height(16.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        )
-        Box(
-            modifier = Modifier
-                .width(36.dp)
-                .height(16.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        )
-    }
-}
-
-@Composable
-private fun CardGrid(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        // First row
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            MediaCard(modifier = Modifier.weight(1f))
-            MediaCard(modifier = Modifier.weight(1f))
-        }
-        // Second row
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            MediaCard(modifier = Modifier.weight(1f))
-            MediaCard(modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun MediaCard(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+private fun PreviewFormatsCard() {
+    Card(
+        modifier = Modifier.width(170.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.padding(12.dp)
         ) {
-            // Image placeholder area
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            Text(
+                text = "Formats",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
-            
-            // Content area with progress bar placeholders
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Two text line placeholders
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+
+            val formats = listOf(
+                Triple(MediaFormat.TV, "TV", Icons.Default.Tv),
+                Triple(MediaFormat.MOVIE, "Movie", Icons.Default.Movie),
+                Triple(MediaFormat.OVA, "OVA", Icons.Default.Book)
+            )
+
+            formats.forEach { (format, label, icon) ->
+                PreviewFormatRow(
+                    icon = icon,
+                    label = label,
+                    count = when (format) {
+                        MediaFormat.TV -> 142
+                        MediaFormat.MOVIE -> 28
+                        MediaFormat.OVA -> 15
+                        else -> 0
+                    },
+                    score = when (format) {
+                        MediaFormat.TV -> "8.4"
+                        MediaFormat.MOVIE -> "7.8"
+                        MediaFormat.OVA -> "8.1"
+                        else -> "0.0"
+                    }
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
-                )
+
+                if (format != MediaFormat.OVA) {
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun BottomNavBar() {
-    Surface(
+private fun PreviewFormatRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    count: Int,
+    score: String
+) {
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Active nav item (filled circle)
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(28.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
             )
-            // Inactive nav items (outline circles)
-            repeat(2) {
-                Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "$count",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = score,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
             }
         }
     }
 }
+
+// =============================================================================
+// MOCK DATA
+// =============================================================================
+
+private val mockLibraryEntries = listOf(
+    LibraryEntry(
+        id = 1,
+        mediaId = 1,
+        titleRomaji = "Frieren: Beyond Journey's End",
+        titleEnglish = "Frieren: Beyond Journey's End",
+        titleNative = "葬送のフリーレン",
+        titleUserPreferred = "Frieren: Beyond Journey's End",
+        coverUrl = "https://api.dicebear.com/9.x/thumbs/svg?seed=frieren&backgroundColor=b6e3f4",
+        progress = 12,
+        totalEpisodes = 28,
+        totalChapters = null,
+        totalVolumes = null,
+        type = MediaType.ANIME,
+        format = MediaFormat.TV,
+        status = LibraryStatus.CURRENT,
+        nextAiringEpisode = 13,
+        timeUntilAiring = 86400
+    ),
+    LibraryEntry(
+        id = 2,
+        mediaId = 2,
+        titleRomaji = "One Piece",
+        titleEnglish = "One Piece",
+        titleNative = "ワンピース",
+        titleUserPreferred = "One Piece",
+        coverUrl = "https://api.dicebear.com/9.x/thumbs/svg?seed=onepiece&backgroundColor=ffdfbf",
+        progress = 1075,
+        totalEpisodes = null,
+        totalChapters = null,
+        totalVolumes = null,
+        type = MediaType.ANIME,
+        format = MediaFormat.TV,
+        status = LibraryStatus.CURRENT,
+        nextAiringEpisode = 1076,
+        timeUntilAiring = 172800
+    ),
+    LibraryEntry(
+        id = 3,
+        mediaId = 3,
+        titleRomaji = "Attack on Titan",
+        titleEnglish = "Attack on Titan",
+        titleNative = "進撃の巨人",
+        titleUserPreferred = "Attack on Titan",
+        coverUrl = "https://api.dicebear.com/9.x/thumbs/svg?seed=attackontitan&backgroundColor=ffdfbf",
+        progress = 88,
+        totalEpisodes = 88,
+        totalChapters = null,
+        totalVolumes = null,
+        type = MediaType.ANIME,
+        format = MediaFormat.TV,
+        status = LibraryStatus.COMPLETED,
+        nextAiringEpisode = null,
+        timeUntilAiring = null
+    )
+)
 
 // =============================================================================
 // PREVIEWS
