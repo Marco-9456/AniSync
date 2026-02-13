@@ -36,10 +36,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -137,16 +135,11 @@ fun MediaDetailsScreen(
         viewModel.loadMedia(mediaId)
     }
 
-    // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()
-
-    // Use TransitionKeys for consistent key generation
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
-
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    // Setup ScrollBehavior for the TopAppBar
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     with(sharedTransitionScope) {
@@ -213,15 +206,13 @@ fun MediaDetailsScreen(
                         )
 
                         val haptic = LocalHapticFeedback.current
-                        val context = LocalContext.current
 
-                        // Handle back button to close menu
                         BackHandler(enabled = fabMenuExpanded) {
                             fabMenuExpanded = false
                         }
 
                         val selectedPrefix = stringResource(R.string.a11y_state_selected)
-                        
+
                         FloatingActionButtonMenu(
                             expanded = fabMenuExpanded,
                             modifier = Modifier
@@ -323,7 +314,6 @@ fun MediaDetailsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        // Apply only bottom padding to keep banner at top
                         .padding(bottom = paddingValues.calculateBottomPadding())
                         .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = containerKey),
@@ -354,7 +344,7 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
-                                onFavouriteClick = { viewModel.toggleFavourite() },
+                                onFavouriteClick = viewModel::toggleFavourite,
                                 onShareClick = { viewModel.shareMedia(context) },
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -468,7 +458,6 @@ fun DetailsPageContent(
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
                         ) {
-                            // Optimization: Add key for stable item identity
                             items(details.genres, key = { it }) { genre ->
                                 SuggestionChip(
                                     onClick = { /* TODO: Filter by genre */ },
@@ -497,7 +486,7 @@ fun DetailsPageContent(
                 }
             }
 
-            // External Links (Separate Item for correct alignment)
+            // External Links
             item {
                 if (details.externalLinks.isNotEmpty()) {
                     StaggeredAnimatedVisibility(
@@ -555,12 +544,11 @@ fun DetailsPageContent(
                                     items = details.characters.take(10),
                                     key = { it.id }
                                 ) { character ->
-                                    // Optimization: onCharacterClick is stable from parent
                                     CharacterItem(
                                         character = character.copy(
                                             nameUserPreferred = when (titleLanguage) {
-                                                com.anisync.android.data.TitleLanguage.ROMAJI -> character.nameUserPreferred // Default fallback
-                                                com.anisync.android.data.TitleLanguage.ENGLISH -> character.nameUserPreferred // No separate English name for chars usually
+                                                com.anisync.android.data.TitleLanguage.ROMAJI -> character.nameUserPreferred
+                                                com.anisync.android.data.TitleLanguage.ENGLISH -> character.nameUserPreferred
                                                 com.anisync.android.data.TitleLanguage.NATIVE -> character.nameNative
                                                     ?: character.nameUserPreferred
                                             }
@@ -603,13 +591,12 @@ fun DetailsPageContent(
                                     items = uniqueRelations,
                                     key = { "${it.id}_${it.relationType}" }
                                 ) { relation ->
-                                    // Optimization: onRelationClick is stable from parent
                                     RelationItem(
                                         relation = relation.copy(
                                             titleUserPreferred = relation.getTitle(
                                                 titleLanguage
                                             )
-                                        ), // Helper update
+                                        ),
                                         onClick = { onRelationClick(relation.id) },
                                         modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
@@ -634,30 +621,60 @@ fun PageHeaderSection(
     animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: com.anisync.android.data.TitleLanguage
 ) {
-    // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()
-
-    // Use TransitionKeys for consistent key generation
     val coverKey = TransitionKeys.cover(sourceScreen, details.id)
     val titleKey = TransitionKeys.title(sourceScreen, details.id)
     val cacheKey = TransitionKeys.imageCacheKey(sourceScreen, details.id)
-
-    // Standard rounded corner shape for cover image clip
     val coverShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+
+    // Hoist ImageRequest creation to prevent object allocation on every recomposition
+    val context = LocalContext.current
+    val coverImageRequest = remember(details.coverUrl, cacheKey) {
+        ImageRequest.Builder(context)
+            .data(details.coverUrl)
+            .crossfade(true)
+            .placeholderMemoryCacheKey(cacheKey)
+            .memoryCacheKey(cacheKey)
+            .build()
+    }
+
+    // Create stable gradients
+    val bannerGradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color.Black.copy(alpha = 0.4f),
+                Color.Transparent,
+                Color(0xCC000000),
+                Color.Black
+            )
+        )
+    }
+
+    // Properly use theme colors in gradient with remember
+    val themeBackground = MaterialTheme.colorScheme.background
+    val scrimGradient = remember(themeBackground) {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color.Black.copy(alpha = 0.4f),
+                Color.Transparent,
+                themeBackground.copy(alpha = 0.8f),
+                themeBackground
+            )
+        )
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp) // Adjusted height
+            .height(280.dp)
     ) {
-        // Banner Image
         AsyncImage(
             model = details.bannerUrl ?: details.coverUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp) // Banner height
+                .height(200.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
@@ -665,26 +682,15 @@ fun PageHeaderSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp) // Match banner height
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.4f),
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
+                .height(200.dp)
+                .background(scrimGradient)
         )
 
-        // Poster and Title Row
         Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(horizontal = dimensionResource(R.dimen.spacing_large))
         ) {
-            // Cover Image (Poster)
             with(sharedTransitionScope) {
                 Card(
                     modifier = Modifier
@@ -701,12 +707,7 @@ fun PageHeaderSection(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(details.coverUrl)
-                            .crossfade(true)
-                            .placeholderMemoryCacheKey(cacheKey)
-                            .memoryCacheKey(cacheKey)
-                            .build(),
+                        model = coverImageRequest,
                         contentDescription = stringResource(R.string.content_description_cover),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -716,11 +717,10 @@ fun PageHeaderSection(
 
             Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_medium)))
 
-            // Title and Metadata
             Column(
                 modifier = Modifier
                     .align(Alignment.Bottom)
-                    .padding(bottom = 8.dp) // Adjust to align with the bottom of the visible section text
+                    .padding(bottom = 8.dp)
             ) {
                 with(sharedTransitionScope) {
                     Text(
@@ -742,22 +742,18 @@ fun PageHeaderSection(
 
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
-                // Metadata chips row (Format, Year, Score)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Format chip (TV Show, Movie, etc.)
                     details.format?.formatAsTitle()?.let { formattedFormat ->
                         MetadataChip(text = formattedFormat)
                     }
 
-                    // Year chip
                     details.seasonYear?.let { year ->
                         MetadataChip(text = year.toString())
                     }
 
-                    // Score chip with star icon
                     details.score?.let { score ->
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -772,7 +768,7 @@ fun PageHeaderSection(
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFFFC107), // Amber/gold color
+                                tint = Color(0xFFFFC107),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
@@ -796,28 +792,24 @@ fun InfoCardsSection(details: MediaDetails) {
         stringResource(R.string.stat_episodes)
     }
 
-    // Episode count with fallback logic
     val episodesValue = if (details.type == com.anisync.android.type.MediaType.MANGA) {
         details.chapters?.let { "$it Chs" } ?: stringResource(R.string.unknown)
     } else {
         when {
-            // Case 1: Known episode count
             details.episodes != null -> "${details.episodes} Eps"
-            // Case 2: Ongoing series - show aired episodes (nextAiringEpisode - 1)
             details.nextAiringEpisode != null -> {
                 val airedEpisodes = details.nextAiringEpisode - 1
                 "$airedEpisodes Eps"
             }
-            // Case 3: Not yet released - show TBA
+
             details.status.equals("NOT_YET_RELEASED", ignoreCase = true) -> {
                 stringResource(R.string.episodes_tba)
             }
-            // Case 4: Unknown
+
             else -> stringResource(R.string.unknown)
         }
     }
 
-    // Status display with "Upcoming" for NOT_YET_RELEASED
     val statusValue = if (details.status.equals("NOT_YET_RELEASED", ignoreCase = true)) {
         stringResource(R.string.media_status_upcoming)
     } else {
@@ -834,12 +826,10 @@ fun InfoCardsSection(details: MediaDetails) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
     ) {
-        // Row 1: Status, Episodes
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
         ) {
-            // Status Card
             InfoCard(
                 modifier = Modifier.weight(1f),
                 icon = MediaDetailsIcons.getStatusIcon(details.status),
@@ -848,7 +838,6 @@ fun InfoCardsSection(details: MediaDetails) {
                 iconTint = MediaDetailsIcons.getStatusColor(details.status),
                 isStatus = true
             )
-            // Episodes Card
             InfoCard(
                 modifier = Modifier.weight(1f),
                 icon = MediaDetailsIcons.getEpisodesIcon(details.type),
@@ -858,16 +847,12 @@ fun InfoCardsSection(details: MediaDetails) {
             )
         }
 
-        // Row 2: Season, Source
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
         ) {
             details.seasonYear?.let { year ->
-                // Show only year for cleaner display, icon represents season visually
                 val seasonValue = year.toString()
-
-                // Get accessibility description for the icon (e.g., "Summer")
                 val seasonDescriptionResId =
                     MediaDetailsIcons.getSeasonContentDescriptionResId(details.season)
                 val seasonDescription = seasonDescriptionResId?.let { stringResource(it) }
@@ -879,7 +864,7 @@ fun InfoCardsSection(details: MediaDetails) {
                         label = stringResource(R.string.stat_season),
                         value = seasonValue,
                         iconTint = MediaDetailsIcons.getSeasonColor(details.season),
-                        iconContentDescription = seasonDescription  // NEW: Accessibility label
+                        iconContentDescription = seasonDescription
                     )
                 } else {
                     InfoCard(
@@ -888,25 +873,21 @@ fun InfoCardsSection(details: MediaDetails) {
                         label = stringResource(R.string.stat_season),
                         value = seasonValue,
                         iconTint = MediaDetailsIcons.getSeasonColor(details.season),
-                        iconContentDescription = seasonDescription  // NEW: Accessibility label
+                        iconContentDescription = seasonDescription
                     )
                 }
             }
-            // Source Card
             InfoCard(
                 modifier = Modifier.weight(1f),
                 icon = MediaDetailsIcons.getSourceIcon(),
                 label = stringResource(R.string.stat_source),
-                value = stringResource(R.string.source_original), // TODO: Get actual source from API
+                value = stringResource(R.string.source_original),
                 iconTint = MaterialTheme.colorScheme.tertiary
             )
         }
     }
 }
 
-/**
- * A simple metadata chip used for displaying format, year, etc.
- */
 @Composable
 fun MetadataChip(
     text: String,
@@ -928,10 +909,6 @@ fun MetadataChip(
     }
 }
 
-/**
- * Row containing Favorite and Share action buttons.
- * Favorite is a larger filled icon-only button with animation, Share is smaller outlined with label.
- */
 @Composable
 fun ActionButtonsRow(
     isFavorite: Boolean = false,
@@ -944,7 +921,6 @@ fun ActionButtonsRow(
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Favorite Button - Filled container with animated icon
         androidx.compose.material3.FilledIconButton(
             onClick = onFavoriteClick,
             modifier = Modifier.size(48.dp),
@@ -967,7 +943,6 @@ fun ActionButtonsRow(
             )
         }
 
-        // Share Button - Outlined with label
         OutlinedButton(
             onClick = onShareClick,
             modifier = Modifier.weight(1f),

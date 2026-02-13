@@ -36,12 +36,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +62,8 @@ import com.anisync.android.presentation.details.components.CharacterStatsCard
 import com.anisync.android.presentation.details.components.ExpandableCharacterSynopsis
 import com.anisync.android.presentation.details.components.MediaRoleItem
 import com.anisync.android.presentation.details.components.NameSection
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // Custom stagger delay for character details (faster reveal)
 private const val CharacterStaggerDelay = 10
@@ -77,8 +81,8 @@ fun CharacterDetailsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    
-    // Track scroll state for animated title visibility
+
+    // PERFORMANCE: derivedStateOf is correctly used here, kept as is.
     val isScrolled by remember {
         derivedStateOf { scrollBehavior.state.contentOffset < -50f }
     }
@@ -90,7 +94,7 @@ fun CharacterDetailsScreen(
         topBar = {
             // Extract name safely for the title
             val title = (uiState as? CharacterDetailsUiState.Success)?.details?.name ?: ""
-            
+
             TopAppBar(
                 title = {
                     AnimatedVisibility(
@@ -137,15 +141,21 @@ fun CharacterDetailsScreen(
                 is CharacterDetailsUiState.Loading -> {
                     CharacterSkeletonContent(onBackClick = onBackClick)
                 }
+
                 is CharacterDetailsUiState.Success -> {
                     CharacterDetailsContent(
                         character = state.details,
-                        // onBackClick handled by Scaffold
-                        onMediaSeeAllClick = { onMediaSeeAllClick(state.details.id, state.details.name) },
+                        onMediaSeeAllClick = {
+                            onMediaSeeAllClick(
+                                state.details.id,
+                                state.details.name
+                            )
+                        },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
+
                 is CharacterDetailsUiState.Error -> {
                     ErrorState(
                         message = state.message,
@@ -172,17 +182,37 @@ private fun CharacterDetailsContent(
     val spoilerBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
     val spoilerContentColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // Parse description into Key-Values (attributes) and Body (bio)
-    val (attributes, bio) = remember(character.description, spoilerBackgroundColor, spoilerContentColor) {
-        CharacterDescriptionParser.parse(character.description, spoilerBackgroundColor, spoilerContentColor)
+    // PERFORMANCE OPTIMIZATION: Moved parsing off the Main Thread.
+    // CharacterDescriptionParser likely uses Regex and String manipulation.
+    // Doing this synchronously in 'remember' blocks the UI thread during the initial composition frame.
+    val parsedDescriptionState by produceState(
+        initialValue = ParsedDescription(emptyList(), AnnotatedString("")),
+        key1 = character.description,
+        key2 = spoilerBackgroundColor
+    ) {
+        // Switch to Default dispatcher for CPU intensive string parsing
+        value = withContext(Dispatchers.Default) {
+            val (attrs, bio) = CharacterDescriptionParser.parse(
+                character.description,
+                spoilerBackgroundColor,
+                spoilerContentColor
+            )
+            ParsedDescription(attrs, bio)
+        }
     }
+
+    val attributes = parsedDescriptionState.attributes
+    val bio = parsedDescriptionState.bio
 
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp)
+            contentPadding = PaddingValues(
+                bottom = WindowInsets.navigationBars.asPaddingValues()
+                    .calculateBottomPadding() + 24.dp
+            )
         ) {
             item {
                 CharacterHeaderSection(
@@ -195,14 +225,22 @@ private fun CharacterDetailsContent(
             item {
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                     // Name Section (stagger index 0)
-                    StaggeredAnimatedVisibility(key = "char_name", index = 0, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "char_name",
+                        index = 0,
+                        delayPerItem = CharacterStaggerDelay
+                    ) {
                         NameSection(character)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Stats (stagger index 1)
-                    StaggeredAnimatedVisibility(key = "char_stats", index = 1, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "char_stats",
+                        index = 1,
+                        delayPerItem = CharacterStaggerDelay
+                    ) {
                         CharacterStatsCard(character, attributes)
                     }
 
@@ -210,15 +248,19 @@ private fun CharacterDetailsContent(
                     // Filter out stats that are already shown in the StatsCard
                     val displayAttributes = remember(attributes) {
                         attributes.filterNot { (key, _) ->
-                            key.equals("Age", ignoreCase = true) || 
-                            key.equals("Gender", ignoreCase = true) || 
-                            key.contains("Blood", ignoreCase = true)
+                            key.equals("Age", ignoreCase = true) ||
+                                    key.equals("Gender", ignoreCase = true) ||
+                                    key.contains("Blood", ignoreCase = true)
                         }
                     }
 
                     if (displayAttributes.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
-                        StaggeredAnimatedVisibility(key = "char_info", index = 2, delayPerItem = CharacterStaggerDelay) {
+                        StaggeredAnimatedVisibility(
+                            key = "char_info",
+                            index = 2,
+                            delayPerItem = CharacterStaggerDelay
+                        ) {
                             CharacterInfoSection(displayAttributes)
                         }
                     }
@@ -226,11 +268,14 @@ private fun CharacterDetailsContent(
             }
 
             // Biography (stagger index 3)
-            // Moved out of the previous column item to align properly with other sections
             if (bio.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    StaggeredAnimatedVisibility(key = "char_bio", index = 3, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "char_bio",
+                        index = 3,
+                        delayPerItem = CharacterStaggerDelay
+                    ) {
                         Column {
                             SectionHeader(title = "Biography", level = HeaderLevel.Section)
                             Spacer(modifier = Modifier.height(12.dp))
@@ -246,9 +291,12 @@ private fun CharacterDetailsContent(
             if (character.media.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
-                    StaggeredAnimatedVisibility(key = "char_media", index = 4, delayPerItem = CharacterStaggerDelay) {
+                    StaggeredAnimatedVisibility(
+                        key = "char_media",
+                        index = 4,
+                        delayPerItem = CharacterStaggerDelay
+                    ) {
                         Column {
-                            // Using standard SectionHeader for consistency
                             SectionHeader(
                                 title = "Appears In",
                                 level = HeaderLevel.Section,
@@ -260,7 +308,11 @@ private fun CharacterDetailsContent(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 modifier = Modifier.height(180.dp)
                             ) {
-                                items(character.media.take(10)) { media ->
+                                // Optimization: Ensure stable keys for list items
+                                items(
+                                    items = character.media.take(10),
+                                    key = { it.id }
+                                ) { media ->
                                     MediaRoleItem(media)
                                 }
                             }
@@ -271,6 +323,12 @@ private fun CharacterDetailsContent(
         }
     }
 }
+
+// Helper data class for state hoisting
+private data class ParsedDescription(
+    val attributes: List<Pair<String, String>>,
+    val bio: AnnotatedString
+)
 
 @Composable
 private fun ErrorState(
