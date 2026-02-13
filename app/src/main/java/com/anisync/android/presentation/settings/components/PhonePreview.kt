@@ -136,8 +136,7 @@ private fun ComponentPreviewContent() {
             .padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section 1: Header
-        // Separate Row for header text to maintain alignment while allowing tabs to scroll edge-to-edge
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,9 +152,7 @@ private fun ComponentPreviewContent() {
             )
         }
 
-        // Section 2: Status Tabs
-        // Changed to LazyRow to fix clipping/missing tabs issue.
-        // Moved out of the padded column to allow edge-to-edge scrolling.
+        // Status Tabs
         var selectedTabIndex by remember { mutableIntStateOf(0) }
         val statuses = listOf(
             LibraryStatus.CURRENT to Icons.Default.PlayArrow,
@@ -179,7 +176,7 @@ private fun ComponentPreviewContent() {
             }
         }
 
-        // Section 3: Library Cards Carousel
+        // Library Cards Carousel
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -190,7 +187,7 @@ private fun ComponentPreviewContent() {
                     mediaType = entry.type ?: MediaType.ANIME,
                     titleLanguage = TitleLanguage.ROMAJI,
                     onClick = { },
-                    modifier = Modifier.width(150.dp), // Slightly more compact width
+                    modifier = Modifier.width(150.dp),
                     config = if (entry.status == LibraryStatus.COMPLETED) {
                         CompletedCardConfig
                     } else {
@@ -202,20 +199,13 @@ private fun ComponentPreviewContent() {
             }
         }
 
-        // Section 4: Statistics Carousel
+        // Statistics Carousel
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Stat Card
-            item {
-                PreviewStatCard()
-            }
-
-            // Formats Card
-            item {
-                PreviewFormatsCard()
-            }
+            item { PreviewStatCard() }
+            item { PreviewFormatsCard() }
         }
     }
 }
@@ -260,7 +250,7 @@ private fun PreviewStatCard() {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 // Days watched
-                Column {
+                Column(horizontalAlignment = Alignment.Start) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Schedule,
@@ -284,7 +274,7 @@ private fun PreviewStatCard() {
                 }
 
                 // Mean score
-                Column {
+                Column(horizontalAlignment = Alignment.End) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Star,
@@ -339,7 +329,7 @@ private fun PreviewFormatsCard() {
                 Triple(MediaFormat.OVA, "OVA", Icons.Default.Book)
             )
 
-            formats.forEach { (format, label, icon) ->
+            formats.forEachIndexed { index, (format, label, icon) ->
                 PreviewFormatRow(
                     icon = icon,
                     label = label,
@@ -357,7 +347,7 @@ private fun PreviewFormatsCard() {
                     }
                 )
 
-                if (format != MediaFormat.OVA) {
+                if (index < formats.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -405,7 +395,10 @@ private fun PreviewFormatRow(
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = "$count",
                 style = MaterialTheme.typography.titleSmall,
