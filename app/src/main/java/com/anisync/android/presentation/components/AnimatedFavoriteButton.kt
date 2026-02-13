@@ -29,8 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -97,7 +97,7 @@ fun AnimatedFavoriteButton(
                         targetValue = 1.5f,
                         animationSpec = keyframes {
                             durationMillis = 400
-                            0.0f at 0 with FastOutSlowInEasing
+                            0.0f at 0 using FastOutSlowInEasing
                             1.5f at 300
                         }
                     )
