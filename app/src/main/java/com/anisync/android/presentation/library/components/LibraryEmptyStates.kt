@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,8 +60,24 @@ fun LibrarySearchResultCard(
     titleLanguage: TitleLanguage,
     modifier: Modifier = Modifier
 ) {
-    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-    val title = entry.getTitle(titleLanguage)
+    val context = LocalContext.current
+
+    val title = remember(entry, titleLanguage) {
+        entry.getTitle(titleLanguage)
+    }
+
+    val statusLabel = entry.status.toLabel(mediaType)
+    val subtitle = remember(entry, mediaType, statusLabel) {
+        val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+        "$statusLabel • ${entry.progress}/${total ?: "?"}"
+    }
+
+    val imageRequest = remember(entry.coverUrl) {
+        ImageRequest.Builder(context)
+            .data(entry.coverUrl)
+            .crossfade(true)
+            .build()
+    }
 
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -80,10 +97,7 @@ fun LibrarySearchResultCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(entry.coverUrl)
-                    .crossfade(true)
-                    .build(),
+                model = imageRequest,
                 contentDescription = stringResource(R.string.a11y_media_poster, title),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -102,7 +116,7 @@ fun LibrarySearchResultCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${entry.status.toLabel(mediaType)} • ${entry.progress}/${total ?: "?"}",
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -121,24 +135,29 @@ fun EmptyLibraryTabState(
     type: MediaType,
     modifier: Modifier = Modifier
 ) {
-    val icon = when (status) {
-        LibraryStatus.CURRENT -> if (type == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
-        LibraryStatus.PLANNING -> Icons.Default.Check
-        LibraryStatus.COMPLETED -> Icons.Default.Check
-        else -> Icons.Default.Inbox
-    }
-    
-    val message = when (status) {
-        LibraryStatus.CURRENT -> if (type == MediaType.ANIME) {
-            stringResource(R.string.empty_watching)
-        } else {
-            stringResource(R.string.empty_reading)
+    val icon = remember(status, type) {
+        when (status) {
+            LibraryStatus.CURRENT -> if (type == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
+            LibraryStatus.PLANNING -> Icons.Default.Check
+            LibraryStatus.COMPLETED -> Icons.Default.Check
+            else -> Icons.Default.Inbox
         }
-        LibraryStatus.PLANNING -> stringResource(R.string.empty_planning)
-        LibraryStatus.COMPLETED -> stringResource(R.string.empty_completed)
-        else -> stringResource(R.string.empty_default)
     }
-    
+
+    val messageResId = remember(status, type) {
+        when (status) {
+            LibraryStatus.CURRENT -> if (type == MediaType.ANIME) {
+                R.string.empty_watching
+            } else {
+                R.string.empty_reading
+            }
+
+            LibraryStatus.PLANNING -> R.string.empty_planning
+            LibraryStatus.COMPLETED -> R.string.empty_completed
+            else -> R.string.empty_default
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -162,7 +181,7 @@ fun EmptyLibraryTabState(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = message,
+            text = stringResource(messageResId),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
