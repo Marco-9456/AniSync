@@ -5,7 +5,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -96,6 +93,9 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "DiscoverScreen"
 private const val SEARCH_DEBOUNCE_MS = 150L
+
+private val TrendingIconColor = Color(0xFFFF5722)
+private val TbaIconColor = Color(0xFF9E9E9E)
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -316,10 +316,15 @@ private fun SearchInputField(
     // PERF: Use derivedStateOf for computed values
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
 
-    val placeholderTextRes = if (mediaType == MediaType.ANIME)
-        R.string.search_anime_placeholder
-    else
-        R.string.search_manga_placeholder
+    val placeholderTextRes by remember(mediaType) {
+        derivedStateOf {
+            if (mediaType == MediaType.ANIME) {
+                R.string.search_anime_placeholder
+            } else {
+                R.string.search_manga_placeholder
+            }
+        }
+    }
 
     SearchBarDefaults.InputField(
         searchBarState = searchBarState,
@@ -466,7 +471,7 @@ private fun DiscoverContent(
                         Spacer(modifier = Modifier.height(24.dp))
                         SectionHeader(
                             title = trendingTitle,
-                            iconColor = Color(0xFFFF5722),
+                            iconColor = TrendingIconColor,
                             onActionClick = {
                                 onSectionSeeAllClick(
                                     trendingTitle,
@@ -559,7 +564,7 @@ private fun DiscoverContent(
                         Spacer(modifier = Modifier.height(48.dp))
                         SectionHeader(
                             title = tbaTitle,
-                            iconColor = Color(0xFF9E9E9E),
+                            iconColor = TbaIconColor,
                             onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", mediaType) },
                             level = HeaderLevel.Section
                         )

@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
@@ -69,6 +67,11 @@ import com.anisync.android.ui.theme.ThemePalette
  * Contains visual theme selector with mini-app previews, title language,
  * streaming service, and haptic feedback settings.
  */
+private val TitleLanguages = TitleLanguage.entries
+private val StreamingServices = StreamingService.entries
+private val ThemeModes = ThemeMode.entries
+private val AppLocales = AppLocale.entries
+
 @Composable
 fun LookAndFeelScreen(
     onBackClick: () -> Unit,
@@ -357,10 +360,8 @@ fun LookAndFeelScreen(
 fun TitleLanguageSelectionDialog(
     currentLanguage: TitleLanguage,
     onLanguageSelected: (TitleLanguage) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val languages = remember { TitleLanguage.entries }
-
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -368,65 +369,69 @@ fun TitleLanguageSelectionDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    // Added scroll state for small screens/large fonts
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.Start
+            LazyColumn(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start,
             ) {
-                Text(
-                    text = stringResource(R.string.settings_title_language),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                item {
+                    Text(
+                        text = stringResource(R.string.settings_title_language),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-                languages.forEach { language ->
+                items(
+                    items = TitleLanguages,
+                    key = { it.name },
+                ) { language ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onLanguageSelected(language) }
                             .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = currentLanguage == language,
-                            onClick = { onLanguageSelected(language) }
+                            onClick = { onLanguageSelected(language) },
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
                                 text = getTitleLanguageLabel(language),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = getTitleLanguageExample(language),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
                     }
                 }
             }
@@ -441,19 +446,9 @@ fun TitleLanguageSelectionDialog(
 fun StreamingServiceSelectionDialog(
     currentService: StreamingService,
     onServiceSelected: (StreamingService) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val services = remember { StreamingService.entries }
-
-    val brandColors = remember(services) {
-        services.associateWith { service ->
-            try {
-                Color(android.graphics.Color.parseColor(service.brandColor))
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    val brandColors = rememberBrandColors()
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -462,18 +457,18 @@ fun StreamingServiceSelectionDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         ) {
             LazyColumn(
                 modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.Start,
             ) {
                 item {
                     Text(
                         text = stringResource(R.string.setting_streaming_service),
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -481,7 +476,7 @@ fun StreamingServiceSelectionDialog(
                     Text(
                         text = stringResource(R.string.setting_streaming_service_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -489,7 +484,10 @@ fun StreamingServiceSelectionDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                items(services) { service ->
+                items(
+                    items = StreamingServices,
+                    key = { it.name },
+                ) { service ->
                     val brandColor = brandColors[service]
 
                     Row(
@@ -498,11 +496,11 @@ fun StreamingServiceSelectionDialog(
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onServiceSelected(service) }
                             .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = currentService == service,
-                            onClick = { onServiceSelected(service) }
+                            onClick = { onServiceSelected(service) },
                         )
                         Spacer(Modifier.width(12.dp))
 
@@ -512,14 +510,14 @@ fun StreamingServiceSelectionDialog(
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp),
                                 contentScale = ContentScale.Fit,
-                                colorFilter = brandColor?.let { ColorFilter.tint(it) }
+                                colorFilter = brandColor?.let { ColorFilter.tint(it) },
                             )
                         } else {
                             Icon(
                                 Icons.Default.PlayCircle,
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
 
@@ -528,7 +526,7 @@ fun StreamingServiceSelectionDialog(
                         Text(
                             text = service.displayName,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
@@ -540,13 +538,26 @@ fun StreamingServiceSelectionDialog(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = onDismiss) {
                             Text(stringResource(R.string.cancel))
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberBrandColors(): Map<StreamingService, Color?> {
+    return remember {
+        StreamingServices.associateWith { service ->
+            try {
+                Color(android.graphics.Color.parseColor(service.brandColor))
+            } catch (e: Exception) {
+                null
             }
         }
     }
@@ -559,10 +570,8 @@ fun StreamingServiceSelectionDialog(
 fun ThemeModeSelectionDialog(
     currentMode: ThemeMode,
     onModeSelected: (ThemeMode) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val modes = remember { ThemeMode.entries }
-
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -570,37 +579,40 @@ fun ThemeModeSelectionDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.Start
+            LazyColumn(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start,
             ) {
-                Text(
-                    text = stringResource(R.string.theme_mode_dialog_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                item {
+                    Text(
+                        text = stringResource(R.string.theme_mode_dialog_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-                modes.forEach { mode ->
+                items(
+                    items = ThemeModes,
+                    key = { it.name },
+                ) { mode ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onModeSelected(mode) }
                             .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = currentMode == mode,
-                            onClick = { onModeSelected(mode) }
+                            onClick = { onModeSelected(mode) },
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
@@ -610,21 +622,23 @@ fun ThemeModeSelectionDialog(
                                 ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
                             },
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
                     }
                 }
             }
@@ -644,10 +658,8 @@ fun ThemeModeSelectionDialog(
 fun AppLanguageSelectionDialog(
     currentLocale: AppLocale,
     onLocaleSelected: (AppLocale) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val locales = remember { AppLocale.entries }
-
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -655,18 +667,18 @@ fun AppLanguageSelectionDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         ) {
             LazyColumn(
                 modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.Start,
             ) {
                 item {
                     Text(
                         text = stringResource(R.string.settings_app_language),
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -674,31 +686,34 @@ fun AppLanguageSelectionDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                items(locales) { locale ->
+                items(
+                    items = AppLocales,
+                    key = { it.name },
+                ) { locale ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onLocaleSelected(locale) }
                             .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = currentLocale == locale,
-                            onClick = { onLocaleSelected(locale) }
+                            onClick = { onLocaleSelected(locale) },
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
                                 text = locale.displayName,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             if (locale == AppLocale.SYSTEM) {
                                 Text(
                                     text = stringResource(R.string.settings_app_language_system_desc),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -712,7 +727,7 @@ fun AppLanguageSelectionDialog(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = onDismiss) {
                             Text(stringResource(R.string.cancel))
