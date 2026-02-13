@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -24,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +45,7 @@ import com.materialkolor.dynamicColorScheme
 
 /**
  * Horizontal scrollable color scheme selector.
- * 
+ *
  * Displays available color palettes as circular icons with 4 color segments,
  * allowing users to select their preferred theme color scheme.
  */
@@ -56,6 +58,16 @@ fun ColorSchemeSelector(
     onPaletteSelected: (ThemePalette) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    val systemScheme = remember(isDarkMode, context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (isDarkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else {
+            null
+        }
+    }
+
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -70,6 +82,7 @@ fun ColorSchemeSelector(
                 isSelected = palette.id == selectedPaletteId,
                 isDarkMode = isDarkMode,
                 paletteStyle = paletteStyle,
+                systemScheme = systemScheme,
                 onClick = { onPaletteSelected(palette) }
             )
         }
@@ -85,75 +98,20 @@ private fun ColorSchemeItem(
     isSelected: Boolean,
     isDarkMode: Boolean,
     paletteStyle: PaletteStyle,
+    systemScheme: ColorScheme?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    
-    // Generate the color scheme for this palette to extract the 4 colors
-    val paletteColors = remember(palette, isDarkMode, paletteStyle) {
-        if (palette.isDynamic) {
-            // Use actual wallpaper-derived dynamic colors on Android 12+,
-            // with dark/light mode-aware fallbacks for older devices
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val dynamicScheme = if (isDarkMode) {
-                    dynamicDarkColorScheme(context)
-                } else {
-                    dynamicLightColorScheme(context)
-                }
-                PaletteColors(
-                    topLeft = dynamicScheme.primaryContainer,
-                    topRight = dynamicScheme.secondaryContainer,
-                    bottomLeft = dynamicScheme.primary,
-                    bottomRight = dynamicScheme.tertiary
-                )
-            } else if (isDarkMode) {
-                PaletteColors(
-                    topLeft = Color(0xFF4F378B),
-                    topRight = Color(0xFF332D41),
-                    bottomLeft = Color(0xFFD0BCFF),
-                    bottomRight = Color(0xFFCCC2DC)
-                )
-            } else {
-                PaletteColors(
-                    topLeft = Color(0xFFE8DEF8),
-                    topRight = Color(0xFFF3EDF7),
-                    bottomLeft = Color(0xFF6750A4),
-                    bottomRight = Color(0xFF7D5260)
-                )
-            }
-        } else {
-            try {
-                val colorScheme = dynamicColorScheme(
-                    seedColor = palette.seedColor,
-                    isDark = isDarkMode,
-                    isAmoled = false,
-                    style = paletteStyle
-                )
-                PaletteColors(
-                    topLeft = colorScheme.primaryContainer,
-                    topRight = colorScheme.secondaryContainer,
-                    bottomLeft = colorScheme.primary,
-                    bottomRight = colorScheme.tertiary
-                )
-            } catch (e: Exception) {
-                // Fallback colors
-                PaletteColors(
-                    topLeft = palette.seedColor.copy(alpha = 0.3f),
-                    topRight = palette.seedColor.copy(alpha = 0.5f),
-                    bottomLeft = palette.seedColor,
-                    bottomRight = palette.seedColor.copy(alpha = 0.7f)
-                )
-            }
-        }
+    val paletteColors = remember(palette, isDarkMode, paletteStyle, systemScheme) {
+        resolvePaletteColors(palette, isDarkMode, paletteStyle, systemScheme)
     }
-    
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Circular palette indicator inside a rounded square container
+        // Circular palette indicator
         Surface(
             modifier = Modifier
                 .size(64.dp)
@@ -164,9 +122,7 @@ private fun ColorSchemeItem(
                             color = MaterialTheme.colorScheme.primary,
                             shape = RoundedCornerShape(16.dp)
                         )
-                    } else {
-                        Modifier
-                    }
+                    } else Modifier
                 )
                 .clip(RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick),
@@ -182,7 +138,7 @@ private fun ColorSchemeItem(
                     colors = paletteColors,
                     modifier = Modifier.size(48.dp)
                 )
-                
+
                 // Checkmark overlay for selected item
                 if (isSelected) {
                     Box(
@@ -202,7 +158,7 @@ private fun ColorSchemeItem(
                 }
             }
         }
-        
+
         // Palette name label
         Text(
             text = palette.name,
@@ -217,8 +173,71 @@ private fun ColorSchemeItem(
 }
 
 /**
+ * Helper to resolve the preview colors. Extracted to keep the Composable clean.
+ */
+private fun resolvePaletteColors(
+    palette: ThemePalette,
+    isDarkMode: Boolean,
+    paletteStyle: PaletteStyle,
+    systemScheme: ColorScheme?
+): PaletteColors {
+    if (palette.isDynamic) {
+        // Use system colors if available (Android 12+)
+        if (systemScheme != null) {
+            return PaletteColors(
+                topLeft = systemScheme.primaryContainer,
+                topRight = systemScheme.secondaryContainer,
+                bottomLeft = systemScheme.primary,
+                bottomRight = systemScheme.tertiary
+            )
+        } else if (isDarkMode) {
+            // Fallback Dark
+            return PaletteColors(
+                topLeft = Color(0xFF4F378B),
+                topRight = Color(0xFF332D41),
+                bottomLeft = Color(0xFFD0BCFF),
+                bottomRight = Color(0xFFCCC2DC)
+            )
+        } else {
+            // Fallback Light
+            return PaletteColors(
+                topLeft = Color(0xFFE8DEF8),
+                topRight = Color(0xFFF3EDF7),
+                bottomLeft = Color(0xFF6750A4),
+                bottomRight = Color(0xFF7D5260)
+            )
+        }
+    } else {
+        // Generate from seed using Material Kolor
+        return try {
+            val colorScheme = dynamicColorScheme(
+                seedColor = palette.seedColor,
+                isDark = isDarkMode,
+                isAmoled = false,
+                style = paletteStyle
+            )
+            PaletteColors(
+                topLeft = colorScheme.primaryContainer,
+                topRight = colorScheme.secondaryContainer,
+                bottomLeft = colorScheme.primary,
+                bottomRight = colorScheme.tertiary
+            )
+        } catch (e: Exception) {
+            // Safety fallback
+            PaletteColors(
+                topLeft = palette.seedColor.copy(alpha = 0.3f),
+                topRight = palette.seedColor.copy(alpha = 0.5f),
+                bottomLeft = palette.seedColor,
+                bottomRight = palette.seedColor.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+/**
  * Data class for the 4 colors in the palette preview circle.
  */
+@Immutable
 private data class PaletteColors(
     val topLeft: Color,
     val topRight: Color,
@@ -238,9 +257,6 @@ private fun FourSegmentCircle(
         modifier = modifier
             .clip(CircleShape)
             .drawBehind {
-                val halfWidth = size.width / 2
-                val halfHeight = size.height / 2
-                
                 // Top-left quadrant
                 drawArc(
                     color = colors.topLeft,
@@ -250,7 +266,7 @@ private fun FourSegmentCircle(
                     topLeft = Offset.Zero,
                     size = size
                 )
-                
+
                 // Top-right quadrant
                 drawArc(
                     color = colors.topRight,
@@ -260,7 +276,7 @@ private fun FourSegmentCircle(
                     topLeft = Offset.Zero,
                     size = size
                 )
-                
+
                 // Bottom-right quadrant
                 drawArc(
                     color = colors.bottomRight,
@@ -270,7 +286,7 @@ private fun FourSegmentCircle(
                     topLeft = Offset.Zero,
                     size = size
                 )
-                
+
                 // Bottom-left quadrant
                 drawArc(
                     color = colors.bottomLeft,

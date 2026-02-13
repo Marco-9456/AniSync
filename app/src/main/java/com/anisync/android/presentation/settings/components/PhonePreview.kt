@@ -62,6 +62,19 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.PreviewTheme
 import com.materialkolor.PaletteStyle
 
+// OPTIMIZATION: Move constant data structures to top-level to avoid allocation on every recomposition.
+private val Statuses = listOf(
+    LibraryStatus.CURRENT to Icons.Default.PlayArrow,
+    LibraryStatus.COMPLETED to Icons.Default.Done,
+    LibraryStatus.PLANNING to Icons.Default.Schedule
+)
+
+private val Formats = listOf(
+    Triple(MediaFormat.TV, "TV", Icons.Default.Tv),
+    Triple(MediaFormat.MOVIE, "Movie", Icons.Default.Movie),
+    Triple(MediaFormat.OVA, "OVA", Icons.Default.Book)
+)
+
 /**
  * A horizontal component showcase preview for the Look and Feel settings screen.
  *
@@ -77,6 +90,16 @@ fun PhonePreview(
 ) {
     val context = LocalContext.current
     val appSettings = remember { AppSettings(context) }
+
+    // OPTIMIZATION: Memoize the dynamic color scheme creation.
+    // Generating dynamic schemes can be expensive; we only want to do this if the context or mode changes.
+    val dynamicColorScheme = remember(context, isDarkMode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (isDarkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else {
+            null
+        }
+    }
 
     Box(
         modifier = modifier.fillMaxWidth(),
@@ -107,12 +130,8 @@ fun PhonePreview(
                 style = paletteStyle,
                 content = themeContent
             )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val dynamicColorScheme = if (isDarkMode) {
-                dynamicDarkColorScheme(context)
-            } else {
-                dynamicLightColorScheme(context)
-            }
+        } else if (dynamicColorScheme != null) {
+            // OPTIMIZATION: Use the memoized scheme
             PreviewTheme(colorScheme = dynamicColorScheme, content = themeContent)
         } else {
             PreviewTheme(
@@ -154,17 +173,17 @@ private fun ComponentPreviewContent() {
 
         // Status Tabs
         var selectedTabIndex by remember { mutableIntStateOf(0) }
-        val statuses = listOf(
-            LibraryStatus.CURRENT to Icons.Default.PlayArrow,
-            LibraryStatus.COMPLETED to Icons.Default.Done,
-            LibraryStatus.PLANNING to Icons.Default.Schedule
-        )
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            itemsIndexed(statuses) { index, (status, icon) ->
+            // OPTIMIZATION: Use 'itemsIndexed' with a key.
+            // Providing a stable key (the status enum) helps Compose skip recomposition of unmodified items.
+            itemsIndexed(
+                items = Statuses,
+                key = { _, (status, _) -> status }
+            ) { index, (status, icon) ->
                 AnimatedTab(
                     index = index,
                     selectedIndex = selectedTabIndex,
@@ -181,7 +200,12 @@ private fun ComponentPreviewContent() {
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(mockLibraryEntries) { entry ->
+            // OPTIMIZATION: Provide a key for library entries.
+            // Uses the unique ID of the entry. Essential for performance if this list updates.
+            items(
+                items = mockLibraryEntries,
+                key = { it.id }
+            ) { entry ->
                 LibraryMediaCard(
                     entry = entry,
                     mediaType = entry.type ?: MediaType.ANIME,
@@ -323,13 +347,8 @@ private fun PreviewFormatsCard() {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            val formats = listOf(
-                Triple(MediaFormat.TV, "TV", Icons.Default.Tv),
-                Triple(MediaFormat.MOVIE, "Movie", Icons.Default.Movie),
-                Triple(MediaFormat.OVA, "OVA", Icons.Default.Book)
-            )
-
-            formats.forEachIndexed { index, (format, label, icon) ->
+            // OPTIMIZATION: Using the static 'Formats' list instead of recreating it here.
+            Formats.forEachIndexed { index, (format, label, icon) ->
                 PreviewFormatRow(
                     icon = icon,
                     label = label,
@@ -347,7 +366,7 @@ private fun PreviewFormatsCard() {
                     }
                 )
 
-                if (index < formats.lastIndex) {
+                if (index < Formats.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier
                             .fillMaxWidth()

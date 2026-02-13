@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
@@ -87,14 +91,17 @@ fun LookAndFeelScreen(
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
     var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
-    
+
     // Determine dark mode for preview rendering
-    val isDarkMode = when (themeMode) {
-        ThemeMode.DARK -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkMode = remember(themeMode, isSystemDark) {
+        when (themeMode) {
+            ThemeMode.DARK -> true
+            ThemeMode.LIGHT -> false
+            ThemeMode.SYSTEM -> isSystemDark
+        }
     }
-    
+
     // Build palette list: filter out Dynamic on pre-Android 12, include custom if set
     val supportseDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val palettes = remember(customSeedColor, supportseDynamicColor) {
@@ -109,29 +116,37 @@ fun LookAndFeelScreen(
             presets
         }
     }
-    
-    // Auto-reset orphaned "custom" palette state: if selected palette ID doesn't
-    // exist in the current palette list (e.g., custom cleared, or dynamic on pre-12),
-    // reset to the first available palette.
+
+    // Auto-reset orphaned "custom" palette state
     LaunchedEffect(selectedPaletteId, palettes) {
         if (palettes.none { it.id == selectedPaletteId }) {
             viewModel.setSelectedPalette(palettes.firstOrNull()?.id ?: "dynamic")
         }
     }
-    
+
+    val onColorSelected = remember(viewModel) {
+        { color: Color ->
+            viewModel.setCustomSeedColor(color)
+            viewModel.setSelectedPalette("custom")
+        }
+    }
+    val onPaletteSelected = remember(viewModel) {
+        { palette: ThemePalette -> viewModel.setSelectedPalette(palette.id) }
+    }
+    val onStyleSelected = remember(viewModel) {
+        { style: com.materialkolor.PaletteStyle -> viewModel.setPaletteStyle(style) }
+    }
+
     // Color picker bottom sheet
     if (showColorPicker) {
         ColorPickerSheet(
             currentColor = customSeedColor,
-            onColorSelected = { color ->
-                viewModel.setCustomSeedColor(color)
-                viewModel.setSelectedPalette("custom")
-            },
+            onColorSelected = onColorSelected,
             onDismiss = { showColorPicker = false }
         )
     }
 
-    // Title Language selection dialog
+    // Dialogs
     if (showTitleLanguageDialog) {
         TitleLanguageSelectionDialog(
             currentLanguage = titleLanguage,
@@ -143,7 +158,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    // Streaming Service selection dialog
     if (showStreamingServiceDialog) {
         StreamingServiceSelectionDialog(
             currentService = preferredStreamingService,
@@ -155,7 +169,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    // Theme Mode selection dialog
     if (showThemeModeDialog) {
         ThemeModeSelectionDialog(
             currentMode = themeMode,
@@ -167,7 +180,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    // App Language selection dialog
     if (showAppLanguageDialog) {
         AppLanguageSelectionDialog(
             currentLocale = appLocale,
@@ -184,23 +196,23 @@ fun LookAndFeelScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        // Note: SettingsScreenScaffold already provides vertical scroll
-        
         // =================================================================
         // PREVIEW SECTION
         // =================================================================
-        
+
         Text(
             text = stringResource(R.string.preview),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        
+
         // Get the seed color for the currently selected palette
-        val selectedPalette = palettes.find { it.id == selectedPaletteId }
+        val selectedPalette = remember(palettes, selectedPaletteId) {
+            palettes.find { it.id == selectedPaletteId }
+        }
         val seedColor = if (selectedPalette?.isDynamic == true) null else selectedPalette?.seedColor
-        
+
         // Phone mockup preview
         PhonePreview(
             seedColor = seedColor,
@@ -208,33 +220,31 @@ fun LookAndFeelScreen(
             paletteStyle = paletteStyle,
             modifier = Modifier.padding(vertical = 16.dp)
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // =================================================================
         // COLOR SCHEME SECTION
         // =================================================================
-        
+
         Text(
             text = stringResource(R.string.color_scheme),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        
+
         // Color scheme selector with palette circles
         ColorSchemeSelector(
             palettes = palettes,
             selectedPaletteId = selectedPaletteId,
             isDarkMode = isDarkMode,
             paletteStyle = paletteStyle,
-            onPaletteSelected = { palette ->
-                viewModel.setSelectedPalette(palette.id)
-            }
+            onPaletteSelected = onPaletteSelected
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Custom Color & Palette Style Row
         Row(
             modifier = Modifier
@@ -256,28 +266,26 @@ fun LookAndFeelScreen(
                 Text(stringResource(R.string.custom_color))
             }
         }
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
-        // Palette Style Selector (disabled when Dynamic palette is selected,
-        // since dynamic colors ignore PaletteStyle)
+
+        // Palette Style Selector (disabled when Dynamic palette is selected)
         PaletteStyleSelector(
             selectedStyle = paletteStyle,
-            onStyleSelected = { viewModel.setPaletteStyle(it) },
+            onStyleSelected = onStyleSelected,
             enabled = selectedPaletteId != "dynamic",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // =================================================================
         // APPEARANCE SECTION
         // =================================================================
-        
+
         SettingsGroup {
-            // Theme Mode Selection
             SelectionSettingsItem(
                 icon = Icons.Default.DarkMode,
                 title = stringResource(R.string.setting_theme),
@@ -289,13 +297,13 @@ fun LookAndFeelScreen(
                 onClick = { showThemeModeDialog = true }
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // =================================================================
         // DISPLAY & CONTENT SECTION
         // =================================================================
-        
+
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.Translate,
@@ -311,13 +319,13 @@ fun LookAndFeelScreen(
                 onClick = { showTitleLanguageDialog = true }
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // =================================================================
         // STREAMING & INTERACTION SECTION
         // =================================================================
-        
+
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.PlayCircle,
@@ -333,7 +341,7 @@ fun LookAndFeelScreen(
                 onCheckedChange = { viewModel.setHapticEnabled(it) }
             )
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
@@ -351,6 +359,8 @@ fun TitleLanguageSelectionDialog(
     onLanguageSelected: (TitleLanguage) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val languages = remember { TitleLanguage.entries }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -362,7 +372,10 @@ fun TitleLanguageSelectionDialog(
             )
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    // Added scroll state for small screens/large fonts
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
@@ -375,7 +388,7 @@ fun TitleLanguageSelectionDialog(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TitleLanguage.entries.forEach { language ->
+                languages.forEach { language ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -430,6 +443,18 @@ fun StreamingServiceSelectionDialog(
     onServiceSelected: (StreamingService) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val services = remember { StreamingService.entries }
+
+    val brandColors = remember(services) {
+        services.associateWith { service ->
+            try {
+                Color(android.graphics.Color.parseColor(service.brandColor))
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -440,36 +465,32 @@ fun StreamingServiceSelectionDialog(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
-            Column(
+            LazyColumn(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    text = stringResource(R.string.setting_streaming_service),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                item {
+                    Text(
+                        text = stringResource(R.string.setting_streaming_service),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = stringResource(R.string.setting_streaming_service_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = stringResource(R.string.setting_streaming_service_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-                StreamingService.entries.forEach { service ->
-                    val brandColor = remember(service) {
-                        try {
-                            Color(android.graphics.Color.parseColor(service.brandColor))
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
+                items(services) { service ->
+                    val brandColor = brandColors[service]
 
                     Row(
                         modifier = Modifier
@@ -512,16 +533,18 @@ fun StreamingServiceSelectionDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
                     }
                 }
             }
@@ -538,6 +561,8 @@ fun ThemeModeSelectionDialog(
     onModeSelected: (ThemeMode) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val modes = remember { ThemeMode.entries }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -549,7 +574,9 @@ fun ThemeModeSelectionDialog(
             )
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
@@ -562,7 +589,7 @@ fun ThemeModeSelectionDialog(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ThemeMode.entries.forEach { mode ->
+                modes.forEach { mode ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -619,6 +646,8 @@ fun AppLanguageSelectionDialog(
     onLocaleSelected: (AppLocale) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val locales = remember { AppLocale.entries }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -629,21 +658,23 @@ fun AppLanguageSelectionDialog(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
-            Column(
+            LazyColumn(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    text = stringResource(R.string.settings_app_language),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                item {
+                    Text(
+                        text = stringResource(R.string.settings_app_language),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-                AppLocale.entries.forEach { locale ->
+                items(locales) { locale ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -674,16 +705,18 @@ fun AppLanguageSelectionDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
                     }
                 }
             }

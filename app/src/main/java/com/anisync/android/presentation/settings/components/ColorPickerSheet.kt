@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -39,12 +40,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.util.bouncyClickable
+import kotlin.math.abs
 
 /**
  * Quick pick colors for the color picker.
@@ -70,12 +73,19 @@ private val QuickPickColors = listOf(
 )
 
 /**
+ * Helper class to cache pre-calculated hue for quick pick colors.
+ * Eliminates repeated math during slider drag.
+ */
+@Immutable
+private data class ColorCandidate(val color: Color, val hue: Float)
+
+/**
  * Bottom sheet for custom color selection.
- * 
+ *
  * Provides two ways to pick a color:
  * 1. Quick pick from preset colors
  * 2. Hue slider for fine-tuned selection
- * 
+ *
  * @param currentColor The currently selected custom color (if any)
  * @param onColorSelected Callback when a color is confirmed
  * @param onDismiss Callback when the sheet is dismissed
@@ -88,23 +98,35 @@ fun ColorPickerSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
+
     // Track the current hue (0-360), survives configuration changes
-    var hue by rememberSaveable { 
+    var hue by rememberSaveable {
         mutableFloatStateOf(
             currentColor?.let { extractHue(it) } ?: 0f
         )
     }
-    
+
+    val quickPickCandidates = remember {
+        QuickPickColors.map { ColorCandidate(it, extractHue(it)) }
+    }
+
     // Saturation and lightness are fixed for consistent, vibrant colors
     val saturation = 0.7f
     val lightness = 0.5f
-    
+
     // The color derived from current slider position
     val selectedColor = remember(hue) {
         Color.hsl(hue, saturation, lightness)
     }
-    
+
+    val rainbowBrush = remember {
+        Brush.horizontalGradient(
+            colors = (0..360 step 30).map { h ->
+                Color.hsl(h.toFloat(), 0.7f, 0.5f)
+            }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
@@ -120,71 +142,67 @@ fun ColorPickerSheet(
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = stringResource(R.string.custom_color_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Quick pick colors
             Text(
                 text = stringResource(R.string.quick_pick),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(QuickPickColors) { color ->
-                    val isSelected = remember(color, selectedColor) {
+                items(
+                    items = quickPickCandidates,
+                    key = { it.color.toArgb() }
+                ) { candidate ->
+                    val isSelected = remember(candidate, hue) {
                         // Compare hues (within 5 degrees tolerance)
-                        val colorHue = extractHue(color)
-                        kotlin.math.abs(colorHue - hue) < 5f || 
-                            kotlin.math.abs(colorHue - hue) > 355f
+                        val diff = abs(candidate.hue - hue)
+                        diff < 5f || diff > 355f
                     }
-                    
+
                     ColorSwatch(
-                        color = color,
+                        color = candidate.color,
                         isSelected = isSelected,
                         onClick = {
-                            hue = extractHue(color)
+                            hue = candidate.hue
                         }
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Hue slider
             Text(
                 text = stringResource(R.string.hue_slider),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Rainbow gradient background for slider track
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = (0..360 step 30).map { h ->
-                                Color.hsl(h.toFloat(), 0.7f, 0.5f)
-                            }
-                        )
-                    ),
+                    .background(rainbowBrush),
                 contentAlignment = Alignment.Center
             ) {
                 Slider(
@@ -201,18 +219,18 @@ fun ColorPickerSheet(
                         .padding(horizontal = 8.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Preview swatch
             Text(
                 text = stringResource(R.string.preview),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -225,9 +243,9 @@ fun ColorPickerSheet(
                         shape = RoundedCornerShape(16.dp)
                     )
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Action buttons
             Row(
                 horizontalArrangement = Arrangement.End,
@@ -260,25 +278,23 @@ private fun ColorSwatch(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    val borderWidth = if (isSelected) 3.dp else 1.dp
+
     Box(
         modifier = modifier
             .size(40.dp)
             .clip(CircleShape)
             .background(color)
-            .then(
-                if (isSelected) {
-                    Modifier.border(
-                        width = 3.dp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        shape = CircleShape
-                    )
-                } else {
-                    Modifier.border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = CircleShape
-                    )
-                }
+            .border(
+                width = borderWidth,
+                color = borderColor,
+                shape = CircleShape
             )
             .bouncyClickable(
                 onClick = onClick,
@@ -305,19 +321,19 @@ private fun extractHue(color: Color): Float {
     val r = color.red
     val g = color.green
     val b = color.blue
-    
+
     val max = maxOf(r, g, b)
     val min = minOf(r, g, b)
     val delta = max - min
-    
+
     if (delta == 0f) return 0f
-    
+
     val hue = when (max) {
         r -> 60f * (((g - b) / delta) % 6f)
         g -> 60f * (((b - r) / delta) + 2f)
         else -> 60f * (((r - g) / delta) + 4f)
     }
-    
+
     return if (hue < 0) hue + 360f else hue
 }
 

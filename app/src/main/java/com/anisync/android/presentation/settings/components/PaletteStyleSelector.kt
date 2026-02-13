@@ -28,10 +28,10 @@ import com.materialkolor.PaletteStyle
 
 /**
  * Dropdown selector for PaletteStyle options.
- * 
+ *
  * Allows users to choose how colors are distributed in the generated palette,
  * affecting the overall mood and vibrancy of the theme.
- * 
+ *
  * @param selectedStyle The currently selected palette style
  * @param onStyleSelected Callback when a style is selected
  * @param modifier Modifier for the dropdown container
@@ -45,7 +45,8 @@ fun PaletteStyleSelector(
     enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
+    val styles = remember { PaletteStyle.entries }
+
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { if (enabled) expanded = it },
@@ -64,20 +65,20 @@ fun PaletteStyleSelector(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
-            trailingIcon = { 
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) 
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
         )
-        
+
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            PaletteStyle.entries.forEach { style ->
+            styles.forEach { style ->
                 DropdownMenuItem(
                     text = {
                         Column {
