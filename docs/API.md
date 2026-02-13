@@ -55,32 +55,28 @@ sequenceDiagram
 
 ### Token Storage
 
-Tokens are stored securely using **Proto DataStore** with **Google Tink** encryption:
+Tokens are stored securely using `EncryptedSharedPreferences`:
 
 ```kotlin
-@Singleton
 class AuthRepository @Inject constructor(
-    private val authDataStore: DataStore<AuthToken>
+    @ApplicationContext private val context: Context
 ) {
-    // Reactive token access via Flow
-    val token: Flow<String?> = authDataStore.data
-        .map { it.accessToken.takeIf { token -> token.isNotEmpty() } }
+    private val prefs = EncryptedSharedPreferences.create(
+        context,
+        "auth_prefs",
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build(),
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
-    suspend fun saveToken(token: String, expiresInSeconds: Long? = null) {
-        authDataStore.updateData { current ->
-            current.toBuilder()
-                .setAccessToken(token)
-                .setIssuedAt(System.currentTimeMillis())
-                .setExpiresAt(expiresInSeconds?.let { System.currentTimeMillis() + (it * 1000) } ?: 0L)
-                .build()
-        }
+    fun saveToken(token: String) {
+        prefs.edit().putString("access_token", token).apply()
     }
 
-    suspend fun getToken(): String? {
-        return authDataStore.data
-            .map { it.accessToken.takeIf { token -> token.isNotEmpty() } }
-            .firstOrNull()
-    }
+    fun getToken(): String? {
+        return prefs.getString("access_token", null)
     }
 }
 ```

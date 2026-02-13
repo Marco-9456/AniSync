@@ -136,7 +136,7 @@ mindmap
 | **Background Work** | WorkManager |
 | **Widgets** | Jetpack Glance |
 | **Serialization** | Kotlinx Serialization |
-| **Security** | Proto DataStore + Google Tink (AES-256-GCM) |
+| **Security** | EncryptedSharedPreferences (AES-256-GCM) |
 | **Min SDK** | 26 (Android 8.0 Oreo) |
 | **Target SDK** | 35 (Android 15) |
 | **Compile SDK** | 36 |
