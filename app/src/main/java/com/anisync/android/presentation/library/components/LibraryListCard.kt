@@ -57,11 +57,6 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
 
-/**
- * List view card for library entries.
- * Displays media cover, title, progress, and increment/decrement buttons.
- * Used when the library is in list view mode (non-grid).
- */
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LibraryListCard(
@@ -109,13 +104,10 @@ fun LibraryListCard(
                 )
         ) {
             Row(modifier = Modifier.fillMaxSize()) {
-                val cacheKey = "library_cover_${entry.mediaId}"
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(entry.coverUrl)
                         .crossfade(true)
-                        .placeholderMemoryCacheKey(cacheKey)
-                        .memoryCacheKey(cacheKey)
                         .build(),
                     contentDescription = stringResource(R.string.a11y_media_poster, title),
                     contentScale = ContentScale.Crop,
@@ -158,8 +150,14 @@ fun LibraryListCard(
                 }
 
                 ProgressButtons(
-                    onIncrement = { haptic.click(); onIncrement() },
-                    onDecrement = { haptic.click(); onDecrement() },
+                    onIncrement = {
+                        haptic.click()
+                        onIncrement()
+                    },
+                    onDecrement = {
+                        haptic.click()
+                        onDecrement()
+                    },
                     modifier = Modifier
                         .width(48.dp)
                         .fillMaxHeight()
@@ -177,7 +175,7 @@ private fun AiringStatusRow(
     modifier: Modifier = Modifier
 ) {
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-    
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -185,7 +183,7 @@ private fun AiringStatusRow(
     ) {
         val nextAiring = entry.nextAiringEpisode
         val latest = if (nextAiring != null) nextAiring - 1 else total
-        
+
         if (entry.status == LibraryStatus.CURRENT) {
             if (latest != null && entry.progress < latest) {
                 StatusBadge(
@@ -201,7 +199,7 @@ private fun AiringStatusRow(
                 )
             }
         }
-        
+
         if (entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
             Text(
                 text = stringResource(

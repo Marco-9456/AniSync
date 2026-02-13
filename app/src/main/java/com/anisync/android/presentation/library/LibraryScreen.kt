@@ -10,7 +10,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,12 +18,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -63,7 +60,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -105,7 +101,9 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -136,7 +134,6 @@ fun LibraryScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
 
-    // Status tabs for HorizontalPager
     val statuses = remember {
         listOf(
             LibraryStatus.CURRENT,
@@ -147,22 +144,14 @@ fun LibraryScreen(
         )
     }
 
-    // Pager state - single source of truth for current tab
     val pagerState = rememberPagerState(pageCount = { statuses.size })
-
-    // State for edit sheet
     var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
 
-
-    // Search Bar State
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
-
-    // Scroll behavior for AppBarWithSearch
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
-    // Trigger initial data load when screen becomes visible (deferred from ViewModel init)
     LaunchedEffect(Unit) {
         viewModel.onScreenVisible()
     }
@@ -175,13 +164,12 @@ fun LibraryScreen(
         }
     }
 
-    // Sync textFieldState changes with ViewModel
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
+            .debounce(300.milliseconds)
             .collect { viewModel.onSearchQueryChange(it) }
     }
 
-    // Clear keyboard and focus when search bar collapses
     LaunchedEffect(searchBarState.currentValue) {
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
             keyboardController?.hide()
@@ -189,13 +177,11 @@ fun LibraryScreen(
         }
     }
 
-    // Handle back press to close search
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         keyboardController?.hide()
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    // Optimization: Memoize search result click to avoid recreation in lazy list
     val onSearchResultClick: (Int) -> Unit = remember(onMediaClick) {
         { id ->
             keyboardController?.hide()
@@ -203,20 +189,15 @@ fun LibraryScreen(
         }
     }
 
-    // Per-page scroll states
-    // Each status tab maintains its own scroll position
     val gridScrollStates = statuses.associateWith { status ->
-        rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+        rememberSaveable(saver = LazyGridState.Saver, key = "grid_$status") { LazyGridState() }
     }
     val listScrollStates = statuses.associateWith { status ->
-        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+        rememberSaveable(saver = LazyListState.Saver, key = "list_$status") { LazyListState() }
     }
 
-    // Optimization: Memoize inputField to avoid recreating the lambda on every recomposition.
-    // The keys are reduced to only what's necessary to redefine the composable's structure.
     val inputField = remember {
         @Composable {
-            // Read states within this Composable lambda to ensure it recomposes when they change.
             val currentSearchBarValue = searchBarState.currentValue
             val currentSearchQuery = searchQuery
             val currentIsGridView = isGridView
@@ -292,9 +273,8 @@ fun LibraryScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column(
-                modifier = Modifier.statusBarsPadding() // Protect entire top bar from status bar
+                modifier = Modifier.statusBarsPadding()
             ) {
-                // AppBarWithSearch for proper search bar transition animation
                 AppBarWithSearch(
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
@@ -303,10 +283,8 @@ fun LibraryScreen(
                         appBarContainerColor = Color.Transparent,
                         scrolledAppBarContainerColor = Color.Transparent
                     ),
+                )
 
-                    )
-
-                // MediaTypeSelector below the search bar
                 MediaTypeSelector(
                     selected = mediaType,
                     onSelect = viewModel::onMediaTypeChange,
@@ -315,14 +293,13 @@ fun LibraryScreen(
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                 )
 
-                // Status tabs with PrimaryScrollableTabRow
                 PrimaryScrollableTabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     edgePadding = 16.dp,
-                    indicator = {}, // No indicator needed - pill background shows selection
-                    divider = {} // Remove the default divider
+                    indicator = {},
+                    divider = {}
                 ) {
                     statuses.forEachIndexed { index, status ->
                         val statusIcon = when (status) {
@@ -331,7 +308,6 @@ fun LibraryScreen(
                             LibraryStatus.COMPLETED -> Icons.Default.Done
                             LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
                             LibraryStatus.DROPPED -> Icons.Default.Close
-                            // Added a fallback to handle potential new statuses gracefully
                             else -> Icons.Default.Inbox
                         }
 
@@ -357,7 +333,7 @@ fun LibraryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(bottom = 80.dp) // Padding for bottom navigation bar
+                .padding(bottom = 80.dp)
         ) {
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
@@ -369,33 +345,18 @@ fun LibraryScreen(
                     onRetry = { viewModel.refresh() })
 
                 is LibraryUiState.Success -> {
-                    // PERFORMANCE: Pre-group entries by status.
-                    // This is much more efficient than filtering the list on every recomposition within the pager.
-                    // The grouping is only re-calculated when state.entries itself changes.
-                    val groupedEntries by remember(state.entries) {
-                        derivedStateOf { state.entries.groupBy { it.status } }
-                    }
-
-                    // Using MotionScheme specs for animations
                     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
                     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
-                    // HorizontalPager for swipeable status tabs
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { pageIndex ->
                         val pageStatus = statuses[pageIndex]
-                        // PERFORMANCE: Directly access the pre-grouped list. This is a very cheap operation.
-                        val entries = remember(groupedEntries, pageStatus) {
-                            groupedEntries[pageStatus] ?: emptyList()
-                        }
+                        val entries = state.groupedEntries[pageStatus] ?: emptyList()
 
-                        // Get scroll states for this page
-                        val gridState = gridScrollStates[pageStatus]
-                            ?: rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
-                        val listState = listScrollStates[pageStatus]
-                            ?: rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+                        val gridState = gridScrollStates[pageStatus]!!
+                        val listState = listScrollStates[pageStatus]!!
 
                         if (entries.isEmpty()) {
                             EmptyLibraryTabState(pageStatus, mediaType)
@@ -414,8 +375,6 @@ fun LibraryScreen(
                             ) { isGrid ->
                                 if (isGrid) {
                                     LazyVerticalGrid(
-                                        // Fixed(2) guarantees 2 columns on all phone screens
-                                        // Adaptive(160.dp) can result in 1 column on edge-case widths
                                         columns = GridCells.Fixed(2),
                                         state = gridState,
                                         contentPadding = PaddingValues(24.dp),
@@ -426,16 +385,12 @@ fun LibraryScreen(
                                         items(entries, key = { it.id }) { entry ->
                                             val cardConfig =
                                                 if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
-                                            // PERFORMANCE: Using remember to stabilize the lambda functions passed to the card
+
                                             val onIncrement = remember(entry.mediaId) {
-                                                {
-                                                    viewModel.incrementProgress(entry.mediaId)
-                                                }
+                                                { viewModel.incrementProgress(entry.mediaId) }
                                             }
                                             val onDecrement = remember(entry.mediaId) {
-                                                {
-                                                    viewModel.decrementProgress(entry.mediaId)
-                                                }
+                                                { viewModel.decrementProgress(entry.mediaId) }
                                             }
                                             val onEdit =
                                                 remember(entry) { { editingEntry = entry } }
@@ -467,16 +422,11 @@ fun LibraryScreen(
                                         modifier = Modifier.fillMaxSize()
                                     ) {
                                         items(entries, key = { it.id }) { entry ->
-                                            // PERFORMANCE: Using remember to stabilize the lambda functions
                                             val onIncrement = remember(entry.mediaId) {
-                                                {
-                                                    viewModel.incrementProgress(entry.mediaId)
-                                                }
+                                                { viewModel.incrementProgress(entry.mediaId) }
                                             }
                                             val onDecrement = remember(entry.mediaId) {
-                                                {
-                                                    viewModel.decrementProgress(entry.mediaId)
-                                                }
+                                                { viewModel.decrementProgress(entry.mediaId) }
                                             }
 
                                             LibraryListCard(
@@ -505,15 +455,11 @@ fun LibraryScreen(
         }
     }
 
-    // ExpandedFullScreenSearchBar displays filtered library results in a full-screen overlay
-    // It must be placed after Scaffold to overlay properly and share the same searchBarState
-    // Only render when not editing to prevent focus conflicts with bottom sheet inputs
     if (editingEntry == null) {
         ExpandedFullScreenSearchBar(
             state = searchBarState,
             inputField = inputField
         ) {
-            // Show filtered library results in the expanded search view
             when (val state = uiState) {
                 is LibraryUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -566,8 +512,6 @@ fun LibraryScreen(
         }
     }
 
-
-    // Sort Bottom Sheet
     SortBottomSheet(
         visible = showSortMenu,
         onDismiss = { showSortMenu = false },
@@ -580,9 +524,7 @@ fun LibraryScreen(
         }
     )
 
-    // Edit Library Entry Bottom Sheet
     editingEntry?.let { entry ->
-        // Collapse search bar when edit sheet is open to prevent focus conflicts
         LaunchedEffect(Unit) {
             if (searchBarState.currentValue == SearchBarValue.Expanded) {
                 searchBarState.animateToCollapsed()
@@ -603,4 +545,3 @@ fun LibraryScreen(
         )
     }
 }
-
