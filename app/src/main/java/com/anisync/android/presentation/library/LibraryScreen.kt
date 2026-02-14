@@ -109,7 +109,8 @@ import kotlin.time.Duration.Companion.milliseconds
     ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class,
-    ExperimentalSharedTransitionApi::class
+    ExperimentalSharedTransitionApi::class,
+    kotlinx.coroutines.FlowPreview::class
 )
 @Composable
 fun LibraryScreen(
@@ -190,10 +191,10 @@ fun LibraryScreen(
     }
 
     val gridScrollStates = statuses.associateWith { status ->
-        rememberSaveable(saver = LazyGridState.Saver, key = "grid_$status") { LazyGridState() }
+        rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
     }
     val listScrollStates = statuses.associateWith { status ->
-        rememberSaveable(saver = LazyListState.Saver, key = "list_$status") { LazyListState() }
+        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     }
 
     val inputField = remember {
