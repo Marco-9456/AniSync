@@ -1,29 +1,40 @@
 package com.anisync.android.presentation.settings
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,44 +42,42 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
-import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * A Jetpack Compose [Shape] that draws a clover-like or flower-like figure.
- *
- * This shape is created by modulating the radius of a circle using a cosine function.
- * It supports a fractional number of "petals", allowing for smooth morphing animations
- * between different petal counts. The interpolation between two integer petal counts
- * (e.g., from 4 to 5) is handled by blending the shapes of the lower and higher counts.
- *
- * @param petalCount The number of petals for the shape. Can be a fractional value (e.g., 4.5f)
- *                   to facilitate smooth animations between integer counts.
- * @param petalDepth A value from 0.0 to 1.0 that controls the depth of the indentations
- *                   between petals. A value of 0.0 results in a perfect circle, while a
- *                   value of 1.0 creates very deep indentations. Defaults to 0.3f.
+ * A configurable shape that mimics Material Design 3 Expressive shapes.
+ * Optimized for smooth animation between standard polygons and starbursts.
  */
-private class CloverShape(
-    private val petalCount: Float,
-    private val petalDepth: Float = 3.0f
+private class ExpressiveMorphShape(
+    private val vertices: Float,
+    private val roundness: Float,
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -80,38 +89,237 @@ private class CloverShape(
         val centerY = size.height / 2f
         val maxRadius = minOf(centerX, centerY)
 
-        val points = 360
-
-        val lowCount = kotlin.math.floor(petalCount)
-        val highCount = kotlin.math.ceil(petalCount)
-
-        val fraction = petalCount - lowCount
+        val points = 200
+        val lowCount = kotlin.math.floor(vertices)
+        val highCount = kotlin.math.ceil(vertices)
+        val fraction = vertices - lowCount
 
         for (i in 0..points) {
             val angle = 2 * PI * i / points
-            val effectLow = 1f - petalDepth * (1 - cos(lowCount * angle).toFloat()) / 2f
-            val effectHigh = 1f - petalDepth * (1 - cos(highCount * angle).toFloat()) / 2f
-            val currentEffect = effectLow + (effectHigh - effectLow) * fraction
-            val r = maxRadius * currentEffect
-            val x = centerX + r * cos(angle).toFloat()
-            val y = centerY + r * sin(angle).toFloat()
 
-            if (i == 0) {
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
-            }
+            // Wave 1 (Current integer N)
+            val waveLow = cos(lowCount * angle).toFloat()
+            val rLow = 1f - roundness * (1 - waveLow) / 2f
+
+            // Wave 2 (Next integer N)
+            val waveHigh = cos(highCount * angle).toFloat()
+            val rHigh = 1f - roundness * (1 - waveHigh) / 2f
+
+            val normalizedR = rLow + (rHigh - rLow) * fraction
+
+            val x = centerX + (maxRadius * normalizedR) * cos(angle).toFloat()
+            val y = centerY + (maxRadius * normalizedR) * sin(angle).toFloat()
+
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
         path.close()
-
         return Outline.Generic(path)
     }
 }
 
-/**
- * About app screen.
- * Displays app information, version, and legal links.
- */
+private enum class HeroState { Idle, Pressed, Revealed }
+
+@Composable
+private fun AboutHero(
+    modifier: Modifier = Modifier
+) {
+    val haptics = LocalHapticFeedback.current
+    var heroState by remember { mutableStateOf(HeroState.Idle) }
+
+    val transition = updateTransition(targetState = heroState, label = "HeroTransition")
+
+    val vertices by transition.animateFloat(
+        label = "vertices",
+        transitionSpec = {
+            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+        }
+    ) { state ->
+        when (state) {
+            HeroState.Revealed -> 12f
+            HeroState.Pressed -> 6f
+            HeroState.Idle -> 4f
+        }
+    }
+
+    val roundness by transition.animateFloat(
+        label = "roundness",
+        transitionSpec = { spring(stiffness = Spring.StiffnessLow) }
+    ) { state ->
+        if (state == HeroState.Revealed) 0.2f else 0.12f
+    }
+
+    val rotationY by transition.animateFloat(
+        label = "rotationY",
+        transitionSpec = {
+            spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)
+        }
+    ) { state ->
+        if (state == HeroState.Revealed) 180f else 0f
+    }
+
+    val containerColor = if (heroState == HeroState.Revealed) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "passive")
+    val levitationOffset by infiniteTransition.animateFloat(
+        initialValue = -5f, targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "levitation"
+    )
+    val spinRotation by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "spin"
+    )
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(160.dp)
+                .graphicsLayer {
+                    this.rotationY = rotationY
+                    cameraDistance = 12f * density
+                    if (rotationY > 90f) translationY = levitationOffset
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            if (heroState != HeroState.Revealed) {
+                                heroState = HeroState.Pressed
+                                tryAwaitRelease()
+                                if (heroState != HeroState.Revealed) {
+                                    heroState = HeroState.Idle
+                                }
+                            } else {
+                                heroState = HeroState.Idle
+                            }
+                        },
+                        onLongPress = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            heroState = HeroState.Revealed
+                        }
+                    )
+                }
+        ) {
+            // Background Shape
+            Box(
+                modifier = Modifier
+                    .size(115.dp)
+                    .align(Alignment.Center)
+                    // Rotate inversely when revealed to sync with the un-flipped content
+                    .rotate(if (heroState == HeroState.Revealed) -spinRotation else 0f)
+                    .clip(ExpressiveMorphShape(vertices, roundness))
+                    .background(containerColor)
+            )
+
+            if (rotationY <= 90f) {
+                // Front: App Icon
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                        contentDescription = stringResource(R.string.a11y_app_icon),
+                        modifier = Modifier.size(96.dp)
+                    )
+                }
+            } else {
+                // Back: Developer Avatar
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { this.rotationY = 180f },
+                    contentAlignment = Alignment.Center
+                ) {
+                    val avatarUrl = "https://i.ibb.co/6cqF2CfY/Adobe-Express-file.png"
+                    val imageScale = 1.3f
+                    val yOffset = (-12).dp
+
+                    // Body Layer: Rotates with the shape, image counter-rotates to stay upright
+                    Box(
+                        modifier = Modifier
+                            .size(115.dp)
+                            .rotate(if (heroState == HeroState.Revealed) spinRotation else 0f)
+                            .clip(ExpressiveMorphShape(vertices, roundness))
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(avatarUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .rotate(if (heroState == HeroState.Revealed) -spinRotation else 0f)
+                                .scale(imageScale)
+                                .offset(y = yOffset)
+                        )
+                    }
+
+                    // Head Layer: Pops out of the shape
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(avatarUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Developer Avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(115.dp)
+                            .scale(imageScale)
+                            .offset(y = yOffset)
+                            .clip(CircleShape)
+                            .drawWithContent {
+                                clipRect(bottom = size.height * 0.45f) {
+                                    this@drawWithContent.drawContent()
+                                }
+                            }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        AnimatedContent(
+            targetState = heroState == HeroState.Revealed,
+            transitionSpec = {
+                (slideInVertically { height -> height } + fadeIn())
+                    .togetherWith(slideOutVertically { height -> -height } + fadeOut())
+            },
+            label = "TitleSwap"
+        ) { isRevealed ->
+            Text(
+                text = if (isRevealed) "Developed by Mohammed" else stringResource(R.string.app_name),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
 @Composable
 fun AboutScreen(
     onBackClick: () -> Unit,
@@ -121,138 +329,22 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
 
-    // State for clover morphing animation
-    var isPressed by remember { mutableStateOf(false) }
-    var isLongPressed by remember { mutableStateOf(false) }
-
-    // Animate petal count: 4 -> 8 on press/long press
-    val targetPetalCount = when {
-        isLongPressed -> 8f
-        isPressed -> 6f
-        else -> 4f
-    }
-
-    val animatedPetalCount by animateFloatAsState(
-        targetValue = targetPetalCount,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "petalCount"
-    )
-
-    // Scale animation for long press
-    val scale by animateFloatAsState(
-        targetValue = if (isLongPressed) 1.15f else if (isPressed) 1.05f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "scale"
-    )
-
-    // 1. Create a variable to hold the rotation value (starts at 0f)
-    val rotation = remember { Animatable(0f) }
-
-    // 2. Listen for the 'isLongPressed' state change
-    LaunchedEffect(isLongPressed) {
-        if (isLongPressed) {
-            delay(600)
-            // If long pressed, spin forever (0 -> 360)
-            rotation.animateTo(
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(2000, easing = LinearEasing), // 2 seconds per full spin
-                    repeatMode = RepeatMode.Restart
-                )
-            )
-        } else {
-            // If released, snap back to 0 (or you could animateTo(0f) for a smooth stop)
-            rotation.snapTo(0f)
-        }
-    }
-
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        // App icon and info
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // App icon with morphing clover shape
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .scale(scale)
-                    .rotate(rotation.value)
-                    .clip(CloverShape(petalCount = animatedPetalCount, petalDepth = 0.15f))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = {
-                                isPressed = true
-                                tryAwaitRelease()
-                                isPressed = false
-                                isLongPressed = false
-                            },
-                            onLongPress = {
-                                isLongPressed = true
-                            },
-                            onTap = {
-                                // Just animate on tap
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
-                    contentDescription = stringResource(R.string.a11y_app_icon),
-                    modifier = Modifier
-                        .size(96.dp)
-                        .rotate(-rotation.value)
-                )
-            }
+        AboutHero(modifier = Modifier.padding(vertical = 40.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // App name
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            // Version
-            Text(
-                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        // Links group
         SettingsGroup {
             SettingsItem(
                 title = stringResource(R.string.settings_privacy_policy),
-                onClick = {
-                    val intent =
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://anisync.app/privacy"))
-                    context.startActivity(intent)
-                }
+                onClick = { context.launchUrl("https://anisync.app/privacy") }
             )
             SettingsDivider(startPadding = 20.dp)
             SettingsItem(
                 title = stringResource(R.string.settings_terms_of_service),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://anisync.app/terms"))
-                    context.startActivity(intent)
-                }
+                onClick = { context.launchUrl("https://anisync.app/terms") }
             )
             SettingsDivider(startPadding = 20.dp)
             SettingsItem(
@@ -263,7 +355,6 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Credits group
         SettingsGroup {
             SettingsItem(
                 title = stringResource(R.string.settings_acknowledgments),
@@ -274,11 +365,17 @@ fun AboutScreen(
             SettingsItem(
                 title = stringResource(R.string.settings_anilist_api),
                 subtitle = stringResource(R.string.settings_anilist_api_desc),
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://anilist.co"))
-                    context.startActivity(intent)
-                }
+                onClick = { context.launchUrl("https://anilist.co") }
             )
         }
+    }
+}
+
+private fun Context.launchUrl(url: String) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        startActivity(intent)
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
