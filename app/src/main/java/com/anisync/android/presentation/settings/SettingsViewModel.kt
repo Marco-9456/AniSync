@@ -1,7 +1,9 @@
 package com.anisync.android.presentation.settings
 
 import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppLocale
@@ -16,8 +18,6 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
 import com.materialkolor.PaletteStyle
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow

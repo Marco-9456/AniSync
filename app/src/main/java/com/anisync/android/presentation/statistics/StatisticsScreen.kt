@@ -76,12 +76,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
-import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
-import com.anisync.android.domain.MangaStatistics
-import com.anisync.android.domain.ReleaseYearStat
-import com.anisync.android.domain.ScoreStat
 import com.anisync.android.domain.StudioStat
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
@@ -104,21 +100,16 @@ fun StatisticsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
-    // Restored LargeTopAppBar scroll behavior
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Track list scroll states for each tab
     val animeListState = rememberLazyListState()
     val mangaListState = rememberLazyListState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = StatisticsType.entries
 
-    // Only enable pull-to-refresh when:
-    // 1. The top app bar is fully expanded (not collapsed)
-    // 2. The list is scrolled to the very top
     val currentListState = if (selectedTabIndex == 0) animeListState else mangaListState
     val canRefresh by remember(selectedTabIndex) {
         derivedStateOf {
@@ -128,7 +119,6 @@ fun StatisticsScreen(
         }
     }
 
-    // Spacing resources
     val spacingMedium = dimensionResource(R.dimen.spacing_medium)
 
     Scaffold(
@@ -149,14 +139,13 @@ fun StatisticsScreen(
                     scrollBehavior = scrollBehavior
                 )
 
-                // Restored AnimatedTab style tabs
                 PrimaryScrollableTabRow(
                     selectedTabIndex = selectedTabIndex,
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     edgePadding = spacingMedium,
-                    indicator = {}, // No indicator - pill background shows selection
-                    divider = {} // Remove default divider
+                    indicator = {},
+                    divider = {}
                 ) {
                     tabs.forEachIndexed { index, type ->
                         val icon = when (type) {
@@ -172,17 +161,12 @@ fun StatisticsScreen(
                             index = index,
                             selectedIndex = selectedTabIndex,
                             selected = selectedTabIndex == index,
-                            onClick = {
-                                coroutineScope.launch {
-                                    selectedTabIndex = index
-                                }
-                            },
+                            onClick = { coroutineScope.launch { selectedTabIndex = index } },
                             icon = icon,
                             label = label
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
@@ -195,7 +179,6 @@ fun StatisticsScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             indicator = {
-                // Only show indicator when refresh is possible or actively refreshing
                 if (canRefresh || isRefreshing) {
                     CustomPullToRefreshIndicator(
                         isRefreshing = isRefreshing,
@@ -225,16 +208,15 @@ fun StatisticsScreen(
                 }
 
                 is StatisticsUiState.Success -> {
-                    // Content Wrapper to handle crossfade or layout changes
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (tabs[selectedTabIndex] == StatisticsType.ANIME) {
                             AnimeStatisticsContent(
-                                stats = state.statistics.animeStats,
+                                stats = state.data.animeStats,
                                 listState = animeListState
                             )
                         } else {
                             MangaStatisticsContent(
-                                stats = state.statistics.mangaStats,
+                                stats = state.data.mangaStats,
                                 listState = mangaListState
                             )
                         }
@@ -247,7 +229,7 @@ fun StatisticsScreen(
 
 @Composable
 private fun AnimeStatisticsContent(
-    stats: AnimeStatistics,
+    stats: AnimeStatisticsUi,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     LazyColumn(
@@ -256,8 +238,8 @@ private fun AnimeStatisticsContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        // 1. Hero Dashboard Section
-        item {
+        // Hero Dashboard
+        item(key = "hero_dashboard") {
             HeroDashboard(
                 count = stats.totalCount.toString(),
                 countLabel = stringResource(R.string.statistics_total_anime),
@@ -271,45 +253,47 @@ private fun AnimeStatisticsContent(
             )
         }
 
-        // 2. Score Histogram
+        // Score Histogram
         if (stats.scoreDistribution.isNotEmpty()) {
-            item {
+            item(key = "score_histogram") {
                 ScoreHistogramSection(stats.scoreDistribution)
             }
         }
 
-        // 3. Top Genres
+        // Top Genres
         if (stats.genreDistribution.isNotEmpty()) {
-            item {
+            item(key = "top_genres") {
                 HorizontalStatsSection(
                     title = stringResource(R.string.statistics_top_genres),
-                    items = stats.genreDistribution
+                    items = stats.genreDistribution,
+                    key = { it.genre }
                 ) {
                     GenreCardModern(it)
                 }
             }
         }
 
-        // 4. Formats Breakdown
+        // Formats Breakdown
         if (stats.formatDistribution.isNotEmpty()) {
-            item {
+            item(key = "formats") {
                 FormatsSection(stats.formatDistribution)
             }
         }
 
-        // 5. Release Years Histogram
+        // Release Years Histogram
         if (stats.releaseYearDistribution.isNotEmpty()) {
-            item {
+            item(key = "years_histogram") {
                 ReleaseYearsHistogramSection(stats.releaseYearDistribution)
             }
         }
 
-        // 6. Studios
+        // Studios
         if (stats.studioDistribution.isNotEmpty()) {
-            item {
+            item(key = "top_studios") {
                 HorizontalStatsSection(
                     title = stringResource(R.string.statistics_top_studios),
-                    items = stats.studioDistribution
+                    items = stats.studioDistribution,
+                    key = { it.studioName }
                 ) {
                     StudioCardModern(it)
                 }
@@ -320,7 +304,7 @@ private fun AnimeStatisticsContent(
 
 @Composable
 private fun MangaStatisticsContent(
-    stats: MangaStatistics?,
+    stats: MangaStatisticsUi?,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     if (stats == null) {
@@ -354,7 +338,7 @@ private fun MangaStatisticsContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        item {
+        item(key = "manga_dashboard") {
             HeroDashboard(
                 count = stats.totalCount.toString(),
                 countLabel = stringResource(R.string.statistics_total_manga),
@@ -364,11 +348,11 @@ private fun MangaStatisticsContent(
                 subStat2Value = formatDecimal(stats.meanScore),
                 subStat2Label = stringResource(R.string.statistics_mean_score),
                 subStat2Icon = Icons.Rounded.Star,
-                episodes = null // No episodes for manga
+                episodes = null
             )
         }
 
-        item {
+        item(key = "manga_placeholder") {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -409,7 +393,6 @@ private fun HeroDashboard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Main Dashboard Card
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -417,9 +400,7 @@ private fun HeroDashboard(
             shape = RoundedCornerShape(28.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -470,7 +451,6 @@ private fun HeroDashboard(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    // Sub Stat 1 (Days / Chapters)
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
@@ -506,7 +486,6 @@ private fun HeroDashboard(
                         }
                     }
 
-                    // Sub Stat 2 (Score)
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
@@ -548,7 +527,7 @@ private fun HeroDashboard(
 }
 
 @Composable
-private fun ScoreHistogramSection(scores: List<ScoreStat>) {
+private fun ScoreHistogramSection(scores: List<ScoreUiModel>) {
     Column {
         SectionHeader(
             title = stringResource(R.string.statistics_score_distribution),
@@ -565,15 +544,6 @@ private fun ScoreHistogramSection(scores: List<ScoreStat>) {
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            val maxCount = remember(scores) { scores.maxOfOrNull { it.count } ?: 1 }
-
-            // Generate full 1..10 range to fill gaps
-            val fullRange = remember(scores) {
-                (1..10).map { score ->
-                    scores.find { it.score == score }?.count ?: 0
-                }
-            }
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -582,14 +552,12 @@ private fun ScoreHistogramSection(scores: List<ScoreStat>) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                fullRange.forEachIndexed { index, count ->
-                    val score = index + 1
-                    val heightFraction = count.toFloat() / maxCount.coerceAtLeast(1)
+                scores.forEach { item ->
                     val animatedHeight = remember { Animatable(0f) }
 
-                    LaunchedEffect(heightFraction) {
+                    LaunchedEffect(item.heightFraction) {
                         animatedHeight.animateTo(
-                            heightFraction,
+                            item.heightFraction,
                             animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
                         )
                     }
@@ -598,21 +566,20 @@ private fun ScoreHistogramSection(scores: List<ScoreStat>) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // The Bar
                         Box(
                             modifier = Modifier
-                                .width(8.dp) // Slim bars
-                                .weight(1f, fill = false) // Allow flexible height logic
-                                .fillMaxHeight(if (count > 0) animatedHeight.value else 0.02f) // Min height for empty
+                                .width(8.dp)
+                                .weight(1f, fill = false)
+                                .fillMaxHeight(if (item.count > 0) animatedHeight.value else 0.02f)
                                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                                 .background(
                                     when {
-                                        count == 0 -> MaterialTheme.colorScheme.outlineVariant.copy(
+                                        item.count == 0 -> MaterialTheme.colorScheme.outlineVariant.copy(
                                             alpha = 0.2f
                                         )
 
-                                        score >= 8 -> MaterialTheme.colorScheme.primary
-                                        score >= 5 -> MaterialTheme.colorScheme.secondary
+                                        item.score >= 8 -> MaterialTheme.colorScheme.primary
+                                        item.score >= 5 -> MaterialTheme.colorScheme.secondary
                                         else -> MaterialTheme.colorScheme.tertiary
                                     }
                                 )
@@ -621,10 +588,10 @@ private fun ScoreHistogramSection(scores: List<ScoreStat>) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = score.toString(),
+                            text = item.score.toString(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (count > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
-                            fontWeight = if (count > 0) FontWeight.Bold else FontWeight.Normal
+                            color = if (item.count > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
+                            fontWeight = if (item.count > 0) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 }
@@ -634,7 +601,7 @@ private fun ScoreHistogramSection(scores: List<ScoreStat>) {
 }
 
 @Composable
-private fun ReleaseYearsHistogramSection(years: List<ReleaseYearStat>) {
+private fun ReleaseYearsHistogramSection(years: List<YearUiModel>) {
     Column {
         SectionHeader(
             title = stringResource(R.string.statistics_by_year),
@@ -651,11 +618,6 @@ private fun ReleaseYearsHistogramSection(years: List<ReleaseYearStat>) {
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            val sortedYears = remember(years) {
-                years.sortedBy { it.year }.takeLast(10)
-            } // Show last 10 relevant years
-            val maxCount = remember(sortedYears) { sortedYears.maxOfOrNull { it.count } ?: 1 }
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -664,14 +626,11 @@ private fun ReleaseYearsHistogramSection(years: List<ReleaseYearStat>) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                sortedYears.forEach { stat ->
-                    val heightFraction = stat.count.toFloat() / maxCount.coerceAtLeast(1)
-
+                years.forEach { stat ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Count Bubble
                         if (stat.count > 0) {
                             Text(
                                 text = stat.count.toString(),
@@ -682,17 +641,16 @@ private fun ReleaseYearsHistogramSection(years: List<ReleaseYearStat>) {
                             Spacer(modifier = Modifier.height(4.dp))
                         }
 
-                        // Bar
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(0.6f)
-                                .height(100.dp), // Max bar height
+                                .height(100.dp),
                             contentAlignment = Alignment.BottomCenter
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .fillMaxHeight(heightFraction.coerceAtLeast(0.02f))
+                                    .fillMaxHeight(stat.heightFraction.coerceAtLeast(0.02f))
                                     .clip(RoundedCornerShape(4.dp))
                                     .background(MaterialTheme.colorScheme.tertiaryContainer)
                             )
@@ -700,7 +658,6 @@ private fun ReleaseYearsHistogramSection(years: List<ReleaseYearStat>) {
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Year Label (vertical if tight)
                         Text(
                             text = "'${stat.year.toString().takeLast(2)}",
                             style = MaterialTheme.typography.labelSmall,
@@ -800,6 +757,7 @@ private fun FormatRow(format: FormatStat) {
 private fun <T> HorizontalStatsSection(
     title: String,
     items: List<T>,
+    key: ((T) -> Any)? = null,
     itemContent: @Composable (T) -> Unit
 ) {
     Column {
@@ -813,7 +771,7 @@ private fun <T> HorizontalStatsSection(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(items) { item ->
+            items(items, key = key) { item ->
                 itemContent(item)
             }
         }
@@ -822,17 +780,17 @@ private fun <T> HorizontalStatsSection(
 
 @Composable
 private fun GenreCardModern(genre: GenreStat) {
-    val gradientBrush = Brush.linearGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    )
+    // Memoize the gradient to prevent re-allocation on every recomposition
+    val secondary = MaterialTheme.colorScheme.secondaryContainer
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val gradientBrush = remember(secondary, surfaceHigh) {
+        Brush.linearGradient(colors = listOf(secondary, surfaceHigh))
+    }
 
     Card(
         modifier = Modifier.width(160.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent) // Manual background
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(
             modifier = Modifier

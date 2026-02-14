@@ -36,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -50,6 +49,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.discover.components.FormatFilterRow
 import com.anisync.android.presentation.util.AppMotion
+import kotlinx.coroutines.launch
 
 /**
  * Grid screen for displaying all media items from a Discover section.
