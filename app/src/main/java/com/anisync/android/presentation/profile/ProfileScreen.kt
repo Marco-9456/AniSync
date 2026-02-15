@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.profile
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -12,10 +11,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -40,9 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,12 +48,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -65,6 +69,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.EditProfileDialog
@@ -73,31 +78,26 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.ui.theme.StarGold
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
     onLogoutClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onFavoritesClick: () -> Unit = {},
     onStatisticsClick: (userId: Int) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    viewModel: ProfileViewModel = hiltViewModel(),
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-    
-    // PERF: Track recomposition count for performance monitoring
-    val recomposeCount = remember { mutableIntStateOf(0) }
-    SideEffect {
-        recomposeCount.intValue++
-        Log.d("ProfilePerf", "ProfileScreen recomposed: ${recomposeCount.intValue} times")
-    }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // Refresh profile on resume to ensure favorites are up to date
-    val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -109,11 +109,10 @@ fun ProfileScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    
-    // Edit Profile Dialog State
+
     var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
-    
-    // PERF: Stabilize callbacks with remember to prevent unnecessary recompositions
+
+    // Stabilized callbacks
     val onShowEditProfile = remember { { showEditProfileDialog = true } }
     val onHideEditProfile = remember { { showEditProfileDialog = false } }
 
@@ -125,22 +124,29 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .windowInsetsPadding(WindowInsets.statusBars) // Handle status bar
-                .padding(bottom = 80.dp) // Padding for bottom navigation bar
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(bottom = 80.dp) // Bottom navigation bar padding
         ) {
             when (val state = uiState) {
                 is ProfileUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator()
                     }
                 }
+
                 is ProfileUiState.Error -> {
-                    ErrorState(message = state.message, onRetry = { viewModel.refresh() })
+                    ErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.refresh() }
+                    )
                 }
+
                 is ProfileUiState.Success -> {
                     ProfileScreenContent(
                         profile = state.profile,
-                        // Use navigation callback for settings
                         onSettingsClick = onNavigateToSettings,
                         onEditProfileClick = onShowEditProfile,
                         onMediaClick = onMediaClick,
@@ -154,11 +160,10 @@ fun ProfileScreen(
                     if (showEditProfileDialog) {
                         EditProfileDialog(
                             initialAbout = state.profile.about ?: "",
-                            // PERF: Use remembered callback
                             onDismiss = onHideEditProfile,
                             onSave = { about ->
                                 viewModel.updateAbout(about) { _ ->
-                                    // TODO: Show error snackbar
+                                    // Handle success/error feedback
                                 }
                                 showEditProfileDialog = false
                             }
@@ -181,14 +186,13 @@ fun ProfileScreenContent(
     onStatisticsClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         // --- Header Section ---
-        // PERF: contentType helps Compose optimize item recycling by grouping similar items
         item(key = "profile_header", contentType = "header") {
             ProfileTopSection(
                 profile = profile,
@@ -199,13 +203,11 @@ fun ProfileScreenContent(
         }
 
         // --- Stats Row ---
-        // PERF: contentType for stats section
         item(key = "profile_stats", contentType = "stats") {
             ProfileStatsRow(profile = profile)
         }
 
         // --- Favorites ---
-        // PERF: contentType for favorites section
         item(key = "profile_favorites", contentType = "favorites") {
             if (profile.favoriteAnime.isNotEmpty()) {
                 FavoritesSection(
@@ -221,7 +223,6 @@ fun ProfileScreenContent(
         }
 
         // --- Recent Updates ---
-        // PERF: contentType for activities section
         item(key = "profile_activities", contentType = "activities") {
             if (profile.activities.isNotEmpty()) {
                 RecentUpdatesSection(
@@ -233,6 +234,12 @@ fun ProfileScreenContent(
     }
 }
 
+/**
+ * Redesigned Top Section featuring "Expressive" Material Design 3 concepts.
+ * - Scalloped/Wavy Avatar shape
+ * - Large rounded corners on the banner
+ * - Centered, symmetrical layout
+ */
 @Composable
 fun ProfileTopSection(
     profile: UserProfile,
@@ -241,178 +248,199 @@ fun ProfileTopSection(
     onStatisticsClick: () -> Unit
 ) {
     val context = LocalContext.current
-    
-    Box(modifier = Modifier.fillMaxWidth()) {
-        // User Banner with Overlay
-        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp + statusBarHeight)
-        ) {
-            if (profile.bannerUrl != null) {
-                AsyncImage(
-                    model = profile.bannerUrl,
-                    contentDescription = stringResource(R.string.content_description_cover, profile.name),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                )
-            }
+    val surfaceColor = MaterialTheme.colorScheme.background
 
-            // Gradient Overlay from bottom for text readability
+    // Dimensions
+    val bannerHeight = 260.dp
+    val avatarSize = 140.dp
+
+    // Shapes
+    val bannerShape = remember {
+        RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+    }
+    val avatarShape = remember {
+        ScallopedProfileShape(waves = 10, amplitude = 0.05f)
+    }
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        // 1. The Banner (Backdrop)
+        Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
-                                MaterialTheme.colorScheme.background
-                            ),
-                            startY = 100f
-                        )
+                    .fillMaxWidth()
+                    .height(bannerHeight)
+                    .clip(bannerShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                if (profile.bannerUrl != null) {
+                    AsyncImage(
+                        model = profile.bannerUrl,
+                        contentDescription = stringResource(
+                            R.string.content_description_cover,
+                            profile.name
+                        ),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
-            )
+
+                    // Gradient Scrim
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.3f),
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.15f)
+                                    )
+                                )
+                            )
+                    )
+                }
+            }
+
+            // Spacer to push content down: Half avatar size + padding
+            Spacer(modifier = Modifier.height((avatarSize / 2) + 12.dp))
+
+            // 2. User Info (Text & Buttons)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Username
+                Text(
+                    text = profile.name,
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                // Meta Info (Level & Active)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+                ) {
+                    val level = remember(profile.animeCount, profile.mangaCount) {
+                        (profile.animeCount + profile.mangaCount) / 10
+                    }
+                    Text(
+                        text = stringResource(R.string.profile_level, level),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = " • ",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    val activeTime = remember(profile.activeAt) {
+                        formatRelativeTime(profile.activeAt, context)
+                    }
+                    Text(
+                        text = activeTime,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Action Buttons Row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                ) {
+                    // Statistics
+                    FilledTonalIconButton(
+                        onClick = onStatisticsClick,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.BarChart,
+                            contentDescription = stringResource(R.string.statistics_view),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    // Edit Profile
+                    Button(
+                        onClick = onEditProfileClick,
+                        contentPadding = PaddingValues(horizontal = 32.dp),
+                        modifier = Modifier.height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.profile_edit),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+
+                    // Settings
+                    FilledTonalIconButton(
+                        onClick = onSettingsClick,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // Bio
+                if (!profile.about.isNullOrBlank()) {
+                    StyledBioText(
+                        bio = profile.about,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
 
-        Column(
+        // 3. The Floating Avatar
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(top = 140.dp + statusBarHeight)
+                .offset(y = bannerHeight - (avatarSize / 2))
+                .size(avatarSize)
+                .background(surfaceColor, avatarShape) // Border effect
+                .padding(6.dp) // Border thickness
+                .shadow(
+                    elevation = 4.dp,
+                    shape = avatarShape,
+                    spotColor = Color.Black.copy(alpha = 0.25f)
+                )
+                .clip(avatarShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .shadow(8.dp, RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
-                    .padding(3.dp)
-            ) {
-                AsyncImage(
-                    model = profile.avatarUrl,
-                    contentDescription = stringResource(R.string.content_description_profile_avatar),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(17.dp))
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Username
-            Text(
-                text = profile.name,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+            AsyncImage(
+                model = profile.avatarUrl,
+                contentDescription = stringResource(R.string.content_description_profile_avatar),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
-
-            // Level & Active time - memoized
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val level = remember(profile.animeCount, profile.mangaCount) {
-                    (profile.animeCount + profile.mangaCount) / 10
-                }
-                Text(
-                    text = stringResource(R.string.profile_level, level),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                val activeTime = remember(profile.activeAt) {
-                    formatRelativeTime(profile.activeAt, context)
-                }
-                Text(
-                    text = " · " + stringResource(R.string.profile_active, activeTime),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Edit Profile & Settings Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Edit Profile Button (takes most of the width)
-                Button(
-                    onClick = onEditProfileClick,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.profile_edit),
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-                }
-
-                // Statistics Icon Button
-                FilledTonalIconButton(
-                    onClick = onStatisticsClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.BarChart,
-                        contentDescription = stringResource(R.string.statistics_view),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                // Settings Icon Button
-                FilledTonalIconButton(
-                    onClick = onSettingsClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = stringResource(R.string.settings),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Bio with hashtag styling - using memoized composable
-            if (!profile.about.isNullOrBlank()) {
-                StyledBioText(bio = profile.about)
-            }
         }
     }
 }
@@ -423,10 +451,10 @@ fun FavoritesSection(
     favorites: List<LibraryEntry>,
     onMediaClick: (Int) -> Unit,
     onFavoritesClick: () -> Unit,
-    modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI
+    modifier: Modifier = Modifier,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI
 ) {
     Column(modifier = modifier) {
         SectionHeader(
@@ -442,12 +470,14 @@ fun FavoritesSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            // PERF: contentType for poster cards enables efficient item recycling
-            items(favorites, key = { it.mediaId }, contentType = { "poster" }) { entry ->
-                // PERF: Stabilize onClick lambda to prevent PosterCard recomposition
-                // By remembering the lambda keyed on mediaId, we ensure the same instance is passed
+            items(
+                items = favorites,
+                key = { it.mediaId },
+                contentType = { "poster" }
+            ) { entry ->
+                // Stable click listener
                 val onClick = remember(entry.mediaId) { { onMediaClick(entry.mediaId) } }
-                
+
                 PosterCard(
                     item = entry,
                     titleLanguage = titleLanguage,
@@ -463,5 +493,46 @@ fun FavoritesSection(
                 )
             }
         }
+    }
+}
+
+/**
+ * A custom shape that creates a wavy/scalloped circle.
+ * Ideal for "Expressive" Material Design avatars.
+ */
+class ScallopedProfileShape(
+    private val waves: Int = 10,
+    private val amplitude: Float = 0.05f // Percentage of radius
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val path = Path()
+        val centerX = size.width / 2f
+        val centerY = size.height / 2f
+        val radius = size.width / 2f
+        val waveAmplitude = radius * amplitude
+
+        // Create 360 points for a smooth circle
+        for (angle in 0..360) {
+            val radians = Math.toRadians(angle.toDouble())
+
+            // Calculate current radius based on cosine wave for peak alignment
+            val currentRadius = radius + (waveAmplitude * cos(waves * radians))
+
+            val x = centerX + (currentRadius * cos(radians)).toFloat()
+            val y = centerY + (currentRadius * sin(radians)).toFloat()
+
+            if (angle == 0) {
+                path.moveTo(x, y)
+            } else {
+                path.lineTo(x, y)
+            }
+        }
+
+        path.close()
+        return Outline.Generic(path)
     }
 }
