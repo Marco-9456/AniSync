@@ -62,18 +62,23 @@ fun ExternalLinksSection(
     mediaType: MediaType?,
     modifier: Modifier = Modifier
 ) {
-    // Group links by type: STREAMING first, then SOCIAL, then INFO
-    val streamingLinks = externalLinks.filter { it.type == ExternalLinkType.STREAMING }
-    val otherLinks = externalLinks.filter { it.type != ExternalLinkType.STREAMING }
+    // Memoize filtered lists to avoid allocation each frame
+    val streamingLinks = remember(externalLinks) {
+        externalLinks.filter { it.type == ExternalLinkType.STREAMING }
+    }
+
+    val otherLinks = remember(externalLinks) {
+        externalLinks.filter { it.type != ExternalLinkType.STREAMING }
+    }
 
     Column(modifier = modifier) {
         SectionHeader(
             title = stringResource(R.string.section_external_links),
             level = HeaderLevel.Section
         )
-        
+
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-        
+
         // Streaming links (if any) - prominent display
         if (streamingLinks.isNotEmpty()) {
             Text(
@@ -95,7 +100,7 @@ fun ExternalLinksSection(
                 }
             }
         }
-        
+
         // Other links
         if (otherLinks.isNotEmpty()) {
             if (streamingLinks.isNotEmpty()) {

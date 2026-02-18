@@ -57,6 +57,7 @@ type Media {
   title: MediaTitle
   coverImage: MediaCoverImage
   episodes: Int
+  duration: Int
   chapters: Int
   volumes: Int
   type: MediaType
@@ -67,6 +68,7 @@ type Media {
   genres: [String]
   studios(isMain: Boolean): StudioConnection
   startDate: FuzzyDate
+  endDate: FuzzyDate
   mediaListEntry: MediaList
   format: MediaFormat
   characters(sort: [CharacterSort], perPage: Int): CharacterConnection
@@ -75,6 +77,8 @@ type Media {
   season: MediaSeason
   externalLinks: [MediaExternalLink]
   isFavourite: Boolean
+  trailer: MediaTrailer
+  tags: [MediaTag]
 }
 
 enum CharacterSort {
@@ -389,6 +393,20 @@ enum MediaStatus {
   NOT_YET_RELEASED
   CANCELLED
   HIATUS
+}
+
+type MediaTrailer {
+  id: String
+  site: String
+  thumbnail: String
+}
+
+type MediaTag {
+  name: String
+  category: String
+  isMediaSpoiler: Boolean
+  isGeneralSpoiler: Boolean
+  rank: Int
 }
 
 type StudioConnection {

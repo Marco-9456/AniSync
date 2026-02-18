@@ -14,6 +14,7 @@ query GetMediaDetails($id: Int) {
         description(asHtml: true)
         averageScore
         episodes
+        duration
         nextAiringEpisode {
             episode
         }
@@ -33,6 +34,23 @@ query GetMediaDetails($id: Int) {
             year
             month
             day
+        }
+        endDate {
+            year
+            month
+            day
+        }
+        trailer {
+            id
+            site
+            thumbnail
+        }
+        tags {
+            name
+            category
+            isMediaSpoiler
+            isGeneralSpoiler
+            rank
         }
         mediaListEntry {
             id

@@ -6,6 +6,8 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.domain.Tag
+import com.anisync.android.domain.Trailer
 import com.anisync.android.type.MediaType
 
 /**
@@ -34,8 +36,12 @@ data class MediaDetailsEntity(
     val studio: String?,
     val year: Int?,
     val startDate: String?,
+    val endDate: String?,
     val season: String?,
     val seasonYear: Int?,
+    val duration: Int?, // Episode duration in minutes
+    val tags: List<Tag>,
+    val trailer: Trailer?,
     val listEntryId: Int?,
     val listStatus: LibraryStatus?,
     val listProgress: Int?,

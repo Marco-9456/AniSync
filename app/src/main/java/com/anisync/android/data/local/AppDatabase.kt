@@ -17,6 +17,13 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v2 (Feb 2026):
+ *   - Added fields to media_details:
+ *     • endDate - Formatted end date string
+ *     • duration - Episode duration in minutes
+ *     • tags - List of content tags (themes, warnings)
+ *     • trailer - Trailer info (id, site, thumbnail)
+ *
  * v1 (Fresh Start - June 2025):
  *   - Initial production schema (reset from development iterations)
  *   - Tables:
@@ -41,7 +48,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         AiringScheduleEntity::class,
         TrendingEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

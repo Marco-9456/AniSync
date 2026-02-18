@@ -22,6 +22,8 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.Tag
+import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.VoiceActor
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.stripHtml
@@ -128,6 +130,46 @@ class DetailsRepositoryImpl @Inject constructor(
                  yearVal?.toString()
             }
 
+            // Format end date
+            val endMonthName = media.endDate?.month?.let { if (it in 1..12) months[it - 1] else null }
+            val endDay = media.endDate?.day?.let { if (it < 10) "0$it" else "$it" }
+            val endYearVal = media.endDate?.year
+            
+            val formattedEndDate = if (endMonthName != null && endDay != null && endYearVal != null) {
+                "$endMonthName $endDay, $endYearVal"
+            } else {
+                 endYearVal?.toString()
+            }
+
+            // Format aired date range
+            val airedDate = when {
+                formattedDate != null && formattedEndDate != null -> "$formattedDate - $formattedEndDate"
+                formattedDate != null -> formattedDate
+                else -> null
+            }
+
+            // Map tags
+            val tags = media.tags?.filterNotNull()?.map { tag ->
+                Tag(
+                    name = tag.name ?: "",
+                    category = tag.category ?: "",
+                    isMediaSpoiler = tag.isMediaSpoiler ?: false,
+                    isGeneralSpoiler = tag.isGeneralSpoiler ?: false,
+                    rank = tag.rank
+                )
+            } ?: emptyList()
+
+            // Map trailer
+            val trailer = media.trailer?.let { trailer ->
+                if (trailer.id != null && trailer.site != null) {
+                    Trailer(
+                        id = trailer.id,
+                        site = trailer.site,
+                        thumbnail = trailer.thumbnail
+                    )
+                } else null
+            }
+
             val details = MediaDetails(
                 id = media.id ?: 0,
                 titleRomaji = titleRomaji,
@@ -149,8 +191,12 @@ class DetailsRepositoryImpl @Inject constructor(
                 studio = media.studios?.nodes?.firstOrNull()?.name,
                 year = media.startDate?.year,
                 startDate = formattedDate,
+                endDate = formattedEndDate,
                 season = media.season?.name,
                 seasonYear = media.startDate?.year,
+                duration = media.duration,
+                tags = tags,
+                trailer = trailer,
                 listEntryId = listEntry?.id,
                 listStatus = listStatus,
                 listProgress = listEntry?.progress,

@@ -58,98 +58,67 @@ fun ExpandableCharacterSynopsis(text: AnnotatedString) {
     val spoilerBackground = MaterialTheme.colorScheme.surfaceVariant
     val spoilerRevealedColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // PERFORMANCE OPTIMIZATION: Chunk-based string building
-    // Old Complexity: O(N) builder calls (where N is char count)
-    // New Complexity: O(S) builder calls (where S is number of spans/spoilers)
+    // Linear scan: O(N+S log S) vs O(N²) for repeated getStringAnnotations
     val displayText = remember(text, revealedSpoilers) {
-        // Trace for verification
-        val startTime = System.nanoTime()
+        // 1. Get all spoiler annotations in one go
+        val spoilers = text.getStringAnnotations(tag = "SPOILER", start = 0, end = text.length)
+            .sortedBy { it.start }
 
-        val result = buildAnnotatedString {
-            var currentIndex = 0
-            val length = text.length
+        // Fast path: if no spoilers, return original text
+        if (spoilers.isEmpty()) return@remember text
 
-            // We iterate through the string looking for the next interesting point (Spoiler or Style)
-            while (currentIndex < length) {
-                // Find the next spoiler at or after current index
-                val spoilerAnnotations =
-                    text.getStringAnnotations(tag = "SPOILER", start = currentIndex, end = length)
-                // Find the next generic span style
-                // Note: optimization relies on text.spanStyles being sorted or easy to access.
-                // Since accessing spanStyles inside the loop can be expensive, we prioritize the logic:
-                // If the ORIGINAL implementation relied on strictly following the structure, we replicate it efficiently.
+        buildAnnotatedString {
+            var lastIndex = 0
 
-                // Optimized approach: Check if current position starts a spoiler
-                val activeSpoiler = text.getStringAnnotations(
-                    tag = "SPOILER",
-                    start = currentIndex,
-                    end = currentIndex + 1
-                ).firstOrNull()
+            // 2. Linear iteration through sorted spoilers
+            for (spoiler in spoilers) {
+                // Append text before this spoiler (preserves original styles implicitly via logic or we assume plain text between)
+                // Note: AnnotatedString.subSequence preserves styles, so we use that.
+                if (spoiler.start > lastIndex) {
+                    append(text.subSequence(lastIndex, spoiler.start))
+                }
 
-                if (activeSpoiler != null) {
-                    val annotation = activeSpoiler
-                    val spoilerIndex = annotation.item.toIntOrNull() ?: -1
-                    val isRevealed = spoilerIndex in revealedSpoilers
+                // Logic for the spoiler part
+                val annotation = spoiler
+                val spoilerIndex = annotation.item.toIntOrNull() ?: -1
+                val isRevealed = spoilerIndex in revealedSpoilers
+                val spoilerContent = text.substring(annotation.start, annotation.end)
 
-                    val spoilerContent = text.substring(annotation.start, annotation.end)
-
-                    val listener = LinkInteractionListener {
-                        revealedSpoilers = if (spoilerIndex in revealedSpoilers) {
-                            revealedSpoilers - spoilerIndex
-                        } else {
-                            revealedSpoilers + spoilerIndex
-                        }
-                    }
-
-                    addLink(
-                        LinkAnnotation.Clickable(
-                            tag = "SPOILER",
-                            linkInteractionListener = listener
-                        ),
-                        start = this.length,
-                        end = this.length + spoilerContent.length
-                    )
-
-                    withStyle(
-                        SpanStyle(
-                            background = spoilerBackground,
-                            color = if (isRevealed) spoilerRevealedColor else spoilerBackground
-                        )
-                    ) {
-                        append(spoilerContent)
-                    }
-
-                    currentIndex = annotation.end
-                } else {
-                    // It's standard text or other styles.
-                    // Instead of appending char by char, find distance to next "event"
-                    // An event is the start of a SPOILER tag.
-
-                    // Look ahead for the next spoiler
-                    val nextSpoilerIndex = text.getStringAnnotations(
-                        tag = "SPOILER",
-                        start = currentIndex,
-                        end = length
-                    )
-                        .minByOrNull { it.start }?.start ?: length
-
-                    // Append everything until the next spoiler
-                    // We preserve existing styles by appending the sub-sequence of the original AnnotatedString
-                    if (nextSpoilerIndex > currentIndex) {
-                        append(text.subSequence(currentIndex, nextSpoilerIndex))
-                        currentIndex = nextSpoilerIndex
+                // Define listener for this specific spoiler
+                val listener = LinkInteractionListener {
+                    revealedSpoilers = if (spoilerIndex in revealedSpoilers) {
+                        revealedSpoilers - spoilerIndex
                     } else {
-                        // Fallback safety (shouldn't happen if logic is correct, prevents infinite loop)
-                        append(text[currentIndex])
-                        currentIndex++
+                        revealedSpoilers + spoilerIndex
                     }
                 }
+
+                addLink(
+                    LinkAnnotation.Clickable(
+                        tag = "SPOILER",
+                        linkInteractionListener = listener
+                    ),
+                    start = this.length,
+                    end = this.length + spoilerContent.length
+                )
+
+                withStyle(
+                    SpanStyle(
+                        background = spoilerBackground,
+                        color = if (isRevealed) spoilerRevealedColor else spoilerBackground
+                    )
+                ) {
+                    append(spoilerContent)
+                }
+
+                lastIndex = spoiler.end
+            }
+
+            // 3. Append remaining text
+            if (lastIndex < text.length) {
+                append(text.subSequence(lastIndex, text.length))
             }
         }
-
-        // Log verification (Remove in production)
-        // Log.d("Perf", "String build time: ${(System.nanoTime() - startTime) / 1000}us")
-        result
     }
 
     Surface(

@@ -7,6 +7,8 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.domain.Tag
+import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.json.Json
@@ -88,4 +90,28 @@ class Converters {
 
     @TypeConverter
     fun toAnimeStatusCounts(counts: AnimeStatusCounts): String = json.encodeToString(counts)
+
+    // --- Tag and Trailer Converters ---
+
+    @TypeConverter
+    fun fromTagList(value: String): List<Tag> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toTagList(list: List<Tag>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromTrailer(value: String?): Trailer? = value?.let {
+        try {
+            json.decodeFromString<Trailer>(it)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun toTrailer(trailer: Trailer?): String? = trailer?.let { json.encodeToString(it) }
 }

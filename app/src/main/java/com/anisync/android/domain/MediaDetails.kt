@@ -27,6 +27,28 @@ data class ExternalLink(
     val notes: String? = null
 )
 
+/**
+ * Represents a content tag for themes, warnings, etc.
+ */
+@Serializable
+data class Tag(
+    val name: String,
+    val category: String,
+    val isMediaSpoiler: Boolean,
+    val isGeneralSpoiler: Boolean,
+    val rank: Int?
+)
+
+/**
+ * Represents a media trailer (typically from YouTube).
+ */
+@Serializable
+data class Trailer(
+    val id: String?,
+    val site: String?,
+    val thumbnail: String?
+)
+
 data class MediaDetails(
     val id: Int,
     val titleRomaji: String?,
@@ -48,8 +70,12 @@ data class MediaDetails(
     val studio: String?,
     val year: Int?,
     val startDate: String?,
+    val endDate: String?,
     val season: String?,
     val seasonYear: Int?,
+    val duration: Int?, // Episode duration in minutes
+    val tags: List<Tag>,
+    val trailer: Trailer?,
     // User's list entry (null if not in user's list)
     val listEntryId: Int?,
     val listStatus: LibraryStatus?,

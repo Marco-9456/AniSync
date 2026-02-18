@@ -5,9 +5,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ButtonDefaults
@@ -43,15 +47,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
@@ -76,6 +80,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -84,22 +89,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.InfoCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
+import com.anisync.android.presentation.details.components.ContentMetadataSection
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
+import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
@@ -142,6 +150,17 @@ fun MediaDetailsScreen(
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
+    // Status list is stable - memoize to avoid reallocation
+    val statuses = remember {
+        listOf(
+            LibraryStatus.CURRENT,
+            LibraryStatus.PLANNING,
+            LibraryStatus.COMPLETED,
+            LibraryStatus.PAUSED,
+            LibraryStatus.DROPPED
+        )
+    }
+
     with(sharedTransitionScope) {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -153,6 +172,11 @@ fun MediaDetailsScreen(
                     // Use standard overlappedFraction for state-based transitions
                     val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
 
+                    // Pre-calculate title to avoid computation during animation
+                    val appBarTitle = remember(state, titleLanguage) {
+                        (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
+                    }
+
                     TopAppBar(
                         title = {
                             // Show title only when scrolled to avoid duplication with the header
@@ -161,11 +185,8 @@ fun MediaDetailsScreen(
                                 enter = fadeIn(),
                                 exit = fadeOut()
                             ) {
-                                val title = (state as? DetailsUiState.Success)?.details?.getTitle(
-                                    titleLanguage
-                                ) ?: ""
                                 Text(
-                                    text = title,
+                                    text = appBarTitle,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.titleLarge
@@ -177,7 +198,7 @@ fun MediaDetailsScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.back),
-                                    tint = androidx.compose.animation.animateColorAsState(
+                                    tint = animateColorAsState(
                                         if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
                                         label = "navIconTint"
                                     ).value
@@ -190,20 +211,14 @@ fun MediaDetailsScreen(
                             titleContentColor = MaterialTheme.colorScheme.onSurface,
                             actionIconContentColor = MaterialTheme.colorScheme.onSurface
                         ),
-                        scrollBehavior = scrollBehavior
+                        scrollBehavior = scrollBehavior,
+                        windowInsets = WindowInsets.statusBars
                     )
                 },
                 floatingActionButton = {
                     val state = uiState
                     if (state is DetailsUiState.Success) {
                         val details = state.details
-                        val statuses = listOf(
-                            LibraryStatus.CURRENT,
-                            LibraryStatus.PLANNING,
-                            LibraryStatus.COMPLETED,
-                            LibraryStatus.PAUSED,
-                            LibraryStatus.DROPPED
-                        )
 
                         val haptic = LocalHapticFeedback.current
 
@@ -412,15 +427,41 @@ fun DetailsPageContent(
     onShareClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    titleLanguage: com.anisync.android.data.TitleLanguage
+    titleLanguage: TitleLanguage
 ) {
+    // Memoize: list transforms were running on every recomposition
+    val displayCharacters = remember(details.characters, titleLanguage) {
+        details.characters.take(10).map { character ->
+            character.copy(
+                nameUserPreferred = when (titleLanguage) {
+                    TitleLanguage.ROMAJI -> character.nameUserPreferred
+                    TitleLanguage.ENGLISH -> character.nameUserPreferred
+                    TitleLanguage.NATIVE -> character.nameNative ?: character.nameUserPreferred
+                }
+            )
+        }
+    }
+
+    val displayRelations = remember(details.relations, titleLanguage) {
+        details.relations.take(10)
+            .distinctBy { "${it.id}_${it.relationType}" }
+            .map { relation ->
+                relation.copy(
+                    titleUserPreferred = relation.getTitle(titleLanguage)
+                )
+            }
+    }
+
+    // Memoize genres for reference equality
+    val displayGenres = remember(details.genres) { details.genres }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.list_bottom_padding_fab))
         ) {
-            item {
+            item(key = "header") {
                 PageHeaderSection(
                     details,
                     sourceScreen,
@@ -430,11 +471,11 @@ fun DetailsPageContent(
                 )
             }
 
-            item {
+            // Action Buttons
+            item(key = "action_buttons") {
                 Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
-                    // Action Buttons (Favorite, Share)
                     StaggeredAnimatedVisibility(
                         key = "media_action_buttons",
                         index = 0,
@@ -446,52 +487,63 @@ fun DetailsPageContent(
                             onShareClick = onShareClick
                         )
                     }
+                }
+            }
 
+            // Synopsis (Moved up to fill gap left by genres)
+            item(key = "synopsis") {
+                Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
 
-                    // Genres (LazyRow)
                     StaggeredAnimatedVisibility(
-                        key = "media_genres",
+                        key = "media_synopsis",
                         index = 1,
                         delayPerItem = MediaStaggerDelay
                     ) {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
-                        ) {
-                            items(details.genres, key = { it }) { genre ->
-                                SuggestionChip(
-                                    onClick = { /* TODO: Filter by genre */ },
-                                    label = { Text(genre) },
-                                    colors = SuggestionChipDefaults.suggestionChipColors(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                    ),
-                                    border = null,
-                                    shape = CircleShape
-                                )
-                            }
-                        }
+                        ExpandableSynopsis(details.description)
                     }
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-
-                    // Info Cards (Status, Episodes, Season, Source)
+            // Fused Genres & Tags Section
+            item(key = "metadata") {
+                if (details.tags.isNotEmpty() || displayGenres.isNotEmpty()) {
                     StaggeredAnimatedVisibility(
-                        key = "media_info_cards",
+                        key = "media_metadata",
                         index = 2,
                         delayPerItem = MediaStaggerDelay
                     ) {
-                        InfoCardsSection(details)
+                        Column {
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                            ContentMetadataSection(
+                                genres = displayGenres,
+                                tags = details.tags
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Information Cards
+            item(key = "info_cards") {
+                StaggeredAnimatedVisibility(
+                    key = "media_info_cards",
+                    index = 3,
+                    delayPerItem = MediaStaggerDelay
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                        HorizontalInfoCards(details = details)
                     }
                 }
             }
 
             // External Links
-            item {
+            item(key = "external_links") {
                 if (details.externalLinks.isNotEmpty()) {
                     StaggeredAnimatedVisibility(
                         key = "media_links",
-                        index = 2,
+                        index = 4,
                         delayPerItem = MediaStaggerDelay
                     ) {
                         Column {
@@ -505,26 +557,11 @@ fun DetailsPageContent(
                 }
             }
 
-            item {
-                Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-
-                    // Synopsis
-                    StaggeredAnimatedVisibility(
-                        key = "media_synopsis",
-                        index = 3,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        ExpandableSynopsis(details.description)
-                    }
-                }
-            }
-
-            item {
-                if (details.characters.isNotEmpty()) {
+            item(key = "cast") {
+                if (displayCharacters.isNotEmpty()) {
                     StaggeredAnimatedVisibility(
                         key = "media_cast",
-                        index = 4,
+                        index = 5,
                         delayPerItem = MediaStaggerDelay
                     ) {
                         Column {
@@ -540,19 +577,13 @@ fun DetailsPageContent(
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
+                                // Optimization: Uses the memoized list 'displayCharacters'
                                 items(
-                                    items = details.characters.take(10),
+                                    items = displayCharacters,
                                     key = { it.id }
                                 ) { character ->
                                     CharacterItem(
-                                        character = character.copy(
-                                            nameUserPreferred = when (titleLanguage) {
-                                                com.anisync.android.data.TitleLanguage.ROMAJI -> character.nameUserPreferred
-                                                com.anisync.android.data.TitleLanguage.ENGLISH -> character.nameUserPreferred
-                                                com.anisync.android.data.TitleLanguage.NATIVE -> character.nameNative
-                                                    ?: character.nameUserPreferred
-                                            }
-                                        ),
+                                        character = character,
                                         onClick = { onCharacterClick(character.id) },
                                         modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
@@ -565,11 +596,11 @@ fun DetailsPageContent(
                 }
             }
 
-            item {
-                if (details.relations.isNotEmpty()) {
+            item(key = "relations") {
+                if (displayRelations.isNotEmpty()) {
                     StaggeredAnimatedVisibility(
                         key = "media_related",
-                        index = 5,
+                        index = 6,
                         delayPerItem = MediaStaggerDelay
                     ) {
                         Column {
@@ -580,23 +611,18 @@ fun DetailsPageContent(
                                 onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
                             )
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                            val uniqueRelations = details.relations.take(10)
-                                .distinctBy { "${it.id}_${it.relationType}" }
                             LazyRow(
                                 contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
                                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
                                 modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                             ) {
+                                // Optimization: Uses the memoized list 'displayRelations'
                                 items(
-                                    items = uniqueRelations,
+                                    items = displayRelations,
                                     key = { "${it.id}_${it.relationType}" }
                                 ) { relation ->
                                     RelationItem(
-                                        relation = relation.copy(
-                                            titleUserPreferred = relation.getTitle(
-                                                titleLanguage
-                                            )
-                                        ),
+                                        relation = relation,
                                         onClick = { onRelationClick(relation.id) },
                                         modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
@@ -619,7 +645,7 @@ fun PageHeaderSection(
     sourceScreen: String,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    titleLanguage: com.anisync.android.data.TitleLanguage
+    titleLanguage: TitleLanguage
 ) {
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val coverKey = TransitionKeys.cover(sourceScreen, details.id)
@@ -627,7 +653,6 @@ fun PageHeaderSection(
     val cacheKey = TransitionKeys.imageCacheKey(sourceScreen, details.id)
     val coverShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
 
-    // Hoist ImageRequest creation to prevent object allocation on every recomposition
     val context = LocalContext.current
     val coverImageRequest = remember(details.coverUrl, cacheKey) {
         ImageRequest.Builder(context)
@@ -638,64 +663,128 @@ fun PageHeaderSection(
             .build()
     }
 
-    // Create stable gradients
-    val bannerGradient = remember {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color.Black.copy(alpha = 0.4f),
-                Color.Transparent,
-                Color(0xCC000000),
-                Color.Black
-            )
-        )
-    }
-
-    // Properly use theme colors in gradient with remember
     val themeBackground = MaterialTheme.colorScheme.background
-    val scrimGradient = remember(themeBackground) {
+
+    // Bottom Gradient: Pure transparency to Background color
+    val bottomGradient = remember(themeBackground) {
         Brush.verticalGradient(
             colors = listOf(
-                Color.Black.copy(alpha = 0.4f),
                 Color.Transparent,
-                themeBackground.copy(alpha = 0.8f),
                 themeBackground
             )
         )
     }
 
+    // Memoize formatted strings to avoid re-computation
+    val displayTitle = remember(details, titleLanguage) {
+        details.getTitle(titleLanguage)
+    }
+
+    val formattedFormat = remember(details.format) {
+        details.format?.formatAsTitle()
+    }
+
+    val formattedScore = remember(details.score) {
+        details.score?.let { String.format("%.1f", it / 10f) }
+    }
+
+    val formattedYear = remember(details.seasonYear) {
+        details.seasonYear?.toString()
+    }
+
+    val uriHandler = LocalUriHandler.current
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .height(340.dp)
     ) {
-        AsyncImage(
-            model = details.bannerUrl ?: details.coverUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-
-        // Gradient Overlay
+        // Banner Area
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .background(scrimGradient)
+                .height(240.dp)
+        ) {
+            val trailer = details.trailer
+            val bannerOrCover = details.bannerUrl ?: details.coverUrl
+
+            AsyncImage(
+                model = trailer?.thumbnail ?: bannerOrCover,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+
+            if (trailer != null && trailer.site == "youtube") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.1f))
+                        .clickable {
+                            trailer.id?.let { videoId ->
+                                try {
+                                    uriHandler.openUri("https://www.youtube.com/watch?v=$videoId")
+                                } catch (_: Exception) {
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(
+                                color = Color.Black.copy(alpha = 0.5f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Play trailer",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Bottom Gradient Overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .height(160.dp)
+                .padding(bottom = 100.dp)
+                .background(bottomGradient)
+        )
+        // Extension of background to cover the rest
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .height(100.dp)
+                .background(themeBackground)
         )
 
+
+        // Content Row (Cover + Info)
         Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                .padding(bottom = 0.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
+            // Cover Image
             with(sharedTransitionScope) {
                 Card(
                     modifier = Modifier
-                        .width(110.dp)
-                        .height(160.dp)
+                        .width(115.dp)
+                        .height(165.dp)
                         .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = coverKey),
                             animatedVisibilityScope = animatedVisibilityScope,
@@ -703,7 +792,7 @@ fun PageHeaderSection(
                             clipInOverlayDuringTransition = OverlayClip(coverShape)
                         ),
                     shape = coverShape,
-                    elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation_large)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     AsyncImage(
@@ -717,16 +806,18 @@ fun PageHeaderSection(
 
             Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_medium)))
 
+            // Title and Metadata
             Column(
                 modifier = Modifier
-                    .align(Alignment.Bottom)
-                    .padding(bottom = 8.dp)
+                    .weight(1f)
+                    .padding(bottom = 6.dp)
             ) {
                 with(sharedTransitionScope) {
                     Text(
-                        text = details.getTitle(titleLanguage),
+                        text = displayTitle,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
                         ),
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 3,
@@ -740,172 +831,72 @@ fun PageHeaderSection(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                Spacer(modifier = Modifier.height(8.dp))
 
+                // Clean Metadata Row (Format • Year • Score)
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    details.format?.formatAsTitle()?.let { formattedFormat ->
-                        MetadataChip(text = formattedFormat)
+                    // Format
+                    if (formattedFormat != null) {
+                        Text(
+                            text = formattedFormat,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
-                    details.seasonYear?.let { year ->
-                        MetadataChip(text = year.toString())
+                    // Separator
+                    if (details.format != null && details.seasonYear != null) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
                     }
 
-                    details.score?.let { score ->
+                    // Year
+                    if (formattedYear != null) {
+                        Text(
+                            text = formattedYear,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Separator
+                    if (details.score != null) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+
+                    // Score
+                    if (formattedScore != null) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    shape = RoundedCornerShape(16.dp)
-                                )
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFFFC107),
+                                tint = Color(0xFFFFC107), // Amber 500
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = String.format("%.1f", score / 10f),
+                                text = formattedScore,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun InfoCardsSection(details: MediaDetails) {
-    val episodesLabel = if (details.type == com.anisync.android.type.MediaType.MANGA) {
-        stringResource(R.string.stat_chapters)
-    } else {
-        stringResource(R.string.stat_episodes)
-    }
-
-    val episodesValue = if (details.type == com.anisync.android.type.MediaType.MANGA) {
-        details.chapters?.let { "$it Chs" } ?: stringResource(R.string.unknown)
-    } else {
-        when {
-            details.episodes != null -> "${details.episodes} Eps"
-            details.nextAiringEpisode != null -> {
-                val airedEpisodes = details.nextAiringEpisode - 1
-                "$airedEpisodes Eps"
-            }
-
-            details.status.equals("NOT_YET_RELEASED", ignoreCase = true) -> {
-                stringResource(R.string.episodes_tba)
-            }
-
-            else -> stringResource(R.string.unknown)
-        }
-    }
-
-    val statusValue = if (details.status.equals("NOT_YET_RELEASED", ignoreCase = true)) {
-        stringResource(R.string.media_status_upcoming)
-    } else {
-        details.status.formatAsTitle() ?: stringResource(R.string.unknown)
-    }
-
-    val seasonValue = if (details.season != null && details.seasonYear != null) {
-        "${details.season.lowercase().replaceFirstChar { it.uppercase() }} ${details.seasonYear}"
-    } else {
-        details.seasonYear?.toString() ?: stringResource(R.string.unknown)
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
-        ) {
-            InfoCard(
-                modifier = Modifier.weight(1f),
-                icon = MediaDetailsIcons.getStatusIcon(details.status),
-                label = stringResource(R.string.stat_status),
-                value = statusValue,
-                iconTint = MediaDetailsIcons.getStatusColor(details.status),
-                isStatus = true
-            )
-            InfoCard(
-                modifier = Modifier.weight(1f),
-                icon = MediaDetailsIcons.getEpisodesIcon(details.type),
-                label = episodesLabel,
-                value = episodesValue,
-                iconTint = MaterialTheme.colorScheme.primary
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
-        ) {
-            details.seasonYear?.let { year ->
-                val seasonValue = year.toString()
-                val seasonDescriptionResId =
-                    MediaDetailsIcons.getSeasonContentDescriptionResId(details.season)
-                val seasonDescription = seasonDescriptionResId?.let { stringResource(it) }
-
-                if (MediaDetailsIcons.useCustomSeasonIcon(details.season)) {
-                    InfoCard(
-                        modifier = Modifier.weight(1f),
-                        iconResId = MediaDetailsIcons.getSeasonIconResId(details.season),
-                        label = stringResource(R.string.stat_season),
-                        value = seasonValue,
-                        iconTint = MediaDetailsIcons.getSeasonColor(details.season),
-                        iconContentDescription = seasonDescription
-                    )
-                } else {
-                    InfoCard(
-                        modifier = Modifier.weight(1f),
-                        icon = MediaDetailsIcons.getSeasonIcon(details.season)!!,
-                        label = stringResource(R.string.stat_season),
-                        value = seasonValue,
-                        iconTint = MediaDetailsIcons.getSeasonColor(details.season),
-                        iconContentDescription = seasonDescription
-                    )
-                }
-            }
-            InfoCard(
-                modifier = Modifier.weight(1f),
-                icon = MediaDetailsIcons.getSourceIcon(),
-                label = stringResource(R.string.stat_source),
-                value = stringResource(R.string.source_original),
-                iconTint = MaterialTheme.colorScheme.tertiary
-            )
-        }
-    }
-}
-
-@Composable
-fun MetadataChip(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
 
@@ -918,17 +909,19 @@ fun ActionButtonsRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        androidx.compose.material3.FilledIconButton(
+        // Expressive Favorite Button (Squircle or Circle)
+        FilledIconButton(
             onClick = onFavoriteClick,
-            modifier = Modifier.size(48.dp),
-            colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+            modifier = Modifier.size(56.dp), // Larger touch target
+            shape = CircleShape, // Full circle for emphasis
+            colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = if (isFavorite)
                     MaterialTheme.colorScheme.primary
                 else
-                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                    MaterialTheme.colorScheme.surfaceContainerHighest,
                 contentColor = if (isFavorite)
                     MaterialTheme.colorScheme.onPrimary
                 else
@@ -938,25 +931,37 @@ fun ActionButtonsRow(
             AnimatedFavoriteButton(
                 isFavorite = isFavorite,
                 onClick = onFavoriteClick,
-                iconSize = 24.dp,
+                iconSize = 28.dp,
                 activeColor = if (isFavorite) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
             )
         }
 
+        // Expressive Share Button (Pill Shape)
         OutlinedButton(
             onClick = onShareClick,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp), // Match height of fav button
+            shape = CircleShape, // Pill shape
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            ),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                containerColor = Color.Transparent
             )
         ) {
             Icon(
                 imageVector = Icons.Filled.Share,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.action_share))
+            Text(
+                stringResource(R.string.action_share),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+            )
         }
     }
 }

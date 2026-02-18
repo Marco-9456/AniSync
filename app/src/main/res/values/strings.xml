@@ -109,8 +109,15 @@
     <string name="action_favorite">Favorite</string>
     <string name="action_share">Share</string>
     <string name="stat_season">Season</string>
+    <string name="stat_duration">Duration</string>
+    <string name="stat_aired">Aired</string>
+    <string name="stat_studio">Studio</string>
     <string name="episodes_tba">TBA</string>
     <string name="media_status_upcoming">Upcoming</string>
+    <string name="section_tags">Tags</string>
+    <string name="episodes_suffix">Eps</string>
+    <string name="chapters_suffix">Chs</string>
+    <string name="minutes_suffix">mins</string>
 
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>

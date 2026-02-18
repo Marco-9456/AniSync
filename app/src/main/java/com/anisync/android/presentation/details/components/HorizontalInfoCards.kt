@@ -1,0 +1,278 @@
+package com.anisync.android.presentation.details.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.anisync.android.R
+import com.anisync.android.domain.MediaDetails
+import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.details.MediaDetailsIcons
+import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.type.MediaType
+
+/**
+ * Displays media information in a scrollable horizontal list with pill-style cards.
+ * Order: Status, Episodes, Duration, Season, Aired, Source, Studio
+ */
+@Composable
+fun HorizontalInfoCards(
+    details: MediaDetails,
+    modifier: Modifier = Modifier
+) {
+    val infoItems = buildInfoItems(details)
+
+    if (infoItems.isEmpty()) return
+
+    Column(modifier = modifier) {
+        SectionHeader(
+            title = stringResource(R.string.section_information),
+            level = HeaderLevel.Section
+        )
+
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(infoItems, key = { it.label }) { item ->
+                InfoPill(
+                    icon = item.icon,
+                    iconResId = item.iconResId,
+                    label = item.label,
+                    value = item.value,
+                    iconTint = item.iconTint,
+                    isStatus = item.isStatus
+                )
+            }
+        }
+    }
+}
+
+private data class InfoItem(
+    val icon: ImageVector? = null,
+    val iconResId: Int? = null,
+    val label: String,
+    val value: String,
+    val iconTint: Color,
+    val isStatus: Boolean = false
+)
+
+@Composable
+private fun buildInfoItems(details: MediaDetails): List<InfoItem> {
+    val items = mutableListOf<InfoItem>()
+
+    // 1. Status
+    val statusValue = if (details.status.equals("NOT_YET_RELEASED", ignoreCase = true)) {
+        stringResource(R.string.media_status_upcoming)
+    } else {
+        details.status.formatAsTitle() ?: stringResource(R.string.unknown)
+    }
+    items.add(
+        InfoItem(
+            icon = MediaDetailsIcons.getStatusIcon(details.status),
+            label = stringResource(R.string.stat_status),
+            value = statusValue,
+            iconTint = MediaDetailsIcons.getStatusColor(details.status),
+            isStatus = true
+        )
+    )
+
+    // 2. Episodes
+    val episodesLabel = if (details.type == MediaType.MANGA) {
+        stringResource(R.string.stat_chapters)
+    } else {
+        stringResource(R.string.stat_episodes)
+    }
+    val episodesValue = if (details.type == MediaType.MANGA) {
+        details.chapters?.let { "$it" } ?: stringResource(R.string.unknown)
+    } else {
+        when {
+            details.episodes != null -> "${details.episodes}"
+            details.nextAiringEpisode != null -> "${details.nextAiringEpisode - 1}"
+            else -> "?"
+        }
+    }
+    // Append unit suffix based on type
+    val fullEpisodesValue = if (episodesValue != "?") {
+        if (details.type == MediaType.MANGA) "$episodesValue Chs" else "$episodesValue Eps"
+    } else {
+        stringResource(R.string.unknown)
+    }
+
+    items.add(
+        InfoItem(
+            icon = MediaDetailsIcons.getEpisodesIcon(details.type),
+            label = episodesLabel,
+            value = fullEpisodesValue,
+            iconTint = MaterialTheme.colorScheme.primary
+        )
+    )
+
+    // 3. Duration
+    details.duration?.let { duration ->
+        items.add(
+            InfoItem(
+                icon = Icons.Default.AccessTime,
+                label = stringResource(R.string.stat_duration),
+                value = "$duration mins",
+                iconTint = MaterialTheme.colorScheme.secondary
+            )
+        )
+    }
+
+    // 4. Season
+    details.seasonYear?.let { year ->
+        val seasonValue = details.season?.let { season ->
+            "${season.lowercase().replaceFirstChar { it.uppercase() }} $year"
+        } ?: year.toString()
+
+        if (MediaDetailsIcons.useCustomSeasonIcon(details.season)) {
+            items.add(
+                InfoItem(
+                    iconResId = MediaDetailsIcons.getSeasonIconResId(details.season),
+                    label = stringResource(R.string.stat_season),
+                    value = seasonValue,
+                    iconTint = MediaDetailsIcons.getSeasonColor(details.season)
+                )
+            )
+        } else {
+            items.add(
+                InfoItem(
+                    icon = MediaDetailsIcons.getSeasonIcon(details.season)!!,
+                    label = stringResource(R.string.stat_season),
+                    value = seasonValue,
+                    iconTint = MediaDetailsIcons.getSeasonColor(details.season)
+                )
+            )
+        }
+    }
+
+    // 5. Source
+    items.add(
+        InfoItem(
+            icon = MediaDetailsIcons.getSourceIcon(),
+            label = stringResource(R.string.stat_source),
+            value = stringResource(R.string.source_original),
+            iconTint = MaterialTheme.colorScheme.tertiary
+        )
+    )
+
+    // 6. Studio
+    details.studio?.let { studio ->
+        items.add(
+            InfoItem(
+                icon = Icons.Default.Business,
+                label = stringResource(R.string.stat_studio),
+                value = studio,
+                iconTint = Color(0xFFFF9800) // Orange
+            )
+        )
+    }
+
+    return items
+}
+
+@Composable
+private fun InfoPill(
+    icon: ImageVector?,
+    iconResId: Int?,
+    label: String,
+    value: String,
+    iconTint: Color,
+    isStatus: Boolean = false
+) {
+    Card(
+        modifier = Modifier.height(56.dp), // Slightly taller for better touch target
+        shape = RoundedCornerShape(16.dp), // Modern softer roundness
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .height(40.dp), // Enforce internal height consistency
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Icon Container
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        color = iconTint.copy(alpha = 0.12f), // More subtle background
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (iconResId != null) {
+                    Icon(
+                        painter = painterResource(id = iconResId),
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Label and value
+            Column(
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
