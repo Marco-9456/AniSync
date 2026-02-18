@@ -21,10 +21,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -175,6 +180,7 @@ private fun GenreChip(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TagChip(
     tag: Tag,
@@ -189,70 +195,98 @@ private fun TagChip(
 
     val shape = RoundedCornerShape(8.dp)
 
-    Surface(
-        modifier = modifier
-            .height(32.dp)
-            .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
-        shape = shape,
-        color = tagColors.containerColor.copy(alpha = 0.12f),
-        border = BorderStroke(
-            1.dp,
-            tagColors.borderColor.copy(alpha = 0.3f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .clip(shape)
-                .clickable(
-                    enabled = isSpoiler,
-                    onClick = { isVisible = !isVisible }
-                )
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+    // Tooltip state
+    val tooltipState = rememberTooltipState()
+
+    // Only show tooltip if:
+    // 1. Tag has a description
+    // 2. For spoilers: only when revealed (isVisible == true)
+    val showTooltip = tag.description?.isNotBlank() == true && (!isSpoiler || isVisible)
+
+    val tagContent = @Composable {
+        Surface(
+            modifier = modifier
+                .height(32.dp)
+                .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+            shape = shape,
+            color = tagColors.containerColor.copy(alpha = 0.12f),
+            border = BorderStroke(
+                1.dp,
+                tagColors.borderColor.copy(alpha = 0.3f)
+            )
         ) {
-            AnimatedContent(
-                targetState = isVisible,
-                label = "spoiler_reveal"
-            ) { visible ->
-                if (visible) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = tag.name,
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = tagColors.textColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                } else {
-                    // Hidden Spoiler State: Icon + "Spoiler" text
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = tagColors.textColor
-                        )
-                        Text(
-                            text = "Spoiler",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = tagColors.textColor
-                        )
+            Row(
+                modifier = Modifier
+                    .clip(shape)
+                    .clickable(
+                        enabled = isSpoiler,
+                        onClick = { isVisible = !isVisible }
+                    )
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                AnimatedContent(
+                    targetState = isVisible,
+                    label = "spoiler_reveal"
+                ) { visible ->
+                    if (visible) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = tag.name,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = tagColors.textColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else {
+                        // Hidden Spoiler State: Icon + "Spoiler" text
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VisibilityOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = tagColors.textColor
+                            )
+                            Text(
+                                text = "Spoiler",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = tagColors.textColor
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (showTooltip) {
+        TooltipBox(
+            // Use the standard default provider as requested
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+            tooltip = {
+                PlainTooltip {
+                    Text(text = tag.description ?: "")
+                }
+            },
+            state = tooltipState,
+            enableUserInput = true
+        ) {
+            tagContent()
+        }
+    } else {
+        tagContent()
     }
 }
 

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -180,12 +181,30 @@ private fun buildInfoItems(details: MediaDetails): List<InfoItem> {
         }
     }
 
-    // 5. Source
+    // 5. Aired Date (Start - End)
+    val airedDateValue = when {
+        details.startDate != null && details.endDate != null -> "${details.startDate} - ${details.endDate}"
+        details.startDate != null -> details.startDate
+        else -> null
+    }
+    airedDateValue?.let { aired ->
+        items.add(
+            InfoItem(
+                icon = Icons.Default.DateRange,
+                label = stringResource(R.string.stat_aired),
+                value = aired,
+                iconTint = MaterialTheme.colorScheme.primary
+            )
+        )
+    }
+
+    // 6. Source
+    val sourceValue = details.source?.let { getSourceDisplayName(it) } ?: stringResource(R.string.unknown)
     items.add(
         InfoItem(
             icon = MediaDetailsIcons.getSourceIcon(),
             label = stringResource(R.string.stat_source),
-            value = stringResource(R.string.source_original),
+            value = sourceValue,
             iconTint = MaterialTheme.colorScheme.tertiary
         )
     )
@@ -274,5 +293,28 @@ private fun InfoPill(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun getSourceDisplayName(source: String): String {
+    return when (source.uppercase()) {
+        "ORIGINAL" -> stringResource(R.string.source_original)
+        "MANGA" -> stringResource(R.string.source_manga)
+        "LIGHT_NOVEL" -> stringResource(R.string.source_light_novel)
+        "VISUAL_NOVEL" -> stringResource(R.string.source_visual_novel)
+        "VIDEO_GAME" -> stringResource(R.string.source_video_game)
+        "OTHER" -> stringResource(R.string.source_other)
+        "NOVEL" -> stringResource(R.string.source_novel)
+        "DOUJINSHI" -> stringResource(R.string.source_doujinshi)
+        "ANIME" -> stringResource(R.string.source_anime)
+        "WEB_NOVEL" -> stringResource(R.string.source_web_novel)
+        "LIVE_ACTION" -> stringResource(R.string.source_live_action)
+        "GAME" -> stringResource(R.string.source_game)
+        "COMIC" -> stringResource(R.string.source_comic)
+        "MULTIMEDIA_PROJECT" -> stringResource(R.string.source_multimedia_project)
+        "PICTURE_BOOK" -> stringResource(R.string.source_picture_book)
+        else -> source.replace("_", " ").lowercase()
+            .replaceFirstChar { it.uppercase() }
     }
 }

@@ -33,6 +33,7 @@ data class MediaDetailsEntity(
     val status: String,
     val format: String?,
     val genres: List<String>,
+    val source: String?,
     val studio: String?,
     val year: Int?,
     val startDate: String?,

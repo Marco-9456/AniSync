@@ -153,6 +153,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 Tag(
                     name = tag.name ?: "",
                     category = tag.category ?: "",
+                    description = tag.description,
                     isMediaSpoiler = tag.isMediaSpoiler ?: false,
                     isGeneralSpoiler = tag.isGeneralSpoiler ?: false,
                     rank = tag.rank
@@ -188,6 +189,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 status = media.status?.name ?: "UNKNOWN",
                 format = media.format?.name,
                 genres = media.genres?.filterNotNull() ?: emptyList(),
+                source = media.source?.name,
                 studio = media.studios?.nodes?.firstOrNull()?.name,
                 year = media.startDate?.year,
                 startDate = formattedDate,

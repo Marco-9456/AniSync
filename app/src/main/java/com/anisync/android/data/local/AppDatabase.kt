@@ -17,6 +17,11 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v3 (Feb 2026):
+ *   - Added fields to media_details:
+ *     • source - Source material (Manga, Light Novel, Original, etc.)
+ *     • Tag description field for tooltip support
+ *
  * v2 (Feb 2026):
  *   - Added fields to media_details:
  *     • endDate - Formatted end date string
@@ -48,8 +53,11 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         AiringScheduleEntity::class,
         TrendingEntity::class
     ],
-    version = 2,
-    exportSchema = true
+    version = 3,
+    exportSchema = true,
+    autoMigrations = [
+        androidx.room.AutoMigration(from = 2, to = 3)
+    ]
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

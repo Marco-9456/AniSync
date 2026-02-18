@@ -34,6 +34,7 @@ data class ExternalLink(
 data class Tag(
     val name: String,
     val category: String,
+    val description: String? = null,
     val isMediaSpoiler: Boolean,
     val isGeneralSpoiler: Boolean,
     val rank: Int?
@@ -67,6 +68,7 @@ data class MediaDetails(
     val status: String,
     val format: String?,
     val genres: List<String>,
+    val source: String?,
     val studio: String?,
     val year: Int?,
     val startDate: String?,

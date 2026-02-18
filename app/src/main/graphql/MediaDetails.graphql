@@ -23,6 +23,7 @@ query GetMediaDetails($id: Int) {
         type
         status
         format
+        source
         genres
         studios(isMain: true) {
             nodes {
@@ -48,6 +49,7 @@ query GetMediaDetails($id: Int) {
         tags {
             name
             category
+            description
             isMediaSpoiler
             isGeneralSpoiler
             rank
