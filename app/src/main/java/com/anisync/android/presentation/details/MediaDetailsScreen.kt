@@ -759,12 +759,12 @@ private fun TrailerPlayButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-            Icon(
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = R.string.action_play_trailer.toString(),
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
-            )
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = R.string.action_play_trailer.toString(),
+            tint = Color.White,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }
 
@@ -778,7 +778,7 @@ private fun ContentRow(
     titleKey: Any,
     cacheKey: Any,
     coverShape: RoundedCornerShape,
-    spatialSpec: Any?, // Replace with your actual SpatialSpec type
+    spatialSpec: FiniteAnimationSpec<Rect>,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -807,7 +807,7 @@ private fun ContentRow(
                     .sharedBounds(
                         sharedContentState = rememberSharedContentState(key = coverKey),
                         animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec as FiniteAnimationSpec<Rect> },
+                        boundsTransform = { _, _ -> spatialSpec },
                         clipInOverlayDuringTransition = OverlayClip(coverShape)
                     ),
                 shape = coverShape,
@@ -844,7 +844,7 @@ private fun ContentRow(
                     modifier = Modifier.sharedBounds(
                         sharedContentState = rememberSharedContentState(key = titleKey),
                         animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec as FiniteAnimationSpec<Rect> },
+                        boundsTransform = { _, _ -> spatialSpec },
                         resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                     )
                 )
