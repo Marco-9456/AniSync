@@ -3,6 +3,8 @@ package com.anisync.android.presentation.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -61,6 +62,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -110,7 +112,7 @@ import kotlin.math.roundToInt
  * A Material Design 3 Expressive bottom sheet for editing library entries.
  * Supports editing status, progress, score, dates, rewatches/rereads, and notes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun EditLibraryEntrySheet(
     entry: LibraryEntry,
@@ -172,100 +174,101 @@ fun EditLibraryEntrySheet(
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         val scrollState = rememberScrollState()
-        val overscrollEffect = rememberOverscrollEffect()
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(
-                    state = scrollState,
-                    overscrollEffect = overscrollEffect
-                )
-                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+        // Disable overscroll stretch effect specifically for this bottom sheet content
+        CompositionLocalProvider(
+            LocalOverscrollFactory provides null
         ) {
-            HeaderSection(
-                entry = entry,
-                titleLanguage = titleLanguage,
-                hasChanges = hasChanges
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(state = scrollState)
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                HeaderSection(
+                    entry = entry,
+                    titleLanguage = titleLanguage,
+                    hasChanges = hasChanges
+                )
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
 
-            StatusSection(
-                statusProvider = { status },
-                mediaType = entry.type,
-                onStatusChange = {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    status = it
-                }
-            )
+                StatusSection(
+                    statusProvider = { status },
+                    mediaType = entry.type,
+                    onStatusChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        status = it
+                    }
+                )
 
-            ProgressSection(
-                progressProvider = { progress },
-                total = entry.totalEpisodes ?: entry.totalChapters,
-                isAnime = isAnime,
-                onProgressChange = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-                    progress = it.coerceIn(0, entry.totalEpisodes ?: Int.MAX_VALUE)
-                }
-            )
+                ProgressSection(
+                    progressProvider = { progress },
+                    total = entry.totalEpisodes ?: entry.totalChapters,
+                    isAnime = isAnime,
+                    onProgressChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                        progress = it.coerceIn(0, entry.totalEpisodes ?: Int.MAX_VALUE)
+                    }
+                )
 
-            ScoreSection(
-                scoreProvider = { score },
-                onScoreChange = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    score = it
-                }
-            )
+                ScoreSection(
+                    scoreProvider = { score },
+                    onScoreChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        score = it
+                    }
+                )
 
-            DateSection(
-                startedAtProvider = { startedAt },
-                completedAtProvider = { completedAt },
-                isAnime = isAnime,
-                onStartClick = { showStartDatePicker = true },
-                onCompletedClick = { showCompletedDatePicker = true }
-            )
+                DateSection(
+                    startedAtProvider = { startedAt },
+                    completedAtProvider = { completedAt },
+                    isAnime = isAnime,
+                    onStartClick = { showStartDatePicker = true },
+                    onCompletedClick = { showCompletedDatePicker = true }
+                )
 
-            RewatchSection(
-                rewatchesProvider = { rewatches },
-                isAnime = isAnime,
-                onRewatchChange = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    rewatches = it.coerceAtLeast(0)
-                }
-            )
+                RewatchSection(
+                    rewatchesProvider = { rewatches },
+                    isAnime = isAnime,
+                    onRewatchChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        rewatches = it.coerceAtLeast(0)
+                    }
+                )
 
-            NotesSection(
-                notesProvider = { notes },
-                onNotesChange = { notes = it },
-                modifier = Modifier.heightIn(min = 120.dp, max = 200.dp)
-            )
+                NotesSection(
+                    notesProvider = { notes },
+                    onNotesChange = { notes = it },
+                    modifier = Modifier.heightIn(min = 120.dp, max = 200.dp)
+                )
 
-            ActionButtons(
-                onDelete = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    showDeleteDialog = true
-                },
-                onSave = {
-                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                    onSave(
-                        entry.copy(
-                            status = status,
-                            progress = progress,
-                            score = score.takeIf { it > 0 },
-                            notes = notes.takeIf { it.isNotBlank() },
-                            startedAt = startedAt,
-                            completedAt = completedAt,
-                            rewatches = rewatches
+                ActionButtons(
+                    onDelete = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showDeleteDialog = true
+                    },
+                    onSave = {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onSave(
+                            entry.copy(
+                                status = status,
+                                progress = progress,
+                                score = score.takeIf { it > 0 },
+                                notes = notes.takeIf { it.isNotBlank() },
+                                startedAt = startedAt,
+                                completedAt = completedAt,
+                                rewatches = rewatches
+                            )
                         )
-                    )
-                },
-                saveEnabled = hasChanges,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+                    },
+                    saveEnabled = hasChanges,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 
@@ -461,15 +464,11 @@ private fun StatusSection(
         SectionTitle(text = stringResource(R.string.filter_status))
 
         val statusScrollState = rememberScrollState()
-        val statusOverscrollEffect = rememberOverscrollEffect()
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(
-                    state = statusScrollState,
-                    overscrollEffect = statusOverscrollEffect
-                ),
+                .horizontalScroll(state = statusScrollState),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             statusOptions.forEach { option ->
