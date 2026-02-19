@@ -104,19 +104,11 @@ import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.util.getTitle
 import java.text.DateFormat
 import java.util.Date
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
  * A Material Design 3 Expressive bottom sheet for editing library entries.
  * Supports editing status, progress, score, dates, rewatches/rereads, and notes.
- *
- * @param entry The library entry to edit
- * @param titleLanguage Preferred language for displaying the title
- * @param onDismiss Callback when the sheet is dismissed
- * @param onSave Callback when changes are saved, provides the updated entry
- * @param onDelete Callback when the delete button is clicked
- * @param sheetState Optional sheet state for controlling the bottom sheet
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,7 +146,6 @@ fun EditLibraryEntrySheet(
     }
 
     val haptics = LocalHapticFeedback.current
-    val context = LocalContext.current
     val isAnime = entry.type == MediaType.ANIME
 
     // Dialog states
@@ -204,7 +195,7 @@ fun EditLibraryEntrySheet(
             )
 
             StatusSection(
-                status = status,
+                statusProvider = { status },
                 mediaType = entry.type,
                 onStatusChange = {
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -213,7 +204,7 @@ fun EditLibraryEntrySheet(
             )
 
             ProgressSection(
-                progress = progress,
+                progressProvider = { progress },
                 total = entry.totalEpisodes ?: entry.totalChapters,
                 isAnime = isAnime,
                 onProgressChange = {
@@ -223,7 +214,7 @@ fun EditLibraryEntrySheet(
             )
 
             ScoreSection(
-                score = score,
+                scoreProvider = { score },
                 onScoreChange = {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     score = it
@@ -231,15 +222,15 @@ fun EditLibraryEntrySheet(
             )
 
             DateSection(
-                startedAt = startedAt,
-                completedAt = completedAt,
+                startedAtProvider = { startedAt },
+                completedAtProvider = { completedAt },
                 isAnime = isAnime,
                 onStartClick = { showStartDatePicker = true },
                 onCompletedClick = { showCompletedDatePicker = true }
             )
 
             RewatchSection(
-                rewatches = rewatches,
+                rewatchesProvider = { rewatches },
                 isAnime = isAnime,
                 onRewatchChange = {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -248,7 +239,7 @@ fun EditLibraryEntrySheet(
             )
 
             NotesSection(
-                notes = notes,
+                notesProvider = { notes },
                 onNotesChange = { notes = it },
                 modifier = Modifier.heightIn(min = 120.dp, max = 200.dp)
             )
@@ -278,7 +269,6 @@ fun EditLibraryEntrySheet(
         }
     }
 
-    // Dialogs
     if (showDeleteDialog) {
         DeleteConfirmationDialog(
             onConfirm = {
@@ -333,7 +323,6 @@ private fun HeaderSection(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Cover Image
         SubcomposeAsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(entry.coverUrl)
@@ -351,9 +340,7 @@ private fun HeaderSection(
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentAlignment = Alignment.Center
-                ) {
-                    // Loading placeholder
-                }
+                ) {}
             },
             error = {
                 Box(
@@ -440,10 +427,11 @@ private data class StatusOption(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatusSection(
-    status: LibraryStatus,
+    statusProvider: () -> LibraryStatus,
     mediaType: MediaType?,
     onStatusChange: (LibraryStatus) -> Unit
 ) {
+    val status = statusProvider()
     val isAnime = mediaType == MediaType.ANIME
 
     val statusOptions = remember(isAnime) {
@@ -461,7 +449,7 @@ private fun StatusSection(
     }
 
     val currentStatusLabel = stringResource(
-        statusOptions.first { it.status == status }.labelResId
+        statusOptions.firstOrNull { it.status == status }?.labelResId ?: R.string.filter_status
     )
 
     Column(
@@ -522,11 +510,12 @@ private fun StatusSection(
 
 @Composable
 private fun ProgressSection(
-    progress: Int,
+    progressProvider: () -> Int,
     total: Int?,
     isAnime: Boolean,
     onProgressChange: (Int) -> Unit
 ) {
+    val progress = progressProvider()
     val maxProgress = total ?: 999
 
     val unitString = if (isAnime) {
@@ -627,9 +616,11 @@ private fun ProgressSection(
 
 @Composable
 private fun ScoreSection(
-    score: Double,
+    scoreProvider: () -> Double,
     onScoreChange: (Double) -> Unit
 ) {
+    val score = scoreProvider()
+
     val scoreColor by animateColorAsState(
         targetValue = when {
             score >= 8.0 -> MaterialTheme.colorScheme.primary
@@ -665,9 +656,12 @@ private fun ScoreSection(
                 )
             }
 
+            val displayScore = if (score > 0) {
+                if (score % 1.0 == 0.0) "${score.toInt()}.0" else score.toString()
+            } else stringResource(R.string.no_score)
+
             Text(
-                text = if (score > 0) String.format(Locale.US, "%.1f", score)
-                else stringResource(R.string.no_score),
+                text = displayScore,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = scoreColor
@@ -690,7 +684,6 @@ private fun ScoreSection(
             )
         )
 
-        // Score scale labels
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -713,12 +706,14 @@ private fun ScoreSection(
 
 @Composable
 private fun DateSection(
-    startedAt: Long?,
-    completedAt: Long?,
+    startedAtProvider: () -> Long?,
+    completedAtProvider: () -> Long?,
     isAnime: Boolean,
     onStartClick: () -> Unit,
     onCompletedClick: () -> Unit
 ) {
+    val startedAt = startedAtProvider()
+    val completedAt = completedAtProvider()
     val dateFormatter = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -823,10 +818,11 @@ private fun DateChip(
 
 @Composable
 private fun RewatchSection(
-    rewatches: Int,
+    rewatchesProvider: () -> Int,
     isAnime: Boolean,
     onRewatchChange: (Int) -> Unit
 ) {
+    val rewatches = rewatchesProvider()
     val label = stringResource(
         if (isAnime) R.string.times_rewatched else R.string.times_reread
     )
@@ -898,10 +894,11 @@ private fun RewatchSection(
 
 @Composable
 private fun NotesSection(
-    notes: String,
+    notesProvider: () -> String,
     onNotesChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val notes = notesProvider()
     var isFocused by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
 
@@ -952,7 +949,6 @@ private fun NotesSection(
             minLines = 3
         )
 
-        // Character count (optional but good for UX)
         AnimatedVisibility(
             visible = notes.isNotEmpty(),
             modifier = Modifier.align(Alignment.End)
@@ -984,7 +980,6 @@ private fun ActionButtons(
             .height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Delete Button - Use TextButton for destructive actions per Material 3
         TextButton(
             onClick = onDelete,
             modifier = Modifier
@@ -1007,7 +1002,6 @@ private fun ActionButtons(
             )
         }
 
-        // Save Button
         Button(
             onClick = onSave,
             enabled = saveEnabled,
