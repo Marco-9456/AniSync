@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,11 +32,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -41,16 +46,24 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.data.AppSettings
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.StatusBadge
+import com.anisync.android.presentation.components.CompletedCardConfig
+import com.anisync.android.presentation.components.LibraryCardConfig
+import com.anisync.android.presentation.components.WatchingCardConfig
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -62,246 +75,408 @@ import com.anisync.android.util.getTitle
 fun LibraryListCard(
     entry: LibraryEntry,
     mediaType: MediaType,
-    onClick: () -> Unit,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    config: LibraryCardConfig = WatchingCardConfig,
+    onIncrement: (() -> Unit)? = null,
+    onDecrement: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Rect>()
-    val haptic = rememberHapticFeedback()
-    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+    val effectsSpec = AppMotion.rememberSlowEffectsSpec()
+
+    val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.id)
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.id)
+
+    val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
     val title = entry.getTitle(titleLanguage)
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressPercent,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+        animationSpec = effectsSpec,
         label = "Progress"
     )
 
-    with(sharedTransitionScope) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = modifier
-                .fillMaxWidth()
-                .height(110.dp)
-                .bouncyClickable(
+    val baseModifier = modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .then(
+            if (config.showAdjusters && onEdit != null) {
+                Modifier.bouncyCombinedClickable(
+                    onClick = onClick,
+                    onLongClick = onEdit,
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                    onLongClickLabel = stringResource(R.string.a11y_action_edit_entry),
+                    clipShape = RoundedCornerShape(16.dp)
+                )
+            } else {
+                Modifier.bouncyClickable(
                     onClick = onClick,
                     role = Role.Button,
                     onClickLabel = stringResource(R.string.a11y_action_open_details, title),
                     clipShape = RoundedCornerShape(16.dp)
                 )
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "library_container_${entry.mediaId}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
-                )
+            }
+        )
+
+    val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            baseModifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = containerKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(16.dp))
+            )
+        }
+    } else {
+        baseModifier
+    }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = cardModifier
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
         ) {
-            Row(modifier = Modifier.fillMaxSize()) {
+            // Left Side: Image
+            Box(
+                modifier = Modifier
+                    .width(96.dp)
+                    .aspectRatio(0.7f) // Dynamically sets Row height and prevents image cropping
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+            ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(entry.coverUrl)
                         .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
                         .build(),
                     contentDescription = stringResource(R.string.a11y_media_poster, title),
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(80.dp)
-                        .fillMaxHeight()
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // Right Side: Content
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                // Title
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 20.sp
                 )
 
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(vertical = 12.dp)
-                        .padding(end = 8.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.sharedBounds(
-                                sharedContentState = rememberSharedContentState(key = "library_media_title_${entry.mediaId}"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                boundsTransform = { _, _ -> spatialSpec },
-                                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                // Badges and Airing Info
+                if (config.showBehindBadge || config.showAiringInfo) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
+                            val nextAiring = entry.nextAiringEpisode
+                            val latest: Int? = if (nextAiring != null) nextAiring - 1 else total
+
+                            if (latest != null && entry.progress < latest) {
+                                StatusBadge(
+                                    formatEpisodesBehind(latest - entry.progress),
+                                    MaterialTheme.colorScheme.error,
+                                    MaterialTheme.colorScheme.onError
+                                )
+                            }
+                        }
+
+                        if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
+                            Text(
+                                text = stringResource(
+                                    R.string.airing_episode_in,
+                                    entry.nextAiringEpisode ?: 0,
+                                    formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        AiringStatusRow(entry = entry, mediaType = mediaType)
+                        }
                     }
-                    ProgressRow(
-                        progress = animatedProgress,
-                        current = entry.progress,
-                        total = total
+                }
+
+                // Metadata section (for completed lists)
+                if (config.showMetadata) {
+                    Text(
+                        text = stringResource(
+                            R.string.progress_format,
+                            entry.progress,
+                            total?.toString() ?: stringResource(R.string.progress_unknown)
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
 
-                ProgressButtons(
-                    onIncrement = {
-                        haptic.click()
-                        onIncrement()
-                    },
-                    onDecrement = {
-                        haptic.click()
-                        onDecrement()
-                    },
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Progress Bar Area
+                if (config.showProgressBar) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    R.string.progress_format,
+                                    entry.progress,
+                                    total?.toString()
+                                        ?: stringResource(R.string.progress_unknown)
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp
+                            )
+                        }
+                        LinearProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                        )
+                    }
+                }
+            }
+
+            // Right Side: Adjusters / Edit Button vertically stacked
+            if (config.showAdjusters && onIncrement != null && onDecrement != null) {
+                val haptic = rememberHapticFeedback()
+                Column(
                     modifier = Modifier
-                        .width(48.dp)
+                        .width(56.dp)
                         .fillMaxHeight()
-                        .padding(vertical = 12.dp, horizontal = 8.dp)
-                )
+                        .padding(end = 12.dp, top = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .bouncyClickable(
+                                onClick = {
+                                    haptic.click()
+                                    onIncrement()
+                                },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_increment_progress),
+                                clipShape = RoundedCornerShape(12.dp)
+                            ),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .bouncyClickable(
+                                onClick = {
+                                    haptic.click()
+                                    onDecrement()
+                                },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_decrement_progress),
+                                clipShape = RoundedCornerShape(12.dp)
+                            ),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Remove,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            } else if (!config.showAdjusters && onEdit != null) {
+                val haptic = rememberHapticFeedback()
+                Column(
+                    modifier = Modifier
+                        .width(56.dp)
+                        .fillMaxHeight()
+                        .padding(end = 12.dp, top = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .bouncyClickable(
+                                onClick = {
+                                    haptic.click()
+                                    onEdit()
+                                },
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.a11y_action_edit_entry),
+                                clipShape = RoundedCornerShape(12.dp)
+                            ),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+// --------------------------------------------------------------------------------
+// PRIVATE COMPONENTS & MOCKS FOR PREVIEWS
+// --------------------------------------------------------------------------------
+
 @Composable
-private fun AiringStatusRow(
-    entry: LibraryEntry,
-    mediaType: MediaType,
-    modifier: Modifier = Modifier
-) {
-    val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
+private fun StatusBadge(text: String, containerColor: Color, contentColor: Color) {
+    Surface(
+        color = containerColor,
+        contentColor = contentColor,
+        shape = RoundedCornerShape(4.dp)
     ) {
-        val nextAiring = entry.nextAiringEpisode
-        val latest = if (nextAiring != null) nextAiring - 1 else total
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp
+        )
+    }
+}
 
-        if (entry.status == LibraryStatus.CURRENT) {
-            if (latest != null && entry.progress < latest) {
-                StatusBadge(
-                    formatEpisodesBehind(latest - entry.progress),
-                    MaterialTheme.colorScheme.errorContainer,
-                    MaterialTheme.colorScheme.onErrorContainer
-                )
-            } else {
-                StatusBadge(
-                    stringResource(R.string.badge_up_to_date),
-                    MaterialTheme.colorScheme.secondaryContainer,
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+private fun mockEntry(
+    id: Int = 1,
+    title: String = "Frieren: Beyond Journey's End",
+    progress: Int = 12,
+    total: Int? = 28,
+    status: LibraryStatus = LibraryStatus.CURRENT,
+    nextAiring: Int? = 13,
+    timeUntil: Int? = 86400
+): LibraryEntry {
+    return LibraryEntry(
+        id = id,
+        mediaId = id,
+        titleRomaji = title,
+        titleEnglish = title,
+        titleNative = title,
+        titleUserPreferred = title,
+        coverUrl = "",
+        progress = progress,
+        totalEpisodes = total,
+        totalChapters = null,
+        totalVolumes = null,
+        type = MediaType.ANIME,
+        status = status,
+        nextAiringEpisode = nextAiring,
+        timeUntilAiring = timeUntil
+    )
+}
+
+@Composable
+private fun PreviewMediaCardTheme(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val appSettings = remember { AppSettings(context) }
+
+    MaterialTheme {
+        CompositionLocalProvider(LocalAppSettings provides appSettings) {
+            content()
         }
+    }
+}
 
-        if (entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
-            Text(
-                text = stringResource(
-                    R.string.airing_episode_in,
-                    entry.nextAiringEpisode,
-                    formatTimeUntilAiring(entry.dynamicTimeUntilAiring!!)
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+@Preview(name = "List - Anime Watching (Behind)", showBackground = true)
+@Composable
+private fun PreviewLibraryListCardWatchingBehind() {
+    PreviewMediaCardTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            LibraryListCard(
+                entry = mockEntry(progress = 10, total = 24, nextAiring = 12),
+                mediaType = MediaType.ANIME,
+                onClick = {},
+                config = WatchingCardConfig,
+                onIncrement = {},
+                onDecrement = {}
             )
         }
     }
 }
 
+@Preview(name = "List - Manga Completed", showBackground = true)
 @Composable
-private fun ProgressRow(
-    progress: Float,
-    current: Int,
-    total: Int?,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
-    ) {
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .weight(1f)
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        )
-        Text(
-            text = stringResource(
-                R.string.progress_format,
-                current,
-                total?.toString() ?: stringResource(R.string.progress_unknown)
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp
-        )
-    }
-}
+private fun PreviewLibraryListCardCompleted() {
+    val completedEntry = mockEntry(
+        title = "Berserk",
+        progress = 364,
+        total = 364,
+        status = LibraryStatus.COMPLETED,
+        nextAiring = null,
+        timeUntil = null
+    ).copy(totalChapters = 364, totalEpisodes = null, type = MediaType.MANGA)
 
-@Composable
-private fun ProgressButtons(
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .bouncyClickable(
-                    onClick = onIncrement,
-                    role = Role.Button,
-                    onClickLabel = stringResource(R.string.a11y_action_increment_progress),
-                    clipShape = RoundedCornerShape(8.dp)
-                ),
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = stringResource(R.string.a11y_action_increment_progress),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .bouncyClickable(
-                    onClick = onDecrement,
-                    role = Role.Button,
-                    onClickLabel = stringResource(R.string.a11y_action_decrement_progress),
-                    clipShape = RoundedCornerShape(8.dp)
-                ),
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Remove,
-                    contentDescription = stringResource(R.string.a11y_action_decrement_progress),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+    PreviewMediaCardTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            LibraryListCard(
+                entry = completedEntry,
+                mediaType = MediaType.MANGA,
+                onClick = {},
+                config = CompletedCardConfig,
+                onEdit = {} // Added to preview to show the Edit button correctly
+            )
         }
     }
 }

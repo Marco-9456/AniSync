@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -119,7 +121,7 @@ fun LibraryMediaCard(
     // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val effectsSpec = AppMotion.rememberSlowEffectsSpec()
-    
+
     // Use TransitionKeys for consistent key generation
     val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.id)
     val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.id)
@@ -138,10 +140,10 @@ fun LibraryMediaCard(
         with(sharedTransitionScope) {
             modifier
                 .fillMaxWidth()
-                .height(if (config.showAdjusters) 340.dp else 280.dp)
+                .wrapContentHeight()
                 .then(
                     if (config.showAdjusters && onEdit != null) {
-                         Modifier.bouncyCombinedClickable(
+                        Modifier.bouncyCombinedClickable(
                             onClick = onClick,
                             onLongClick = onEdit,
                             role = Role.Button,
@@ -168,7 +170,7 @@ fun LibraryMediaCard(
     } else {
         modifier
             .fillMaxWidth()
-            .height(if (config.showAdjusters) 340.dp else 280.dp)
+            .wrapContentHeight()
             .then(
                 if (config.showAdjusters && onEdit != null) {
                     Modifier.bouncyCombinedClickable(
@@ -196,12 +198,14 @@ fun LibraryMediaCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = cardModifier
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             // Image section
-            Box(modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.7f) // Ensure image is never cropped differently across lists
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(entry.coverUrl)
@@ -230,7 +234,9 @@ fun LibraryMediaCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp)
                 )
             }
 
@@ -322,9 +328,9 @@ fun LibraryMediaCard(
 
                 // Edit button for non-adjuster cards
                 if (!config.showAdjusters && onEdit != null) {
-                     Spacer(modifier = Modifier.height(8.dp))
-                     val haptic = rememberHapticFeedback()
-                     Row(
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val haptic = rememberHapticFeedback()
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp), // Adjust padding as needed
@@ -348,9 +354,9 @@ fun LibraryMediaCard(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    Icons.Default.Edit, 
+                                    Icons.Default.Edit,
                                     contentDescription = null, // Label is on Surface
-                                    modifier = Modifier.size(18.dp), 
+                                    modifier = Modifier.size(18.dp),
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                             }
@@ -389,7 +395,7 @@ fun LibraryMediaCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                Icons.Default.Remove, 
+                                Icons.Default.Remove,
                                 contentDescription = stringResource(R.string.a11y_action_decrement_progress),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -413,7 +419,7 @@ fun LibraryMediaCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                Icons.Default.Add, 
+                                Icons.Default.Add,
                                 contentDescription = stringResource(R.string.a11y_action_increment_progress),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -485,10 +491,10 @@ private fun StatusBadge(text: String, containerColor: Color, contentColor: Color
 private fun PreviewMediaCardTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val appSettings = androidx.compose.runtime.remember { AppSettings(context) }
-    
+
     MaterialTheme {
         CompositionLocalProvider(LocalAppSettings provides appSettings) {
-             content()
+            content()
         }
     }
 }
@@ -497,11 +503,13 @@ private fun PreviewMediaCardTheme(content: @Composable () -> Unit) {
 @Composable
 private fun PreviewLibraryCardWatchingBehind() {
     PreviewMediaCardTheme {
-        Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+        Box(modifier = Modifier
+            .padding(16.dp)
+            .width(200.dp)) {
             LibraryMediaCard(
                 entry = mockEntry(progress = 10, total = 24, nextAiring = 12),
                 mediaType = MediaType.ANIME,
-                titleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
+                titleLanguage = TitleLanguage.ROMAJI,
                 onClick = {},
                 config = WatchingCardConfig,
                 onIncrement = {},
@@ -515,11 +523,13 @@ private fun PreviewLibraryCardWatchingBehind() {
 @Composable
 private fun PreviewLibraryCardUpToDate() {
     PreviewMediaCardTheme {
-        Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+        Box(modifier = Modifier
+            .padding(16.dp)
+            .width(200.dp)) {
             LibraryMediaCard(
                 entry = mockEntry(progress = 11, total = 24, nextAiring = 12),
                 mediaType = MediaType.ANIME,
-                titleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
+                titleLanguage = TitleLanguage.ROMAJI,
                 onClick = {},
                 config = WatchingCardConfig,
                 onIncrement = {},
@@ -542,11 +552,13 @@ private fun PreviewLibraryCardCompleted() {
     ).copy(totalChapters = 364, totalEpisodes = null, type = MediaType.MANGA)
 
     PreviewMediaCardTheme {
-        Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+        Box(modifier = Modifier
+            .padding(16.dp)
+            .width(200.dp)) {
             LibraryMediaCard(
                 entry = completedEntry,
                 mediaType = MediaType.MANGA,
-                titleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
+                titleLanguage = TitleLanguage.ROMAJI,
                 onClick = {},
                 config = CompletedCardConfig
             )

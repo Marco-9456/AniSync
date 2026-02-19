@@ -60,6 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -123,7 +124,6 @@ fun LibraryScreen(
     val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
     val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
     val isAscending by viewModel.isAscending.collectAsStateWithLifecycle()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -152,6 +152,16 @@ fun LibraryScreen(
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+
+    val isSearchQueryEmpty by remember {
+        derivedStateOf { textFieldState.text.isEmpty() }
+    }
+
+    val handleIncrement =
+        remember(viewModel) { { mediaId: Int -> viewModel.incrementProgress(mediaId) } }
+    val handleDecrement =
+        remember(viewModel) { { mediaId: Int -> viewModel.decrementProgress(mediaId) } }
+    val handleEdit = remember { { entry: LibraryEntry -> editingEntry = entry } }
 
     LaunchedEffect(Unit) {
         viewModel.onScreenVisible()
@@ -200,7 +210,7 @@ fun LibraryScreen(
     val inputField = remember {
         @Composable {
             val currentSearchBarValue = searchBarState.currentValue
-            val currentSearchQuery = searchQuery
+            val currentIsSearchQueryEmpty = isSearchQueryEmpty
             val currentIsGridView = isGridView
             val currentIsAscending = isAscending
 
@@ -233,7 +243,7 @@ fun LibraryScreen(
                     }
                 } else null,
                 trailingIcon = {
-                    if (currentSearchBarValue == SearchBarValue.Expanded && currentSearchQuery.isNotEmpty()) {
+                    if (currentSearchBarValue == SearchBarValue.Expanded && !currentIsSearchQueryEmpty) {
                         IconButton(onClick = {
                             textFieldState.edit { replace(0, length, "") }
                         }) {
@@ -346,8 +356,11 @@ fun LibraryScreen(
                     onRetry = { viewModel.refresh() })
 
                 is LibraryUiState.Success -> {
-                    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
-                    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                    val motionScheme = MaterialTheme.motionScheme
+                    val spatialSpec =
+                        remember(motionScheme) { motionScheme.defaultSpatialSpec<IntOffset>() }
+                    val effectsSpec =
+                        remember(motionScheme) { motionScheme.defaultEffectsSpec<Float>() }
 
                     HorizontalPager(
                         state = pagerState,
@@ -358,6 +371,9 @@ fun LibraryScreen(
 
                         val gridState = gridScrollStates[pageStatus]!!
                         val listState = listScrollStates[pageStatus]!!
+
+                        val cardConfig =
+                            if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
 
                         if (entries.isEmpty()) {
                             EmptyLibraryTabState(pageStatus, mediaType)
@@ -383,26 +399,22 @@ fun LibraryScreen(
                                         verticalArrangement = Arrangement.spacedBy(16.dp),
                                         modifier = Modifier.fillMaxSize()
                                     ) {
-                                        items(entries, key = { it.id }) { entry ->
-                                            val cardConfig =
-                                                if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
-
-                                            val onIncrement = remember(entry.mediaId) {
-                                                { viewModel.incrementProgress(entry.mediaId) }
-                                            }
-                                            val onDecrement = remember(entry.mediaId) {
-                                                { viewModel.decrementProgress(entry.mediaId) }
-                                            }
-                                            val onEdit =
-                                                remember(entry) { { editingEntry = entry } }
-
+                                        items(
+                                            items = entries,
+                                            key = { it.id },
+                                            contentType = { "LibraryEntry" }
+                                        ) { entry ->
                                             LibraryMediaCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { onMediaClick(entry.mediaId) },
-                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) onIncrement else null,
-                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) onDecrement else null,
-                                                onEdit = onEdit,
+                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                    { handleIncrement(entry.mediaId) }
+                                                } else null,
+                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                    { handleDecrement(entry.mediaId) }
+                                                } else null,
+                                                onEdit = { handleEdit(entry) },
                                                 config = cardConfig,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -422,20 +434,23 @@ fun LibraryScreen(
                                         verticalArrangement = Arrangement.spacedBy(12.dp),
                                         modifier = Modifier.fillMaxSize()
                                     ) {
-                                        items(entries, key = { it.id }) { entry ->
-                                            val onIncrement = remember(entry.mediaId) {
-                                                { viewModel.incrementProgress(entry.mediaId) }
-                                            }
-                                            val onDecrement = remember(entry.mediaId) {
-                                                { viewModel.decrementProgress(entry.mediaId) }
-                                            }
-
+                                        items(
+                                            items = entries,
+                                            key = { it.id },
+                                            contentType = { "LibraryEntry" }
+                                        ) { entry ->
                                             LibraryListCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { onMediaClick(entry.mediaId) },
-                                                onIncrement = onIncrement,
-                                                onDecrement = onDecrement,
+                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                    { handleIncrement(entry.mediaId) }
+                                                } else null,
+                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                    { handleDecrement(entry.mediaId) }
+                                                } else null,
+                                                onEdit = { handleEdit(entry) },
+                                                config = cardConfig,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 titleLanguage = titleLanguage,
@@ -481,7 +496,7 @@ fun LibraryScreen(
                 }
 
                 is LibraryUiState.Success -> {
-                    if (state.entries.isEmpty() && searchQuery.isNotEmpty()) {
+                    if (state.entries.isEmpty() && !isSearchQueryEmpty) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
