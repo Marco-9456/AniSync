@@ -35,8 +35,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -44,7 +42,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -102,11 +99,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
-import com.anisync.android.domain.ExternalLink
-import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
-import com.anisync.android.domain.Trailer
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
@@ -123,7 +117,6 @@ import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
-import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
 
 private const val MediaStaggerDelay = 15 // Slightly increased for better perception
@@ -175,9 +168,6 @@ fun MediaDetailsScreen(
             Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 containerColor = MaterialTheme.colorScheme.background,
-                // Fix: Removed WindowInsets(0,0,0,0) override.
-                // Using ScaffoldDefaults.contentWindowInsets (the default) ensures the Scaffold
-                // is aware of system bars, allowing paddingValues to calculate correctly.
                 contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
                 topBar = {
                     val state = uiState
@@ -238,8 +228,6 @@ fun MediaDetailsScreen(
                         FloatingActionButtonMenu(
                             expanded = fabMenuExpanded,
                             modifier = Modifier.padding(dimensionResource(R.dimen.fab_menu_padding)),
-                            // Fix: Removed manual WindowInsets padding here.
-                            // Scaffold now handles the bottom padding automatically.
                             button = {
                                 ToggleFloatingActionButton(
                                     checked = fabMenuExpanded,
@@ -467,9 +455,6 @@ fun DetailsPageContent(
                     ) {
                         SmartActionButtonsRow(
                             isFavorite = details.isFavourite,
-                            externalLinks = details.externalLinks,
-                            mediaType = details.type,
-                            trailer = details.trailer,
                             onFavoriteClick = onFavouriteClick,
                             onShareClick = onShareClick
                         )
@@ -642,7 +627,8 @@ fun PageHeaderSection(
 
     // --- Data Preparation ---
     val displayTitle = remember(details, titleLanguage) { details.getTitle(titleLanguage) }
-    val formattedScore = remember(details.score) { details.score?.let { String.format("%.1f", it / 10f) } }
+    val formattedScore =
+        remember(details.score) { details.score?.let { String.format("%.1f", it / 10f) } }
 
     // Resolve the best image to show in the banner
     // Priority: Trailer Thumbnail -> Banner -> Cover
@@ -773,21 +759,12 @@ private fun TrailerPlayButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        // Inner opaque circle for better visibility
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Play Trailer", // Use stringResource(R.string...)
+                contentDescription = R.string.action_play_trailer.toString(),
                 tint = Color.White,
                 modifier = Modifier.size(32.dp)
             )
-        }
     }
 }
 
@@ -946,140 +923,68 @@ private fun MetadataSeparator() {
     )
 }
 
-/**
- * Intelligent Action Row (V3):
- * 1. Checks for Streaming Link -> "Watch on Netflix"
- * 2. Else Checks for Trailer -> "Watch Trailer"
- * 3. Else Fallback -> "Search"
- */
 @Composable
 fun SmartActionButtonsRow(
     isFavorite: Boolean = false,
-    externalLinks: List<ExternalLink> = emptyList(),
-    mediaType: MediaType? = null,
-    trailer: Trailer? = null,
     onFavoriteClick: () -> Unit = {},
     onShareClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val uriHandler = LocalUriHandler.current
-
-    val primaryLink = remember(externalLinks) {
-        externalLinks.firstOrNull { it.type == ExternalLinkType.STREAMING }
-            ?: externalLinks.firstOrNull()
-    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val isManga = mediaType == MediaType.MANGA
-
-        // --- PRIMARY ACTION LOGIC ---
-        val buttonText: String
-        val buttonSubText: String?
-        val buttonIcon: androidx.compose.ui.graphics.vector.ImageVector
-        val onPrimaryClick: () -> Unit
-
-        if (primaryLink != null) {
-            buttonText = if (isManga) "Read Now" else "Watch Now"
-            buttonSubText = "on ${primaryLink.site}"
-            buttonIcon = if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Filled.PlayArrow
-            onPrimaryClick = {
-                primaryLink.url?.let {
-                    try {
-                        uriHandler.openUri(it)
-                    } catch (_: Exception) {
-                    }
-                }
-            }
-        } else if (trailer != null && trailer.site == "youtube") {
-            buttonText = "Watch Trailer"
-            buttonSubText = null
-            buttonIcon = Icons.Filled.PlayArrow
-            onPrimaryClick = {
-                trailer.id?.let {
-                    try {
-                        uriHandler.openUri("https://www.youtube.com/watch?v=$it")
-                    } catch (_: Exception) {
-                    }
-                }
-            }
-        } else {
-            buttonText = "Search"
-            buttonSubText = null
-            buttonIcon = Icons.AutoMirrored.Filled.OpenInNew
-            onPrimaryClick = { /* TODO: Implement search */ }
-        }
-
-        // Expressive Button: Large corner radius (Squircle)
-        Button(
-            onClick = onPrimaryClick,
-            modifier = Modifier
-                .weight(1f)
-                .height(56.dp),
-            shape = RoundedCornerShape(24.dp), // MD3 Expressive shape
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            Icon(
-                imageVector = buttonIcon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = buttonText,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-                if (buttonSubText != null) {
-                    Text(
-                        text = buttonSubText,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal),
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                    )
-                }
-            }
-        }
-
         // --- SOCIAL ACTIONS ---
-
-        // Favorite: Tertiary color to distinguish from "Consumption" action
         FilledIconButton(
             onClick = onFavoriteClick,
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(56.dp), // Larger touch target
             shape = CircleShape,
             colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = if (isFavorite) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = if (isFavorite) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                containerColor = if (isFavorite)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = if (isFavorite)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.primary
             )
         ) {
             AnimatedFavoriteButton(
                 isFavorite = isFavorite,
                 onClick = onFavoriteClick,
                 iconSize = 28.dp,
-                activeColor = MaterialTheme.colorScheme.onTertiaryContainer
+                activeColor = if (isFavorite) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
             )
         }
 
-        // Share: Surface color
-        FilledIconButton(
+        // Share
+        OutlinedButton(
             onClick = onShareClick,
-            modifier = Modifier.size(56.dp),
-            shape = CircleShape,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp), // Match height of fav button
+            shape = CircleShape, // Pill shape
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            ),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                containerColor = Color.Transparent
             )
         ) {
             Icon(
                 imageVector = Icons.Filled.Share,
-                contentDescription = stringResource(R.string.action_share),
-                modifier = Modifier.size(24.dp)
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                stringResource(R.string.action_share),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
             )
         }
     }
