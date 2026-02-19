@@ -2,6 +2,7 @@ package com.anisync.android
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -15,8 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
@@ -27,15 +30,18 @@ import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.system.measureTimeMillis
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
-    
+
     @Inject
     lateinit var appSettings: AppSettings
 
@@ -43,83 +49,100 @@ class MainActivity : AppCompatActivity() {
     lateinit var notificationScheduler: com.anisync.android.worker.NotificationScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        // Enable edge-to-edge display
-        enableEdgeToEdge()
+        val onCreateTime = measureTimeMillis {
+            super.onCreate(savedInstanceState)
 
-        // Apply saved locale on startup
-        val savedLocale = appSettings.appLocale.value
-        if (savedLocale != AppLocale.SYSTEM) {
-            AppCompatDelegate.setApplicationLocales(
-                LocaleListCompat.forLanguageTags(savedLocale.tag)
-            )
-        }
-        
-        // Handle initial intent (when app first opens with redirect)
-        handleAuthRedirect(intent)
+            enableEdgeToEdge()
 
-        // Ensure notifications are scheduled if enabled
-        lifecycleScope.launch {
-            kotlinx.coroutines.flow.combine(
-                appSettings.notificationsEnabled,
-                authRepository.isLoggedIn
-            ) { enabled, loggedIn ->
-                if (enabled && loggedIn) {
-                    notificationScheduler.schedule()
-                }
-            }.collect {}
-        }
-        
-setContent {
-            val themeMode by appSettings.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
-            val selectedPaletteId by appSettings.selectedPaletteId.collectAsStateWithLifecycle(initialValue = "dynamic")
-            val customSeedColor by appSettings.customSeedColor.collectAsStateWithLifecycle(initialValue = null)
-            val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle(initialValue = com.materialkolor.PaletteStyle.TonalSpot)
-            val isSystemDark = isSystemInDarkTheme()
-            
-            // Determine if dark theme should be used based on settings
-            val useDarkTheme = when (themeMode) {
-                ThemeMode.LIGHT -> false
-                ThemeMode.DARK -> true
-                ThemeMode.SYSTEM -> isSystemDark
+            val savedLocale = appSettings.appLocale.value
+            if (savedLocale != AppLocale.SYSTEM) {
+                AppCompatDelegate.setApplicationLocales(
+                    LocaleListCompat.forLanguageTags(savedLocale.tag)
+                )
             }
-            
-            // Resolve seed color from selection
-            val seedColor = remember(selectedPaletteId, customSeedColor) {
-                when (selectedPaletteId) {
-                    "dynamic" -> null  // Use system dynamic colors
-                    "custom" -> customSeedColor
-                    else -> PresetPalettes.findById(selectedPaletteId)?.seedColor
+
+            handleAuthRedirect(intent)
+
+            // Schedule notifications when enabled and logged in, only while activity is active
+            lifecycleScope.launch {
+                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    combine(
+                        appSettings.notificationsEnabled,
+                        authRepository.isLoggedIn
+                    ) { enabled, loggedIn ->
+                        enabled && loggedIn
+                    }
+                        .distinctUntilChanged()
+                        .collect { shouldSchedule ->
+                            if (shouldSchedule) {
+                                val scheduleTime = measureTimeMillis {
+                                    notificationScheduler.schedule()
+                                }
+                                Log.d("PerfMetrics", "Notification scheduled in ${scheduleTime}ms")
+                            }
+                        }
                 }
             }
-            
-            // Determine if we should use dynamic color
-            val useDynamicColor = selectedPaletteId == "dynamic"
-            
-            // Provide AppSettings to the entire Compose tree via CompositionLocal
-            CompositionLocalProvider(LocalAppSettings provides appSettings) {
-                AppTheme(
-                    darkTheme = useDarkTheme,
-                    dynamicColor = useDynamicColor,
-                    seedColor = seedColor,
-                    paletteStyle = paletteStyle
-                ) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
+
+            setContent {
+                val themeMode by appSettings.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
+                val selectedPaletteId by appSettings.selectedPaletteId.collectAsStateWithLifecycle(
+                    initialValue = "dynamic"
+                )
+                val customSeedColor by appSettings.customSeedColor.collectAsStateWithLifecycle(
+                    initialValue = null
+                )
+                val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle(
+                    initialValue = com.materialkolor.PaletteStyle.TonalSpot
+                )
+                val isSystemDark = isSystemInDarkTheme()
+
+                val useDarkTheme = remember(themeMode, isSystemDark) {
+                    when (themeMode) {
+                        ThemeMode.LIGHT -> false
+                        ThemeMode.DARK -> true
+                        ThemeMode.SYSTEM -> isSystemDark
+                    }
+                }
+
+                val seedColor = remember(selectedPaletteId, customSeedColor) {
+                    when (selectedPaletteId) {
+                        "dynamic" -> null
+                        "custom" -> customSeedColor
+                        else -> PresetPalettes.findById(selectedPaletteId)?.seedColor
+                    }
+                }
+
+                val useDynamicColor = remember(selectedPaletteId) {
+                    selectedPaletteId == "dynamic"
+                }
+
+                CompositionLocalProvider(LocalAppSettings provides appSettings) {
+                    AppTheme(
+                        darkTheme = useDarkTheme,
+                        dynamicColor = useDynamicColor,
+                        seedColor = seedColor,
+                        paletteStyle = paletteStyle
                     ) {
-                        val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
-                        
-                        if (isLoggedIn) {
-                            MainScreen()
-                        } else {
-                            LoginScreen()
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
+                                initialValue = false
+                            )
+
+                            if (isLoggedIn) {
+                                MainScreen()
+                            } else {
+                                LoginScreen()
+                            }
                         }
                     }
                 }
             }
         }
+        Log.d("PerfMetrics", "MainActivity onCreate completed in ${onCreateTime}ms")
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -130,22 +153,33 @@ setContent {
     private fun handleAuthRedirect(intent: Intent?) {
         val uri = intent?.data ?: return
 
-        // Check if this is our auth redirect
         if (uri.scheme == "anisync" && uri.host == "auth") {
-            // Implicit Grant: token is in URL fragment
             val fragment = uri.fragment
             if (fragment != null) {
-                val params = fragment.split("&").associate { part ->
-                    val parts = part.split("=", limit = 2)
-                    if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
+                val startNanos = System.nanoTime()
+
+                // Parse token using zero-allocation sequence
+                var accessToken: String? = null
+                val sequence = fragment.splitToSequence("&")
+
+                for (param in sequence) {
+                    val eqIndex = param.indexOf('=')
+                    if (eqIndex > 0) {
+                        val key = param.substring(0, eqIndex)
+                        if (key == "access_token") {
+                            accessToken = param.substring(eqIndex + 1)
+                            break
+                        }
+                    }
                 }
 
-                val accessToken = params["access_token"]
                 if (accessToken != null) {
                     authRepository.saveToken(accessToken)
                 }
+
+                val parseTimeMs = (System.nanoTime() - startNanos) / 1_000_000.0
+                Log.d("PerfMetrics", "Auth token parsing took $parseTimeMs ms")
             }
         }
     }
 }
-

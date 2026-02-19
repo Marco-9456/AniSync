@@ -1,15 +1,30 @@
 package com.anisync.android
 
 import android.app.Application
+import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.system.measureTimeMillis
 
 @HiltAndroidApp
 class AniSyncApplication : Application(), Configuration.Provider {
 
-    @Inject lateinit var workerFactory: HiltWorkerFactory
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -18,77 +33,55 @@ class AniSyncApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        // Initialize notification channels on app startup
-        com.anisync.android.worker.NotificationChannels.createChannels(this)
 
-        // Schedule Workers
-        scheduleAiringUpdates()
+        val mainThreadTime = measureTimeMillis {
+            com.anisync.android.worker.NotificationChannels.createChannels(this)
+        }
+        Log.d("PerfMetrics", "Main thread AppInit took $mainThreadTime ms")
+
+        applicationScope.launch {
+            val backgroundInitTime = measureTimeMillis {
+                scheduleWorkersBackground()
+            }
+            Log.d("PerfMetrics", "Background Worker scheduling took $backgroundInitTime ms")
+        }
     }
 
-    private fun scheduleAiringUpdates() {
-        val request = androidx.work.PeriodicWorkRequestBuilder<com.anisync.android.worker.AiringScheduleWorker>(
-            1, java.util.concurrent.TimeUnit.HOURS
-        )
-            .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-            )
+    private fun scheduleWorkersBackground() {
+        val networkConstraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
-        
-        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+
+        val workManager = WorkManager.getInstance(this@AniSyncApplication)
+
+        // Schedule Airing Updates
+        val airingRequest =
+            PeriodicWorkRequestBuilder<com.anisync.android.worker.AiringScheduleWorker>(
+                1, TimeUnit.HOURS
+            )
+                .setConstraints(networkConstraints)
+                .build()
+
+        workManager.enqueueUniquePeriodicWork(
             "AiringScheduleWorker",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP, // Keep existing if running
-            request
-        )
-        
-        // Also run once immediately for dev/debugging
-        val oneTime = androidx.work.OneTimeWorkRequestBuilder<com.anisync.android.worker.AiringScheduleWorker>()
-             .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
-        androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
-            "AiringScheduleWorker_OneTime",
-             androidx.work.ExistingWorkPolicy.REPLACE,
-             oneTime
+            ExistingPeriodicWorkPolicy.KEEP,
+            airingRequest
         )
 
-        // Schedule Trending Worker (Every 12 hours)
-        val trendingRequest = androidx.work.PeriodicWorkRequestBuilder<com.anisync.android.worker.TrendingWorker>(
-            12, java.util.concurrent.TimeUnit.HOURS
+        // Schedule Trending Worker
+        val trendingRequest = PeriodicWorkRequestBuilder<com.anisync.android.worker.TrendingWorker>(
+            12, TimeUnit.HOURS
         )
-            .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-            )
+            .setConstraints(networkConstraints)
             .build()
-        
-        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+
+        workManager.enqueueUniquePeriodicWork(
             "TrendingWorker",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.KEEP,
             trendingRequest
         )
-        
-        // One time immediate for dev
-        val trendingOneTime = androidx.work.OneTimeWorkRequestBuilder<com.anisync.android.worker.TrendingWorker>()
-             .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
-             
-        androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
-            "TrendingWorker_OneTime",
-             androidx.work.ExistingWorkPolicy.REPLACE,
-             trendingOneTime
-        )
 
-        // Schedule Widget Refresh Worker (Every 15 minutes for countdown updates)
-        com.anisync.android.worker.WidgetRefreshWorker.schedule(this)
+        // Schedule Widget Refresh
+        com.anisync.android.worker.WidgetRefreshWorker.schedule(this@AniSyncApplication)
     }
 }

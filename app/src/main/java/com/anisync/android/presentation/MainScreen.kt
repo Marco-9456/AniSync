@@ -1,5 +1,6 @@
 package com.anisync.android.presentation
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
@@ -43,9 +45,6 @@ import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
 import kotlin.reflect.KClass
 
-/**
- * Helper class to define navigation items with selected/unselected icon states
- */
 private data class BottomNavItem<T : Any>(
     val titleResId: Int,
     val route: T,
@@ -54,108 +53,20 @@ private data class BottomNavItem<T : Any>(
     val unselectedIcon: ImageVector
 )
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
 
-    val navItems = remember {
-        listOf(
-            BottomNavItem(
-                titleResId = R.string.nav_library,
-                route = Library,
-                routeClass = Library::class,
-                selectedIcon = Icons.Filled.VideoLibrary,
-                unselectedIcon = Icons.Outlined.VideoLibrary
-            ),
-            BottomNavItem(
-                titleResId = R.string.nav_discover,
-                route = Discover,
-                routeClass = Discover::class,
-                selectedIcon = Icons.Filled.Explore,
-                unselectedIcon = Icons.Outlined.Explore
-            ),
-            BottomNavItem(
-                titleResId = R.string.nav_profile,
-                route = Profile,
-                routeClass = Profile::class,
-                selectedIcon = Icons.Filled.Person,
-                unselectedIcon = Icons.Outlined.Person
-            )
-        )
-    }
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-
-    // Determine if bottom bar should be visible (show for main tabs only)
-    val isBottomBarVisible by remember(currentDestination) {
-        derivedStateOf {
-            currentDestination?.let { dest ->
-                dest.hasRoute<Library>() ||
-                dest.hasRoute<Discover>() ||
-                dest.hasRoute<Profile>()
-            } ?: false
-        }
-    }
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            AnimatedVisibility(
-                visible = isBottomBarVisible,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
-                ) + expandVertically(
-                    expandFrom = Alignment.Top,
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
-                ) + shrinkVertically(
-                    shrinkTowards = Alignment.Top,
-                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
-                )
-            ) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 0.dp
-                ) {
-                    navItems.forEach { item ->
-                        val isSelected = currentDestination?.hasRoute(item.routeClass) == true
-
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = stringResource(item.titleResId)
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = stringResource(item.titleResId),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            },
-                            selected = isSelected,
-                            onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        )
-                    }
-                }
-            }
+            MainBottomBar(navController = navController)
         }
     ) { _ ->
+        // Scaffold padding is intentionally ignored to prevent the NavHost from
+        // remeasuring during bottom bar animations. AniSyncNavHost handles its own insets.
         AniSyncNavHost(
             navController = navController,
             onMediaClick = { mediaId, sourceScreen ->
@@ -163,5 +74,113 @@ fun MainScreen() {
             },
             modifier = Modifier.fillMaxSize()
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun MainBottomBar(navController: NavHostController) {
+    val navItems = remember {
+        listOf(
+            BottomNavItem(
+                R.string.nav_library,
+                Library,
+                Library::class,
+                Icons.Filled.VideoLibrary,
+                Icons.Outlined.VideoLibrary
+            ),
+            BottomNavItem(
+                R.string.nav_discover,
+                Discover,
+                Discover::class,
+                Icons.Filled.Explore,
+                Icons.Outlined.Explore
+            ),
+            BottomNavItem(
+                R.string.nav_profile,
+                Profile,
+                Profile::class,
+                Icons.Filled.Person,
+                Icons.Outlined.Person
+            )
+        )
+    }
+
+    val navBackStackEntryState = navController.currentBackStackEntryAsState()
+
+    val isBottomBarVisible by remember {
+        derivedStateOf {
+            val dest = navBackStackEntryState.value?.destination
+            dest?.hasRoute<Library>() == true ||
+                    dest?.hasRoute<Discover>() == true ||
+                    dest?.hasRoute<Profile>() == true
+        }
+    }
+
+    val motionScheme = MaterialTheme.motionScheme
+
+    val enterAnim = remember(motionScheme) {
+        slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = motionScheme.defaultSpatialSpec()
+        ) + expandVertically(
+            expandFrom = Alignment.Top,
+            animationSpec = motionScheme.defaultSpatialSpec()
+        )
+    }
+
+    val exitAnim = remember(motionScheme) {
+        slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = motionScheme.fastSpatialSpec()
+        ) + shrinkVertically(
+            shrinkTowards = Alignment.Top,
+            animationSpec = motionScheme.fastSpatialSpec()
+        )
+    }
+
+    AnimatedVisibility(
+        visible = isBottomBarVisible,
+        enter = enterAnim,
+        exit = exitAnim
+    ) {
+        NavigationBar(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 0.dp
+        ) {
+            val currentDestination = navBackStackEntryState.value?.destination
+
+            navItems.forEach { item ->
+                val isSelected = currentDestination?.hasRoute(item.routeClass) == true
+
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = stringResource(item.titleResId)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(item.titleResId),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    selected = isSelected,
+                    onClick = {
+                        if (!isSelected) {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
+            }
+        }
     }
 }
