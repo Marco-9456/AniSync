@@ -300,6 +300,15 @@ This project's source code is licensed under the **GNU General Public License v3
 
 ---
 
+## ☕ Support the Project
+
+I make apps for fun, buy me a coffee if you love them like I do!
+
+* [Sponsor on GitHub](https://github.com/sponsors/Marco-9456)
+* [Support on Ko-fi](https://ko-fi.com/marco_9456) (also available if you don't have a GitHub account)
+
+---
+
 ## 🙏 Acknowledgments
 
 * [AniList](https://anilist.co) for providing the excellent GraphQL API.
