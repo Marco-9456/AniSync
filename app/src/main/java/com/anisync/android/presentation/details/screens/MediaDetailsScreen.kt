@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.details
+package com.anisync.android.presentation.details.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -113,6 +113,8 @@ import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.RelationItem
+import com.anisync.android.presentation.details.state.DetailsUiState
+import com.anisync.android.presentation.details.viewmodel.MediaDetailsViewModel
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle

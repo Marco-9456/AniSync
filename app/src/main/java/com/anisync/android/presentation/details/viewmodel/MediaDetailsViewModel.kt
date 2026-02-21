@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.details
+package com.anisync.android.presentation.details.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
@@ -10,6 +10,7 @@ import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.details.state.DetailsUiState
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,12 +23,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-sealed interface DetailsUiState {
-    data object Loading : DetailsUiState
-    data class Success(val details: MediaDetails) : DetailsUiState
-    data class Error(val message: String) : DetailsUiState
-}
 
 @HiltViewModel
 class MediaDetailsViewModel @Inject constructor(

@@ -21,11 +21,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.anisync.android.presentation.details.CharacterDetailsScreen
-import com.anisync.android.presentation.details.CharacterMediaGridScreen
-import com.anisync.android.presentation.details.MediaCharactersGridScreen
-import com.anisync.android.presentation.details.MediaDetailsScreen
-import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.screens.CharacterDetailsScreen
+import com.anisync.android.presentation.details.screens.CharacterMediaGridScreen
+import com.anisync.android.presentation.details.screens.MediaCharactersGridScreen
+import com.anisync.android.presentation.details.screens.MediaDetailsScreen
+import com.anisync.android.presentation.details.screens.MediaRelationsGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen

@@ -38,7 +38,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.details.MediaDetailsIcons
+
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.type.MediaType
 
