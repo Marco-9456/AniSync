@@ -1,5 +1,6 @@
 package com.anisync.android.util
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,11 +15,6 @@ object AppLinksUtil {
 
     private const val DOMAIN_ANILIST = "anilist.co"
 
-    /**
-     * Checks if the app is verified to open the specified domain.
-     * On Android 12+ (API 31+), checks the DomainVerificationManager.
-     * On earlier versions, returns true since App Links prompt is not required in the same way.
-     */
     fun isDomainVerified(context: Context, domain: String = DOMAIN_ANILIST): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager = context.getSystemService(DomainVerificationManager::class.java)
@@ -36,16 +32,30 @@ object AppLinksUtil {
         return true
     }
 
-    /**
-     * Opens the "Open by default" settings page for the app to allow the user
-     * to manually add verified links.
-     */
     @RequiresApi(Build.VERSION_CODES.S)
     fun openAppLinksSettings(context: Context) {
-        val intent = Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS).apply {
-            data = "package:${context.packageName}".toUri()
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            // Samsung Android 12+ specific workaround to avoid Settings app crash
+            if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+                val intent = Intent("android.settings.MANAGE_DOMAIN_URLS").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } else {
+                // Standard approach for all other manufacturers
+                val intent = Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS).apply {
+                    data = "package:${context.packageName}".toUri()
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
+        } catch (e: ActivityNotFoundException) {
+            // Ultimate fallback to App Info page if everything else fails
+            val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = "package:${context.packageName}".toUri()
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(fallbackIntent)
         }
-        context.startActivity(intent)
     }
 }

@@ -456,4 +456,10 @@
     <string name="a11y_progress_updated">تم تحديث التقدم إلى %1$d</string>
     <string name="a11y_error_occurred">خطأ: %1$s</string>
     <string name="action_play_trailer">تشغيل العرض الدعائي</string>
+
+    <!-- App Links Prompt -->
+    <string name="enable_app_links_title">تفعيل روابط التطبيق</string>
+    <string name="samsung_app_links_instructions">لفتح روابط AniList مباشرة في AniSync، يرجى تفعيل الروابط المدعومة في إعدادات Android لديك.\n\n1. اضغط على \'فتح الإعدادات\'\n2. ابحث عن \'AniSync\' في القائمة واضغط عليه\n3. اضغط على \'إضافة رابط\'\n4. حدد \'anilist.co\' واحفظ.</string>
+    <string name="default_app_links_instructions">لفتح روابط AniList مباشرة في AniSync، يرجى تفعيل الروابط المدعومة لهذا التطبيق في إعدادات Android لديك.\n\n1. اضغط على \'فتح الإعدادات\'\n2. اضغط على \'إضافة رابط\'\n3. حدد \'anilist.co\' واحفظ.</string>
+    <string name="open_settings">فتح الإعدادات</string>
 </resources>

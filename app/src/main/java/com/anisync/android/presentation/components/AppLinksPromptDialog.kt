@@ -23,6 +23,11 @@ fun AppLinksPromptDialog(
     }
 
     val context = LocalContext.current
+    val instructions = if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+        stringResource(R.string.samsung_app_links_instructions)
+    } else {
+        stringResource(R.string.default_app_links_instructions)
+    }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -34,14 +39,11 @@ fun AppLinksPromptDialog(
             )
         },
         title = {
-            Text(text = "Enable App Links")
+            Text(text = stringResource(R.string.enable_app_links_title))
         },
         text = {
             Text(
-                text = "To open AniList links directly in AniSync, please enable supported web links for this app in your Android Settings.\n\n" +
-                        "1. Tap 'Open Settings'\n" +
-                        "2. Tap 'Add link'\n" +
-                        "3. Select 'anilist.co' and save."
+                instructions
             )
         },
         confirmButton = {
@@ -51,7 +53,7 @@ fun AppLinksPromptDialog(
                     onDismissRequest()
                 }
             ) {
-                Text("Open Settings")
+                Text(stringResource(R.string.open_settings))
             }
         },
         dismissButton = {
