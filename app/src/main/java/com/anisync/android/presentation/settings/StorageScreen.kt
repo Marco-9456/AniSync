@@ -36,10 +36,11 @@ fun StorageScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val cacheSize by viewModel.cacheSize.collectAsStateWithLifecycle()
-    val isCacheCleared by viewModel.isCacheCleared.collectAsStateWithLifecycle()
-    val isCacheLoading by viewModel.isCacheLoading.collectAsStateWithLifecycle()
-    val isCacheClearing by viewModel.isCacheClearing.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val cacheSize = uiState.cacheSize
+    val isCacheCleared = uiState.isCacheCleared
+    val isCacheLoading = uiState.isCacheLoading
+    val isCacheClearing = uiState.isCacheClearing
 
     val snackbarHostState = remember { SnackbarHostState() }
     val cacheClearedMessage = stringResource(R.string.settings_cache_cleared)
@@ -48,7 +49,7 @@ fun StorageScreen(
     LaunchedEffect(isCacheCleared) {
         if (isCacheCleared) {
             snackbarHostState.showSnackbar(cacheClearedMessage)
-            viewModel.resetCacheCleared()
+            viewModel.onAction(SettingsAction.ResetCacheCleared)
         }
     }
 
@@ -95,7 +96,7 @@ fun StorageScreen(
                 icon = Icons.Outlined.Delete,
                 title = stringResource(R.string.settings_clear_cache),
                 subtitle = stringResource(R.string.settings_cache_description, cacheSize),
-                onClick = { viewModel.clearCache() },
+                onClick = { viewModel.onAction(SettingsAction.ClearCache) },
                 enabled = !isCacheClearing
             )
         }

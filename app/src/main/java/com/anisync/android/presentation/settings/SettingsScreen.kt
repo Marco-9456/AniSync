@@ -84,7 +84,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val cacheSize by viewModel.cacheSize.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val cacheSize = uiState.cacheSize
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -97,7 +98,7 @@ fun SettingsScreen(
 
     // Refresh cache size when this screen is displayed
     LaunchedEffect(Unit) {
-        viewModel.refreshCacheSize()
+        viewModel.onAction(SettingsAction.RefreshCacheSize)
     }
 
     // Define all settings items with search keywords

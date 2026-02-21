@@ -78,16 +78,17 @@ fun LookAndFeelScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-    val preferredStreamingService by viewModel.preferredStreamingService.collectAsStateWithLifecycle()
-    val hapticEnabled by viewModel.hapticEnabled.collectAsStateWithLifecycle()
-    val appLocale by viewModel.appLocale.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val themeMode = uiState.themeMode
+    val titleLanguage = uiState.titleLanguage
+    val preferredStreamingService = uiState.preferredStreamingService
+    val hapticEnabled = uiState.hapticEnabled
+    val appLocale = uiState.appLocale
 
     // Theme palette settings
-    val selectedPaletteId by viewModel.selectedPaletteId.collectAsStateWithLifecycle()
-    val customSeedColor by viewModel.customSeedColor.collectAsStateWithLifecycle()
-    val paletteStyle by viewModel.paletteStyle.collectAsStateWithLifecycle()
+    val selectedPaletteId = uiState.selectedPaletteId
+    val customSeedColor = uiState.customSeedColor
+    val paletteStyle = uiState.paletteStyle
 
     var showTitleLanguageDialog by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceDialog by rememberSaveable { mutableStateOf(false) }
@@ -121,23 +122,23 @@ fun LookAndFeelScreen(
     }
 
     // Auto-reset orphaned "custom" palette state
-    LaunchedEffect(selectedPaletteId, palettes) {
-        if (palettes.none { it.id == selectedPaletteId }) {
-            viewModel.setSelectedPalette(palettes.firstOrNull()?.id ?: "dynamic")
+    LaunchedEffect(selectedPaletteId, palettes, uiState.isLoaded) {
+        if (uiState.isLoaded && palettes.none { it.id == selectedPaletteId }) {
+            viewModel.onAction(SettingsAction.SetSelectedPalette(palettes.firstOrNull()?.id ?: "dynamic"))
         }
     }
 
     val onColorSelected = remember(viewModel) {
         { color: Color ->
-            viewModel.setCustomSeedColor(color)
-            viewModel.setSelectedPalette("custom")
+            viewModel.onAction(SettingsAction.SetCustomSeedColor(color))
+            viewModel.onAction(SettingsAction.SetSelectedPalette("custom"))
         }
     }
     val onPaletteSelected = remember(viewModel) {
-        { palette: ThemePalette -> viewModel.setSelectedPalette(palette.id) }
+        { palette: ThemePalette -> viewModel.onAction(SettingsAction.SetSelectedPalette(palette.id)) }
     }
     val onStyleSelected = remember(viewModel) {
-        { style: com.materialkolor.PaletteStyle -> viewModel.setPaletteStyle(style) }
+        { style: com.materialkolor.PaletteStyle -> viewModel.onAction(SettingsAction.SetPaletteStyle(style)) }
     }
 
     // Color picker bottom sheet
@@ -154,7 +155,7 @@ fun LookAndFeelScreen(
         TitleLanguageSelectionDialog(
             currentLanguage = titleLanguage,
             onLanguageSelected = {
-                viewModel.setTitleLanguage(it)
+                viewModel.onAction(SettingsAction.SetTitleLanguage(it))
                 showTitleLanguageDialog = false
             },
             onDismiss = { showTitleLanguageDialog = false }
@@ -165,7 +166,7 @@ fun LookAndFeelScreen(
         StreamingServiceSelectionDialog(
             currentService = preferredStreamingService,
             onServiceSelected = {
-                viewModel.setPreferredStreamingService(it)
+                viewModel.onAction(SettingsAction.SetPreferredStreamingService(it))
                 showStreamingServiceDialog = false
             },
             onDismiss = { showStreamingServiceDialog = false }
@@ -176,7 +177,7 @@ fun LookAndFeelScreen(
         ThemeModeSelectionDialog(
             currentMode = themeMode,
             onModeSelected = {
-                viewModel.setThemeMode(it)
+                viewModel.onAction(SettingsAction.SetThemeMode(it))
                 showThemeModeDialog = false
             },
             onDismiss = { showThemeModeDialog = false }
@@ -187,7 +188,7 @@ fun LookAndFeelScreen(
         AppLanguageSelectionDialog(
             currentLocale = appLocale,
             onLocaleSelected = {
-                viewModel.setAppLocale(it)
+                viewModel.onAction(SettingsAction.SetAppLocale(it))
                 showAppLanguageDialog = false
             },
             onDismiss = { showAppLanguageDialog = false }
@@ -216,13 +217,15 @@ fun LookAndFeelScreen(
         }
         val seedColor = if (selectedPalette?.isDynamic == true) null else selectedPalette?.seedColor
 
-        // Phone mockup preview
-        PhonePreview(
-            seedColor = seedColor,
-            isDarkMode = isDarkMode,
-            paletteStyle = paletteStyle,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
+        // Phone mockup preview — only render after settings have loaded to prevent flicker
+        if (uiState.isLoaded) {
+            PhonePreview(
+                seedColor = seedColor,
+                isDarkMode = isDarkMode,
+                paletteStyle = paletteStyle,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -341,7 +344,7 @@ fun LookAndFeelScreen(
                 icon = Icons.Default.Vibration,
                 title = stringResource(R.string.setting_haptic_feedback),
                 checked = hapticEnabled,
-                onCheckedChange = { viewModel.setHapticEnabled(it) }
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
             )
         }
 

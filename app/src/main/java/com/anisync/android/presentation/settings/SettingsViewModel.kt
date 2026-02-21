@@ -2,7 +2,6 @@ package com.anisync.android.presentation.settings
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.ui.graphics.Color
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,28 +9,20 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.NotificationPreferences
-import com.anisync.android.data.StreamingService
-import com.anisync.android.data.ThemeMode
-import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
-import com.materialkolor.PaletteStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel for Settings screens.
- * Manages app settings, notifications, storage, and account operations.
- */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val appSettings: AppSettings,
@@ -39,60 +30,114 @@ class SettingsViewModel @Inject constructor(
     private val notificationScheduler: NotificationScheduler,
     private val notificationDebugService: NotificationDebugService,
     private val authRepository: AuthRepository,
-    private val getProfileUseCase: GetProfileUseCase,
+    getProfileUseCase: GetProfileUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // ==========================================================================
-    // USER PROFILE
-    // ==========================================================================
+    private val _cacheSize = MutableStateFlow("0 B")
+    private val _isCacheCleared = MutableStateFlow(false)
+    private val _isCacheLoading = MutableStateFlow(false)
+    private val _isCacheClearing = MutableStateFlow(false)
 
-    /**
-     * Observe user profile from local cache.
-     */
-    val userProfile: StateFlow<UserProfile?> = getProfileUseCase()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+    init {
+        refreshCacheSize()
+    }
+
+    val uiState: StateFlow<SettingsUiState> = combine(
+        combine(
+            appSettings.themeMode,
+            appSettings.titleLanguage,
+            appSettings.hapticEnabled,
+            appSettings.preferredStreamingService,
+            appSettings.appLocale
+        ) { theme, title, haptic, streaming, locale ->
+            SettingsUiState(
+                themeMode = theme,
+                titleLanguage = title,
+                hapticEnabled = haptic,
+                preferredStreamingService = streaming,
+                appLocale = locale
+            )
+        },
+        combine(
+            appSettings.selectedPaletteId,
+            appSettings.customSeedColor,
+            appSettings.paletteStyle
+        ) { paletteId, customColor, style ->
+            Triple(paletteId, customColor, style)
+        },
+        combine(
+            appSettings.notificationsEnabled,
+            notificationPreferences.watchingEnabled,
+            notificationPreferences.planningEnabled,
+            notificationPreferences.upcomingEnabled
+        ) { enabled, watching, planning, upcoming ->
+            listOf(enabled, watching, planning, upcoming)
+        },
+        combine(
+            _cacheSize,
+            _isCacheCleared,
+            _isCacheLoading,
+            _isCacheClearing,
+            getProfileUseCase()
+        ) { size, cleared, loading, clearing, profile ->
+            listOf(size, cleared, loading, clearing, profile)
+        }
+    ) { lookAndFeel, themePalette, notifications, storageAndProfile ->
+        val (paletteId, customColor, style) = themePalette
+        val (notifEnabled, watching, planning, upcoming) = notifications
+        val (cacheSize, isCleared, isLoading, isClearing, profile) = storageAndProfile
+        
+        lookAndFeel.copy(
+            selectedPaletteId = paletteId,
+            customSeedColor = customColor,
+            paletteStyle = style,
+            isNotificationsEnabled = notifEnabled as Boolean,
+            watchingNotificationsEnabled = watching as Boolean,
+            planningNotificationsEnabled = planning as Boolean,
+            upcomingNotificationsEnabled = upcoming as Boolean,
+            cacheSize = cacheSize as String,
+            isCacheCleared = isCleared as Boolean,
+            isCacheLoading = isLoading as Boolean,
+            isCacheClearing = isClearing as Boolean,
+            userProfile = profile as UserProfile?,
+            isLoaded = true
         )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = SettingsUiState()
+    )
 
-    // ==========================================================================
-    // LOOK & FEEL SETTINGS
-    // ==========================================================================
-
-    val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
-    val titleLanguage: StateFlow<TitleLanguage> = appSettings.titleLanguage
-    val hapticEnabled: StateFlow<Boolean> = appSettings.hapticEnabled
-    val preferredStreamingService: StateFlow<StreamingService> = appSettings.preferredStreamingService
-
-    fun setThemeMode(mode: ThemeMode) {
-        appSettings.setThemeMode(mode)
+    fun onAction(action: SettingsAction) {
+        when (action) {
+            is SettingsAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
+            is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
+            is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
+            is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(action.service)
+            is SettingsAction.SetAppLocale -> setAppLocale(action.locale)
+            is SettingsAction.SetSelectedPalette -> appSettings.setSelectedPalette(action.paletteId)
+            is SettingsAction.SetCustomSeedColor -> appSettings.setCustomSeedColor(action.color)
+            is SettingsAction.SetPaletteStyle -> appSettings.setPaletteStyle(action.style)
+            
+            is SettingsAction.ToggleNotifications -> toggleNotifications(action.enabled)
+            is SettingsAction.SetWatchingNotificationsEnabled -> notificationPreferences.setWatchingEnabled(action.enabled)
+            is SettingsAction.SetPlanningNotificationsEnabled -> notificationPreferences.setPlanningEnabled(action.enabled)
+            is SettingsAction.SetUpcomingNotificationsEnabled -> notificationPreferences.setUpcomingEnabled(action.enabled)
+            
+            SettingsAction.RefreshCacheSize -> refreshCacheSize()
+            SettingsAction.ClearCache -> clearCache()
+            SettingsAction.ResetCacheCleared -> _isCacheCleared.value = false
+            
+            SettingsAction.SendTestWatchingNotification -> notificationDebugService.sendTestWatchingNotification()
+            SettingsAction.SendTestPlanningNotification -> notificationDebugService.sendTestPlanningNotification()
+            SettingsAction.SendTestAdvanceNotification -> notificationDebugService.sendTestAdvanceNotification()
+            SettingsAction.SendTestImminentNotification -> notificationDebugService.sendTestImminentNotification()
+            SettingsAction.ClearAllNotifications -> notificationDebugService.clearAllNotifications()
+        }
     }
 
-    fun setTitleLanguage(language: TitleLanguage) {
-        appSettings.setTitleLanguage(language)
-    }
-
-    fun setHapticEnabled(enabled: Boolean) {
-        appSettings.setHapticEnabled(enabled)
-    }
-
-    fun setPreferredStreamingService(service: StreamingService) {
-        appSettings.setPreferredStreamingService(service)
-    }
-
-    // ==========================================================================
-    // APP LANGUAGE SETTINGS
-    // ==========================================================================
-
-    val appLocale: StateFlow<AppLocale> = appSettings.appLocale
-
-    /**
-     * Set the app locale. Persists the choice and applies it via AppCompatDelegate
-     * which triggers an activity recreation to reload resources in the new language.
-     */
-    fun setAppLocale(locale: AppLocale) {
+    private fun setAppLocale(locale: AppLocale) {
         appSettings.setAppLocale(locale)
         val localeList = if (locale == AppLocale.SYSTEM) {
             LocaleListCompat.getEmptyLocaleList()
@@ -102,36 +147,7 @@ class SettingsViewModel @Inject constructor(
         AppCompatDelegate.setApplicationLocales(localeList)
     }
 
-    // ==========================================================================
-    // THEME PALETTE SETTINGS
-    // ==========================================================================
-
-    val selectedPaletteId: StateFlow<String> = appSettings.selectedPaletteId
-    val customSeedColor: StateFlow<Color?> = appSettings.customSeedColor
-    val paletteStyle: StateFlow<PaletteStyle> = appSettings.paletteStyle
-
-    fun setSelectedPalette(paletteId: String) {
-        appSettings.setSelectedPalette(paletteId)
-    }
-
-    fun setCustomSeedColor(color: Color?) {
-        appSettings.setCustomSeedColor(color)
-    }
-
-    fun setPaletteStyle(style: PaletteStyle) {
-        appSettings.setPaletteStyle(style)
-    }
-
-    // ==========================================================================
-    // NOTIFICATION SETTINGS
-    // ==========================================================================
-
-    val isNotificationsEnabled: StateFlow<Boolean> = appSettings.notificationsEnabled
-    val watchingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.watchingEnabled
-    val planningNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.planningEnabled
-    val upcomingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.upcomingEnabled
-
-    fun toggleNotifications(enabled: Boolean) {
+    private fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch {
             appSettings.setNotificationsEnabled(enabled)
             if (enabled) {
@@ -142,68 +158,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setWatchingNotificationsEnabled(enabled: Boolean) {
-        notificationPreferences.setWatchingEnabled(enabled)
-    }
-
-    fun setPlanningNotificationsEnabled(enabled: Boolean) {
-        notificationPreferences.setPlanningEnabled(enabled)
-    }
-
-    fun setUpcomingNotificationsEnabled(enabled: Boolean) {
-        notificationPreferences.setUpcomingEnabled(enabled)
-    }
-
-    // ==========================================================================
-    // DEBUG NOTIFICATIONS (Debug builds only)
-    // ==========================================================================
-
-    fun sendTestWatchingNotification() {
-        notificationDebugService.sendTestWatchingNotification()
-    }
-
-    fun sendTestPlanningNotification() {
-        notificationDebugService.sendTestPlanningNotification()
-    }
-
-    fun sendTestAdvanceNotification() {
-        notificationDebugService.sendTestAdvanceNotification()
-    }
-
-    fun sendTestImminentNotification() {
-        notificationDebugService.sendTestImminentNotification()
-    }
-
-    fun clearAllNotifications() {
-        notificationDebugService.clearAllNotifications()
-    }
-
-    // ==========================================================================
-    // STORAGE SETTINGS
-    // ==========================================================================
-
-    private val _cacheSize = MutableStateFlow("0 B")
-    val cacheSize: StateFlow<String> = _cacheSize.asStateFlow()
-
-    private val _isCacheCleared = MutableStateFlow(false)
-    val isCacheCleared: StateFlow<Boolean> = _isCacheCleared.asStateFlow()
-
-    private val _isCacheLoading = MutableStateFlow(false)
-    val isCacheLoading: StateFlow<Boolean> = _isCacheLoading.asStateFlow()
-
-    private val _isCacheClearing = MutableStateFlow(false)
-    val isCacheClearing: StateFlow<Boolean> = _isCacheClearing.asStateFlow()
-
-    init {
-        // Calculate cache size off the main thread on init
-        refreshCacheSize()
-    }
-
-    /**
-     * Refreshes the cache size calculation.
-     * Call this when returning to the main Settings screen.
-     */
-    fun refreshCacheSize() {
+    private fun refreshCacheSize() {
         viewModelScope.launch {
             _isCacheLoading.value = true
             _cacheSize.value = calculateCacheSizeAsync()
@@ -211,7 +166,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun clearCache() {
+    private fun clearCache() {
         viewModelScope.launch {
             _isCacheClearing.value = true
             try {
@@ -225,10 +180,6 @@ class SettingsViewModel @Inject constructor(
                 _isCacheClearing.value = false
             }
         }
-    }
-
-    fun resetCacheCleared() {
-        _isCacheCleared.value = false
     }
 
     private suspend fun calculateCacheSizeAsync(): String {
@@ -248,10 +199,6 @@ class SettingsViewModel @Inject constructor(
             else -> String.format("%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
         }
     }
-
-    // ==========================================================================
-    // ACCOUNT SETTINGS
-    // ==========================================================================
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {

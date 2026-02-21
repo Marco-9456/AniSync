@@ -49,7 +49,8 @@ fun AccountScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val userProfile = uiState.userProfile
     var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
 
     // Logout confirmation dialog

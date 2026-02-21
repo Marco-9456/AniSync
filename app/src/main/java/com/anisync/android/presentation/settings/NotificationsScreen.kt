@@ -65,10 +65,11 @@ fun NotificationsScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsStateWithLifecycle()
-    val watchingEnabled by viewModel.watchingNotificationsEnabled.collectAsStateWithLifecycle()
-    val planningEnabled by viewModel.planningNotificationsEnabled.collectAsStateWithLifecycle()
-    val upcomingEnabled by viewModel.upcomingNotificationsEnabled.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isNotificationsEnabled = uiState.isNotificationsEnabled
+    val watchingEnabled = uiState.watchingNotificationsEnabled
+    val planningEnabled = uiState.planningNotificationsEnabled
+    val upcomingEnabled = uiState.upcomingNotificationsEnabled
 
     // Track actual system permission status
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
@@ -78,7 +79,7 @@ fun NotificationsScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            viewModel.toggleNotifications(true)
+            viewModel.onAction(SettingsAction.ToggleNotifications(true))
         }
         hasSystemPermission = isGranted
     }
@@ -90,7 +91,7 @@ fun NotificationsScreen(
                 hasSystemPermission = NotificationPermissionHelper.hasNotificationPermission(context)
                 // Auto-disable if permission was revoked
                 if (!hasSystemPermission && isNotificationsEnabled) {
-                    viewModel.toggleNotifications(false)
+                    viewModel.onAction(SettingsAction.ToggleNotifications(false))
                 }
             }
         }
@@ -149,10 +150,10 @@ fun NotificationsScreen(
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             } else {
-                                viewModel.toggleNotifications(true)
+                                viewModel.onAction(SettingsAction.ToggleNotifications(true))
                             }
                         } else {
-                            viewModel.toggleNotifications(false)
+                            viewModel.onAction(SettingsAction.ToggleNotifications(false))
                         }
                     }
                     .padding(20.dp),
@@ -188,10 +189,10 @@ fun NotificationsScreen(
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             } else {
-                                viewModel.toggleNotifications(true)
+                                viewModel.onAction(SettingsAction.ToggleNotifications(true))
                             }
                         } else {
-                            viewModel.toggleNotifications(false)
+                            viewModel.onAction(SettingsAction.ToggleNotifications(false))
                         }
                     }
                 )
@@ -212,21 +213,21 @@ fun NotificationsScreen(
                         title = stringResource(R.string.notification_watching),
                         description = stringResource(R.string.notification_watching_desc),
                         isEnabled = watchingEnabled,
-                        onToggle = { viewModel.setWatchingNotificationsEnabled(it) }
+                        onToggle = { viewModel.onAction(SettingsAction.SetWatchingNotificationsEnabled(it)) }
                     )
                     SettingsDivider(startPadding = 20.dp)
                     NotificationTypeItem(
                         title = stringResource(R.string.notification_planning),
                         description = stringResource(R.string.notification_planning_desc),
                         isEnabled = planningEnabled,
-                        onToggle = { viewModel.setPlanningNotificationsEnabled(it) }
+                        onToggle = { viewModel.onAction(SettingsAction.SetPlanningNotificationsEnabled(it)) }
                     )
                     SettingsDivider(startPadding = 20.dp)
                     NotificationTypeItem(
                         title = stringResource(R.string.notification_upcoming),
                         description = stringResource(R.string.notification_upcoming_desc),
                         isEnabled = upcomingEnabled,
-                        onToggle = { viewModel.setUpcomingNotificationsEnabled(it) }
+                        onToggle = { viewModel.onAction(SettingsAction.SetUpcomingNotificationsEnabled(it)) }
                     )
                 }
             }
@@ -298,13 +299,13 @@ private fun DebugNotificationsSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilledTonalButton(
-                    onClick = { viewModel.sendTestWatchingNotification() },
+                    onClick = { viewModel.onAction(SettingsAction.SendTestWatchingNotification) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(stringResource(R.string.debug_test_watching))
                 }
                 FilledTonalButton(
-                    onClick = { viewModel.sendTestPlanningNotification() },
+                    onClick = { viewModel.onAction(SettingsAction.SendTestPlanningNotification) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(stringResource(R.string.debug_test_planning))
@@ -319,13 +320,13 @@ private fun DebugNotificationsSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilledTonalButton(
-                    onClick = { viewModel.sendTestAdvanceNotification() },
+                    onClick = { viewModel.onAction(SettingsAction.SendTestAdvanceNotification) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(stringResource(R.string.debug_test_advance))
                 }
                 FilledTonalButton(
-                    onClick = { viewModel.sendTestImminentNotification() },
+                    onClick = { viewModel.onAction(SettingsAction.SendTestImminentNotification) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(stringResource(R.string.debug_test_imminent))
@@ -336,7 +337,7 @@ private fun DebugNotificationsSection(
 
             // Third row: Clear All
             FilledTonalButton(
-                onClick = { viewModel.clearAllNotifications() },
+                onClick = { viewModel.onAction(SettingsAction.ClearAllNotifications) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
