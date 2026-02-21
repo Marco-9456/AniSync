@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.discover.screens
+package com.anisync.android.presentation.discover
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -46,8 +46,6 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.discover.components.SearchFiltersRow
-import com.anisync.android.presentation.discover.state.SectionGridEvent
-import com.anisync.android.presentation.discover.viewmodel.SectionGridViewModel
 import com.anisync.android.presentation.util.AppMotion
 import kotlinx.coroutines.launch
 
@@ -163,7 +161,7 @@ fun SectionGridScreen(
             lastVisibleItem >= totalItems - 6 && totalItems > 0
         }.collect { shouldLoadMore ->
             if (shouldLoadMore && !uiState.isLoadingMore && uiState.hasNextPage && !uiState.isLoading) {
-                viewModel.onEvent(SectionGridEvent.LoadNextPage)
+                viewModel.onAction(SectionGridAction.LoadNextPage)
             }
         }
     }
@@ -208,7 +206,7 @@ fun SectionGridScreen(
                 onFormatSelected = { format ->
                     coroutineScope.launch {
                         gridState.scrollToItem(0, 0) // Reset scroll to stop ongoing animations
-                        viewModel.onEvent(SectionGridEvent.SetFormatFilter(format))
+                        viewModel.onAction(SectionGridAction.SetFormatFilter(format))
                     }
                 },
                 modifier = Modifier.padding(vertical = 8.dp)

@@ -1,12 +1,10 @@
-package com.anisync.android.presentation.discover.viewmodel
+package com.anisync.android.presentation.discover
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.Result
-import com.anisync.android.presentation.discover.state.SectionGridEvent
-import com.anisync.android.presentation.discover.state.SectionGridUiState
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,12 +41,12 @@ class SectionGridViewModel @Inject constructor(
         loadInitialData()
     }
 
-    fun onEvent(event: SectionGridEvent) {
-        when (event) {
-            is SectionGridEvent.LoadNextPage -> loadNextPage()
-            is SectionGridEvent.SetFormatFilter -> setFormatFilter(event.format)
-            is SectionGridEvent.SetMediaType -> setMediaType(event.type)
-            is SectionGridEvent.Retry -> retry()
+    fun onAction(action: SectionGridAction) {
+        when (action) {
+            is SectionGridAction.LoadNextPage -> loadNextPage()
+            is SectionGridAction.SetFormatFilter -> setFormatFilter(action.format)
+            is SectionGridAction.SetMediaType -> setMediaType(action.type)
+            is SectionGridAction.Retry -> retry()
         }
     }
 

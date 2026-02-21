@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.discover.state
+package com.anisync.android.presentation.discover
 
 import androidx.compose.runtime.Stable
 import com.anisync.android.domain.LibraryEntry
@@ -16,9 +16,9 @@ data class SectionGridUiState(
     val errorMessage: String? = null
 )
 
-sealed interface SectionGridEvent {
-    data object LoadNextPage : SectionGridEvent
-    data class SetFormatFilter(val format: MediaFormat?) : SectionGridEvent
-    data class SetMediaType(val type: MediaType) : SectionGridEvent
-    data object Retry : SectionGridEvent
+sealed interface SectionGridAction {
+    data object LoadNextPage : SectionGridAction
+    data class SetFormatFilter(val format: MediaFormat?) : SectionGridAction
+    data class SetMediaType(val type: MediaType) : SectionGridAction
+    data object Retry : SectionGridAction
 }

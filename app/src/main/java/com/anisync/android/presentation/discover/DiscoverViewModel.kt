@@ -1,12 +1,10 @@
-package com.anisync.android.presentation.discover.viewmodel
+package com.anisync.android.presentation.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
-import com.anisync.android.presentation.discover.state.DiscoverEvent
-import com.anisync.android.presentation.discover.state.DiscoverUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
@@ -46,16 +44,16 @@ class DiscoverViewModel @Inject constructor(
         observeSearchQuery()
     }
 
-    fun onEvent(event: DiscoverEvent) {
-        when (event) {
-            is DiscoverEvent.OnScreenVisible -> onScreenVisible()
-            is DiscoverEvent.OnMediaTypeChange -> onMediaTypeChange(event.type)
-            is DiscoverEvent.Refresh -> refresh()
-            is DiscoverEvent.OnSearchQueryChange -> onSearchQueryChange(event.query)
-            is DiscoverEvent.OnSearchActiveChange -> onSearchActiveChange(event.active)
-            is DiscoverEvent.OnSearch -> onSearch(event.query)
-            is DiscoverEvent.UpdateFilters -> updateFilters(event.filters)
-            is DiscoverEvent.ClearFilters -> clearFilters()
+    fun onAction(action: DiscoverAction) {
+        when (action) {
+            is DiscoverAction.OnScreenVisible -> onScreenVisible()
+            is DiscoverAction.OnMediaTypeChange -> onMediaTypeChange(action.type)
+            is DiscoverAction.Refresh -> refresh()
+            is DiscoverAction.OnSearchQueryChange -> onSearchQueryChange(action.query)
+            is DiscoverAction.OnSearchActiveChange -> onSearchActiveChange(action.active)
+            is DiscoverAction.OnSearch -> onSearch(action.query)
+            is DiscoverAction.UpdateFilters -> updateFilters(action.filters)
+            is DiscoverAction.ClearFilters -> clearFilters()
         }
     }
 

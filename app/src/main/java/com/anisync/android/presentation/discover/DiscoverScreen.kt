@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.discover.screens
+package com.anisync.android.presentation.discover
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -83,9 +83,6 @@ import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
 import com.anisync.android.presentation.discover.components.SearchFilterDialog
 import com.anisync.android.presentation.discover.components.SearchResultItem
-import com.anisync.android.presentation.discover.state.DiscoverEvent
-import com.anisync.android.presentation.discover.state.DiscoverUiState
-import com.anisync.android.presentation.discover.viewmodel.DiscoverViewModel
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.CoroutineScope
@@ -145,13 +142,13 @@ fun DiscoverScreen(
     val tbaTitle = stringResource(R.string.section_tba)
 
     LaunchedEffect(Unit) {
-        viewModel.onEvent(DiscoverEvent.OnScreenVisible)
+        viewModel.onAction(DiscoverAction.OnScreenVisible)
     }
 
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .debounce(SEARCH_DEBOUNCE_MS)
-            .collect { viewModel.onEvent(DiscoverEvent.OnSearchQueryChange(it)) }
+            .collect { viewModel.onAction(DiscoverAction.OnSearchQueryChange(it)) }
     }
 
     LaunchedEffect(searchBarState.currentValue) {
@@ -168,7 +165,7 @@ fun DiscoverScreen(
         }
     }
 
-    val onRefresh: () -> Unit = remember(viewModel) { { viewModel.onEvent(DiscoverEvent.Refresh) } }
+    val onRefresh: () -> Unit = remember(viewModel) { { viewModel.onAction(DiscoverAction.Refresh) } }
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         keyboardController?.hide()
@@ -183,7 +180,7 @@ fun DiscoverScreen(
         SearchFilterDialog(
             filters = currentSearchFilters,
             mediaType = currentMediaType,
-            onFiltersChanged = { viewModel.onEvent(DiscoverEvent.UpdateFilters(it)) },
+            onFiltersChanged = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
             onDismiss = { showFilterDialog = false }
         )
     }
@@ -201,8 +198,8 @@ fun DiscoverScreen(
                 searchFilters = currentSearchFilters,
                 coroutineScope = coroutineScope,
                 keyboardController = keyboardController,
-                onSearch = { viewModel.onEvent(DiscoverEvent.OnSearch(textFieldState.text.toString())) },
-                onMediaTypeChange = { viewModel.onEvent(DiscoverEvent.OnMediaTypeChange(it)) },
+                onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
+                onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
                 onShowFilterDialog = { showFilterDialog = true }
             )
         }
@@ -246,7 +243,7 @@ fun DiscoverScreen(
         searchQuery = searchQuery,
         searchResults = searchResults,
         isSearching = isSearching,
-        onSearch = { viewModel.onEvent(DiscoverEvent.OnSearch(it)) },
+        onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
         onSearchItemClick = onSearchItemClick,
         onShowFilterDialog = { showFilterDialog = true }
     )

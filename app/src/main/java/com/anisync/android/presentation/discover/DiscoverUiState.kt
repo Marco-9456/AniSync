@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.discover.state
+package com.anisync.android.presentation.discover
 
 import androidx.compose.runtime.Stable
 import com.anisync.android.domain.LibraryEntry
@@ -26,13 +26,13 @@ sealed interface DiscoverUiState {
     data class Error(val message: String) : DiscoverUiState
 }
 
-sealed interface DiscoverEvent {
-    data object OnScreenVisible : DiscoverEvent
-    data class OnMediaTypeChange(val type: MediaType) : DiscoverEvent
-    data object Refresh : DiscoverEvent
-    data class OnSearchQueryChange(val query: String) : DiscoverEvent
-    data class OnSearchActiveChange(val active: Boolean) : DiscoverEvent
-    data class OnSearch(val query: String) : DiscoverEvent
-    data class UpdateFilters(val filters: SearchFilters) : DiscoverEvent
-    data object ClearFilters : DiscoverEvent
+sealed interface DiscoverAction {
+    data object OnScreenVisible : DiscoverAction
+    data class OnMediaTypeChange(val type: MediaType) : DiscoverAction
+    data object Refresh : DiscoverAction
+    data class OnSearchQueryChange(val query: String) : DiscoverAction
+    data class OnSearchActiveChange(val active: Boolean) : DiscoverAction
+    data class OnSearch(val query: String) : DiscoverAction
+    data class UpdateFilters(val filters: SearchFilters) : DiscoverAction
+    data object ClearFilters : DiscoverAction
 }
