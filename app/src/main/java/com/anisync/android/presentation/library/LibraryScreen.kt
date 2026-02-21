@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.library.screens
+package com.anisync.android.presentation.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -98,9 +98,6 @@ import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
 import com.anisync.android.presentation.library.components.SortBottomSheet
 import com.anisync.android.presentation.library.components.SortIcon
-import com.anisync.android.presentation.library.state.LibraryEvent
-import com.anisync.android.presentation.library.state.LibrarySort
-import com.anisync.android.presentation.library.viewmodel.LibraryViewModel
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
@@ -161,19 +158,19 @@ fun LibraryScreen(
     }
 
     val handleIncrement =
-        remember(viewModel) { { mediaId: Int -> viewModel.onEvent(LibraryEvent.IncrementProgress(mediaId)) } }
+        remember(viewModel) { { mediaId: Int -> viewModel.onAction(LibraryAction.IncrementProgress(mediaId)) } }
     val handleDecrement =
-        remember(viewModel) { { mediaId: Int -> viewModel.onEvent(LibraryEvent.DecrementProgress(mediaId)) } }
+        remember(viewModel) { { mediaId: Int -> viewModel.onAction(LibraryAction.DecrementProgress(mediaId)) } }
     val handleEdit = remember { { entry: LibraryEntry -> editingEntry = entry } }
 
     LaunchedEffect(Unit) {
-        viewModel.onEvent(LibraryEvent.OnScreenVisible)
+        viewModel.onAction(LibraryAction.OnScreenVisible)
     }
 
     LaunchedEffect(Unit) {
-        viewModel.events.collectLatest { event ->
-            when (event) {
-                is LibraryEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+        viewModel.actions.collectLatest { action ->
+            when (action) {
+                is LibraryAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
                 else -> {}
             }
         }
@@ -182,7 +179,7 @@ fun LibraryScreen(
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .debounce(300.milliseconds)
-            .collect { viewModel.onEvent(LibraryEvent.OnSearchQueryChange(it)) }
+            .collect { viewModel.onAction(LibraryAction.OnSearchQueryChange(it)) }
     }
 
     LaunchedEffect(searchBarState.currentValue) {
@@ -206,12 +203,12 @@ fun LibraryScreen(
 
     val gridScrollStates = statuses.associateWith { status ->
         androidx.compose.runtime.key(status.name + "Grid") {
-            rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+            rememberSaveable(sortOption, isAscending, saver = LazyGridState.Saver) { LazyGridState() }
         }
     }
     val listScrollStates = statuses.associateWith { status ->
         androidx.compose.runtime.key(status.name + "List") {
-            rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+            rememberSaveable(sortOption, isAscending, saver = LazyListState.Saver) { LazyListState() }
         }
     }
 
@@ -306,7 +303,7 @@ fun LibraryScreen(
 
                 MediaTypeSelector(
                     selected = mediaType,
-                    onSelect = { viewModel.onEvent(LibraryEvent.OnMediaTypeChange(it)) },
+                    onSelect = { viewModel.onAction(LibraryAction.OnMediaTypeChange(it)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -361,7 +358,7 @@ fun LibraryScreen(
 
                 uiState.errorMessage != null -> ErrorState(
                     message = uiState.errorMessage!!,
-                    onRetry = { viewModel.onEvent(LibraryEvent.Refresh) })
+                    onRetry = { viewModel.onAction(LibraryAction.Refresh) })
 
                 else -> {
                     val motionScheme = MaterialTheme.motionScheme
@@ -548,7 +545,7 @@ fun LibraryScreen(
         isAscending = isAscending,
         onOptionSelected = { sort, ascending ->
             haptic.click()
-            viewModel.onEvent(LibraryEvent.OnSortOptionChange(sort, ascending))
+            viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
         }
     )
 
@@ -563,11 +560,10 @@ fun LibraryScreen(
             entry = entry,
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->
-                viewModel.onEvent(LibraryEvent.UpdateEntry(updatedEntry))
-                editingEntry = null
+                viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
             },
             onDelete = {
-                viewModel.onEvent(LibraryEvent.DeleteEntry(entry.id, entry.mediaId))
+                viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
                 editingEntry = null
             }
         )

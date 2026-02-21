@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.library.state
+package com.anisync.android.presentation.library
 
 import androidx.compose.runtime.Stable
 import com.anisync.android.data.TitleLanguage
@@ -31,15 +31,15 @@ enum class LibrarySort {
     RELEASE_DATE
 }
 
-sealed interface LibraryEvent {
-    data object OnScreenVisible : LibraryEvent
-    data object Refresh : LibraryEvent
-    data class OnMediaTypeChange(val type: MediaType) : LibraryEvent
-    data class OnSortOptionChange(val sort: LibrarySort, val ascending: Boolean) : LibraryEvent
-    data class OnSearchQueryChange(val query: String) : LibraryEvent
-    data class IncrementProgress(val mediaId: Int) : LibraryEvent
-    data class DecrementProgress(val mediaId: Int) : LibraryEvent
-    data class UpdateEntry(val entry: LibraryEntry) : LibraryEvent
-    data class DeleteEntry(val entryId: Int, val mediaId: Int) : LibraryEvent
-    data class ShowSnackbar(val message: String) : LibraryEvent
+sealed interface LibraryAction {
+    data object OnScreenVisible : LibraryAction
+    data object Refresh : LibraryAction
+    data class OnMediaTypeChange(val type: MediaType) : LibraryAction
+    data class OnSortOptionChange(val sort: LibrarySort, val ascending: Boolean) : LibraryAction
+    data class OnSearchQueryChange(val query: String) : LibraryAction
+    data class IncrementProgress(val mediaId: Int) : LibraryAction
+    data class DecrementProgress(val mediaId: Int) : LibraryAction
+    data class UpdateEntry(val entry: LibraryEntry) : LibraryAction
+    data class DeleteEntry(val entryId: Int, val mediaId: Int) : LibraryAction
+    data class ShowSnackbar(val message: String) : LibraryAction
 }

@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.presentation.library.state.LibrarySort
+import com.anisync.android.presentation.library.LibrarySort
 
 /**
  * Bottom sheet component for displaying library sorting options with direction toggle.

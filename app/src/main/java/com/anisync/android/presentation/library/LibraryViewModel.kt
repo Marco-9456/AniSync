@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.library.viewmodel
+package com.anisync.android.presentation.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,9 +6,6 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.Result
-import com.anisync.android.presentation.library.state.LibraryEvent
-import com.anisync.android.presentation.library.state.LibrarySort
-import com.anisync.android.presentation.library.state.LibraryUiState
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -41,8 +38,8 @@ class LibraryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
-    private val _events = MutableSharedFlow<LibraryEvent>()
-    val events: SharedFlow<LibraryEvent> = _events.asSharedFlow()
+    private val _actions = MutableSharedFlow<LibraryAction>()
+    val actions: SharedFlow<LibraryAction> = _actions.asSharedFlow()
 
     private var hasLoadedInitially = false
 
@@ -54,26 +51,26 @@ class LibraryViewModel @Inject constructor(
         observeLibraryData()
     }
 
-    fun onEvent(event: LibraryEvent) {
-        when (event) {
-            is LibraryEvent.OnScreenVisible -> onScreenVisible()
-            is LibraryEvent.Refresh -> refresh()
-            is LibraryEvent.OnMediaTypeChange -> {
-                _uiState.update { it.copy(mediaType = event.type, isLoading = true, errorMessage = null) }
+    fun onAction(action: LibraryAction) {
+        when (action) {
+            is LibraryAction.OnScreenVisible -> onScreenVisible()
+            is LibraryAction.Refresh -> refresh()
+            is LibraryAction.OnMediaTypeChange -> {
+                _uiState.update { it.copy(mediaType = action.type, isLoading = true, errorMessage = null) }
                 refresh()
             }
-            is LibraryEvent.OnSortOptionChange -> {
-                _uiState.update { it.copy(sortOption = event.sort, isAscending = event.ascending) }
+            is LibraryAction.OnSortOptionChange -> {
+                _uiState.update { it.copy(sortOption = action.sort, isAscending = action.ascending) }
             }
-            is LibraryEvent.OnSearchQueryChange -> {
-                _uiState.update { it.copy(searchQuery = event.query) }
+            is LibraryAction.OnSearchQueryChange -> {
+                _uiState.update { it.copy(searchQuery = action.query) }
             }
-            is LibraryEvent.IncrementProgress -> updateProgress(event.mediaId, 1)
-            is LibraryEvent.DecrementProgress -> updateProgress(event.mediaId, -1)
-            is LibraryEvent.UpdateEntry -> updateEntry(event.entry)
-            is LibraryEvent.DeleteEntry -> deleteEntry(event.entryId, event.mediaId)
-            is LibraryEvent.ShowSnackbar -> {
-                viewModelScope.launch { _events.emit(LibraryEvent.ShowSnackbar(event.message)) }
+            is LibraryAction.IncrementProgress -> updateProgress(action.mediaId, 1)
+            is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
+            is LibraryAction.UpdateEntry -> updateEntry(action.entry)
+            is LibraryAction.DeleteEntry -> deleteEntry(action.entryId, action.mediaId)
+            is LibraryAction.ShowSnackbar -> {
+                viewModelScope.launch { _actions.emit(LibraryAction.ShowSnackbar(action.message)) }
             }
         }
     }
@@ -180,7 +177,7 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(isRefreshing = true) }
             when (val result = libraryRepository.refreshLibrary("", _uiState.value.mediaType)) {
                 is Result.Success -> {} // Automatically updated via Flow
-                is Result.Error -> _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
             }
             _uiState.update { it.copy(isRefreshing = false) }
         }
@@ -193,7 +190,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = libraryRepository.updateProgress(mediaId, newProgress)) {
                 is Result.Success -> {}
-                is Result.Error -> _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
             }
         }
     }
@@ -201,8 +198,8 @@ class LibraryViewModel @Inject constructor(
     private fun updateEntry(entry: LibraryEntry) {
         viewModelScope.launch {
             when (val result = libraryRepository.updateEntry(entry)) {
-                is Result.Success -> _events.emit(LibraryEvent.ShowSnackbar("Entry updated"))
-                is Result.Error -> _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                is Result.Success -> _actions.emit(LibraryAction.ShowSnackbar("Entry updated"))
+                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
             }
         }
     }
@@ -210,8 +207,8 @@ class LibraryViewModel @Inject constructor(
     private fun deleteEntry(entryId: Int, mediaId: Int) {
         viewModelScope.launch {
             when (val result = libraryRepository.deleteEntry(entryId, mediaId)) {
-                is Result.Success -> _events.emit(LibraryEvent.ShowSnackbar("Entry removed"))
-                is Result.Error -> _events.emit(LibraryEvent.ShowSnackbar(result.message))
+                is Result.Success -> _actions.emit(LibraryAction.ShowSnackbar("Entry removed"))
+                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
             }
         }
     }
