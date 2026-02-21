@@ -151,7 +151,7 @@ class MyViewModel @Inject constructor(
     val uiState: StateFlow<UiState> = ...
 
     // Private state
-    private val _events = Channel<Event>()
+    private val _actions = Channel<Action>()
 
     init {
         loadData()
@@ -184,7 +184,7 @@ fun MediaCard(
 @Composable
 fun MediaList(
     media: List<Media>,         // State passed down
-    onItemClick: (Media) -> Unit // Events passed up
+    onItemClick: (Media) -> Unit // Actions passed up
 ) { ... }
 
 // Preview annotations
@@ -249,7 +249,7 @@ img_placeholder.png
 ┌─────────────────────────────────────────────┐
 │             Presentation Layer              │
 │  • Screens (Composables)                    │
-│  • ViewModels (UI State + Events)           │
+│  • ViewModels (UI State + Actions)          │
 │  • Navigation                               │
 ├─────────────────────────────────────────────┤
 │               Domain Layer                  │

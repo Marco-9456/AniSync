@@ -139,9 +139,9 @@ com.anisync.android/
 │   └── usecase/            # Business logic
 ├── presentation/
 │   ├── components/         # Shared UI components
-│   ├── details/            # Media details screen
-│   ├── discover/           # Discover/browse screen
-│   ├── library/            # Library management screen
+│   ├── details/            # Media details and related logic/screens
+│   ├── discover/           # Discover/browse and related logic/screens
+│   ├── library/            # Library management and related logic/screens
 │   ├── login/              # Authentication screen
 │   ├── navigation/         # Nav graph & routes
 │   ├── profile/            # User profile screen
@@ -274,11 +274,6 @@ data class MediaListUiState(
     val error: String? = null
 )
 
-sealed interface MediaListEvent {
-    data class NavigateToDetails(val id: Int) : MediaListEvent
-    data class ShowError(val message: String) : MediaListEvent
-}
-
 sealed interface MediaListAction {
     data object Refresh : MediaListAction
     data object Retry : MediaListAction
@@ -286,6 +281,10 @@ sealed interface MediaListAction {
     data class SelectMedia(val media: Media) : MediaListAction
 }
 ```
+
+AniSync enforces a strict **Unidirectional Data Flow (UDF)** pattern:
+1. **State (`*UiState`)**: ViewModels expose a single cohesive `StateFlow<UiState>` representing the entire screen state.
+2. **Actions (`*Action`)**: User intents and events are sent from the UI to the ViewModel through a single unified `onAction(action: *Action)` function. (Note: We use the `Action` suffix exclusively, avoiding the `Event` suffix for UI-to-ViewModel communication).
 
 ---
 
