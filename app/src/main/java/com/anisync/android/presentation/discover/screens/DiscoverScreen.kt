@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.discover
+package com.anisync.android.presentation.discover.screens
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -74,16 +74,18 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.SearchFilters
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.discover.components.CinematicHeroCarousel
+import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
 import com.anisync.android.presentation.discover.components.SearchFilterDialog
 import com.anisync.android.presentation.discover.components.SearchResultItem
+import com.anisync.android.presentation.discover.state.DiscoverEvent
+import com.anisync.android.presentation.discover.state.DiscoverUiState
+import com.anisync.android.presentation.discover.viewmodel.DiscoverViewModel
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.CoroutineScope
@@ -119,13 +121,8 @@ fun DiscoverScreen(
         }
     }
 
-    // PERF: Use collectAsStateWithLifecycle for lifecycle-aware collection
-    // PERF: Group related state to reduce recomposition scope
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val searchFilters by viewModel.searchFilters.collectAsStateWithLifecycle()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -135,7 +132,6 @@ fun DiscoverScreen(
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
-    // PERF: Hoist pullToRefreshState outside Scaffold content lambda
     val pullToRefreshState = rememberPullToRefreshState()
 
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
@@ -143,21 +139,19 @@ fun DiscoverScreen(
 
     var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
-    // PERF: Hoist string resources to avoid repeated lookups in LazyColumn items
     val trendingTitle = stringResource(R.string.section_trending_now)
     val popularTitle = stringResource(R.string.section_all_time_popular)
     val upcomingTitle = stringResource(R.string.section_upcoming_season)
     val tbaTitle = stringResource(R.string.section_tba)
 
     LaunchedEffect(Unit) {
-        viewModel.onScreenVisible()
+        viewModel.onEvent(DiscoverEvent.OnScreenVisible)
     }
 
-    // PERF: Debounce text field updates at UI level to prevent excessive state updates
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .debounce(SEARCH_DEBOUNCE_MS)
-            .collect { viewModel.onSearchQueryChange(it) }
+            .collect { viewModel.onEvent(DiscoverEvent.OnSearchQueryChange(it)) }
     }
 
     LaunchedEffect(searchBarState.currentValue) {
@@ -167,7 +161,6 @@ fun DiscoverScreen(
         }
     }
 
-    // PERF: Stable callback references
     val onSearchItemClick: (Int) -> Unit = remember(onMediaClick, keyboardController) {
         { id ->
             keyboardController?.hide()
@@ -175,18 +168,22 @@ fun DiscoverScreen(
         }
     }
 
-    val onRefresh: () -> Unit = remember(viewModel) { { viewModel.refresh() } }
+    val onRefresh: () -> Unit = remember(viewModel) { { viewModel.onEvent(DiscoverEvent.Refresh) } }
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         keyboardController?.hide()
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
+    val currentMediaType = (uiState as? DiscoverUiState.Success)?.mediaType ?: MediaType.ANIME
+    val currentSearchFilters = (uiState as? DiscoverUiState.Success)?.searchFilters ?: com.anisync.android.domain.SearchFilters()
+    val currentIsRefreshing = (uiState as? DiscoverUiState.Success)?.isRefreshing ?: false
+
     if (showFilterDialog) {
         SearchFilterDialog(
-            filters = searchFilters,
-            mediaType = mediaType,
-            onFiltersChanged = { viewModel.updateFilters(it) },
+            filters = currentSearchFilters,
+            mediaType = currentMediaType,
+            onFiltersChanged = { viewModel.onEvent(DiscoverEvent.UpdateFilters(it)) },
             onDismiss = { showFilterDialog = false }
         )
     }
@@ -196,32 +193,29 @@ fun DiscoverScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            // PERF: Extract to separate composable to isolate recomposition
             DiscoverTopBar(
                 scrollBehavior = scrollBehavior,
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
-                mediaType = mediaType,
-                searchFilters = searchFilters,
+                mediaType = currentMediaType,
+                searchFilters = currentSearchFilters,
                 coroutineScope = coroutineScope,
                 keyboardController = keyboardController,
-                onSearch = { viewModel.onSearch(textFieldState.text.toString()) },
-                onMediaTypeChange = viewModel::onMediaTypeChange,
+                onSearch = { viewModel.onEvent(DiscoverEvent.OnSearch(textFieldState.text.toString())) },
+                onMediaTypeChange = { viewModel.onEvent(DiscoverEvent.OnMediaTypeChange(it)) },
                 onShowFilterDialog = { showFilterDialog = true }
             )
         }
     ) { paddingValues ->
-        // PERF: Extract main content to separate composable
         DiscoverContent(
             uiState = uiState,
-            mediaType = mediaType,
             titleLanguage = titleLanguage,
-            isRefreshing = isRefreshing,
+            isRefreshing = currentIsRefreshing,
             mainListState = mainListState,
             pullToRefreshState = pullToRefreshState,
             paddingValues = PaddingValues(
                 top = paddingValues.calculateTopPadding(),
-                bottom = 80.dp // Padding for bottom navigation bar
+                bottom = 80.dp 
             ),
             trendingTitle = trendingTitle,
             popularTitle = popularTitle,
@@ -235,17 +229,24 @@ fun DiscoverScreen(
         )
     }
 
-    // PERF: Extract search overlay to separate composable
+    val (searchQuery, searchResults, isSearching) = when (val state = uiState) {
+        is DiscoverUiState.Success -> Triple(state.searchQuery, state.searchResults, state.isSearching)
+        else -> Triple("", emptyList<LibraryEntry>(), false)
+    }
+
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
-        mediaType = mediaType,
+        mediaType = currentMediaType,
         titleLanguage = titleLanguage,
-        searchFilters = searchFilters,
+        searchFilters = currentSearchFilters,
         coroutineScope = coroutineScope,
         keyboardController = keyboardController,
         listState = listState,
-        viewModel = viewModel,
+        searchQuery = searchQuery,
+        searchResults = searchResults,
+        isSearching = isSearching,
+        onSearch = { viewModel.onEvent(DiscoverEvent.OnSearch(it)) },
         onSearchItemClick = onSearchItemClick,
         onShowFilterDialog = { showFilterDialog = true }
     )
@@ -258,7 +259,7 @@ private fun DiscoverTopBar(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     mediaType: MediaType,
-    searchFilters: SearchFilters,
+    searchFilters: com.anisync.android.domain.SearchFilters,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     onSearch: () -> Unit,
@@ -266,7 +267,7 @@ private fun DiscoverTopBar(
     onShowFilterDialog: () -> Unit
 ) {
     Column(
-        modifier = Modifier.statusBarsPadding() // Protect entire top bar from status bar
+        modifier = Modifier.statusBarsPadding()
     ) {
         AppBarWithSearch(
             scrollBehavior = scrollBehavior,
@@ -305,7 +306,7 @@ private fun SearchInputField(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     mediaType: MediaType,
-    searchFilters: SearchFilters,
+    searchFilters: com.anisync.android.domain.SearchFilters,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     onSearch: () -> Unit,
@@ -313,7 +314,6 @@ private fun SearchInputField(
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
 
-    // PERF: Use derivedStateOf for computed values
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
 
     val placeholderTextRes by remember(mediaType) {
@@ -375,7 +375,7 @@ private fun SearchInputField(
 @Composable
 private fun SearchTrailingIcons(
     hasText: Boolean,
-    searchFilters: SearchFilters,
+    searchFilters: com.anisync.android.domain.SearchFilters,
     onClearText: () -> Unit,
     onShowFilterDialog: () -> Unit
 ) {
@@ -416,7 +416,6 @@ private fun SearchTrailingIcons(
 @Composable
 private fun DiscoverContent(
     uiState: DiscoverUiState,
-    mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     isRefreshing: Boolean,
     mainListState: LazyListState,
@@ -476,7 +475,7 @@ private fun DiscoverContent(
                                 onSectionSeeAllClick(
                                     trendingTitle,
                                     "trending",
-                                    mediaType
+                                    uiState.mediaType
                                 )
                             },
                             level = HeaderLevel.Section
@@ -485,9 +484,8 @@ private fun DiscoverContent(
                     }
 
                     item(key = "trending_carousel", contentType = "hero_carousel") {
-                        // PERF: Slice list with stable key
                         val trendingItems = remember(uiState.trending) { uiState.trending.take(10) }
-                        CinematicHeroCarousel(
+                        DiscoverHeroCarousel(
                             items = trendingItems,
                             onItemClick = onMediaClick,
                             titleLanguage = titleLanguage,
@@ -507,7 +505,7 @@ private fun DiscoverContent(
                                 onSectionSeeAllClick(
                                     popularTitle,
                                     "popular",
-                                    mediaType
+                                    uiState.mediaType
                                 )
                             },
                             level = HeaderLevel.Section
@@ -527,7 +525,7 @@ private fun DiscoverContent(
                     }
 
                     // Upcoming Section (Anime only)
-                    if (mediaType == MediaType.ANIME) {
+                    if (uiState.mediaType == MediaType.ANIME) {
                         item(key = "upcoming_header", contentType = "section_header") {
                             Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
@@ -537,7 +535,7 @@ private fun DiscoverContent(
                                     onSectionSeeAllClick(
                                         upcomingTitle,
                                         "upcoming",
-                                        mediaType
+                                        uiState.mediaType
                                     )
                                 },
                                 level = HeaderLevel.Section
@@ -565,7 +563,7 @@ private fun DiscoverContent(
                         SectionHeader(
                             title = tbaTitle,
                             iconColor = TbaIconColor,
-                            onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", mediaType) },
+                            onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", uiState.mediaType) },
                             level = HeaderLevel.Section
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -617,19 +615,17 @@ private fun DiscoverSearchOverlay(
     textFieldState: TextFieldState,
     mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    searchFilters: SearchFilters,
+    searchFilters: com.anisync.android.domain.SearchFilters,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     listState: LazyListState,
-    viewModel: DiscoverViewModel,
+    searchQuery: String,
+    searchResults: List<LibraryEntry>,
+    isSearching: Boolean,
+    onSearch: (String) -> Unit,
     onSearchItemClick: (Int) -> Unit,
     onShowFilterDialog: () -> Unit
 ) {
-    // PERF: Only collect search-related state when search overlay is potentially visible
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
-    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
-
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         inputField = {
@@ -640,7 +636,7 @@ private fun DiscoverSearchOverlay(
                 searchFilters = searchFilters,
                 coroutineScope = coroutineScope,
                 keyboardController = keyboardController,
-                onSearch = { viewModel.onSearch(textFieldState.text.toString()) },
+                onSearch = { onSearch(textFieldState.text.toString()) },
                 onShowFilterDialog = onShowFilterDialog
             )
         }
@@ -700,7 +696,6 @@ private fun SearchResultsContent(
                     key = { it.mediaId },
                     contentType = { "search_result" }
                 ) { item ->
-                    // PERF: Stable onClick reference per item
                     val onClick = remember(item.mediaId, onSearchItemClick) {
                         { onSearchItemClick(item.mediaId) }
                     }

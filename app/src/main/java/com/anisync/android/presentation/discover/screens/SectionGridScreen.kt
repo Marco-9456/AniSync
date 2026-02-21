@@ -1,6 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
-package com.anisync.android.presentation.discover
+package com.anisync.android.presentation.discover.screens
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -47,14 +45,12 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.PosterCard
-import com.anisync.android.presentation.discover.components.FormatFilterRow
+import com.anisync.android.presentation.discover.components.SearchFiltersRow
+import com.anisync.android.presentation.discover.state.SectionGridEvent
+import com.anisync.android.presentation.discover.viewmodel.SectionGridViewModel
 import com.anisync.android.presentation.util.AppMotion
 import kotlinx.coroutines.launch
 
-/**
- * Grid screen for displaying all media items from a Discover section.
- * Reuses the card pattern from LibraryScreen but without controls.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MediaGridContent(
@@ -123,7 +119,6 @@ fun MediaGridContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(items, key = { it.mediaId }) { item ->
-                            // Optimization: Use stable callback
                             PosterCard(
                                 item = item,
                                 titleLanguage = titleLanguage,
@@ -140,7 +135,7 @@ fun MediaGridContent(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SectionGridScreen(
     sectionTitle: String,
@@ -151,34 +146,24 @@ fun SectionGridScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-    val items by viewModel.items.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
-    val hasNextPage by viewModel.hasNextPage.collectAsStateWithLifecycle()
-    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val selectedFormat by viewModel.selectedFormat.collectAsStateWithLifecycle()
-    val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
     
-    // Grid state - we'll reset it manually when filter changes
-    // This prevents duplicate key crashes when switching between filters during fling animations
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
     
-    // Reset scroll position when filter changes to prevent key conflicts
-    LaunchedEffect(selectedFormat) {
+    LaunchedEffect(uiState.selectedFormat) {
         gridState.scrollToItem(0, 0)
     }
     
-    // Infinite scroll detection using snapshotFlow for proper reactivity
     LaunchedEffect(gridState) {
         snapshotFlow {
             val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val totalItems = gridState.layoutInfo.totalItemsCount
             lastVisibleItem >= totalItems - 6 && totalItems > 0
         }.collect { shouldLoadMore ->
-            if (shouldLoadMore && !viewModel.isLoadingMore.value && viewModel.hasNextPage.value && !viewModel.isLoading.value) {
-                viewModel.loadNextPage()
+            if (shouldLoadMore && !uiState.isLoadingMore && uiState.hasNextPage && !uiState.isLoading) {
+                viewModel.onEvent(SectionGridEvent.LoadNextPage)
             }
         }
     }
@@ -217,16 +202,13 @@ fun SectionGridScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Format filter row
-            FormatFilterRow(
-                mediaType = mediaType,
-                selectedFormat = selectedFormat,
+            SearchFiltersRow(
+                mediaType = uiState.mediaType,
+                selectedFormat = uiState.selectedFormat,
                 onFormatSelected = { format ->
-                    // Stop any ongoing scroll/fling animation before changing filter
-                    // This prevents race conditions where animation tries to use stale keys
                     coroutineScope.launch {
                         gridState.scrollToItem(0, 0) // Reset scroll to stop ongoing animations
-                        viewModel.setFormatFilter(format)
+                        viewModel.onEvent(SectionGridEvent.SetFormatFilter(format))
                     }
                 },
                 modifier = Modifier.padding(vertical = 8.dp)
@@ -234,17 +216,17 @@ fun SectionGridScreen(
             
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
-                    isLoading -> {
+                    uiState.isLoading -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
                     }
-                    errorMessage != null -> {
+                    uiState.errorMessage != null -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                            Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
                         }
                     }
-                    items.isEmpty() -> {
+                    uiState.items.isEmpty() -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 text = "No items found",
@@ -264,8 +246,7 @@ fun SectionGridScreen(
                             modifier = Modifier.fillMaxSize(),
                             state = gridState
                         ) {
-                            items(items, key = { it.mediaId }) { item ->
-                                // Optimization: Use stable callback
+                            items(uiState.items, key = { it.mediaId }) { item ->
                                 PosterCard(
                                     item = item,
                                     titleLanguage = titleLanguage,
@@ -281,8 +262,7 @@ fun SectionGridScreen(
                                 )
                             }
                             
-                            // Loading indicator at bottom
-                            if (isLoadingMore) {
+                            if (uiState.isLoadingMore) {
                                 item(span = { GridItemSpan(maxLineSpan) }) {
                                     Box(
                                         modifier = Modifier

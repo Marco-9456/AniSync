@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.discover.components
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -289,5 +290,83 @@ private fun getSeasonLabel(season: MediaSeason): String {
         MediaSeason.SUMMER -> stringResource(R.string.season_summer)
         MediaSeason.FALL -> stringResource(R.string.season_fall)
         MediaSeason.UNKNOWN__ -> ""
+    }
+}
+
+/**
+ * Horizontally scrollable row of filter chips for media format selection.
+ * Shows different options based on whether the current media type is Anime or Manga.
+ */
+@Composable
+fun SearchFiltersRow(
+    mediaType: MediaType,
+    selectedFormat: MediaFormat?,
+    onFormatSelected: (MediaFormat?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val formats = when (mediaType) {
+        MediaType.ANIME -> listOf(
+            MediaFormat.TV,
+            MediaFormat.MOVIE,
+            MediaFormat.OVA,
+            MediaFormat.SPECIAL,
+            MediaFormat.ONA
+        )
+        MediaType.MANGA -> listOf(
+            MediaFormat.MANGA,
+            MediaFormat.NOVEL,
+            MediaFormat.ONE_SHOT
+        )
+        else -> emptyList()
+    }
+
+    Row(
+        modifier = modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // "All" chip
+        FilterChip(
+            selected = selectedFormat == null,
+            onClick = { onFormatSelected(null) },
+            label = { Text("All") },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        )
+
+        // Format-specific chips
+        formats.forEach { format ->
+            FilterChip(
+                selected = selectedFormat == format,
+                onClick = { onFormatSelected(format) },
+                label = { Text(format.toDisplayString()) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
+    }
+}
+
+/**
+ * Convert MediaFormat enum to user-friendly display string.
+ */
+private fun MediaFormat.toDisplayString(): String {
+    return when (this) {
+        MediaFormat.TV -> "TV"
+        MediaFormat.TV_SHORT -> "TV Short"
+        MediaFormat.MOVIE -> "Movie"
+        MediaFormat.SPECIAL -> "Special"
+        MediaFormat.OVA -> "OVA"
+        MediaFormat.ONA -> "ONA"
+        MediaFormat.MUSIC -> "Music"
+        MediaFormat.MANGA -> "Manga"
+        MediaFormat.NOVEL -> "Novel"
+        MediaFormat.ONE_SHOT -> "One-shot"
+        else -> this.name
     }
 }

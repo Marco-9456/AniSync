@@ -55,7 +55,7 @@ import com.anisync.android.util.getTitle
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun CinematicHeroCarousel(
+fun DiscoverHeroCarousel(
     items: List<LibraryEntry>,
     onItemClick: (Int) -> Unit,
     titleLanguage: TitleLanguage,

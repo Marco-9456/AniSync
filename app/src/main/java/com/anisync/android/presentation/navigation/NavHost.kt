@@ -26,8 +26,9 @@ import com.anisync.android.presentation.details.screens.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.screens.MediaCharactersGridScreen
 import com.anisync.android.presentation.details.screens.MediaDetailsScreen
 import com.anisync.android.presentation.details.screens.MediaRelationsGridScreen
-import com.anisync.android.presentation.discover.DiscoverScreen
-import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.discover.screens.DiscoverScreen
+import com.anisync.android.presentation.discover.screens.FavoritesGridScreen
+import com.anisync.android.presentation.discover.screens.SectionGridScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
@@ -374,7 +375,7 @@ fun AniSyncNavHost(
                 val sectionGrid: SectionGrid = backStackEntry.toRoute()
 
                 if (sectionGrid.sectionType == "favorites") {
-                    com.anisync.android.presentation.discover.FavoritesGridScreen(
+                    FavoritesGridScreen(
                         sectionTitle = sectionGrid.sectionTitle,
                         onBackClick = { navController.popBackStack() },
                         onMediaClick = { mediaId ->

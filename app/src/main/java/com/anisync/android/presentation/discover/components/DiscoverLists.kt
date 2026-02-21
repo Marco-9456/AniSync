@@ -13,6 +13,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -59,12 +62,90 @@ import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.formatChaptersCount
 import com.anisync.android.presentation.util.formatEpisodesCount
+import com.anisync.android.presentation.util.shimmerEffect
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
 import java.util.Locale
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun HorizontalMediaList(
+    items: List<LibraryEntry>,
+    onItemClick: (Int) -> Unit,
+    titleLanguage: TitleLanguage,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
+    val placementSpec = AppMotion.rememberOffsetSpatialSpec()
+    val fadeSpec = AppMotion.rememberEffectsSpec()
+    
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(
+            items = items,
+            key = { it.mediaId },
+            contentType = { "media_card" }
+        ) { item ->
+            val onClick = remember(item.mediaId) { { onItemClick(item.mediaId) } }
+            DiscoverMediaCard(
+                item = item,
+                style = CardStyle.Standard(),
+                onClick = onClick,
+                titleLanguage = titleLanguage,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                transitionPrefix = "discover",
+                modifier = Modifier.animateItem(
+                    fadeInSpec = fadeSpec,
+                    fadeOutSpec = fadeSpec,
+                    placementSpec = placementSpec
+                )
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun SearchResultItem(
+    item: LibraryEntry,
+    onClick: () -> Unit,
+    titleLanguage: TitleLanguage,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
+) {
+    DiscoverMediaCard(
+        item = item,
+        style = CardStyle.ListItem,
+        onClick = onClick,
+        titleLanguage = titleLanguage,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+        transitionPrefix = "search"
+    )
+}
+
+@Composable
+fun DiscoverShimmer() {
+    Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+        Box(Modifier.fillMaxWidth().height(380.dp).clip(RoundedCornerShape(28.dp)).shimmerEffect())
+        Spacer(Modifier.height(48.dp))
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Box(Modifier.size(150.dp, 24.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            repeat(3) {
+                Box(Modifier.width(140.dp).height(200.dp).clip(RoundedCornerShape(16.dp)).shimmerEffect())
+            }
+        }
+    }
+}
 
 /**
  * Sealed class defining the card style variants for the unified DiscoverMediaCard.
