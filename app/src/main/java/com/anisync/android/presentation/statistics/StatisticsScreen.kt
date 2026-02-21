@@ -98,7 +98,11 @@ fun StatisticsScreen(
     viewModel: StatisticsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val isRefreshing by remember(uiState) {
+        derivedStateOf {
+            (uiState as? StatisticsUiState.Success)?.isRefreshing == true
+        }
+    }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
@@ -173,7 +177,7 @@ fun StatisticsScreen(
     ) { innerPadding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = { if (canRefresh) viewModel.refresh() },
+            onRefresh = { if (canRefresh) viewModel.onAction(StatisticsAction.Refresh) },
             state = pullToRefreshState,
             modifier = Modifier
                 .fillMaxSize()
@@ -202,7 +206,7 @@ fun StatisticsScreen(
                 is StatisticsUiState.Error -> {
                     ErrorState(
                         message = state.message,
-                        onRetry = { viewModel.retry() },
+                        onRetry = { viewModel.onAction(StatisticsAction.Retry) },
                         modifier = Modifier.fillMaxSize()
                     )
                 }

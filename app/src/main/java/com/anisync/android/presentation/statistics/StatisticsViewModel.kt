@@ -7,18 +7,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.anisync.android.domain.AnimeStatistics
-import com.anisync.android.domain.FormatStat
-import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.MangaStatistics
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StatisticsRepository
-import com.anisync.android.domain.StudioStat
 import com.anisync.android.presentation.navigation.Statistics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -39,11 +37,15 @@ class StatisticsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<StatisticsUiState>(StatisticsUiState.Loading)
     val uiState: StateFlow<StatisticsUiState> = _uiState.asStateFlow()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
     init {
         loadStatistics()
+    }
+    
+    fun onAction(action: StatisticsAction) {
+        when (action) {
+            is StatisticsAction.Refresh -> refresh()
+            is StatisticsAction.Retry -> loadStatistics()
+        }
     }
 
     private fun loadStatistics() {
@@ -53,12 +55,14 @@ class StatisticsViewModel @Inject constructor(
         }
     }
 
-    fun refresh() {
+    private fun refresh() {
         viewModelScope.launch {
-            if (_isRefreshing.value) return@launch
-            _isRefreshing.value = true
-            fetchAndProcessData()
-            _isRefreshing.value = false
+            val currentState = _uiState.value
+            if (currentState is StatisticsUiState.Success) {
+                if (currentState.isRefreshing) return@launch
+                _uiState.update { currentState.copy(isRefreshing = true) }
+                fetchAndProcessData()
+            }
         }
     }
 
@@ -75,7 +79,7 @@ class StatisticsViewModel @Inject constructor(
                     StatisticsUiModel(animeUi, mangaUi)
                 }
 
-                _uiState.value = StatisticsUiState.Success(processedData)
+                _uiState.value = StatisticsUiState.Success(data = processedData, isRefreshing = false)
 
                 val duration = SystemClock.elapsedRealtime() - startTime
                 Log.d("StatisticsPerf", "Data fetch and process took: ${duration}ms")
@@ -132,51 +136,4 @@ class StatisticsViewModel @Inject constructor(
             meanScore = stats.meanScore.toDouble() // Convert Float to Double
         )
     }
-
-    fun retry() {
-        loadStatistics()
-    }
 }
-
-// MARK: - UI States & Models
-
-sealed interface StatisticsUiState {
-    data object Loading : StatisticsUiState
-    data class Success(val data: StatisticsUiModel) : StatisticsUiState
-    data class Error(val message: String) : StatisticsUiState
-}
-
-data class StatisticsUiModel(
-    val animeStats: AnimeStatisticsUi,
-    val mangaStats: MangaStatisticsUi?
-)
-
-data class AnimeStatisticsUi(
-    val totalCount: Int,
-    val daysWatched: Double, // Kept as Double for consistency/formatting
-    val meanScore: Double,   // Changed to Double to match daysWatched and formatter
-    val episodesWatched: Int,
-    val scoreDistribution: List<ScoreUiModel>,
-    val genreDistribution: List<GenreStat>,
-    val formatDistribution: List<FormatStat>,
-    val releaseYearDistribution: List<YearUiModel>,
-    val studioDistribution: List<StudioStat>
-)
-
-data class MangaStatisticsUi(
-    val totalCount: Int,
-    val chaptersRead: Int,
-    val meanScore: Double // Changed to Double
-)
-
-data class ScoreUiModel(
-    val score: Int,
-    val count: Int,
-    val heightFraction: Float
-)
-
-data class YearUiModel(
-    val year: Int,
-    val count: Int,
-    val heightFraction: Float
-)

@@ -101,7 +101,7 @@ fun ProfileScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
+                viewModel.onAction(ProfileAction.Refresh)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -140,7 +140,7 @@ fun ProfileScreen(
                 is ProfileUiState.Error -> {
                     ErrorState(
                         message = state.message,
-                        onRetry = { viewModel.refresh() }
+                        onRetry = { viewModel.onAction(ProfileAction.Refresh) }
                     )
                 }
 
@@ -162,9 +162,7 @@ fun ProfileScreen(
                             initialAbout = state.profile.about ?: "",
                             onDismiss = onHideEditProfile,
                             onSave = { about ->
-                                viewModel.updateAbout(about) { _ ->
-                                    // Handle success/error feedback
-                                }
+                                viewModel.onAction(ProfileAction.UpdateAbout(about))
                                 showEditProfileDialog = false
                             }
                         )

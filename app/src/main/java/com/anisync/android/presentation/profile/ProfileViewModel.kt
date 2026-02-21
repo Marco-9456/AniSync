@@ -4,14 +4,10 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
-import com.anisync.android.data.NotificationPreferences
-import com.anisync.android.data.StreamingService
-import com.anisync.android.data.ThemeMode
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.worker.NotificationDebugService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,35 +19,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed interface ProfileUiState {
-    data object Loading : ProfileUiState
-    data class Success(val profile: UserProfile) : ProfileUiState
-    data class Error(val message: String) : ProfileUiState
-}
-
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val profileRepository: ProfileRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
-    private val notificationPreferences: NotificationPreferences,
-    private val notificationScheduler: com.anisync.android.worker.NotificationScheduler,
-    private val notificationDebugService: NotificationDebugService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // Settings from AppSettings
+    // Settings from AppSettings (needed for display in profile)
     val titleLanguage: StateFlow<com.anisync.android.data.TitleLanguage> = appSettings.titleLanguage
-    val themeMode: StateFlow<ThemeMode> = appSettings.themeMode
-    val hapticEnabled: StateFlow<Boolean> = appSettings.hapticEnabled
-    val isNotificationsEnabled: StateFlow<Boolean> = appSettings.notificationsEnabled
-    val preferredStreamingService: StateFlow<StreamingService> = appSettings.preferredStreamingService
-
-    // Granular notification settings from NotificationPreferences
-    val watchingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.watchingEnabled
-    val planningNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.planningEnabled
-    val upcomingNotificationsEnabled: StateFlow<Boolean> = notificationPreferences.upcomingEnabled
 
     /**
      * Observe profile from local cache via Flow.
@@ -74,10 +52,17 @@ class ProfileViewModel @Inject constructor(
 
     init {
         // Trigger initial refresh
-        refresh()
+        onAction(ProfileAction.Refresh)
     }
 
-    fun refresh() {
+    fun onAction(action: ProfileAction) {
+        when (action) {
+            is ProfileAction.Refresh -> refresh()
+            is ProfileAction.UpdateAbout -> updateAbout(action.about)
+        }
+    }
+
+    private fun refresh() {
         viewModelScope.launch {
             when (val result = profileRepository.refreshProfile("")) {
                 is Result.Success -> {
@@ -90,10 +75,10 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateAbout(about: String, onUnsuccessful: (String) -> Unit) {
+    private fun updateAbout(about: String) {
         viewModelScope.launch {
             if (profileRepository.updateAbout(about) is Result.Error) {
-                onUnsuccessful("Failed to update profile")
+                // In a real app, send a one-off UI event (e.g. Snackbar) here
             }
         }
     }
@@ -104,67 +89,4 @@ class ProfileViewModel @Inject constructor(
             onComplete()
         }
     }
-
-    fun setThemeMode(mode: ThemeMode) {
-        appSettings.setThemeMode(mode)
-    }
-
-    fun setTitleLanguage(language: com.anisync.android.data.TitleLanguage) {
-        appSettings.setTitleLanguage(language)
-    }
-
-    fun setHapticEnabled(enabled: Boolean) {
-        appSettings.setHapticEnabled(enabled)
-    }
-    
-    fun setPreferredStreamingService(service: StreamingService) {
-        appSettings.setPreferredStreamingService(service)
-    }
-
-    fun toggleNotifications(enabled: Boolean) {
-        viewModelScope.launch {
-            appSettings.setNotificationsEnabled(enabled)
-
-            if (enabled) {
-                notificationScheduler.schedule()
-            } else {
-                notificationScheduler.cancel()
-            }
-        }
-    }
-
-    // Granular notification settings
-    fun setWatchingNotificationsEnabled(enabled: Boolean) {
-        notificationPreferences.setWatchingEnabled(enabled)
-    }
-
-    fun setPlanningNotificationsEnabled(enabled: Boolean) {
-        notificationPreferences.setPlanningEnabled(enabled)
-    }
-
-    fun setUpcomingNotificationsEnabled(enabled: Boolean) {
-        notificationPreferences.setUpcomingEnabled(enabled)
-    }
-
-    // Debug notification methods
-    fun sendTestWatchingNotification() {
-        notificationDebugService.sendTestWatchingNotification()
-    }
-
-    fun sendTestPlanningNotification() {
-        notificationDebugService.sendTestPlanningNotification()
-    }
-
-    fun sendTestAdvanceNotification() {
-        notificationDebugService.sendTestAdvanceNotification()
-    }
-
-    fun sendTestImminentNotification() {
-        notificationDebugService.sendTestImminentNotification()
-    }
-
-    fun clearAllNotifications() {
-        notificationDebugService.clearAllNotifications()
-    }
 }
-
