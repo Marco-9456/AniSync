@@ -2,8 +2,8 @@ package com.anisync.android.presentation.settings
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -23,7 +23,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,10 +33,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.VolunteerActivism
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,7 +78,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import coil.compose.AsyncImage
+import coil.imageLoader
 import coil.request.ImageRequest
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
@@ -119,12 +136,23 @@ private class ExpressiveMorphShape(
 
 private enum class HeroState { Idle, Pressed, Revealed }
 
+private const val AVATAR_URL = "https://avatars.githubusercontent.com/u/41828058?v=4"
+
 @Composable
 private fun AboutHero(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     var heroState by remember { mutableStateOf(HeroState.Idle) }
+
+    // Preload the avatar image to ensure it's instantly available when the easter egg triggers
+    LaunchedEffect(Unit) {
+        val request = ImageRequest.Builder(context)
+            .data(AVATAR_URL)
+            .build()
+        context.imageLoader.enqueue(request)
+    }
 
     val transition = updateTransition(targetState = heroState, label = "HeroTransition")
 
@@ -157,10 +185,16 @@ private fun AboutHero(
         if (state == HeroState.Revealed) 180f else 0f
     }
 
-    val containerColor = if (heroState == HeroState.Revealed) {
-        MaterialTheme.colorScheme.tertiaryContainer
-    } else {
-        MaterialTheme.colorScheme.primaryContainer
+    // Use animateColor instead of an instant swap for higher polish
+    val containerColor by transition.animateColor(
+        label = "containerColor",
+        transitionSpec = { tween(durationMillis = 400, easing = FastOutSlowInEasing) }
+    ) { state ->
+        if (state == HeroState.Revealed) {
+            MaterialTheme.colorScheme.tertiaryContainer
+        } else {
+            MaterialTheme.colorScheme.primaryContainer
+        }
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "passive")
@@ -213,11 +247,11 @@ private fun AboutHero(
                 }
         ) {
             // Background Shape
+            // We use graphicsLayer for rotation to bypass recomposition entirely
             Box(
                 modifier = Modifier
                     .size(115.dp)
                     .align(Alignment.Center)
-                    // Rotate inversely when revealed to sync with the un-flipped content
                     .rotate(if (heroState == HeroState.Revealed) -spinRotation else 0f)
                     .clip(ExpressiveMorphShape(vertices, roundness))
                     .background(containerColor)
@@ -243,7 +277,6 @@ private fun AboutHero(
                         .graphicsLayer { this.rotationY = 180f },
                     contentAlignment = Alignment.Center
                 ) {
-                    val avatarUrl = "https://i.ibb.co/6cqF2CfY/Adobe-Express-file.png"
                     val imageScale = 1.3f
                     val yOffset = (-12).dp
 
@@ -256,7 +289,7 @@ private fun AboutHero(
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(avatarUrl)
+                                .data(AVATAR_URL)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = null,
@@ -272,7 +305,7 @@ private fun AboutHero(
                     // Head Layer: Pops out of the shape
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(avatarUrl)
+                            .data(AVATAR_URL)
                             .crossfade(true)
                             .build(),
                         contentDescription = "Developer Avatar",
@@ -328,13 +361,46 @@ fun AboutScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var showSponsorSheet by remember { mutableStateOf(false) }
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        AboutHero(modifier = Modifier.padding(vertical = 40.dp))
+        AboutHero(modifier = Modifier.padding(top = 40.dp, bottom = 16.dp))
+
+        ElevatedButton(
+            onClick = { showSponsorSheet = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .height(56.dp), // A slightly taller, more prominent button height
+            shape = RoundedCornerShape(
+                topStart = 24.dp,
+                topEnd = 24.dp,
+                bottomStart = 24.dp,
+                bottomEnd = 8.dp // Creates a subtle 'chat bubble' or dynamic activism shape
+            ),
+            colors = ButtonDefaults.elevatedButtonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.VolunteerActivism,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Sponsor the Project",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         SettingsGroup {
             SettingsItem(
@@ -369,11 +435,167 @@ fun AboutScreen(
             )
         }
     }
+
+    if (showSponsorSheet) {
+        SponsorBottomSheet(
+            onDismissRequest = { showSponsorSheet = false },
+            onSponsorClick = {
+                showSponsorSheet = false
+                context.launchUrl("https://github.com/sponsors/Marco-9456")
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SponsorBottomSheet(
+    onDismissRequest: () -> Unit,
+    onSponsorClick: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.VolunteerActivism,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(48.dp)
+                    .padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "Support AniSync",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "AniSync is a passion project built entirely in my free time. If you enjoy the app, consider supporting its development. Your contribution helps cover server costs and keeps the project growing!",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Developer Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Static easter egg avatar
+                    StaticDeveloperAvatar(modifier = Modifier.size(56.dp))
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Mohammed",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = "Lead Developer",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+
+                    Button(
+                        onClick = onSponsorClick,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text("Sponsor")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+    }
+}
+
+@Composable
+private fun StaticDeveloperAvatar(modifier: Modifier = Modifier) {
+    BoxWithConstraints(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        val imageScale = 1.3f
+        val yOffset = maxWidth * (-12f / 115f)
+
+        // Body Layer
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(ExpressiveMorphShape(vertices = 12f, roundness = 0.2f))
+                .background(MaterialTheme.colorScheme.tertiaryContainer)
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(AVATAR_URL)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .scale(imageScale)
+                    .offset(y = yOffset)
+            )
+        }
+
+        // Head Layer (Popping out)
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(AVATAR_URL)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(imageScale)
+                .offset(y = yOffset)
+                .clip(CircleShape)
+                .drawWithContent {
+                    clipRect(bottom = size.height * 0.45f) {
+                        this@drawWithContent.drawContent()
+                    }
+                }
+        )
+    }
 }
 
 private fun Context.launchUrl(url: String) {
     try {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         startActivity(intent)
     } catch (e: Exception) {
         e.printStackTrace()
