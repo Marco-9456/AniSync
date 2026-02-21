@@ -74,8 +74,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -83,6 +83,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
@@ -636,9 +637,8 @@ fun PageHeaderSection(
         details.trailer?.thumbnail ?: details.bannerUrl ?: details.coverUrl
     }
 
-    // Calculate if we need to zoom
-    // Standard YouTube thumbnails (hqdefault) often have black letterbox bars for 16:9 content.
-    // We apply a scale to crop these out if we are using the trailer thumbnail.
+    // Calculate if we need a custom crop ratio
+    // Standard YouTube thumbnails (hqdefault) usually have black letterbox bars for 16:9 content.
     val needsZoom = remember(details, bannerModel) {
         bannerModel == details.trailer?.thumbnail
     }
@@ -700,17 +700,37 @@ private fun BannerImage(
     needsZoom: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val contentScale = remember(needsZoom) {
+        if (needsZoom) {
+            object : ContentScale {
+                override fun computeScaleFactor(srcSize: Size, dstSize: Size): ScaleFactor {
+                    if (srcSize.width == 0f || srcSize.height == 0f) return ScaleFactor(1f, 1f)
+                    // YouTube standard thumbnails (hqdefault.jpg) are 4:3 with 16:9 content letterboxed (black bars).
+                    // We calculate the exact mathematical scale needed to fit the 16:9 content cleanly
+                    // into the destination bounds, completely avoiding arbitrary zooming or stretching.
+                    val contentHeight = srcSize.width * (9f / 16f)
+                    val widthScale = dstSize.width / srcSize.width
+                    val heightScale = dstSize.height / contentHeight
+
+                    // Use maxOf to ensure it fills the space completely, exactly like ContentScale.Crop
+                    val scale = maxOf(widthScale, heightScale)
+                    return ScaleFactor(scale, scale)
+                }
+            }
+        } else {
+            ContentScale.Crop
+        }
+    }
+
     Box(modifier = modifier.clip(RectangleShape)) {
         AsyncImage(
             model = model,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
             alignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                // Apply the zoom hack if we are falling back to a trailer thumbnail
-                .then(if (needsZoom) Modifier.scale(1.3f) else Modifier)
         )
     }
 }
