@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.components
+package com.anisync.android.presentation.library.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

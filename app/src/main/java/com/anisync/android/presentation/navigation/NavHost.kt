@@ -29,7 +29,7 @@ import com.anisync.android.presentation.details.screens.MediaRelationsGridScreen
 import com.anisync.android.presentation.discover.screens.DiscoverScreen
 import com.anisync.android.presentation.discover.screens.FavoritesGridScreen
 import com.anisync.android.presentation.discover.screens.SectionGridScreen
-import com.anisync.android.presentation.library.LibraryScreen
+import com.anisync.android.presentation.library.screens.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.settings.AboutScreen

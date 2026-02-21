@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.components
+package com.anisync.android.presentation.library.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.presentation.library.LibrarySort
+import com.anisync.android.presentation.library.state.LibrarySort
 
 /**
  * Bottom sheet component for displaying library sorting options with direction toggle.

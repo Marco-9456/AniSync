@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.library
+package com.anisync.android.presentation.library.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -86,18 +86,21 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.components.CompletedCardConfig
-import com.anisync.android.presentation.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.MediaTypeSelector
-import com.anisync.android.presentation.components.SkeletonGrid
-import com.anisync.android.presentation.components.SkeletonList
-import com.anisync.android.presentation.components.SortBottomSheet
-import com.anisync.android.presentation.components.SortIcon
 import com.anisync.android.presentation.components.WatchingCardConfig
+import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.library.components.EmptyLibraryTabState
 import com.anisync.android.presentation.library.components.LibraryListCard
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
+import com.anisync.android.presentation.library.components.SkeletonGrid
+import com.anisync.android.presentation.library.components.SkeletonList
+import com.anisync.android.presentation.library.components.SortBottomSheet
+import com.anisync.android.presentation.library.components.SortIcon
+import com.anisync.android.presentation.library.state.LibraryEvent
+import com.anisync.android.presentation.library.state.LibrarySort
+import com.anisync.android.presentation.library.viewmodel.LibraryViewModel
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
@@ -121,10 +124,10 @@ fun LibraryScreen(
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val mediaType by viewModel.mediaType.collectAsStateWithLifecycle()
-    val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
-    val isAscending by viewModel.isAscending.collectAsStateWithLifecycle()
-    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
+    val mediaType = uiState.mediaType
+    val sortOption = uiState.sortOption
+    val isAscending = uiState.isAscending
+    val titleLanguage = uiState.titleLanguage
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -158,19 +161,20 @@ fun LibraryScreen(
     }
 
     val handleIncrement =
-        remember(viewModel) { { mediaId: Int -> viewModel.incrementProgress(mediaId) } }
+        remember(viewModel) { { mediaId: Int -> viewModel.onEvent(LibraryEvent.IncrementProgress(mediaId)) } }
     val handleDecrement =
-        remember(viewModel) { { mediaId: Int -> viewModel.decrementProgress(mediaId) } }
+        remember(viewModel) { { mediaId: Int -> viewModel.onEvent(LibraryEvent.DecrementProgress(mediaId)) } }
     val handleEdit = remember { { entry: LibraryEntry -> editingEntry = entry } }
 
     LaunchedEffect(Unit) {
-        viewModel.onScreenVisible()
+        viewModel.onEvent(LibraryEvent.OnScreenVisible)
     }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
                 is LibraryEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                else -> {}
             }
         }
     }
@@ -178,7 +182,7 @@ fun LibraryScreen(
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .debounce(300.milliseconds)
-            .collect { viewModel.onSearchQueryChange(it) }
+            .collect { viewModel.onEvent(LibraryEvent.OnSearchQueryChange(it)) }
     }
 
     LaunchedEffect(searchBarState.currentValue) {
@@ -201,13 +205,17 @@ fun LibraryScreen(
     }
 
     val gridScrollStates = statuses.associateWith { status ->
-        rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+        androidx.compose.runtime.key(status.name + "Grid") {
+            rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+        }
     }
     val listScrollStates = statuses.associateWith { status ->
-        rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+        androidx.compose.runtime.key(status.name + "List") {
+            rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+        }
     }
 
-    val inputField = remember {
+    val inputField = remember(isAscending) {
         @Composable {
             val currentSearchBarValue = searchBarState.currentValue
             val currentIsSearchQueryEmpty = isSearchQueryEmpty
@@ -298,7 +306,7 @@ fun LibraryScreen(
 
                 MediaTypeSelector(
                     selected = mediaType,
-                    onSelect = viewModel::onMediaTypeChange,
+                    onSelect = { viewModel.onEvent(LibraryEvent.OnMediaTypeChange(it)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -346,16 +354,16 @@ fun LibraryScreen(
                 .padding(innerPadding)
                 .padding(bottom = 80.dp)
         ) {
-            when (val state = uiState) {
-                is LibraryUiState.Loading -> {
+            when {
+                uiState.isLoading -> {
                     if (isGridView) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
                 }
 
-                is LibraryUiState.Error -> ErrorState(
-                    message = state.message,
-                    onRetry = { viewModel.refresh() })
+                uiState.errorMessage != null -> ErrorState(
+                    message = uiState.errorMessage!!,
+                    onRetry = { viewModel.onEvent(LibraryEvent.Refresh) })
 
-                is LibraryUiState.Success -> {
+                else -> {
                     val motionScheme = MaterialTheme.motionScheme
                     val spatialSpec =
                         remember(motionScheme) { motionScheme.defaultSpatialSpec<IntOffset>() }
@@ -367,7 +375,7 @@ fun LibraryScreen(
                         modifier = Modifier.fillMaxSize()
                     ) { pageIndex ->
                         val pageStatus = statuses[pageIndex]
-                        val entries = state.groupedEntries[pageStatus] ?: emptyList()
+                        val entries = uiState.groupedEntries[pageStatus] ?: emptyList()
 
                         val gridState = gridScrollStates[pageStatus]!!
                         val listState = listScrollStates[pageStatus]!!
@@ -401,7 +409,7 @@ fun LibraryScreen(
                                     ) {
                                         items(
                                             items = entries,
-                                            key = { it.id },
+                                            key = { "grid_${it.id}" },
                                             contentType = { "LibraryEntry" }
                                         ) { entry ->
                                             LibraryMediaCard(
@@ -436,7 +444,7 @@ fun LibraryScreen(
                                     ) {
                                         items(
                                             items = entries,
-                                            key = { it.id },
+                                            key = { "list_${it.id}" },
                                             contentType = { "LibraryEntry" }
                                         ) { entry ->
                                             LibraryListCard(
@@ -476,8 +484,8 @@ fun LibraryScreen(
             state = searchBarState,
             inputField = inputField
         ) {
-            when (val state = uiState) {
-                is LibraryUiState.Loading -> {
+            when {
+                uiState.isLoading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = stringResource(R.string.loading),
@@ -486,17 +494,17 @@ fun LibraryScreen(
                     }
                 }
 
-                is LibraryUiState.Error -> {
+                uiState.errorMessage != null -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = state.message,
+                            text = uiState.errorMessage!!,
                             color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
 
-                is LibraryUiState.Success -> {
-                    if (state.entries.isEmpty() && !isSearchQueryEmpty) {
+                else -> {
+                    if (uiState.entries.isEmpty() && !isSearchQueryEmpty) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -513,7 +521,11 @@ fun LibraryScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.entries, key = { it.id }) { entry ->
+                            items(
+                                items = uiState.entries,
+                                key = { "search_${it.id}" },
+                                contentType = { "SearchResult" }
+                            ) { entry ->
                                 LibrarySearchResultCard(
                                     entry = entry,
                                     mediaType = mediaType,
@@ -536,7 +548,7 @@ fun LibraryScreen(
         isAscending = isAscending,
         onOptionSelected = { sort, ascending ->
             haptic.click()
-            viewModel.onSortOptionChange(sort, ascending)
+            viewModel.onEvent(LibraryEvent.OnSortOptionChange(sort, ascending))
         }
     )
 
@@ -551,11 +563,11 @@ fun LibraryScreen(
             entry = entry,
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->
-                viewModel.updateEntry(updatedEntry)
+                viewModel.onEvent(LibraryEvent.UpdateEntry(updatedEntry))
                 editingEntry = null
             },
             onDelete = {
-                viewModel.deleteEntry(entry.id, entry.mediaId)
+                viewModel.onEvent(LibraryEvent.DeleteEntry(entry.id, entry.mediaId))
                 editingEntry = null
             }
         )

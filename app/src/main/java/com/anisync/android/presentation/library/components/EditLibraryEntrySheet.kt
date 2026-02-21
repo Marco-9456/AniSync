@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.components
+package com.anisync.android.presentation.library.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
