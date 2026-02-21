@@ -18,11 +18,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform">
-  <img src="https://img.shields.io/badge/Min%20SDK-26-blue" alt="Min SDK">
-  <img src="https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin">
-  <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white" alt="Compose">
-  <img src="https://img.shields.io/badge/License-GPLv3-blue" alt="License">
+  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform"></a>
+  <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue" alt="Min SDK"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white" alt="Compose"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue" alt="License"></a>
 </p>
 
 ---
@@ -223,20 +223,20 @@ Comprehensive documentation is available in the `docs/` folder:
 
 | Document | Description |
 | --- | --- |
-| **[ARCHITECTURE.md](https://www.google.com/search?q=docs/ARCHITECTURE.md)** | System architecture, patterns, and layer responsibilities. |
-| **[DATABASE.md](https://www.google.com/search?q=docs/DATABASE.md)** | Room database schema, migrations, and caching strategy. |
-| **[API.md](https://www.google.com/search?q=docs/API.md)** | GraphQL integration, authentication, and API reference. |
-| **[NAVIGATION.md](https://www.google.com/search?q=docs/NAVIGATION.md)** | Screen flows, navigation graph, and deep links. |
-| **[WIDGETS.md](https://www.google.com/search?q=docs/WIDGETS.md)** | Widget architecture and notification system. |
-| **[CONTRIBUTING.md](https://www.google.com/search?q=docs/CONTRIBUTING.md)** | Contribution guidelines and code style. |
-| **[CHANGELOG.md](https://www.google.com/search?q=docs/CHANGELOG.md)** | Version history and release notes. |
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System architecture, patterns, and layer responsibilities. |
+| **[DATABASE.md](docs/DATABASE.md)** | Room database schema, migrations, and caching strategy. |
+| **[API.md](docs/API.md)** | GraphQL integration, authentication, and API reference. |
+| **[NAVIGATION.md](docs/NAVIGATION.md)** | Screen flows, navigation graph, and deep links. |
+| **[WIDGETS.md](docs/WIDGETS.md)** | Widget architecture and notification system. |
+| **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** | Contribution guidelines and code style. |
+| **[CHANGELOG.md](docs/CHANGELOG.md)** | Version history and release notes. |
 
 ### ⚡ Quick Links
 
-* **Adding a new screen?** → See [NAVIGATION.md](https://www.google.com/search?q=docs/NAVIGATION.md)
-* **Changing database schema?** → See [DATABASE.md](https://www.google.com/search?q=docs/DATABASE.md) ⚠️
-* **Understanding data flow?** → See [ARCHITECTURE.md](https://www.google.com/search?q=docs/ARCHITECTURE.md)
-* **Working with widgets?** → See [WIDGETS.md](https://www.google.com/search?q=docs/WIDGETS.md)
+* **Adding a new screen?** → See [NAVIGATION.md](docs/NAVIGATION.md)
+* **Changing database schema?** → See [DATABASE.md](docs/DATABASE.md) ⚠️
+* **Understanding data flow?** → See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+* **Working with widgets?** → See [WIDGETS.md](docs/WIDGETS.md)
 
 ---
 
@@ -267,7 +267,7 @@ AniSync/
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](https://www.google.com/search?q=docs/CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ### 🏃‍♂️ Quick Start for Contributors
 
@@ -313,6 +313,7 @@ I make apps for fun, buy me a coffee if you love them like I do!
 
 * [AniList](https://anilist.co) for providing the excellent GraphQL API.
 * [Material Design 3](https://m3.material.io) for the design system.
+* [Seal](https://github.com/JunkFood02/Seal) and [ReadYou](https://github.com/ReadYouApp/ReadYou) for serving as great UI/UX inspiration during development.
 * The Android and Kotlin communities for amazing tools and libraries.
 
 ---
