@@ -88,6 +88,20 @@
     <string name="stat_status">الحالة</string>
     <string name="stat_source">المصدر</string>
     <string name="source_original">أصلي</string>
+    <string name="source_manga">مانجا</string>
+    <string name="source_light_novel">رواية خفيفة</string>
+    <string name="source_visual_novel">رواية مرئية</string>
+    <string name="source_video_game">لعبة فيديو</string>
+    <string name="source_other">أخرى</string>
+    <string name="source_novel">رواية</string>
+    <string name="source_doujinshi">دوجينشي</string>
+    <string name="source_anime">أنمي</string>
+    <string name="source_web_novel">رواية ويب</string>
+    <string name="source_live_action">حركة حية</string>
+    <string name="source_game">لعبة</string>
+    <string name="source_comic">قصة مصورة</string>
+    <string name="source_multimedia_project">مشروع وسائط متعددة</string>
+    <string name="source_picture_book">كتاب مصور</string>
     <string name="error_something_went_wrong">حدث خطأ ما</string>
     <string name="action_go_back">الرجوع</string>
     <string name="synopsis_show_less">عرض أقل</string>
@@ -109,8 +123,15 @@
     <string name="action_favorite">المفضلة</string>
     <string name="action_share">مشاركة</string>
     <string name="stat_season">الموسم</string>
+    <string name="stat_duration">المدة</string>
+    <string name="stat_aired">تاريخ العرض</string>
+    <string name="stat_studio">الاستوديو</string>
     <string name="episodes_tba">سيُعلن لاحقًا</string>
     <string name="media_status_upcoming">قادم</string>
+    <string name="section_tags">الوسوم</string>
+    <string name="episodes_suffix">حلقات</string>
+    <string name="chapters_suffix">فصول</string>
+    <string name="minutes_suffix">دقيقة</string>
 
     <!-- Profile Screen -->
     <string name="profile_id">المعرّف: %1$d</string>
@@ -161,6 +182,8 @@
     <string name="settings_notifications_desc">تنبيهات الحلقات، تذكيرات الخطط</string>
     <string name="settings_storage">التخزين</string>
     <string name="settings_storage_subtitle">ذاكرة التخزين المؤقت: %1$s</string>
+    <string name="settings_app_links">فتح روابط التطبيق</string>
+    <string name="settings_app_links_desc">تمكين فتح روابط anilist.co مباشرة في التطبيق</string>
     <string name="settings_account">الحساب</string>
     <string name="settings_account_desc">الملف الشخصي، تسجيل الخروج</string>
     <string name="settings_about">حول التطبيق</string>
@@ -432,4 +455,5 @@
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">تم تحديث التقدم إلى %1$d</string>
     <string name="a11y_error_occurred">خطأ: %1$s</string>
+    <string name="action_play_trailer">تشغيل العرض الدعائي</string>
 </resources>

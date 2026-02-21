@@ -88,6 +88,20 @@
     <string name="stat_status">Status</string>
     <string name="stat_source">Quelle</string>
     <string name="source_original">Original</string>
+    <string name="source_manga">Manga</string>
+    <string name="source_light_novel">Light Novel</string>
+    <string name="source_visual_novel">Visual Novel</string>
+    <string name="source_video_game">Videospiel</string>
+    <string name="source_other">Andere</string>
+    <string name="source_novel">Roman</string>
+    <string name="source_doujinshi">Doujinshi</string>
+    <string name="source_anime">Anime</string>
+    <string name="source_web_novel">Web-Roman</string>
+    <string name="source_live_action">Live-Action</string>
+    <string name="source_game">Spiel</string>
+    <string name="source_comic">Comic</string>
+    <string name="source_multimedia_project">Multimedia-Projekt</string>
+    <string name="source_picture_book">Bilderbuch</string>
     <string name="error_something_went_wrong">Etwas ist schiefgelaufen</string>
     <string name="action_go_back">Zurück</string>
     <string name="synopsis_show_less">Weniger anzeigen</string>
@@ -109,8 +123,15 @@
     <string name="action_favorite">Favorit</string>
     <string name="action_share">Teilen</string>
     <string name="stat_season">Saison</string>
+    <string name="stat_duration">Dauer</string>
+    <string name="stat_aired">Ausgestrahlt</string>
+    <string name="stat_studio">Studio</string>
     <string name="episodes_tba">TBA</string>
     <string name="media_status_upcoming">Demnächst</string>
+    <string name="section_tags">Tags</string>
+    <string name="episodes_suffix">Eps</string>
+    <string name="chapters_suffix">Kap</string>
+    <string name="minutes_suffix">Min.</string>
 
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>
@@ -161,6 +182,8 @@
     <string name="settings_notifications_desc">Episodenhinweise, Planungserinnerungen</string>
     <string name="settings_storage">Speicher</string>
     <string name="settings_storage_subtitle">Cache: %1$s</string>
+    <string name="settings_app_links">App-Links öffnen</string>
+    <string name="settings_app_links_desc">Öffnen von anilist.co-Links direkt in der App aktivieren</string>
     <string name="settings_account">Konto</string>
     <string name="settings_account_desc">Profil, Abmelden</string>
     <string name="settings_about">Über</string>
@@ -432,4 +455,5 @@
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">Fortschritt aktualisiert auf %1$d</string>
     <string name="a11y_error_occurred">Fehler: %1$s</string>
+    <string name="action_play_trailer">Trailer ansehen</string>
 </resources>

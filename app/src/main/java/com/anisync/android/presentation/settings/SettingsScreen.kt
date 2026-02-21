@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +52,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.presentation.components.AppLinksPromptDialog
 
 /**
  * Data class representing a searchable settings item.
@@ -84,14 +86,20 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val cacheSize by viewModel.cacheSize.collectAsStateWithLifecycle()
     val keyboardController = LocalSoftwareKeyboardController.current
-    
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var showAppLinksDialog by remember { mutableStateOf(false) }
+
+    if (showAppLinksDialog) {
+        AppLinksPromptDialog(onDismissRequest = { showAppLinksDialog = false })
+    }
 
     // Refresh cache size when this screen is displayed
     LaunchedEffect(Unit) {
         viewModel.refreshCacheSize()
     }
-    
+
     // Define all settings items with search keywords
     val settingsItems = remember(cacheSize) {
         listOf(
@@ -100,7 +108,20 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Palette,
                 titleResId = R.string.settings_look_and_feel,
                 subtitleResId = R.string.settings_look_and_feel_desc,
-                searchKeywords = listOf("look", "feel", "theme", "dark", "light", "appearance", "color", "language", "title", "streaming", "haptic", "vibration"),
+                searchKeywords = listOf(
+                    "look",
+                    "feel",
+                    "theme",
+                    "dark",
+                    "light",
+                    "appearance",
+                    "color",
+                    "language",
+                    "title",
+                    "streaming",
+                    "haptic",
+                    "vibration"
+                ),
                 onClick = onNavigateToLookAndFeel
             ),
             SettingsItemData(
@@ -108,7 +129,14 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Notifications,
                 titleResId = R.string.settings_notifications,
                 subtitleResId = R.string.settings_notifications_desc,
-                searchKeywords = listOf("notification", "alert", "episode", "reminder", "watching", "planning"),
+                searchKeywords = listOf(
+                    "notification",
+                    "alert",
+                    "episode",
+                    "reminder",
+                    "watching",
+                    "planning"
+                ),
                 onClick = onNavigateToNotifications
             ),
             SettingsItemData(
@@ -125,8 +153,23 @@ fun SettingsScreen(
                 icon = Icons.Outlined.AccountCircle,
                 titleResId = R.string.settings_account,
                 subtitleResId = R.string.settings_account_desc,
-                searchKeywords = listOf("account", "profile", "logout", "sign out", "user", "anilist"),
+                searchKeywords = listOf(
+                    "account",
+                    "profile",
+                    "logout",
+                    "sign out",
+                    "user",
+                    "anilist"
+                ),
                 onClick = onNavigateToAccount
+            ),
+            SettingsItemData(
+                key = "app_links",
+                icon = Icons.Rounded.Link,
+                titleResId = R.string.settings_app_links,
+                subtitleResId = R.string.settings_app_links_desc,
+                searchKeywords = listOf("links", "app links", "browser", "open", "anilist"),
+                onClick = { showAppLinksDialog = true }
             ),
             SettingsItemData(
                 key = "about",
@@ -134,12 +177,19 @@ fun SettingsScreen(
                 titleResId = R.string.settings_about,
                 subtitleResId = R.string.settings_version,
                 subtitleArg = BuildConfig.VERSION_NAME,
-                searchKeywords = listOf("about", "version", "license", "privacy", "terms", "acknowledgments"),
+                searchKeywords = listOf(
+                    "about",
+                    "version",
+                    "license",
+                    "privacy",
+                    "terms",
+                    "acknowledgments"
+                ),
                 onClick = onNavigateToAbout
             )
         )
     }
-    
+
     // Filter items based on search query
     val filteredItems by remember(searchQuery, settingsItems) {
         derivedStateOf {
@@ -153,7 +203,7 @@ fun SettingsScreen(
             }
         }
     }
-    
+
     val isSearching = searchQuery.isNotBlank()
 
     Scaffold(
@@ -246,14 +296,15 @@ fun SettingsScreen(
                     item(key = "search_results") {
                         SettingsGroup {
                             filteredItems.forEachIndexed { index, item ->
-                                val subtitle = if (item.subtitleArg != null && item.subtitleResId != null) {
-                                    stringResource(item.subtitleResId, item.subtitleArg)
-                                } else if (item.subtitleResId != null) {
-                                    stringResource(item.subtitleResId)
-                                } else {
-                                    null
-                                }
-                                
+                                val subtitle =
+                                    if (item.subtitleArg != null && item.subtitleResId != null) {
+                                        stringResource(item.subtitleResId, item.subtitleArg)
+                                    } else if (item.subtitleResId != null) {
+                                        stringResource(item.subtitleResId)
+                                    } else {
+                                        null
+                                    }
+
                                 SettingsItem(
                                     icon = item.icon,
                                     title = stringResource(item.titleResId),
@@ -269,7 +320,7 @@ fun SettingsScreen(
                 }
             } else {
                 // Grouped layout when not searching
-                
+
                 // Look & Feel Group
                 item(key = "group_look_and_feel") {
                     SettingsGroup {
@@ -295,7 +346,10 @@ fun SettingsScreen(
                         SettingsItem(
                             icon = Icons.Outlined.Storage,
                             title = stringResource(R.string.settings_storage),
-                            subtitle = stringResource(R.string.settings_storage_subtitle, cacheSize),
+                            subtitle = stringResource(
+                                R.string.settings_storage_subtitle,
+                                cacheSize
+                            ),
                             onClick = onNavigateToStorage
                         )
                     }
@@ -312,9 +366,19 @@ fun SettingsScreen(
                         )
                         SettingsDivider()
                         SettingsItem(
+                            icon = Icons.Rounded.Link,
+                            title = stringResource(R.string.settings_app_links),
+                            subtitle = stringResource(R.string.settings_app_links_desc),
+                            onClick = { showAppLinksDialog = true }
+                        )
+                        SettingsDivider()
+                        SettingsItem(
                             icon = Icons.Outlined.Info,
                             title = stringResource(R.string.settings_about),
-                            subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                            subtitle = stringResource(
+                                R.string.settings_version,
+                                BuildConfig.VERSION_NAME
+                            ),
                             onClick = onNavigateToAbout
                         )
                     }

@@ -182,6 +182,8 @@
     <string name="settings_notifications_desc">Episode alerts, planning reminders</string>
     <string name="settings_storage">Storage</string>
     <string name="settings_storage_subtitle">Cache: %1$s</string>
+    <string name="settings_app_links">Open App Links</string>
+    <string name="settings_app_links_desc">Enable opening anilist.co links directly in app</string>
     <string name="settings_account">Account</string>
     <string name="settings_account_desc">Profile, logout</string>
     <string name="settings_about">About</string>
