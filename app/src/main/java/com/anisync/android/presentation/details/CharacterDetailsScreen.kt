@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.details.screens
+package com.anisync.android.presentation.details
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -62,8 +62,6 @@ import com.anisync.android.presentation.details.components.CharacterStatsCard
 import com.anisync.android.presentation.details.components.ExpandableCharacterSynopsis
 import com.anisync.android.presentation.details.components.MediaRoleItem
 import com.anisync.android.presentation.details.components.NameSection
-import com.anisync.android.presentation.details.state.CharacterDetailsUiState
-import com.anisync.android.presentation.details.viewmodel.CharacterDetailsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

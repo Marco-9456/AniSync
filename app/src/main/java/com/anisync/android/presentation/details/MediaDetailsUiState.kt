@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.details.state
+package com.anisync.android.presentation.details
 
 import com.anisync.android.domain.MediaDetails
 

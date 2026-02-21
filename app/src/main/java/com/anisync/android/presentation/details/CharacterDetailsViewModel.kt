@@ -1,11 +1,10 @@
-package com.anisync.android.presentation.details.viewmodel
+package com.anisync.android.presentation.details
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.Result
-import com.anisync.android.presentation.details.state.CharacterDetailsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

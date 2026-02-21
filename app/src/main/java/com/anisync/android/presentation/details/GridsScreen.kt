@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.details.screens
+package com.anisync.android.presentation.details
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -36,10 +36,6 @@ import com.anisync.android.R
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.MediaRoleItem
 import com.anisync.android.presentation.details.components.RelationItem
-import com.anisync.android.presentation.details.state.CharacterDetailsUiState
-import com.anisync.android.presentation.details.state.DetailsUiState
-import com.anisync.android.presentation.details.viewmodel.CharacterDetailsViewModel
-import com.anisync.android.presentation.details.viewmodel.MediaDetailsViewModel
 import com.anisync.android.presentation.util.AppMotion
 
 /**

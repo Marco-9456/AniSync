@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.details.viewmodel
+package com.anisync.android.presentation.details
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
@@ -10,7 +10,6 @@ import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.Result
-import com.anisync.android.presentation.details.state.DetailsUiState
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
