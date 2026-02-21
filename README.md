@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logoWide.svg" alt="AniSync Logo" width="120" height="120">
+  <img src="docs/assets/logoWide.svg" alt="AniSync Logo" width="300" height="100">
 </p>
 
 <h1 align="center">AniSync</h1>
