@@ -71,6 +71,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -260,7 +261,7 @@ fun LibraryScreen(
                     } else if (currentSearchBarValue == SearchBarValue.Collapsed) {
                         Row {
                             IconButton(onClick = {
-                                haptic.click()
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 isGridView = !currentIsGridView
                             }) {
                                 Icon(
@@ -270,7 +271,7 @@ fun LibraryScreen(
                             }
 
                             IconButton(onClick = {
-                                haptic.click()
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 showSortMenu = true
                             }) {
                                 SortIcon(isAscending = currentIsAscending)
@@ -544,7 +545,7 @@ fun LibraryScreen(
         selectedOption = sortOption,
         isAscending = isAscending,
         onOptionSelected = { sort, ascending ->
-            haptic.click()
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
         }
     )
@@ -561,6 +562,7 @@ fun LibraryScreen(
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->
                 viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
+                editingEntry = null
             },
             onDelete = {
                 viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))

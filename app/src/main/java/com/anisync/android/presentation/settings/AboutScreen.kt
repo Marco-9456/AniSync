@@ -70,7 +70,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +83,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -143,7 +143,7 @@ private fun AboutHero(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
+    val haptics = rememberHapticFeedback()
     var heroState by remember { mutableStateOf(HeroState.Idle) }
 
     // Preload the avatar image to ensure it's instantly available when the easter egg triggers

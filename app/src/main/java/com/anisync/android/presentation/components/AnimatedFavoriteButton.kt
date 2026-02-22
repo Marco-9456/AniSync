@@ -30,9 +30,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -55,7 +55,7 @@ fun AnimatedFavoriteButton(
     inactiveColor: Color = LocalContentColor.current
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberHapticFeedback()
 
     // Animations
     val scale = remember { Animatable(1f) }

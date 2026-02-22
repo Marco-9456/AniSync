@@ -85,7 +85,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -116,6 +115,7 @@ import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.util.getTitle
@@ -219,7 +219,7 @@ fun MediaDetailsScreen(
                     val state = uiState
                     if (state is DetailsUiState.Success) {
                         val details = state.details
-                        val haptic = LocalHapticFeedback.current
+                        val haptic = rememberHapticFeedback()
 
                         BackHandler(enabled = fabMenuExpanded) {
                             fabMenuExpanded = false

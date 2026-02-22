@@ -81,7 +81,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -101,6 +100,7 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.util.getTitle
@@ -147,7 +147,7 @@ fun EditLibraryEntrySheet(
         }
     }
 
-    val haptics = LocalHapticFeedback.current
+    val haptics = rememberHapticFeedback()
     val isAnime = entry.type == MediaType.ANIME
 
     // Dialog states
@@ -899,7 +899,7 @@ private fun NotesSection(
 ) {
     val notes = notesProvider()
     var isFocused by remember { mutableStateOf(false) }
-    val haptics = LocalHapticFeedback.current
+    val haptics = rememberHapticFeedback()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),

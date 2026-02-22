@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -292,7 +293,7 @@ fun LibraryListCard(
                             .weight(1f)
                             .bouncyClickable(
                                 onClick = {
-                                    haptic.click()
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onIncrement()
                                 },
                                 role = Role.Button,
@@ -318,7 +319,7 @@ fun LibraryListCard(
                             .weight(1f)
                             .bouncyClickable(
                                 onClick = {
-                                    haptic.click()
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onDecrement()
                                 },
                                 role = Role.Button,
@@ -353,7 +354,7 @@ fun LibraryListCard(
                             .fillMaxHeight()
                             .bouncyClickable(
                                 onClick = {
-                                    haptic.click()
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onEdit()
                                 },
                                 role = Role.Button,

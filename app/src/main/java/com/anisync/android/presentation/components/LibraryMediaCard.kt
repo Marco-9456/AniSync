@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -342,7 +343,7 @@ fun LibraryMediaCard(
                                 .height(48.dp) // Minimum touch target
                                 .bouncyClickable(
                                     onClick = {
-                                        haptic.click()
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         onEdit()
                                     },
                                     role = Role.Button,
@@ -383,7 +384,7 @@ fun LibraryMediaCard(
                             .height(48.dp) // Minimum touch target
                             .bouncyClickable(
                                 onClick = {
-                                    haptic.click()
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onDecrement()
                                 },
                                 role = Role.Button,
@@ -407,7 +408,7 @@ fun LibraryMediaCard(
                             .height(48.dp) // Minimum touch target
                             .bouncyClickable(
                                 onClick = {
-                                    haptic.click()
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onIncrement()
                                 },
                                 role = Role.Button,

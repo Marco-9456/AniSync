@@ -1,155 +1,77 @@
 package com.anisync.android.presentation.util
 
-import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.anisync.android.data.AppSettings
 
 /**
- * Types of haptic feedback available for UI interactions.
+ * A thin wrapper around Compose's [HapticFeedback] that respects the app's
+ * internal haptic toggle.
+ *
+ * This delegates all haptic work to Compose's [LocalHapticFeedback], which
+ * internally uses [android.view.View.performHapticFeedback] with
+ * [android.view.HapticFeedbackConstants]. This is the recommended approach per
+ * Android's haptics documentation because:
+ *
+ * - **No VIBRATE permission needed.**
+ * - **Built-in device-optimized fallbacks** — the OS automatically provides the
+ *   best effect for the device's hardware.
+ * - **Action-oriented constants** — effects are consistent with the system UX.
+ * - **Respects system Touch Feedback setting.**
+ *
+ * The only addition over raw [LocalHapticFeedback] is gating haptic calls behind
+ * the app's own `hapticEnabled` preference.
  */
-enum class HapticType {
-    /** Light feedback for button clicks and chip selection */
-    Click,
-    /** Medium feedback for long press actions */
-    LongPress,
-    /** Strong feedback for successful action confirmation */
-    Confirm
-}
-
-/**
- * Provides haptic feedback utilities using the system Vibrator.
- * Bypasses system "Touch feedback" setting to respect the app's internal "Haptic Feedback" toggle.
- * 
- * @param context Context used to retrieve the Vibrator service
- * @param isEnabledProvider Lambda that returns current enabled state (checked on each call)
- */
-class HapticFeedbackHelper(
-    context: Context,
+class AppHapticFeedback(
+    private val composeFeedback: HapticFeedback,
     private val isEnabledProvider: () -> Boolean
 ) {
-    
-    private val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val vibratorManager = context.getSystemService(android.os.VibratorManager::class.java)
-        vibratorManager?.defaultVibrator
-    } else {
-        @Suppress("DEPRECATION")
-        context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-    }
-
     /**
-     * Performs haptic feedback of the specified type.
-     * Only performs feedback if haptic is enabled in app settings.
-     * Uses Vibrator directly to ensure feedback is delivered.
-     * 
-     * @param type The type of haptic feedback to perform
+     * Performs haptic feedback of the given [type] only if the app's haptic
+     * setting is enabled.
+     *
+     * Choose [type] based on interaction frequency and importance:
+     *
+     * | Frequency / Importance | Recommended type |
+     * |---|---|
+     * | High freq, low importance (sliders) | [HapticFeedbackType.SegmentFrequentTick] |
+     * | Medium freq, low importance (chips, toggles) | [HapticFeedbackType.TextHandleMove] |
+     * | Low freq, medium importance (score ticks) | [HapticFeedbackType.SegmentTick] |
+     * | Low freq, high importance (favorite) | [HapticFeedbackType.LongPress] |
+     * | Low freq, high importance (save/submit) | [HapticFeedbackType.Confirm] |
      */
-    fun performHapticFeedback(type: HapticType) {
-        // Check if haptic feedback is enabled in app settings
+    fun performHapticFeedback(type: HapticFeedbackType) {
         if (!isEnabledProvider()) return
-        
-        // Check if device has a vibrator
-        if (vibrator == null || !vibrator.hasVibrator()) return
-
-        try {
-            when (type) {
-                HapticType.Click -> vibrateClick()
-                HapticType.LongPress -> vibrateLongPress()
-                HapticType.Confirm -> vibrateConfirm()
-            }
-        } catch (e: Exception) {
-            // Fail silently if vibration fails
-        }
-    }
-    
-    private fun vibrateClick() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
-        } else {
-            // Fallback for API 26-28
-            vibrator?.vibrate(VibrationEffect.createOneShot(10, VibrationEffect.DEFAULT_AMPLITUDE))
-        }
-    }
-
-    private fun vibrateLongPress() {
-        // Long press is typically slightly longer/heavier
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Heavy click or Tick can represent long press depending on preference, 
-            // but standard Heavy Click is good.
-           vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
-        } else {
-            vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
-        }
-    }
-
-    private fun vibrateConfirm() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK))
-        } else {
-            // Double pulse
-            vibrator?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 10, 50, 10), -1))
-        }
-    }
-    
-    /**
-     * Convenience method for light click feedback.
-     */
-    fun click() = performHapticFeedback(HapticType.Click)
-    
-    /**
-     * Convenience method for long press feedback.
-     */
-    fun longPress() = performHapticFeedback(HapticType.LongPress)
-    
-    /**
-     * Convenience method for confirmation feedback.
-     */
-    fun confirm() = performHapticFeedback(HapticType.Confirm)
-}
-
-/**
- * Remembers a HapticFeedbackHelper instance for use in composables.
- * Reads haptic enabled setting from AppSettings.
- * 
- * @param appSettings The app settings to check for haptic enabled state
- */
-@Composable
-fun rememberHapticFeedback(appSettings: AppSettings): HapticFeedbackHelper {
-    val context = LocalContext.current
-    val hapticEnabled by appSettings.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
-    
-    return remember(context) { 
-        HapticFeedbackHelper(
-            context = context,
-            isEnabledProvider = { appSettings.hapticEnabled.value }
-        )
+        composeFeedback.performHapticFeedback(type)
     }
 }
 
 /**
- * Remembers a HapticFeedbackHelper that respects app settings.
- * Automatically reads the haptic enabled setting from LocalAppSettings.
+ * Remembers an [AppHapticFeedback] that delegates to Compose's
+ * [LocalHapticFeedback] while respecting the app's haptic enabled setting
+ * from [LocalAppSettings].
+ *
+ * Usage:
+ * ```
+ * val haptic = rememberHapticFeedback()
+ * haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+ * ```
  */
 @Composable
-fun rememberHapticFeedback(): HapticFeedbackHelper {
-    val context = LocalContext.current
+fun rememberHapticFeedback(): AppHapticFeedback {
+    val composeFeedback = LocalHapticFeedback.current
     val appSettings = LocalAppSettings.current
-    // We observe state here to trigger recomposition if setting changes, 
-    // ensuring validity of the closure if needed, though provider handles value reading.
+    // Observe the setting so recomposition is triggered if it changes.
     val hapticEnabled by appSettings.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
-    
-    return remember(context, appSettings) { 
-        HapticFeedbackHelper(
-            context = context,
-            isEnabledProvider = { appSettings.hapticEnabled.value }
+
+    return remember(composeFeedback, hapticEnabled) {
+        AppHapticFeedback(
+            composeFeedback = composeFeedback,
+            isEnabledProvider = { hapticEnabled }
         )
     }
 }
-
-

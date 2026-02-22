@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -35,6 +34,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -63,7 +63,7 @@ fun AnimatedTab(
     icon: ImageVector,
     label: String
 ) {
-    val hapticFeedback = LocalHapticFeedback.current
+    val hapticFeedback = rememberHapticFeedback()
     val isSelected = selected
     
     // Stretch animation (scaleX for horizontal expansion)
