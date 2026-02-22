@@ -10,7 +10,10 @@ jobs:
   build:
     name: Build Release APK
     runs-on: ubuntu-latest
-    
+
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,20 +31,27 @@ jobs:
 
       - name: Decode Keystore
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
         run: |
-          echo $RELEASE_KEYSTORE_BASE64 | base64 --decode > ./app/release.keystore
+          echo $SIGNING_KEY | base64 -d > ./app/release.keystore
 
       - name: Build Release APK
         env:
-          KEYSTORE_FILE: release.keystore # File is inside app module
+          KEYSTORE_FILE: release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle assembleRelease
+        run: ./gradlew assembleRelease
 
-      - name: Upload Release APK
+      - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: app/build/outputs/apk/release/*.apk # Matches your output renaming logic
+          path: app/build/outputs/apk/release/*.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/*.apk
