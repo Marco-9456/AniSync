@@ -18,6 +18,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
@@ -115,6 +116,7 @@ fun Modifier.bouncyCombinedClickable(
 ): Modifier = composed {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val haptic = rememberHapticFeedback()
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) pressedScale else 1f,
@@ -141,7 +143,17 @@ fun Modifier.bouncyCombinedClickable(
             interactionSource = interactionSource,
             indication = ripple(),
             enabled = enabled,
+            // Disable system long-press haptic — we fire our own through
+            // AppHapticFeedback so it respects the app's haptic toggle and
+            // works on devices where View.performHapticFeedback fails.
+            hapticFeedbackEnabled = false,
             onClick = onClick,
-            onLongClick = onLongClick
+            onLongClick = if (onLongClick != null) {
+                {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
+            } else null
         )
 }
+
