@@ -35,11 +35,13 @@ import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
+import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsScreen
 import com.anisync.android.presentation.settings.StorageScreen
+import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.statistics.StatisticsScreen
 
 // =============================================================================
@@ -490,6 +492,7 @@ fun AniSyncNavHost(
                     onNavigateToStorage = { navController.navigate(SettingsStorage) },
                     onNavigateToAccount = { navController.navigate(SettingsAccount) },
                     onNavigateToAbout = { navController.navigate(SettingsAbout) },
+                    onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -557,7 +560,8 @@ fun AniSyncNavHost(
                 AboutScreen(
                     onBackClick = { navController.popBackStack() },
                     onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) },
-                    onNavigateToAcknowledgments = { navController.navigate(SettingsAcknowledgments) }
+                    onNavigateToAcknowledgments = { navController.navigate(SettingsAcknowledgments) },
+                    onNavigateToLinks = { navController.navigate(SettingsLinks) }
                 )
             }
 
@@ -581,6 +585,30 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 AcknowledgmentsScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Updates Screen
+            composable<SettingsUpdates>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                UpdatesScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Links Screen
+            composable<SettingsLinks>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                LinksScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

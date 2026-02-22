@@ -143,3 +143,15 @@ object SettingsOpenSourceLicenses
  */
 @Serializable
 object SettingsAcknowledgments
+
+/**
+ * App updates screen.
+ */
+@Serializable
+object SettingsUpdates
+
+/**
+ * Developer and source links screen.
+ */
+@Serializable
+object SettingsLinks

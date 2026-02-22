@@ -358,6 +358,7 @@ fun AboutScreen(
     onBackClick: () -> Unit,
     onNavigateToOpenSourceLicenses: () -> Unit,
     onNavigateToAcknowledgments: () -> Unit,
+    onNavigateToLinks: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -432,6 +433,18 @@ fun AboutScreen(
                 title = stringResource(R.string.settings_anilist_api),
                 subtitle = stringResource(R.string.settings_anilist_api_desc),
                 onClick = { context.launchUrl("https://anilist.co") }
+            )
+            SettingsDivider(startPadding = 20.dp)
+            SettingsItem(
+                title = stringResource(R.string.settings_links),
+                subtitle = stringResource(R.string.settings_links_desc),
+                onClick = onNavigateToLinks
+            )
+            SettingsDivider(startPadding = 20.dp)
+            SettingsItem(
+                title = stringResource(R.string.about_improve_translations),
+                subtitle = stringResource(R.string.about_improve_translations_desc),
+                onClick = { /* Placeholder */ }
             )
         }
     }

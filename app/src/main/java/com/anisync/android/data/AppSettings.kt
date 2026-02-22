@@ -143,6 +143,13 @@ class AppSettings @Inject constructor(
     )
     val appLocale: StateFlow<AppLocale> = _appLocale.asStateFlow()
 
+    // Updates settings
+    private val _autoUpdateEnabled = MutableStateFlow(prefs.getBoolean(KEY_AUTO_UPDATE_ENABLED, false))
+    val autoUpdateEnabled: StateFlow<Boolean> = _autoUpdateEnabled.asStateFlow()
+
+    private val _allowPrerelease = MutableStateFlow(prefs.getBoolean(KEY_ALLOW_PRERELEASE, false))
+    val allowPrerelease: StateFlow<Boolean> = _allowPrerelease.asStateFlow()
+
     /**
      * Set the app theme mode.
      */
@@ -238,6 +245,16 @@ class AppSettings @Inject constructor(
         prefs.edit().putInt(KEY_APP_LOCALE, locale.ordinal).apply()
     }
     
+    fun setAutoUpdateEnabled(enabled: Boolean) {
+        _autoUpdateEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AUTO_UPDATE_ENABLED, enabled).apply()
+    }
+
+    fun setAllowPrerelease(allowed: Boolean) {
+        _allowPrerelease.value = allowed
+        prefs.edit().putBoolean(KEY_ALLOW_PRERELEASE, allowed).apply()
+    }
+    
     /**
      * Get the preferred streaming service directly from SharedPreferences.
      * Use this for widgets to ensure the latest value is always read.
@@ -285,6 +302,8 @@ companion object {
         private const val KEY_CUSTOM_SEED_COLOR = "custom_seed_color"
         private const val KEY_PALETTE_STYLE = "palette_style"
         private const val KEY_APP_LOCALE = "app_locale"
+        private const val KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled"
+        private const val KEY_ALLOW_PRERELEASE = "allow_prerelease"
     }
 }
 

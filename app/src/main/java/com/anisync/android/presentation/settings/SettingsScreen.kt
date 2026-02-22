@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -79,6 +80,7 @@ fun SettingsScreen(
     onNavigateToStorage: () -> Unit,
     onNavigateToAccount: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onNavigateToUpdates: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
@@ -171,6 +173,14 @@ fun SettingsScreen(
                 subtitleResId = R.string.settings_app_links_desc,
                 searchKeywords = listOf("links", "app links", "browser", "open", "anilist"),
                 onClick = { showAppLinksDialog = true }
+            ),
+            SettingsItemData(
+                key = "updates",
+                icon = Icons.Outlined.Update,
+                titleResId = R.string.settings_updates,
+                subtitleResId = R.string.settings_updates_desc,
+                searchKeywords = listOf("update", "version", "download", "upgrade", "new"),
+                onClick = onNavigateToUpdates
             ),
             SettingsItemData(
                 key = "about",
@@ -371,6 +381,13 @@ fun SettingsScreen(
                             title = stringResource(R.string.settings_app_links),
                             subtitle = stringResource(R.string.settings_app_links_desc),
                             onClick = { showAppLinksDialog = true }
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = Icons.Outlined.Update,
+                            title = stringResource(R.string.settings_updates),
+                            subtitle = stringResource(R.string.settings_updates_desc),
+                            onClick = onNavigateToUpdates
                         )
                         SettingsDivider()
                         SettingsItem(

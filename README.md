@@ -25,6 +25,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue" alt="License"></a>
 </p>
 
+<p align="center">
+  <a href="https://ko-fi.com/marco_9456"><img src="https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg" alt="Ko-Fi"></a>
+  <a href="https://github.com/sponsors/Marco-9456"><img src="https://srv-cdn.himpfen.io/badges/github/github-flat.svg" alt="GitHub"></a>
+</p>
+
 ---
 
 ## 📖 Overview
@@ -297,15 +302,6 @@ This project's source code is licensed under the **GNU General Public License v3
 > [!WARNING]
 > **Brand & Naming Guidelines**
 > While the source code is freely available under the GPLv3, the **AniSync** name and brand identity are protected. To avoid user confusion, any derivative works—including but not limited to forks and unofficial builds—are strictly prohibited from using "AniSync" as the name for an AniList client application.
-
----
-
-## ☕ Support the Project
-
-I make apps for fun, buy me a coffee if you love them like I do!
-
-* [Sponsor on GitHub](https://github.com/sponsors/Marco-9456)
-* [Support on Ko-fi](https://ko-fi.com/marco_9456) (also available if you don't have a GitHub account)
 
 ---
 

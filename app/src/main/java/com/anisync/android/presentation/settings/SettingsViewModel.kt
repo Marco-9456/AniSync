@@ -75,6 +75,12 @@ class SettingsViewModel @Inject constructor(
             listOf(enabled, watching, planning, upcoming)
         },
         combine(
+            appSettings.autoUpdateEnabled,
+            appSettings.allowPrerelease
+        ) { autoUpdate, prerelease ->
+            autoUpdate to prerelease
+        },
+        combine(
             _cacheSize,
             _isCacheCleared,
             _isCacheLoading,
@@ -83,9 +89,10 @@ class SettingsViewModel @Inject constructor(
         ) { size, cleared, loading, clearing, profile ->
             listOf(size, cleared, loading, clearing, profile)
         }
-    ) { lookAndFeel, themePalette, notifications, storageAndProfile ->
+    ) { lookAndFeel, themePalette, notifications, updates, storageAndProfile ->
         val (paletteId, customColor, style) = themePalette
         val (notifEnabled, watching, planning, upcoming) = notifications
+        val (autoUpdate, prerelease) = updates
         val (cacheSize, isCleared, isLoading, isClearing, profile) = storageAndProfile
         
         lookAndFeel.copy(
@@ -96,6 +103,8 @@ class SettingsViewModel @Inject constructor(
             watchingNotificationsEnabled = watching as Boolean,
             planningNotificationsEnabled = planning as Boolean,
             upcomingNotificationsEnabled = upcoming as Boolean,
+            isAutoUpdateEnabled = autoUpdate,
+            isPrereleaseAllowed = prerelease,
             cacheSize = cacheSize as String,
             isCacheCleared = isCleared as Boolean,
             isCacheLoading = isLoading as Boolean,
@@ -114,21 +123,35 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
-            is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(action.service)
+            is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
+                action.service
+            )
+
             is SettingsAction.SetAppLocale -> setAppLocale(action.locale)
             is SettingsAction.SetSelectedPalette -> appSettings.setSelectedPalette(action.paletteId)
             is SettingsAction.SetCustomSeedColor -> appSettings.setCustomSeedColor(action.color)
             is SettingsAction.SetPaletteStyle -> appSettings.setPaletteStyle(action.style)
-            
+
             is SettingsAction.ToggleNotifications -> toggleNotifications(action.enabled)
-            is SettingsAction.SetWatchingNotificationsEnabled -> notificationPreferences.setWatchingEnabled(action.enabled)
-            is SettingsAction.SetPlanningNotificationsEnabled -> notificationPreferences.setPlanningEnabled(action.enabled)
-            is SettingsAction.SetUpcomingNotificationsEnabled -> notificationPreferences.setUpcomingEnabled(action.enabled)
-            
+            is SettingsAction.SetWatchingNotificationsEnabled -> notificationPreferences.setWatchingEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetPlanningNotificationsEnabled -> notificationPreferences.setPlanningEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetUpcomingNotificationsEnabled -> notificationPreferences.setUpcomingEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetAutoUpdateEnabled -> appSettings.setAutoUpdateEnabled(action.enabled)
+            is SettingsAction.SetPrereleaseAllowed -> appSettings.setAllowPrerelease(action.allowed)
+
             SettingsAction.RefreshCacheSize -> refreshCacheSize()
             SettingsAction.ClearCache -> clearCache()
             SettingsAction.ResetCacheCleared -> _isCacheCleared.value = false
-            
+
             SettingsAction.SendTestWatchingNotification -> notificationDebugService.sendTestWatchingNotification()
             SettingsAction.SendTestPlanningNotification -> notificationDebugService.sendTestPlanningNotification()
             SettingsAction.SendTestAdvanceNotification -> notificationDebugService.sendTestAdvanceNotification()
@@ -185,7 +208,8 @@ class SettingsViewModel @Inject constructor(
     private suspend fun calculateCacheSizeAsync(): String {
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val internalCacheSize = context.cacheDir.walkTopDown().sumOf { it.length() }
-            val externalCacheSize = context.externalCacheDir?.walkTopDown()?.sumOf { it.length() } ?: 0L
+            val externalCacheSize =
+                context.externalCacheDir?.walkTopDown()?.sumOf { it.length() } ?: 0L
             val totalSize = internalCacheSize + externalCacheSize
             formatFileSize(totalSize)
         }

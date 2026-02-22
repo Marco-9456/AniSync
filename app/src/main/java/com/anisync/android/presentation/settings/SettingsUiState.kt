@@ -23,6 +23,9 @@ sealed interface SettingsAction {
     data class SetPlanningNotificationsEnabled(val enabled: Boolean) : SettingsAction
     data class SetUpcomingNotificationsEnabled(val enabled: Boolean) : SettingsAction
     
+    data class SetAutoUpdateEnabled(val enabled: Boolean) : SettingsAction
+    data class SetPrereleaseAllowed(val allowed: Boolean) : SettingsAction
+    
     data object RefreshCacheSize : SettingsAction
     data object ClearCache : SettingsAction
     data object ResetCacheCleared : SettingsAction
@@ -64,5 +67,9 @@ data class SettingsUiState(
     val isCacheClearing: Boolean = false,
     
     // Profile
-    val userProfile: UserProfile? = null
+    val userProfile: UserProfile? = null,
+    
+    // Updates
+    val isAutoUpdateEnabled: Boolean = false,
+    val isPrereleaseAllowed: Boolean = false
 )

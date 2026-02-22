@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.settings.components.InfoNotice
 
 /**
  * Data class representing an open source library.
@@ -145,10 +146,6 @@ fun OpenSourceLicensesScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = stringResource(R.string.settings_oss_footer),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        InfoNotice()
     }
 }
