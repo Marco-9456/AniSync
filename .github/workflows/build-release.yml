@@ -41,17 +41,17 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleStableRelease
 
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/stable/release/*.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
+          files: app/build/outputs/apk/stable/release/*.apk
