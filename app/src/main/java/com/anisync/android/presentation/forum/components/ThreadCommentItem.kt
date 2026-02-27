@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -18,14 +20,17 @@ import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
@@ -54,8 +59,8 @@ fun ThreadCommentItem(
         // Divider between top-level comments
         if (depth == 0) {
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                thickness = 0.5.dp
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                thickness = 1.dp
             )
         }
 
@@ -64,15 +69,17 @@ fun ThreadCommentItem(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
         ) {
-            // Colored nesting bars — one per depth level
+            // Colored nesting bars — one per depth level, styled with rounded corners
             repeat(depth) { level ->
                 Box(
                     modifier = Modifier
-                        .width(3.dp)
+                        .padding(vertical = 4.dp)
+                        .width(4.dp)
                         .fillMaxHeight()
+                        .clip(RoundedCornerShape(percent = 50))
                         .background(nestingBarColor(level + 1))
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
             }
 
             Column(
@@ -81,60 +88,82 @@ fun ThreadCommentItem(
                     .padding(
                         start = if (depth == 0) 16.dp else 4.dp,
                         end = 16.dp,
-                        top = 10.dp,
-                        bottom = 4.dp
+                        top = 16.dp,
+                        bottom = 8.dp
                     )
             ) {
                 // "Replying to @parent" label for nested comments
                 if (depth > 0 && parentAuthorName != null) {
-                    Text(
-                        text = stringResource(R.string.forum_replying_to, parentAuthorName),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontStyle = FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.5f),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.forum_replying_to, parentAuthorName),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
                 AuthorRow(
                     name = comment.authorName,
                     avatarUrl = comment.authorAvatarUrl,
-                    timestampSeconds = comment.createdAt
+                    timestampSeconds = comment.createdAt,
+                    avatarSize = 24.dp
                 )
 
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Render body as AniList-Flavored Markdown
                 HtmlText(
                     html = comment.body,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.1f
+                    ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Action buttons (like + reply)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onLikeClick) {
+                    IconButton(
+                        onClick = onLikeClick,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (comment.isLiked) MaterialTheme.colorScheme.errorContainer.copy(alpha=0.3f) else Color.Transparent
+                        )
+                    ) {
                         Icon(
                             imageVector = if (comment.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
                             tint = if (comment.isLiked) MaterialTheme.colorScheme.error
-                                   else MaterialTheme.colorScheme.onSurfaceVariant
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
-                    Text(
-                        text = comment.likeCount.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.width(8.dp))
+                    if (comment.likeCount > 0) {
+                        Text(
+                            text = comment.likeCount.toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (comment.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(16.dp))
+                    } else {
+                         Spacer(Modifier.width(8.dp))
+                    }
+
                     if (onReplyClick != null) {
                         IconButton(onClick = onReplyClick) {
                             Icon(
                                 imageVector = Icons.Default.Reply,
                                 contentDescription = "Reply",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -163,8 +192,8 @@ fun ThreadCommentItem(
  */
 @Composable
 private fun nestingBarColor(depth: Int): Color = when (depth) {
-    1 -> MaterialTheme.colorScheme.primary
-    2 -> MaterialTheme.colorScheme.tertiary
-    3 -> MaterialTheme.colorScheme.secondary
+    1 -> MaterialTheme.colorScheme.primary.copy(alpha=0.7f)
+    2 -> MaterialTheme.colorScheme.tertiary.copy(alpha=0.7f)
+    3 -> MaterialTheme.colorScheme.secondary.copy(alpha=0.7f)
     else -> MaterialTheme.colorScheme.outlineVariant
 }

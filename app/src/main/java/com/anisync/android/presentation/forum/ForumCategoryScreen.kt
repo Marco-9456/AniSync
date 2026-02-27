@@ -2,9 +2,11 @@ package com.anisync.android.presentation.forum
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,22 +24,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
 import com.anisync.android.presentation.forum.components.SearchField
@@ -56,6 +63,7 @@ fun ForumCategoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val pullToRefreshState = rememberPullToRefreshState()
 
     // Infinite scroll trigger
     val shouldLoadMore by remember {
@@ -95,7 +103,9 @@ fun ForumCategoryScreen(
                     Text(
                         text = categoryName,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
@@ -116,7 +126,15 @@ fun ForumCategoryScreen(
     ) { innerPadding ->
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
+            state = pullToRefreshState,
             onRefresh = { viewModel.onAction(ForumCategoryAction.Refresh) },
+            indicator = {
+                CustomPullToRefreshIndicator(
+                    isRefreshing = uiState.isRefreshing,
+                    state = pullToRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp)
+                )
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -126,7 +144,8 @@ fun ForumCategoryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(8) { ForumThreadCardSkeleton(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) }
+                    item { Spacer(Modifier.height(16.dp)) }
+                    items(8) { ForumThreadCardSkeleton(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) }
                 }
 
                 uiState.errorMessage != null -> ErrorState(
@@ -143,28 +162,33 @@ fun ForumCategoryScreen(
                     ) {
                         // Search bar
                         item(key = "search") {
-                            SearchField(
-                                query = uiState.searchQuery,
-                                onQueryChange = { viewModel.onAction(ForumCategoryAction.OnSearchQueryChange(it)) },
-                                placeholder = stringResource(R.string.forum_search_threads),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
+                            StaggeredAnimatedVisibility(key = "cat_search", index = 0) {
+                                SearchField(
+                                    query = uiState.searchQuery,
+                                    onQueryChange = { viewModel.onAction(ForumCategoryAction.OnSearchQueryChange(it)) },
+                                    placeholder = stringResource(R.string.forum_search_threads),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
                         }
 
                         itemsIndexed(
                             items = uiState.threads,
                             key = { _, t -> "thread_${t.id}" },
                             contentType = { _, _ -> "ForumThread" }
-                        ) { _, thread ->
-                            ForumThreadCard(
-                                thread = thread,
-                                onClick = { onThreadClick(thread.id, thread.title) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
+                        ) { index, thread ->
+                            StaggeredAnimatedVisibility(key = "cat_thread_${thread.id}", index = index + 1) {
+                                ForumThreadCard(
+                                    thread = thread,
+                                    onClick = { onThreadClick(thread.id, thread.title) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
+                            }
                         }
                     }
                 }

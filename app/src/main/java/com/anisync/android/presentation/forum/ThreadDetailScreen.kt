@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,6 +27,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -38,12 +40,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
 import com.anisync.android.presentation.forum.components.ThreadHeaderItem
@@ -62,6 +67,7 @@ fun ThreadDetailScreen(
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val replySheetState = rememberModalBottomSheetState()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(threadId) {
         viewModel.onAction(ThreadDetailAction.Load(threadId))
@@ -88,7 +94,8 @@ fun ThreadDetailScreen(
                         text = uiState.thread?.title ?: threadTitle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
@@ -106,110 +113,133 @@ fun ThreadDetailScreen(
         floatingActionButton = {
             val thread = uiState.thread
             if (thread != null && !thread.isLocked) {
-                FloatingActionButton(
-                    onClick = {
-                        viewModel.onAction(ThreadDetailAction.OpenReply(null, null))
-                    },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.forum_reply))
+                StaggeredAnimatedVisibility(key = "thread_fab", index = 10) {
+                    FloatingActionButton(
+                        onClick = {
+                            viewModel.onAction(ThreadDetailAction.OpenReply(null, null))
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.forum_reply))
+                    }
                 }
             }
         }
     ) { innerPadding ->
-        when {
-            uiState.isLoading -> Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-
-            uiState.errorMessage != null -> ErrorState(
-                message = uiState.errorMessage!!,
-                onRetry = { viewModel.onAction(ThreadDetailAction.Load(threadId)) }
-            )
-
-            else -> {
-                val thread = uiState.thread ?: return@Scaffold
-
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentPadding = PaddingValues(bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading && uiState.thread != null,
+            state = pullToRefreshState,
+            onRefresh = { viewModel.onAction(ThreadDetailAction.Load(threadId)) },
+            indicator = {
+                CustomPullToRefreshIndicator(
+                    isRefreshing = uiState.isLoading && uiState.thread != null,
+                    state = pullToRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp)
+                )
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when {
+                uiState.isLoading && uiState.thread == null -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Thread header (body + stats)
-                    item(key = "thread_header") {
-                        ThreadHeaderItem(
-                            thread = thread,
-                            onLikeClick = {
-                                viewModel.onAction(
-                                    ThreadDetailAction.ToggleLike(
-                                        isThread = true,
-                                        id = thread.id,
-                                        currentLiked = thread.isLiked
-                                    )
+                    CircularProgressIndicator()
+                }
+
+                uiState.errorMessage != null -> ErrorState(
+                    message = uiState.errorMessage!!,
+                    onRetry = { viewModel.onAction(ThreadDetailAction.Load(threadId)) }
+                )
+
+                else -> {
+                    val thread = uiState.thread ?: return@PullToRefreshBox
+
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 96.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        // Thread header (body + stats)
+                        item(key = "thread_header") {
+                            StaggeredAnimatedVisibility(key = "header_item", index = 0) {
+                                ThreadHeaderItem(
+                                    thread = thread,
+                                    onLikeClick = {
+                                        viewModel.onAction(
+                                            ThreadDetailAction.ToggleLike(
+                                                isThread = true,
+                                                id = thread.id,
+                                                currentLiked = thread.isLiked
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                            }
+                        }
 
-                    // Comments section header
-                    item(key = "comments_header") {
-                        Text(
-                            text = stringResource(R.string.forum_comments),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-
-                    // Comment items
-                    items(
-                        items = uiState.comments,
-                        key = { "comment_${it.id}" },
-                        contentType = { "Comment" }
-                    ) { comment ->
-                        ThreadCommentItem(
-                            comment = comment,
-                            onLikeClick = {
-                                viewModel.onAction(
-                                    ThreadDetailAction.ToggleLike(
-                                        isThread = false,
-                                        id = comment.id,
-                                        currentLiked = comment.isLiked
-                                    )
+                        // Comments section header
+                        item(key = "comments_header") {
+                            StaggeredAnimatedVisibility(key = "comments_title", index = 1) {
+                                Text(
+                                    text = stringResource(R.string.forum_comments),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
                                 )
-                            },
-                            onReplyClick = if (!thread.isLocked) {
-                                {
-                                    viewModel.onAction(
-                                        ThreadDetailAction.OpenReply(comment.id, comment.authorName)
-                                    )
-                                }
-                            } else null,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                            }
+                        }
 
-                    // Load more comments button
-                    if (uiState.hasMoreComments) {
-                        item(key = "load_more") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (uiState.isLoadingMoreComments) {
-                                    CircularProgressIndicator()
-                                } else {
-                                    Button(onClick = { viewModel.onAction(ThreadDetailAction.LoadMoreComments) }) {
-                                        Text(stringResource(R.string.forum_load_more_comments))
+                        // Comment items
+                        itemsIndexed(
+                            items = uiState.comments,
+                            key = { _, c -> "comment_${c.id}" },
+                            contentType = { _, _ -> "Comment" }
+                        ) { index, comment ->
+                            StaggeredAnimatedVisibility(key = "comment_${comment.id}", index = index + 2) {
+                                ThreadCommentItem(
+                                    comment = comment,
+                                    onLikeClick = {
+                                        viewModel.onAction(
+                                            ThreadDetailAction.ToggleLike(
+                                                isThread = false,
+                                                id = comment.id,
+                                                currentLiked = comment.isLiked
+                                            )
+                                        )
+                                    },
+                                    onReplyClick = if (!thread.isLocked) {
+                                        {
+                                            viewModel.onAction(
+                                                ThreadDetailAction.OpenReply(comment.id, comment.authorName)
+                                            )
+                                        }
+                                    } else null,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        // Load more comments button
+                        if (uiState.hasMoreComments) {
+                            item(key = "load_more") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (uiState.isLoadingMoreComments) {
+                                        CircularProgressIndicator()
+                                    } else {
+                                        Button(onClick = { viewModel.onAction(ThreadDetailAction.LoadMoreComments) }) {
+                                            Text(stringResource(R.string.forum_load_more_comments))
+                                        }
                                     }
                                 }
                             }

@@ -37,13 +37,13 @@ fun StatBadge(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(16.dp),
             tint = tint
         )
-        Spacer(Modifier.width(3.dp))
+        Spacer(Modifier.width(4.dp))
         Text(
             text = value.formatCount(),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -55,7 +55,7 @@ fun AuthorRow(
     avatarUrl: String?,
     timestampSeconds: Long,
     modifier: Modifier = Modifier,
-    avatarSize: Dp = 20.dp
+    avatarSize: Dp = 24.dp
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -70,24 +70,24 @@ fun AuthorRow(
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(8.dp))
         }
         Text(
             text = name,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface
         )
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(8.dp))
         Text(
             text = "•",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.outlineVariant
         )
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(8.dp))
         Text(
             text = timestampSeconds.toRelativeTime(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outlineVariant
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.outline
         )
     }
 }
