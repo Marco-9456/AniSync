@@ -1,0 +1,81 @@
+mutation CreateForumThread($title: String!, $body: String!, $categories: [Int]!) {
+  SaveThread(title: $title, body: $body, categories: $categories) {
+    id
+    title
+    body
+    replyCount
+    viewCount
+    likeCount
+    isLiked
+    isLocked
+    createdAt
+    siteUrl
+    user {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+    categories {
+      id
+      name
+    }
+  }
+}
+
+mutation CreateForumComment($threadId: Int!, $comment: String!) {
+  SaveThreadComment(threadId: $threadId, comment: $comment) {
+    id
+    comment
+    likeCount
+    isLiked
+    createdAt
+    siteUrl
+    user {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+  }
+}
+
+mutation CreateForumCommentReply($threadId: Int!, $comment: String!, $parentCommentId: Int!) {
+  SaveThreadComment(threadId: $threadId, comment: $comment, parentCommentId: $parentCommentId) {
+    id
+    comment
+    likeCount
+    isLiked
+    createdAt
+    siteUrl
+    user {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+  }
+}
+
+mutation ToggleLikeThread($id: Int!) {
+  ToggleLikeV2(id: $id, type: THREAD) {
+    ... on Thread {
+      id
+      likeCount
+      isLiked
+    }
+  }
+}
+
+mutation ToggleLikeThreadComment($id: Int!) {
+  ToggleLikeV2(id: $id, type: THREAD_COMMENT) {
+    ... on ThreadComment {
+      id
+      likeCount
+      isLiked
+    }
+  }
+}

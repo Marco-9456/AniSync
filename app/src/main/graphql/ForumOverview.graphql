@@ -1,0 +1,30 @@
+query GetForumOverview($page: Int = 1, $perPage: Int = 15, $sort: [ThreadSort] = [IS_STICKY, REPLIED_AT_DESC]) {
+  Page(page: $page, perPage: $perPage) {
+    threads(sort: $sort) {
+      id
+      title
+      replyCount
+      viewCount
+      likeCount
+      isLiked
+      isLocked
+      repliedAt
+      createdAt
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      categories {
+        id
+        name
+      }
+    }
+    pageInfo {
+      hasNextPage
+      currentPage
+    }
+  }
+}

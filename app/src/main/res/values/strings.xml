@@ -5,7 +5,32 @@
     <!-- Navigation -->
     <string name="nav_library">Library</string>
     <string name="nav_discover">Discover</string>
+    <string name="nav_forum">Forum</string>
     <string name="nav_profile">Profile</string>
+
+    <!-- Forum Screen -->
+    <string name="forum_browse_categories">Browse Categories</string>
+    <string name="forum_recent_discussions">Recent Discussions</string>
+    <string name="forum_create_thread">New Thread</string>
+    <string name="forum_post_thread">Post Thread</string>
+    <string name="forum_reply">Reply</string>
+    <string name="forum_write_reply">Write a Reply</string>
+    <string name="forum_reply_hint">Share your thoughts…</string>
+    <string name="forum_post_reply">Post Reply</string>
+    <string name="forum_comments">Comments</string>
+    <string name="forum_load_more_comments">Load More Comments</string>
+    <string name="forum_search_threads">Search threads…</string>
+    <string name="forum_select_categories">Select categories</string>
+    <string name="forum_thread_title">Title</string>
+    <string name="forum_thread_title_hint">What do you want to discuss?</string>
+    <string name="forum_thread_body">Body</string>
+    <string name="forum_thread_body_hint">Write your message here…</string>
+    <string name="forum_empty_threads">No threads found.</string>
+    <string name="forum_thread_locked">This thread is locked.</string>
+    <string name="forum_view_on_anilist">View on AniList</string>
+    <string name="forum_recently_active">Recently Active</string>
+    <string name="forum_new_threads">Newest Threads</string>
+    <string name="forum_replying_to">Replying to %1$s</string>
 
     <!-- Common -->
     <string name="back">Back</string>

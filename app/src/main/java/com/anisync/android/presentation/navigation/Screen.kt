@@ -93,8 +93,44 @@ data class Statistics(
 )
 
 // =============================================================================
-// SETTINGS ROUTES
+// FORUM ROUTES
 // =============================================================================
+
+/**
+ * Main Forum tab — shows recent threads and category chips.
+ */
+@Serializable
+object Forum
+
+/**
+ * Category browse screen — shows threads filtered by a specific category.
+ * @param categoryId The AniList ThreadCategory ID
+ * @param categoryName Display name for the app bar
+ */
+@Serializable
+data class ForumCategoryBrowse(
+    val categoryId: Int,
+    val categoryName: String
+)
+
+/**
+ * Thread detail screen — shows the full thread body and comments.
+ * @param threadId The AniList Thread ID
+ * @param threadTitle The thread title (for immediate display before data loads)
+ */
+@Serializable
+data class ForumThreadDetail(
+    val threadId: Int,
+    val threadTitle: String
+)
+
+/**
+ * Create new thread screen.
+ */
+@Serializable
+object CreateThread
+
+
 
 /**
  * Main settings hub screen.

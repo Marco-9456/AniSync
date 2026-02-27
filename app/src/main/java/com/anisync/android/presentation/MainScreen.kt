@@ -9,9 +9,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +42,7 @@ import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
 import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Discover
+import com.anisync.android.presentation.navigation.Forum
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
@@ -97,6 +100,13 @@ private fun MainBottomBar(navController: NavHostController) {
                 Icons.Outlined.Explore
             ),
             BottomNavItem(
+                R.string.nav_forum,
+                Forum,
+                Forum::class,
+                Icons.Filled.Forum,
+                Icons.Outlined.Forum
+            ),
+            BottomNavItem(
                 R.string.nav_profile,
                 Profile,
                 Profile::class,
@@ -113,6 +123,7 @@ private fun MainBottomBar(navController: NavHostController) {
             val dest = navBackStackEntryState.value?.destination
             dest?.hasRoute<Library>() == true ||
                     dest?.hasRoute<Discover>() == true ||
+                    dest?.hasRoute<Forum>() == true ||
                     dest?.hasRoute<Profile>() == true
         }
     }

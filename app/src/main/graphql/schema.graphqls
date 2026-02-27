@@ -572,3 +572,108 @@ enum ActivitySort {
   ID
   ID_DESC
 }
+
+# =============================================================================
+# FORUM TYPES
+# =============================================================================
+
+extend type Query {
+  Thread(id: Int): Thread
+  ThreadComment(id: Int): ThreadComment
+}
+
+extend type Mutation {
+  SaveThread(id: Int, title: String, body: String, categories: [Int]): Thread
+  SaveThreadComment(id: Int, threadId: Int, comment: String, parentCommentId: Int): ThreadComment
+  ToggleLikeV2(id: Int, type: LikeableType): LikeableUnion
+}
+
+extend type Page {
+  threads(
+    id: Int,
+    userId: Int,
+    categoryId: Int,
+    mediaCategoryId: Int,
+    search: String,
+    sort: [ThreadSort]
+  ): [Thread]
+  threadComments(
+    id: Int,
+    threadId: Int,
+    userId: Int,
+    sort: [ThreadCommentSort]
+  ): [ThreadComment]
+}
+
+type Thread {
+  id: Int
+  title: String
+  body: String
+  userId: Int
+  replyCount: Int
+  viewCount: Int
+  likeCount: Int
+  isLiked: Boolean
+  isSubscribed: Boolean
+  isLocked: Boolean
+  repliedAt: Int
+  createdAt: Int
+  updatedAt: Int
+  siteUrl: String
+  user: User
+  categories: [ThreadCategory]
+  mediaCategories: [Media]
+  likes: [User]
+}
+
+type ThreadCategory {
+  id: Int
+  name: String
+}
+
+type ThreadComment {
+  id: Int
+  userId: Int
+  threadId: Int
+  comment: String
+  likeCount: Int
+  isLiked: Boolean
+  isParent: Boolean
+  createdAt: Int
+  updatedAt: Int
+  siteUrl: String
+  user: User
+  thread: Thread
+  childComments: String
+  likes: [User]
+}
+
+enum ThreadSort {
+  ID
+  ID_DESC
+  TITLE
+  TITLE_DESC
+  CREATED_AT
+  CREATED_AT_DESC
+  UPDATED_AT
+  UPDATED_AT_DESC
+  REPLIED_AT
+  REPLIED_AT_DESC
+  IS_STICKY
+  SEARCH_MATCH
+}
+
+enum ThreadCommentSort {
+  ID
+  ID_DESC
+}
+
+enum LikeableType {
+  THREAD
+  THREAD_COMMENT
+  ACTIVITY
+  ACTIVITY_REPLY
+}
+
+union LikeableUnion = ListActivity | TextActivity | MessageActivity | Thread | ThreadComment
+

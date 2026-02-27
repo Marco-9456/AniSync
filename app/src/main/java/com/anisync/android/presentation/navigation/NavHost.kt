@@ -29,6 +29,10 @@ import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.forum.CreateThreadScreen
+import com.anisync.android.presentation.forum.ForumCategoryScreen
+import com.anisync.android.presentation.forum.ForumScreen
+import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
@@ -53,7 +57,8 @@ import com.anisync.android.presentation.statistics.StatisticsScreen
 private val tabOrder = mapOf(
     Library::class.qualifiedName to 0,
     Discover::class.qualifiedName to 1,
-    Profile::class.qualifiedName to 2
+    Forum::class.qualifiedName to 2,
+    Profile::class.qualifiedName to 3
 )
 
 /**
@@ -295,6 +300,49 @@ fun AniSyncNavHost(
             }
 
             // =================================================================
+            // FORUM TAB - Shared Axis X (Horizontal)
+            // =================================================================
+
+            composable<Forum>(
+                enterTransition = {
+                    val forward = isForwardNavigation(
+                        fromRoute = initialState.destination.route,
+                        toRoute = Forum::class.qualifiedName
+                    )
+                    sharedAxisXEnter(forward = forward)
+                },
+                exitTransition = {
+                    val forward = isForwardNavigation(
+                        fromRoute = Forum::class.qualifiedName,
+                        toRoute = targetState.destination.route
+                    )
+                    sharedAxisXExit(forward = forward)
+                },
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
+            ) {
+                val onThreadClick = remember(navController) {
+                    { threadId: Int, threadTitle: String ->
+                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    }
+                }
+                val onCategoryClick = remember(navController) {
+                    { categoryId: Int, categoryName: String ->
+                        navController.navigate(ForumCategoryBrowse(categoryId, categoryName))
+                    }
+                }
+                val onCreateThreadClick = remember(navController) {
+                    { navController.navigate(CreateThread) }
+                }
+
+                ForumScreen(
+                    onThreadClick = onThreadClick,
+                    onCategoryClick = onCategoryClick,
+                    onCreateThreadClick = onCreateThreadClick
+                )
+            }
+
+            // =================================================================
             // DETAILS SCREEN - Shared Axis Z (Depth)
             // =================================================================
             // Navigating to detail view uses scale+fade for depth perception
@@ -472,6 +520,58 @@ fun AniSyncNavHost(
             ) {
                 StatisticsScreen(
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // FORUM CATEGORY BROWSE - Shared Axis Z (Depth)
+            // =================================================================
+            composable<ForumCategoryBrowse>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ForumCategoryBrowse = backStackEntry.toRoute()
+                ForumCategoryScreen(
+                    categoryId = route.categoryId,
+                    categoryName = route.categoryName,
+                    onBackClick = { navController.popBackStack() },
+                    onThreadClick = { threadId, threadTitle ->
+                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    }
+                )
+            }
+
+            // =================================================================
+            // FORUM THREAD DETAIL - Shared Axis Z (Depth)
+            // =================================================================
+            composable<ForumThreadDetail>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ForumThreadDetail = backStackEntry.toRoute()
+                ThreadDetailScreen(
+                    threadId = route.threadId,
+                    threadTitle = route.threadTitle,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // CREATE THREAD - Shared Axis Z (Depth)
+            // =================================================================
+            composable<CreateThread>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                CreateThreadScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onThreadCreated = { navController.popBackStack() }
                 )
             }
 

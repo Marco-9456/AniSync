@@ -2,6 +2,7 @@ package com.anisync.android.di
 
 import com.anisync.android.data.DetailsRepositoryImpl
 import com.anisync.android.data.DiscoverRepositoryImpl
+import com.anisync.android.data.ForumRepositoryImpl
 import com.anisync.android.data.LibraryRepositoryImpl
 import com.anisync.android.data.NotificationRepositoryImpl
 import com.anisync.android.data.ProfileRepositoryImpl
@@ -10,6 +11,7 @@ import com.anisync.android.data.StatisticsRepositoryImpl
 import com.anisync.android.data.repository.PreferencesRepositoryImpl
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.DiscoverRepository
+import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.PreferencesRepository
@@ -64,4 +66,9 @@ abstract class RepositoryModule {
     abstract fun bindStatisticsRepository(
         impl: StatisticsRepositoryImpl
     ): StatisticsRepository
+
+    @Binds
+    abstract fun bindForumRepository(
+        impl: ForumRepositoryImpl
+    ): ForumRepository
 }
