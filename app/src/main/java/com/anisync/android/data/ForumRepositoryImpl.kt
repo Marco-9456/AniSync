@@ -164,7 +164,48 @@ class ForumRepositoryImpl @Inject constructor(
                 }
             }
             collectChildIds(allComments)
-            val rootComments = allComments.filter { it.id !in childIds }
+            val baseRootComments = allComments.filter { it.id !in childIds }.toMutableList()
+
+            // Some AniList threads do not use the nested `childComments` JSON, 
+            // but instead users reply by starting a comment with `@Username` or `[@Username](...)`.
+            // We can detect these flat replies and reconstruct the tree manually.
+            val finalRootComments = mutableListOf<ForumComment>()
+            
+            // Map to track the most recent comment ID by a specific author name
+            val latestCommentByAuthor = mutableMapOf<String, ForumComment>()
+            
+            val commentsToAdd = mutableMapOf<Int, MutableList<ForumComment>>()
+
+            // Process sequentially to build the tree
+            for (comment in baseRootComments) {
+                // Look for `@Username` or `[@Username](url)` at the start or near the start
+                // We'll strip HTML tags to make it easier if the API returns parsed markdown
+                val strippedBody = comment.body.replace(Regex("<[^>]*>"), "").trim()
+                
+                // Match @Username or [@Username](...)
+                val mentionMatch = Regex("""^\[?@([a-zA-Z0-9_]+)]?""").find(strippedBody)
+                
+                if (mentionMatch != null) {
+                    val mentionedName = mentionMatch.groupValues[1]
+                    // Find if the mentioned user has posted a comment earlier in this thread
+                    val parent = latestCommentByAuthor[mentionedName]
+                    if (parent != null) {
+                        commentsToAdd.getOrPut(parent.id) { mutableListOf() }.add(comment)
+                        // This is now nested, so we don't add it to root comments.
+                        // However we still record it in latestCommentByAuthor in case someone replies to *this* reply.
+                        latestCommentByAuthor[comment.authorName] = comment
+                        continue
+                    }
+                }
+                
+                finalRootComments.add(comment)
+                latestCommentByAuthor[comment.authorName] = comment
+            }
+            
+            // Now apply the manual nesting
+            val rootComments = finalRootComments.map { root ->
+                attachManualReplies(root, commentsToAdd)
+            }
 
             val pageInfo = pageData?.pageInfo
             Result.Success(
@@ -179,6 +220,27 @@ class ForumRepositoryImpl @Inject constructor(
             Result.Error("Network error: ${e.message}", e)
         } catch (e: Exception) {
             Result.Error("Unexpected error: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Recursively attaches flat replies that were manually extracted via @Username mentions.
+     */
+    private fun attachManualReplies(
+        comment: ForumComment,
+        commentsToAdd: Map<Int, List<ForumComment>>
+    ): ForumComment {
+        val directReplies = commentsToAdd[comment.id] ?: emptyList()
+        // We also need to attach replies to the existing child comments from the JSON
+        val existingChildrenWithReplies = comment.childComments.map { attachManualReplies(it, commentsToAdd) }
+        val newChildrenWithReplies = directReplies.map { attachManualReplies(it, commentsToAdd) }
+        
+        val allChildren = existingChildrenWithReplies + newChildrenWithReplies
+        
+        return if (allChildren.isNotEmpty()) {
+            comment.copy(childComments = allChildren)
+        } else {
+            comment
         }
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Reply
@@ -39,11 +40,12 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 
 /**
  * Renders a forum comment with visual nesting via colored left-border bars.
- * Child comments display "Replying to @parent" labels and increasing indentation.
+ * Child comments display a refined "↳ Replying to..." prefix and indentation.
  *
  * @param comment The comment to render
  * @param onLikeClick Called when the like button is tapped, with the comment's ID and current liked state
  * @param onReplyClick Called when the reply button is tapped, with the comment's ID and author name (null hides button)
+ * @param threadAuthorId ID of the main thread author to display OP badges
  * @param parentAuthorName Name of the parent comment's author (null for top-level)
  * @param depth Nesting depth — 0 for top-level, capped at 3
  */
@@ -60,11 +62,11 @@ fun ThreadCommentItem(
     val haptic = rememberHapticFeedback()
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Divider between top-level comments
+        // Subtle divider separating top-level threads
         if (depth == 0) {
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                thickness = 1.dp
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                thickness = 0.5.dp
             )
         }
 
@@ -72,29 +74,28 @@ fun ThreadCommentItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
-                .then(
-                    if (depth == 0) {
-                        Modifier.background(
-                            MaterialTheme.colorScheme.surfaceContainerLowest
-                        )
-                    } else {
-                        Modifier
-                    }
+                .background(
+                    if (depth == 0) MaterialTheme.colorScheme.surfaceContainerLowest
+                    else Color.Transparent
                 )
         ) {
-            // Colored nesting bars — one per depth level, styled with rounded corners
-            repeat(depth) { level ->
-                Box(
-                    modifier = Modifier
-                        .padding(vertical = 4.dp)
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(nestingBarColor(level + 1))
-                )
-                Spacer(Modifier.width(8.dp))
+            // Refined Thread Context Lines (Pills)
+            if (depth > 0) {
+                Spacer(Modifier.width(12.dp)) // Initial indent offset
+                for (level in 1..depth.coerceAtMost(3)) {
+                    Box(
+                        modifier = Modifier
+                            .width(2.dp)
+                            .fillMaxHeight()
+                            .padding(vertical = 4.dp) // Creates visual separation between connected bars
+                            .clip(CircleShape)        // Rounded caps for a modern feel
+                            .background(nestingBarColor(level))
+                    )
+                    Spacer(Modifier.width(10.dp))
+                }
             }
 
+            // Main Content Area
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -102,98 +103,109 @@ fun ThreadCommentItem(
                         start = if (depth == 0) 16.dp else 4.dp,
                         end = 16.dp,
                         top = 16.dp,
-                        bottom = 8.dp
+                        bottom = 12.dp
                     )
             ) {
-                // "Replying to @parent" label for nested comments
+                // Inline "Replying to" context
                 if (depth > 0 && parentAuthorName != null) {
-                    Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    Text(
+                        text = "↳ ${stringResource(R.string.forum_replying_to, parentAuthorName)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.forum_replying_to, parentAuthorName),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
+                    )
                 }
 
+                // Header Row: Author Info & OP Badge
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    AuthorRow(
-                        name = comment.authorName,
-                        avatarUrl = comment.authorAvatarUrl,
-                        timestampSeconds = comment.createdAt,
-                        avatarSize = 24.dp,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    // OP badge
-                    if (threadAuthorId != 0 && comment.authorId == threadAuthorId) {
-                        Surface(
-                            shape = RoundedCornerShape(percent = 50),
-                            color = MaterialTheme.colorScheme.primary
-                        ) {
-                            Text(
-                                text = stringResource(R.string.forum_op_badge),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        AuthorRow(
+                            name = comment.authorName,
+                            avatarUrl = comment.authorAvatarUrl,
+                            timestampSeconds = comment.createdAt,
+                            avatarSize = 28.dp, // Slightly prominent avatar
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+
+                        // OP Badge styled softly with M3 Container colors
+                        if (threadAuthorId != 0 && comment.authorId == threadAuthorId) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.forum_op_badge),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
 
-                // Render body as AniList-Flavored Markdown
+                // Markdown / HTML Body with enhanced line height
                 HtmlText(
                     html = comment.body,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.1f
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.25f
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(12.dp))
 
-                // Action buttons (animated like + reply)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AnimatedFavoriteButton(
-                        isFavorite = comment.isLiked,
-                        onClick = { onLikeClick(comment.id, comment.isLiked) },
-                        iconSize = 18.dp
-                    )
-                    if (comment.likeCount > 0) {
-                        Text(
-                            text = comment.likeCount.toString(),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (comment.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                // Bottom Action Buttons
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Like Button Group
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        AnimatedFavoriteButton(
+                            isFavorite = comment.isLiked,
+                            onClick = { onLikeClick(comment.id, comment.isLiked) },
+                            iconSize = 20.dp
                         )
-                        Spacer(Modifier.width(12.dp))
-                    } else {
-                        Spacer(Modifier.width(4.dp))
+                        if (comment.likeCount > 0) {
+                            Text(
+                                text = comment.likeCount.toString(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (comment.isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = if (comment.isLiked) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
                     }
 
+                    // Reply Button
                     if (onReplyClick != null) {
                         IconButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 onReplyClick(comment.id, comment.authorName)
-                            }
+                            },
+                            modifier = Modifier.size(28.dp) // Compact click target
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Reply,
                                 contentDescription = "Reply",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -201,7 +213,7 @@ fun ThreadCommentItem(
             }
         }
 
-        // Render child comments recursively (capped at depth 3)
+        // Recursive Child Comments Rendering
         if (depth < 3) {
             comment.childComments.forEach { child ->
                 ThreadCommentItem(
@@ -218,13 +230,15 @@ fun ThreadCommentItem(
 }
 
 /**
- * Returns a visually distinct color for each nesting depth.
- * Multiple bars stack to show the full thread ancestry.
+ * Provides a thematic cohesive color for depth indicator bars using alpha channels.
  */
 @Composable
-private fun nestingBarColor(depth: Int): Color = when (depth) {
-    1 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-    2 -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
-    3 -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-    else -> MaterialTheme.colorScheme.outlineVariant
+private fun nestingBarColor(depth: Int): Color {
+    val colors = MaterialTheme.colorScheme
+    return when (depth) {
+        1 -> colors.primary.copy(alpha = 0.6f)
+        2 -> colors.tertiary.copy(alpha = 0.6f)
+        3 -> colors.secondary.copy(alpha = 0.6f)
+        else -> colors.outlineVariant.copy(alpha = 0.6f)
+    }
 }
