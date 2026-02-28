@@ -21,16 +21,23 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.util.rememberHapticFeedback
+
+private const val MAX_REPLY_LENGTH = 2000
 
 @Composable
 fun ReplyBottomSheetContent(
@@ -41,6 +48,13 @@ fun ReplyBottomSheetContent(
 ) {
     var text by remember { mutableStateOf("") }
     val isBlank = text.isBlank()
+    val focusRequester = remember { FocusRequester() }
+    val haptic = rememberHapticFeedback()
+
+    // Auto-focus the text field when the sheet opens
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Column(
         modifier = Modifier
@@ -52,8 +66,8 @@ fun ReplyBottomSheetContent(
         // Header
         if (replyingToAuthor != null) {
             Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.5f),
+                shape = RoundedCornerShape(percent = 50),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                 modifier = Modifier.padding(bottom = 12.dp)
             ) {
                 Text(
@@ -61,7 +75,7 @@ fun ReplyBottomSheetContent(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
                 )
             }
         }
@@ -76,15 +90,30 @@ fun ReplyBottomSheetContent(
 
         OutlinedTextField(
             value = text,
-            onValueChange = { text = it },
+            onValueChange = { if (it.length <= MAX_REPLY_LENGTH) text = it },
             placeholder = { Text(stringResource(R.string.forum_reply_hint)) },
             minLines = 4,
             maxLines = 10,
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
         )
 
-        Spacer(Modifier.height(24.dp))
+        // Character counter
+        Text(
+            text = "${text.length} / $MAX_REPLY_LENGTH",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (text.length > MAX_REPLY_LENGTH * 0.9)
+                MaterialTheme.colorScheme.error
+            else
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(top = 4.dp)
+        )
+
+        Spacer(Modifier.height(20.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(
@@ -100,7 +129,10 @@ fun ReplyBottomSheetContent(
             Spacer(Modifier.weight(1f))
 
             Button(
-                onClick = { onSubmit(text) },
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onSubmit(text)
+                },
                 enabled = !isBlank && !isSubmitting,
                 shape = RoundedCornerShape(percent = 50),
                 modifier = Modifier.height(48.dp)

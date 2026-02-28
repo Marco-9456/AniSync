@@ -351,6 +351,29 @@ private fun parseAniListMarkdown(raw: String, linkColor: Color): AnnotatedString
                 text.startsWith("&quot;", i) -> { append("\""); i += 6 }
                 text.startsWith("&nbsp;", i) -> { append(" "); i += 6 }
 
+                // Numeric HTML entities: &#12345; or &#x1F4F8;
+                text.startsWith("&#", i) -> {
+                    val semiColon = text.indexOf(';', i + 2)
+                    if (semiColon != -1 && semiColon - i < 12) {
+                        val entityBody = text.substring(i + 2, semiColon)
+                        val codePoint = if (entityBody.startsWith("x", ignoreCase = true)) {
+                            entityBody.substring(1).toIntOrNull(16)
+                        } else {
+                            entityBody.toIntOrNull()
+                        }
+                        if (codePoint != null) {
+                            append(String(Character.toChars(codePoint)))
+                            i = semiColon + 1
+                        } else {
+                            append(text[i])
+                            i++
+                        }
+                    } else {
+                        append(text[i])
+                        i++
+                    }
+                }
+
                 else -> {
                     append(text[i])
                     i++

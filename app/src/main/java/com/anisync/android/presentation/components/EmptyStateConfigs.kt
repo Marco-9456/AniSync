@@ -3,8 +3,10 @@ package com.anisync.android.presentation.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
@@ -224,6 +226,55 @@ object EmptyStateConfigs {
             icon = Icons.Default.Person,
             title = "No characters listed",
             description = "Character information is not available for this title",
+            modifier = modifier
+        )
+    }
+
+    /**
+     * No forum threads found
+     */
+    @Composable
+    fun ForumNoThreads(
+        onCreateClick: (() -> Unit)? = null,
+        modifier: Modifier = Modifier
+    ) {
+        EmptyStateWithAction(
+            icon = Icons.Default.Forum,
+            title = "No discussions yet",
+            description = "Be the first to start a conversation",
+            actionLabel = if (onCreateClick != null) "Start a Discussion" else null,
+            onActionClick = onCreateClick,
+            modifier = modifier
+        )
+    }
+
+    /**
+     * No comments on a forum thread
+     */
+    @Composable
+    fun ForumNoComments(
+        modifier: Modifier = Modifier
+    ) {
+        EmptyStateCompact(
+            icon = Icons.Default.ChatBubbleOutline,
+            title = "No comments yet",
+            description = "Be the first to share your thoughts",
+            modifier = modifier
+        )
+    }
+
+    /**
+     * No forum search results
+     */
+    @Composable
+    fun ForumSearchNoResults(
+        query: String,
+        modifier: Modifier = Modifier
+    ) {
+        EmptyStateCompact(
+            icon = Icons.Default.SearchOff,
+            title = "No threads found for \"$query\"",
+            description = "Try different keywords",
             modifier = modifier
         )
     }

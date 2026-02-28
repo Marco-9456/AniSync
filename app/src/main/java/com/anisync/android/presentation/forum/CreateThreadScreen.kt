@@ -12,14 +12,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,17 +31,21 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.forum.components.ForumCategoryChip
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -52,6 +57,7 @@ fun CreateThreadScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     LaunchedEffect(Unit) {
         viewModel.actions.collectLatest { action ->
@@ -63,12 +69,18 @@ fun CreateThreadScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.forum_create_thread)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.forum_create_thread),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
@@ -91,7 +103,11 @@ fun CreateThreadScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         }
     ) { innerPadding ->
@@ -114,6 +130,7 @@ fun CreateThreadScreen(
                 isError = uiState.titleError != null,
                 supportingText = uiState.titleError?.let { { Text(it) } },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -127,6 +144,7 @@ fun CreateThreadScreen(
                 supportingText = uiState.bodyError?.let { { Text(it) } },
                 minLines = 6,
                 maxLines = 20,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -134,6 +152,7 @@ fun CreateThreadScreen(
             Text(
                 text = stringResource(R.string.forum_select_categories),
                 style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
                 color = if (uiState.categoryError != null) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.onSurface
             )
@@ -147,23 +166,15 @@ fun CreateThreadScreen(
 
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 uiState.availableCategories.forEach { category ->
                     val isSelected = category.id in uiState.selectedCategoryIds
-                    FilterChip(
+                    ForumCategoryChip(
+                        category = category,
                         selected = isSelected,
-                        onClick = { viewModel.onAction(CreateThreadAction.ToggleCategory(category.id)) },
-                        label = { Text(category.name) },
-                        leadingIcon = if (isSelected) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null
-                                )
-                            }
-                        } else null
+                        onClick = { viewModel.onAction(CreateThreadAction.ToggleCategory(category.id)) }
                     )
                 }
             }
@@ -173,6 +184,7 @@ fun CreateThreadScreen(
             Button(
                 onClick = { viewModel.onAction(CreateThreadAction.Submit) },
                 enabled = uiState.isValid && !uiState.isSubmitting,
+                shape = RoundedCornerShape(percent = 50),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -182,8 +194,17 @@ fun CreateThreadScreen(
                         modifier = Modifier.padding(end = 8.dp),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
                 }
-                Text(stringResource(R.string.forum_post_thread))
+                Text(
+                    text = stringResource(R.string.forum_post_thread),
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(Modifier.height(24.dp))

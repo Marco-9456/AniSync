@@ -10,12 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,7 +48,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
@@ -186,42 +190,48 @@ fun ThreadDetailScreen(
                         // Comments section header
                         item(key = "comments_header") {
                             StaggeredAnimatedVisibility(key = "comments_title", index = 1) {
-                                Text(
-                                    text = stringResource(R.string.forum_comments),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                                SectionHeader(
+                                    title = stringResource(R.string.forum_comments),
+                                    level = HeaderLevel.Section
                                 )
                             }
                         }
 
-                        // Comment items
-                        itemsIndexed(
-                            items = uiState.comments,
-                            key = { _, c -> "comment_${c.id}" },
-                            contentType = { _, _ -> "Comment" }
-                        ) { index, comment ->
-                            StaggeredAnimatedVisibility(key = "comment_${comment.id}", index = index + 2) {
-                                ThreadCommentItem(
-                                    comment = comment,
-                                    onLikeClick = {
-                                        viewModel.onAction(
-                                            ThreadDetailAction.ToggleLike(
-                                                isThread = false,
-                                                id = comment.id,
-                                                currentLiked = comment.isLiked
-                                            )
-                                        )
-                                    },
-                                    onReplyClick = if (!thread.isLocked) {
-                                        {
+                        // Comment items or empty state
+                        if (uiState.comments.isEmpty() && !uiState.isLoadingMoreComments) {
+                            item(key = "empty_comments") {
+                                StaggeredAnimatedVisibility(key = "empty_comments", index = 2) {
+                                    EmptyStateConfigs.ForumNoComments()
+                                }
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = uiState.comments,
+                                key = { _, c -> "comment_${c.id}" },
+                                contentType = { _, _ -> "Comment" }
+                            ) { index, comment ->
+                                StaggeredAnimatedVisibility(key = "comment_${comment.id}", index = index + 2) {
+                                    ThreadCommentItem(
+                                        comment = comment,
+                                        onLikeClick = { commentId, currentLiked ->
                                             viewModel.onAction(
-                                                ThreadDetailAction.OpenReply(comment.id, comment.authorName)
+                                                ThreadDetailAction.ToggleLike(
+                                                    isThread = false,
+                                                    id = commentId,
+                                                    currentLiked = currentLiked
+                                                )
                                             )
-                                        }
-                                    } else null,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                                        },
+                                        onReplyClick = if (!thread.isLocked) {
+                                            { commentId, authorName ->
+                                                viewModel.onAction(
+                                                    ThreadDetailAction.OpenReply(commentId, authorName)
+                                                )
+                                            }
+                                        } else null,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
                             }
                         }
 
@@ -237,8 +247,14 @@ fun ThreadDetailScreen(
                                     if (uiState.isLoadingMoreComments) {
                                         CircularProgressIndicator()
                                     } else {
-                                        Button(onClick = { viewModel.onAction(ThreadDetailAction.LoadMoreComments) }) {
-                                            Text(stringResource(R.string.forum_load_more_comments))
+                                        FilledTonalButton(
+                                            onClick = { viewModel.onAction(ThreadDetailAction.LoadMoreComments) },
+                                            shape = RoundedCornerShape(percent = 50)
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.forum_load_more_comments),
+                                                fontWeight = FontWeight.SemiBold
+                                            )
                                         }
                                     }
                                 }

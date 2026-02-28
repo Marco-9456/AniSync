@@ -14,13 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,32 +26,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
+import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
+import com.anisync.android.presentation.util.rememberHapticFeedback
 
 /**
  * Renders a forum comment with visual nesting via colored left-border bars.
  * Child comments display "Replying to @parent" labels and increasing indentation.
  *
  * @param comment The comment to render
- * @param onLikeClick Called when the like button is tapped
- * @param onReplyClick Called when the reply button is tapped (null hides button)
+ * @param onLikeClick Called when the like button is tapped, with the comment's ID and current liked state
+ * @param onReplyClick Called when the reply button is tapped, with the comment's ID and author name (null hides button)
  * @param parentAuthorName Name of the parent comment's author (null for top-level)
  * @param depth Nesting depth — 0 for top-level, capped at 3
  */
 @Composable
 fun ThreadCommentItem(
     comment: ForumComment,
-    onLikeClick: () -> Unit,
-    onReplyClick: (() -> Unit)?,
+    onLikeClick: (commentId: Int, currentLiked: Boolean) -> Unit,
+    onReplyClick: ((commentId: Int, authorName: String) -> Unit)?,
     modifier: Modifier = Modifier,
     parentAuthorName: String? = null,
     depth: Int = 0
 ) {
+    val haptic = rememberHapticFeedback()
+
     Column(modifier = modifier.fillMaxWidth()) {
         // Divider between top-level comments
         if (depth == 0) {
@@ -68,6 +70,15 @@ fun ThreadCommentItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
+                .then(
+                    if (depth == 0) {
+                        Modifier.background(
+                            MaterialTheme.colorScheme.surfaceContainerLowest
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             // Colored nesting bars — one per depth level, styled with rounded corners
             repeat(depth) { level ->
@@ -95,8 +106,8 @@ fun ThreadCommentItem(
                 // "Replying to @parent" label for nested comments
                 if (depth > 0 && parentAuthorName != null) {
                     Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.5f),
+                        shape = RoundedCornerShape(percent = 50),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
                         Text(
@@ -104,7 +115,7 @@ fun ThreadCommentItem(
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -129,22 +140,13 @@ fun ThreadCommentItem(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Action buttons (like + reply)
+                // Action buttons (animated like + reply)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = onLikeClick,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = if (comment.isLiked) MaterialTheme.colorScheme.errorContainer.copy(alpha=0.3f) else Color.Transparent
-                        )
-                    ) {
-                        Icon(
-                            imageVector = if (comment.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Like",
-                            tint = if (comment.isLiked) MaterialTheme.colorScheme.error
-                                   else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    AnimatedFavoriteButton(
+                        isFavorite = comment.isLiked,
+                        onClick = { onLikeClick(comment.id, comment.isLiked) },
+                        iconSize = 18.dp
+                    )
                     if (comment.likeCount > 0) {
                         Text(
                             text = comment.likeCount.toString(),
@@ -152,13 +154,18 @@ fun ThreadCommentItem(
                             fontWeight = FontWeight.SemiBold,
                             color = if (comment.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(Modifier.width(16.dp))
+                        Spacer(Modifier.width(12.dp))
                     } else {
-                         Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(4.dp))
                     }
 
                     if (onReplyClick != null) {
-                        IconButton(onClick = onReplyClick) {
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onReplyClick(comment.id, comment.authorName)
+                            }
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Reply,
                                 contentDescription = "Reply",
@@ -192,8 +199,8 @@ fun ThreadCommentItem(
  */
 @Composable
 private fun nestingBarColor(depth: Int): Color = when (depth) {
-    1 -> MaterialTheme.colorScheme.primary.copy(alpha=0.7f)
-    2 -> MaterialTheme.colorScheme.tertiary.copy(alpha=0.7f)
-    3 -> MaterialTheme.colorScheme.secondary.copy(alpha=0.7f)
+    1 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+    2 -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
+    3 -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
     else -> MaterialTheme.colorScheme.outlineVariant
 }

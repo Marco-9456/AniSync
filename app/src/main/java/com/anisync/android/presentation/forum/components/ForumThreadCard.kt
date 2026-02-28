@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.forum.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,14 +37,12 @@ fun ForumThreadCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)) // Dynamic rounding
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -114,7 +110,7 @@ fun ForumThreadCard(
                     )
                 }
 
-                // Category chips 
+                // Category chips
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     thread.categories.take(2).forEach { category ->
                         Surface(
@@ -127,6 +123,8 @@ fun ForumThreadCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
@@ -142,14 +140,14 @@ fun ForumThreadCardSkeleton(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
              // Author Row Skeleton
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SkeletonLine(fraction = 0f, height = 24.dp, modifier = Modifier.size(24.dp).clip(RoundedCornerShape(percent = 50)))
+                SkeletonLine(fraction = 0f, height = 24.dp, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.height(8.dp))
                 SkeletonLine(fraction = 0.3f, height = 14.dp)
             }

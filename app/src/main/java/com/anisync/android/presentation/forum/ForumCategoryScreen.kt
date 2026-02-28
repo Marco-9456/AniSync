@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.forum.components.ForumThreadCard
@@ -175,19 +176,34 @@ fun ForumCategoryScreen(
                             Spacer(Modifier.height(8.dp))
                         }
 
-                        itemsIndexed(
-                            items = uiState.threads,
-                            key = { _, t -> "thread_${t.id}" },
-                            contentType = { _, _ -> "ForumThread" }
-                        ) { index, thread ->
-                            StaggeredAnimatedVisibility(key = "cat_thread_${thread.id}", index = index + 1) {
-                                ForumThreadCard(
-                                    thread = thread,
-                                    onClick = { onThreadClick(thread.id, thread.title) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                                )
+                        // Thread cards or empty state
+                        if (uiState.threads.isEmpty()) {
+                            item(key = "empty") {
+                                StaggeredAnimatedVisibility(key = "cat_empty", index = 1) {
+                                    if (uiState.searchQuery.isNotEmpty()) {
+                                        EmptyStateConfigs.ForumSearchNoResults(
+                                            query = uiState.searchQuery
+                                        )
+                                    } else {
+                                        EmptyStateConfigs.ForumNoThreads()
+                                    }
+                                }
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = uiState.threads,
+                                key = { _, t -> "thread_${t.id}" },
+                                contentType = { _, _ -> "ForumThread" }
+                            ) { index, thread ->
+                                StaggeredAnimatedVisibility(key = "cat_thread_${thread.id}", index = index + 1) {
+                                    ForumThreadCard(
+                                        thread = thread,
+                                        onClick = { onThreadClick(thread.id, thread.title) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                                    )
+                                }
                             }
                         }
                     }

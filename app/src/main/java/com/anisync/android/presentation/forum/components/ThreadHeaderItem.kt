@@ -11,13 +11,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.ForumThread
+import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 
@@ -129,7 +127,7 @@ fun ThreadHeaderItem(
         
         Spacer(Modifier.height(12.dp))
 
-        // Stats row with like toggle
+        // Stats row with animated like toggle
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -155,17 +153,11 @@ fun ThreadHeaderItem(
                     fontWeight = FontWeight.Bold,
                     color = if (thread.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                IconToggleButton(
-                    checked = thread.isLiked,
-                    onCheckedChange = { onLikeClick() }
-                ) {
-                    Icon(
-                        imageVector = if (thread.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (thread.isLiked) "Unlike" else "Like",
-                        tint = if (thread.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+                AnimatedFavoriteButton(
+                    isFavorite = thread.isLiked,
+                    onClick = onLikeClick,
+                    iconSize = 26.dp
+                )
             }
         }
     }
