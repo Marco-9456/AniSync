@@ -95,7 +95,7 @@ fun ThreadDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = uiState.thread?.title ?: threadTitle,
+                        text = stringResource(R.string.forum_thread_appbar),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleMedium,
@@ -229,6 +229,7 @@ fun ThreadDetailScreen(
                                                 )
                                             }
                                         } else null,
+                                        threadAuthorId = thread.authorId,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }

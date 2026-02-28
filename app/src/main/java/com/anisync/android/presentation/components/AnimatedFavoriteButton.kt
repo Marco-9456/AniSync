@@ -11,7 +11,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -129,39 +128,37 @@ fun AnimatedFavoriteButton(
 
     Box(
         modifier = modifier
+            .size(iconSize + 8.dp) // Fixed size prevents layout shift
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            )
-            .padding(4.dp), // Touch target padding
+            ),
         contentAlignment = Alignment.Center
     ) {
-        // Sparkles Canvas
-        // Only draw if we are animating or in a state where sparkles might be visible
-        if (sparklesAlpha.value > 0f) {
-            Canvas(modifier = Modifier.size(iconSize * 2.0f)) {
-                val alpha = sparklesAlpha.value
-                if (alpha > 0f) {
-                    val center = Offset(size.width / 2, size.height / 2)
-                    // Radius calculation relative to the icon size logic
-                    // We want the particles to travel outwards from the center
-                    val maxTravelDistance = size.width / 2
-                    val currentRadius = maxTravelDistance * (sparklesRadius.value * 0.5f) // Adjust scaling
-                    val dotRadius = (size.width / 20) * alpha
+        // Sparkles Canvas — always present to avoid layout shift, visibility via alpha
+        Canvas(
+            modifier = Modifier
+                .size(iconSize * 2.0f)
+                .graphicsLayer { alpha = sparklesAlpha.value }
+        ) {
+            val currentAlpha = sparklesAlpha.value
+            if (currentAlpha > 0f) {
+                val center = Offset(size.width / 2, size.height / 2)
+                val maxTravelDistance = size.width / 2
+                val currentRadius = maxTravelDistance * (sparklesRadius.value * 0.5f)
+                val dotRadius = (size.width / 20) * currentAlpha
 
-                    // Draw 8 dots in a circle
-                    for (i in 0 until 8) {
-                        val angle = Math.toRadians((i * 45).toDouble())
-                        val x = center.x + cos(angle).toFloat() * currentRadius
-                        val y = center.y + sin(angle).toFloat() * currentRadius
+                for (i in 0 until 8) {
+                    val angle = Math.toRadians((i * 45).toDouble())
+                    val x = center.x + cos(angle).toFloat() * currentRadius
+                    val y = center.y + sin(angle).toFloat() * currentRadius
 
-                        drawCircle(
-                            color = activeColor.copy(alpha = alpha),
-                            radius = dotRadius,
-                            center = Offset(x, y)
-                        )
-                    }
+                    drawCircle(
+                        color = activeColor.copy(alpha = currentAlpha),
+                        radius = dotRadius,
+                        center = Offset(x, y)
+                    )
                 }
             }
         }

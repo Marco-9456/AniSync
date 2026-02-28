@@ -146,15 +146,30 @@ class ForumRepositoryImpl @Inject constructor(
                 .execute()
 
             val pageData = response.data?.Page
-            val comments = pageData?.threadComments
+            val allComments = pageData?.threadComments
                 ?.filterNotNull()
                 ?.map { it.toForumComment() }
                 ?: emptyList()
 
+            // AniList returns ALL comments flat (including replies). Each root comment
+            // also embeds its children in the `childComments` JSON field. We must
+            // deduplicate by collecting all child IDs and showing only roots at top level.
+            val childIds = mutableSetOf<Int>()
+            fun collectChildIds(comments: List<ForumComment>) {
+                for (c in comments) {
+                    for (child in c.childComments) {
+                        childIds.add(child.id)
+                        collectChildIds(child.childComments)
+                    }
+                }
+            }
+            collectChildIds(allComments)
+            val rootComments = allComments.filter { it.id !in childIds }
+
             val pageInfo = pageData?.pageInfo
             Result.Success(
                 PaginatedResult(
-                    items = comments,
+                    items = rootComments,
                     hasNextPage = pageInfo?.hasNextPage ?: false,
                     currentPage = pageInfo?.currentPage ?: page,
                     totalPages = 0
@@ -402,24 +417,34 @@ class ForumRepositoryImpl @Inject constructor(
 
     /**
      * AniList returns nested child comments as a raw JSON string.
-     * We parse it shallowly — enough for 1 level display.
+     * We parse it recursively up to a max depth of 3.
      */
-    private fun parseChildComments(rawJson: String?): List<ForumComment> {
+    private fun parseChildComments(rawJson: String?, depth: Int = 0): List<ForumComment> {
+        if (depth >= 3) return emptyList()
         if (rawJson.isNullOrBlank() || rawJson == "null" || rawJson == "[]") return emptyList()
         return try {
             val array = JSONArray(rawJson)
             (0 until array.length()).mapNotNull { i ->
                 val obj = array.optJSONObject(i) ?: return@mapNotNull null
-                parseChildCommentObject(obj)
+                parseChildCommentObject(obj, depth)
             }
         } catch (e: Exception) {
             emptyList()
         }
     }
 
-    private fun parseChildCommentObject(obj: JSONObject): ForumComment {
+    private fun parseChildCommentObject(obj: JSONObject, depth: Int = 0): ForumComment {
         val userObj = obj.optJSONObject("user")
         val avatarObj = userObj?.optJSONObject("avatar")
+
+        // Recursively parse nested children
+        val nestedChildrenRaw = obj.opt("childComments")
+        val nestedChildren = when (nestedChildrenRaw) {
+            is JSONArray -> parseChildComments(nestedChildrenRaw.toString(), depth + 1)
+            is String -> parseChildComments(nestedChildrenRaw, depth + 1)
+            else -> emptyList()
+        }
+
         return ForumComment(
             id = obj.optInt("id"),
             body = obj.optString("comment", ""),
@@ -430,7 +455,7 @@ class ForumRepositoryImpl @Inject constructor(
             authorAvatarUrl = avatarObj?.optString("large"),
             createdAt = obj.optLong("createdAt"),
             siteUrl = obj.optString("siteUrl").takeIf { it.isNotBlank() },
-            childComments = emptyList() // Capped at 1 level deep
+            childComments = nestedChildren
         )
     }
 }

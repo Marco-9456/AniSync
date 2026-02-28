@@ -31,6 +31,8 @@
     <string name="forum_recently_active">Recently Active</string>
     <string name="forum_new_threads">Newest Threads</string>
     <string name="forum_replying_to">Replying to %1$s</string>
+    <string name="forum_thread_appbar">Thread</string>
+    <string name="forum_op_badge">OP</string>
 
     <!-- Common -->
     <string name="back">Back</string>

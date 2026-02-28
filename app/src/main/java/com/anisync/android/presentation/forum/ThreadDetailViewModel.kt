@@ -2,6 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -113,13 +114,7 @@ class ThreadDetailViewModel @Inject constructor(
                 val newLikeCount = if (action.currentLiked) thread.likeCount - 1 else thread.likeCount + 1
                 state.copy(thread = thread.copy(isLiked = !action.currentLiked, likeCount = newLikeCount.coerceAtLeast(0)))
             } else {
-                val updatedComments = state.comments.map { comment ->
-                    if (comment.id == action.id) {
-                        val newCount = if (action.currentLiked) comment.likeCount - 1 else comment.likeCount + 1
-                        comment.copy(isLiked = !action.currentLiked, likeCount = newCount.coerceAtLeast(0))
-                    } else comment
-                }
-                state.copy(comments = updatedComments)
+                state.copy(comments = state.comments.map { it.updateCommentLike(action) })
             }
         }
 
@@ -138,13 +133,9 @@ class ThreadDetailViewModel @Inject constructor(
                         val revertedCount = if (action.currentLiked) thread.likeCount + 1 else thread.likeCount - 1
                         state.copy(thread = thread.copy(isLiked = action.currentLiked, likeCount = revertedCount.coerceAtLeast(0)))
                     } else {
-                        val reverted = state.comments.map { comment ->
-                            if (comment.id == action.id) {
-                                val revertedCount = if (action.currentLiked) comment.likeCount + 1 else comment.likeCount - 1
-                                comment.copy(isLiked = action.currentLiked, likeCount = revertedCount.coerceAtLeast(0))
-                            } else comment
-                        }
-                        state.copy(comments = reverted)
+                        // Revert: swap back to original liked state
+                        val revertAction = action.copy(currentLiked = !action.currentLiked)
+                        state.copy(comments = state.comments.map { it.updateCommentLike(revertAction) })
                     }
                 }
                 _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
@@ -180,5 +171,18 @@ class ThreadDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+}
+
+/**
+ * Recursively walks the comment tree to toggle the like state
+ * of the comment matching [action].id.
+ */
+private fun ForumComment.updateCommentLike(action: ThreadDetailAction.ToggleLike): ForumComment {
+    return if (id == action.id) {
+        val newCount = if (action.currentLiked) likeCount - 1 else likeCount + 1
+        copy(isLiked = !action.currentLiked, likeCount = newCount.coerceAtLeast(0))
+    } else {
+        copy(childComments = childComments.map { it.updateCommentLike(action) })
     }
 }

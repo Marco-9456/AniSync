@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.forum.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -52,6 +53,7 @@ fun ThreadCommentItem(
     onLikeClick: (commentId: Int, currentLiked: Boolean) -> Unit,
     onReplyClick: ((commentId: Int, authorName: String) -> Unit)?,
     modifier: Modifier = Modifier,
+    threadAuthorId: Int = 0,
     parentAuthorName: String? = null,
     depth: Int = 0
 ) {
@@ -120,12 +122,33 @@ fun ThreadCommentItem(
                     }
                 }
 
-                AuthorRow(
-                    name = comment.authorName,
-                    avatarUrl = comment.authorAvatarUrl,
-                    timestampSeconds = comment.createdAt,
-                    avatarSize = 24.dp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    AuthorRow(
+                        name = comment.authorName,
+                        avatarUrl = comment.authorAvatarUrl,
+                        timestampSeconds = comment.createdAt,
+                        avatarSize = 24.dp,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    // OP badge
+                    if (threadAuthorId != 0 && comment.authorId == threadAuthorId) {
+                        Surface(
+                            shape = RoundedCornerShape(percent = 50),
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text(
+                                text = stringResource(R.string.forum_op_badge),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(Modifier.height(8.dp))
 
@@ -185,6 +208,7 @@ fun ThreadCommentItem(
                     comment = child,
                     onLikeClick = onLikeClick,
                     onReplyClick = onReplyClick,
+                    threadAuthorId = threadAuthorId,
                     parentAuthorName = comment.authorName,
                     depth = depth + 1
                 )
