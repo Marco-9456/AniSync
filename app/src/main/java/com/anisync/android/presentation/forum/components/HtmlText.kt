@@ -54,20 +54,8 @@ import coil.compose.AsyncImage
  * Renders AniList-Flavored Markdown as styled text with inline images.
  *
  * Content is split into blocks:
- * - **Text blocks** rendered via [ClickableText] with styled [AnnotatedString]
+ * - **Text blocks** rendered via[ClickableText] with styled [AnnotatedString]
  * - **Image blocks** rendered via Coil [AsyncImage]
- *
- * Supported syntax:
- * - `# Header` through `##### Header 5` (scaled font sizes)
- * - `**bold**` / `__bold__`, `*italic*` / `_italic_`, `~~strikethrough~~`
- * - `~!spoiler text!~` (hidden behind matching-color overlay)
- * - `[text](url)` links, `![alt](url)` markdown images
- * - `img###(url)` AniList-specific sized images
- * - `youtube(id/url)` / `webm(url)` → "[video]" link
- * - `> blockquote`, `- list item`, `1. ordered list`
- * - `` `inline code` ``, `---`/`___` horizontal rule, `~~~` (stripped)
- * - HTML tags: `<b>`, `<i>`, `<a>`, `<img>`, `<h1>`–`<h5>`, etc.
- * - HTML entities: named and numeric
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -104,14 +92,16 @@ fun HtmlText(
                             block.annotatedString.getStringAnnotations("URL", offset, offset)
                                 .firstOrNull()
                                 ?.let { annotation ->
-                                    try { uriHandler.openUri(annotation.item) } catch (_: Exception) { }
+                                    try {
+                                        uriHandler.openUri(annotation.item)
+                                    } catch (_: Exception) {
+                                    }
                                 }
                         }
                     )
                 }
 
                 is ContentBlock.Image -> {
-                    // Collect consecutive images into a row
                     val imageGroup = mutableListOf(block)
                     while (i + 1 < blocks.size && blocks[i + 1] is ContentBlock.Image) {
                         i++
@@ -154,7 +144,6 @@ fun HtmlText(
         }
     }
 
-    // Fullscreen image viewer dialog
     fullscreenImageUrl?.let { imageUrl ->
         FullscreenImageViewer(
             imageUrl = imageUrl,
@@ -163,9 +152,6 @@ fun HtmlText(
     }
 }
 
-/**
- * Fullscreen image viewer with pinch-to-zoom and a close button.
- */
 @Composable
 private fun FullscreenImageViewer(
     imageUrl: String,
@@ -207,7 +193,6 @@ private fun FullscreenImageViewer(
                     .clickable(indication = null, interactionSource = null) { /* consume */ }
             )
 
-            // Close button
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
@@ -226,7 +211,7 @@ private fun FullscreenImageViewer(
 }
 
 // =============================================================================
-// Content block model
+// Data Models
 // =============================================================================
 
 private sealed class ContentBlock {
@@ -235,124 +220,80 @@ private sealed class ContentBlock {
 }
 
 // =============================================================================
-// Parser: AniList Markdown → List<ContentBlock>
+// Parser Engine
 // =============================================================================
 
-/**
- * Converts AniList-Flavored Markdown to a list of [ContentBlock]s.
- * Images are extracted as separate [ContentBlock.Image] blocks;
- * everything else is rendered as styled [ContentBlock.Text].
- */
 private fun parseAniListMarkdownBlocks(
     raw: String,
     linkColor: Color,
     codeBackground: Color,
     spoilerColor: Color
 ): List<ContentBlock> {
-    // Pre-process
     var text = raw
-    text = text.replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
-    text = text.replace(Regex("</?p>", RegexOption.IGNORE_CASE), "\n")
-    text = text.replace(Regex("</?div>", RegexOption.IGNORE_CASE), "\n")
-    text = text.replace(Regex("</?center>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+        .replace(Regex("</?p>", RegexOption.IGNORE_CASE), "\n")
+        .replace(Regex("</?div>", RegexOption.IGNORE_CASE), "\n")
+        .replace(Regex("</?center>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("\n{3,}"), "\n\n")
+
     text = stripAlignmentWrappers(text)
-    text = text.replace(Regex("\n{3,}"), "\n\n")
 
     val blocks = mutableListOf<ContentBlock>()
-    val textBuffer = StringBuilder()
 
-    fun flushText() {
-        val buffered = textBuffer.toString().trimEnd('\n')
-        if (buffered.isNotBlank()) {
-            val annotated = buildTextAnnotatedString(buffered, linkColor, codeBackground, spoilerColor)
-            blocks.add(ContentBlock.Text(annotated))
-        }
-        textBuffer.clear()
-    }
+    // Updated image matching to capture formatting like img220%(...) or img100px(...)
+    val imgPattern = Regex(
+        """img([a-zA-Z0-9%]*)\(([^)]+)\)|!\[([^\]]*)\]\(([^)]+)\)|<img\s+[^>]*src="([^"]*)"[^>]*/?>""",
+        RegexOption.IGNORE_CASE
+    )
 
-    val lines = text.split("\n")
-    for ((lineIndex, rawLine) in lines.withIndex()) {
-        val line = rawLine.trimEnd()
-
-        // Extract images that appear on the line before building text blocks
-        val imageResults = extractImages(line)
-
-        if (imageResults.images.isNotEmpty()) {
-            // Flush any text before the images
-            val remainingText = imageResults.remainingText.trim()
-            if (remainingText.isNotEmpty()) {
-                textBuffer.append(remainingText)
-                if (lineIndex < lines.lastIndex) textBuffer.append("\n")
-                flushText()
-            } else if (textBuffer.isNotEmpty()) {
-                flushText()
+    var currentIndex = 0
+    imgPattern.findAll(text).forEach { match ->
+        if (match.range.first > currentIndex) {
+            val subText = text.substring(currentIndex, match.range.first).trim()
+            if (subText.isNotBlank()) {
+                blocks.add(
+                    ContentBlock.Text(
+                        buildTextAnnotatedString(
+                            subText,
+                            linkColor,
+                            codeBackground,
+                            spoilerColor
+                        )
+                    )
+                )
             }
-            // Add images as separate blocks
-            imageResults.images.forEach { blocks.add(it) }
-        } else {
-            // Regular text line
-            textBuffer.append(line)
-            if (lineIndex < lines.lastIndex) textBuffer.append("\n")
+        }
+
+        // Strip % and px from AniList img sizes to satisfy Coil
+        val widthStr = match.groups[1]?.value
+        val width = widthStr?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
+        val url = match.groups[2]?.value ?: match.groups[4]?.value ?: match.groups[5]?.value ?: ""
+
+        if (url.isNotBlank()) {
+            blocks.add(ContentBlock.Image(url, width))
+        }
+        currentIndex = match.range.last + 1
+    }
+
+    if (currentIndex < text.length) {
+        val subText = text.substring(currentIndex).trim()
+        if (subText.isNotBlank()) {
+            blocks.add(
+                ContentBlock.Text(
+                    buildTextAnnotatedString(
+                        subText,
+                        linkColor,
+                        codeBackground,
+                        spoilerColor
+                    )
+                )
+            )
         }
     }
 
-    flushText()
     return blocks
 }
 
-/**
- * Data class to hold the result of image extraction from a line.
- */
-private data class ImageExtractionResult(
-    val images: List<ContentBlock.Image>,
-    val remainingText: String
-)
-
-/**
- * Extracts images from a line of text. Returns the list of image blocks
- * and the remaining text (with image syntax removed).
- */
-private fun extractImages(line: String): ImageExtractionResult {
-    val images = mutableListOf<ContentBlock.Image>()
-    var remaining = line
-
-    // img###(url)
-    val imgPattern = Regex("""img(\d*)\(([^)]+)\)""")
-    imgPattern.findAll(remaining).toList().reversed().forEach { match ->
-        val width = match.groupValues[1].toIntOrNull()
-        val url = match.groupValues[2]
-        images.add(0, ContentBlock.Image(url, width))
-        remaining = remaining.removeRange(match.range)
-    }
-
-    // ![alt](url) markdown images
-    val mdImgPattern = Regex("""!\[([^\]]*)\]\(([^)]+)\)""")
-    mdImgPattern.findAll(remaining).toList().reversed().forEach { match ->
-        val url = match.groupValues[2]
-        images.add(0, ContentBlock.Image(url))
-        remaining = remaining.removeRange(match.range)
-    }
-
-    // <img src="url" ...> HTML images
-    val htmlImgPattern = Regex("""<img\s+[^>]*src="([^"]*)"[^>]*/?>""", RegexOption.IGNORE_CASE)
-    htmlImgPattern.findAll(remaining).toList().reversed().forEach { match ->
-        val url = match.groupValues[1]
-        if (url.isNotEmpty()) {
-            images.add(0, ContentBlock.Image(url))
-        }
-        remaining = remaining.removeRange(match.range)
-    }
-
-    return ImageExtractionResult(images, remaining)
-}
-
-// =============================================================================
-// Text-only AnnotatedString builder (no images — those are handled above)
-// =============================================================================
-
-/**
- * Builds a styled [AnnotatedString] for text content (images excluded).
- */
 private fun buildTextAnnotatedString(
     text: String,
     linkColor: Color,
@@ -360,92 +301,444 @@ private fun buildTextAnnotatedString(
     spoilerColor: Color
 ): AnnotatedString {
     return buildAnnotatedString {
-        val lines = text.split("\n")
-        for ((lineIndex, rawLine) in lines.withIndex()) {
-            val line = rawLine.trimEnd()
-
-            when {
-                // ~~~ lines — decorative wrappers, invisible
-                line.matches(Regex("^\\s*~~~\\s*$")) -> { }
-
-                // Horizontal rule
-                line.matches(Regex("^\\s*[-_]{3,}\\s*$")) -> {
-                    withStyle(SpanStyle(color = spoilerColor.copy(alpha = 0.5f))) {
-                        append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-                    }
-                }
-
-                // Headers: # through #####
-                line.matches(Regex("^#{1,5}\\s+.+")) -> {
-                    val hashes = line.takeWhile { it == '#' }.length
-                    val headerText = line.drop(hashes).trimStart()
-                    val headerStyle = headerSpanStyle(hashes)
-                    withStyle(headerStyle) {
-                        parseInlineMarkdown(headerText, linkColor, codeBackground, spoilerColor)
-                    }
-                }
-
-                // Unordered list items
-                line.matches(Regex("^\\s*[-*+]\\s+.+")) -> {
-                    val content = line.replace(Regex("^\\s*[-*+]\\s+"), "")
-                    append("  • ")
-                    parseInlineMarkdown(content, linkColor, codeBackground, spoilerColor)
-                }
-
-                // Ordered list items
-                line.matches(Regex("^\\s*\\d+\\.\\s+.+")) -> {
-                    val match = Regex("^\\s*(\\d+)\\.\\s+(.+)").find(line)
-                    if (match != null) {
-                        val (num, content) = match.destructured
-                        append("  $num. ")
-                        parseInlineMarkdown(content, linkColor, codeBackground, spoilerColor)
-                    } else {
-                        parseInlineMarkdown(line, linkColor, codeBackground, spoilerColor)
-                    }
-                }
-
-                // Blockquote
-                line.startsWith(">") -> {
-                    val content = line.removePrefix(">").trimStart()
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = spoilerColor)) {
-                        append("┃ ")
-                        parseInlineMarkdown(content, linkColor, codeBackground, spoilerColor)
-                    }
-                }
-
-                // HTML headers
-                line.matches(Regex(".*<h[1-5]>.*</h[1-5]>.*", RegexOption.IGNORE_CASE)) -> {
-                    val htmlMatch = Regex("<h([1-5])>(.*?)</h\\1>", RegexOption.IGNORE_CASE).find(line)
-                    if (htmlMatch != null) {
-                        val level = htmlMatch.groupValues[1].toInt()
-                        val content = htmlMatch.groupValues[2]
-                        withStyle(headerSpanStyle(level)) {
-                            parseInlineMarkdown(content, linkColor, codeBackground, spoilerColor)
-                        }
-                    } else {
-                        parseInlineMarkdown(line, linkColor, codeBackground, spoilerColor)
-                    }
-                }
-
-                // Regular line
-                else -> {
-                    parseInlineMarkdown(line, linkColor, codeBackground, spoilerColor)
-                }
-            }
-
-            if (lineIndex < lines.lastIndex) append("\n")
-        }
+        parseMarkdown(text, linkColor, codeBackground, spoilerColor, isStartOfLine = true)
     }
 }
 
-// =============================================================================
-// Helpers
-// =============================================================================
+/**
+ * Recursive descent string-builder. Ensures that formats like `**` or `<strike>`
+ * cannot "bleed over" infinitely, as they must have a closed match found ahead.
+ */
+private fun AnnotatedString.Builder.parseMarkdown(
+    text: String,
+    linkColor: Color,
+    codeBackground: Color,
+    spoilerColor: Color,
+    isStartOfLine: Boolean
+) {
+    var i = 0
+    var lineStart = isStartOfLine
+
+    while (i < text.length) {
+        // --- BLOCK LEVEL PARSING (Only applies if at start of a line) ---
+        if (lineStart) {
+            val spaceCount = text.drop(i).takeWhile { it == ' ' || it == '\t' }.length
+            val idx = i + spaceCount
+
+            // Horizontal rules
+            if (text.startsWith("---", idx) || text.startsWith("___", idx)) {
+                val endOfLine = text.indexOf('\n', idx)
+                val eol = if (endOfLine == -1) text.length else endOfLine
+                val content = text.substring(idx, eol).trim()
+                if (content.all { it == '-' } || content.all { it == '_' }) {
+                    withStyle(SpanStyle(color = spoilerColor.copy(alpha = 0.5f))) {
+                        append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    }
+                    i = eol
+                    continue
+                }
+            }
+
+            // Decorative ~~~
+            if (text.startsWith("~~~", idx)) {
+                val endOfLine = text.indexOf('\n', idx)
+                val eol = if (endOfLine == -1) text.length else endOfLine
+                if (text.substring(idx, eol).trim() == "~~~") {
+                    i = eol
+                    continue
+                }
+            }
+
+            // Headers
+            var hashes = 0
+            var hIdx = idx
+            while (hIdx < text.length && text[hIdx] == '#') {
+                hashes++; hIdx++
+            }
+            if (hashes in 1..5 && hIdx < text.length && text[hIdx] == ' ') {
+                val endOfLine = text.indexOf('\n', hIdx)
+                val eol = if (endOfLine == -1) text.length else endOfLine
+                withStyle(headerSpanStyle(hashes)) {
+                    parseMarkdown(
+                        text.substring(hIdx + 1, eol),
+                        linkColor,
+                        codeBackground,
+                        spoilerColor,
+                        false
+                    )
+                }
+                i = eol
+                continue
+            }
+
+            // Blockquote
+            if (text.startsWith(">", idx)) {
+                val endOfLine = text.indexOf('\n', idx)
+                val eol = if (endOfLine == -1) text.length else endOfLine
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = spoilerColor)) {
+                    append("┃ ")
+                    val contentStart =
+                        if (idx + 1 < text.length && text[idx + 1] == ' ') idx + 2 else idx + 1
+                    parseMarkdown(
+                        text.substring(contentStart, eol),
+                        linkColor,
+                        codeBackground,
+                        spoilerColor,
+                        false
+                    )
+                }
+                i = eol
+                continue
+            }
+
+            // Unordered list
+            if (text.startsWith("- ", idx) || text.startsWith("* ", idx) || text.startsWith(
+                    "+ ",
+                    idx
+                )
+            ) {
+                append("  • ")
+                i = idx + 2
+                lineStart = false
+                continue
+            }
+
+            // Ordered list
+            val digitMatch =
+                Regex("^\\d+\\.\\s").find(text.substring(idx, minOf(idx + 10, text.length)))
+            if (digitMatch != null) {
+                append("  ${digitMatch.value.trim()} ")
+                i = idx + digitMatch.value.length
+                lineStart = false
+                continue
+            }
+        }
+
+        // Break Block Line Spans
+        if (text[i] == '\n') {
+            append('\n')
+            lineStart = true
+            i++
+            continue
+        } else {
+            lineStart = false
+        }
+
+        // --- INLINE LEVEL PARSING ---
+
+        // Spoilers: ~! !~
+        if (text.startsWith("~!", i)) {
+            val end = text.indexOf("!~", i + 2)
+            if (end != -1) {
+                withStyle(
+                    SpanStyle(
+                        background = spoilerColor.copy(alpha = 0.8f),
+                        color = spoilerColor.copy(alpha = 0.8f)
+                    )
+                ) {
+                    parseMarkdown(
+                        text.substring(i + 2, end),
+                        linkColor,
+                        codeBackground,
+                        spoilerColor,
+                        false
+                    )
+                }
+                i = end + 2
+                continue
+            }
+        }
+
+        // Strikethrough: ~~ ~~
+        if (text.startsWith("~~", i)) {
+            val end = text.indexOf("~~", i + 2)
+            if (end != -1) {
+                withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                    parseMarkdown(
+                        text.substring(i + 2, end),
+                        linkColor,
+                        codeBackground,
+                        spoilerColor,
+                        false
+                    )
+                }
+                i = end + 2
+                continue
+            }
+        }
+
+        // Bold: ** ** or __ __
+        if (text.startsWith("**", i) || text.startsWith("__", i)) {
+            val marker = text.substring(i, i + 2)
+            val end = text.indexOf(marker, i + 2)
+            if (end != -1) {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                    parseMarkdown(
+                        text.substring(i + 2, end),
+                        linkColor,
+                        codeBackground,
+                        spoilerColor,
+                        false
+                    )
+                }
+                i = end + 2
+                continue
+            }
+        }
+
+        // Italic: * * or _ _
+        if ((text[i] == '*' || text[i] == '_') && (i == 0 || text[i - 1] != text[i])) {
+            val marker = text[i].toString()
+            val end = text.indexOf(marker, i + 1)
+            if (end != -1 && end > i + 1 && (end + 1 == text.length || text[end + 1] != text[i])) {
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                    parseMarkdown(
+                        text.substring(i + 1, end),
+                        linkColor,
+                        codeBackground,
+                        spoilerColor,
+                        false
+                    )
+                }
+                i = end + 1
+                continue
+            }
+        }
+
+        // Inline Code: ` `
+        if (text[i] == '`') {
+            val end = text.indexOf('`', i + 1)
+            if (end != -1) {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        background = codeBackground,
+                        fontSize = 13.sp
+                    )
+                ) {
+                    append(text.substring(i + 1, end))
+                }
+                i = end + 1
+                continue
+            }
+        }
+
+        // YouTube / Webm Links
+        if (text.startsWith("youtube(", i, ignoreCase = true) || text.startsWith(
+                "webm(",
+                i,
+                ignoreCase = true
+            )
+        ) {
+            val isYoutube = text.startsWith("y", i, ignoreCase = true)
+            val prefixLen = if (isYoutube) 8 else 5
+            val end = text.indexOf(')', i + prefixLen)
+            if (end != -1) {
+                val content = text.substring(i + prefixLen, end)
+                val url = if (isYoutube && !content.startsWith(
+                        "http",
+                        ignoreCase = true
+                    )
+                ) "https://www.youtube.com/watch?v=$content" else content
+                withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) {
+                    pushStringAnnotation("URL", url)
+                    append("▶ Video")
+                    pop()
+                }
+                i = end + 1
+                continue
+            }
+        }
+
+        // Markdown Links: [text](url)
+        if (text[i] == '[') {
+            var closeBracket = -1
+            var nested = 0
+            for (j in i + 1 until text.length) {
+                if (text[j] == '[') nested++
+                else if (text[j] == ']') {
+                    if (nested == 0) {
+                        closeBracket = j; break
+                    } else nested--
+                }
+            }
+            if (closeBracket != -1 && closeBracket + 1 < text.length && text[closeBracket + 1] == '(') {
+                val closeParen = text.indexOf(')', closeBracket + 2)
+                if (closeParen != -1) {
+                    val linkText = text.substring(i + 1, closeBracket)
+                    val linkUrl = text.substring(closeBracket + 2, closeParen)
+
+                    withStyle(
+                        SpanStyle(
+                            color = linkColor,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
+                        pushStringAnnotation("URL", linkUrl)
+                        parseMarkdown(linkText, linkColor, codeBackground, spoilerColor, false)
+                        pop()
+                    }
+                    i = closeParen + 1
+                    continue
+                }
+            }
+        }
+
+        // HTML Tags & Links
+        if (text[i] == '<') {
+            val tagEnd = text.indexOf('>', i)
+            if (tagEnd != -1) {
+                val tagLength = tagEnd - i + 1
+                if (tagLength < 500) {
+                    val tag = text.substring(i, tagEnd + 1)
+                    val lowerTag = tag.lowercase()
+
+                    if (lowerTag.startsWith("<a ") && lowerTag.contains("href=")) {
+                        val hrefMatch = Regex("""href="([^"]*)"""").find(tag)
+                        val endA = text.indexOf("</a>", tagEnd + 1, ignoreCase = true)
+                        if (hrefMatch != null && endA != -1) {
+                            val url = hrefMatch.groupValues[1]
+                            withStyle(
+                                SpanStyle(
+                                    color = linkColor,
+                                    textDecoration = TextDecoration.Underline
+                                )
+                            ) {
+                                pushStringAnnotation("URL", url)
+                                parseMarkdown(
+                                    text.substring(tagEnd + 1, endA),
+                                    linkColor,
+                                    codeBackground,
+                                    spoilerColor,
+                                    false
+                                )
+                                pop()
+                            }
+                            i = endA + 4
+                            continue
+                        }
+                    }
+
+                    val endTag = when (lowerTag) {
+                        "<b>", "<strong>" -> "</b>"
+                        "<i>", "<em>" -> "</i>"
+                        "<del>", "<strike>" -> "</del>"
+                        else -> null
+                    }
+                    val style = when (lowerTag) {
+                        "<b>", "<strong>" -> SpanStyle(fontWeight = FontWeight.Bold)
+                        "<i>", "<em>" -> SpanStyle(fontStyle = FontStyle.Italic)
+                        "<del>", "<strike>" -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+                        else -> null
+                    }
+
+                    if (endTag != null && style != null) {
+                        val closeIdx = text.indexOf(endTag, tagEnd + 1, ignoreCase = true)
+                        val altEndTag = when (lowerTag) {
+                            "<b>" -> "</strong>"
+                            "<strong>" -> "</b>"
+                            "<del>" -> "</strike>"
+                            "<strike>" -> "</del>"
+                            else -> null
+                        }
+                        val altCloseIdx = if (altEndTag != null) text.indexOf(
+                            altEndTag,
+                            tagEnd + 1,
+                            ignoreCase = true
+                        ) else -1
+
+                        val actualClose = if (closeIdx != -1) closeIdx else altCloseIdx
+                        if (actualClose != -1) {
+                            val endTagLen =
+                                if (closeIdx != -1) endTag.length else altEndTag?.length ?: 0
+
+                            withStyle(style) {
+                                parseMarkdown(
+                                    text.substring(tagEnd + 1, actualClose),
+                                    linkColor,
+                                    codeBackground,
+                                    spoilerColor,
+                                    false
+                                )
+                            }
+                            i = actualClose + endTagLen
+                            continue
+                        }
+                    }
+
+                    if (lowerTag.matches(Regex("^<h[1-5]>$"))) {
+                        val level = lowerTag[2].digitToInt()
+                        val closeTag = "</h$level>"
+                        val closeIdx = text.indexOf(closeTag, tagEnd + 1, ignoreCase = true)
+                        if (closeIdx != -1) {
+                            withStyle(headerSpanStyle(level)) {
+                                parseMarkdown(
+                                    text.substring(tagEnd + 1, closeIdx),
+                                    linkColor,
+                                    codeBackground,
+                                    spoilerColor,
+                                    false
+                                )
+                            }
+                            i = closeIdx + closeTag.length
+                            continue
+                        }
+                    }
+
+                    // Bypass unknown HTML tags
+                    if (tagLength < 20 && (lowerTag[1].isLetter() || lowerTag[1] == '/')) {
+                        i = tagEnd + 1
+                        continue
+                    }
+                }
+            }
+        }
+
+        // HTML Entities
+        if (text.startsWith("&", i)) {
+            val semi = text.indexOf(';', i)
+            if (semi != -1 && semi - i < 10) {
+                val entity = text.substring(i, semi + 1).lowercase()
+                val char = when (entity) {
+                    "&amp;" -> "&"
+                    "&lt;" -> "<"
+                    "&gt;" -> ">"
+                    "&quot;" -> "\""
+                    "&nbsp;" -> " "
+                    "&apos;" -> "'"
+                    else -> null
+                }
+                if (char != null) {
+                    append(char)
+                    i = semi + 1
+                    continue
+                }
+                if (entity.startsWith("&#")) {
+                    val num = entity.substring(2, entity.length - 1)
+                    val code = if (num.startsWith("x")) num.substring(1)
+                        .toIntOrNull(16) else num.toIntOrNull()
+                    if (code != null) {
+                        try {
+                            append(String(Character.toChars(code)))
+                        } catch (e: Exception) { /* Malformed Ignore */
+                        }
+                        i = semi + 1
+                        continue
+                    }
+                }
+            }
+        }
+
+        // Normal text fallback
+        append(text[i])
+        i++
+    }
+}
 
 private fun stripAlignmentWrappers(text: String): String {
     var result = text
     for (prefix in listOf("center", "left", "right")) {
-        val pattern = Regex("(?s)${prefix}\\((.*?)\\)", RegexOption.DOT_MATCHES_ALL)
+        val pattern = Regex("${prefix}\\((.*?)\\)", RegexOption.DOT_MATCHES_ALL)
         result = pattern.replace(result) { it.groupValues[1] }
     }
     return result
@@ -458,243 +751,4 @@ private fun headerSpanStyle(level: Int): SpanStyle = when (level) {
     4 -> SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     5 -> SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
     else -> SpanStyle(fontWeight = FontWeight.Bold)
-}
-
-/**
- * Parses inline markdown elements within a single logical line.
- */
-private fun AnnotatedString.Builder.parseInlineMarkdown(
-    text: String,
-    linkColor: Color,
-    codeBackground: Color,
-    spoilerColor: Color
-) {
-    var i = 0
-    while (i < text.length) {
-        when {
-            // ~!spoiler!~
-            text.startsWith("~!", i) -> {
-                val end = text.indexOf("!~", i + 2)
-                if (end != -1) {
-                    withStyle(SpanStyle(
-                        background = spoilerColor.copy(alpha = 0.8f),
-                        color = spoilerColor.copy(alpha = 0.8f)
-                    )) {
-                        append(text.substring(i + 2, end))
-                    }
-                    i = end + 2
-                } else { append(text[i]); i++ }
-            }
-
-            // img###(url) — already extracted at block level, but handle leftover inline
-            text.startsWith("img", i) && i + 3 < text.length && (text[i + 3].isDigit() || text[i + 3] == '(') -> {
-                val parenStart = text.indexOf('(', i)
-                val parenEnd = if (parenStart != -1) text.indexOf(')', parenStart + 1) else -1
-                if (parenStart != -1 && parenEnd != -1) {
-                    i = parenEnd + 1 // skip — images rendered at block level
-                } else { append(text[i]); i++ }
-            }
-
-            // youtube(id/url) → [video]
-            text.startsWith("youtube(", i) -> {
-                val end = text.indexOf(')', i + 8)
-                if (end != -1) {
-                    val content = text.substring(i + 8, end)
-                    val url = if (content.startsWith("http")) content
-                              else "https://www.youtube.com/watch?v=$content"
-                    withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) {
-                        pushStringAnnotation("URL", url)
-                        append("▶ Video")
-                        pop()
-                    }
-                    i = end + 1
-                } else { append(text[i]); i++ }
-            }
-
-            // webm(url) → [video]
-            text.startsWith("webm(", i) -> {
-                val end = text.indexOf(')', i + 5)
-                if (end != -1) {
-                    val url = text.substring(i + 5, end)
-                    withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) {
-                        pushStringAnnotation("URL", url)
-                        append("▶ Video")
-                        pop()
-                    }
-                    i = end + 1
-                } else { append(text[i]); i++ }
-            }
-
-            // ![alt](url) — already extracted at block level, skip leftovers
-            text.startsWith("![", i) -> {
-                val closeBracket = text.indexOf(']', i + 2)
-                if (closeBracket != -1 && closeBracket + 1 < text.length && text[closeBracket + 1] == '(') {
-                    val closeParen = text.indexOf(')', closeBracket + 2)
-                    if (closeParen != -1) {
-                        i = closeParen + 1 // skip — image rendered at block level
-                    } else { append(text[i]); i++ }
-                } else { append(text[i]); i++ }
-            }
-
-            // [text](url) links
-            text[i] == '[' -> {
-                val closeBracket = text.indexOf(']', i + 1)
-                if (closeBracket != -1 && closeBracket + 1 < text.length && text[closeBracket + 1] == '(') {
-                    val closeParen = text.indexOf(')', closeBracket + 2)
-                    if (closeParen != -1) {
-                        val linkText = text.substring(i + 1, closeBracket)
-                        val linkUrl = text.substring(closeBracket + 2, closeParen)
-                        withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) {
-                            pushStringAnnotation("URL", linkUrl)
-                            append(linkText)
-                            pop()
-                        }
-                        i = closeParen + 1
-                    } else { append(text[i]); i++ }
-                } else { append(text[i]); i++ }
-            }
-
-            // <a href="url">text</a>
-            text.startsWith("<a ", i) -> {
-                val hrefMatch = Regex("""<a\s+href="([^"]*)"[^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE)
-                    .find(text, i)
-                if (hrefMatch != null && hrefMatch.range.first == i) {
-                    val url = hrefMatch.groupValues[1]
-                    val linkText = hrefMatch.groupValues[2]
-                    withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) {
-                        pushStringAnnotation("URL", url)
-                        append(linkText)
-                        pop()
-                    }
-                    i = hrefMatch.range.last + 1
-                } else { append(text[i]); i++ }
-            }
-
-            // <b> / <strong>
-            text.startsWith("<b>", i) || text.startsWith("<strong>", i) -> {
-                val tag = if (text.startsWith("<b>", i)) "b" else "strong"
-                val endTag = "</$tag>"
-                val end = text.indexOf(endTag, i, ignoreCase = true)
-                val start = i + tag.length + 2
-                if (end != -1) {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        parseInlineMarkdown(text.substring(start, end), linkColor, codeBackground, spoilerColor)
-                    }
-                    i = end + endTag.length
-                } else { append(text[i]); i++ }
-            }
-
-            // <i> / <em>
-            text.startsWith("<i>", i) || text.startsWith("<em>", i) -> {
-                val tag = if (text.startsWith("<i>", i)) "i" else "em"
-                val endTag = "</$tag>"
-                val end = text.indexOf(endTag, i, ignoreCase = true)
-                val start = i + tag.length + 2
-                if (end != -1) {
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        parseInlineMarkdown(text.substring(start, end), linkColor, codeBackground, spoilerColor)
-                    }
-                    i = end + endTag.length
-                } else { append(text[i]); i++ }
-            }
-
-            // <del> / <strike>
-            text.startsWith("<del>", i) || text.startsWith("<strike>", i) -> {
-                val tag = if (text.startsWith("<del>", i)) "del" else "strike"
-                val endTag = "</$tag>"
-                val end = text.indexOf(endTag, i, ignoreCase = true)
-                val start = i + tag.length + 2
-                if (end != -1) {
-                    withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                        parseInlineMarkdown(text.substring(start, end), linkColor, codeBackground, spoilerColor)
-                    }
-                    i = end + endTag.length
-                } else { append(text[i]); i++ }
-            }
-
-            // <img> tags — already extracted at block level, skip
-            text.startsWith("<img", i) -> {
-                val end = text.indexOf('>', i)
-                if (end != -1) { i = end + 1 } else { append(text[i]); i++ }
-            }
-
-            // Skip unrecognized HTML tags
-            text[i] == '<' && i + 1 < text.length && (text[i + 1].isLetter() || text[i + 1] == '/') -> {
-                val end = text.indexOf('>', i)
-                if (end != -1) { i = end + 1 } else { append(text[i]); i++ }
-            }
-
-            // Inline code: `code`
-            text[i] == '`' -> {
-                val end = text.indexOf('`', i + 1)
-                if (end != -1 && end > i + 1) {
-                    withStyle(SpanStyle(
-                        fontFamily = FontFamily.Monospace,
-                        background = codeBackground,
-                        fontSize = 13.sp
-                    )) { append(text.substring(i + 1, end)) }
-                    i = end + 1
-                } else { append(text[i]); i++ }
-            }
-
-            // **bold** / __bold__
-            text.startsWith("**", i) || text.startsWith("__", i) -> {
-                val marker = text.substring(i, i + 2)
-                val end = text.indexOf(marker, i + 2)
-                if (end != -1) {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        parseInlineMarkdown(text.substring(i + 2, end), linkColor, codeBackground, spoilerColor)
-                    }
-                    i = end + 2
-                } else { append(text[i]); i++ }
-            }
-
-            // ~~strikethrough~~
-            text.startsWith("~~", i) -> {
-                val end = text.indexOf("~~", i + 2)
-                if (end != -1) {
-                    withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                        parseInlineMarkdown(text.substring(i + 2, end), linkColor, codeBackground, spoilerColor)
-                    }
-                    i = end + 2
-                } else { append(text[i]); i++ }
-            }
-
-            // *italic* / _italic_ (single char, not preceding double)
-            (text[i] == '*' || text[i] == '_') && (i == 0 || text[i - 1] != text[i]) -> {
-                val marker = text[i]
-                val end = text.indexOf(marker, i + 1)
-                if (end != -1 && end > i + 1 && i + 1 < text.length && text[i + 1] != marker) {
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        parseInlineMarkdown(text.substring(i + 1, end), linkColor, codeBackground, spoilerColor)
-                    }
-                    i = end + 1
-                } else { append(text[i]); i++ }
-            }
-
-            // Named HTML entities
-            text.startsWith("&amp;", i) -> { append("&"); i += 5 }
-            text.startsWith("&lt;", i) -> { append("<"); i += 4 }
-            text.startsWith("&gt;", i) -> { append(">"); i += 4 }
-            text.startsWith("&quot;", i) -> { append("\""); i += 6 }
-            text.startsWith("&nbsp;", i) -> { append(" "); i += 6 }
-            text.startsWith("&apos;", i) -> { append("'"); i += 6 }
-
-            // Numeric HTML entities
-            text.startsWith("&#", i) -> {
-                val semiColon = text.indexOf(';', i + 2)
-                if (semiColon != -1 && semiColon - i < 12) {
-                    val entityBody = text.substring(i + 2, semiColon)
-                    val codePoint = if (entityBody.startsWith("x", ignoreCase = true))
-                        entityBody.substring(1).toIntOrNull(16) else entityBody.toIntOrNull()
-                    if (codePoint != null) {
-                        append(String(Character.toChars(codePoint)))
-                        i = semiColon + 1
-                    } else { append(text[i]); i++ }
-                } else { append(text[i]); i++ }
-            }
-
-            else -> { append(text[i]); i++ }
-        }
-    }
 }

@@ -9,6 +9,9 @@ import com.anisync.android.GetForumThreadsQuery
 import com.anisync.android.GetThreadCommentsQuery
 import com.anisync.android.ToggleLikeThreadCommentMutation
 import com.anisync.android.ToggleLikeThreadMutation
+import com.anisync.android.ToggleThreadSubscriptionMutation
+import com.anisync.android.data.local.dao.SavedForumThreadDao
+import com.anisync.android.data.local.entity.SavedForumThreadEntity
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
@@ -21,12 +24,14 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.exception.ApolloException
+import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 
 class ForumRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val savedForumThreadDao: SavedForumThreadDao
 ) : ForumRepository {
 
     // =========================================================================
@@ -358,6 +363,109 @@ class ForumRepositoryImpl @Inject constructor(
     }
 
     // =========================================================================
+    // READ: Subscribed threads (AniList API)
+    // =========================================================================
+
+    override suspend fun getSubscribedThreads(page: Int): Result<PaginatedResult<ForumThread>> {
+        return try {
+            val response = apolloClient
+                .query(GetForumOverviewQuery(
+                    page = Optional.present(page),
+                    sort = Optional.present(listOf(ThreadSort.REPLIED_AT_DESC)),
+                    subscribed = Optional.present(true)
+                ))
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val pageData = response.data?.Page
+            val threads = pageData?.threads
+                ?.filterNotNull()
+                ?.map { it.toForumThread() }
+                ?: emptyList()
+
+            val pageInfo = pageData?.pageInfo
+            Result.Success(
+                PaginatedResult(
+                    items = threads,
+                    hasNextPage = pageInfo?.hasNextPage ?: false,
+                    currentPage = pageInfo?.currentPage ?: page,
+                    totalPages = 0
+                )
+            )
+        } catch (e: ApolloException) {
+            Result.Error("Network error: ${e.message}", e)
+        } catch (e: Exception) {
+            Result.Error("Unexpected error: ${e.message}", e)
+        }
+    }
+
+    // =========================================================================
+    // WRITE: Toggle thread subscription (AniList API)
+    // =========================================================================
+
+    override suspend fun toggleThreadSubscription(threadId: Int, subscribe: Boolean): Result<Unit> {
+        return try {
+            apolloClient
+                .mutation(ToggleThreadSubscriptionMutation(threadId = threadId, subscribe = subscribe))
+                .execute()
+            Result.Success(Unit)
+        } catch (e: ApolloException) {
+            Result.Error("Network error: ${e.message}", e)
+        } catch (e: Exception) {
+            Result.Error("Unexpected error: ${e.message}", e)
+        }
+    }
+
+    // =========================================================================
+    // LOCAL: Saved threads (Room DB)
+    // =========================================================================
+
+    override suspend fun getSavedThreads(): List<ForumThread> {
+        return savedForumThreadDao.getAll().first().map { entity ->
+            ForumThread(
+                id = entity.threadId,
+                title = entity.title,
+                body = null,
+                replyCount = entity.replyCount,
+                viewCount = entity.viewCount,
+                likeCount = entity.likeCount,
+                isLiked = false,
+                isSubscribed = false,
+                isLocked = false,
+                authorId = 0,
+                authorName = entity.authorName,
+                authorAvatarUrl = entity.authorAvatarUrl,
+                categories = emptyList(),
+                createdAt = entity.savedAt,
+                updatedAt = entity.savedAt,
+                siteUrl = null
+            )
+        }
+    }
+
+    override suspend fun saveThread(thread: ForumThread) {
+        savedForumThreadDao.insert(
+            SavedForumThreadEntity(
+                threadId = thread.id,
+                title = thread.title,
+                authorName = thread.authorName,
+                authorAvatarUrl = thread.authorAvatarUrl,
+                replyCount = thread.replyCount,
+                viewCount = thread.viewCount,
+                likeCount = thread.likeCount
+            )
+        )
+    }
+
+    override suspend fun unsaveThread(threadId: Int) {
+        savedForumThreadDao.delete(threadId)
+    }
+
+    override suspend fun isThreadSaved(threadId: Int): Boolean {
+        return savedForumThreadDao.exists(threadId)
+    }
+
+    // =========================================================================
     // PRIVATE MAPPERS
     // =========================================================================
 
@@ -369,7 +477,7 @@ class ForumRepositoryImpl @Inject constructor(
         viewCount = viewCount ?: 0,
         likeCount = likeCount ?: 0,
         isLiked = isLiked ?: false,
-        isSubscribed = false,
+        isSubscribed = isSubscribed ?: false,
         isLocked = isLocked ?: false,
         authorId = user?.id ?: 0,
         authorName = user?.name ?: "Unknown",
@@ -388,7 +496,7 @@ class ForumRepositoryImpl @Inject constructor(
         viewCount = viewCount ?: 0,
         likeCount = likeCount ?: 0,
         isLiked = isLiked ?: false,
-        isSubscribed = false,
+        isSubscribed = isSubscribed ?: false,
         isLocked = isLocked ?: false,
         authorId = user?.id ?: 0,
         authorName = user?.name ?: "Unknown",

@@ -326,18 +326,12 @@ fun AniSyncNavHost(
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
                     }
                 }
-                val onCategoryClick = remember(navController) {
-                    { categoryId: Int, categoryName: String ->
-                        navController.navigate(ForumCategoryBrowse(categoryId, categoryName))
-                    }
-                }
                 val onCreateThreadClick = remember(navController) {
                     { navController.navigate(CreateThread) }
                 }
 
                 ForumScreen(
                     onThreadClick = onThreadClick,
-                    onCategoryClick = onCategoryClick,
                     onCreateThreadClick = onCreateThreadClick
                 )
             }

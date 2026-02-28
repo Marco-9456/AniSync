@@ -1,7 +1,10 @@
 package com.anisync.android.presentation.forum.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,137 +31,163 @@ import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ThreadHeaderItem(
     thread: ForumThread,
     onLikeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 24.dp)) {
-        // Category chips
-        if (thread.categories.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                thread.categories.forEach { cat ->
-                    Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
-                    ) {
-                        Text(
-                            text = cat.name.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                top = 20.dp,
+                start = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp
+            )
+        ) {
+            // Social Media Style header row - highly prominent author stats
+            AuthorRow(
+                name = thread.authorName,
+                avatarUrl = thread.authorAvatarUrl,
+                timestampSeconds = thread.createdAt,
+                avatarSize = 36.dp
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Extra Bold Main Title
+            Text(
+                text = thread.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = MaterialTheme.typography.headlineSmall.lineHeight * 1.15f
+            )
+
+            if (thread.categories.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    thread.categories.forEach { cat ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = cat.name.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
-        }
 
-        // Title
-        Text(
-            text = thread.title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            lineHeight = MaterialTheme.typography.headlineMedium.lineHeight * 1.1f
-        )
+            Spacer(Modifier.height(20.dp))
 
-        Spacer(Modifier.height(16.dp))
-
-        // Author and timestamp
-        AuthorRow(
-            name = thread.authorName,
-            avatarUrl = thread.authorAvatarUrl,
-            timestampSeconds = thread.createdAt,
-            avatarSize = 32.dp
-        )
-
-        Spacer(Modifier.height(24.dp))
-        
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-        // Locked banner
-        if (thread.isLocked) {
-            Spacer(Modifier.height(16.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            if (thread.isLocked) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(20.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "This thread is locked and cannot receive new replies.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
+            // High legibility body segment
+            thread.body?.let { body ->
+                HtmlText(
+                    html = body,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3f
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(Modifier.height(28.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(Modifier.height(12.dp))
+
+            // Action Row System
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StatBadge(
+                        icon = Icons.Default.ChatBubbleOutline,
+                        value = thread.replyCount,
+                        contentDescription = "${thread.replyCount} replies"
+                    )
+                    StatBadge(
+                        icon = Icons.Default.RemoveRedEye,
+                        value = thread.viewCount,
+                        contentDescription = "${thread.viewCount} views"
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    AnimatedFavoriteButton(
+                        isFavorite = thread.isLiked,
+                        onClick = onLikeClick,
+                        iconSize = 24.dp
                     )
                     Text(
-                        text = "This thread is locked and cannot receive new replies.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        text = thread.likeCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (thread.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(24.dp))
-
-        // Body rendered from HTML
-        thread.body?.let { body ->
-            HtmlText(
-                html = body,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(32.dp))
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        
-        Spacer(Modifier.height(12.dp))
-
-        // Stats row with animated like toggle
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                StatBadge(
-                    icon = Icons.Default.ChatBubbleOutline,
-                    value = thread.replyCount,
-                    contentDescription = "${thread.replyCount} replies"
-                )
-                StatBadge(
-                    icon = Icons.Default.RemoveRedEye,
-                    value = thread.viewCount,
-                    contentDescription = "${thread.viewCount} views"
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = thread.likeCount.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (thread.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                AnimatedFavoriteButton(
-                    isFavorite = thread.isLiked,
-                    onClick = onLikeClick,
-                    iconSize = 26.dp
-                )
-            }
-        }
+        // A crisp separator indicating the absolute end of the Original Post content
+        HorizontalDivider(
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        // A structured gap creating breathing room before the comment tree begins
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+        )
     }
 }

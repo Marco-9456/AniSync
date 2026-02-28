@@ -586,12 +586,14 @@ extend type Mutation {
   SaveThread(id: Int, title: String, body: String, categories: [Int]): Thread
   SaveThreadComment(id: Int, threadId: Int, comment: String, parentCommentId: Int): ThreadComment
   ToggleLikeV2(id: Int, type: LikeableType): LikeableUnion
+  ToggleThreadSubscription(threadId: Int, subscribe: Boolean): Thread
 }
 
 extend type Page {
   threads(
     id: Int,
     userId: Int,
+    subscribed: Boolean,
     categoryId: Int,
     mediaCategoryId: Int,
     search: String,

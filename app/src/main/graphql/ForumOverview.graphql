@@ -1,12 +1,13 @@
-query GetForumOverview($page: Int = 1, $perPage: Int = 15, $sort: [ThreadSort] = [IS_STICKY, REPLIED_AT_DESC]) {
+query GetForumOverview($page: Int = 1, $perPage: Int = 15, $sort: [ThreadSort] = [IS_STICKY, REPLIED_AT_DESC], $subscribed: Boolean) {
   Page(page: $page, perPage: $perPage) {
-    threads(sort: $sort) {
+    threads(sort: $sort, subscribed: $subscribed) {
       id
       title
       replyCount
       viewCount
       likeCount
       isLiked
+      isSubscribed
       isLocked
       repliedAt
       createdAt

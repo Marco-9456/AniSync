@@ -45,7 +45,6 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
-import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
 import com.anisync.android.presentation.forum.components.SearchField
@@ -163,30 +162,26 @@ fun ForumCategoryScreen(
                     ) {
                         // Search bar
                         item(key = "search") {
-                            StaggeredAnimatedVisibility(key = "cat_search", index = 0) {
-                                SearchField(
-                                    query = uiState.searchQuery,
-                                    onQueryChange = { viewModel.onAction(ForumCategoryAction.OnSearchQueryChange(it)) },
-                                    placeholder = stringResource(R.string.forum_search_threads),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                )
-                            }
+                            SearchField(
+                                query = uiState.searchQuery,
+                                onQueryChange = { viewModel.onAction(ForumCategoryAction.OnSearchQueryChange(it)) },
+                                placeholder = stringResource(R.string.forum_search_threads),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
                             Spacer(Modifier.height(8.dp))
                         }
 
                         // Thread cards or empty state
                         if (uiState.threads.isEmpty()) {
                             item(key = "empty") {
-                                StaggeredAnimatedVisibility(key = "cat_empty", index = 1) {
-                                    if (uiState.searchQuery.isNotEmpty()) {
-                                        EmptyStateConfigs.ForumSearchNoResults(
-                                            query = uiState.searchQuery
-                                        )
-                                    } else {
-                                        EmptyStateConfigs.ForumNoThreads()
-                                    }
+                                if (uiState.searchQuery.isNotEmpty()) {
+                                    EmptyStateConfigs.ForumSearchNoResults(
+                                        query = uiState.searchQuery
+                                    )
+                                } else {
+                                    EmptyStateConfigs.ForumNoThreads()
                                 }
                             }
                         } else {
@@ -195,15 +190,13 @@ fun ForumCategoryScreen(
                                 key = { _, t -> "thread_${t.id}" },
                                 contentType = { _, _ -> "ForumThread" }
                             ) { index, thread ->
-                                StaggeredAnimatedVisibility(key = "cat_thread_${thread.id}", index = index + 1) {
-                                    ForumThreadCard(
-                                        thread = thread,
-                                        onClick = { onThreadClick(thread.id, thread.title) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                                    )
-                                }
+                                ForumThreadCard(
+                                    thread = thread,
+                                    onClick = { onThreadClick(thread.id, thread.title) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
                             }
                         }
                     }

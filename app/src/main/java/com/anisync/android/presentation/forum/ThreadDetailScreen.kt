@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -13,7 +14,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -35,7 +40,9 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,16 +54,24 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.domain.ForumComment
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
 import com.anisync.android.presentation.forum.components.ThreadHeaderItem
 import kotlinx.coroutines.flow.collectLatest
+
+// Internal data model to optimize deep comment trees for LazyColumn
+internal data class FlatComment(
+    val comment: ForumComment,
+    val depth: Int,
+    val ancestorIds: List<Int>,
+    val descendantCount: Int
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +88,9 @@ fun ThreadDetailScreen(
     val replySheetState = rememberModalBottomSheetState()
     val pullToRefreshState = rememberPullToRefreshState()
 
+    // UI state for collapsing nested comment trees
+    var collapsedIds by remember { mutableStateOf(emptySet<Int>()) }
+
     LaunchedEffect(threadId) {
         viewModel.onAction(ThreadDetailAction.Load(threadId))
     }
@@ -83,6 +101,18 @@ fun ThreadDetailScreen(
                 is ThreadDetailAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
                 else -> {}
             }
+        }
+    }
+
+    // Flatten recursive comments structure into a 1D list to make LazyColumn highly performant
+    val flatComments = remember(uiState.comments) {
+        flattenComments(uiState.comments)
+    }
+
+    // Filter out comments whose ancestors are currently collapsed
+    val visibleComments = remember(flatComments, collapsedIds) {
+        flatComments.filter { flat ->
+            flat.ancestorIds.none { it in collapsedIds }
         }
     }
 
@@ -107,6 +137,22 @@ fun ThreadDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
+                actions = {
+                    IconButton(onClick = { viewModel.onAction(ThreadDetailAction.ToggleSubscribe) }) {
+                        Icon(
+                            imageVector = if (uiState.thread?.isSubscribed == true) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
+                            contentDescription = if (uiState.thread?.isSubscribed == true) "Unsubscribe" else "Subscribe",
+                            tint = if (uiState.thread?.isSubscribed == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { viewModel.onAction(ThreadDetailAction.ToggleSave) }) {
+                        Icon(
+                            imageVector = if (uiState.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = if (uiState.isSaved) "Unsave thread" else "Save thread",
+                            tint = if (uiState.isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
@@ -117,15 +163,16 @@ fun ThreadDetailScreen(
         floatingActionButton = {
             val thread = uiState.thread
             if (thread != null && !thread.isLocked) {
-                StaggeredAnimatedVisibility(key = "thread_fab", index = 10) {
+                Box(modifier = Modifier.navigationBarsPadding()) {
                     FloatingActionButton(
-                        onClick = {
-                            viewModel.onAction(ThreadDetailAction.OpenReply(null, null))
-                        },
+                        onClick = { viewModel.onAction(ThreadDetailAction.OpenReply(null, null)) },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.forum_reply))
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.forum_reply)
+                        )
                     }
                 }
             }
@@ -139,7 +186,9 @@ fun ThreadDetailScreen(
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isLoading && uiState.thread != null,
                     state = pullToRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp)
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp)
                 )
             },
             modifier = Modifier
@@ -166,83 +215,86 @@ fun ThreadDetailScreen(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 96.dp),
+                        // 0.dp arrangement is critical for the continuous nesting lines to touch each other perfectly
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
-                        // Thread header (body + stats)
                         item(key = "thread_header") {
-                            StaggeredAnimatedVisibility(key = "header_item", index = 0) {
-                                ThreadHeaderItem(
-                                    thread = thread,
-                                    onLikeClick = {
+                            ThreadHeaderItem(
+                                thread = thread,
+                                onLikeClick = {
+                                    viewModel.onAction(
+                                        ThreadDetailAction.ToggleLike(
+                                            isThread = true,
+                                            id = thread.id,
+                                            currentLiked = thread.isLiked
+                                        )
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        item(key = "comments_header") {
+                            SectionHeader(
+                                title = stringResource(R.string.forum_comments),
+                                level = HeaderLevel.Section,
+                                padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+
+                        if (visibleComments.isEmpty() && !uiState.isLoadingMoreComments) {
+                            item(key = "empty_comments") {
+                                EmptyStateConfigs.ForumNoComments()
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = visibleComments,
+                                key = { _, c -> "comment_${c.comment.id}" },
+                                contentType = { _, _ -> "Comment" }
+                            ) { _, flat ->
+                                ThreadCommentItem(
+                                    comment = flat.comment,
+                                    isCollapsed = collapsedIds.contains(flat.comment.id),
+                                    onToggleCollapse = {
+                                        collapsedIds = if (collapsedIds.contains(flat.comment.id)) {
+                                            collapsedIds - flat.comment.id
+                                        } else {
+                                            collapsedIds + flat.comment.id
+                                        }
+                                    },
+                                    descendantCount = flat.descendantCount,
+                                    onLikeClick = { commentId, currentLiked ->
                                         viewModel.onAction(
                                             ThreadDetailAction.ToggleLike(
-                                                isThread = true,
-                                                id = thread.id,
-                                                currentLiked = thread.isLiked
+                                                isThread = false,
+                                                id = commentId,
+                                                currentLiked = currentLiked
                                             )
                                         )
                                     },
+                                    onReplyClick = if (!thread.isLocked) {
+                                        { commentId, authorName ->
+                                            viewModel.onAction(
+                                                ThreadDetailAction.OpenReply(
+                                                    commentId,
+                                                    authorName
+                                                )
+                                            )
+                                        }
+                                    } else null,
+                                    threadAuthorId = thread.authorId,
+                                    depth = flat.depth,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
 
-                        // Comments section header
-                        item(key = "comments_header") {
-                            StaggeredAnimatedVisibility(key = "comments_title", index = 1) {
-                                SectionHeader(
-                                    title = stringResource(R.string.forum_comments),
-                                    level = HeaderLevel.Section
-                                )
-                            }
-                        }
-
-                        // Comment items or empty state
-                        if (uiState.comments.isEmpty() && !uiState.isLoadingMoreComments) {
-                            item(key = "empty_comments") {
-                                StaggeredAnimatedVisibility(key = "empty_comments", index = 2) {
-                                    EmptyStateConfigs.ForumNoComments()
-                                }
-                            }
-                        } else {
-                            itemsIndexed(
-                                items = uiState.comments,
-                                key = { _, c -> "comment_${c.id}" },
-                                contentType = { _, _ -> "Comment" }
-                            ) { index, comment ->
-                                StaggeredAnimatedVisibility(key = "comment_${comment.id}", index = index + 2) {
-                                    ThreadCommentItem(
-                                        comment = comment,
-                                        onLikeClick = { commentId, currentLiked ->
-                                            viewModel.onAction(
-                                                ThreadDetailAction.ToggleLike(
-                                                    isThread = false,
-                                                    id = commentId,
-                                                    currentLiked = currentLiked
-                                                )
-                                            )
-                                        },
-                                        onReplyClick = if (!thread.isLocked) {
-                                            { commentId, authorName ->
-                                                viewModel.onAction(
-                                                    ThreadDetailAction.OpenReply(commentId, authorName)
-                                                )
-                                            }
-                                        } else null,
-                                        threadAuthorId = thread.authorId,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
-
-                        // Load more comments button
                         if (uiState.hasMoreComments) {
                             item(key = "load_more") {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp),
+                                        .padding(vertical = 24.dp, horizontal = 16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (uiState.isLoadingMoreComments) {
@@ -267,7 +319,6 @@ fun ThreadDetailScreen(
         }
     }
 
-    // Reply bottom sheet
     if (uiState.isReplySheetVisible) {
         ModalBottomSheet(
             onDismissRequest = { viewModel.onAction(ThreadDetailAction.CloseReply) },
@@ -283,4 +334,38 @@ fun ThreadDetailScreen(
             )
         }
     }
+}
+
+// =============================================================================
+// Helper Functions to Map the recursive tree to a flattened performance-optimized list
+// =============================================================================
+
+private fun flattenComments(
+    comments: List<ForumComment>,
+    depth: Int = 0,
+    ancestors: List<Int> = emptyList()
+): List<FlatComment> {
+    val flatList = mutableListOf<FlatComment>()
+    for (comment in comments) {
+        val descendants = countDescendants(comment)
+        flatList.add(FlatComment(comment, depth, ancestors, descendants))
+        if (comment.childComments.isNotEmpty()) {
+            flatList.addAll(
+                flattenComments(
+                    comments = comment.childComments,
+                    depth = depth + 1,
+                    ancestors = ancestors + comment.id
+                )
+            )
+        }
+    }
+    return flatList
+}
+
+private fun countDescendants(comment: ForumComment): Int {
+    var count = comment.childComments.size
+    for (child in comment.childComments) {
+        count += countDescendants(child)
+    }
+    return count
 }

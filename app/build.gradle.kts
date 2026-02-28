@@ -201,8 +201,9 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-    implementation("androidx.glance:glance:1.2.0-rc01")
-    implementation("androidx.glance:glance-appwidget:1.2.0-rc01")
+    implementation(libs.androidx.glance)
+    implementation(libs.androidx.glance.appwidget.v120rc01)
+    implementation(libs.kotlinx.collections.immutable)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

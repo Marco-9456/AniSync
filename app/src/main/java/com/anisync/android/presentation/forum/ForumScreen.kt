@@ -1,48 +1,79 @@
 package com.anisync.android.presentation.forum
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Announcement
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Commute
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.NewReleases
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedTab
@@ -50,25 +81,53 @@ import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.HorizontalStaggeredAnimatedVisibility
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
-import com.anisync.android.presentation.forum.components.ForumCategoryChip
+import com.anisync.android.presentation.forum.components.ForumFeedSelector
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
-private data class FeedTabInfo(
-    val feed: ForumFeed,
+/**
+ * Category tabs definition: null = "All", then each defaultCategory with an icon.
+ */
+private data class CategoryTab(
+    val id: Int?,
     val label: String,
     val icon: ImageVector
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+private val categoryTabs = listOf(
+    CategoryTab(null, "All", Icons.Default.Forum),
+    CategoryTab(1, "Anime", Icons.Default.PlayArrow),
+    CategoryTab(2, "Manga", Icons.AutoMirrored.Filled.MenuBook),
+    CategoryTab(3, "Light Novels", Icons.AutoMirrored.Filled.LibraryBooks),
+    CategoryTab(4, "Visual Novels", Icons.Default.VisibilityOff),
+    CategoryTab(5, "Release Discussion", Icons.Default.RateReview),
+    CategoryTab(7, "General", Icons.Default.Public),
+    CategoryTab(8, "News", Icons.Default.Newspaper),
+    CategoryTab(9, "Music", Icons.Default.MusicNote),
+    CategoryTab(10, "Gaming", Icons.Default.Gamepad),
+    CategoryTab(11, "Site Feedback", Icons.Default.Feedback),
+    CategoryTab(12, "Bug Reports", Icons.Default.BugReport),
+    CategoryTab(13, "Announcements", Icons.AutoMirrored.Filled.Announcement),
+    CategoryTab(15, "Recommendations", Icons.Default.ThumbUp),
+    CategoryTab(16, "Forum Games", Icons.Default.Casino),
+    CategoryTab(17, "Misc", Icons.Default.Commute),
+    CategoryTab(18, "AniList Apps", Icons.Default.Apps)
+)
+
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    FlowPreview::class
+)
 @Composable
 fun ForumScreen(
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
-    onCategoryClick: (categoryId: Int, categoryName: String) -> Unit,
     onCreateThreadClick: () -> Unit,
     viewModel: ForumViewModel = hiltViewModel()
 ) {
@@ -76,29 +135,33 @@ fun ForumScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
+    val coroutineScope = rememberCoroutineScope()
 
-    val feedTabs = remember {
-        listOf(
-            FeedTabInfo(ForumFeed.OVERVIEW, "Overview", Icons.Default.ViewList),
-            FeedTabInfo(ForumFeed.RECENT, "Recent", Icons.Default.Schedule),
-            FeedTabInfo(ForumFeed.NEW, "New", Icons.Default.NewReleases)
-        )
-    }
-    val selectedTabIndex = remember(uiState.selectedFeed) {
-        feedTabs.indexOfFirst { it.feed == uiState.selectedFeed }.coerceAtLeast(0)
-    }
+    // Use FocusManager to clear focus and hide keyboard safely
+    val focusManager = LocalFocusManager.current
+
+    // Hoist systemBarsPadding here so Scaffold content can account for the navigation bar
+    val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
+
+    // Search bar state
+    val searchBarState = rememberSearchBarState()
+    val textFieldState = rememberTextFieldState()
+    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
     // Detect when user scrolls near end for infinite scroll
     val shouldLoadMore by remember {
         derivedStateOf {
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val total = listState.layoutInfo.totalItemsCount
+            val layoutInfo = listState.layoutInfo
+            val total = layoutInfo.totalItemsCount
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             total > 0 && lastVisible >= total - 4
         }
     }
 
     LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) viewModel.onAction(ForumAction.LoadMore)
+        if (shouldLoadMore) {
+            viewModel.onAction(ForumAction.LoadMore)
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -106,27 +169,146 @@ fun ForumScreen(
             when (action) {
                 is ForumAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
                 is ForumAction.OnThreadClick -> onThreadClick(action.threadId, action.threadTitle)
-                is ForumAction.OnCategoryClick -> onCategoryClick(action.category.id, action.category.name)
                 is ForumAction.OnCreateThreadClick -> onCreateThreadClick()
                 else -> {}
             }
         }
     }
 
+    // Debounced search
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .debounce(300.milliseconds)
+            .collect { viewModel.onAction(ForumAction.OnSearchQueryChange(it)) }
+    }
+
+    LaunchedEffect(searchBarState.currentValue) {
+        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            focusManager.clearFocus()
+        }
+    }
+
+    BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
+        focusManager.clearFocus()
+        coroutineScope.launch { searchBarState.animateToCollapsed() }
+    }
+
+    // Find selected category tab index
+    val selectedCategoryIndex = remember(uiState.selectedCategoryId) {
+        categoryTabs.indexOfFirst { it.id == uiState.selectedCategoryId }.coerceAtLeast(0)
+    }
+
+    val sharedItemModifier = remember { Modifier.fillMaxWidth() }
+
+    val inputField = remember {
+        @Composable {
+            val currentSearchBarValue = searchBarState.currentValue
+            val isSearchEmpty = textFieldState.text.isEmpty()
+
+            SearchBarDefaults.InputField(
+                searchBarState = searchBarState,
+                textFieldState = textFieldState,
+                onSearch = { focusManager.clearFocus() },
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.forum_search_placeholder),
+                        modifier = if (currentSearchBarValue == SearchBarValue.Collapsed) sharedItemModifier else Modifier,
+                        textAlign = if (currentSearchBarValue == SearchBarValue.Collapsed) TextAlign.Center else TextAlign.Start
+                    )
+                },
+                leadingIcon = if (currentSearchBarValue == SearchBarValue.Expanded) {
+                    {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            coroutineScope.launch { searchBarState.animateToCollapsed() }
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
+                    }
+                } else null,
+                trailingIcon = {
+                    if (currentSearchBarValue == SearchBarValue.Expanded && !isSearchEmpty) {
+                        IconButton(onClick = {
+                            textFieldState.edit { replace(0, length, "") }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.clear)
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            StaggeredAnimatedVisibility(key = "fab", index = 4) {
+            // Offset the FAB above the app's bottom NavigationBar (~85dp).
+            Box(modifier = Modifier.padding(bottom = 85.dp)) {
                 FloatingActionButton(
                     onClick = onCreateThreadClick,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(bottom = 80.dp)
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.forum_create_thread))
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.forum_create_thread)
+                    )
                 }
+            }
+        },
+        topBar = {
+            Column(modifier = Modifier.statusBarsPadding()) {
+                AppBarWithSearch(
+                    scrollBehavior = scrollBehavior,
+                    state = searchBarState,
+                    inputField = inputField,
+                    colors = SearchBarDefaults.appBarWithSearchColors(
+                        appBarContainerColor = Color.Transparent,
+                        scrolledAppBarContainerColor = Color.Transparent
+                    )
+                )
+
+                ForumFeedSelector(
+                    selected = uiState.selectedFeed,
+                    onSelect = { feed ->
+                        viewModel.onAction(ForumAction.OnFeedChange(feed))
+                    },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                PrimaryScrollableTabRow(
+                    selectedTabIndex = selectedCategoryIndex,
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    edgePadding = 16.dp,
+                    indicator = {},
+                    divider = {}
+                ) {
+                    categoryTabs.forEachIndexed { index, tab ->
+                        AnimatedTab(
+                            index = index,
+                            selectedIndex = selectedCategoryIndex,
+                            selected = selectedCategoryIndex == index,
+                            onClick = {
+                                viewModel.onAction(ForumAction.OnCategoryChange(tab.id))
+                            },
+                            icon = tab.icon,
+                            label = tab.label
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     ) { innerPadding ->
@@ -138,7 +320,9 @@ fun ForumScreen(
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isRefreshing,
                     state = pullToRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp)
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp)
                 )
             },
             modifier = Modifier
@@ -151,110 +335,41 @@ fun ForumScreen(
                     message = uiState.errorMessage!!,
                     onRetry = { viewModel.onAction(ForumAction.Refresh) }
                 )
+
                 else -> {
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 96.dp)
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            // Add navBar padding dynamically so list scrolls over nav bar smoothly
+                            bottom = systemBarsPadding.calculateBottomPadding() + 96.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Screen header
-                        item(key = "header") {
-                            StaggeredAnimatedVisibility(key = "forum_header", index = 0) {
-                                Column(modifier = Modifier.statusBarsPadding()) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    SectionHeader(
-                                        title = stringResource(R.string.nav_forum),
-                                        level = HeaderLevel.Screen,
-                                        icon = Icons.Default.Forum,
-                                        iconColor = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-
-                        // Feed tabs
-                        item(key = "feed_tabs") {
-                            StaggeredAnimatedVisibility(key = "forum_tabs", index = 1) {
-                                PrimaryScrollableTabRow(
-                                    selectedTabIndex = selectedTabIndex,
-                                    containerColor = Color.Transparent,
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                    edgePadding = 16.dp,
-                                    indicator = {},
-                                    divider = {}
-                                ) {
-                                    feedTabs.forEachIndexed { index, tab ->
-                                        AnimatedTab(
-                                            index = index,
-                                            selectedIndex = selectedTabIndex,
-                                            selected = selectedTabIndex == index,
-                                            onClick = {
-                                                viewModel.onAction(ForumAction.OnFeedChange(tab.feed))
-                                            },
-                                            icon = tab.icon,
-                                            label = tab.label
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(16.dp))
-                        }
-
-                        // Category chips row
-                        item(key = "categories") {
-                            StaggeredAnimatedVisibility(key = "forum_categories", index = 2) {
-                                Column {
-                                    SectionHeader(
-                                        title = stringResource(R.string.forum_browse_categories),
-                                        level = HeaderLevel.Section
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 24.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        itemsIndexed(defaultCategories, key = { _, c -> "cat_${c.id}" }) { index, category ->
-                                            HorizontalStaggeredAnimatedVisibility(
-                                                key = "cat_chip_${category.id}",
-                                                index = index
-                                            ) {
-                                                ForumCategoryChip(
-                                                    category = category,
-                                                    onClick = { onCategoryClick(category.id, category.name) }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(24.dp))
-                        }
-
                         // Threads section header
                         item(key = "threads_header") {
-                            StaggeredAnimatedVisibility(key = "forum_threads_header", index = 3) {
-                                SectionHeader(
-                                    title = when (uiState.selectedFeed) {
-                                        ForumFeed.OVERVIEW -> stringResource(R.string.forum_recent_discussions)
-                                        ForumFeed.RECENT -> stringResource(R.string.forum_recently_active)
-                                        ForumFeed.NEW -> stringResource(R.string.forum_new_threads)
-                                    },
-                                    level = HeaderLevel.Section
-                                )
-                            }
-                            Spacer(Modifier.height(8.dp))
+                            SectionHeader(
+                                title = when (uiState.selectedFeed) {
+                                    ForumFeed.OVERVIEW -> stringResource(R.string.forum_recent_discussions)
+                                    ForumFeed.RECENT -> stringResource(R.string.forum_recently_active)
+                                    ForumFeed.NEW -> stringResource(R.string.forum_new_threads)
+                                    ForumFeed.SUBSCRIBED -> stringResource(R.string.forum_subscribed_threads)
+                                    ForumFeed.SAVED -> stringResource(R.string.forum_saved_threads)
+                                },
+                                level = HeaderLevel.Section,
+                                padding = PaddingValues(vertical = 4.dp),
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
                         }
 
                         // Thread cards or empty state
                         if (uiState.threads.isEmpty()) {
                             item(key = "empty_threads") {
-                                StaggeredAnimatedVisibility(key = "empty_threads", index = 4) {
-                                    EmptyStateConfigs.ForumNoThreads(
-                                        onCreateClick = onCreateThreadClick
-                                    )
-                                }
+                                EmptyStateConfigs.ForumNoThreads(
+                                    onCreateClick = onCreateThreadClick
+                                )
                             }
                         } else {
                             itemsIndexed(
@@ -262,20 +377,99 @@ fun ForumScreen(
                                 key = { _, thread -> "thread_${thread.id}" },
                                 contentType = { _, _ -> "ForumThread" }
                             ) { index, thread ->
-                                StaggeredAnimatedVisibility(
-                                    key = "thread_${thread.id}",
-                                    index = index + 4
-                                ) {
-                                    ForumThreadCard(
-                                        thread = thread,
-                                        onClick = { onThreadClick(thread.id, thread.title) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                                    )
+                                val onCardClick = remember(thread.id, thread.title) {
+                                    { onThreadClick(thread.id, thread.title) }
                                 }
+                                val onSaveThreadClick = remember(thread.id) {
+                                    { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) }
+                                }
+                                val onSubscribeThreadClick = remember(thread.id) {
+                                    { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) }
+                                }
+
+                                ForumThreadCard(
+                                    thread = thread,
+                                    onClick = onCardClick,
+                                    isSaved = thread.id in uiState.savedThreadIds,
+                                    onSaveClick = onSaveThreadClick,
+                                    isSubscribed = thread.isSubscribed,
+                                    onSubscribeClick = onSubscribeThreadClick,
+                                    modifier = sharedItemModifier
+                                )
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fullscreen search overlay
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        inputField = inputField
+    ) {
+        when {
+            uiState.isLoading -> ForumLoadingSkeleton(
+                contentPadding = PaddingValues(
+                    top = 16.dp,
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
+                )
+            )
+
+            uiState.threads.isEmpty() && textFieldState.text.isNotEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.search_no_results),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    contentPadding = PaddingValues(
+                        top = 16.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    itemsIndexed(
+                        items = uiState.threads,
+                        key = { _, thread -> "search_${thread.id}" },
+                        contentType = { _, _ -> "ForumThread" }
+                    ) { _, thread ->
+                        val onSearchCardClick = remember(thread.id, thread.title) {
+                            {
+                                focusManager.clearFocus()
+                                onThreadClick(thread.id, thread.title)
+                            }
+                        }
+                        val onSearchSaveClick = remember(thread.id) {
+                            { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) }
+                        }
+                        val onSearchSubscribeClick = remember(thread.id) {
+                            { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) }
+                        }
+
+                        ForumThreadCard(
+                            thread = thread,
+                            onClick = onSearchCardClick,
+                            isSaved = thread.id in uiState.savedThreadIds,
+                            onSaveClick = onSearchSaveClick,
+                            isSubscribed = thread.isSubscribed,
+                            onSubscribeClick = onSearchSubscribeClick,
+                            modifier = sharedItemModifier
+                        )
                     }
                 }
             }
@@ -284,12 +478,26 @@ fun ForumScreen(
 }
 
 @Composable
-private fun ForumLoadingSkeleton() {
+private fun ForumLoadingSkeleton(
+    contentPadding: PaddingValues? = null
+) {
+    // Default to including navigation bar padding if not provided explicitly
+    val actualPadding = contentPadding ?: PaddingValues(
+        start = 16.dp,
+        end = 16.dp,
+        bottom = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 96.dp
+    )
+
+    val sharedSkeletonModifier = remember { Modifier.fillMaxWidth() }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 96.dp)
+        contentPadding = actualPadding,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { Spacer(Modifier.height(80.dp)) }
-        items(8) { ForumThreadCardSkeleton(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) }
+        item { Spacer(Modifier.height(8.dp)) } // Mimics the header spacing
+        items(8) {
+            ForumThreadCardSkeleton(sharedSkeletonModifier)
+        }
     }
 }

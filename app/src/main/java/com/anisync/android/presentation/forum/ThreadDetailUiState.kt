@@ -16,6 +16,7 @@ data class ThreadDetailUiState(
     val replyTargetCommentId: Int? = null, // null = replying to thread
     val replyTargetAuthorName: String? = null,
     val isSubmittingReply: Boolean = false,
+    val isSaved: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -26,5 +27,7 @@ sealed interface ThreadDetailAction {
     data class OpenReply(val parentCommentId: Int?, val parentAuthorName: String?) : ThreadDetailAction
     data object CloseReply : ThreadDetailAction
     data class SubmitReply(val threadId: Int, val body: String) : ThreadDetailAction
+    data object ToggleSave : ThreadDetailAction
+    data object ToggleSubscribe : ThreadDetailAction
     data class ShowSnackbar(val message: String) : ThreadDetailAction
 }

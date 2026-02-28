@@ -45,6 +45,8 @@ class ThreadDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(isReplySheetVisible = false, replyTargetCommentId = null) }
             }
             is ThreadDetailAction.SubmitReply -> submitReply(action)
+            is ThreadDetailAction.ToggleSave -> toggleSave()
+            is ThreadDetailAction.ToggleSubscribe -> toggleSubscribe()
             is ThreadDetailAction.ShowSnackbar -> viewModelScope.launch { _actions.emit(action) }
             else -> viewModelScope.launch { _actions.emit(action) }
         }
@@ -57,6 +59,7 @@ class ThreadDetailViewModel @Inject constructor(
             // Load thread and first page of comments in parallel
             val threadResult = forumRepository.getThread(threadId)
             val commentsResult = forumRepository.getComments(threadId, page = 1)
+            val isSaved = forumRepository.isThreadSaved(threadId)
 
             if (threadResult is Result.Error) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = threadResult.message) }
@@ -73,6 +76,7 @@ class ThreadDetailViewModel @Inject constructor(
                     comments = commentsData?.items ?: emptyList(),
                     hasMoreComments = commentsData?.hasNextPage ?: false,
                     currentCommentPage = 1,
+                    isSaved = isSaved,
                     errorMessage = null
                 )
             }
@@ -139,6 +143,45 @@ class ThreadDetailViewModel @Inject constructor(
                     }
                 }
                 _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
+            }
+        }
+    }
+
+    private fun toggleSave() {
+        val thread = _uiState.value.thread ?: return
+        val wasSaved = _uiState.value.isSaved
+
+        // Optimistic update
+        _uiState.update { it.copy(isSaved = !wasSaved) }
+
+        viewModelScope.launch {
+            try {
+                if (wasSaved) {
+                    forumRepository.unsaveThread(thread.id)
+                } else {
+                    forumRepository.saveThread(thread)
+                }
+            } catch (_: Exception) {
+                // Revert
+                _uiState.update { it.copy(isSaved = wasSaved) }
+                _actions.emit(ThreadDetailAction.ShowSnackbar("Failed to update save state"))
+            }
+        }
+    }
+
+    private fun toggleSubscribe() {
+        val thread = _uiState.value.thread ?: return
+        val wasSubscribed = thread.isSubscribed
+
+        // Optimistic update
+        _uiState.update { it.copy(thread = thread.copy(isSubscribed = !wasSubscribed)) }
+
+        viewModelScope.launch {
+            val result = forumRepository.toggleThreadSubscription(thread.id, !wasSubscribed)
+            if (result is Result.Error) {
+                // Revert
+                _uiState.update { it.copy(thread = it.thread?.copy(isSubscribed = wasSubscribed)) }
+                _actions.emit(ThreadDetailAction.ShowSnackbar("Failed to update subscription"))
             }
         }
     }

@@ -20,6 +20,7 @@
     <string name="forum_comments">Comments</string>
     <string name="forum_load_more_comments">Load More Comments</string>
     <string name="forum_search_threads">Search threads…</string>
+    <string name="forum_search_placeholder">Search forum threads</string>
     <string name="forum_select_categories">Select categories</string>
     <string name="forum_thread_title">Title</string>
     <string name="forum_thread_title_hint">What do you want to discuss?</string>
@@ -30,6 +31,8 @@
     <string name="forum_view_on_anilist">View on AniList</string>
     <string name="forum_recently_active">Recently Active</string>
     <string name="forum_new_threads">Newest Threads</string>
+    <string name="forum_subscribed_threads">Subscribed Threads</string>
+    <string name="forum_saved_threads">Saved Threads</string>
     <string name="forum_replying_to">Replying to %1$s</string>
     <string name="forum_thread_appbar">Thread</string>
     <string name="forum_op_badge">OP</string>

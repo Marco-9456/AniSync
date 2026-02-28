@@ -10,13 +10,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,7 +39,11 @@ import com.anisync.android.presentation.forum.components.shared.StatBadge
 fun ForumThreadCard(
     thread: ForumThread,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSaved: Boolean = false,
+    onSaveClick: (() -> Unit)? = null,
+    isSubscribed: Boolean = false,
+    onSubscribeClick: (() -> Unit)? = null
 ) {
     Card(
         onClick = onClick,
@@ -46,12 +55,47 @@ fun ForumThreadCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Author Row
-            AuthorRow(
-                name = thread.authorName,
-                avatarUrl = thread.authorAvatarUrl,
-                timestampSeconds = thread.updatedAt
-            )
+            // Author Row + Bookmark
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                AuthorRow(
+                    name = thread.authorName,
+                    avatarUrl = thread.authorAvatarUrl,
+                    timestampSeconds = thread.updatedAt,
+                    modifier = Modifier.weight(1f)
+                )
+                Row {
+                    if (onSubscribeClick != null) {
+                        IconButton(
+                            onClick = onSubscribeClick,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isSubscribed) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
+                                contentDescription = if (isSubscribed) "Unsubscribe" else "Subscribe",
+                                tint = if (isSubscribed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    if (onSaveClick != null) {
+                        IconButton(
+                            onClick = onSaveClick,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                contentDescription = if (isSaved) "Unsave" else "Save",
+                                tint = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Spacer(Modifier.height(12.dp))
 

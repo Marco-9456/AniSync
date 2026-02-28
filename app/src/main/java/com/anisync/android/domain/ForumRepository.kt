@@ -72,4 +72,38 @@ interface ForumRepository {
      * Toggles the like state for a comment.
      */
     suspend fun toggleLikeComment(commentId: Int): Result<Unit>
+
+    // =========================================================================
+    // SUBSCRIBED / SAVED / SUBSCRIPTION
+    // =========================================================================
+
+    /**
+     * Fetches threads the authenticated user is subscribed to.
+     */
+    suspend fun getSubscribedThreads(page: Int): Result<PaginatedResult<ForumThread>>
+
+    /**
+     * Toggles the thread subscription status on AniList.
+     */
+    suspend fun toggleThreadSubscription(threadId: Int, subscribe: Boolean): Result<Unit>
+
+    /**
+     * Returns all locally saved (bookmarked) threads.
+     */
+    suspend fun getSavedThreads(): List<ForumThread>
+
+    /**
+     * Saves a thread locally.
+     */
+    suspend fun saveThread(thread: ForumThread)
+
+    /**
+     * Removes a saved thread.
+     */
+    suspend fun unsaveThread(threadId: Int)
+
+    /**
+     * Checks if a thread is locally saved.
+     */
+    suspend fun isThreadSaved(threadId: Int): Boolean
 }

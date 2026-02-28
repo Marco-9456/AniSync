@@ -1,6 +1,9 @@
 [versions]
 agp = "8.13.1"
+glanceAppwidget = "1.2.0-rc01"
+glanceVersion = "1.2.0-rc01"
 kotlin = "2.2.21"
+kotlinxCollectionsImmutable = "0.4.0"
 ksp = "2.2.21-2.0.4"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -30,6 +33,8 @@ appcompat = "1.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-glance = { module = "androidx.glance:glance", version.ref = "glanceVersion" }
+androidx-glance-appwidget-v120rc01 = { module = "androidx.glance:glance-appwidget", version.ref = "glanceAppwidget" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -53,6 +58,7 @@ apollo-runtime = { group = "com.apollographql.apollo", name = "apollo-runtime", 
 apollo-normalized-cache = { group = "com.apollographql.apollo", name = "apollo-normalized-cache", version.ref = "apollo" }
 apollo-normalized-cache-sqlite = { group = "com.apollographql.apollo", name = "apollo-normalized-cache-sqlite", version.ref = "apollo" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }

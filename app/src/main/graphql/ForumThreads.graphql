@@ -13,6 +13,7 @@ query GetForumThreads(
       viewCount
       likeCount
       isLiked
+      isSubscribed
       isLocked
       repliedAt
       createdAt

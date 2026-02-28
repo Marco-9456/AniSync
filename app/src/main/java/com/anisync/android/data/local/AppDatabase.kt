@@ -5,10 +5,12 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
+import com.anisync.android.data.local.dao.SavedForumThreadDao
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
+import com.anisync.android.data.local.entity.SavedForumThreadEntity
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.data.local.entity.UserProfileEntity
 
@@ -51,12 +53,14 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         MediaDetailsEntity::class,
         UserProfileEntity::class,
         AiringScheduleEntity::class,
-        TrendingEntity::class
+        TrendingEntity::class,
+        SavedForumThreadEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
-        androidx.room.AutoMigration(from = 2, to = 3)
+        androidx.room.AutoMigration(from = 2, to = 3),
+        androidx.room.AutoMigration(from = 3, to = 4)
     ]
 )
 @TypeConverters(Converters::class)
@@ -66,4 +70,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
     abstract fun airingScheduleDao(): com.anisync.android.data.local.dao.AiringScheduleDao
     abstract fun trendingDao(): com.anisync.android.data.local.dao.TrendingDao
+    abstract fun savedForumThreadDao(): SavedForumThreadDao
 }
