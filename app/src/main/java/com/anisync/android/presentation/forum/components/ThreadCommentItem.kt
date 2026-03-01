@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.times
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.HtmlText
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
@@ -122,7 +123,7 @@ fun ThreadCommentItem(
                                 moveTo(parentX, 0f)
                                 lineTo(parentX, avatarCenterY - cornerRadius)
                                 // Elegant curve mimicking modern mobile thread graphs
-                                quadraticBezierTo(
+                                quadraticTo(
                                     parentX,
                                     avatarCenterY,
                                     parentX + cornerRadius,
@@ -275,7 +276,7 @@ fun ThreadCommentItem(
                                     .padding(horizontal = 6.dp, vertical = 4.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Reply,
+                                    imageVector = Icons.AutoMirrored.Filled.Reply,
                                     contentDescription = "Reply",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)

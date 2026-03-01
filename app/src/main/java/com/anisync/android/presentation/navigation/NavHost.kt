@@ -39,6 +39,7 @@ import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
+import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
@@ -587,6 +588,7 @@ fun AniSyncNavHost(
                     onNavigateToAccount = { navController.navigate(SettingsAccount) },
                     onNavigateToAbout = { navController.navigate(SettingsAbout) },
                     onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
+                    onNavigateToDeveloperTools = { navController.navigate(SettingsDeveloperTools) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -703,6 +705,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 LinksScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Developer Tools (debug builds only — route is only navigated to from debug UI)
+            composable<SettingsDeveloperTools>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                DeveloperToolsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

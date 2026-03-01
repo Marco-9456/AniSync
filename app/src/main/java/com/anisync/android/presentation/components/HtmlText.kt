@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.forum.components
+package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,12 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -34,9 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -54,7 +55,7 @@ import coil.compose.AsyncImage
  * Renders AniList-Flavored Markdown as styled text with inline images.
  *
  * Content is split into blocks:
- * - **Text blocks** rendered via[ClickableText] with styled [AnnotatedString]
+ * - **Text blocks** rendered via [Text] with styled [AnnotatedString]
  * - **Image blocks** rendered via Coil [AsyncImage]
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -66,7 +67,6 @@ fun HtmlText(
     linkColor: Color = MaterialTheme.colorScheme.primary,
     color: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    val uriHandler = LocalUriHandler.current
     val codeBackground = MaterialTheme.colorScheme.surfaceContainerHighest
     val spoilerColor = MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -85,19 +85,9 @@ fun HtmlText(
         while (i < blocks.size) {
             when (val block = blocks[i]) {
                 is ContentBlock.Text -> {
-                    ClickableText(
+                    Text(
                         text = block.annotatedString,
-                        style = style.copy(color = color),
-                        onClick = { offset ->
-                            block.annotatedString.getStringAnnotations("URL", offset, offset)
-                                .firstOrNull()
-                                ?.let { annotation ->
-                                    try {
-                                        uriHandler.openUri(annotation.item)
-                                    } catch (_: Exception) {
-                                    }
-                                }
-                        }
+                        style = style.copy(color = color)
                     )
                 }
 
@@ -540,11 +530,9 @@ private fun AnnotatedString.Builder.parseMarkdown(
                         ignoreCase = true
                     )
                 ) "https://www.youtube.com/watch?v=$content" else content
-                withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) {
-                    pushStringAnnotation("URL", url)
-                    append("▶ Video")
-                    pop()
-                }
+                pushLink(LinkAnnotation.Url(url, TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))))
+                append("▶ Video")
+                pop()
                 i = end + 1
                 continue
             }
@@ -568,16 +556,9 @@ private fun AnnotatedString.Builder.parseMarkdown(
                     val linkText = text.substring(i + 1, closeBracket)
                     val linkUrl = text.substring(closeBracket + 2, closeParen)
 
-                    withStyle(
-                        SpanStyle(
-                            color = linkColor,
-                            textDecoration = TextDecoration.Underline
-                        )
-                    ) {
-                        pushStringAnnotation("URL", linkUrl)
-                        parseMarkdown(linkText, linkColor, codeBackground, spoilerColor, false)
-                        pop()
-                    }
+                    pushLink(LinkAnnotation.Url(linkUrl, TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))))
+                    parseMarkdown(linkText, linkColor, codeBackground, spoilerColor, false)
+                    pop()
                     i = closeParen + 1
                     continue
                 }
@@ -598,22 +579,15 @@ private fun AnnotatedString.Builder.parseMarkdown(
                         val endA = text.indexOf("</a>", tagEnd + 1, ignoreCase = true)
                         if (hrefMatch != null && endA != -1) {
                             val url = hrefMatch.groupValues[1]
-                            withStyle(
-                                SpanStyle(
-                                    color = linkColor,
-                                    textDecoration = TextDecoration.Underline
-                                )
-                            ) {
-                                pushStringAnnotation("URL", url)
-                                parseMarkdown(
-                                    text.substring(tagEnd + 1, endA),
-                                    linkColor,
-                                    codeBackground,
-                                    spoilerColor,
-                                    false
-                                )
-                                pop()
-                            }
+                            pushLink(LinkAnnotation.Url(url, TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))))
+                            parseMarkdown(
+                                text.substring(tagEnd + 1, endA),
+                                linkColor,
+                                codeBackground,
+                                spoilerColor,
+                                false
+                            )
+                            pop()
                             i = endA + 4
                             continue
                         }

@@ -5,6 +5,7 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.data.update.Release
 import com.anisync.android.domain.UserProfile
 import com.materialkolor.PaletteStyle
 
@@ -25,6 +26,13 @@ sealed interface SettingsAction {
     
     data class SetAutoUpdateEnabled(val enabled: Boolean) : SettingsAction
     data class SetPrereleaseAllowed(val allowed: Boolean) : SettingsAction
+
+    // Update operations (delegated to UpdateManager via ViewModel)
+    data object CheckForUpdate : SettingsAction
+    data class StartDownload(val release: Release) : SettingsAction
+    data object CancelDownload : SettingsAction
+    data object InstallUpdate : SettingsAction
+    data object DismissUpdate : SettingsAction
     
     data object RefreshCacheSize : SettingsAction
     data object ClearCache : SettingsAction
@@ -35,6 +43,8 @@ sealed interface SettingsAction {
     data object SendTestAdvanceNotification : SettingsAction
     data object SendTestImminentNotification : SettingsAction
     data object ClearAllNotifications : SettingsAction
+    
+    data object SimulateUpdateAvailable : SettingsAction
 }
 
 data class SettingsUiState(

@@ -26,8 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -48,7 +46,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.util.NotificationPermissionHelper
 
@@ -232,12 +229,6 @@ fun NotificationsScreen(
                 }
             }
         }
-
-        // Debug section (debug builds only)
-        if (BuildConfig.DEBUG) {
-            Spacer(modifier = Modifier.height(16.dp))
-            DebugNotificationsSection(viewModel = viewModel)
-        }
     }
 }
 
@@ -274,78 +265,5 @@ private fun NotificationTypeItem(
             checked = isEnabled,
             onCheckedChange = onToggle
         )
-    }
-}
-
-/**
- * Debug notifications section for testing (debug builds only).
- */
-@Composable
-private fun DebugNotificationsSection(
-    viewModel: SettingsViewModel
-) {
-    SettingsGroup {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                stringResource(R.string.debug_notifications),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // First row: Watching and Planning
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = { viewModel.onAction(SettingsAction.SendTestWatchingNotification) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.debug_test_watching))
-                }
-                FilledTonalButton(
-                    onClick = { viewModel.onAction(SettingsAction.SendTestPlanningNotification) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.debug_test_planning))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Second row: Advance and Imminent
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = { viewModel.onAction(SettingsAction.SendTestAdvanceNotification) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.debug_test_advance))
-                }
-                FilledTonalButton(
-                    onClick = { viewModel.onAction(SettingsAction.SendTestImminentNotification) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.debug_test_imminent))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Third row: Clear All
-            FilledTonalButton(
-                onClick = { viewModel.onAction(SettingsAction.ClearAllNotifications) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
-                )
-            ) {
-                Text(stringResource(R.string.debug_clear_all))
-            }
-        }
     }
 }

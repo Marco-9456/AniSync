@@ -1,14 +1,18 @@
 package com.anisync.android.presentation.settings
 
 import android.content.Context
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.NotificationPreferences
+import com.anisync.android.data.update.UpdateCheckResult
+import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationDebugService
@@ -30,6 +34,7 @@ class SettingsViewModel @Inject constructor(
     private val notificationScheduler: NotificationScheduler,
     private val notificationDebugService: NotificationDebugService,
     private val authRepository: AuthRepository,
+    private val updateManager: UpdateManager,
     getProfileUseCase: GetProfileUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -38,6 +43,9 @@ class SettingsViewModel @Inject constructor(
     private val _isCacheCleared = MutableStateFlow(false)
     private val _isCacheLoading = MutableStateFlow(false)
     private val _isCacheClearing = MutableStateFlow(false)
+
+    /** Exposed so the UI can observe download/check state from [UpdateManager]. */
+    val updateState = updateManager.updateState
 
     init {
         refreshCacheSize()
@@ -148,6 +156,18 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetAutoUpdateEnabled -> appSettings.setAutoUpdateEnabled(action.enabled)
             is SettingsAction.SetPrereleaseAllowed -> appSettings.setAllowPrerelease(action.allowed)
 
+            // Update operations
+            is SettingsAction.CheckForUpdate -> checkForUpdate()
+            is SettingsAction.StartDownload -> updateManager.startDownload(
+                release = action.release,
+                onError = {
+                    Toast.makeText(context, R.string.app_update_failed, Toast.LENGTH_SHORT).show()
+                }
+            )
+            is SettingsAction.CancelDownload -> updateManager.cancelDownload()
+            is SettingsAction.InstallUpdate -> updateManager.installApk()
+            is SettingsAction.DismissUpdate -> updateManager.dismissUpdate()
+
             SettingsAction.RefreshCacheSize -> refreshCacheSize()
             SettingsAction.ClearCache -> clearCache()
             SettingsAction.ResetCacheCleared -> _isCacheCleared.value = false
@@ -157,6 +177,25 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.SendTestAdvanceNotification -> notificationDebugService.sendTestAdvanceNotification()
             SettingsAction.SendTestImminentNotification -> notificationDebugService.sendTestImminentNotification()
             SettingsAction.ClearAllNotifications -> notificationDebugService.clearAllNotifications()
+            SettingsAction.SimulateUpdateAvailable -> updateManager.simulateUpdateAvailable()
+        }
+    }
+
+    private fun checkForUpdate() {
+        val allowPrerelease = uiState.value.isPrereleaseAllowed
+        viewModelScope.launch {
+            when (val result = updateManager.checkForUpdate(allowPrerelease)) {
+                is UpdateCheckResult.UpToDate -> {
+                    Toast.makeText(context, R.string.update_is_up_to_date, Toast.LENGTH_SHORT)
+                        .show()
+                }
+                is UpdateCheckResult.Error -> {
+                    Toast.makeText(context, R.string.app_update_failed, Toast.LENGTH_SHORT).show()
+                }
+                is UpdateCheckResult.Available -> {
+                    // State is already updated in UpdateManager; dialog will react
+                }
+            }
         }
     }
 

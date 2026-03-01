@@ -1,10 +1,15 @@
 package com.anisync.android
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -24,8 +29,11 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.ThemeMode
+import com.anisync.android.data.update.UpdateManager
+import com.anisync.android.data.update.UpdateState
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
+import com.anisync.android.presentation.settings.UpdateDialog
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
@@ -47,6 +55,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var notificationScheduler: com.anisync.android.worker.NotificationScheduler
+
+    @Inject
+    lateinit var updateManager: UpdateManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val onCreateTime = measureTimeMillis {
@@ -81,6 +92,17 @@ class MainActivity : AppCompatActivity() {
                                 Log.d("PerfMetrics", "Notification scheduled in ${scheduleTime}ms")
                             }
                         }
+                }
+            }
+
+            // Silent auto-update check on launch (no UI unless update found)
+            if (appSettings.autoUpdateEnabled.value) {
+                lifecycleScope.launch {
+                    val allowPrerelease = appSettings.allowPrerelease.value
+                    updateManager.checkForUpdate(allowPrerelease)
+                    // Result is reflected in updateManager.updateState;
+                    // the dialog composable below will react if an update is found.
+                    // No toast/snackbar for "up to date" or "error" — completely silent.
                 }
             }
 
@@ -136,6 +158,52 @@ class MainActivity : AppCompatActivity() {
                                 MainScreen()
                             } else {
                                 LoginScreen()
+                            }
+
+                            // Global update dialog — overlays the entire app when an update is found.
+                            // This dialog appears silently after the auto-check on launch completes.
+                            val updateState by updateManager.updateState.collectAsStateWithLifecycle()
+
+                            val dialogRelease = when (val state = updateState) {
+                                is UpdateState.UpdateAvailable -> state.release
+                                is UpdateState.Downloading -> state.release
+                                is UpdateState.ReadyToInstall -> state.release
+                                else -> null
+                            }
+
+                            // Launcher for "Install Unknown Apps" system settings
+                            val installSettingsLauncher =
+                                rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                                    updateManager.installApk()
+                                }
+
+                            if (dialogRelease != null) {
+                                UpdateDialog(
+                                    updateState = updateState,
+                                    tagName = dialogRelease.tagName,
+                                    releaseBody = dialogRelease.body,
+                                    onDismiss = { updateManager.dismissUpdate() },
+                                    onDownload = {
+                                        updateManager.startDownload(dialogRelease)
+                                    },
+                                    onCancel = { updateManager.cancelDownload() },
+                                    onInstall = {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                            if (packageManager.canRequestPackageInstalls()) {
+                                                updateManager.installApk()
+                                            } else {
+                                                installSettingsLauncher.launch(
+                                                    Intent(
+                                                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                                        Uri.parse("package:$packageName")
+                                                    )
+                                                )
+                                            }
+                                        } else {
+                                            updateManager.installApk()
+                                        }
+                                    }
+                                )
                             }
                         }
                     }

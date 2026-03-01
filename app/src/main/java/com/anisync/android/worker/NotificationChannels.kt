@@ -4,11 +4,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import com.anisync.android.R
 
 object NotificationChannels {
     const val AIRING_CHANNEL_ID = "airing_notifications"
     const val PLANNING_CHANNEL_ID = "planning_notifications"
     const val UPCOMING_CHANNEL_ID = "upcoming_notifications"
+    const val UPDATE_CHANNEL_ID = "update_notifications"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -38,7 +40,17 @@ object NotificationChannels {
                 description = "Notifications for upcoming episode premieres"
             }
 
-            notificationManager.createNotificationChannels(listOf(airingChannel, planningChannel, upcomingChannel))
+            val updateChannel = NotificationChannel(
+                UPDATE_CHANNEL_ID,
+                context.getString(R.string.update_notification_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.update_notification_channel_desc)
+            }
+
+            notificationManager.createNotificationChannels(
+                listOf(airingChannel, planningChannel, upcomingChannel, updateChannel)
+            )
         }
     }
 }

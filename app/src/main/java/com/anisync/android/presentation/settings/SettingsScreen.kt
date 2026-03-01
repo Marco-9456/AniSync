@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
@@ -81,6 +82,7 @@ fun SettingsScreen(
     onNavigateToAccount: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToUpdates: () -> Unit,
+    onNavigateToDeveloperTools: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
@@ -198,7 +200,27 @@ fun SettingsScreen(
                 ),
                 onClick = onNavigateToAbout
             )
-        )
+        ) + if (BuildConfig.DEBUG) {
+            listOf(
+                SettingsItemData(
+                    key = "developer_tools",
+                    icon = Icons.Outlined.Build,
+                    titleResId = R.string.settings_developer_tools,
+                    subtitleResId = R.string.settings_developer_tools_desc,
+                    searchKeywords = listOf(
+                        "developer",
+                        "debug",
+                        "tools",
+                        "test",
+                        "notification",
+                        "update"
+                    ),
+                    onClick = onNavigateToDeveloperTools
+                )
+            )
+        } else {
+            emptyList()
+        }
     }
 
     // Filter items based on search query
@@ -399,6 +421,20 @@ fun SettingsScreen(
                             ),
                             onClick = onNavigateToAbout
                         )
+                    }
+                }
+
+                // Developer Tools (debug builds only)
+                if (BuildConfig.DEBUG) {
+                    item(key = "group_developer_tools") {
+                        SettingsGroup {
+                            SettingsItem(
+                                icon = Icons.Outlined.Build,
+                                title = stringResource(R.string.settings_developer_tools),
+                                subtitle = stringResource(R.string.settings_developer_tools_desc),
+                                onClick = onNavigateToDeveloperTools
+                            )
+                        }
                     }
                 }
             }

@@ -54,11 +54,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.components.HtmlText
 import com.anisync.android.presentation.forum.components.ForumCategoryChip
-import com.anisync.android.presentation.forum.components.HtmlText
 import kotlinx.coroutines.flow.collectLatest
 
 private const val MAX_BODY_LENGTH = 10000

@@ -191,3 +191,9 @@ object SettingsUpdates
  */
 @Serializable
 object SettingsLinks
+
+/**
+ * Developer tools screen (debug builds only).
+ */
+@Serializable
+object SettingsDeveloperTools

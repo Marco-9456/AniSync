@@ -83,5 +83,21 @@ class AniSyncApplication : Application(), Configuration.Provider {
 
         // Schedule Widget Refresh
         com.anisync.android.worker.WidgetRefreshWorker.schedule(this@AniSyncApplication)
+
+        // Schedule periodic update check (every 6 hours, requires network).
+        // The worker itself checks whether auto-update is enabled, so the work
+        // is always enqueued but becomes a no-op when the feature is off.
+        val updateCheckRequest =
+            PeriodicWorkRequestBuilder<com.anisync.android.worker.UpdateCheckWorker>(
+                6, TimeUnit.HOURS
+            )
+                .setConstraints(networkConstraints)
+                .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "UpdateCheckWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            updateCheckRequest
+        )
     }
 }

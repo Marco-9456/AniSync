@@ -230,6 +230,15 @@
     <string name="app_update_failed">Update failed</string>
     <string name="channel_stable">Stable</string>
     <string name="channel_prerelease">Pre-release</string>
+    <string name="channel_stable_desc">Recommended for most users</string>
+    <string name="channel_prerelease_desc">Get early access to new features</string>
+    <string name="download_update">Download</string>
+    <string name="update_check_failed">Failed to check for updates</string>
+    <string name="update_notification_channel_name">App Updates</string>
+    <string name="update_notification_channel_desc">Notifications when a new version of AniSync is available</string>
+    <string name="update_notification_title">AniSync Update Available</string>
+    <string name="update_notification_body">Version %1$s is available. Tap to update.</string>
+    <string name="release_notes">Release Notes</string>
     <string name="latest_version">Latest Version</string>
     <string name="new_update_available">New update available</string>
     <string name="downloading_update">Downloading update: %1$d%%</string>
@@ -318,6 +327,12 @@
     <string name="debug_test_advance">Test Advance (12h)</string>
     <string name="debug_test_imminent">Test Imminent (2h)</string>
     <string name="debug_clear_all">Clear All</string>
+    <string name="settings_developer_tools">Developer Tools</string>
+    <string name="settings_developer_tools_desc">Debug utilities and test tools</string>
+    <string name="debug_build_info">Build Information</string>
+    <string name="debug_update_section">Update Debug</string>
+    <string name="debug_force_update_check">Force Update Check</string>
+    <string name="debug_simulate_update">Simulate Update Available</string>
 
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>
