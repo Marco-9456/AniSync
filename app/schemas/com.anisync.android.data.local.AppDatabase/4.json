@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 4,
-    "identityHash": "d6c43770321b37c05a79ffb10b96cc67",
+    "identityHash": "08b0339441f6b200cbe65ddaee22da65",
     "entities": [
       {
         "tableName": "library_entries",
@@ -638,7 +638,7 @@
       },
       {
         "tableName": "saved_forum_threads",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`threadId` INTEGER NOT NULL, `title` TEXT NOT NULL, `authorName` TEXT NOT NULL, `authorAvatarUrl` TEXT, `replyCount` INTEGER NOT NULL, `viewCount` INTEGER NOT NULL, `likeCount` INTEGER NOT NULL, `savedAt` INTEGER NOT NULL, PRIMARY KEY(`threadId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`threadId` INTEGER NOT NULL, `title` TEXT NOT NULL, `authorName` TEXT NOT NULL, `authorAvatarUrl` TEXT, `replyCount` INTEGER NOT NULL, `viewCount` INTEGER NOT NULL, `likeCount` INTEGER NOT NULL, `isLiked` INTEGER NOT NULL DEFAULT 0, `isLocked` INTEGER NOT NULL DEFAULT 0, `repliedAt` INTEGER, `replyUserName` TEXT, `replyUserAvatarUrl` TEXT, `categories` TEXT NOT NULL DEFAULT '[]', `mediaTitle` TEXT, `mediaCoverUrl` TEXT, `savedAt` INTEGER NOT NULL, PRIMARY KEY(`threadId`))",
         "fields": [
           {
             "fieldPath": "threadId",
@@ -682,6 +682,52 @@
             "notNull": true
           },
           {
+            "fieldPath": "isLiked",
+            "columnName": "isLiked",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isLocked",
+            "columnName": "isLocked",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "repliedAt",
+            "columnName": "repliedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "replyUserName",
+            "columnName": "replyUserName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "replyUserAvatarUrl",
+            "columnName": "replyUserAvatarUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categories",
+            "columnName": "categories",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "mediaTitle",
+            "columnName": "mediaTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mediaCoverUrl",
+            "columnName": "mediaCoverUrl",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "savedAt",
             "columnName": "savedAt",
             "affinity": "INTEGER",
@@ -698,7 +744,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd6c43770321b37c05a79ffb10b96cc67')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '08b0339441f6b200cbe65ddaee22da65')"
     ]
   }
 }

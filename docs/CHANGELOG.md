@@ -9,6 +9,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] - 2026-03-01
+
+### Added
+
+#### Forum
+- **Forum Hub** - New "Forum" tab in main navigation with three feeds: Overview, Recent, and New
+- **Thread Browsing** - Browse threads by category with horizontally scrollable category chips
+- **Thread Detail** - Full thread view with nested comment rendering (up to 3 levels deep), Reddit-style colored nesting lines, and OP badges
+- **Thread Creation** - Compose new threads with category selection, markdown preview toggle, character counter, and unsaved-changes confirmation dialog
+- **Comment Replies** - Reply to threads and comments via bottom sheet with markdown formatting toolbar (bold, italic, strikethrough, code, links, spoilers) and preview toggle
+- **Thread Search** - Debounced search across forum threads with immersive full-screen search bar
+- **Thread Saving (Bookmarks)** - Save threads locally for offline access; "Saved" feed displays bookmarked threads from local database
+- **Thread Subscriptions** - Subscribe/unsubscribe to threads via the AniList API; "Subscribed" feed for followed threads
+- **Comment Sorting** - Sort comments by Newest or Oldest
+- **Thread Sharing** - Share thread URLs directly from the detail screen
+- **Comment Collapsing** - Collapse/expand comment sub-trees with descendant count
+- **Inline Images** - Parse and render `img###(url)`, `![alt](url)`, and `<img>` syntaxes with fullscreen pinch-to-zoom viewer
+- **Flat Reply Parsing** - Reconstruct comment trees from `@Username` mention-based replies
+- **Rich Markdown/HTML Parser** - Comprehensive parser supporting headers, lists, blockquotes, horizontal rules, inline code, spoilers, alignment wrappers, and HTML entities (named and numeric)
+- **Empty States** - Dedicated empty state screens for no threads, no comments, and no search results, each with contextual actions
+- **Pull-to-Refresh** - Pull-to-refresh on Forum Hub, Category, and Thread Detail screens
+- **Staggered Animations** - Animated entry for headers, chips, and list items across all forum screens
+- **Optimistic Updates** - Instant UI feedback for liking, saving, and subscribing actions
+
+#### In-App Updates
+- **Update Manager** - New `UpdateManager` singleton centralizing update logic (check, download, install) with `StateFlow`-based state management
+- **Background Update Checks** - Periodic checks every 6 hours via `UpdateCheckWorker` with notification when a new version is available
+- **Automatic Launch Check** - App checks for updates on startup
+- **Update Dialog** - Reusable composable showing release notes, download progress, and install prompts
+- **Atomic Downloads** - Downloads write to `.tmp` file and rename on success to prevent partial installs
+- **Unknown Sources Flow** - Handles "Install from Unknown Sources" permission on Android O+
+
+#### Developer Tools (Debug Builds Only)
+- **Developer Tools Screen** - Consolidated debug utilities accessible from Settings
+- **Update Debug** - Force update check or simulate available update
+- **Build Information** - Display version, build type, flavor, and other build details
+
+### Changed
+- **Haptic Feedback** - Replaced custom `HapticFeedbackHelper` with Compose's `HapticFeedback` API, then added a robust 4-tier fallback chain for reliable haptics across devices and API levels (including Samsung One UI Core)
+- **`HtmlText` Component** - Moved from `forum` package to shared `components` package; migrated to modern `Text` with `LinkAnnotation`
+- **Hilt ViewModels** - Switched to `hiltViewModel()` from deprecated `hiltNavigation.compose.hiltViewModel()`
+- **RTL Support** - Use `Icons.AutoMirrored.Filled.Reply` for proper LTR/RTL layout
+- **Forum Thread Cards** - Redesigned with modern layout, media thumbnails, last reply info, and pinned/locked indicators
+- **Timestamp Formatting** - More granular relative timestamps (e.g., "2w ago")
+- **Database Schema** - Squashed intermediate migrations (v4/v5/v6) into a single v3 -> v4 auto-migration for clean upgrade path
+- **CI Workflow** - Use PAT for release notes generation
+
+### Fixed
+- **`EditLibraryEntrySheet`** - Sheet now automatically closes after saving an entry
+- **Animated Favorite Button** - Fixed size to prevent layout shifts during sparkle animation
+- **VIBRATE Permission** - Removed; haptic feedback now delegated to Android system
+
+### Removed
+- **`UpdateUtil.kt`** - Replaced by the new `UpdateManager`
+- **`ForumCategoryScreen`** (legacy) - Replaced by the new integrated forum UI
+- **Notification Debug Section** - Moved from `NotificationsScreen` to `DeveloperToolsScreen`
+
+---
+
+## [1.0.1] - 2026-02-22
+
 ### Added
 - Initial documentation suite with Mermaid diagrams
 - Room database migration infrastructure
