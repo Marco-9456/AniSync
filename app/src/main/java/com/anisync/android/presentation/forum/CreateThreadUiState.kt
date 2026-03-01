@@ -10,19 +10,23 @@ data class CreateThreadUiState(
     val selectedCategoryIds: Set<Int> = emptySet(),
     val availableCategories: List<ForumCategory> = defaultCategories,
     val isSubmitting: Boolean = false,
+    val isPreviewMode: Boolean = false,
     val titleError: String? = null,
     val bodyError: String? = null,
     val categoryError: String? = null
 ) {
     val isValid: Boolean get() = title.isNotBlank() && body.isNotBlank() && selectedCategoryIds.isNotEmpty()
+    val hasUnsavedChanges: Boolean get() = title.isNotBlank() || body.isNotBlank() || selectedCategoryIds.isNotEmpty()
 }
 
 sealed interface CreateThreadAction {
     data class OnTitleChange(val value: String) : CreateThreadAction
     data class OnBodyChange(val value: String) : CreateThreadAction
     data class ToggleCategory(val categoryId: Int) : CreateThreadAction
+    data object TogglePreview : CreateThreadAction
     data object Submit : CreateThreadAction
     data object NavigateUp : CreateThreadAction
+    data class ShowSnackbar(val message: String) : CreateThreadAction
 }
 
 /**

@@ -612,17 +612,21 @@ type Thread {
   title: String
   body: String
   userId: Int
+  replyUserId: Int
+  replyCommentId: Int
   replyCount: Int
   viewCount: Int
   likeCount: Int
   isLiked: Boolean
   isSubscribed: Boolean
   isLocked: Boolean
+  isSticky: Boolean
   repliedAt: Int
   createdAt: Int
   updatedAt: Int
   siteUrl: String
   user: User
+  replyUser: User
   categories: [ThreadCategory]
   mediaCategories: [Media]
   likes: [User]
@@ -668,6 +672,8 @@ enum ThreadSort {
 enum ThreadCommentSort {
   ID
   ID_DESC
+  CREATED_AT
+  CREATED_AT_DESC
 }
 
 enum LikeableType {

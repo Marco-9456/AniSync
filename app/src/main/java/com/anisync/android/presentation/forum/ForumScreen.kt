@@ -377,23 +377,13 @@ fun ForumScreen(
                                 key = { _, thread -> "thread_${thread.id}" },
                                 contentType = { _, _ -> "ForumThread" }
                             ) { index, thread ->
-                                val onCardClick = remember(thread.id, thread.title) {
-                                    { onThreadClick(thread.id, thread.title) }
-                                }
-                                val onSaveThreadClick = remember(thread.id) {
-                                    { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) }
-                                }
-                                val onSubscribeThreadClick = remember(thread.id) {
-                                    { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) }
-                                }
-
                                 ForumThreadCard(
                                     thread = thread,
-                                    onClick = onCardClick,
+                                    onClick = { focusManager.clearFocus(); onThreadClick(thread.id, thread.title) },
                                     isSaved = thread.id in uiState.savedThreadIds,
-                                    onSaveClick = onSaveThreadClick,
+                                    onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
                                     isSubscribed = thread.isSubscribed,
-                                    onSubscribeClick = onSubscribeThreadClick,
+                                    onSubscribeClick = { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) },
                                     modifier = sharedItemModifier
                                 )
                             }
@@ -448,26 +438,16 @@ fun ForumScreen(
                         key = { _, thread -> "search_${thread.id}" },
                         contentType = { _, _ -> "ForumThread" }
                     ) { _, thread ->
-                        val onSearchCardClick = remember(thread.id, thread.title) {
-                            {
-                                focusManager.clearFocus()
-                                onThreadClick(thread.id, thread.title)
-                            }
-                        }
-                        val onSearchSaveClick = remember(thread.id) {
-                            { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) }
-                        }
-                        val onSearchSubscribeClick = remember(thread.id) {
-                            { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) }
-                        }
-
                         ForumThreadCard(
                             thread = thread,
-                            onClick = onSearchCardClick,
+                            onClick = { 
+                                focusManager.clearFocus()
+                                onThreadClick(thread.id, thread.title) 
+                            },
                             isSaved = thread.id in uiState.savedThreadIds,
-                            onSaveClick = onSearchSaveClick,
+                            onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
                             isSubscribed = thread.isSubscribed,
-                            onSubscribeClick = onSearchSubscribeClick,
+                            onSubscribeClick = { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) },
                             modifier = sharedItemModifier
                         )
                     }

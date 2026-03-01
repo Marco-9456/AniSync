@@ -9,6 +9,8 @@ query GetForumThread($id: Int!) {
     isLiked
     isSubscribed
     isLocked
+    isSticky
+    repliedAt
     createdAt
     updatedAt
     siteUrl
@@ -19,9 +21,23 @@ query GetForumThread($id: Int!) {
         large
       }
     }
+    replyUser {
+      name
+      avatar {
+        large
+      }
+    }
     categories {
       id
       name
+    }
+    mediaCategories {
+      title {
+        romaji
+      }
+      coverImage {
+        medium
+      }
     }
   }
 }
@@ -29,10 +45,11 @@ query GetForumThread($id: Int!) {
 query GetThreadComments(
   $threadId: Int!,
   $page: Int = 1,
-  $perPage: Int = 25
+  $perPage: Int = 25,
+  $sort: [ThreadCommentSort] = [ID]
 ) {
   Page(page: $page, perPage: $perPage) {
-    threadComments(threadId: $threadId) {
+    threadComments(threadId: $threadId, sort: $sort) {
       id
       comment
       likeCount

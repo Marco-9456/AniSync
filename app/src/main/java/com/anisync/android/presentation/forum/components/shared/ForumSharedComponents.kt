@@ -98,7 +98,10 @@ fun AuthorRow(
             text = name,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
         Spacer(Modifier.width(8.dp))
         Text(
@@ -116,7 +119,14 @@ fun AuthorRow(
 }
 
 private fun Int.formatCount(): String = when {
-    this >= 1000 -> "${this / 1000}k"
+    this >= 1_000_000 -> {
+        val m = this / 1_000_000.0
+        if (m % 1.0 == 0.0) "${m.toInt()}M" else "%.1fM".format(m)
+    }
+    this >= 1000 -> {
+        val k = this / 1000.0
+        if (k % 1.0 == 0.0) "${k.toInt()}k" else "%.1fk".format(k)
+    }
     else -> toString()
 }
 
@@ -127,7 +137,8 @@ private fun Long.toRelativeTime(): String {
         diff < 60 -> "just now"
         diff < 3600 -> "${diff / 60}m ago"
         diff < 86400 -> "${diff / 3600}h ago"
-        diff < 2592000 -> "${diff / 86400}d ago"
+        diff < 604800 -> "${diff / 86400}d ago"
+        diff < 2592000 -> "${diff / 604800}w ago"
         else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this * 1000))
     }
 }

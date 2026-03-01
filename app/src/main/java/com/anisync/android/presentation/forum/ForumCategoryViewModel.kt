@@ -3,6 +3,7 @@ package com.anisync.android.presentation.forum
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumRepository
+import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -36,6 +37,7 @@ class ForumCategoryViewModel @Inject constructor(
     val actions: SharedFlow<ForumCategoryAction> = _actions.asSharedFlow()
 
     private var categoryId: Int = 0
+    private var currentSort: String? = null
 
     init {
         // Debounce search query changes and re-fetch
@@ -52,6 +54,7 @@ class ForumCategoryViewModel @Inject constructor(
         if (this.categoryId == categoryId) return // Already loaded
         this.categoryId = categoryId
         _uiState.update { it.copy(categoryName = categoryName) }
+        loadSavedIds()
         load(page = 1, replaceExisting = true)
     }
 
@@ -60,6 +63,7 @@ class ForumCategoryViewModel @Inject constructor(
             is ForumCategoryAction.Load -> initialize(action.categoryId, action.categoryName)
             is ForumCategoryAction.Refresh -> {
                 _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+                loadSavedIds()
                 load(page = 1, replaceExisting = true)
             }
             is ForumCategoryAction.LoadMore -> {
@@ -68,6 +72,13 @@ class ForumCategoryViewModel @Inject constructor(
             }
             is ForumCategoryAction.OnSearchQueryChange -> {
                 _uiState.update { it.copy(searchQuery = action.query) }
+            }
+            is ForumCategoryAction.ToggleSaveThread -> toggleSave(action.thread)
+            is ForumCategoryAction.ToggleSubscribeThread -> toggleSubscribe(action.thread)
+            is ForumCategoryAction.ChangeSort -> {
+                currentSort = action.sort
+                _uiState.update { it.copy(sortLabel = action.label, isLoading = true) }
+                load(page = 1, replaceExisting = true)
             }
             is ForumCategoryAction.ShowSnackbar -> {
                 viewModelScope.launch { _actions.emit(action) }
@@ -103,6 +114,60 @@ class ForumCategoryViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(isLoading = false, isRefreshing = false, errorMessage = result.message)
                     }
+                }
+            }
+        }
+    }
+
+    private fun loadSavedIds() {
+        viewModelScope.launch {
+            val saved = forumRepository.getSavedThreads()
+            _uiState.update { it.copy(savedThreadIds = saved.map { t -> t.id }.toSet()) }
+        }
+    }
+
+    private fun toggleSave(thread: ForumThread) {
+        viewModelScope.launch {
+            val isSaved = thread.id in _uiState.value.savedThreadIds
+            if (isSaved) {
+                forumRepository.unsaveThread(thread.id)
+                _uiState.update { it.copy(savedThreadIds = it.savedThreadIds - thread.id) }
+                _actions.emit(ForumCategoryAction.ShowSnackbar("Thread unsaved"))
+            } else {
+                forumRepository.saveThread(thread)
+                _uiState.update { it.copy(savedThreadIds = it.savedThreadIds + thread.id) }
+                _actions.emit(ForumCategoryAction.ShowSnackbar("Thread saved"))
+            }
+        }
+    }
+
+    private fun toggleSubscribe(thread: ForumThread) {
+        viewModelScope.launch {
+            val newState = !thread.isSubscribed
+            // Optimistic update
+            _uiState.update { state ->
+                state.copy(
+                    threads = state.threads.map { t ->
+                        if (t.id == thread.id) t.copy(isSubscribed = newState) else t
+                    }
+                )
+            }
+            when (forumRepository.toggleThreadSubscription(thread.id, newState)) {
+                is Result.Success -> {
+                    _actions.emit(ForumCategoryAction.ShowSnackbar(
+                        if (newState) "Subscribed to thread" else "Unsubscribed from thread"
+                    ))
+                }
+                is Result.Error -> {
+                    // Revert optimistic update
+                    _uiState.update { state ->
+                        state.copy(
+                            threads = state.threads.map { t ->
+                                if (t.id == thread.id) t.copy(isSubscribed = !newState) else t
+                            }
+                        )
+                    }
+                    _actions.emit(ForumCategoryAction.ShowSnackbar("Failed to update subscription"))
                 }
             }
         }

@@ -25,8 +25,6 @@ import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import com.apollographql.apollo.exception.ApolloException
 import kotlinx.coroutines.flow.first
-import org.json.JSONArray
-import org.json.JSONObject
 import javax.inject.Inject
 
 class ForumRepositoryImpl @Inject constructor(
@@ -39,7 +37,7 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun getRecentThreads(page: Int, sort: String?): Result<PaginatedResult<ForumThread>> {
-        return try {
+        return runCatchingApi("load forum threads") {
             // Parse sort string like "IS_STICKY,REPLIED_AT_DESC" into ThreadSort enums
             val sortList = sort?.split(",")
                 ?.mapNotNull { s -> ThreadSort.entries.find { it.name == s.trim() } }
@@ -60,18 +58,12 @@ class ForumRepositoryImpl @Inject constructor(
                 ?: emptyList()
 
             val pageInfo = pageData?.pageInfo
-            Result.Success(
-                PaginatedResult(
-                    items = threads,
-                    hasNextPage = pageInfo?.hasNextPage ?: false,
-                    currentPage = pageInfo?.currentPage ?: page,
-                    totalPages = 0
-                )
+            PaginatedResult(
+                items = threads,
+                hasNextPage = pageInfo?.hasNextPage ?: false,
+                currentPage = pageInfo?.currentPage ?: page,
+                totalPages = 0
             )
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -84,7 +76,7 @@ class ForumRepositoryImpl @Inject constructor(
         search: String?,
         page: Int
     ): Result<PaginatedResult<ForumThread>> {
-        return try {
+        return runCatchingApi("load forum threads") {
             val response = apolloClient
                 .query(
                     GetForumThreadsQuery(
@@ -104,18 +96,12 @@ class ForumRepositoryImpl @Inject constructor(
                 ?: emptyList()
 
             val pageInfo = pageData?.pageInfo
-            Result.Success(
-                PaginatedResult(
-                    items = threads,
-                    hasNextPage = pageInfo?.hasNextPage ?: false,
-                    currentPage = pageInfo?.currentPage ?: page,
-                    totalPages = 0
-                )
+            PaginatedResult(
+                items = threads,
+                hasNextPage = pageInfo?.hasNextPage ?: false,
+                currentPage = pageInfo?.currentPage ?: page,
+                totalPages = 0
             )
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -124,18 +110,14 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun getThread(threadId: Int): Result<ForumThread> {
-        return try {
+        return runCatchingApi("load thread details") {
             val response = apolloClient
                 .query(GetForumThreadQuery(id = threadId))
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
 
-            val thread = response.data?.Thread ?: return Result.Error("Thread not found")
-            Result.Success(thread.toForumThread())
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
+            response.data?.Thread?.toForumThread()
+                ?: throw IllegalStateException("Thread not found")
         }
     }
 
@@ -143,109 +125,80 @@ class ForumRepositoryImpl @Inject constructor(
     // READ: Thread comments (paginated)
     // =========================================================================
 
-    override suspend fun getComments(threadId: Int, page: Int): Result<PaginatedResult<ForumComment>> {
-        return try {
+    override suspend fun getComments(threadId: Int, page: Int, sort: String?): Result<PaginatedResult<ForumComment>> {
+        return runCatchingApi("load comments") {
+            val sortList = sort?.split(",")
+                ?.mapNotNull { s ->
+                    try {
+                        com.anisync.android.type.ThreadCommentSort.valueOf(s.trim())
+                    } catch (_: Exception) { null }
+                }
+
             val response = apolloClient
-                .query(GetThreadCommentsQuery(threadId = threadId, page = Optional.present(page)))
+                .query(GetThreadCommentsQuery(
+                    threadId = threadId,
+                    page = Optional.present(page),
+                    sort = if (sortList != null) Optional.present(sortList) else Optional.absent()
+                ))
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
 
             val pageData = response.data?.Page
-            val allComments = pageData?.threadComments
-                ?.filterNotNull()
-                ?.map { it.toForumComment() }
-                ?: emptyList()
+            val allCommentsNodes = pageData?.threadComments?.filterNotNull() ?: emptyList()
 
-            // AniList returns ALL comments flat (including replies). Each root comment
-            // also embeds its children in the `childComments` JSON field. We must
-            // deduplicate by collecting all child IDs and showing only roots at top level.
-            val childIds = mutableSetOf<Int>()
-            fun collectChildIds(comments: List<ForumComment>) {
-                for (c in comments) {
-                    for (child in c.childComments) {
-                        childIds.add(child.id)
-                        collectChildIds(child.childComments)
+            val nodeMap = allCommentsNodes.associateBy { it.id ?: 0 }
+
+            fun parseChildIds(rawJson: String?): List<Int> {
+                if (rawJson.isNullOrBlank() || rawJson == "null" || rawJson == "[]") return emptyList()
+                return try {
+                    val array = org.json.JSONArray(rawJson)
+                    (0 until array.length()).mapNotNull { i ->
+                        val obj = array.optJSONObject(i)
+                        obj?.optInt("id") ?: array.optInt(i).takeIf { it != 0 }
                     }
+                } catch (e: Exception) {
+                    emptyList()
                 }
             }
-            collectChildIds(allComments)
-            val baseRootComments = allComments.filter { it.id !in childIds }.toMutableList()
 
-            // Some AniList threads do not use the nested `childComments` JSON, 
-            // but instead users reply by starting a comment with `@Username` or `[@Username](...)`.
-            // We can detect these flat replies and reconstruct the tree manually.
-            val finalRootComments = mutableListOf<ForumComment>()
-            
-            // Map to track the most recent comment ID by a specific author name
-            val latestCommentByAuthor = mutableMapOf<String, ForumComment>()
-            
-            val commentsToAdd = mutableMapOf<Int, MutableList<ForumComment>>()
+            // Map of Parent ID -> List of Child IDs
+            val parentToChildrenIds = allCommentsNodes.associate { node ->
+                (node.id ?: 0) to parseChildIds(node.childComments)
+            }
 
-            // Process sequentially to build the tree
-            for (comment in baseRootComments) {
-                // Look for `@Username` or `[@Username](url)` at the start or near the start
-                // We'll strip HTML tags to make it easier if the API returns parsed markdown
-                val strippedBody = comment.body.replace(Regex("<[^>]*>"), "").trim()
-                
-                // Match @Username or [@Username](...)
-                val mentionMatch = Regex("""^\[?@([a-zA-Z0-9_]+)]?""").find(strippedBody)
-                
-                if (mentionMatch != null) {
-                    val mentionedName = mentionMatch.groupValues[1]
-                    // Find if the mentioned user has posted a comment earlier in this thread
-                    val parent = latestCommentByAuthor[mentionedName]
-                    if (parent != null) {
-                        commentsToAdd.getOrPut(parent.id) { mutableListOf() }.add(comment)
-                        // This is now nested, so we don't add it to root comments.
-                        // However we still record it in latestCommentByAuthor in case someone replies to *this* reply.
-                        latestCommentByAuthor[comment.authorName] = comment
-                        continue
-                    }
-                }
-                
-                finalRootComments.add(comment)
-                latestCommentByAuthor[comment.authorName] = comment
+            // Collect all child IDs to find the roots
+            val allChildIds = parentToChildrenIds.values.flatten().toSet()
+            val rootIds = nodeMap.keys.filter { it !in allChildIds && it != 0 }
+
+            // Recursive function to build the richly-populated tree
+            fun buildCommentTree(commentId: Int): ForumComment? {
+                val node = nodeMap[commentId] ?: return null
+                val childIds = parentToChildrenIds[commentId] ?: emptyList()
+                val builtChildren = childIds.mapNotNull { buildCommentTree(it) }
+
+                return ForumComment(
+                    id = node.id ?: 0,
+                    body = node.comment ?: "",
+                    likeCount = node.likeCount ?: 0,
+                    isLiked = node.isLiked ?: false,
+                    authorId = node.user?.id ?: 0,
+                    authorName = node.user?.name ?: "Unknown",
+                    authorAvatarUrl = node.user?.avatar?.large,
+                    createdAt = (node.createdAt ?: 0).toLong(),
+                    siteUrl = node.siteUrl,
+                    childComments = builtChildren
+                )
             }
-            
-            // Now apply the manual nesting
-            val rootComments = finalRootComments.map { root ->
-                attachManualReplies(root, commentsToAdd)
-            }
+
+            val rootComments = rootIds.mapNotNull { buildCommentTree(it) }
 
             val pageInfo = pageData?.pageInfo
-            Result.Success(
-                PaginatedResult(
-                    items = rootComments,
-                    hasNextPage = pageInfo?.hasNextPage ?: false,
-                    currentPage = pageInfo?.currentPage ?: page,
-                    totalPages = 0
-                )
+            PaginatedResult(
+                items = rootComments,
+                hasNextPage = pageInfo?.hasNextPage ?: false,
+                currentPage = pageInfo?.currentPage ?: page,
+                totalPages = 0
             )
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
-        }
-    }
-
-    /**
-     * Recursively attaches flat replies that were manually extracted via @Username mentions.
-     */
-    private fun attachManualReplies(
-        comment: ForumComment,
-        commentsToAdd: Map<Int, List<ForumComment>>
-    ): ForumComment {
-        val directReplies = commentsToAdd[comment.id] ?: emptyList()
-        // We also need to attach replies to the existing child comments from the JSON
-        val existingChildrenWithReplies = comment.childComments.map { attachManualReplies(it, commentsToAdd) }
-        val newChildrenWithReplies = directReplies.map { attachManualReplies(it, commentsToAdd) }
-        
-        val allChildren = existingChildrenWithReplies + newChildrenWithReplies
-        
-        return if (allChildren.isNotEmpty()) {
-            comment.copy(childComments = allChildren)
-        } else {
-            comment
         }
     }
 
@@ -258,7 +211,7 @@ class ForumRepositoryImpl @Inject constructor(
         body: String,
         categoryIds: List<Int>
     ): Result<ForumThread> {
-        return try {
+        return runCatchingApi("create thread") {
             val response = apolloClient
                 .mutation(
                     CreateForumThreadMutation(
@@ -269,12 +222,8 @@ class ForumRepositoryImpl @Inject constructor(
                 )
                 .execute()
 
-            val thread = response.data?.SaveThread ?: return Result.Error("Failed to create thread")
-            Result.Success(thread.toForumThread())
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
+            response.data?.SaveThread?.toForumThread()
+                ?: throw IllegalStateException("Failed to create thread")
         }
     }
 
@@ -283,18 +232,13 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun createComment(threadId: Int, comment: String): Result<ForumComment> {
-        return try {
+        return runCatchingApi("post comment") {
             val response = apolloClient
                 .mutation(CreateForumCommentMutation(threadId = threadId, comment = comment))
                 .execute()
 
-            val saved = response.data?.SaveThreadComment
-                ?: return Result.Error("Failed to post comment")
-            Result.Success(saved.toForumComment())
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
+            response.data?.SaveThreadComment?.toForumComment()
+                ?: throw IllegalStateException("Failed to post comment")
         }
     }
 
@@ -307,7 +251,7 @@ class ForumRepositoryImpl @Inject constructor(
         comment: String,
         parentCommentId: Int
     ): Result<ForumComment> {
-        return try {
+        return runCatchingApi("post reply") {
             val response = apolloClient
                 .mutation(
                     CreateForumCommentReplyMutation(
@@ -318,13 +262,8 @@ class ForumRepositoryImpl @Inject constructor(
                 )
                 .execute()
 
-            val saved = response.data?.SaveThreadComment
-                ?: return Result.Error("Failed to post reply")
-            Result.Success(saved.toForumComment())
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
+            response.data?.SaveThreadComment?.toForumComment()
+                ?: throw IllegalStateException("Failed to post reply")
         }
     }
 
@@ -333,15 +272,10 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun toggleLikeThread(threadId: Int): Result<Unit> {
-        return try {
+        return runCatchingApi("update like") {
             apolloClient
                 .mutation(ToggleLikeThreadMutation(id = threadId))
                 .execute()
-            Result.Success(Unit)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -350,15 +284,10 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun toggleLikeComment(commentId: Int): Result<Unit> {
-        return try {
+        return runCatchingApi("update like") {
             apolloClient
                 .mutation(ToggleLikeThreadCommentMutation(id = commentId))
                 .execute()
-            Result.Success(Unit)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -367,7 +296,7 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun getSubscribedThreads(page: Int): Result<PaginatedResult<ForumThread>> {
-        return try {
+        return runCatchingApi("load subscribed threads") {
             val response = apolloClient
                 .query(GetForumOverviewQuery(
                     page = Optional.present(page),
@@ -384,18 +313,12 @@ class ForumRepositoryImpl @Inject constructor(
                 ?: emptyList()
 
             val pageInfo = pageData?.pageInfo
-            Result.Success(
-                PaginatedResult(
-                    items = threads,
-                    hasNextPage = pageInfo?.hasNextPage ?: false,
-                    currentPage = pageInfo?.currentPage ?: page,
-                    totalPages = 0
-                )
+            PaginatedResult(
+                items = threads,
+                hasNextPage = pageInfo?.hasNextPage ?: false,
+                currentPage = pageInfo?.currentPage ?: page,
+                totalPages = 0
             )
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -404,15 +327,10 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     override suspend fun toggleThreadSubscription(threadId: Int, subscribe: Boolean): Result<Unit> {
-        return try {
+        return runCatchingApi("update subscription") {
             apolloClient
                 .mutation(ToggleThreadSubscriptionMutation(threadId = threadId, subscribe = subscribe))
                 .execute()
-            Result.Success(Unit)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -429,13 +347,18 @@ class ForumRepositoryImpl @Inject constructor(
                 replyCount = entity.replyCount,
                 viewCount = entity.viewCount,
                 likeCount = entity.likeCount,
-                isLiked = false,
+                isLiked = entity.isLiked,
                 isSubscribed = false,
-                isLocked = false,
+                isLocked = entity.isLocked,
                 authorId = 0,
                 authorName = entity.authorName,
                 authorAvatarUrl = entity.authorAvatarUrl,
-                categories = emptyList(),
+                repliedAt = entity.repliedAt,
+                replyUserName = entity.replyUserName,
+                replyUserAvatarUrl = entity.replyUserAvatarUrl,
+                categories = entity.categories,
+                mediaTitle = entity.mediaTitle,
+                mediaCoverUrl = entity.mediaCoverUrl,
                 createdAt = entity.savedAt,
                 updatedAt = entity.savedAt,
                 siteUrl = null
@@ -452,7 +375,15 @@ class ForumRepositoryImpl @Inject constructor(
                 authorAvatarUrl = thread.authorAvatarUrl,
                 replyCount = thread.replyCount,
                 viewCount = thread.viewCount,
-                likeCount = thread.likeCount
+                likeCount = thread.likeCount,
+                isLiked = thread.isLiked,
+                isLocked = thread.isLocked,
+                repliedAt = thread.repliedAt,
+                replyUserName = thread.replyUserName,
+                replyUserAvatarUrl = thread.replyUserAvatarUrl,
+                categories = thread.categories,
+                mediaTitle = thread.mediaTitle,
+                mediaCoverUrl = thread.mediaCoverUrl
             )
         )
     }
@@ -466,48 +397,37 @@ class ForumRepositoryImpl @Inject constructor(
     }
 
     // =========================================================================
-    // PRIVATE MAPPERS
+    // PRIVATE: Shared thread mapper
     // =========================================================================
 
-    private fun GetForumOverviewQuery.Thread.toForumThread() = ForumThread(
-        id = id ?: 0,
-        title = title ?: "(Untitled)",
-        body = null,
-        replyCount = replyCount ?: 0,
-        viewCount = viewCount ?: 0,
-        likeCount = likeCount ?: 0,
-        isLiked = isLiked ?: false,
-        isSubscribed = isSubscribed ?: false,
-        isLocked = isLocked ?: false,
-        authorId = user?.id ?: 0,
-        authorName = user?.name ?: "Unknown",
-        authorAvatarUrl = user?.avatar?.large,
-        categories = categories?.filterNotNull()?.map { ForumCategory(it.id ?: 0, it.name ?: "") } ?: emptyList(),
-        createdAt = (createdAt ?: 0).toLong(),
-        updatedAt = (repliedAt ?: createdAt ?: 0).toLong(),
-        siteUrl = null
-    )
-
-    private fun GetForumThreadsQuery.Thread.toForumThread() = ForumThread(
-        id = id ?: 0,
-        title = title ?: "(Untitled)",
-        body = null,
-        replyCount = replyCount ?: 0,
-        viewCount = viewCount ?: 0,
-        likeCount = likeCount ?: 0,
-        isLiked = isLiked ?: false,
-        isSubscribed = isSubscribed ?: false,
-        isLocked = isLocked ?: false,
-        authorId = user?.id ?: 0,
-        authorName = user?.name ?: "Unknown",
-        authorAvatarUrl = user?.avatar?.large,
-        categories = categories?.filterNotNull()?.map { ForumCategory(it.id ?: 0, it.name ?: "") } ?: emptyList(),
-        createdAt = (createdAt ?: 0).toLong(),
-        updatedAt = (repliedAt ?: createdAt ?: 0).toLong(),
-        siteUrl = null
-    )
-
-    private fun GetForumThreadQuery.Thread.toForumThread() = ForumThread(
+    /**
+     * Shared mapper for building [ForumThread] from common thread fields.
+     * Eliminates duplication across the 4 different GraphQL response types.
+     */
+    private fun buildForumThread(
+        id: Int?,
+        title: String?,
+        body: String? = null,
+        replyCount: Int?,
+        viewCount: Int?,
+        likeCount: Int?,
+        isLiked: Boolean?,
+        isSubscribed: Boolean?,
+        isLocked: Boolean?,
+        isSticky: Boolean? = null,
+        userId: Int?,
+        userName: String?,
+        userAvatarLarge: String?,
+        repliedAt: Int? = null,
+        replyUserName: String? = null,
+        replyUserAvatarLarge: String? = null,
+        createdAt: Int?,
+        updatedAt: Int? = null,
+        siteUrl: String? = null,
+        categories: List<Pair<Int?, String?>>? = null,
+        mediaTitle: String? = null,
+        mediaCoverUrl: String? = null
+    ) = ForumThread(
         id = id ?: 0,
         title = title ?: "(Untitled)",
         body = body,
@@ -517,49 +437,86 @@ class ForumRepositoryImpl @Inject constructor(
         isLiked = isLiked ?: false,
         isSubscribed = isSubscribed ?: false,
         isLocked = isLocked ?: false,
-        authorId = user?.id ?: 0,
-        authorName = user?.name ?: "Unknown",
-        authorAvatarUrl = user?.avatar?.large,
-        categories = categories?.filterNotNull()?.map { ForumCategory(it.id ?: 0, it.name ?: "") } ?: emptyList(),
+        isSticky = isSticky ?: false,
+        authorId = userId ?: 0,
+        authorName = userName ?: "Unknown",
+        authorAvatarUrl = userAvatarLarge,
+        repliedAt = repliedAt?.toLong(),
+        replyUserName = replyUserName,
+        replyUserAvatarUrl = replyUserAvatarLarge,
+        categories = categories
+            ?.map { (cId, cName) -> ForumCategory(cId ?: 0, cName ?: "") }
+            ?: emptyList(),
         createdAt = (createdAt ?: 0).toLong(),
-        updatedAt = (updatedAt ?: createdAt ?: 0).toLong(),
-        siteUrl = siteUrl
+        updatedAt = (updatedAt ?: repliedAt ?: createdAt ?: 0).toLong(),
+        siteUrl = siteUrl,
+        mediaTitle = mediaTitle,
+        mediaCoverUrl = mediaCoverUrl
     )
 
-    private fun CreateForumThreadMutation.SaveThread.toForumThread() = ForumThread(
-        id = id ?: 0,
-        title = title ?: "(Untitled)",
-        body = body,
-        replyCount = replyCount ?: 0,
-        viewCount = viewCount ?: 0,
-        likeCount = likeCount ?: 0,
-        isLiked = isLiked ?: false,
-        isSubscribed = false,
-        isLocked = isLocked ?: false,
-        authorId = user?.id ?: 0,
-        authorName = user?.name ?: "Unknown",
-        authorAvatarUrl = user?.avatar?.large,
-        categories = categories?.filterNotNull()?.map { ForumCategory(it.id ?: 0, it.name ?: "") } ?: emptyList(),
-        createdAt = (createdAt ?: 0).toLong(),
-        updatedAt = (createdAt ?: 0).toLong(),
-        siteUrl = siteUrl
-    )
+    // =========================================================================
+    // PRIVATE MAPPERS — thin wrappers calling buildForumThread
+    // =========================================================================
 
-    private fun GetThreadCommentsQuery.ThreadComment.toForumComment(): ForumComment {
-        val children = parseChildComments(childComments)
-        return ForumComment(
-            id = id ?: 0,
-            body = comment ?: "",
-            likeCount = likeCount ?: 0,
-            isLiked = isLiked ?: false,
-            authorId = user?.id ?: 0,
-            authorName = user?.name ?: "Unknown",
-            authorAvatarUrl = user?.avatar?.large,
-            createdAt = (createdAt ?: 0).toLong(),
-            siteUrl = siteUrl,
-            childComments = children
+    private fun GetForumOverviewQuery.Thread.toForumThread(): ForumThread {
+        val media = mediaCategories?.firstOrNull()
+        return buildForumThread(
+            id = id, title = title, replyCount = replyCount, viewCount = viewCount,
+            likeCount = likeCount, isLiked = isLiked, isSubscribed = isSubscribed,
+            isLocked = isLocked, isSticky = isSticky,
+            userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
+            repliedAt = repliedAt, replyUserName = replyUser?.name,
+            replyUserAvatarLarge = replyUser?.avatar?.large,
+            createdAt = createdAt,
+            categories = categories?.filterNotNull()?.map { it.id to it.name },
+            mediaTitle = media?.title?.romaji,
+            mediaCoverUrl = media?.coverImage?.medium
         )
     }
+
+    private fun GetForumThreadsQuery.Thread.toForumThread(): ForumThread {
+        val media = mediaCategories?.firstOrNull()
+        return buildForumThread(
+            id = id, title = title, replyCount = replyCount, viewCount = viewCount,
+            likeCount = likeCount, isLiked = isLiked, isSubscribed = isSubscribed,
+            isLocked = isLocked, isSticky = isSticky,
+            userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
+            repliedAt = repliedAt, replyUserName = replyUser?.name,
+            replyUserAvatarLarge = replyUser?.avatar?.large,
+            createdAt = createdAt,
+            categories = categories?.filterNotNull()?.map { it.id to it.name },
+            mediaTitle = media?.title?.romaji,
+            mediaCoverUrl = media?.coverImage?.medium
+        )
+    }
+
+    private fun GetForumThreadQuery.Thread.toForumThread(): ForumThread {
+        val media = mediaCategories?.firstOrNull()
+        return buildForumThread(
+            id = id, title = title, body = body, replyCount = replyCount, viewCount = viewCount,
+            likeCount = likeCount, isLiked = isLiked, isSubscribed = isSubscribed,
+            isLocked = isLocked, isSticky = isSticky,
+            userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
+            repliedAt = repliedAt, replyUserName = replyUser?.name,
+            replyUserAvatarLarge = replyUser?.avatar?.large,
+            createdAt = createdAt, updatedAt = updatedAt, siteUrl = siteUrl,
+            categories = categories?.filterNotNull()?.map { it.id to it.name },
+            mediaTitle = media?.title?.romaji,
+            mediaCoverUrl = media?.coverImage?.medium
+        )
+    }
+
+    private fun CreateForumThreadMutation.SaveThread.toForumThread() = buildForumThread(
+        id = id, title = title, body = body, replyCount = replyCount, viewCount = viewCount,
+        likeCount = likeCount, isLiked = isLiked, isSubscribed = null, isLocked = isLocked,
+        userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
+        createdAt = createdAt, siteUrl = siteUrl,
+        categories = categories?.filterNotNull()?.map { it.id to it.name }
+    )
+
+    // =========================================================================
+    // PRIVATE: Comment mappers
+    // =========================================================================
 
     private fun CreateForumCommentMutation.SaveThreadComment.toForumComment() = ForumComment(
         id = id ?: 0,
@@ -585,47 +542,24 @@ class ForumRepositoryImpl @Inject constructor(
         siteUrl = siteUrl
     )
 
+
+
+    // =========================================================================
+    // PRIVATE: Error handling helper
+    // =========================================================================
+
     /**
-     * AniList returns nested child comments as a raw JSON string.
-     * We parse it recursively up to a max depth of 3.
+     * Wraps API calls with user-friendly error messages instead of raw exceptions.
      */
-    private fun parseChildComments(rawJson: String?, depth: Int = 0): List<ForumComment> {
-        if (depth >= 3) return emptyList()
-        if (rawJson.isNullOrBlank() || rawJson == "null" || rawJson == "[]") return emptyList()
+    private inline fun <T> runCatchingApi(action: String, block: () -> T): Result<T> {
         return try {
-            val array = JSONArray(rawJson)
-            (0 until array.length()).mapNotNull { i ->
-                val obj = array.optJSONObject(i) ?: return@mapNotNull null
-                parseChildCommentObject(obj, depth)
-            }
+            Result.Success(block())
+        } catch (e: ApolloException) {
+            Result.Error("Unable to $action. Please check your connection and try again.", e)
+        } catch (e: IllegalStateException) {
+            Result.Error(e.message ?: "Something went wrong. Please try again.", e)
         } catch (e: Exception) {
-            emptyList()
+            Result.Error("Something went wrong while trying to $action. Please try again.", e)
         }
-    }
-
-    private fun parseChildCommentObject(obj: JSONObject, depth: Int = 0): ForumComment {
-        val userObj = obj.optJSONObject("user")
-        val avatarObj = userObj?.optJSONObject("avatar")
-
-        // Recursively parse nested children
-        val nestedChildrenRaw = obj.opt("childComments")
-        val nestedChildren = when (nestedChildrenRaw) {
-            is JSONArray -> parseChildComments(nestedChildrenRaw.toString(), depth + 1)
-            is String -> parseChildComments(nestedChildrenRaw, depth + 1)
-            else -> emptyList()
-        }
-
-        return ForumComment(
-            id = obj.optInt("id"),
-            body = obj.optString("comment", ""),
-            likeCount = obj.optInt("likeCount"),
-            isLiked = obj.optBoolean("isLiked"),
-            authorId = userObj?.optInt("id") ?: 0,
-            authorName = userObj?.optString("name", "Unknown") ?: "Unknown",
-            authorAvatarUrl = avatarObj?.optString("large"),
-            createdAt = obj.optLong("createdAt"),
-            siteUrl = obj.optString("siteUrl").takeIf { it.isNotBlank() },
-            childComments = nestedChildren
-        )
     }
 }

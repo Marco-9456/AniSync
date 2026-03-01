@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.anisync.android.domain.AnimeStatusCounts
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.ExternalLink
+import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.RelatedMedia
@@ -114,4 +115,14 @@ class Converters {
 
     @TypeConverter
     fun toTrailer(trailer: Trailer?): String? = trailer?.let { json.encodeToString(it) }
+
+    @TypeConverter
+    fun fromForumCategoryList(value: String): List<ForumCategory> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toForumCategoryList(list: List<ForumCategory>): String = json.encodeToString(list)
 }

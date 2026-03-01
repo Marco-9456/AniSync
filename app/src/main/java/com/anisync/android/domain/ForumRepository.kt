@@ -34,7 +34,7 @@ interface ForumRepository {
     /**
      * Fetches a page of top-level comments for a thread.
      */
-    suspend fun getComments(threadId: Int, page: Int): Result<PaginatedResult<ForumComment>>
+    suspend fun getComments(threadId: Int, page: Int, sort: String? = null): Result<PaginatedResult<ForumComment>>
 
     // =========================================================================
     // WRITE OPERATIONS

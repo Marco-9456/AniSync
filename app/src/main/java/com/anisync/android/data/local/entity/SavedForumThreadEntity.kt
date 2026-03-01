@@ -1,5 +1,6 @@
 package com.anisync.android.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -16,5 +17,13 @@ data class SavedForumThreadEntity(
     val replyCount: Int,
     val viewCount: Int,
     val likeCount: Int,
+    @ColumnInfo(defaultValue = "0") val isLiked: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val isLocked: Boolean = false,
+    val repliedAt: Long? = null,
+    val replyUserName: String? = null,
+    val replyUserAvatarUrl: String? = null,
+    @ColumnInfo(defaultValue = "[]") val categories: List<com.anisync.android.domain.ForumCategory> = emptyList(),
+    val mediaTitle: String? = null,
+    val mediaCoverUrl: String? = null,
     val savedAt: Long = System.currentTimeMillis()
 )

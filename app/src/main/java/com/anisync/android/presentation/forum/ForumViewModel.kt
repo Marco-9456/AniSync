@@ -6,7 +6,6 @@ import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -52,8 +51,7 @@ class ForumViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         selectedFeed = action.feed,
-                        threads = persistentListOf(),
-                        isLoading = true
+                        isRefreshing = true
                     )
                 }
                 load(page = 1, replaceExisting = true)
@@ -64,8 +62,7 @@ class ForumViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         selectedCategoryId = action.categoryId,
-                        threads = persistentListOf(),
-                        isLoading = true
+                        isRefreshing = true
                     )
                 }
                 load(page = 1, replaceExisting = true)
@@ -75,8 +72,7 @@ class ForumViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         searchQuery = action.query,
-                        threads = persistentListOf(),
-                        isLoading = true
+                        isRefreshing = true
                     )
                 }
                 load(page = 1, replaceExisting = true)
@@ -105,15 +101,23 @@ class ForumViewModel @Inject constructor(
         }
     }
 
-    private fun toggleSave(thread: com.anisync.android.domain.ForumThread) {
+    private fun toggleSave(thread: ForumThread) {
+        val isCurrentlySaved = _uiState.value.savedThreadIds.contains(thread.id)
+        
+        // Optimistic update
+        _uiState.update { state ->
+            if (isCurrentlySaved) {
+                state.copy(savedThreadIds = (state.savedThreadIds - thread.id).toPersistentSet())
+            } else {
+                state.copy(savedThreadIds = (state.savedThreadIds + thread.id).toPersistentSet())
+            }
+        }
+
         viewModelScope.launch {
-            val isSaved = forumRepository.isThreadSaved(thread.id)
-            if (isSaved) {
+            if (isCurrentlySaved) {
                 forumRepository.unsaveThread(thread.id)
-                _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds - thread.id).toPersistentSet()) }
             } else {
                 forumRepository.saveThread(thread)
-                _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds + thread.id).toPersistentSet()) }
             }
             // If we're on the Saved feed, reload
             if (_uiState.value.selectedFeed == ForumFeed.SAVED) {

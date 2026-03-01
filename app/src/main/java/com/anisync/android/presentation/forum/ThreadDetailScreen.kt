@@ -1,27 +1,37 @@
 package com.anisync.android.presentation.forum
 
+import android.content.Intent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,7 +57,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -61,6 +74,7 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
+import com.anisync.android.presentation.forum.components.SkeletonLine
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
 import com.anisync.android.presentation.forum.components.ThreadHeaderItem
 import kotlinx.coroutines.flow.collectLatest
@@ -71,6 +85,13 @@ internal data class FlatComment(
     val depth: Int,
     val ancestorIds: List<Int>,
     val descendantCount: Int
+)
+
+private data class CommentSortOption(val sort: String, val label: String)
+
+private val commentSortOptions = listOf(
+    CommentSortOption("ID", "Oldest"),
+    CommentSortOption("ID_DESC", "Newest")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,6 +108,7 @@ fun ThreadDetailScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val replySheetState = rememberModalBottomSheetState()
     val pullToRefreshState = rememberPullToRefreshState()
+    val context = LocalContext.current
 
     // UI state for collapsing nested comment trees
     var collapsedIds by remember { mutableStateOf(emptySet<Int>()) }
@@ -101,6 +123,14 @@ fun ThreadDetailScreen(
                 is ThreadDetailAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
                 else -> {}
             }
+        }
+    }
+
+    // Auto-scroll to bottom when a new top-level reply is submitted
+    LaunchedEffect(uiState.scrollToBottom) {
+        if (uiState.scrollToBottom) {
+            val totalItems = listState.layoutInfo.totalItemsCount
+            if (totalItems > 0) listState.animateScrollToItem(totalItems - 1)
         }
     }
 
@@ -133,22 +163,56 @@ fun ThreadDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.semantics { contentDescription = "Navigate back" }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.onAction(ThreadDetailAction.ToggleSubscribe) }) {
+                    // Share button
+                    val siteUrl = uiState.thread?.siteUrl
+                    if (siteUrl != null) {
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, siteUrl)
+                                    putExtra(Intent.EXTRA_SUBJECT, uiState.thread?.title ?: "")
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share thread"))
+                            },
+                            modifier = Modifier.semantics { contentDescription = "Share thread" }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = { viewModel.onAction(ThreadDetailAction.ToggleSubscribe) },
+                        modifier = Modifier.semantics {
+                            contentDescription = if (uiState.thread?.isSubscribed == true) "Unsubscribe from thread" else "Subscribe to thread"
+                        }
+                    ) {
                         Icon(
                             imageVector = if (uiState.thread?.isSubscribed == true) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
-                            contentDescription = if (uiState.thread?.isSubscribed == true) "Unsubscribe" else "Subscribe",
+                            contentDescription = null,
                             tint = if (uiState.thread?.isSubscribed == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { viewModel.onAction(ThreadDetailAction.ToggleSave) }) {
+                    IconButton(
+                        onClick = { viewModel.onAction(ThreadDetailAction.ToggleSave) },
+                        modifier = Modifier.semantics {
+                            contentDescription = if (uiState.isSaved) "Unsave thread" else "Save thread"
+                        }
+                    ) {
                         Icon(
                             imageVector = if (uiState.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = if (uiState.isSaved) "Unsave thread" else "Save thread",
+                            contentDescription = null,
                             tint = if (uiState.isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -196,12 +260,7 @@ fun ThreadDetailScreen(
                 .padding(innerPadding)
         ) {
             when {
-                uiState.isLoading && uiState.thread == null -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                uiState.isLoading && uiState.thread == null -> ThreadDetailSkeleton()
 
                 uiState.errorMessage != null -> ErrorState(
                     message = uiState.errorMessage!!,
@@ -234,12 +293,39 @@ fun ThreadDetailScreen(
                             )
                         }
 
+                        // Comments header with sort chips
                         item(key = "comments_header") {
-                            SectionHeader(
-                                title = stringResource(R.string.forum_comments),
-                                level = HeaderLevel.Section,
-                                padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                            )
+                            Column {
+                                SectionHeader(
+                                    title = stringResource(R.string.forum_comments),
+                                    level = HeaderLevel.Section,
+                                    padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    commentSortOptions.forEach { option ->
+                                        FilterChip(
+                                            selected = uiState.commentSortLabel == option.label,
+                                            onClick = {
+                                                viewModel.onAction(
+                                                    ThreadDetailAction.ChangeCommentSort(option.sort, option.label)
+                                                )
+                                            },
+                                            label = {
+                                                Text(
+                                                    text = option.label,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         if (visibleComments.isEmpty() && !uiState.isLoadingMoreComments) {
@@ -332,6 +418,67 @@ fun ThreadDetailScreen(
                 },
                 onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) }
             )
+        }
+    }
+}
+
+// =============================================================================
+// Skeleton for initial loading state
+// =============================================================================
+
+@Composable
+private fun ThreadDetailSkeleton() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Author row skeleton
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SkeletonLine(fraction = 0f, height = 40.dp, modifier = Modifier.width(40.dp).height(40.dp))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                SkeletonLine(fraction = 0.4f, height = 14.dp)
+                Spacer(Modifier.height(4.dp))
+                SkeletonLine(fraction = 0.25f, height = 12.dp)
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+        // Title skeleton
+        SkeletonLine(fraction = 0.85f, height = 24.dp)
+        Spacer(Modifier.height(8.dp))
+        SkeletonLine(fraction = 0.6f, height = 24.dp)
+        Spacer(Modifier.height(20.dp))
+        // Body skeleton
+        SkeletonLine(fraction = 1f, height = 16.dp)
+        Spacer(Modifier.height(6.dp))
+        SkeletonLine(fraction = 1f, height = 16.dp)
+        Spacer(Modifier.height(6.dp))
+        SkeletonLine(fraction = 0.8f, height = 16.dp)
+        Spacer(Modifier.height(6.dp))
+        SkeletonLine(fraction = 0.9f, height = 16.dp)
+        Spacer(Modifier.height(6.dp))
+        SkeletonLine(fraction = 0.5f, height = 16.dp)
+        Spacer(Modifier.height(24.dp))
+        // Stats skeleton
+        SkeletonLine(fraction = 0.5f, height = 16.dp)
+        Spacer(Modifier.height(32.dp))
+        // Comment skeletons
+        SkeletonLine(fraction = 0.3f, height = 20.dp) // Comments header
+        Spacer(Modifier.height(16.dp))
+        repeat(3) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SkeletonLine(fraction = 0f, height = 32.dp, modifier = Modifier.width(32.dp).height(32.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    SkeletonLine(fraction = 0.3f, height = 12.dp)
+                    Spacer(Modifier.height(8.dp))
+                    SkeletonLine(fraction = 0.9f, height = 14.dp)
+                    Spacer(Modifier.height(4.dp))
+                    SkeletonLine(fraction = 0.6f, height = 14.dp)
+                }
+            }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

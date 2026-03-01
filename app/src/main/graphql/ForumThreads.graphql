@@ -15,6 +15,7 @@ query GetForumThreads(
       isLiked
       isSubscribed
       isLocked
+      isSticky
       repliedAt
       createdAt
       user {
@@ -24,9 +25,23 @@ query GetForumThreads(
           large
         }
       }
+      replyUser {
+        name
+        avatar {
+          large
+        }
+      }
       categories {
         id
         name
+      }
+      mediaCategories {
+        title {
+          romaji
+        }
+        coverImage {
+          medium
+        }
       }
     }
     pageInfo {

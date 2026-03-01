@@ -15,11 +15,17 @@ data class ForumThread(
     val isLiked: Boolean,
     val isSubscribed: Boolean,
     val isLocked: Boolean,
+    val isSticky: Boolean = false,
     val authorId: Int,
     val authorName: String,
     val authorAvatarUrl: String?,
+    val repliedAt: Long? = null,
+    val replyUserName: String? = null,
+    val replyUserAvatarUrl: String? = null,
     val categories: List<ForumCategory>,
     val createdAt: Long,
     val updatedAt: Long,
-    val siteUrl: String?
+    val siteUrl: String?,
+    val mediaTitle: String? = null,
+    val mediaCoverUrl: String? = null
 )

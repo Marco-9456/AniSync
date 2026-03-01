@@ -12,7 +12,9 @@ data class ForumCategoryUiState(
     val hasNextPage: Boolean = false,
     val currentPage: Int = 1,
     val searchQuery: String = "",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val savedThreadIds: Set<Int> = emptySet(),
+    val sortLabel: String = "Recent"
 )
 
 sealed interface ForumCategoryAction {
@@ -21,5 +23,8 @@ sealed interface ForumCategoryAction {
     data object LoadMore : ForumCategoryAction
     data class OnSearchQueryChange(val query: String) : ForumCategoryAction
     data class OnThreadClick(val threadId: Int, val threadTitle: String) : ForumCategoryAction
+    data class ToggleSaveThread(val thread: ForumThread) : ForumCategoryAction
+    data class ToggleSubscribeThread(val thread: ForumThread) : ForumCategoryAction
+    data class ChangeSort(val sort: String, val label: String) : ForumCategoryAction
     data class ShowSnackbar(val message: String) : ForumCategoryAction
 }

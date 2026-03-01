@@ -19,6 +19,11 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v5 (Mar 2026):
+ *   - Added fields to saved_forum_threads:
+ *     • isLiked - Preserves liked state when saving threads locally
+ *     • isLocked - Preserves locked state when saving threads locally
+ *
  * v3 (Feb 2026):
  *   - Added fields to media_details:
  *     • source - Source material (Manga, Light Novel, Original, etc.)
@@ -56,11 +61,13 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
-        androidx.room.AutoMigration(from = 3, to = 4)
+        androidx.room.AutoMigration(from = 3, to = 4),
+        androidx.room.AutoMigration(from = 4, to = 5),
+        androidx.room.AutoMigration(from = 5, to = 6)
     ]
 )
 @TypeConverters(Converters::class)

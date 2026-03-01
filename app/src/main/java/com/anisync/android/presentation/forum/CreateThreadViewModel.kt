@@ -44,8 +44,14 @@ class CreateThreadViewModel @Inject constructor(
                     current.copy(selectedCategoryIds = updated, categoryError = null)
                 }
             }
+            is CreateThreadAction.TogglePreview -> {
+                _uiState.update { it.copy(isPreviewMode = !it.isPreviewMode) }
+            }
             is CreateThreadAction.Submit -> submit()
             is CreateThreadAction.NavigateUp -> {
+                viewModelScope.launch { _actions.emit(action) }
+            }
+            is CreateThreadAction.ShowSnackbar -> {
                 viewModelScope.launch { _actions.emit(action) }
             }
         }
@@ -86,7 +92,8 @@ class CreateThreadViewModel @Inject constructor(
                     _actions.emit(CreateThreadAction.NavigateUp)
                 }
                 is Result.Error -> {
-                    _uiState.update { it.copy(isSubmitting = false, bodyError = result.message) }
+                    _uiState.update { it.copy(isSubmitting = false) }
+                    _actions.emit(CreateThreadAction.ShowSnackbar(result.message))
                 }
             }
         }

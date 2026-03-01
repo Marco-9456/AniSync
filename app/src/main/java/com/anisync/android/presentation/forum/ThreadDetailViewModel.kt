@@ -6,6 +6,7 @@ import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -47,6 +48,7 @@ class ThreadDetailViewModel @Inject constructor(
             is ThreadDetailAction.SubmitReply -> submitReply(action)
             is ThreadDetailAction.ToggleSave -> toggleSave()
             is ThreadDetailAction.ToggleSubscribe -> toggleSubscribe()
+            is ThreadDetailAction.ChangeCommentSort -> changeCommentSort(action)
             is ThreadDetailAction.ShowSnackbar -> viewModelScope.launch { _actions.emit(action) }
             else -> viewModelScope.launch { _actions.emit(action) }
         }
@@ -56,10 +58,16 @@ class ThreadDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            // Load thread and first page of comments in parallel
-            val threadResult = forumRepository.getThread(threadId)
-            val commentsResult = forumRepository.getComments(threadId, page = 1)
-            val isSaved = forumRepository.isThreadSaved(threadId)
+            val sort = _uiState.value.commentSort
+
+            // Load thread, comments, and saved state in parallel
+            val threadDeferred = async { forumRepository.getThread(threadId) }
+            val commentsDeferred = async { forumRepository.getComments(threadId, page = 1, sort = sort) }
+            val savedDeferred = async { forumRepository.isThreadSaved(threadId) }
+
+            val threadResult = threadDeferred.await()
+            val commentsResult = commentsDeferred.await()
+            val isSaved = savedDeferred.await()
 
             if (threadResult is Result.Error) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = threadResult.message) }
@@ -90,8 +98,9 @@ class ThreadDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMoreComments = true) }
             val nextPage = _uiState.value.currentCommentPage + 1
+            val sort = _uiState.value.commentSort
 
-            when (val result = forumRepository.getComments(threadId, nextPage)) {
+            when (val result = forumRepository.getComments(threadId, nextPage, sort = sort)) {
                 is Result.Success -> {
                     _uiState.update { current ->
                         current.copy(
@@ -99,6 +108,30 @@ class ThreadDetailViewModel @Inject constructor(
                             comments = current.comments + result.data.items,
                             hasMoreComments = result.data.hasNextPage,
                             currentCommentPage = nextPage
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
+                }
+            }
+        }
+    }
+
+    private fun changeCommentSort(action: ThreadDetailAction.ChangeCommentSort) {
+        val threadId = _uiState.value.thread?.id ?: return
+        _uiState.update { it.copy(commentSort = action.sort, commentSortLabel = action.label) }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoreComments = true, comments = emptyList()) }
+            when (val result = forumRepository.getComments(threadId, page = 1, sort = action.sort)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMoreComments = false,
+                            comments = result.data.items,
+                            hasMoreComments = result.data.hasNextPage,
+                            currentCommentPage = 1
                         )
                     }
                 }
@@ -200,11 +233,19 @@ class ThreadDetailViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> {
                     _uiState.update { current ->
+                        val updatedComments = if (parentId != null) {
+                            // Insert reply into the correct position in the tree
+                            current.comments.map { it.insertReply(parentId, result.data) }
+                        } else {
+                            // Top-level reply → append to root
+                            current.comments + result.data
+                        }
                         current.copy(
                             isSubmittingReply = false,
                             isReplySheetVisible = false,
                             replyTargetCommentId = null,
-                            comments = current.comments + result.data
+                            comments = updatedComments,
+                            scrollToBottom = parentId == null // Signal scroll for top-level replies
                         )
                     }
                 }
@@ -227,5 +268,17 @@ private fun ForumComment.updateCommentLike(action: ThreadDetailAction.ToggleLike
         copy(isLiked = !action.currentLiked, likeCount = newCount.coerceAtLeast(0))
     } else {
         copy(childComments = childComments.map { it.updateCommentLike(action) })
+    }
+}
+
+/**
+ * Recursively walks the comment tree to insert [reply] as a child
+ * of the comment with [parentId].
+ */
+private fun ForumComment.insertReply(parentId: Int, reply: ForumComment): ForumComment {
+    return if (id == parentId) {
+        copy(childComments = childComments + reply)
+    } else {
+        copy(childComments = childComments.map { it.insertReply(parentId, reply) })
     }
 }
