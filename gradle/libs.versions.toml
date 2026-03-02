@@ -28,6 +28,8 @@ serialization = "1.9.0"
 leakcanary = "2.14"
 glance = "1.1.1"
 materialkolor = "4.1.1"
+media3 = "1.6.1"
+jsoup = "1.18.3"
 runtime = "1.11.0-alpha04"
 appcompat = "1.7.0"
 
@@ -77,6 +79,9 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 materialkolor = { group = "com.materialkolor", name = "material-kolor", version.ref = "materialkolor" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
+media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 [plugins]

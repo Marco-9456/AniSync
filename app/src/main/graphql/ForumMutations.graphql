@@ -2,7 +2,7 @@ mutation CreateForumThread($title: String!, $body: String!, $categories: [Int]!)
   SaveThread(title: $title, body: $body, categories: $categories) {
     id
     title
-    body
+    body(asHtml: true)
     replyCount
     viewCount
     likeCount
@@ -27,7 +27,7 @@ mutation CreateForumThread($title: String!, $body: String!, $categories: [Int]!)
 mutation CreateForumComment($threadId: Int!, $comment: String!) {
   SaveThreadComment(threadId: $threadId, comment: $comment) {
     id
-    comment
+    comment(asHtml: true)
     likeCount
     isLiked
     createdAt
@@ -45,7 +45,7 @@ mutation CreateForumComment($threadId: Int!, $comment: String!) {
 mutation CreateForumCommentReply($threadId: Int!, $comment: String!, $parentCommentId: Int!) {
   SaveThreadComment(threadId: $threadId, comment: $comment, parentCommentId: $parentCommentId) {
     id
-    comment
+    comment(asHtml: true)
     likeCount
     isLiked
     createdAt

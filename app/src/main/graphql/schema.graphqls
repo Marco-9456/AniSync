@@ -610,7 +610,7 @@ extend type Page {
 type Thread {
   id: Int
   title: String
-  body: String
+  body(asHtml: Boolean): String
   userId: Int
   replyUserId: Int
   replyCommentId: Int
@@ -641,7 +641,7 @@ type ThreadComment {
   id: Int
   userId: Int
   threadId: Int
-  comment: String
+  comment(asHtml: Boolean): String
   likeCount: Int
   isLiked: Boolean
   isParent: Boolean
