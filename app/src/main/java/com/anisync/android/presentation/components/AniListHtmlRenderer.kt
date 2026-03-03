@@ -1,29 +1,38 @@
 package com.anisync.android.presentation.components
 
+import android.app.DownloadManager
+import android.content.Context
 import android.net.Uri
+import android.os.Environment
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +40,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,12 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -77,30 +80,6 @@ import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 
 // =============================================================================
-// Pre-compiled Regex Patterns
-// =============================================================================
-// PERF: Regex compilation is expensive. These were previously compiled inside
-// hot functions (normalizeWhitespace per TextNode, parseMarkdownText per line,
-// handleImage per image). Hoisting them to top-level vals eliminates redundant
-// compilation and reduces CPU time in the parsing hot-path.
-
-/** Collapses runs of whitespace to a single space (used in normalizeWhitespace). */
-private val WHITESPACE_REGEX = Regex("[\\s]+")
-
-/** Standard markdown header: "# text" through "##### text". */
-private val HEADER_REGEX = Regex("^(#{1,5})\\s+(.*)")
-
-/** Header without space: "#text" (common in AniList markdown). */
-private val HEADER_NO_SPACE_REGEX = Regex("^(#{1,5})([^#\\s].*)")
-
-/** Bold wrapping a header: "__#Header__" or "**#Header**". */
-private val BOLD_WRAPPED_HEADER_REGEX =
-    Regex("^(?:\\*\\*|__)(#{1,5})\\s*(.*?)(?:\\*\\*|__)\\s*$")
-
-/** Strips non-digit characters from an image width attribute. */
-private val NON_DIGIT_REGEX = Regex("[^0-9]")
-
-// =============================================================================
 // Public Composable
 // =============================================================================
 
@@ -129,7 +108,8 @@ fun AniListHtmlRenderer(
         parseHtmlToBlocks(html, linkColor, codeBackground, spoilerColor)
     }
 
-    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
+    var fullscreenState by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
+    val allImageUrls = remember(blocks) { collectImageUrls(blocks) }
 
     Column(
         modifier = modifier.clipToBounds(),
@@ -170,7 +150,11 @@ fun AniListHtmlRenderer(
                                     contentScale = ContentScale.Fit,
                                     modifier = imageModifier(img)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .clickable { fullscreenImageUrl = img.url }
+                                        .clickable {
+                                            val index =
+                                                allImageUrls.indexOf(img.url).coerceAtLeast(0)
+                                            fullscreenState = Pair(allImageUrls, index)
+                                        }
                                 )
                             }
                         }
@@ -182,7 +166,10 @@ fun AniListHtmlRenderer(
                             contentScale = if (img.width != null) ContentScale.Fit else ContentScale.FillWidth,
                             modifier = imageModifier(img)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { fullscreenImageUrl = img.url }
+                                .clickable {
+                                    val index = allImageUrls.indexOf(img.url).coerceAtLeast(0)
+                                    fullscreenState = Pair(allImageUrls, index)
+                                }
                         )
                     }
                 }
@@ -215,7 +202,10 @@ fun AniListHtmlRenderer(
                         linkColor = linkColor,
                         spoilerColor = spoilerColor,
                         codeBackground = codeBackground,
-                        onImageClick = { fullscreenImageUrl = it }
+                        onImageClick = { url ->
+                            val index = allImageUrls.indexOf(url).coerceAtLeast(0)
+                            fullscreenState = Pair(allImageUrls, index)
+                        }
                     )
                 }
 
@@ -252,27 +242,16 @@ fun AniListHtmlRenderer(
                 is RenderBlock.Video -> {
                     VideoPlayer(url = block.url)
                 }
-
-                is RenderBlock.Blockquote -> {
-                    BlockquoteBlock(
-                        content = block.children,
-                        style = style,
-                        color = color,
-                        linkColor = linkColor,
-                        spoilerColor = spoilerColor,
-                        codeBackground = codeBackground,
-                        onImageClick = { fullscreenImageUrl = it }
-                    )
-                }
             }
             i++
         }
     }
 
-    fullscreenImageUrl?.let { imageUrl ->
+    fullscreenState?.let { (imageUrls, initialIndex) ->
         FullscreenImageDialog(
-            imageUrl = imageUrl,
-            onDismiss = { fullscreenImageUrl = null }
+            imageUrls = imageUrls,
+            initialIndex = initialIndex,
+            onDismiss = { fullscreenState = null }
         )
     }
 }
@@ -434,201 +413,6 @@ private fun SpoilerBlock(
                     is RenderBlock.Video -> {
                         VideoPlayer(url = block.url)
                     }
-
-                    is RenderBlock.Blockquote -> {
-                        BlockquoteBlock(
-                            content = block.children,
-                            style = style,
-                            color = color,
-                            linkColor = linkColor,
-                            spoilerColor = spoilerColor,
-                            codeBackground = codeBackground,
-                            onImageClick = onImageClick
-                        )
-                    }
-                }
-                j++
-            }
-        }
-    }
-}
-
-// =============================================================================
-// Blockquote Block (left border bar + background + italic text)
-// =============================================================================
-
-/**
- * Renders a blockquote with AniList-style visual treatment:
- * - Left vertical border bar (3dp wide)
- * - Subtle dark background
- * - Italic text (AniList convention: "quoted text will always appear italic")
- *
- * Nested blockquotes are handled recursively — a [RenderBlock.Blockquote]
- * inside [content] produces a nested [BlockquoteBlock] with compounding visual
- * indentation.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun BlockquoteBlock(
-    content: List<RenderBlock>,
-    style: TextStyle,
-    color: Color,
-    linkColor: Color,
-    spoilerColor: Color,
-    codeBackground: Color,
-    onImageClick: (String) -> Unit
-) {
-    val borderColor = spoilerColor.copy(alpha = 0.5f)
-    val bgColor = spoilerColor.copy(alpha = 0.08f)
-    // AniList blockquote text is always italic
-    val italicStyle = style.copy(fontStyle = FontStyle.Italic)
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
-            .background(bgColor)
-            .drawBehind {
-                // Draw the left border bar
-                drawRect(
-                    color = borderColor,
-                    topLeft = Offset.Zero,
-                    size = Size(3.dp.toPx(), size.height)
-                )
-            }
-            .padding(start = 12.dp, top = 8.dp, end = 8.dp, bottom = 8.dp)
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            var j = 0
-            while (j < content.size) {
-                when (val block = content[j]) {
-                    is RenderBlock.Text -> {
-                        if (block.annotatedString.isNotBlank()) {
-                            Text(
-                                text = block.annotatedString,
-                                style = italicStyle.copy(color = color),
-                                textAlign = block.textAlign,
-                                modifier = if (block.textAlign == TextAlign.Center)
-                                    Modifier.fillMaxWidth() else Modifier
-                            )
-                        }
-                    }
-
-                    is RenderBlock.Image -> {
-                        val imageGroup = mutableListOf(block)
-                        while (j + 1 < content.size && content[j + 1] is RenderBlock.Image) {
-                            j++
-                            imageGroup.add(content[j] as RenderBlock.Image)
-                        }
-                        if (imageGroup.size > 1) {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                imageGroup.forEach { img ->
-                                    AsyncImage(
-                                        model = img.url,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Fit,
-                                        modifier = imageModifier(img)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { onImageClick(img.url) }
-                                    )
-                                }
-                            }
-                        } else {
-                            val img = imageGroup.first()
-                            AsyncImage(
-                                model = img.url,
-                                contentDescription = null,
-                                contentScale = if (img.width != null) ContentScale.Fit else ContentScale.FillWidth,
-                                modifier = imageModifier(img)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { onImageClick(img.url) }
-                            )
-                        }
-                    }
-
-                    is RenderBlock.Code -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(codeBackground)
-                                .horizontalScroll(rememberScrollState())
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = block.code,
-                                style = italicStyle.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 13.sp,
-                                    color = color
-                                )
-                            )
-                        }
-                    }
-
-                    is RenderBlock.Spoiler -> {
-                        SpoilerBlock(
-                            content = block.children,
-                            style = italicStyle,
-                            color = color,
-                            linkColor = linkColor,
-                            spoilerColor = spoilerColor,
-                            codeBackground = codeBackground,
-                            onImageClick = onImageClick
-                        )
-                    }
-
-                    is RenderBlock.HorizontalRule -> {
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = spoilerColor.copy(alpha = 0.5f))) {
-                                    append("\u2501".repeat(28))
-                                }
-                            },
-                            style = italicStyle
-                        )
-                    }
-
-                    is RenderBlock.YouTube -> {
-                        val annotated = buildAnnotatedString {
-                            pushLink(
-                                LinkAnnotation.Url(
-                                    block.url,
-                                    TextLinkStyles(
-                                        SpanStyle(
-                                            color = linkColor,
-                                            textDecoration = TextDecoration.Underline
-                                        )
-                                    )
-                                )
-                            )
-                            append("\u25B6 YouTube Video")
-                            pop()
-                        }
-                        Text(text = annotated, style = italicStyle.copy(color = color))
-                    }
-
-                    is RenderBlock.Video -> {
-                        VideoPlayer(url = block.url)
-                    }
-
-                    is RenderBlock.Blockquote -> {
-                        // Nested blockquote — recurse for compounding indentation
-                        BlockquoteBlock(
-                            content = block.children,
-                            style = style,
-                            color = color,
-                            linkColor = linkColor,
-                            spoilerColor = spoilerColor,
-                            codeBackground = codeBackground,
-                            onImageClick = onImageClick
-                        )
-                    }
                 }
                 j++
             }
@@ -642,59 +426,131 @@ private fun BlockquoteBlock(
 
 @Composable
 private fun FullscreenImageDialog(
-    imageUrl: String,
+    imageUrls: List<String>,
+    initialIndex: Int,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val pagerState = rememberPagerState(
+        initialPage = initialIndex,
+        pageCount = { imageUrls.size }
+    )
+
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.92f))
-                .clickable(indication = null, interactionSource = null) { onDismiss() }
+                .background(Color.Black.copy(alpha = 0.50f))
         ) {
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offsetX by remember { mutableFloatStateOf(0f) }
-            var offsetY by remember { mutableFloatStateOf(0f) }
-
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offsetX,
-                        translationY = offsetY
+            // Image pager
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(indication = null, interactionSource = null) { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = imageUrls[page],
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable(
+                                indication = null,
+                                interactionSource = null
+                            ) { /* consume */ }
                     )
-                    .pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            scale = (scale * zoom).coerceIn(0.5f, 5f)
-                            offsetX += pan.x
-                            offsetY += pan.y
-                        }
-                    }
-                    .clickable(indication = null, interactionSource = null) { /* consume */ }
-            )
+                }
+            }
 
-            IconButton(
-                onClick = onDismiss,
+            // Top bar
+            Row(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+
+                Text(
+                    text = "${pagerState.currentPage + 1} of ${imageUrls.size}",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
                 )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(
+                    onClick = {
+                        downloadImage(context, imageUrls[pagerState.currentPage])
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = "Download",
+                        tint = Color.White
+                    )
+                }
             }
         }
+    }
+}
+
+/** Recursively collects all image URLs from render blocks (including inside spoilers). */
+private fun collectImageUrls(blocks: List<RenderBlock>): List<String> {
+    val urls = mutableListOf<String>()
+    for (block in blocks) {
+        when (block) {
+            is RenderBlock.Image -> urls.add(block.url)
+            is RenderBlock.Spoiler -> urls.addAll(collectImageUrls(block.children))
+            else -> {}
+        }
+    }
+    return urls
+}
+
+/** Downloads an image to the device's Downloads folder using DownloadManager. */
+private fun downloadImage(context: Context, imageUrl: String) {
+    try {
+        val uri = Uri.parse(imageUrl)
+        val fileName = uri.lastPathSegment?.let { segment ->
+            if (segment.contains('.')) segment
+            else "$segment.jpg"
+        } ?: "image_${System.currentTimeMillis()}.jpg"
+
+        val request = DownloadManager.Request(uri)
+            .setTitle(fileName)
+            .setDescription("Downloading image...")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
+
+        val dm = context.getSystemService(DownloadManager::class.java)
+        dm?.enqueue(request)
+
+        Toast.makeText(context, "Download started", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -793,11 +649,12 @@ private fun imageModifier(img: RenderBlock.Image): Modifier {
 // Data Models
 // =============================================================================
 
-internal sealed class RenderBlock {
+private sealed class RenderBlock {
     data class Text(
         val annotatedString: AnnotatedString,
         val textAlign: TextAlign = TextAlign.Unspecified
     ) : RenderBlock()
+
     data class Image(
         val url: String,
         val width: Int? = null,
@@ -810,7 +667,6 @@ internal sealed class RenderBlock {
     data object HorizontalRule : RenderBlock()
     data class YouTube(val url: String) : RenderBlock()
     data class Video(val url: String) : RenderBlock()
-    data class Blockquote(val children: List<RenderBlock>) : RenderBlock()
 }
 
 // =============================================================================
@@ -825,12 +681,6 @@ internal sealed class RenderBlock {
  *
  * Uses a `var builder` that gets replaced with a fresh instance on flush,
  * since [AnnotatedString.Builder] has no clear/reset method.
- *
- * PERF: Tracks [trailingNewlineCount] to avoid calling [AnnotatedString.Builder.toAnnotatedString]
- * just to check the last character(s). Previously, ensureParagraphBreak(), ensureNewline(),
- * walkNode(), and parseMarkdownText() each called toAnnotatedString() which builds a full
- * copy of accumulated text + all spans + all link annotations — O(n) per call. With trailing
- * newline tracking, these checks become O(1).
  */
 private class Ctx(
     val linkColor: Color,
@@ -840,12 +690,6 @@ private class Ctx(
 ) {
     var builder: AnnotatedString.Builder = AnnotatedString.Builder()
     var hasContent = false
-
-    // PERF: Tracks how many consecutive newlines trail the current builder content.
-    // Updated by appendText(), appendNewline(), and markNonNewlineContent().
-    // Eliminates the need for toAnnotatedString() in ensureParagraphBreak/ensureNewline.
-    var trailingNewlineCount = 0
-        private set
 
     /** Flush accumulated text into a [RenderBlock.Text], if any content exists. */
     fun flushText(blocks: MutableList<RenderBlock>) {
@@ -857,70 +701,42 @@ private class Ctx(
             }
             builder = AnnotatedString.Builder()
             hasContent = false
-            trailingNewlineCount = 0
         }
     }
 
     /**
      * Ensures a paragraph break (`\n\n`) before new paragraph content.
      * No-op if builder is empty or already ends with `\n\n`.
-     *
-     * PERF: Uses [trailingNewlineCount] instead of toAnnotatedString().
      */
     fun ensureParagraphBreak() {
         if (!hasContent) return
+        val text = builder.toAnnotatedString().text
+        if (text.isEmpty()) return
         when {
-            trailingNewlineCount >= 2 -> { /* already has paragraph break */ }
-            trailingNewlineCount == 1 -> {
-                builder.append("\n")
-                trailingNewlineCount = 2
-            }
-            else -> {
-                builder.append("\n\n")
-                trailingNewlineCount = 2
-            }
+            text.endsWith("\n\n") -> {}
+            text.endsWith("\n") -> builder.append("\n")
+            else -> builder.append("\n\n")
         }
     }
 
-    /**
-     * Ensures a single newline at end (for list items, blockquote lines).
-     *
-     * PERF: Uses [trailingNewlineCount] instead of toAnnotatedString().
-     */
+    /** Ensures a single newline at end (for list items, blockquote lines). */
     fun ensureNewline() {
         if (!hasContent) return
-        if (trailingNewlineCount > 0) return
+        val text = builder.toAnnotatedString().text
+        if (text.isEmpty() || text.endsWith("\n")) return
         builder.append("\n")
-        trailingNewlineCount = 1
     }
 
     fun appendNewline() {
         builder.append("\n")
         hasContent = true
-        trailingNewlineCount++
     }
 
     fun appendText(text: String) {
         if (text.isNotEmpty()) {
             builder.append(text)
             hasContent = true
-            // Count trailing newlines in the appended text
-            trailingNewlineCount = 0
-            for (i in text.length - 1 downTo 0) {
-                if (text[i] == '\n') trailingNewlineCount++
-                else break
-            }
         }
-    }
-
-    /**
-     * Call after non-newline content is appended directly to [builder] (e.g., inside
-     * withStyle blocks). Resets [trailingNewlineCount] to 0 since we know the
-     * appended content is not a newline.
-     */
-    fun markNonNewlineContent() {
-        hasContent = true
-        trailingNewlineCount = 0
     }
 }
 
@@ -932,24 +748,18 @@ private class Ctx(
  * Parses server-rendered AniList HTML into a flat list of [RenderBlock]s.
  *
  * Text content flows within a single [AnnotatedString] builder as much as possible.
- * Paragraphs are separated by `\n\n`, line breaks by `\n`. Headers and lists are
- * rendered via SpanStyle within the text flow.
- * Images, code blocks, spoilers, blockquotes, horizontal rules, and video/YouTube
- * embeds break out into separate composables.
+ * Paragraphs are separated by `\n\n`, line breaks by `\n`. Headers, blockquotes,
+ * and lists are rendered via SpanStyle within the text flow.
+ * Only images, code blocks, spoilers, horizontal rules, and video/YouTube embeds
+ * cause a flush into a separate block.
  */
-internal fun parseHtmlToBlocks(
+private fun parseHtmlToBlocks(
     html: String,
     linkColor: Color,
     codeBackground: Color,
     spoilerColor: Color
 ): List<RenderBlock> {
     if (html.isBlank()) return emptyList()
-
-    // PERF: Measure total parse time for performance monitoring.
-    // Uses try/catch around android.util.Log so it doesn't crash in JVM unit tests
-    // where the Android framework is not available. In release builds, ProGuard/R8
-    // strips DEBUG-level logs.
-    val startNanos = System.nanoTime()
 
     val doc = Jsoup.parseBodyFragment(html)
     doc.outputSettings().prettyPrint(false)
@@ -959,16 +769,6 @@ internal fun parseHtmlToBlocks(
 
     walkChildren(doc.body(), blocks, ctx)
     ctx.flushText(blocks)
-
-    val elapsedMs = (System.nanoTime() - startNanos) / 1_000_000.0
-    try {
-        android.util.Log.d(
-            "AniListHtmlRenderer",
-            "parseHtmlToBlocks: ${blocks.size} blocks in %.2fms (html length=${html.length})".format(elapsedMs)
-        )
-    } catch (_: RuntimeException) {
-        // android.util.Log is unavailable in JVM unit tests — silently ignore.
-    }
 
     return blocks
 }
@@ -998,9 +798,9 @@ private fun walkNode(
             // Normalize HTML whitespace: collapse runs of whitespace to single space
             val normalized = normalizeWhitespace(node.wholeText)
             if (normalized.isNotEmpty()) {
-                // Don't append leading space if builder is empty or ends with newline.
-                // PERF: Uses trailingNewlineCount instead of toAnnotatedString().
-                val trimmed = if (!ctx.hasContent || ctx.trailingNewlineCount > 0) {
+                // Don't append leading space if builder is empty or ends with newline
+                val text = builder(ctx).toAnnotatedString().text
+                val trimmed = if (!ctx.hasContent || text.isEmpty() || text.endsWith('\n')) {
                     normalized.trimStart()
                 } else {
                     normalized
@@ -1008,9 +808,13 @@ private fun walkNode(
                 ctx.appendText(trimmed)
             }
         }
+
         is Element -> walkElement(node, blocks, ctx)
     }
 }
+
+/** Helper to access context builder (avoids repeated ctx.builder). */
+private fun builder(ctx: Ctx): AnnotatedString.Builder = ctx.builder
 
 private fun walkElement(
     element: Element,
@@ -1027,22 +831,19 @@ private fun walkElement(
         }
 
         // --- Headers: render inline with SpanStyle (stays in text flow) ---
-        // FIX: Pass markdownText = true so raw markdown like __bold__ inside headers
-        // is parsed. AniList's API converts ### to <h3> but may leave __ as raw text.
         "h1", "h2", "h3", "h4", "h5" -> {
             ctx.ensureParagraphBreak()
             val level = tag[1].digitToInt()
             ctx.builder.withStyle(headerSpanStyle(level)) {
-                renderInline(element, this, ctx, blocks, markdownText = true)
+                renderInline(element, this, ctx, blocks)
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
         }
 
-        // --- Blockquotes: flush text, parse children into a separate Blockquote block ---
-        // Blockquotes are rendered as a distinct composable with a left border bar,
-        // subtle background, and italic text (matching AniList's styling).
+        // --- Blockquotes: render inline with prefix and italic style ---
         "blockquote" -> {
-            renderBlockquote(element, blocks, ctx)
+            ctx.ensureParagraphBreak()
+            renderBlockquote(element, blocks, ctx, depth = 1)
         }
 
         // --- Horizontal rule: flush text, emit HR block ---
@@ -1066,6 +867,7 @@ private fun walkElement(
             ctx.ensureParagraphBreak()
             renderUnorderedList(element, ctx, blocks, depth = 0)
         }
+
         "ol" -> {
             ctx.ensureParagraphBreak()
             renderOrderedList(element, ctx, blocks, depth = 0)
@@ -1113,21 +915,21 @@ private fun walkElement(
             ctx.builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                 renderInline(element, this, ctx, blocks)
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
         }
 
         "i", "em" -> {
             ctx.builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 renderInline(element, this, ctx, blocks)
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
         }
 
         "del", "strike", "s" -> {
             ctx.builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
                 renderInline(element, this, ctx, blocks)
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
         }
 
         "a" -> {
@@ -1145,14 +947,18 @@ private fun walkElement(
             ) {
                 append(element.wholeText())
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
         }
 
         // --- Iframe (legacy fallback) ---
         "iframe" -> {
             ctx.flushText(blocks)
             val src = element.attr("src")
-            if (src.contains("youtube", ignoreCase = true) || src.contains("youtu.be", ignoreCase = true)) {
+            if (src.contains("youtube", ignoreCase = true) || src.contains(
+                    "youtu.be",
+                    ignoreCase = true
+                )
+            ) {
                 blocks.add(RenderBlock.YouTube(src))
             } else if (src.isNotBlank()) {
                 blocks.add(RenderBlock.Video(src))
@@ -1210,7 +1016,7 @@ private fun handleAnchor(
             renderInline(element, this, ctx, blocks)
         }
     }
-    ctx.markNonNewlineContent()
+    ctx.hasContent = true
 }
 
 // =============================================================================
@@ -1233,7 +1039,7 @@ private fun handleImage(
     if (src.isNotBlank()) {
         val widthAttr = element.attr("width")
         val isPercent = widthAttr.contains("%")
-        val widthNum = widthAttr.replace(NON_DIGIT_REGEX, "").toIntOrNull()
+        val widthNum = widthAttr.replace(Regex("[^0-9]"), "").toIntOrNull()
         blocks.add(RenderBlock.Image(src, widthNum, isPercent, linkUrl))
     }
 }
@@ -1308,7 +1114,7 @@ private fun handleSpan(
 
     // Regular span: render children inline
     renderInline(element, ctx.builder, ctx, blocks)
-    ctx.markNonNewlineContent()
+    ctx.hasContent = true
 }
 
 // =============================================================================
@@ -1353,13 +1159,6 @@ private fun handleCenter(
  * also dispatched to [walkElement] so that HTML-based formatting inside center is
  * preserved. For any other elements (like Jsoup-inserted wrappers), we recurse
  * into their children. TextNodes at ANY depth are parsed as raw markdown.
- *
- * FIX: `<p>` is handled by recursing with [walkCenterChildren] instead of dispatching
- * to [walkElement]. Previously, `<p>` inside `<center>` was dispatched to walkElement →
- * walkChildren → walkNode, where TextNodes were appended verbatim without markdown
- * parsing. This caused `<center><p>_Test_</p></center>` to render as literal "_Test_"
- * instead of italic "Test". Now, `<p>` recurses so its TextNode children still go
- * through [parseMarkdownText] for proper italic/bold/link rendering.
  */
 private fun walkCenterChildren(
     parent: Element,
@@ -1374,23 +1173,19 @@ private fun walkCenterChildren(
                     parseMarkdownText(raw, blocks, ctx)
                 }
             }
+
             is Element -> {
                 val tag = child.tagName().lowercase()
+                // Tags that are real HTML content from the API — process normally
                 when (tag) {
-                    // Block-level tags that need special handling inside center:
-                    // <p> recurses through walkCenterChildren so nested TextNodes
-                    // still get markdown parsing.
-                    "p" -> {
-                        ctx.ensureParagraphBreak()
-                        walkCenterChildren(child, blocks, ctx)
-                    }
-                    // Tags that are real HTML content from the API — process normally
                     "video", "img", "a", "div", "span", "br", "hr",
                     "pre", "code", "ul", "ol",
-                    // Inline formatting tags (may appear if user mixes HTML inside center)
+                        // Inline formatting tags (may appear if user mixes HTML inside center)
                     "b", "strong", "i", "em", "del", "strike", "s",
-                    // Block-level tags that AniList may generate
-                    "h1", "h2", "h3", "h4", "h5", "blockquote" -> {
+                        // Block-level tags that AniList may generate
+                    "h1", "h2", "h3", "h4", "h5", "blockquote",
+                        // Paragraph tags Jsoup may insert
+                    "p" -> {
                         walkElement(child, blocks, ctx)
                     }
                     // Wrapper tags or unknown tags: recurse to find TextNodes and
@@ -1429,7 +1224,7 @@ private fun parseMarkdownText(
         val trimmedLine = line.trimStart()
 
         // Check for standard headers: # through #####
-        val headerMatch = HEADER_REGEX.find(trimmedLine)
+        val headerMatch = Regex("^(#{1,5})\\s+(.*)").find(trimmedLine)
         if (headerMatch != null) {
             ctx.ensureParagraphBreak()
             val level = headerMatch.groupValues[1].length
@@ -1437,12 +1232,12 @@ private fun parseMarkdownText(
             ctx.builder.withStyle(headerSpanStyle(level)) {
                 parseInlineMarkdown(content, this, ctx)
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
             continue
         }
 
         // Check for headers without space: #text (common in AniList)
-        val headerNoSpaceMatch = HEADER_NO_SPACE_REGEX.find(trimmedLine)
+        val headerNoSpaceMatch = Regex("^(#{1,5})([^#\\s].*)").find(trimmedLine)
         if (headerNoSpaceMatch != null) {
             ctx.ensureParagraphBreak()
             val level = headerNoSpaceMatch.groupValues[1].length
@@ -1450,12 +1245,13 @@ private fun parseMarkdownText(
             ctx.builder.withStyle(headerSpanStyle(level)) {
                 parseInlineMarkdown(content, this, ctx)
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
             continue
         }
 
         // Check for bold-wrapped headers: __#Header__ or **#Header**
-        val boldWrappedHeaderMatch = BOLD_WRAPPED_HEADER_REGEX.find(trimmedLine)
+        val boldWrappedHeaderMatch =
+            Regex("^(?:\\*\\*|__)(#{1,5})\\s*(.*?)(?:\\*\\*|__)\\s*$").find(trimmedLine)
         if (boldWrappedHeaderMatch != null) {
             ctx.ensureParagraphBreak()
             val level = boldWrappedHeaderMatch.groupValues[1].length
@@ -1465,17 +1261,19 @@ private fun parseMarkdownText(
                     parseInlineMarkdown(content, this, ctx)
                 }
             }
-            ctx.markNonNewlineContent()
+            ctx.hasContent = true
             continue
         }
 
-        // Regular text line with inline markdown.
-        // PERF: Uses trailingNewlineCount instead of toAnnotatedString().
-        if (ctx.hasContent && ctx.trailingNewlineCount == 0) {
-            ctx.appendNewline()
+        // Regular text line with inline markdown
+        if (ctx.hasContent) {
+            val currentText = ctx.builder.toAnnotatedString().text
+            if (currentText.isNotEmpty() && !currentText.endsWith("\n")) {
+                ctx.builder.append("\n")
+            }
         }
         parseInlineMarkdown(line, ctx.builder, ctx)
-        ctx.markNonNewlineContent()
+        ctx.hasContent = true
     }
 }
 
@@ -1494,19 +1292,6 @@ private fun parseInlineMarkdown(
 
     while (i < len) {
         when {
-            // Bold+Italic: ***text***
-            i + 2 < len && text[i] == '*' && text[i + 1] == '*' && text[i + 2] == '*' -> {
-                val end = text.indexOf("***", i + 3)
-                if (end != -1) {
-                    builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)) {
-                        parseInlineMarkdown(text.substring(i + 3, end), this, ctx)
-                    }
-                    i = end + 3
-                } else {
-                    builder.append(text[i])
-                    i++
-                }
-            }
             // Bold: **text**
             i + 1 < len && text[i] == '*' && text[i + 1] == '*' -> {
                 val end = text.indexOf("**", i + 2)
@@ -1515,19 +1300,6 @@ private fun parseInlineMarkdown(
                         parseInlineMarkdown(text.substring(i + 2, end), this, ctx)
                     }
                     i = end + 2
-                } else {
-                    builder.append(text[i])
-                    i++
-                }
-            }
-            // Bold+Italic: ___text___
-            i + 2 < len && text[i] == '_' && text[i + 1] == '_' && text[i + 2] == '_' -> {
-                val end = text.indexOf("___", i + 3)
-                if (end != -1) {
-                    builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)) {
-                        parseInlineMarkdown(text.substring(i + 3, end), this, ctx)
-                    }
-                    i = end + 3
                 } else {
                     builder.append(text[i])
                     i++
@@ -1649,33 +1421,132 @@ private fun parseInlineMarkdown(
 // =============================================================================
 
 /**
- * Renders a `<blockquote>` as a separate [RenderBlock.Blockquote].
+ * Renders a `<blockquote>` inline within the text flow.
+ * Uses `\u2503 ` (┃) prefix per nesting depth with italic style.
  *
- * Flushes any accumulated text, parses the blockquote's children into a
- * separate list of [RenderBlock]s, and emits a [RenderBlock.Blockquote].
- * Nested `<blockquote>` elements naturally produce nested [RenderBlock.Blockquote]
- * blocks since walkElement dispatches them back here.
- *
- * The composable rendering applies the visual styling: left border bar,
- * subtle background, and italic text — matching AniList's blockquote appearance.
+ * AniList HTML pattern:
+ *   `<blockquote>\n<p>text<br>more text</p>\n</blockquote>`
+ * Nested: `<blockquote><blockquote><p>text</p></blockquote></blockquote>`
  */
 private fun renderBlockquote(
     element: Element,
     blocks: MutableList<RenderBlock>,
-    ctx: Ctx
+    ctx: Ctx,
+    depth: Int
 ) {
-    // Flush any text accumulated before the blockquote
-    ctx.flushText(blocks)
+    val prefix = "\u2503 ".repeat(depth)
 
-    // Parse blockquote children into a separate block list
-    val childBlocks = mutableListOf<RenderBlock>()
-    val childCtx = Ctx(ctx.linkColor, ctx.codeBackground, ctx.spoilerColor)
+    for (child in element.children()) {
+        val childTag = child.tagName().lowercase()
+        when (childTag) {
+            "blockquote" -> {
+                renderBlockquote(child, blocks, ctx, depth + 1)
+            }
 
-    walkChildren(element, childBlocks, childCtx)
-    childCtx.flushText(childBlocks)
+            "p" -> {
+                ctx.ensureNewline()
+                ctx.builder.withStyle(
+                    SpanStyle(fontStyle = FontStyle.Italic, color = ctx.spoilerColor)
+                ) {
+                    append(prefix)
+                    renderBlockquoteInline(child, this, ctx, blocks, prefix)
+                }
+                ctx.hasContent = true
+            }
 
-    if (childBlocks.isNotEmpty()) {
-        blocks.add(RenderBlock.Blockquote(childBlocks))
+            else -> {
+                // Other elements (images, etc.) inside blockquote
+                ctx.ensureNewline()
+                ctx.builder.withStyle(
+                    SpanStyle(fontStyle = FontStyle.Italic, color = ctx.spoilerColor)
+                ) {
+                    append(prefix)
+                }
+                ctx.hasContent = true
+                walkElement(child, blocks, ctx)
+            }
+        }
+    }
+}
+
+/**
+ * Renders inline content within a blockquote paragraph.
+ * `<br>` inserts newline + blockquote prefix continuation.
+ */
+private fun renderBlockquoteInline(
+    element: Element,
+    builder: AnnotatedString.Builder,
+    ctx: Ctx,
+    blocks: MutableList<RenderBlock>,
+    prefix: String
+) {
+    var isFirstContent = true
+    for (child in element.childNodes()) {
+        when (child) {
+            is TextNode -> {
+                val normalized = normalizeWhitespace(child.wholeText)
+                val text = if (isFirstContent) normalized.trimStart() else normalized
+                if (text.isNotEmpty()) {
+                    builder.append(text)
+                    isFirstContent = false
+                }
+            }
+
+            is Element -> {
+                val tag = child.tagName().lowercase()
+                when (tag) {
+                    "br" -> builder.append("\n$prefix")
+                    "b", "strong" -> builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        renderBlockquoteInline(child, this, ctx, blocks, prefix)
+                    }
+
+                    "i", "em" -> builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        renderBlockquoteInline(child, this, ctx, blocks, prefix)
+                    }
+
+                    "del", "strike", "s" -> builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                        renderBlockquoteInline(child, this, ctx, blocks, prefix)
+                    }
+
+                    "a" -> {
+                        val href = child.attr("href")
+                        if (href.isNotBlank()) {
+                            builder.pushLink(
+                                LinkAnnotation.Url(
+                                    href,
+                                    TextLinkStyles(
+                                        SpanStyle(
+                                            color = ctx.linkColor,
+                                            textDecoration = TextDecoration.Underline
+                                        )
+                                    )
+                                )
+                            )
+                            renderBlockquoteInline(child, builder, ctx, blocks, prefix)
+                            builder.pop()
+                        } else {
+                            builder.withStyle(SpanStyle(color = ctx.linkColor)) {
+                                renderBlockquoteInline(child, this, ctx, blocks, prefix)
+                            }
+                        }
+                    }
+
+                    "code" -> builder.withStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily.Monospace,
+                            background = ctx.codeBackground,
+                            fontSize = 13.sp
+                        )
+                    ) {
+                        append(child.wholeText())
+                    }
+
+                    "span" -> renderBlockquoteInline(child, builder, ctx, blocks, prefix)
+                    else -> renderBlockquoteInline(child, builder, ctx, blocks, prefix)
+                }
+                isFirstContent = false
+            }
+        }
     }
 }
 
@@ -1693,41 +1564,16 @@ private fun renderUnorderedList(
     val indent = "  ".repeat(depth)
     var first = true
 
-    for (child in element.childNodes()) {
-        when (child) {
-            is TextNode -> {
-                // Raw text directly in <ul> (e.g. <ul>**bold text:**)
-                val text = normalizeWhitespace(child.wholeText).trim()
-                if (text.isNotEmpty()) {
-                    if (!first || ctx.hasContent) {
-                        ctx.ensureNewline()
-                    }
-                    parseInlineMarkdown(text, ctx.builder, ctx)
-                    ctx.hasContent = true
-                    first = false
-                }
-            }
-            is Element -> {
-                val tag = child.tagName().lowercase()
-                when (tag) {
-                    "li" -> {
-                        if (!first || ctx.hasContent) {
-                            ctx.ensureNewline()
-                        }
-                        first = false
-                        ctx.appendText("$indent  \u2022 ")
-                        renderListItem(child, ctx, blocks, depth)
-                    }
-                    "ul" -> renderUnorderedList(child, ctx, blocks, depth + 1)
-                    "ol" -> renderOrderedList(child, ctx, blocks, depth + 1)
-                    else -> {
-                        // Other elements directly in <ul>
-                        renderInlineForCtx(child, ctx, blocks)
-                        first = false
-                    }
-                }
-            }
+    for (li in element.children()) {
+        if (li.tagName().lowercase() != "li") continue
+
+        if (!first || ctx.hasContent) {
+            ctx.ensureNewline()
         }
+        first = false
+
+        ctx.appendText("$indent  \u2022 ")
+        renderListItem(li, ctx, blocks, depth)
     }
 }
 
@@ -1746,40 +1592,16 @@ private fun renderOrderedList(
     var idx = if (startAttr.isNotBlank()) startAttr.toIntOrNull() ?: 1 else 1
     var first = true
 
-    for (child in element.childNodes()) {
-        when (child) {
-            is TextNode -> {
-                // Raw text directly in <ol>
-                val text = normalizeWhitespace(child.wholeText).trim()
-                if (text.isNotEmpty()) {
-                    if (!first || ctx.hasContent) {
-                        ctx.ensureNewline()
-                    }
-                    parseInlineMarkdown(text, ctx.builder, ctx)
-                    ctx.hasContent = true
-                    first = false
-                }
-            }
-            is Element -> {
-                val tag = child.tagName().lowercase()
-                when (tag) {
-                    "li" -> {
-                        if (!first || ctx.hasContent) {
-                            ctx.ensureNewline()
-                        }
-                        first = false
-                        ctx.appendText("$indent  ${idx++}. ")
-                        renderListItem(child, ctx, blocks, depth)
-                    }
-                    "ul" -> renderUnorderedList(child, ctx, blocks, depth + 1)
-                    "ol" -> renderOrderedList(child, ctx, blocks, depth + 1)
-                    else -> {
-                        renderInlineForCtx(child, ctx, blocks)
-                        first = false
-                    }
-                }
-            }
+    for (li in element.children()) {
+        if (li.tagName().lowercase() != "li") continue
+
+        if (!first || ctx.hasContent) {
+            ctx.ensureNewline()
         }
+        first = false
+
+        ctx.appendText("$indent  ${idx++}. ")
+        renderListItem(li, ctx, blocks, depth)
     }
 }
 
@@ -1797,12 +1619,11 @@ private fun renderListItem(
                 val normalized = normalizeWhitespace(child.wholeText)
                 val text = if (isFirstContent) normalized.trimStart() else normalized
                 if (text.isNotEmpty()) {
-                    // Parse inline markdown (bold, italic, links, etc.) from raw text
-                    parseInlineMarkdown(text, ctx.builder, ctx)
-                    ctx.hasContent = true
+                    ctx.appendText(text)
                     isFirstContent = false
                 }
             }
+
             is Element -> {
                 val tag = child.tagName().lowercase()
                 when (tag) {
@@ -1815,6 +1636,7 @@ private fun renderListItem(
                         renderInline(child, ctx.builder, ctx, blocks)
                         ctx.hasContent = true
                     }
+
                     else -> {
                         renderInlineForCtx(child, ctx, blocks)
                     }
@@ -1838,38 +1660,32 @@ private fun renderInline(
     element: Element,
     builder: AnnotatedString.Builder,
     ctx: Ctx,
-    blocks: MutableList<RenderBlock>,
-    markdownText: Boolean = false
+    blocks: MutableList<RenderBlock>
 ) {
     for (child in element.childNodes()) {
         when (child) {
             is TextNode -> {
                 val text = normalizeWhitespace(child.wholeText)
                 if (text.isNotEmpty()) {
-                    if (markdownText) {
-                        parseInlineMarkdown(text, builder, ctx)
-                    } else {
-                        builder.append(text)
-                    }
+                    builder.append(text)
                 }
             }
+
             is Element -> {
                 val tag = child.tagName().lowercase()
                 when (tag) {
                     "b", "strong" -> builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        renderInline(child, this, ctx, blocks, markdownText)
+                        renderInline(child, this, ctx, blocks)
                     }
+
                     "i", "em" -> builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                        renderInline(child, this, ctx, blocks, markdownText)
+                        renderInline(child, this, ctx, blocks)
                     }
+
                     "del", "strike", "s" -> builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                        renderInline(child, this, ctx, blocks, markdownText)
+                        renderInline(child, this, ctx, blocks)
                     }
-                    "center" -> {
-                        // <center> inside inline context (e.g. inside <h1>):
-                        // enable markdown parsing for text nodes
-                        renderInline(child, builder, ctx, blocks, true)
-                    }
+
                     "a" -> {
                         val href = child.attr("href")
                         val img = child.selectFirst("img")
@@ -1889,15 +1705,15 @@ private fun renderInline(
                                     )
                                 )
                             )
-                            // Don't parse markdown inside <a> — content is already the link text
-                            renderInline(child, builder, ctx, blocks, false)
+                            renderInline(child, builder, ctx, blocks)
                             builder.pop()
                         } else {
                             builder.withStyle(SpanStyle(color = ctx.linkColor)) {
-                                renderInline(child, this, ctx, blocks, markdownText)
+                                renderInline(child, this, ctx, blocks)
                             }
                         }
                     }
+
                     "code" -> builder.withStyle(
                         SpanStyle(
                             fontFamily = FontFamily.Monospace,
@@ -1905,25 +1721,27 @@ private fun renderInline(
                             fontSize = 13.sp
                         )
                     ) {
-                        // Never parse markdown inside <code>
                         append(child.wholeText())
                     }
+
                     "br" -> builder.append("\n")
                     "img" -> {
                         // Image inside inline context: break out into Image block
                         ctx.hasContent = true
                         handleImage(child, blocks, ctx, linkUrl = null)
                     }
+
                     "span" -> {
                         val cls = child.className().lowercase()
                         if (cls.contains("markdown_spoiler")) {
                             ctx.hasContent = true
                             handleSpan(child, blocks, ctx)
                         } else {
-                            renderInline(child, builder, ctx, blocks, markdownText)
+                            renderInline(child, builder, ctx, blocks)
                         }
                     }
-                    else -> renderInline(child, builder, ctx, blocks, markdownText)
+
+                    else -> renderInline(child, builder, ctx, blocks)
                 }
             }
         }
@@ -1947,18 +1765,21 @@ private fun renderInlineForCtx(
             }
             ctx.hasContent = true
         }
+
         "i", "em" -> {
             ctx.builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 renderInline(element, this, ctx, blocks)
             }
             ctx.hasContent = true
         }
+
         "del", "strike", "s" -> {
             ctx.builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
                 renderInline(element, this, ctx, blocks)
             }
             ctx.hasContent = true
         }
+
         "a" -> handleAnchor(element, ctx, blocks)
         "code" -> {
             ctx.builder.withStyle(
@@ -1972,6 +1793,7 @@ private fun renderInlineForCtx(
             }
             ctx.hasContent = true
         }
+
         "span" -> handleSpan(element, blocks, ctx)
         else -> {
             renderInline(element, ctx.builder, ctx, blocks)
@@ -1990,7 +1812,7 @@ private fun renderInlineForCtx(
  * TextNode.wholeText preserves (indentation, newlines between tags, etc.).
  */
 private fun normalizeWhitespace(text: String): String {
-    return text.replace(WHITESPACE_REGEX, " ")
+    return text.replace(Regex("[\\s]+"), " ")
 }
 
 // =============================================================================
