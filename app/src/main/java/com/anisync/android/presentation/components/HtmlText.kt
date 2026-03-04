@@ -2,39 +2,28 @@ package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -49,8 +38,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 
 /**
@@ -79,8 +66,9 @@ fun HtmlText(
         parseAniListMarkdownBlocks(html, linkColor, codeBackground, spoilerColor)
     }
 
-    // Fullscreen image viewer state
-    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
+    // Image viewer state
+    val allImageUrls = remember(blocks) { collectImageUrls(blocks) }
+    var viewerInitialIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(
         modifier = modifier.clipToBounds(),
@@ -121,7 +109,10 @@ fun HtmlText(
                                     contentScale = ContentScale.Fit,
                                     modifier = widthModifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .clickable { fullscreenImageUrl = img.url }
+                                        .clickable {
+                                            val idx = allImageUrls.indexOf(img.url)
+                                            if (idx >= 0) viewerInitialIndex = idx
+                                        }
                                 )
                             }
                         }
@@ -140,7 +131,10 @@ fun HtmlText(
                             contentScale = if (img.width != null) ContentScale.Fit else ContentScale.FillWidth,
                             modifier = imgModifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { fullscreenImageUrl = img.url }
+                                .clickable {
+                                    val idx = allImageUrls.indexOf(img.url)
+                                    if (idx >= 0) viewerInitialIndex = idx
+                                }
                         )
                     }
                 }
@@ -169,69 +163,12 @@ fun HtmlText(
         }
     }
 
-    fullscreenImageUrl?.let { imageUrl ->
-        FullscreenImageViewer(
-            imageUrl = imageUrl,
-            onDismiss = { fullscreenImageUrl = null }
+    viewerInitialIndex?.let { index ->
+        ImageViewerDialog(
+            imageUrls = allImageUrls,
+            initialIndex = index,
+            onDismiss = { viewerInitialIndex = null }
         )
-    }
-}
-
-@Composable
-private fun FullscreenImageViewer(
-    imageUrl: String,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.92f))
-                .clickable(indication = null, interactionSource = null) { onDismiss() }
-        ) {
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offsetX by remember { mutableFloatStateOf(0f) }
-            var offsetY by remember { mutableFloatStateOf(0f) }
-
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offsetX,
-                        translationY = offsetY
-                    )
-                    .pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            scale = (scale * zoom).coerceIn(0.5f, 5f)
-                            offsetX += pan.x
-                            offsetY += pan.y
-                        }
-                    }
-                    .clickable(indication = null, interactionSource = null) { /* consume */ }
-            )
-
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White
-                )
-            }
-        }
     }
 }
 
@@ -248,6 +185,11 @@ private sealed class ContentBlock {
     ) : ContentBlock()
 
     data class Code(val code: String) : ContentBlock()
+}
+
+/** Collects all image URLs from a list of [ContentBlock]s. */
+private fun collectImageUrls(blocks: List<ContentBlock>): List<String> {
+    return blocks.filterIsInstance<ContentBlock.Image>().map { it.url }
 }
 
 // =============================================================================

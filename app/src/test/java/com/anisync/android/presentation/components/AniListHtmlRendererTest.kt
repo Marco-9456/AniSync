@@ -625,4 +625,434 @@ class AniListHtmlRendererTest {
             .joinToString(" ") { it.annotatedString.text }
         assertTrue("Blockquote should contain 'Quoted'", quotedText.contains("Quoted"))
     }
+
+    // =========================================================================
+    // Thread 67067: Body-level raw markdown (not inside any HTML element)
+    // AniList API sometimes leaves raw markdown at body level that isn't
+    // wrapped in <p>, <center>, or any other HTML tag.
+    // =========================================================================
+
+    @Test
+    fun `body-level raw markdown link is parsed as clickable link`() {
+        val html = "[__All AWC Challenges__](https://anilist.co/activity/26266744)"
+        val blocks = parse(html)
+        val textBlock = blocks.filterIsInstance<RenderBlock.Text>().first()
+        val text = textBlock.annotatedString
+
+        assertTrue("Should contain 'All AWC Challenges'", text.text.contains("All AWC Challenges"))
+        assertTrue("Should NOT contain raw brackets", !text.text.contains("[__All"))
+
+        val boldSpans = text.spanStyles.filter { it.item.fontWeight == FontWeight.Bold }
+        assertTrue("Should have bold span for __...__", boldSpans.isNotEmpty())
+
+        val links = text.getLinkAnnotations(0, text.length)
+        assertTrue("Should have link annotation", links.isNotEmpty())
+    }
+
+    @Test
+    fun `body-level raw bold markdown is parsed`() {
+        val html = "**Credits**"
+        val blocks = parse(html)
+        val textBlock = blocks.filterIsInstance<RenderBlock.Text>().first()
+        val text = textBlock.annotatedString
+
+        assertTrue("Should contain 'Credits'", text.text.contains("Credits"))
+        assertTrue("Should NOT contain raw asterisks", !text.text.contains("**Credits"))
+
+        val boldSpans = text.spanStyles.filter { it.item.fontWeight == FontWeight.Bold }
+        assertTrue("Should have bold span", boldSpans.isNotEmpty())
+    }
+
+    @Test
+    fun `multiple body-level markdown links on separate lines`() {
+        val html = "[__Link One__](https://example.com/1)\n[__Link Two__](https://example.com/2)"
+        val blocks = parse(html)
+        val textBlock = blocks.filterIsInstance<RenderBlock.Text>().first()
+        val text = textBlock.annotatedString
+
+        assertTrue("Should contain 'Link One'", text.text.contains("Link One"))
+        assertTrue("Should contain 'Link Two'", text.text.contains("Link Two"))
+
+        val links = text.getLinkAnnotations(0, text.length)
+        assertTrue("Should have at least 2 links", links.size >= 2)
+    }
+
+    // =========================================================================
+    // Thread 67067: Raw markdown --- as horizontal rule
+    // =========================================================================
+
+    @Test
+    fun `body-level triple dash creates HorizontalRule block`() {
+        val html = "<p>Before</p>\n---\n<p>After</p>"
+        val blocks = parse(html)
+        val hrBlocks = blocks.filterIsInstance<RenderBlock.HorizontalRule>()
+        assertTrue("Should have HR block for ---", hrBlocks.isNotEmpty())
+    }
+
+    @Test
+    fun `standalone triple dash between elements creates HR`() {
+        val html = "<ul><li>item</li></ul>\n\n---\n\n<center>text</center>"
+        val blocks = parse(html)
+        val hrBlocks = blocks.filterIsInstance<RenderBlock.HorizontalRule>()
+        assertTrue("Should have HR block for ---", hrBlocks.isNotEmpty())
+    }
+
+    // =========================================================================
+    // Thread 67067: Non-<li> elements in <ul> should not be lost
+    // AniList generates <ul>**<a>NEW!</a>**<li>...</li></ul>
+    // =========================================================================
+
+    @Test
+    fun `anchor element inside ul before li is not lost`() {
+        val html = "<ul><a>NEW!</a><li>Quarter Banners</li></ul>"
+        val blocks = parse(html)
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'NEW!'", allText.contains("NEW!"))
+        assertTrue("Should contain 'Quarter Banners'", allText.contains("Quarter Banners"))
+    }
+
+    @Test
+    fun `strong element inside ul before li is not lost`() {
+        val html = "<ul><strong>Header text</strong><li>List item</li></ul>"
+        val blocks = parse(html)
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'Header text'", allText.contains("Header text"))
+        assertTrue("Should contain 'List item'", allText.contains("List item"))
+    }
+
+    // =========================================================================
+    // Thread 67067: Bare # markdown prefix suppressed
+    // AniList generates: #<ul>**text**</ul> where # is a header prefix
+    // =========================================================================
+
+    @Test
+    fun `bare hash prefix before ul is suppressed`() {
+        val html = "#<ul>**Badge Levels**</ul>"
+        val blocks = parse(html)
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should NOT show literal # prefix", !allText.trimStart().startsWith("#"))
+        assertTrue("Should contain 'Badge Levels'", allText.contains("Badge Levels"))
+    }
+
+    @Test
+    fun `bare angle bracket prefix before ul is suppressed`() {
+        val html = "><ul>**N - Normal** - Base rarity</ul>"
+        val blocks = parse(html)
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should NOT show literal > prefix", !allText.trimStart().startsWith(">"))
+        assertTrue("Should contain 'Normal'", allText.contains("Normal"))
+    }
+
+    // =========================================================================
+    // Thread 67067: <h1> wrapping <ul> (AniList quirk)
+    // =========================================================================
+
+    @Test
+    fun `h1 wrapping ul with strong renders header text`() {
+        val html = "<h1><ul><strong>How to Play!</strong></ul></h1>"
+        val blocks = parse(html)
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'How to Play!'", allText.contains("How to Play!"))
+    }
+
+    // =========================================================================
+    // Thread 67067: Complex <h1> with <br>, <center>, raw markdown, newlines
+    // =========================================================================
+
+    @Test
+    fun `h1 with br and center containing raw bold markdown`() {
+        val html = "<h1><br><center>\u0001F3AE **Video Games**\n=== Banner ===</center></h1>"
+        val blocks = parse(html)
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'Video Games'", allText.contains("Video Games"))
+        assertTrue("Should not contain raw ** markers", !allText.contains("**Video"))
+    }
+
+    // =========================================================================
+    // Thread 67067: Smoke test — full thread body parses without crash
+    // =========================================================================
+
+    @Test
+    fun `smoke test full thread 67067 does not crash and produces content`() {
+        // Representative subset of the actual thread body HTML
+        val html = """
+            <center><a href="https://anilist.co/user/AWC/">
+            <img width='150' src='https://i.postimg.cc/Z4Gc6m5j/awc.png'>
+            </a></center>
+            <h1><center>__AWC Gacha Challenge__</center></h1>
+            <center><img width='80%' src='https://i.postimg.cc/HpNVQ2cV/G1.png'></center>
+            <hr />
+            <p>The Gacha Challenge is inspired by real life gacha games.</p>
+            <blockquote>
+            <hr />
+            <h1><center> <a><strong><code>Active Quarter Banner: Video Games!</code></strong></a> </center></h1>
+            <hr />
+            <p>The Winter 2026 banner is now active!</p>
+            <center><img width='' src='https://i.postimg.cc/YpNr4q9S/26Q1-B.png'></center>
+            <ul><li>__Enter for a chance to pull the new character: [Chiaki Nanami](https://anilist.co/character/73205)__</li>
+            <li>50:50 chance for the new character</li></ul>
+            </blockquote>
+            <hr />
+            <center><img width='' src='https://i.postimg.cc/W2zdFK4B/G2.png'></center>
+            <center>Badges designed by [AWC Staff](https://anilist.co/user/AWC/social)</center>
+            <center>**Rewards:** A random badge and 2 [Challenge Points](https://anilist.co/activity/93614073) per play</center>
+            #<ul>**Badge Levels & Rarity**</ul>
+            <ul><li>Every time you complete the Gacha Challenge you will earn a random character badge</li>
+            <li>__Character badges are available in 4 levels of rarity:__</li></ul>
+            ><ul> **N - Normal** - This is the base rarity</ul>
+            ---
+            <h1><ul><strong>How to Play!</strong></ul></h1>
+            <ul><li>To play the Gacha Challenge, simply post a comment</li></ul>
+            <ul>**There are 3 types of banners:**
+            <li>**General Banners:** Standard & Adult</li></ul>
+            <ul>**<a>NEW!</a>**<li>**Quarter Banners:** 1 per quarter from 2026</li></ul>
+            [__All AWC Challenges__](https://anilist.co/activity/26266744)
+            [__AWC Discord__](https://discord.com/invite/fbp2YH8)
+            **Credits** <span class='markdown_spoiler'><span>Credit details here</span></span>
+        """.trimIndent()
+
+        val blocks = parse(html)
+        assertTrue("Should produce blocks", blocks.isNotEmpty())
+
+        // Verify key content exists somewhere in the output
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'AWC Gacha Challenge'", allText.contains("AWC Gacha Challenge"))
+        assertTrue("Should contain 'How to Play'", allText.contains("How to Play"))
+        assertTrue("Should contain 'Gacha Challenge is inspired'", allText.contains("Gacha Challenge is inspired"))
+
+        // Verify structural blocks
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have image blocks", imageBlocks.isNotEmpty())
+
+        val hrBlocks = blocks.filterIsInstance<RenderBlock.HorizontalRule>()
+        assertTrue("Should have HR blocks", hrBlocks.isNotEmpty())
+
+        val bqBlocks = blocks.filterIsInstance<RenderBlock.Blockquote>()
+        assertTrue("Should have blockquote blocks", bqBlocks.isNotEmpty())
+
+        val spoilerBlocks = blocks.filterIsInstance<RenderBlock.Spoiler>()
+        assertTrue("Should have spoiler blocks", spoilerBlocks.isNotEmpty())
+    }
+
+    // =========================================================================
+    // ~~~ center marker handling (not confused with ~~ strikethrough)
+    // =========================================================================
+
+    @Test
+    fun `triple tilde center markers are stripped not treated as strikethrough`() {
+        val blocks = parse("<center>~~~Staff Picks Challenge: 2025~~~</center>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString("") { it.annotatedString.text }
+
+        assertTrue(
+            "Should contain 'Staff Picks Challenge: 2025'",
+            allText.contains("Staff Picks Challenge: 2025")
+        )
+        // Should NOT have strikethrough style from misinterpreting ~~
+        val strikeThroughSpans = textBlocks.flatMap { it.annotatedString.spanStyles }
+            .filter { it.item.textDecoration == TextDecoration.LineThrough }
+        assertTrue("Should not have strikethrough spans", strikeThroughSpans.isEmpty())
+    }
+
+    @Test
+    fun `triple tilde with bold inside center`() {
+        val blocks = parse("<center>~~~__Header Text__~~~</center>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString("") { it.annotatedString.text }
+
+        assertTrue(
+            "Should contain 'Header Text'",
+            allText.contains("Header Text")
+        )
+        // Should have bold from __ markers
+        val boldSpans = textBlocks.flatMap { it.annotatedString.spanStyles }
+            .filter { it.item.fontWeight == FontWeight.Bold }
+        assertTrue("Should have bold spans from __ markers", boldSpans.isNotEmpty())
+    }
+
+    @Test
+    fun `triple tilde in body-level text node`() {
+        // Body-level ~~~text~~~ would normally be converted to <center> by AniList API.
+        // But when appearing as raw text in a TextNode, parseInlineMarkdown strips
+        // the ~~~ markers and renders the inner content inline (no alignment change).
+        val blocks = parse("~~~centered text~~~")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString("") { it.annotatedString.text }
+
+        assertTrue(
+            "Should contain 'centered text'",
+            allText.contains("centered text")
+        )
+        // The ~~~ markers should be stripped (not rendered as text or strikethrough)
+        assertTrue(
+            "Should NOT contain tilde characters",
+            !allText.contains("~")
+        )
+    }
+
+    // =========================================================================
+    // img() markdown handling
+    // =========================================================================
+
+    @Test
+    fun `img markdown in body text emits Image block`() {
+        val blocks = parse("img(https://example.com/photo.jpg)")
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have an image block", imageBlocks.isNotEmpty())
+        assertEquals("https://example.com/photo.jpg", imageBlocks.first().url)
+    }
+
+    @Test
+    fun `img with width markdown emits Image block with width`() {
+        val blocks = parse("img150(https://example.com/photo.jpg)")
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have an image block", imageBlocks.isNotEmpty())
+        assertEquals("https://example.com/photo.jpg", imageBlocks.first().url)
+        assertEquals(150, imageBlocks.first().width)
+    }
+
+    @Test
+    fun `img with percent width markdown emits Image block`() {
+        val blocks = parse("img90%(https://example.com/photo.jpg)")
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have an image block", imageBlocks.isNotEmpty())
+        assertEquals("https://example.com/photo.jpg", imageBlocks.first().url)
+        assertEquals(90, imageBlocks.first().width)
+        assertTrue("Should be percent", imageBlocks.first().isPercentWidth)
+    }
+
+    @Test
+    fun `img markdown inside anchor emits linked Image block`() {
+        val blocks = parse("""<a href="https://anilist.co/anime/123">img(https://example.com/photo.jpg)</a>""")
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have an image block", imageBlocks.isNotEmpty())
+        assertEquals("https://example.com/photo.jpg", imageBlocks.first().url)
+        assertEquals("https://anilist.co/anime/123", imageBlocks.first().linkUrl)
+    }
+
+    @Test
+    fun `img markdown in list item emits Image block`() {
+        val blocks = parse("<ul><li>img(https://example.com/photo.jpg)</li></ul>")
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have an image block from list item", imageBlocks.isNotEmpty())
+        assertEquals("https://example.com/photo.jpg", imageBlocks.first().url)
+    }
+
+    // =========================================================================
+    // Bare URL handling
+    // =========================================================================
+
+    @Test
+    fun `bare URL in body text rendered as clickable link`() {
+        val blocks = parse("Visit https://anilist.co/anime/140499/ for details")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val text = textBlocks.first().annotatedString
+
+        assertTrue(
+            "Should contain the URL text",
+            text.text.contains("https://anilist.co/anime/140499/")
+        )
+
+        // Verify the URL is present as a link annotation.
+        // LinkAnnotation.Url is pushed via pushLink — check that link annotations exist.
+        assertTrue(
+            "Should have link annotations for bare URL",
+            text.hasLinkAnnotations(0, text.length)
+        )
+    }
+
+    @Test
+    fun `bare URL in list item rendered as clickable link`() {
+        val blocks = parse("<ul><li>Check https://example.com/page for info</li></ul>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString("") { it.annotatedString.text }
+
+        assertTrue(
+            "Should contain the URL text",
+            allText.contains("https://example.com/page")
+        )
+    }
+
+    // =========================================================================
+    // Block-level elements in inline context
+    // =========================================================================
+
+    @Test
+    fun `center tag inside inline context is rendered as block`() {
+        val blocks = parse("<b><center>centered bold text</center></b>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString("") { it.annotatedString.text }
+
+        assertTrue(
+            "Should contain 'centered bold text'",
+            allText.contains("centered bold text")
+        )
+    }
+
+    @Test
+    fun `div inside inline context is rendered`() {
+        val blocks = parse("<p>before<div>inside div</div>after</p>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'inside div'", allText.contains("inside div"))
+    }
+
+    @Test
+    fun `br in renderInline uses ctx appendNewline`() {
+        // Verify <br> doesn't cause issues with stale builder
+        val blocks = parse("<p>line one<br>line two</p>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString("") { it.annotatedString.text }
+
+        assertTrue("Should contain 'line one'", allText.contains("line one"))
+        assertTrue("Should contain 'line two'", allText.contains("line two"))
+    }
+
+    // =========================================================================
+    // Stale builder fix validation
+    // =========================================================================
+
+    @Test
+    fun `text after image in inline context is not lost`() {
+        // This tests the stale builder fix: text after an image flush should not be lost
+        val blocks = parse("<p>before <img src='https://example.com/img.jpg'> after</p>")
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+
+        assertTrue("Should contain 'before'", allText.contains("before"))
+        assertTrue("Should contain 'after'", allText.contains("after"))
+
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have image block", imageBlocks.isNotEmpty())
+    }
+
+    @Test
+    fun `anchor with img() markdown followed by text does not crash`() {
+        val blocks = parse("""
+            <a href="https://anilist.co/anime/123">img(https://example.com/img.jpg)</a>
+            Some text after the link
+        """.trimIndent())
+
+        val imageBlocks = blocks.filterIsInstance<RenderBlock.Image>()
+        assertTrue("Should have image block", imageBlocks.isNotEmpty())
+
+        val textBlocks = blocks.filterIsInstance<RenderBlock.Text>()
+        val allText = textBlocks.joinToString(" ") { it.annotatedString.text }
+        assertTrue("Should contain text after the link", allText.contains("Some text after the link"))
+    }
 }
