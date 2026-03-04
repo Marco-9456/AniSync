@@ -75,8 +75,10 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.SkeletonLine
+import com.anisync.android.presentation.forum.components.ThreadBodyItem
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
-import com.anisync.android.presentation.forum.components.ThreadHeaderItem
+import com.anisync.android.presentation.forum.components.ThreadHeaderStats
+import com.anisync.android.presentation.forum.components.ThreadHeaderTop
 import kotlinx.coroutines.flow.collectLatest
 
 // Internal data model to optimize deep comment trees for LazyColumn
@@ -277,8 +279,24 @@ fun ThreadDetailScreen(
                         // 0.dp arrangement is critical for the continuous nesting lines to touch each other perfectly
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
-                        item(key = "thread_header") {
-                            ThreadHeaderItem(
+                        item(key = "thread_header_top") {
+                            ThreadHeaderTop(
+                                thread = thread,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        thread.body?.let { body ->
+                            item(key = "thread_body") {
+                                ThreadBodyItem(
+                                    body = body,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        item(key = "thread_header_stats") {
+                            ThreadHeaderStats(
                                 thread = thread,
                                 onLikeClick = {
                                     viewModel.onAction(

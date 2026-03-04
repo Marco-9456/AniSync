@@ -33,130 +33,169 @@ import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 
+/**
+ * Thread header top section: author, title, categories, locked message.
+ * This is a separate LazyColumn item to keep individual items at a reasonable height,
+ * which ensures Compose's touch dispatch works correctly for all interactive children.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ThreadHeaderItem(
+fun ThreadHeaderTop(
+    thread: ForumThread,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                top = 24.dp,
+                start = 20.dp,
+                end = 20.dp,
+                bottom = 8.dp
+            )
+        ) {
+            // Social Media Style header row
+            AuthorRow(
+                name = thread.authorName,
+                avatarUrl = thread.authorAvatarUrl,
+                timestampSeconds = thread.createdAt,
+                avatarSize = 44.dp
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // Expressive Typography: Black weight, larger display feel
+            Text(
+                text = thread.title,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = MaterialTheme.typography.headlineMedium.lineHeight * 1.1f
+            )
+
+            if (thread.categories.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    thread.categories.forEach { cat ->
+                        Surface(
+                            shape = RoundedCornerShape(100),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        ) {
+                            Text(
+                                text = cat.name.uppercase(),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (thread.isLocked) {
+                Spacer(Modifier.height(24.dp))
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(100),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Lock,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onError,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "This thread is locked and cannot receive new replies.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+/**
+ * Thread body section: the rendered HTML body content.
+ * This is a SEPARATE LazyColumn item so that long bodies don't create a single
+ * extremely tall item (which breaks Compose's touch dispatch for nested children).
+ */
+@Composable
+fun ThreadBodyItem(
+    body: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        AniListHtmlRenderer(
+            html = body,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4f
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+    }
+}
+
+/**
+ * Thread stats footer: reply count, view count, like button.
+ * Separate LazyColumn item with the bottom rounded corners for the "sheet" effect.
+ */
+@Composable
+fun ThreadHeaderStats(
     thread: ForumThread,
     onLikeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // We use a bottom background color that matches the comment tree area (surfaceContainerLowest)
-    // to allow the header to look like an elevated, rounded sheet resting on top.
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            // MD3 Expressive: Massive bottom rounded corners for a "sheet" effect
-            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-            shadowElevation = 2.dp
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier.padding(
-                    top = 24.dp,
                     start = 20.dp,
                     end = 20.dp,
+                    top = 16.dp,
                     bottom = 24.dp
                 )
             ) {
-                // Social Media Style header row
-                AuthorRow(
-                    name = thread.authorName,
-                    avatarUrl = thread.authorAvatarUrl,
-                    timestampSeconds = thread.createdAt,
-                    avatarSize = 44.dp // Slightly larger for expressive avatar presence
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                // Expressive Typography: Black weight, larger display feel
-                Text(
-                    text = thread.title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = MaterialTheme.typography.headlineMedium.lineHeight * 1.1f
-                )
-
-                if (thread.categories.isNotEmpty()) {
-                    Spacer(Modifier.height(16.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        thread.categories.forEach { cat ->
-                            Surface(
-                                // Pill shapes are a staple of MD3 expressive
-                                shape = RoundedCornerShape(100),
-                                color = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                            ) {
-                                Text(
-                                    text = cat.name.uppercase(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                if (thread.isLocked) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp), // Friendlier, large radius
-                        color = MaterialTheme.colorScheme.errorContainer
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(100),
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Lock,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onError,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "This thread is locked and cannot receive new replies.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(20.dp))
-                }
-
-                // High legibility body segment
-                thread.body?.let { body ->
-                    AniListHtmlRenderer(
-                        html = body,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4f
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Spacer(Modifier.height(32.dp))
-
                 // Expressive Action Row: A floating tonal pill holding all stats
                 Surface(
                     shape = RoundedCornerShape(100),

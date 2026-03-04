@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
+
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -72,7 +73,7 @@ private val BARE_URL_REGEX = Regex("""https?://[^\s<>"\[\]~!`)]+""")
  * Only images, code blocks, spoilers, horizontal rules, and video/YouTube embeds
  * break out into separate composables.
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AniListHtmlRenderer(
     html: String,
@@ -92,7 +93,7 @@ fun AniListHtmlRenderer(
     var viewerInitialIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(
-        modifier = modifier.clipToBounds(),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         var i = 0
@@ -254,7 +255,7 @@ fun AniListHtmlRenderer(
 // Spoiler Block (click-to-reveal)
 // =============================================================================
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun SpoilerBlock(
     content: List<RenderBlock>,
@@ -430,7 +431,7 @@ private fun SpoilerBlock(
 // Blockquote Block (left-border styled recursive content)
 // =============================================================================
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun BlockquoteBlock(
     content: List<RenderBlock>,
