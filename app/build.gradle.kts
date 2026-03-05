@@ -227,5 +227,6 @@ apollo {
             schemaFile.set(file("src/main/graphql/schema.graphqls"))
         }
         generateKotlinModels.set(true)
+        mapScalar("Json", "kotlin.Any", "com.apollographql.apollo.api.AnyAdapter")
     }
 }

@@ -1,576 +1,578 @@
 schema {
-  query: Query
-  mutation: Mutation
+    query: Query
+    mutation: Mutation
 }
 
+scalar Json
+
 type Query {
-  MediaListCollection(userName: String, type: MediaType): MediaListCollection
-  Page(page: Int, perPage: Int): Page
-  User(id: Int, name: String): User
-  Media(id: Int): Media
-  Character(id: Int): Character
-  Viewer: User
+    MediaListCollection(userName: String, type: MediaType): MediaListCollection
+    Page(page: Int, perPage: Int): Page
+    User(id: Int, name: String): User
+    Media(id: Int): Media
+    Character(id: Int): Character
+    Viewer: User
 }
 
 type Mutation {
-  SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int, score: Float, repeat: Int, notes: String, startedAt: FuzzyDateInput, completedAt: FuzzyDateInput): MediaList
-  DeleteMediaListEntry(id: Int): Deleted
-  UpdateUser(about: String): User
-  ToggleFavourite(animeId: Int, mangaId: Int, characterId: Int, staffId: Int, studioId: Int): Favourites
+    SaveMediaListEntry(mediaId: Int, status: MediaListStatus, progress: Int, score: Float, repeat: Int, notes: String, startedAt: FuzzyDateInput, completedAt: FuzzyDateInput): MediaList
+    DeleteMediaListEntry(id: Int): Deleted
+    UpdateUser(about: String): User
+    ToggleFavourite(animeId: Int, mangaId: Int, characterId: Int, staffId: Int, studioId: Int): Favourites
 }
 
 type Deleted {
-  deleted: Boolean
+    deleted: Boolean
 }
 
 type MediaListCollection {
-  lists: [MediaListGroup]
+    lists: [MediaListGroup]
 }
 
 type MediaListGroup {
-  name: String
-  entries: [MediaList]
+    name: String
+    entries: [MediaList]
 }
 
 type MediaList {
-  id: Int
-  media: Media
-  status: MediaListStatus
-  progress: Int
-  score: Float
-  repeat: Int
-  notes: String
-  startedAt: FuzzyDate
-  completedAt: FuzzyDate
-  updatedAt: Int
-  createdAt: Int
+    id: Int
+    media: Media
+    status: MediaListStatus
+    progress: Int
+    score: Float
+    repeat: Int
+    notes: String
+    startedAt: FuzzyDate
+    completedAt: FuzzyDate
+    updatedAt: Int
+    createdAt: Int
 }
 
 input FuzzyDateInput {
-  year: Int
-  month: Int
-  day: Int
+    year: Int
+    month: Int
+    day: Int
 }
 
 type Media {
-  id: Int
-  title: MediaTitle
-  coverImage: MediaCoverImage
-  episodes: Int
-  duration: Int
-  chapters: Int
-  volumes: Int
-  type: MediaType
-  bannerImage: String
-  description(asHtml: Boolean): String
-  averageScore: Int
-  status: MediaStatus
-  source: MediaSource
-  genres: [String]
-  studios(isMain: Boolean): StudioConnection
-  startDate: FuzzyDate
-  endDate: FuzzyDate
-  mediaListEntry: MediaList
-  format: MediaFormat
-  characters(sort: [CharacterSort], perPage: Int): CharacterConnection
-  relations: MediaConnection
-  nextAiringEpisode: AiringSchedule
-  season: MediaSeason
-  externalLinks: [MediaExternalLink]
-  isFavourite: Boolean
-  trailer: MediaTrailer
-  tags: [MediaTag]
+    id: Int
+    title: MediaTitle
+    coverImage: MediaCoverImage
+    episodes: Int
+    duration: Int
+    chapters: Int
+    volumes: Int
+    type: MediaType
+    bannerImage: String
+    description(asHtml: Boolean): String
+    averageScore: Int
+    status: MediaStatus
+    source: MediaSource
+    genres: [String]
+    studios(isMain: Boolean): StudioConnection
+    startDate: FuzzyDate
+    endDate: FuzzyDate
+    mediaListEntry: MediaList
+    format: MediaFormat
+    characters(sort: [CharacterSort], perPage: Int): CharacterConnection
+    relations: MediaConnection
+    nextAiringEpisode: AiringSchedule
+    season: MediaSeason
+    externalLinks: [MediaExternalLink]
+    isFavourite: Boolean
+    trailer: MediaTrailer
+    tags: [MediaTag]
 }
 
 enum CharacterSort {
-  ROLE
-  RELEVANCE
+    ROLE
+    RELEVANCE
 }
 
 type CharacterConnection {
-  edges: [CharacterEdge]
+    edges: [CharacterEdge]
 }
 
 type CharacterEdge {
-  role: CharacterRole
-  node: Character
-  voiceActors(language: StaffLanguage, sort: [StaffSort]): [Staff]
+    role: CharacterRole
+    node: Character
+    voiceActors(language: StaffLanguage, sort: [StaffSort]): [Staff]
 }
 
 enum CharacterRole {
-  MAIN
-  SUPPORTING
-  BACKGROUND
+    MAIN
+    SUPPORTING
+    BACKGROUND
 }
 
 type Character {
-  id: Int
-  name: CharacterName
-  image: CharacterImage
-  description: String
-  gender: String
-  dateOfBirth: FuzzyDate
-  age: String
-  bloodType: String
-  favourites: Int
-  media(sort: [MediaSort], type: MediaType, onList: Boolean, page: Int, perPage: Int): MediaConnection
+    id: Int
+    name: CharacterName
+    image: CharacterImage
+    description: String
+    gender: String
+    dateOfBirth: FuzzyDate
+    age: String
+    bloodType: String
+    favourites: Int
+    media(sort: [MediaSort], type: MediaType, onList: Boolean, page: Int, perPage: Int): MediaConnection
 }
 
 type CharacterName {
-  userPreferred: String
-  full: String
-  native: String
+    userPreferred: String
+    full: String
+    native: String
 }
 
 type CharacterImage {
-  large: String
-  medium: String
+    large: String
+    medium: String
 }
 
 type Staff {
-  id: Int
-  name: StaffName
-  image: StaffImage
+    id: Int
+    name: StaffName
+    image: StaffImage
 }
 
 type StaffName {
-  full: String
-  native: String
-  userPreferred: String
+    full: String
+    native: String
+    userPreferred: String
 }
 
 type StaffImage {
-  medium: String
+    medium: String
 }
 
 enum StaffLanguage {
-  JAPANESE
-  ENGLISH
-  KOREAN
-  ITALIAN
-  SPANISH
-  PORTUGUESE
-  FRENCH
-  GERMAN
-  HEBREW
-  HUNGARIAN
-  CHINESE
-  ARABIC
-  FILIPINO
-  CATALAN
+    JAPANESE
+    ENGLISH
+    KOREAN
+    ITALIAN
+    SPANISH
+    PORTUGUESE
+    FRENCH
+    GERMAN
+    HEBREW
+    HUNGARIAN
+    CHINESE
+    ARABIC
+    FILIPINO
+    CATALAN
 }
 
 enum StaffSort {
-  ID
-  ROLE
-  LANGUAGE
-  SEARCH_MATCH
-  FAVOURITES
-  RELEVANCE
+    ID
+    ROLE
+    LANGUAGE
+    SEARCH_MATCH
+    FAVOURITES
+    RELEVANCE
 }
 
 type MediaEdge {
-  relationType: MediaRelation
-  node: Media
-  voiceActors(language: StaffLanguage, sort: [StaffSort]): [Staff]
+    relationType: MediaRelation
+    node: Media
+    voiceActors(language: StaffLanguage, sort: [StaffSort]): [Staff]
 }
 
 enum MediaRelation {
-  ADAPTATION
-  PREQUEL
-  SEQUEL
-  PARENT
-  SIDE_STORY
-  CHARACTER
-  SUMMARY
-  ALTERNATIVE
-  SPIN_OFF
-  OTHER
-  SOURCE
-  COMPILATION
-  CONTAINS
+    ADAPTATION
+    PREQUEL
+    SEQUEL
+    PARENT
+    SIDE_STORY
+    CHARACTER
+    SUMMARY
+    ALTERNATIVE
+    SPIN_OFF
+    OTHER
+    SOURCE
+    COMPILATION
+    CONTAINS
 }
 
 enum MediaFormat {
-  TV
-  TV_SHORT
-  MOVIE
-  SPECIAL
-  OVA
-  ONA
-  MUSIC
-  MANGA
-  NOVEL
-  ONE_SHOT
+    TV
+    TV_SHORT
+    MOVIE
+    SPECIAL
+    OVA
+    ONA
+    MUSIC
+    MANGA
+    NOVEL
+    ONE_SHOT
 }
 
 enum MediaSeason {
-  WINTER
-  SPRING
-  SUMMER
-  FALL
+    WINTER
+    SPRING
+    SUMMER
+    FALL
 }
 
 """External link to another site related to media"""
 type MediaExternalLink {
-  """The id of the external link"""
-  id: Int!
-  """The url of the external link"""
-  url: String
-  """The site name"""
-  site: String!
-  """The site id"""
-  siteId: Int
-  """The type of external link"""
-  type: ExternalLinkType
-  """Language the site content is in"""
-  language: String
-  """The icon color of the site"""
-  color: String
-  """The icon url of the site"""
-  icon: String
-  """Notes about the link"""
-  notes: String
-  """Whether the link is disabled"""
-  isDisabled: Boolean
+    """The id of the external link"""
+    id: Int!
+    """The url of the external link"""
+    url: String
+    """The site name"""
+    site: String!
+    """The site id"""
+    siteId: Int
+    """The type of external link"""
+    type: ExternalLinkType
+    """Language the site content is in"""
+    language: String
+    """The icon color of the site"""
+    color: String
+    """The icon url of the site"""
+    icon: String
+    """Notes about the link"""
+    notes: String
+    """Whether the link is disabled"""
+    isDisabled: Boolean
 }
 
 """The type of external link"""
 enum ExternalLinkType {
-  INFO
-  STREAMING
-  SOCIAL
+    INFO
+    STREAMING
+    SOCIAL
 }
 
 type MediaTitle {
-  userPreferred: String
-  romaji: String
-  english: String
-  native: String
+    userPreferred: String
+    romaji: String
+    english: String
+    native: String
 }
 
 type MediaCoverImage {
-  extraLarge: String
-  large: String
-  medium: String
+    extraLarge: String
+    large: String
+    medium: String
 }
 
 enum MediaType {
-  ANIME
-  MANGA
+    ANIME
+    MANGA
 }
 
 enum MediaListStatus {
-  CURRENT
-  PLANNING
-  COMPLETED
-  DROPPED
-  PAUSED
-  REPEATING
+    CURRENT
+    PLANNING
+    COMPLETED
+    DROPPED
+    PAUSED
+    REPEATING
 }
 
 type Page {
-  media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, format_in: [MediaFormat], genre: String, genre_in: [String], seasonYear: Int, season: MediaSeason): [Media]
-  pageInfo: PageInfo
+    media(sort: [MediaSort], type: MediaType, search: String, status: MediaStatus, format: MediaFormat, format_in: [MediaFormat], genre: String, genre_in: [String], seasonYear: Int, season: MediaSeason): [Media]
+    pageInfo: PageInfo
 }
 
 type PageInfo {
-  total: Int
-  perPage: Int
-  currentPage: Int
-  lastPage: Int
-  hasNextPage: Boolean
+    total: Int
+    perPage: Int
+    currentPage: Int
+    lastPage: Int
+    hasNextPage: Boolean
 }
 
 enum MediaSort {
-  TRENDING_DESC
-  POPULARITY_DESC
-  START_DATE_DESC
+    TRENDING_DESC
+    POPULARITY_DESC
+    START_DATE_DESC
 }
 
 type User {
-  id: Int
-  name: String
-  avatar: UserAvatar
-  bannerImage: String
-  about: String
-  updatedAt: Int
-  statistics: UserStatisticTypes
-  favourites: Favourites
+    id: Int
+    name: String
+    avatar: UserAvatar
+    bannerImage: String
+    about: String
+    updatedAt: Int
+    statistics: UserStatisticTypes
+    favourites: Favourites
 }
 
 type UserAvatar {
-  large: String
+    large: String
 }
 
 type UserStatisticTypes {
-  anime: UserAnimeStatistics
-  manga: UserMangaStatistics
+    anime: UserAnimeStatistics
+    manga: UserMangaStatistics
 }
 
 type UserAnimeStatistics {
-  count: Int
-  minutesWatched: Int
-  meanScore: Float
-  episodesWatched: Int
-  statuses: [UserStatusStatistic]
-  genres(limit: Int, sort: [UserStatisticsSort]): [UserGenreStatistic]
-  scores(limit: Int, sort: [UserStatisticsSort]): [UserScoreStatistic]
-  formats(limit: Int, sort: [UserStatisticsSort]): [UserFormatStatistic]
-  releaseYears(limit: Int, sort: [UserStatisticsSort]): [UserReleaseYearStatistic]
-  studios(limit: Int, sort: [UserStatisticsSort]): [UserStudioStatistic]
+    count: Int
+    minutesWatched: Int
+    meanScore: Float
+    episodesWatched: Int
+    statuses: [UserStatusStatistic]
+    genres(limit: Int, sort: [UserStatisticsSort]): [UserGenreStatistic]
+    scores(limit: Int, sort: [UserStatisticsSort]): [UserScoreStatistic]
+    formats(limit: Int, sort: [UserStatisticsSort]): [UserFormatStatistic]
+    releaseYears(limit: Int, sort: [UserStatisticsSort]): [UserReleaseYearStatistic]
+    studios(limit: Int, sort: [UserStatisticsSort]): [UserStudioStatistic]
 }
 
 type UserGenreStatistic {
-  genre: String
-  count: Int!
-  meanScore: Float
-  minutesWatched: Int
+    genre: String
+    count: Int!
+    meanScore: Float
+    minutesWatched: Int
 }
 
 type UserScoreStatistic {
-  score: Int
-  count: Int!
-  meanScore: Float
-  minutesWatched: Int
+    score: Int
+    count: Int!
+    meanScore: Float
+    minutesWatched: Int
 }
 
 type UserFormatStatistic {
-  format: MediaFormat
-  count: Int!
-  meanScore: Float
-  minutesWatched: Int
+    format: MediaFormat
+    count: Int!
+    meanScore: Float
+    minutesWatched: Int
 }
 
 type UserReleaseYearStatistic {
-  releaseYear: Int
-  count: Int!
-  meanScore: Float
-  minutesWatched: Int
+    releaseYear: Int
+    count: Int!
+    meanScore: Float
+    minutesWatched: Int
 }
 
 type UserStudioStatistic {
-  studio: Studio
-  count: Int!
-  meanScore: Float
-  minutesWatched: Int
+    studio: Studio
+    count: Int!
+    meanScore: Float
+    minutesWatched: Int
 }
 
 enum UserStatisticsSort {
-  ID
-  ID_DESC
-  COUNT
-  COUNT_DESC
-  PROGRESS
-  PROGRESS_DESC
-  MEAN_SCORE
-  MEAN_SCORE_DESC
+    ID
+    ID_DESC
+    COUNT
+    COUNT_DESC
+    PROGRESS
+    PROGRESS_DESC
+    MEAN_SCORE
+    MEAN_SCORE_DESC
 }
 
 type UserStatusStatistic {
-  count: Int
-  status: MediaListStatus
+    count: Int
+    status: MediaListStatus
 }
 
 type UserMangaStatistics {
-  count: Int
-  chaptersRead: Int
-  meanScore: Float
+    count: Int
+    chaptersRead: Int
+    meanScore: Float
 }
 
 type Favourites {
-  anime(page: Int, perPage: Int): MediaConnection
+    anime(page: Int, perPage: Int): MediaConnection
 }
 
 type MediaConnection {
-  nodes: [Media]
-  edges: [MediaEdge]
-  pageInfo: PageInfo
+    nodes: [Media]
+    edges: [MediaEdge]
+    pageInfo: PageInfo
 }
 
 enum MediaStatus {
-  FINISHED
-  RELEASING
-  NOT_YET_RELEASED
-  CANCELLED
-  HIATUS
+    FINISHED
+    RELEASING
+    NOT_YET_RELEASED
+    CANCELLED
+    HIATUS
 }
 
 enum MediaSource {
-  ORIGINAL
-  MANGA
-  LIGHT_NOVEL
-  VISUAL_NOVEL
-  VIDEO_GAME
-  OTHER
-  NOVEL
-  DOUJINSHI
-  ANIME
-  WEB_NOVEL
-  LIVE_ACTION
-  GAME
-  COMIC
-  MULTIMEDIA_PROJECT
-  PICTURE_BOOK
+    ORIGINAL
+    MANGA
+    LIGHT_NOVEL
+    VISUAL_NOVEL
+    VIDEO_GAME
+    OTHER
+    NOVEL
+    DOUJINSHI
+    ANIME
+    WEB_NOVEL
+    LIVE_ACTION
+    GAME
+    COMIC
+    MULTIMEDIA_PROJECT
+    PICTURE_BOOK
 }
 
 type MediaTrailer {
-  id: String
-  site: String
-  thumbnail: String
+    id: String
+    site: String
+    thumbnail: String
 }
 
 type MediaTag {
-  name: String
-  category: String
-  description: String
-  isMediaSpoiler: Boolean
-  isGeneralSpoiler: Boolean
-  rank: Int
+    name: String
+    category: String
+    description: String
+    isMediaSpoiler: Boolean
+    isGeneralSpoiler: Boolean
+    rank: Int
 }
 
 type StudioConnection {
-  nodes: [Studio]
+    nodes: [Studio]
 }
 
 type Studio {
-  name: String
+    name: String
 }
 
 type FuzzyDate {
-  year: Int
-  month: Int
-  day: Int
+    year: Int
+    month: Int
+    day: Int
 }
 
 type AiringSchedule {
-  id: Int
-  airingAt: Int
-  timeUntilAiring: Int
-  episode: Int
-  mediaId: Int
-  media: Media
+    id: Int
+    airingAt: Int
+    timeUntilAiring: Int
+    episode: Int
+    mediaId: Int
+    media: Media
 }
 
 union NotificationUnion = AiringNotification | FollowingNotification | ActivityLikeNotification | ActivityReplyNotification
 
 type AiringNotification {
-  id: Int
-  type: NotificationType
-  contexts: [String]
-  createdAt: Int
-  episode: Int
-  media: Media
+    id: Int
+    type: NotificationType
+    contexts: [String]
+    createdAt: Int
+    episode: Int
+    media: Media
 }
 
 type FollowingNotification {
-  id: Int
-  type: NotificationType
-  context: String
-  createdAt: Int
-  user: User
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
 }
 
 type ActivityLikeNotification {
-  id: Int
-  type: NotificationType
-  context: String
-  createdAt: Int
-  user: User
-  activity: ActivityUnion
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    activity: ActivityUnion
 }
 
 type ActivityReplyNotification {
-  id: Int
-  type: NotificationType
-  context: String
-  createdAt: Int
-  user: User
-  activity: ActivityUnion
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    activity: ActivityUnion
 }
 
 union ActivityUnion = TextActivity | ListActivity | MessageActivity
 
 type TextActivity {
-  id: Int
-  userId: Int
-  type: ActivityType
-  replyCount: Int
-  text: String
-  user: User
+    id: Int
+    userId: Int
+    type: ActivityType
+    replyCount: Int
+    text: String
+    user: User
 }
 
 type ListActivity {
-  id: Int
-  userId: Int
-  type: ActivityType
-  status: String
-  progress: String
-  createdAt: Int
-  media: Media
-  user: User
+    id: Int
+    userId: Int
+    type: ActivityType
+    status: String
+    progress: String
+    createdAt: Int
+    media: Media
+    user: User
 }
 
 type MessageActivity {
-  id: Int
-  recipientId: Int
-  type: ActivityType
-  message: String
-  user: User
+    id: Int
+    recipientId: Int
+    type: ActivityType
+    message: String
+    user: User
 }
 
 enum ActivityType {
-  TEXT
-  ANIME_LIST
-  MANGA_LIST
-  MESSAGE
-  MEDIA_LIST
+    TEXT
+    ANIME_LIST
+    MANGA_LIST
+    MESSAGE
+    MEDIA_LIST
 }
 
 enum NotificationType {
-  ACTIVITY_MESSAGE
-  ACTIVITY_REPLY
-  FOLLOWING
-  ACTIVITY_MENTION
-  THREAD_COMMENT_MENTION
-  THREAD_SUBSCRIBED
-  RELATED_MEDIA_ADDITION
-  MEDIA_DATA_CHANGE
-  MEDIA_MERGE
-  MEDIA_DELETION
-  AIRING
-  ACTIVITY_LIKE
-  THREAD_COMMENT_LIKE
-  ACTIVITY_REPLY_LIKE
+    ACTIVITY_MESSAGE
+    ACTIVITY_REPLY
+    FOLLOWING
+    ACTIVITY_MENTION
+    THREAD_COMMENT_MENTION
+    THREAD_SUBSCRIBED
+    RELATED_MEDIA_ADDITION
+    MEDIA_DATA_CHANGE
+    MEDIA_MERGE
+    MEDIA_DELETION
+    AIRING
+    ACTIVITY_LIKE
+    THREAD_COMMENT_LIKE
+    ACTIVITY_REPLY_LIKE
 }
 
 enum AiringSort {
-  ID
-  ID_DESC
-  MEDIA_ID
-  MEDIA_ID_DESC
-  TIME
-  TIME_DESC
-  EPISODE
-  EPISODE_DESC
+    ID
+    ID_DESC
+    MEDIA_ID
+    MEDIA_ID_DESC
+    TIME
+    TIME_DESC
+    EPISODE
+    EPISODE_DESC
 }
 
 extend type Page {
-  notifications(type: NotificationType, resetNotificationCount: Boolean, typeIn: [NotificationType]): [NotificationUnion]
-  airingSchedules(
-    mediaId_in: [Int],
-    episode: Int,
-    notYetAired: Boolean,
-    airingAt_lesser: Int,
-    airingAt_greater: Int,
-    sort: [AiringSort]
-  ): [AiringSchedule]
-  activities(userId: Int, type: ActivityType, sort: [ActivitySort], perPage: Int): [ActivityUnion]
+    notifications(type: NotificationType, resetNotificationCount: Boolean, typeIn: [NotificationType]): [NotificationUnion]
+    airingSchedules(
+        mediaId_in: [Int],
+        episode: Int,
+        notYetAired: Boolean,
+        airingAt_lesser: Int,
+        airingAt_greater: Int,
+        sort: [AiringSort]
+    ): [AiringSchedule]
+    activities(userId: Int, type: ActivityType, sort: [ActivitySort], perPage: Int): [ActivityUnion]
 }
 
 enum ActivitySort {
-  ID
-  ID_DESC
+    ID
+    ID_DESC
 }
 
 # =============================================================================
@@ -578,109 +580,109 @@ enum ActivitySort {
 # =============================================================================
 
 extend type Query {
-  Thread(id: Int): Thread
-  ThreadComment(id: Int): ThreadComment
+    Thread(id: Int): Thread
+    ThreadComment(id: Int): ThreadComment
 }
 
 extend type Mutation {
-  SaveThread(id: Int, title: String, body: String, categories: [Int]): Thread
-  SaveThreadComment(id: Int, threadId: Int, comment: String, parentCommentId: Int): ThreadComment
-  ToggleLikeV2(id: Int, type: LikeableType): LikeableUnion
-  ToggleThreadSubscription(threadId: Int, subscribe: Boolean): Thread
+    SaveThread(id: Int, title: String, body: String, categories: [Int]): Thread
+    SaveThreadComment(id: Int, threadId: Int, comment: String, parentCommentId: Int): ThreadComment
+    ToggleLikeV2(id: Int, type: LikeableType): LikeableUnion
+    ToggleThreadSubscription(threadId: Int, subscribe: Boolean): Thread
 }
 
 extend type Page {
-  threads(
-    id: Int,
-    userId: Int,
-    subscribed: Boolean,
-    categoryId: Int,
-    mediaCategoryId: Int,
-    search: String,
-    sort: [ThreadSort]
-  ): [Thread]
-  threadComments(
-    id: Int,
-    threadId: Int,
-    userId: Int,
-    sort: [ThreadCommentSort]
-  ): [ThreadComment]
+    threads(
+        id: Int,
+        userId: Int,
+        subscribed: Boolean,
+        categoryId: Int,
+        mediaCategoryId: Int,
+        search: String,
+        sort: [ThreadSort]
+    ): [Thread]
+    threadComments(
+        id: Int,
+        threadId: Int,
+        userId: Int,
+        sort: [ThreadCommentSort]
+    ): [ThreadComment]
 }
 
 type Thread {
-  id: Int
-  title: String
-  body(asHtml: Boolean): String
-  userId: Int
-  replyUserId: Int
-  replyCommentId: Int
-  replyCount: Int
-  viewCount: Int
-  likeCount: Int
-  isLiked: Boolean
-  isSubscribed: Boolean
-  isLocked: Boolean
-  isSticky: Boolean
-  repliedAt: Int
-  createdAt: Int
-  updatedAt: Int
-  siteUrl: String
-  user: User
-  replyUser: User
-  categories: [ThreadCategory]
-  mediaCategories: [Media]
-  likes: [User]
+    id: Int
+    title: String
+    body(asHtml: Boolean): String
+    userId: Int
+    replyUserId: Int
+    replyCommentId: Int
+    replyCount: Int
+    viewCount: Int
+    likeCount: Int
+    isLiked: Boolean
+    isSubscribed: Boolean
+    isLocked: Boolean
+    isSticky: Boolean
+    repliedAt: Int
+    createdAt: Int
+    updatedAt: Int
+    siteUrl: String
+    user: User
+    replyUser: User
+    categories: [ThreadCategory]
+    mediaCategories: [Media]
+    likes: [User]
 }
 
 type ThreadCategory {
-  id: Int
-  name: String
+    id: Int
+    name: String
 }
 
 type ThreadComment {
-  id: Int
-  userId: Int
-  threadId: Int
-  comment(asHtml: Boolean): String
-  likeCount: Int
-  isLiked: Boolean
-  isParent: Boolean
-  createdAt: Int
-  updatedAt: Int
-  siteUrl: String
-  user: User
-  thread: Thread
-  childComments: String
-  likes: [User]
+    id: Int
+    userId: Int
+    threadId: Int
+    comment(asHtml: Boolean): String
+    likeCount: Int
+    isLiked: Boolean
+    isParent: Boolean
+    createdAt: Int
+    updatedAt: Int
+    siteUrl: String
+    user: User
+    thread: Thread
+    childComments: Json
+    likes: [User]
 }
 
 enum ThreadSort {
-  ID
-  ID_DESC
-  TITLE
-  TITLE_DESC
-  CREATED_AT
-  CREATED_AT_DESC
-  UPDATED_AT
-  UPDATED_AT_DESC
-  REPLIED_AT
-  REPLIED_AT_DESC
-  IS_STICKY
-  SEARCH_MATCH
+    ID
+    ID_DESC
+    TITLE
+    TITLE_DESC
+    CREATED_AT
+    CREATED_AT_DESC
+    UPDATED_AT
+    UPDATED_AT_DESC
+    REPLIED_AT
+    REPLIED_AT_DESC
+    IS_STICKY
+    SEARCH_MATCH
 }
 
 enum ThreadCommentSort {
-  ID
-  ID_DESC
-  CREATED_AT
-  CREATED_AT_DESC
+    ID
+    ID_DESC
+    CREATED_AT
+    CREATED_AT_DESC
 }
 
 enum LikeableType {
-  THREAD
-  THREAD_COMMENT
-  ACTIVITY
-  ACTIVITY_REPLY
+    THREAD
+    THREAD_COMMENT
+    ACTIVITY
+    ACTIVITY_REPLY
 }
 
 union LikeableUnion = ListActivity | TextActivity | MessageActivity | Thread | ThreadComment

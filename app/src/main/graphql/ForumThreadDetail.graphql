@@ -1,74 +1,73 @@
 query GetForumThread($id: Int!) {
-  Thread(id: $id) {
-    id
-    title
-    body(asHtml: true)
-    replyCount
-    viewCount
-    likeCount
-    isLiked
-    isSubscribed
-    isLocked
-    isSticky
-    repliedAt
-    createdAt
-    updatedAt
-    siteUrl
-    user {
-      id
-      name
-      avatar {
-        large
-      }
+    Thread(id: $id) {
+        id
+        title
+        body(asHtml: true)
+        replyCount
+        viewCount
+        likeCount
+        isLiked
+        isSubscribed
+        isLocked
+        isSticky
+        repliedAt
+        createdAt
+        updatedAt
+        siteUrl
+        user {
+            id
+            name
+            avatar {
+                large
+            }
+        }
+        replyUser {
+            name
+            avatar {
+                large
+            }
+        }
+        categories {
+            id
+            name
+        }
+        mediaCategories {
+            title {
+                romaji
+            }
+            coverImage {
+                medium
+            }
+        }
     }
-    replyUser {
-      name
-      avatar {
-        large
-      }
-    }
-    categories {
-      id
-      name
-    }
-    mediaCategories {
-      title {
-        romaji
-      }
-      coverImage {
-        medium
-      }
-    }
-  }
 }
 
-query GetThreadComments(
-  $threadId: Int!,
-  $page: Int = 1,
-  $perPage: Int = 25,
-  $sort: [ThreadCommentSort] = [ID]
+query GetForumComments(
+    $threadId: Int!,
+    $page: Int = 1,
+    $perPage: Int = 25
 ) {
-  Page(page: $page, perPage: $perPage) {
-    threadComments(threadId: $threadId, sort: $sort) {
-      id
-      comment(asHtml: true)
-      likeCount
-      isLiked
-      createdAt
-      updatedAt
-      siteUrl
-      childComments
-      user {
-        id
-        name
-        avatar {
-          large
+    Page(page: $page, perPage: $perPage) {
+        threadComments(threadId: $threadId, sort: [ID]) {
+            id
+            comment(asHtml: true)
+            likeCount
+            isLiked
+            createdAt
+            updatedAt
+            siteUrl
+            childComments
+            user {
+                id
+                name
+                avatar {
+                    large
+                }
+            }
         }
-      }
+        pageInfo {
+            hasNextPage
+            currentPage
+        }
     }
-    pageInfo {
-      hasNextPage
-      currentPage
-    }
-  }
 }

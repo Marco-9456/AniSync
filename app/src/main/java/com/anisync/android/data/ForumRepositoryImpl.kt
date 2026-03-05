@@ -3,10 +3,10 @@ package com.anisync.android.data
 import com.anisync.android.CreateForumCommentMutation
 import com.anisync.android.CreateForumCommentReplyMutation
 import com.anisync.android.CreateForumThreadMutation
+import com.anisync.android.GetForumCommentsQuery
 import com.anisync.android.GetForumOverviewQuery
 import com.anisync.android.GetForumThreadQuery
 import com.anisync.android.GetForumThreadsQuery
-import com.anisync.android.GetThreadCommentsQuery
 import com.anisync.android.ToggleLikeThreadCommentMutation
 import com.anisync.android.ToggleLikeThreadMutation
 import com.anisync.android.ToggleThreadSubscriptionMutation
@@ -23,7 +23,6 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
-import com.apollographql.apollo.exception.ApolloException
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -36,32 +35,33 @@ class ForumRepositoryImpl @Inject constructor(
     // READ: Recent threads (Forum hub / overview)
     // =========================================================================
 
-    override suspend fun getRecentThreads(page: Int, sort: String?): Result<PaginatedResult<ForumThread>> {
+    override suspend fun getRecentThreads(
+        page: Int,
+        sort: String?
+    ): Result<PaginatedResult<ForumThread>> {
         return runCatchingApi("load forum threads") {
-            // Parse sort string like "IS_STICKY,REPLIED_AT_DESC" into ThreadSort enums
             val sortList = sort?.split(",")
                 ?.mapNotNull { s -> ThreadSort.entries.find { it.name == s.trim() } }
                 ?: listOf(ThreadSort.IS_STICKY, ThreadSort.REPLIED_AT_DESC)
 
             val response = apolloClient
-                .query(GetForumOverviewQuery(
-                    page = Optional.present(page),
-                    sort = Optional.present(sortList)
-                ))
+                .query(
+                    GetForumOverviewQuery(
+                        page = Optional.present(page),
+                        sort = Optional.present(sortList)
+                    )
+                )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
 
             val pageData = response.data?.Page
-            val threads = pageData?.threads
-                ?.filterNotNull()
-                ?.map { it.toForumThread() }
-                ?: emptyList()
+            val threads =
+                pageData?.threads?.filterNotNull()?.map { it.toForumThread() } ?: emptyList()
 
-            val pageInfo = pageData?.pageInfo
             PaginatedResult(
                 items = threads,
-                hasNextPage = pageInfo?.hasNextPage ?: false,
-                currentPage = pageInfo?.currentPage ?: page,
+                hasNextPage = pageData?.pageInfo?.hasNextPage ?: false,
+                currentPage = pageData?.pageInfo?.currentPage ?: page,
                 totalPages = 0
             )
         }
@@ -82,24 +82,21 @@ class ForumRepositoryImpl @Inject constructor(
                     GetForumThreadsQuery(
                         page = Optional.present(page),
                         categoryId = categoryId?.let { Optional.present(it) } ?: Optional.absent(),
-                        search = search?.takeIf { it.isNotBlank() }
-                            ?.let { Optional.present(it) } ?: Optional.absent()
+                        search = search?.takeIf { it.isNotBlank() }?.let { Optional.present(it) }
+                            ?: Optional.absent()
                     )
                 )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
 
             val pageData = response.data?.Page
-            val threads = pageData?.threads
-                ?.filterNotNull()
-                ?.map { it.toForumThread() }
-                ?: emptyList()
+            val threads =
+                pageData?.threads?.filterNotNull()?.map { it.toForumThread() } ?: emptyList()
 
-            val pageInfo = pageData?.pageInfo
             PaginatedResult(
                 items = threads,
-                hasNextPage = pageInfo?.hasNextPage ?: false,
-                currentPage = pageInfo?.currentPage ?: page,
+                hasNextPage = pageData?.pageInfo?.hasNextPage ?: false,
+                currentPage = pageData?.pageInfo?.currentPage ?: page,
                 totalPages = 0
             )
         }
@@ -122,61 +119,47 @@ class ForumRepositoryImpl @Inject constructor(
     }
 
     // =========================================================================
-    // READ: Thread comments (paginated)
+    // READ: Thread comments (Recursive tree build)
     // =========================================================================
 
-    override suspend fun getComments(threadId: Int, page: Int, sort: String?): Result<PaginatedResult<ForumComment>> {
+    override suspend fun getComments(
+        threadId: Int,
+        page: Int,
+        sort: String?
+    ): Result<PaginatedResult<ForumComment>> {
         return runCatchingApi("load comments") {
-            val sortList = sort?.split(",")
-                ?.mapNotNull { s ->
-                    try {
-                        com.anisync.android.type.ThreadCommentSort.valueOf(s.trim())
-                    } catch (_: Exception) { null }
-                }
-
             val response = apolloClient
-                .query(GetThreadCommentsQuery(
-                    threadId = threadId,
-                    page = Optional.present(page),
-                    sort = if (sortList != null) Optional.present(sortList) else Optional.absent()
-                ))
+                .query(GetForumCommentsQuery(threadId = threadId, page = Optional.present(page)))
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
 
             val pageData = response.data?.Page
-            val allCommentsNodes = pageData?.threadComments?.filterNotNull() ?: emptyList()
+            val rootNodes = pageData?.threadComments?.filterNotNull() ?: emptyList()
 
-            val nodeMap = allCommentsNodes.associateBy { it.id ?: 0 }
+            val rootComments = rootNodes.mapNotNull { mapToForumComment(it) }
 
-            fun parseChildIds(rawJson: String?): List<Int> {
-                if (rawJson.isNullOrBlank() || rawJson == "null" || rawJson == "[]") return emptyList()
-                return try {
-                    val array = org.json.JSONArray(rawJson)
-                    (0 until array.length()).mapNotNull { i ->
-                        val obj = array.optJSONObject(i)
-                        obj?.optInt("id") ?: array.optInt(i).takeIf { it != 0 }
-                    }
-                } catch (e: Exception) {
-                    emptyList()
-                }
-            }
+            PaginatedResult(
+                items = rootComments,
+                hasNextPage = pageData?.pageInfo?.hasNextPage ?: false,
+                currentPage = pageData?.pageInfo?.currentPage ?: page,
+                totalPages = 0
+            )
+        }
+    }
 
-            // Map of Parent ID -> List of Child IDs
-            val parentToChildrenIds = allCommentsNodes.associate { node ->
-                (node.id ?: 0) to parseChildIds(node.childComments)
-            }
+    /**
+     * Handles recursive conversion of both Apollo types and nested Map types
+     * resulting from the Json scalar Any-mapping.
+     */
+    private fun mapToForumComment(node: Any?): ForumComment? {
+        if (node == null) return null
 
-            // Collect all child IDs to find the roots
-            val allChildIds = parentToChildrenIds.values.flatten().toSet()
-            val rootIds = nodeMap.keys.filter { it !in allChildIds && it != 0 }
-
-            // Recursive function to build the richly-populated tree
-            fun buildCommentTree(commentId: Int): ForumComment? {
-                val node = nodeMap[commentId] ?: return null
-                val childIds = parentToChildrenIds[commentId] ?: emptyList()
-                val builtChildren = childIds.mapNotNull { buildCommentTree(it) }
-
-                return ForumComment(
+        return when (node) {
+            is GetForumCommentsQuery.ThreadComment -> {
+                val children =
+                    (node.childComments as? List<*>)?.mapNotNull { mapToForumComment(it) }
+                        ?: emptyList()
+                ForumComment(
                     id = node.id ?: 0,
                     body = node.comment ?: "",
                     likeCount = node.likeCount ?: 0,
@@ -186,24 +169,37 @@ class ForumRepositoryImpl @Inject constructor(
                     authorAvatarUrl = node.user?.avatar?.large,
                     createdAt = (node.createdAt ?: 0).toLong(),
                     siteUrl = node.siteUrl,
-                    childComments = builtChildren
+                    childComments = children
                 )
             }
 
-            val rootComments = rootIds.mapNotNull { buildCommentTree(it) }
+            is Map<*, *> -> {
+                val userMap = node["user"] as? Map<*, *>
+                val avatarMap = userMap?.get("avatar") as? Map<*, *>
+                val children =
+                    (node["childComments"] as? List<*>)?.mapNotNull { mapToForumComment(it) }
+                        ?: emptyList()
 
-            val pageInfo = pageData?.pageInfo
-            PaginatedResult(
-                items = rootComments,
-                hasNextPage = pageInfo?.hasNextPage ?: false,
-                currentPage = pageInfo?.currentPage ?: page,
-                totalPages = 0
-            )
+                ForumComment(
+                    id = (node["id"] as? Number)?.toInt() ?: 0,
+                    body = node["comment"] as? String ?: "",
+                    likeCount = (node["likeCount"] as? Number)?.toInt() ?: 0,
+                    isLiked = node["isLiked"] as? Boolean ?: false,
+                    authorId = (userMap?.get("id") as? Number)?.toInt() ?: 0,
+                    authorName = userMap?.get("name") as? String ?: "Unknown",
+                    authorAvatarUrl = avatarMap?.get("large") as? String,
+                    createdAt = (node["createdAt"] as? Number)?.toLong() ?: 0L,
+                    siteUrl = node["siteUrl"] as? String,
+                    childComments = children
+                )
+            }
+
+            else -> null
         }
     }
 
     // =========================================================================
-    // WRITE: Create thread
+    // WRITE: Mutations
     // =========================================================================
 
     override suspend fun createThread(
@@ -212,39 +208,30 @@ class ForumRepositoryImpl @Inject constructor(
         categoryIds: List<Int>
     ): Result<ForumThread> {
         return runCatchingApi("create thread") {
-            val response = apolloClient
-                .mutation(
-                    CreateForumThreadMutation(
-                        title = title,
-                        body = body,
-                        categories = categoryIds
-                    )
+            val response = apolloClient.mutation(
+                CreateForumThreadMutation(
+                    title = title,
+                    body = body,
+                    categories = categoryIds
                 )
-                .execute()
-
+            ).execute()
             response.data?.SaveThread?.toForumThread()
                 ?: throw IllegalStateException("Failed to create thread")
         }
     }
 
-    // =========================================================================
-    // WRITE: Create comment
-    // =========================================================================
-
     override suspend fun createComment(threadId: Int, comment: String): Result<ForumComment> {
         return runCatchingApi("post comment") {
-            val response = apolloClient
-                .mutation(CreateForumCommentMutation(threadId = threadId, comment = comment))
-                .execute()
-
+            val response = apolloClient.mutation(
+                CreateForumCommentMutation(
+                    threadId = threadId,
+                    comment = comment
+                )
+            ).execute()
             response.data?.SaveThreadComment?.toForumComment()
                 ?: throw IllegalStateException("Failed to post comment")
         }
     }
-
-    // =========================================================================
-    // WRITE: Reply to comment
-    // =========================================================================
 
     override suspend fun replyToComment(
         threadId: Int,
@@ -252,90 +239,64 @@ class ForumRepositoryImpl @Inject constructor(
         parentCommentId: Int
     ): Result<ForumComment> {
         return runCatchingApi("post reply") {
-            val response = apolloClient
-                .mutation(
-                    CreateForumCommentReplyMutation(
-                        threadId = threadId,
-                        comment = comment,
-                        parentCommentId = parentCommentId
-                    )
+            val response = apolloClient.mutation(
+                CreateForumCommentReplyMutation(
+                    threadId = threadId,
+                    comment = comment,
+                    parentCommentId = parentCommentId
                 )
-                .execute()
-
+            ).execute()
             response.data?.SaveThreadComment?.toForumComment()
                 ?: throw IllegalStateException("Failed to post reply")
         }
     }
 
-    // =========================================================================
-    // WRITE: Toggle like (thread)
-    // =========================================================================
-
     override suspend fun toggleLikeThread(threadId: Int): Result<Unit> {
         return runCatchingApi("update like") {
-            apolloClient
-                .mutation(ToggleLikeThreadMutation(id = threadId))
-                .execute()
+            apolloClient.mutation(ToggleLikeThreadMutation(id = threadId)).execute()
         }
     }
-
-    // =========================================================================
-    // WRITE: Toggle like (comment)
-    // =========================================================================
 
     override suspend fun toggleLikeComment(commentId: Int): Result<Unit> {
         return runCatchingApi("update like") {
-            apolloClient
-                .mutation(ToggleLikeThreadCommentMutation(id = commentId))
-                .execute()
+            apolloClient.mutation(
+                ToggleLikeThreadCommentMutation(
+                    id = commentId
+                )
+            ).execute()
         }
     }
 
-    // =========================================================================
-    // READ: Subscribed threads (AniList API)
-    // =========================================================================
-
     override suspend fun getSubscribedThreads(page: Int): Result<PaginatedResult<ForumThread>> {
         return runCatchingApi("load subscribed threads") {
-            val response = apolloClient
-                .query(GetForumOverviewQuery(
+            val response = apolloClient.query(
+                GetForumOverviewQuery(
                     page = Optional.present(page),
                     sort = Optional.present(listOf(ThreadSort.REPLIED_AT_DESC)),
                     subscribed = Optional.present(true)
-                ))
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .execute()
-
-            val pageData = response.data?.Page
-            val threads = pageData?.threads
-                ?.filterNotNull()
-                ?.map { it.toForumThread() }
+                )
+            ).fetchPolicy(FetchPolicy.NetworkOnly).execute()
+            val threads = response.data?.Page?.threads?.filterNotNull()?.map { it.toForumThread() }
                 ?: emptyList()
-
-            val pageInfo = pageData?.pageInfo
             PaginatedResult(
                 items = threads,
-                hasNextPage = pageInfo?.hasNextPage ?: false,
-                currentPage = pageInfo?.currentPage ?: page,
+                hasNextPage = response.data?.Page?.pageInfo?.hasNextPage ?: false,
+                currentPage = response.data?.Page?.pageInfo?.currentPage ?: page,
                 totalPages = 0
             )
         }
     }
 
-    // =========================================================================
-    // WRITE: Toggle thread subscription (AniList API)
-    // =========================================================================
-
     override suspend fun toggleThreadSubscription(threadId: Int, subscribe: Boolean): Result<Unit> {
         return runCatchingApi("update subscription") {
-            apolloClient
-                .mutation(ToggleThreadSubscriptionMutation(threadId = threadId, subscribe = subscribe))
-                .execute()
+            apolloClient.mutation(
+                ToggleThreadSubscriptionMutation(threadId = threadId, subscribe = subscribe)
+            ).execute()
         }
     }
 
     // =========================================================================
-    // LOCAL: Saved threads (Room DB)
+    // LOCAL: Saved Threads (Persistence)
     // =========================================================================
 
     override suspend fun getSavedThreads(): List<ForumThread> {
@@ -388,22 +349,13 @@ class ForumRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun unsaveThread(threadId: Int) {
-        savedForumThreadDao.delete(threadId)
-    }
-
-    override suspend fun isThreadSaved(threadId: Int): Boolean {
-        return savedForumThreadDao.exists(threadId)
-    }
+    override suspend fun unsaveThread(threadId: Int) = savedForumThreadDao.delete(threadId)
+    override suspend fun isThreadSaved(threadId: Int) = savedForumThreadDao.exists(threadId)
 
     // =========================================================================
-    // PRIVATE: Shared thread mapper
+    // PRIVATE MAPPERS
     // =========================================================================
 
-    /**
-     * Shared mapper for building [ForumThread] from common thread fields.
-     * Eliminates duplication across the 4 different GraphQL response types.
-     */
     private fun buildForumThread(
         id: Int?,
         title: String?,
@@ -444,79 +396,99 @@ class ForumRepositoryImpl @Inject constructor(
         repliedAt = repliedAt?.toLong(),
         replyUserName = replyUserName,
         replyUserAvatarUrl = replyUserAvatarLarge,
-        categories = categories
-            ?.map { (cId, cName) -> ForumCategory(cId ?: 0, cName ?: "") }
+        categories = categories?.map { (cId, cName) -> ForumCategory(cId ?: 0, cName ?: "") }
             ?: emptyList(),
         createdAt = (createdAt ?: 0).toLong(),
         updatedAt = (updatedAt ?: repliedAt ?: createdAt ?: 0).toLong(),
         siteUrl = siteUrl,
         mediaTitle = mediaTitle,
-        mediaCoverUrl = mediaCoverUrl
+        mediaCoverUrl = mediaCoverUrl)
+
+    private fun GetForumOverviewQuery.Thread.toForumThread() = buildForumThread(
+        id = id,
+        title = title,
+        replyCount = replyCount,
+        viewCount = viewCount,
+        likeCount = likeCount,
+        isLiked = isLiked,
+        isSubscribed = isSubscribed,
+        isLocked = isLocked,
+        isSticky = isSticky,
+        userId = user?.id,
+        userName = user?.name,
+        userAvatarLarge = user?.avatar?.large,
+        repliedAt = repliedAt,
+        replyUserName = replyUser?.name,
+        replyUserAvatarLarge = replyUser?.avatar?.large,
+        createdAt = createdAt,
+        categories = categories?.filterNotNull()?.map { it.id to it.name },
+        mediaTitle = mediaCategories?.firstOrNull()?.title?.romaji,
+        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium
     )
 
-    // =========================================================================
-    // PRIVATE MAPPERS — thin wrappers calling buildForumThread
-    // =========================================================================
+    private fun GetForumThreadsQuery.Thread.toForumThread() = buildForumThread(
+        id = id,
+        title = title,
+        replyCount = replyCount,
+        viewCount = viewCount,
+        likeCount = likeCount,
+        isLiked = isLiked,
+        isSubscribed = isSubscribed,
+        isLocked = isLocked,
+        isSticky = isSticky,
+        userId = user?.id,
+        userName = user?.name,
+        userAvatarLarge = user?.avatar?.large,
+        repliedAt = repliedAt,
+        replyUserName = replyUser?.name,
+        replyUserAvatarLarge = replyUser?.avatar?.large,
+        createdAt = createdAt,
+        categories = categories?.filterNotNull()?.map { it.id to it.name },
+        mediaTitle = mediaCategories?.firstOrNull()?.title?.romaji,
+        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium
+    )
 
-    private fun GetForumOverviewQuery.Thread.toForumThread(): ForumThread {
-        val media = mediaCategories?.firstOrNull()
-        return buildForumThread(
-            id = id, title = title, replyCount = replyCount, viewCount = viewCount,
-            likeCount = likeCount, isLiked = isLiked, isSubscribed = isSubscribed,
-            isLocked = isLocked, isSticky = isSticky,
-            userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
-            repliedAt = repliedAt, replyUserName = replyUser?.name,
-            replyUserAvatarLarge = replyUser?.avatar?.large,
-            createdAt = createdAt,
-            categories = categories?.filterNotNull()?.map { it.id to it.name },
-            mediaTitle = media?.title?.romaji,
-            mediaCoverUrl = media?.coverImage?.medium
-        )
-    }
-
-    private fun GetForumThreadsQuery.Thread.toForumThread(): ForumThread {
-        val media = mediaCategories?.firstOrNull()
-        return buildForumThread(
-            id = id, title = title, replyCount = replyCount, viewCount = viewCount,
-            likeCount = likeCount, isLiked = isLiked, isSubscribed = isSubscribed,
-            isLocked = isLocked, isSticky = isSticky,
-            userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
-            repliedAt = repliedAt, replyUserName = replyUser?.name,
-            replyUserAvatarLarge = replyUser?.avatar?.large,
-            createdAt = createdAt,
-            categories = categories?.filterNotNull()?.map { it.id to it.name },
-            mediaTitle = media?.title?.romaji,
-            mediaCoverUrl = media?.coverImage?.medium
-        )
-    }
-
-    private fun GetForumThreadQuery.Thread.toForumThread(): ForumThread {
-        val media = mediaCategories?.firstOrNull()
-        return buildForumThread(
-            id = id, title = title, body = body, replyCount = replyCount, viewCount = viewCount,
-            likeCount = likeCount, isLiked = isLiked, isSubscribed = isSubscribed,
-            isLocked = isLocked, isSticky = isSticky,
-            userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
-            repliedAt = repliedAt, replyUserName = replyUser?.name,
-            replyUserAvatarLarge = replyUser?.avatar?.large,
-            createdAt = createdAt, updatedAt = updatedAt, siteUrl = siteUrl,
-            categories = categories?.filterNotNull()?.map { it.id to it.name },
-            mediaTitle = media?.title?.romaji,
-            mediaCoverUrl = media?.coverImage?.medium
-        )
-    }
+    private fun GetForumThreadQuery.Thread.toForumThread() = buildForumThread(
+        id = id,
+        title = title,
+        body = body,
+        replyCount = replyCount,
+        viewCount = viewCount,
+        likeCount = likeCount,
+        isLiked = isLiked,
+        isSubscribed = isSubscribed,
+        isLocked = isLocked,
+        isSticky = isSticky,
+        userId = user?.id,
+        userName = user?.name,
+        userAvatarLarge = user?.avatar?.large,
+        repliedAt = repliedAt,
+        replyUserName = replyUser?.name,
+        replyUserAvatarLarge = replyUser?.avatar?.large,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        siteUrl = siteUrl,
+        categories = categories?.filterNotNull()?.map { it.id to it.name },
+        mediaTitle = mediaCategories?.firstOrNull()?.title?.romaji,
+        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium
+    )
 
     private fun CreateForumThreadMutation.SaveThread.toForumThread() = buildForumThread(
-        id = id, title = title, body = body, replyCount = replyCount, viewCount = viewCount,
-        likeCount = likeCount, isLiked = isLiked, isSubscribed = null, isLocked = isLocked,
-        userId = user?.id, userName = user?.name, userAvatarLarge = user?.avatar?.large,
-        createdAt = createdAt, siteUrl = siteUrl,
-        categories = categories?.filterNotNull()?.map { it.id to it.name }
-    )
-
-    // =========================================================================
-    // PRIVATE: Comment mappers
-    // =========================================================================
+        id = id,
+        title = title,
+        body = body,
+        replyCount = replyCount,
+        viewCount = viewCount,
+        likeCount = likeCount,
+        isLiked = isLiked,
+        isSubscribed = null,
+        isLocked = isLocked,
+        userId = user?.id,
+        userName = user?.name,
+        userAvatarLarge = user?.avatar?.large,
+        createdAt = createdAt,
+        siteUrl = siteUrl,
+        categories = categories?.filterNotNull()?.map { it.id to it.name })
 
     private fun CreateForumCommentMutation.SaveThreadComment.toForumComment() = ForumComment(
         id = id ?: 0,
@@ -542,24 +514,11 @@ class ForumRepositoryImpl @Inject constructor(
         siteUrl = siteUrl
     )
 
-
-
-    // =========================================================================
-    // PRIVATE: Error handling helper
-    // =========================================================================
-
-    /**
-     * Wraps API calls with user-friendly error messages instead of raw exceptions.
-     */
     private inline fun <T> runCatchingApi(action: String, block: () -> T): Result<T> {
         return try {
             Result.Success(block())
-        } catch (e: ApolloException) {
-            Result.Error("Unable to $action. Please check your connection and try again.", e)
-        } catch (e: IllegalStateException) {
-            Result.Error(e.message ?: "Something went wrong. Please try again.", e)
         } catch (e: Exception) {
-            Result.Error("Something went wrong while trying to $action. Please try again.", e)
+            Result.Error(e.message ?: "Something went wrong while trying to $action.", e)
         }
     }
 }
