@@ -782,6 +782,17 @@ private fun walkNode(
             // Normalize HTML whitespace: collapse runs of whitespace to single space
             val normalized = normalizeWhitespace(raw)
             if (normalized.isNotEmpty()) {
+                // Handle preserved newlines from normalizeWhitespace:
+                // AniList treats single newlines as line breaks (like Discord) but doesn't
+                // always insert <br> tags. When a whitespace-only TextNode contains \n,
+                // normalizeWhitespace returns "\n" — emit it as a line break.
+                if (normalized == "\n") {
+                    if (ctx.hasContent) {
+                        ctx.appendNewline()
+                    }
+                    return
+                }
+
                 // Don't append leading space if builder is empty or ends with newline
                 val text = builder(ctx).toAnnotatedString().text
                 val trimmed = if (!ctx.hasContent || text.isEmpty() || text.endsWith('\n')) {
@@ -801,7 +812,7 @@ private fun walkNode(
                 // Suppress bare # or > prefix that appears before an element
                 // (AniList generates patterns like #<ul>... or ><ul>...)
                 val stripped = trimmed.trim()
-                if (stripped.length <= 5 && stripped.all { it == '#' || it == '>' || it == ' ' }) {
+                if (stripped.isNotEmpty() && stripped.length <= 5 && stripped.all { it == '#' || it == '>' || it == ' ' }) {
                     // Bare markdown prefix with no actual content — suppress
                     return
                 }
@@ -1357,8 +1368,8 @@ private fun parseInlineMarkdown(
                     parseInlineMarkdown(inner, builder, ctx, blocks)
                     i = end + 3
                 } else {
-                    builder.append(text[i])
-                    i++
+                    // Orphaned ~~~ (split by Jsoup across element boundaries) — skip
+                    i += 3
                 }
             }
             // Bold+Italic: ***text***
@@ -1370,8 +1381,7 @@ private fun parseInlineMarkdown(
                     }
                     i = end + 3
                 } else {
-                    builder.append(text[i])
-                    i++
+                    i += 3 // Skip orphaned ***
                 }
             }
             // Bold+Italic: ___text___
@@ -1383,8 +1393,7 @@ private fun parseInlineMarkdown(
                     }
                     i = end + 3
                 } else {
-                    builder.append(text[i])
-                    i++
+                    i += 3 // Skip orphaned ___
                 }
             }
             // Bold: **text**
@@ -1396,8 +1405,7 @@ private fun parseInlineMarkdown(
                     }
                     i = end + 2
                 } else {
-                    builder.append(text[i])
-                    i++
+                    i += 2 // Skip orphaned **
                 }
             }
             // Bold: __text__
@@ -1409,8 +1417,7 @@ private fun parseInlineMarkdown(
                     }
                     i = end + 2
                 } else {
-                    builder.append(text[i])
-                    i++
+                    i += 2 // Skip orphaned __
                 }
             }
             // Strikethrough: ~~text~~
@@ -1422,8 +1429,7 @@ private fun parseInlineMarkdown(
                     }
                     i = end + 2
                 } else {
-                    builder.append(text[i])
-                    i++
+                    i += 2 // Skip orphaned ~~
                 }
             }
             // Inline code: `text`
@@ -1722,6 +1728,10 @@ private fun renderUnorderedList(
 /**
  * Renders `<ol>` inline using numbered prefix.
  * Supports `start` attribute: `<ol start="6">`.
+ *
+ * AniList sometimes uses `<ol>` without `<li>` children, placing content directly
+ * inside like `<ol>__01)__ Watch an anime...</ol>`. In that case, we fall back to
+ * rendering the content as a regular block element (paragraph break + inline text).
  */
 private fun renderOrderedList(
     element: Element,
@@ -1729,6 +1739,42 @@ private fun renderOrderedList(
     blocks: MutableList<RenderBlock>,
     depth: Int
 ) {
+    // Check if there are actual <li> children
+    val liChildren = element.children().filter { it.tagName().lowercase() == "li" }
+
+    if (liChildren.isEmpty()) {
+        // AniList non-standard usage: <ol>content</ol> without <li> wrappers.
+        // Render children directly — TextNodes as inline markdown, known block
+        // elements via standard dispatch. We avoid renderInlineForCtx here because
+        // Jsoup may nest <ol> elements, causing infinite recursion.
+        // Use ensureNewline (not ensureParagraphBreak) for tight spacing between
+        // consecutive requirements, matching AniList's visual layout.
+        ctx.ensureNewline()
+        for (child in element.childNodes()) {
+            when (child) {
+                is TextNode -> {
+                    val text = normalizeWhitespace(child.wholeText).trim()
+                    if (text.isNotEmpty()) {
+                        parseInlineMarkdown(text, ctx.builder, ctx, blocks)
+                        ctx.hasContent = true
+                    }
+                }
+                is Element -> {
+                    val childTag = child.tagName().lowercase()
+                    when (childTag) {
+                        "ul" -> renderUnorderedList(child, ctx, blocks, depth + 1)
+                        "ol" -> renderOrderedList(child, ctx, blocks, depth + 1)
+                        "br" -> ctx.appendNewline()
+                        "img" -> handleImage(child, blocks, ctx, linkUrl = null)
+                        else -> renderInlineForCtx(child, ctx, blocks)
+                    }
+                    ctx.hasContent = true
+                }
+            }
+        }
+        return
+    }
+
     val indent = "  ".repeat(depth)
     val startAttr = element.attr("start")
     var idx = if (startAttr.isNotBlank()) startAttr.toIntOrNull() ?: 1 else 1
@@ -1919,8 +1965,17 @@ private fun renderInlineForCtx(
  * Normalizes HTML whitespace: collapses runs of whitespace (spaces, tabs, newlines)
  * into a single space. This handles the source-level whitespace that Jsoup's
  * TextNode.wholeText preserves (indentation, newlines between tags, etc.).
+ *
+ * SPECIAL CASE: When the entire text is whitespace that contains a newline,
+ * returns "\n" instead of " ". AniList treats single newlines as line breaks
+ * (like Discord/GitHub), but doesn't always insert explicit <br> tags.
+ * This preserves intentional line breaks between sibling elements (e.g.,
+ * consecutive <a> tags each on their own line).
  */
 private fun normalizeWhitespace(text: String): String {
+    if (text.isNotEmpty() && text.all { it.isWhitespace() } && '\n' in text) {
+        return "\n"
+    }
     return text.replace(WHITESPACE_REGEX, " ")
 }
 
