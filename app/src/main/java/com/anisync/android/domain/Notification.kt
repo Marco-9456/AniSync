@@ -43,6 +43,60 @@ data class ActivityReplyNotification(
     // val activity: Activity? // Simplified for now
 ) : Notification
 
+data class ThreadCommentReplyNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val threadId: Int,
+    val threadTitle: String,
+    val commentId: Int?
+) : Notification
+
+data class ThreadSubscribedNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val threadId: Int,
+    val threadTitle: String,
+    val commentId: Int?
+) : Notification
+
+data class ThreadCommentMentionNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val threadId: Int,
+    val threadTitle: String,
+    val commentId: Int?
+) : Notification
+
+data class ThreadLikeNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val threadId: Int,
+    val threadTitle: String
+) : Notification
+
+data class ThreadCommentLikeNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val threadId: Int,
+    val threadTitle: String,
+    val commentId: Int?
+) : Notification
+
 data class UnknownNotification(
     override val id: Int,
     override val type: NotificationType,

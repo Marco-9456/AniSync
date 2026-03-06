@@ -51,7 +51,7 @@ import com.anisync.android.util.NotificationPermissionHelper
 
 /**
  * Notification settings screen.
- * Contains master toggle and granular notification type controls.
+ * Contains master toggle and granular notification type controls grouped by category.
  */
 @Composable
 fun NotificationsScreen(
@@ -67,6 +67,11 @@ fun NotificationsScreen(
     val watchingEnabled = uiState.watchingNotificationsEnabled
     val planningEnabled = uiState.planningNotificationsEnabled
     val upcomingEnabled = uiState.upcomingNotificationsEnabled
+    val threadCommentReplyEnabled = uiState.threadCommentReplyEnabled
+    val threadSubscribedEnabled = uiState.threadSubscribedEnabled
+    val threadCommentMentionEnabled = uiState.threadCommentMentionEnabled
+    val threadLikeEnabled = uiState.threadLikeEnabled
+    val threadCommentLikeEnabled = uiState.threadCommentLikeEnabled
 
     // Track actual system permission status
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
@@ -205,6 +210,11 @@ fun NotificationsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Airing group header
+                NotificationGroupHeader(
+                    title = stringResource(R.string.notification_group_airing)
+                )
+
                 SettingsGroup {
                     NotificationTypeItem(
                         title = stringResource(R.string.notification_watching),
@@ -227,9 +237,69 @@ fun NotificationsScreen(
                         onToggle = { viewModel.onAction(SettingsAction.SetUpcomingNotificationsEnabled(it)) }
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Forum group header
+                NotificationGroupHeader(
+                    title = stringResource(R.string.notification_group_forum)
+                )
+
+                SettingsGroup {
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_thread_comment_reply),
+                        description = stringResource(R.string.notification_thread_comment_reply_desc),
+                        isEnabled = threadCommentReplyEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetThreadCommentReplyEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_thread_subscribed),
+                        description = stringResource(R.string.notification_thread_subscribed_desc),
+                        isEnabled = threadSubscribedEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetThreadSubscribedEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_thread_comment_mention),
+                        description = stringResource(R.string.notification_thread_comment_mention_desc),
+                        isEnabled = threadCommentMentionEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetThreadCommentMentionEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_thread_like),
+                        description = stringResource(R.string.notification_thread_like_desc),
+                        isEnabled = threadLikeEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetThreadLikeEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_thread_comment_like),
+                        description = stringResource(R.string.notification_thread_comment_like_desc),
+                        isEnabled = threadCommentLikeEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetThreadCommentLikeEnabled(it)) }
+                    )
+                }
             }
         }
     }
+}
+
+/**
+ * Section header for notification groups.
+ */
+@Composable
+private fun NotificationGroupHeader(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+    )
 }
 
 /**

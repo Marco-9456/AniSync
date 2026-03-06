@@ -202,6 +202,34 @@
     <string name="notification_planning_desc">Alerts when Episode 1 airs for shows you plan to watch</string>
     <string name="notification_upcoming">Upcoming Premieres</string>
     <string name="notification_upcoming_desc">Advance notice before episodes air</string>
+    <string name="notification_thread_comment_reply">Comment Replies</string>
+    <string name="notification_thread_comment_reply_desc">When someone replies to your comment</string>
+    <string name="notification_thread_subscribed">Subscribed Threads</string>
+    <string name="notification_thread_subscribed_desc">New comments in threads you subscribed to</string>
+    <string name="notification_thread_comment_mention">Mentions</string>
+    <string name="notification_thread_comment_mention_desc">When someone mentions you in a comment</string>
+    <string name="notification_thread_like">Thread Likes</string>
+    <string name="notification_thread_like_desc">When someone likes your thread</string>
+    <string name="notification_thread_comment_like">Comment Likes</string>
+    <string name="notification_thread_comment_like_desc">When someone likes your comment</string>
+    <string name="notification_group_airing">Airing</string>
+    <string name="notification_group_forum">Forum</string>
+    <string name="notification_channel_watching">Watching List</string>
+    <string name="notification_channel_watching_desc">New episodes for shows you\'re watching</string>
+    <string name="notification_channel_planning">Planning List</string>
+    <string name="notification_channel_planning_desc">Alerts when Episode 1 airs for shows you plan to watch</string>
+    <string name="notification_channel_upcoming">Upcoming Premieres</string>
+    <string name="notification_channel_upcoming_desc">Advance notice before episodes air</string>
+    <string name="notification_channel_thread_comment_reply">Comment Replies</string>
+    <string name="notification_channel_thread_comment_reply_desc">When someone replies to your comment</string>
+    <string name="notification_channel_thread_subscribed">Subscribed Threads</string>
+    <string name="notification_channel_thread_subscribed_desc">New comments in threads you subscribed to</string>
+    <string name="notification_channel_thread_comment_mention">Mentions</string>
+    <string name="notification_channel_thread_comment_mention_desc">When someone mentions you in a comment</string>
+    <string name="notification_channel_thread_like">Thread Likes</string>
+    <string name="notification_channel_thread_like_desc">When someone likes your thread</string>
+    <string name="notification_channel_thread_comment_like">Comment Likes</string>
+    <string name="notification_channel_thread_comment_like_desc">When someone likes your comment</string>
     <string name="notification_permission_revoked">Notification permission was revoked. Tap to open settings.</string>
 
     <!-- Settings Screens -->
@@ -209,7 +237,7 @@
     <string name="settings_look_and_feel">Look and Feel</string>
     <string name="settings_look_and_feel_desc">Theme, language, streaming service</string>
     <string name="settings_notifications">Notifications</string>
-    <string name="settings_notifications_desc">Episode alerts, planning reminders</string>
+    <string name="settings_notifications_desc">Episode alerts, forum activity</string>
     <string name="settings_storage">Storage</string>
     <string name="settings_storage_subtitle">Cache: %1$s</string>
     <string name="settings_app_links">Open App Links</string>

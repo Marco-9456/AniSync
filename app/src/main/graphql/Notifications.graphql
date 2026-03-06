@@ -57,6 +57,103 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
           }
         }
       }
+      ... on ThreadCommentReplyNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+        thread {
+          id
+          title
+        }
+        comment {
+          id
+        }
+      }
+      ... on ThreadSubscribedNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+        thread {
+          id
+          title
+        }
+        comment {
+          id
+        }
+      }
+      ... on ThreadCommentMentionNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+        thread {
+          id
+          title
+        }
+        comment {
+          id
+        }
+      }
+      ... on ThreadLikeNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+        thread {
+          id
+          title
+        }
+      }
+      ... on ThreadCommentLikeNotification {
+        id
+        type
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+        thread {
+          id
+          title
+        }
+        comment {
+          id
+        }
+      }
     }
   }
 }

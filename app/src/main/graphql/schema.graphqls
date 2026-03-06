@@ -454,7 +454,7 @@ type AiringSchedule {
     media: Media
 }
 
-union NotificationUnion = AiringNotification | FollowingNotification | ActivityLikeNotification | ActivityReplyNotification
+union NotificationUnion = AiringNotification | FollowingNotification | ActivityLikeNotification | ActivityReplyNotification | ThreadCommentReplyNotification | ThreadSubscribedNotification | ThreadCommentMentionNotification | ThreadLikeNotification | ThreadCommentLikeNotification
 
 type AiringNotification {
     id: Int
@@ -489,6 +489,55 @@ type ActivityReplyNotification {
     createdAt: Int
     user: User
     activity: ActivityUnion
+}
+
+type ThreadCommentReplyNotification {
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    thread: Thread
+    comment: ThreadComment
+}
+
+type ThreadSubscribedNotification {
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    thread: Thread
+    comment: ThreadComment
+}
+
+type ThreadCommentMentionNotification {
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    thread: Thread
+    comment: ThreadComment
+}
+
+type ThreadLikeNotification {
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    thread: Thread
+}
+
+type ThreadCommentLikeNotification {
+    id: Int
+    type: NotificationType
+    context: String
+    createdAt: Int
+    user: User
+    thread: Thread
+    comment: ThreadComment
 }
 
 union ActivityUnion = TextActivity | ListActivity | MessageActivity
@@ -535,7 +584,9 @@ enum NotificationType {
     FOLLOWING
     ACTIVITY_MENTION
     THREAD_COMMENT_MENTION
+    THREAD_COMMENT_REPLY
     THREAD_SUBSCRIBED
+    THREAD_LIKE
     RELATED_MEDIA_ADDITION
     MEDIA_DATA_CHANGE
     MEDIA_MERGE

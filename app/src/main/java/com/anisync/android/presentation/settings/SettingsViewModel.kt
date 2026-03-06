@@ -75,12 +75,25 @@ class SettingsViewModel @Inject constructor(
             Triple(paletteId, customColor, style)
         },
         combine(
-            appSettings.notificationsEnabled,
-            notificationPreferences.watchingEnabled,
-            notificationPreferences.planningEnabled,
-            notificationPreferences.upcomingEnabled
-        ) { enabled, watching, planning, upcoming ->
-            listOf(enabled, watching, planning, upcoming)
+            combine(
+                appSettings.notificationsEnabled,
+                notificationPreferences.watchingEnabled,
+                notificationPreferences.planningEnabled,
+                notificationPreferences.upcomingEnabled
+            ) { enabled, watching, planning, upcoming ->
+                listOf(enabled, watching, planning, upcoming)
+            },
+            combine(
+                notificationPreferences.threadCommentReplyEnabled,
+                notificationPreferences.threadSubscribedEnabled,
+                notificationPreferences.threadCommentMentionEnabled,
+                notificationPreferences.threadLikeEnabled,
+                notificationPreferences.threadCommentLikeEnabled
+            ) { commentReply, subscribed, commentMention, threadLike, commentLike ->
+                listOf(commentReply, subscribed, commentMention, threadLike, commentLike)
+            }
+        ) { airing, forum ->
+            airing + forum
         },
         combine(
             appSettings.autoUpdateEnabled,
@@ -99,7 +112,6 @@ class SettingsViewModel @Inject constructor(
         }
     ) { lookAndFeel, themePalette, notifications, updates, storageAndProfile ->
         val (paletteId, customColor, style) = themePalette
-        val (notifEnabled, watching, planning, upcoming) = notifications
         val (autoUpdate, prerelease) = updates
         val (cacheSize, isCleared, isLoading, isClearing, profile) = storageAndProfile
         
@@ -107,10 +119,15 @@ class SettingsViewModel @Inject constructor(
             selectedPaletteId = paletteId,
             customSeedColor = customColor,
             paletteStyle = style,
-            isNotificationsEnabled = notifEnabled as Boolean,
-            watchingNotificationsEnabled = watching as Boolean,
-            planningNotificationsEnabled = planning as Boolean,
-            upcomingNotificationsEnabled = upcoming as Boolean,
+            isNotificationsEnabled = notifications[0] as Boolean,
+            watchingNotificationsEnabled = notifications[1] as Boolean,
+            planningNotificationsEnabled = notifications[2] as Boolean,
+            upcomingNotificationsEnabled = notifications[3] as Boolean,
+            threadCommentReplyEnabled = notifications[4] as Boolean,
+            threadSubscribedEnabled = notifications[5] as Boolean,
+            threadCommentMentionEnabled = notifications[6] as Boolean,
+            threadLikeEnabled = notifications[7] as Boolean,
+            threadCommentLikeEnabled = notifications[8] as Boolean,
             isAutoUpdateEnabled = autoUpdate,
             isPrereleaseAllowed = prerelease,
             cacheSize = cacheSize as String,
@@ -150,6 +167,26 @@ class SettingsViewModel @Inject constructor(
             )
 
             is SettingsAction.SetUpcomingNotificationsEnabled -> notificationPreferences.setUpcomingEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetThreadCommentReplyEnabled -> notificationPreferences.setThreadCommentReplyEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetThreadSubscribedEnabled -> notificationPreferences.setThreadSubscribedEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetThreadCommentMentionEnabled -> notificationPreferences.setThreadCommentMentionEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetThreadLikeEnabled -> notificationPreferences.setThreadLikeEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetThreadCommentLikeEnabled -> notificationPreferences.setThreadCommentLikeEnabled(
                 action.enabled
             )
 

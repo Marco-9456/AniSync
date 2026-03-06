@@ -23,6 +23,11 @@ sealed interface SettingsAction {
     data class SetWatchingNotificationsEnabled(val enabled: Boolean) : SettingsAction
     data class SetPlanningNotificationsEnabled(val enabled: Boolean) : SettingsAction
     data class SetUpcomingNotificationsEnabled(val enabled: Boolean) : SettingsAction
+    data class SetThreadCommentReplyEnabled(val enabled: Boolean) : SettingsAction
+    data class SetThreadSubscribedEnabled(val enabled: Boolean) : SettingsAction
+    data class SetThreadCommentMentionEnabled(val enabled: Boolean) : SettingsAction
+    data class SetThreadLikeEnabled(val enabled: Boolean) : SettingsAction
+    data class SetThreadCommentLikeEnabled(val enabled: Boolean) : SettingsAction
     
     data class SetAutoUpdateEnabled(val enabled: Boolean) : SettingsAction
     data class SetPrereleaseAllowed(val allowed: Boolean) : SettingsAction
@@ -69,6 +74,11 @@ data class SettingsUiState(
     val watchingNotificationsEnabled: Boolean = true,
     val planningNotificationsEnabled: Boolean = false,
     val upcomingNotificationsEnabled: Boolean = true,
+    val threadCommentReplyEnabled: Boolean = true,
+    val threadSubscribedEnabled: Boolean = true,
+    val threadCommentMentionEnabled: Boolean = true,
+    val threadLikeEnabled: Boolean = true,
+    val threadCommentLikeEnabled: Boolean = true,
     
     // Storage
     val cacheSize: String = "0 B",

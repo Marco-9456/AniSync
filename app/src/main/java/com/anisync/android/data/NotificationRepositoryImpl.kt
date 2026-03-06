@@ -13,6 +13,11 @@ import com.anisync.android.domain.Media
 import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ThreadCommentLikeNotification
+import com.anisync.android.domain.ThreadCommentMentionNotification
+import com.anisync.android.domain.ThreadCommentReplyNotification
+import com.anisync.android.domain.ThreadLikeNotification
+import com.anisync.android.domain.ThreadSubscribedNotification
 import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo.ApolloClient
@@ -108,6 +113,100 @@ class NotificationRepositoryImpl @Inject constructor(
                                     avatarUrl = user.avatar?.large
                                 )
                             }
+                        )
+                    }
+                    notification.onThreadCommentReplyNotification != null -> {
+                        val data = notification.onThreadCommentReplyNotification!!
+                        ThreadCommentReplyNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.THREAD_COMMENT_REPLY,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            },
+                            threadId = data.thread?.id ?: 0,
+                            threadTitle = data.thread?.title ?: "",
+                            commentId = data.comment?.id
+                        )
+                    }
+                    notification.onThreadSubscribedNotification != null -> {
+                        val data = notification.onThreadSubscribedNotification!!
+                        ThreadSubscribedNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.THREAD_SUBSCRIBED,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            },
+                            threadId = data.thread?.id ?: 0,
+                            threadTitle = data.thread?.title ?: "",
+                            commentId = data.comment?.id
+                        )
+                    }
+                    notification.onThreadCommentMentionNotification != null -> {
+                        val data = notification.onThreadCommentMentionNotification!!
+                        ThreadCommentMentionNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.THREAD_COMMENT_MENTION,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            },
+                            threadId = data.thread?.id ?: 0,
+                            threadTitle = data.thread?.title ?: "",
+                            commentId = data.comment?.id
+                        )
+                    }
+                    notification.onThreadLikeNotification != null -> {
+                        val data = notification.onThreadLikeNotification!!
+                        ThreadLikeNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.THREAD_LIKE,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            },
+                            threadId = data.thread?.id ?: 0,
+                            threadTitle = data.thread?.title ?: ""
+                        )
+                    }
+                    notification.onThreadCommentLikeNotification != null -> {
+                        val data = notification.onThreadCommentLikeNotification!!
+                        ThreadCommentLikeNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.THREAD_COMMENT_LIKE,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            },
+                            threadId = data.thread?.id ?: 0,
+                            threadTitle = data.thread?.title ?: "",
+                            commentId = data.comment?.id
                         )
                     }
                     else -> null
