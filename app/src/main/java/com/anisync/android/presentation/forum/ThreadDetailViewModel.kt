@@ -42,15 +42,21 @@ class ThreadDetailViewModel @Inject constructor(
                     )
                 }
             }
+
             is ThreadDetailAction.CloseReply -> {
-                _uiState.update { it.copy(isReplySheetVisible = false, replyTargetCommentId = null) }
+                _uiState.update {
+                    it.copy(
+                        isReplySheetVisible = false,
+                        replyTargetCommentId = null
+                    )
+                }
             }
+
             is ThreadDetailAction.SubmitReply -> submitReply(action)
             is ThreadDetailAction.ToggleSave -> toggleSave()
             is ThreadDetailAction.ToggleSubscribe -> toggleSubscribe()
             is ThreadDetailAction.ChangeCommentSort -> changeCommentSort(action)
-            is ThreadDetailAction.ShowSnackbar -> viewModelScope.launch { _actions.emit(action) }
-            else -> viewModelScope.launch { _actions.emit(action) }
+            else -> {}
         }
     }
 
@@ -60,9 +66,9 @@ class ThreadDetailViewModel @Inject constructor(
 
             val sort = _uiState.value.commentSort
 
-            // Load thread, comments, and saved state in parallel
             val threadDeferred = async { forumRepository.getThread(threadId) }
-            val commentsDeferred = async { forumRepository.getComments(threadId, page = 1, sort = sort) }
+            val commentsDeferred =
+                async { forumRepository.getComments(threadId, page = 1, sort = sort) }
             val savedDeferred = async { forumRepository.isThreadSaved(threadId) }
 
             val threadResult = threadDeferred.await()
@@ -111,9 +117,9 @@ class ThreadDetailViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
-                    _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
                 }
             }
         }
@@ -122,9 +128,11 @@ class ThreadDetailViewModel @Inject constructor(
     private fun changeCommentSort(action: ThreadDetailAction.ChangeCommentSort) {
         val threadId = _uiState.value.thread?.id ?: return
         _uiState.update { it.copy(commentSort = action.sort, commentSortLabel = action.label) }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMoreComments = true, comments = emptyList()) }
-            when (val result = forumRepository.getComments(threadId, page = 1, sort = action.sort)) {
+            when (val result =
+                forumRepository.getComments(threadId, page = 1, sort = action.sort)) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(
@@ -135,47 +143,55 @@ class ThreadDetailViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
-                    _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
                 }
             }
         }
     }
 
     private fun toggleLike(action: ThreadDetailAction.ToggleLike) {
-        // Optimistic update
         _uiState.update { state ->
             if (action.isThread) {
                 val thread = state.thread ?: return@update state
-                val newLikeCount = if (action.currentLiked) thread.likeCount - 1 else thread.likeCount + 1
-                state.copy(thread = thread.copy(isLiked = !action.currentLiked, likeCount = newLikeCount.coerceAtLeast(0)))
+                val newLikeCount =
+                    if (action.currentLiked) thread.likeCount - 1 else thread.likeCount + 1
+                state.copy(
+                    thread = thread.copy(
+                        isLiked = !action.currentLiked,
+                        likeCount = newLikeCount.coerceAtLeast(0)
+                    )
+                )
             } else {
                 state.copy(comments = state.comments.map { it.updateCommentLike(action) })
             }
         }
 
-        // Actual API call
         viewModelScope.launch {
             val result = if (action.isThread) {
                 forumRepository.toggleLikeThread(action.id)
             } else {
                 forumRepository.toggleLikeComment(action.id)
             }
+
             if (result is Result.Error) {
-                // Revert optimistic update
                 _uiState.update { state ->
                     if (action.isThread) {
                         val thread = state.thread ?: return@update state
-                        val revertedCount = if (action.currentLiked) thread.likeCount + 1 else thread.likeCount - 1
-                        state.copy(thread = thread.copy(isLiked = action.currentLiked, likeCount = revertedCount.coerceAtLeast(0)))
+                        val revertedCount =
+                            if (action.currentLiked) thread.likeCount + 1 else thread.likeCount - 1
+                        state.copy(
+                            thread = thread.copy(
+                                isLiked = action.currentLiked,
+                                likeCount = revertedCount.coerceAtLeast(0)
+                            )
+                        )
                     } else {
-                        // Revert: swap back to original liked state
                         val revertAction = action.copy(currentLiked = !action.currentLiked)
                         state.copy(comments = state.comments.map { it.updateCommentLike(revertAction) })
                     }
                 }
-                _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
             }
         }
     }
@@ -184,7 +200,6 @@ class ThreadDetailViewModel @Inject constructor(
         val thread = _uiState.value.thread ?: return
         val wasSaved = _uiState.value.isSaved
 
-        // Optimistic update
         _uiState.update { it.copy(isSaved = !wasSaved) }
 
         viewModelScope.launch {
@@ -195,9 +210,7 @@ class ThreadDetailViewModel @Inject constructor(
                     forumRepository.saveThread(thread)
                 }
             } catch (_: Exception) {
-                // Revert
                 _uiState.update { it.copy(isSaved = wasSaved) }
-                _actions.emit(ThreadDetailAction.ShowSnackbar("Failed to update save state"))
             }
         }
     }
@@ -206,15 +219,12 @@ class ThreadDetailViewModel @Inject constructor(
         val thread = _uiState.value.thread ?: return
         val wasSubscribed = thread.isSubscribed
 
-        // Optimistic update
         _uiState.update { it.copy(thread = thread.copy(isSubscribed = !wasSubscribed)) }
 
         viewModelScope.launch {
             val result = forumRepository.toggleThreadSubscription(thread.id, !wasSubscribed)
             if (result is Result.Error) {
-                // Revert
                 _uiState.update { it.copy(thread = it.thread?.copy(isSubscribed = wasSubscribed)) }
-                _actions.emit(ThreadDetailAction.ShowSnackbar("Failed to update subscription"))
             }
         }
     }
@@ -234,10 +244,8 @@ class ThreadDetailViewModel @Inject constructor(
                 is Result.Success -> {
                     _uiState.update { current ->
                         val updatedComments = if (parentId != null) {
-                            // Insert reply into the correct position in the tree
                             current.comments.map { it.insertReply(parentId, result.data) }
                         } else {
-                            // Top-level reply → append to root
                             current.comments + result.data
                         }
                         current.copy(
@@ -245,13 +253,13 @@ class ThreadDetailViewModel @Inject constructor(
                             isReplySheetVisible = false,
                             replyTargetCommentId = null,
                             comments = updatedComments,
-                            scrollToBottom = parentId == null // Signal scroll for top-level replies
+                            scrollToBottom = parentId == null
                         )
                     }
                 }
+
                 is Result.Error -> {
                     _uiState.update { it.copy(isSubmittingReply = false) }
-                    _actions.emit(ThreadDetailAction.ShowSnackbar(result.message))
                 }
             }
         }

@@ -38,8 +38,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -49,6 +47,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,9 +78,10 @@ import com.anisync.android.presentation.forum.components.ThreadBodyItem
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
 import com.anisync.android.presentation.forum.components.ThreadHeaderStats
 import com.anisync.android.presentation.forum.components.ThreadHeaderTop
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-// Internal data model to optimize deep comment trees for LazyColumn
+/** Internal data model representing a flattened comment tree node for optimal LazyColumn rendering. */
 internal data class FlatComment(
     val comment: ForumComment,
     val depth: Int,
@@ -105,30 +105,18 @@ fun ThreadDetailScreen(
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val replySheetState = rememberModalBottomSheetState()
     val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
-    // UI state for collapsing nested comment trees
     var collapsedIds by remember { mutableStateOf(emptySet<Int>()) }
 
     LaunchedEffect(threadId) {
         viewModel.onAction(ThreadDetailAction.Load(threadId))
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.actions.collectLatest { action ->
-            when (action) {
-                is ThreadDetailAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
-                else -> {}
-            }
-        }
-    }
-
-    // Auto-scroll to bottom when a new top-level reply is submitted
     LaunchedEffect(uiState.scrollToBottom) {
         if (uiState.scrollToBottom) {
             val totalItems = listState.layoutInfo.totalItemsCount
@@ -136,15 +124,19 @@ fun ThreadDetailScreen(
         }
     }
 
-    // Flatten recursive comments structure into a 1D list to make LazyColumn highly performant
-    val flatComments = remember(uiState.comments) {
-        flattenComments(uiState.comments)
+    var flatComments by remember { mutableStateOf(emptyList<FlatComment>()) }
+
+    LaunchedEffect(uiState.comments) {
+        withContext(Dispatchers.Default) {
+            flatComments = flattenComments(uiState.comments)
+        }
     }
 
-    // Filter out comments whose ancestors are currently collapsed
-    val visibleComments = remember(flatComments, collapsedIds) {
-        flatComments.filter { flat ->
-            flat.ancestorIds.none { it in collapsedIds }
+    val visibleComments by remember {
+        derivedStateOf {
+            flatComments.filter { flat ->
+                flat.ancestorIds.none { it in collapsedIds }
+            }
         }
     }
 
@@ -152,7 +144,6 @@ fun ThreadDetailScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -173,7 +164,6 @@ fun ThreadDetailScreen(
                     }
                 },
                 actions = {
-                    // Share button
                     val siteUrl = uiState.thread?.siteUrl
                     if (siteUrl != null) {
                         IconButton(
@@ -197,7 +187,8 @@ fun ThreadDetailScreen(
                     IconButton(
                         onClick = { viewModel.onAction(ThreadDetailAction.ToggleSubscribe) },
                         modifier = Modifier.semantics {
-                            contentDescription = if (uiState.thread?.isSubscribed == true) "Unsubscribe from thread" else "Subscribe to thread"
+                            contentDescription =
+                                if (uiState.thread?.isSubscribed == true) "Unsubscribe from thread" else "Subscribe to thread"
                         }
                     ) {
                         Icon(
@@ -209,7 +200,8 @@ fun ThreadDetailScreen(
                     IconButton(
                         onClick = { viewModel.onAction(ThreadDetailAction.ToggleSave) },
                         modifier = Modifier.semantics {
-                            contentDescription = if (uiState.isSaved) "Unsave thread" else "Save thread"
+                            contentDescription =
+                                if (uiState.isSaved) "Unsave thread" else "Save thread"
                         }
                     ) {
                         Icon(
@@ -275,8 +267,6 @@ fun ThreadDetailScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 96.dp),
-                        // 0.dp arrangement is critical for the continuous nesting lines to touch each other perfectly
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         item(key = "thread_header_top") {
@@ -311,7 +301,6 @@ fun ThreadDetailScreen(
                             )
                         }
 
-                        // Comments header with sort chips
                         item(key = "comments_header") {
                             Column {
                                 SectionHeader(
@@ -330,7 +319,10 @@ fun ThreadDetailScreen(
                                             selected = uiState.commentSortLabel == option.label,
                                             onClick = {
                                                 viewModel.onAction(
-                                                    ThreadDetailAction.ChangeCommentSort(option.sort, option.label)
+                                                    ThreadDetailAction.ChangeCommentSort(
+                                                        option.sort,
+                                                        option.label
+                                                    )
                                                 )
                                             },
                                             label = {
@@ -348,7 +340,14 @@ fun ThreadDetailScreen(
 
                         if (visibleComments.isEmpty() && !uiState.isLoadingMoreComments) {
                             item(key = "empty_comments") {
-                                EmptyStateConfigs.ForumNoComments()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    EmptyStateConfigs.ForumNoComments()
+                                }
                             }
                         } else {
                             itemsIndexed(
@@ -417,6 +416,10 @@ fun ThreadDetailScreen(
                                 }
                             }
                         }
+
+                        item(key = "bottom_spacer") {
+                            Spacer(modifier = Modifier.height(96.dp))
+                        }
                     }
                 }
             }
@@ -440,10 +443,6 @@ fun ThreadDetailScreen(
     }
 }
 
-// =============================================================================
-// Skeleton for initial loading state
-// =============================================================================
-
 @Composable
 private fun ThreadDetailSkeleton() {
     Column(
@@ -451,9 +450,14 @@ private fun ThreadDetailSkeleton() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Author row skeleton
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SkeletonLine(fraction = 0f, height = 40.dp, modifier = Modifier.width(40.dp).height(40.dp))
+            SkeletonLine(
+                fraction = 0f,
+                height = 40.dp,
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(40.dp)
+            )
             Spacer(Modifier.width(12.dp))
             Column {
                 SkeletonLine(fraction = 0.4f, height = 14.dp)
@@ -462,12 +466,10 @@ private fun ThreadDetailSkeleton() {
             }
         }
         Spacer(Modifier.height(20.dp))
-        // Title skeleton
         SkeletonLine(fraction = 0.85f, height = 24.dp)
         Spacer(Modifier.height(8.dp))
         SkeletonLine(fraction = 0.6f, height = 24.dp)
         Spacer(Modifier.height(20.dp))
-        // Body skeleton
         SkeletonLine(fraction = 1f, height = 16.dp)
         Spacer(Modifier.height(6.dp))
         SkeletonLine(fraction = 1f, height = 16.dp)
@@ -478,15 +480,20 @@ private fun ThreadDetailSkeleton() {
         Spacer(Modifier.height(6.dp))
         SkeletonLine(fraction = 0.5f, height = 16.dp)
         Spacer(Modifier.height(24.dp))
-        // Stats skeleton
         SkeletonLine(fraction = 0.5f, height = 16.dp)
         Spacer(Modifier.height(32.dp))
-        // Comment skeletons
-        SkeletonLine(fraction = 0.3f, height = 20.dp) // Comments header
+        SkeletonLine(fraction = 0.3f, height = 20.dp)
         Spacer(Modifier.height(16.dp))
+
         repeat(3) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SkeletonLine(fraction = 0f, height = 32.dp, modifier = Modifier.width(32.dp).height(32.dp))
+                SkeletonLine(
+                    fraction = 0f,
+                    height = 32.dp,
+                    modifier = Modifier
+                        .width(32.dp)
+                        .height(32.dp)
+                )
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     SkeletonLine(fraction = 0.3f, height = 12.dp)
@@ -500,10 +507,6 @@ private fun ThreadDetailSkeleton() {
         }
     }
 }
-
-// =============================================================================
-// Helper Functions to Map the recursive tree to a flattened performance-optimized list
-// =============================================================================
 
 private fun flattenComments(
     comments: List<ForumComment>,

@@ -34,9 +34,7 @@ import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 
 /**
- * Thread header top section: author, title, categories, locked message.
- * This is a separate LazyColumn item to keep individual items at a reasonable height,
- * which ensures Compose's touch dispatch works correctly for all interactive children.
+ * Renders the top portion of the thread including the author, title, tags, and locked banner.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -57,7 +55,6 @@ fun ThreadHeaderTop(
                 bottom = 8.dp
             )
         ) {
-            // Social Media Style header row
             AuthorRow(
                 name = thread.authorName,
                 avatarUrl = thread.authorAvatarUrl,
@@ -67,7 +64,6 @@ fun ThreadHeaderTop(
 
             Spacer(Modifier.height(20.dp))
 
-            // Expressive Typography: Black weight, larger display feel
             Text(
                 text = thread.title,
                 style = MaterialTheme.typography.headlineMedium,
@@ -142,9 +138,7 @@ fun ThreadHeaderTop(
 }
 
 /**
- * Thread body section: the rendered HTML body content.
- * This is a SEPARATE LazyColumn item so that long bodies don't create a single
- * extremely tall item (which breaks Compose's touch dispatch for nested children).
+ * Renders the main HTML body content of the thread.
  */
 @Composable
 fun ThreadBodyItem(
@@ -168,8 +162,7 @@ fun ThreadBodyItem(
 }
 
 /**
- * Thread stats footer: reply count, view count, like button.
- * Separate LazyColumn item with the bottom rounded corners for the "sheet" effect.
+ * Renders the stats block (views, replies, likes) at the bottom of the thread content.
  */
 @Composable
 fun ThreadHeaderStats(
@@ -180,69 +173,61 @@ fun ThreadHeaderStats(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                .background(MaterialTheme.colorScheme.surface)
+        Column(
+            modifier = Modifier.padding(
+                start = 20.dp,
+                end = 20.dp,
+                top = 16.dp,
+                bottom = 16.dp
+            )
         ) {
-            Column(
-                modifier = Modifier.padding(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = 16.dp,
-                    bottom = 24.dp
-                )
+            Surface(
+                shape = RoundedCornerShape(100),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Expressive Action Row: A floating tonal pill holding all stats
-                Surface(
-                    shape = RoundedCornerShape(100),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
                 ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        StatBadge(
+                            icon = Icons.Default.ChatBubbleOutline,
+                            value = thread.replyCount,
+                            contentDescription = "${thread.replyCount} replies"
+                        )
+                        StatBadge(
+                            icon = Icons.Default.RemoveRedEye,
+                            value = thread.viewCount,
+                            contentDescription = "${thread.viewCount} views"
+                        )
+                    }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100))
+                            .background(
+                                if (thread.isLiked) MaterialTheme.colorScheme.errorContainer
+                                else MaterialTheme.colorScheme.surfaceContainerHighest
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                            StatBadge(
-                                icon = Icons.Default.ChatBubbleOutline,
-                                value = thread.replyCount,
-                                contentDescription = "${thread.replyCount} replies"
-                            )
-                            StatBadge(
-                                icon = Icons.Default.RemoveRedEye,
-                                value = thread.viewCount,
-                                contentDescription = "${thread.viewCount} views"
-                            )
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(100))
-                                .background(
-                                    if (thread.isLiked) MaterialTheme.colorScheme.errorContainer
-                                    else MaterialTheme.colorScheme.surfaceContainerHighest
-                                )
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            AnimatedFavoriteButton(
-                                isFavorite = thread.isLiked,
-                                onClick = onLikeClick,
-                                iconSize = 22.dp
-                            )
-                            Text(
-                                text = thread.likeCount.toString(),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                color = if (thread.isLiked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        AnimatedFavoriteButton(
+                            isFavorite = thread.isLiked,
+                            onClick = onLikeClick,
+                            iconSize = 22.dp
+                        )
+                        Text(
+                            text = thread.likeCount.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = if (thread.isLiked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

@@ -15,7 +15,7 @@ data class ThreadDetailUiState(
     val commentSort: String = "ID",
     val commentSortLabel: String = "Oldest",
     val isReplySheetVisible: Boolean = false,
-    val replyTargetCommentId: Int? = null, // null = replying to thread
+    val replyTargetCommentId: Int? = null,
     val replyTargetAuthorName: String? = null,
     val isSubmittingReply: Boolean = false,
     val isSaved: Boolean = false,
@@ -26,8 +26,12 @@ data class ThreadDetailUiState(
 sealed interface ThreadDetailAction {
     data class Load(val threadId: Int) : ThreadDetailAction
     data object LoadMoreComments : ThreadDetailAction
-    data class ToggleLike(val isThread: Boolean, val id: Int, val currentLiked: Boolean) : ThreadDetailAction
-    data class OpenReply(val parentCommentId: Int?, val parentAuthorName: String?) : ThreadDetailAction
+    data class ToggleLike(val isThread: Boolean, val id: Int, val currentLiked: Boolean) :
+        ThreadDetailAction
+
+    data class OpenReply(val parentCommentId: Int?, val parentAuthorName: String?) :
+        ThreadDetailAction
+
     data object CloseReply : ThreadDetailAction
     data class SubmitReply(val threadId: Int, val body: String) : ThreadDetailAction
     data object ToggleSave : ThreadDetailAction

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +31,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,7 +45,6 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 
 /**
  * Modern Reddit-style comment item supporting curved tree branches and strict top-level boundaries.
- * Redesigned for Material Design 3 Expressive (Softer curves, prominent pills, thicker paths).
  */
 @Composable
 fun ThreadCommentItem(
@@ -62,17 +64,23 @@ fun ThreadCommentItem(
     val indentSize = 32.dp
     val avatarRadius = 14.dp
     val curvePadding = 6.dp
-    val headerHorizontalPadding = 4.dp // Space inside the Row containing AuthorRow
+    val headerHorizontalPadding = 4.dp
 
-    // NEW: Indent the body content so the thread line has a clear path downward without crossing text.
-    // 32.dp beautifully aligns the body text with the author's username.
     val contentIndent = 32.dp
 
     val maxVisualDepth = 5
     val displayDepth = depth.coerceAtMost(maxVisualDepth)
 
-    // Remember the path to avoid allocations during the draw phase
     val branchPath = remember { Path() }
+
+    val density = LocalDensity.current
+    val strokeStyle = remember(density) {
+        Stroke(
+            width = with(density) { 2.dp.toPx() },
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    }
 
     val colorScheme = MaterialTheme.colorScheme
     val lineColors = remember(colorScheme) {
@@ -88,14 +96,13 @@ fun ThreadCommentItem(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         if (depth == 0) {
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .background(Color.Transparent)
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
             )
         }
 
@@ -103,9 +110,7 @@ fun ThreadCommentItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
-                    val strokeWidth = 2.dp.toPx()
                     val cornerRadius = 12.dp.toPx()
-
                     val avatarCenterY = 26.dp.toPx()
 
                     val basePx = basePadding.toPx()
@@ -114,31 +119,21 @@ fun ThreadCommentItem(
                     val curvePaddingPx = curvePadding.toPx()
                     val headerHorizontalPaddingPx = headerHorizontalPadding.toPx()
 
-                    val strokeStyle = Stroke(
-                        width = strokeWidth,
-                        cap = StrokeCap.Round,
-                        join = StrokeJoin.Round
-                    )
-
-                    // Helper to get the absolute precise X center of an avatar at a given depth
                     val getAvatarCenterX = { d: Int ->
                         basePx + (d * indentPx) + headerHorizontalPaddingPx + avatarRadiusPx
                     }
 
-                    // 1. Draw continuous vertical timeline lines for all ancestor depths
                     for (i in 0 until displayDepth) {
                         val x = getAvatarCenterX(i)
                         drawLine(
-                            // Slightly increased alpha since it's now cleanly in open space
                             color = lineColors[i % lineColors.size].copy(alpha = 0.25f),
                             start = Offset(x, 0f),
                             end = Offset(x, size.height),
-                            strokeWidth = strokeWidth,
+                            strokeWidth = strokeStyle.width,
                             cap = StrokeCap.Round
                         )
                     }
 
-                    // 2. Draw the prominent branch curving into THIS comment's avatar
                     if (depth > 0) {
                         val parentVisualDepth = (depth - 1).coerceAtMost(maxVisualDepth)
 
@@ -162,26 +157,24 @@ fun ThreadCommentItem(
                                 style = strokeStyle
                             )
                         } else {
-                            // Max visual depth trunk
                             val myX = getAvatarCenterX(displayDepth)
                             drawLine(
                                 color = lineColors[displayDepth % lineColors.size].copy(alpha = 0.6f),
                                 start = Offset(myX, 0f),
                                 end = Offset(myX, avatarCenterY - avatarRadiusPx - curvePaddingPx),
-                                strokeWidth = strokeWidth,
+                                strokeWidth = strokeStyle.width,
                                 cap = StrokeCap.Round
                             )
                         }
                     }
 
-                    // 3. Draw downward line sprouting from THIS comment if applicable
                     if (descendantCount > 0 && !isCollapsed) {
                         val myX = getAvatarCenterX(displayDepth)
                         drawLine(
                             color = lineColors[displayDepth % lineColors.size].copy(alpha = 0.25f),
                             start = Offset(myX, avatarCenterY + avatarRadiusPx + 4.dp.toPx()),
                             end = Offset(myX, size.height),
-                            strokeWidth = strokeWidth,
+                            strokeWidth = strokeStyle.width,
                             cap = StrokeCap.Round
                         )
                     }
@@ -193,7 +186,6 @@ fun ThreadCommentItem(
                     bottom = 8.dp
                 )
         ) {
-            // Interactive header area
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -205,10 +197,10 @@ fun ThreadCommentItem(
                         onToggleCollapse()
                     }
                     .background(
-                        if (isCollapsed && depth > 0) MaterialTheme.colorScheme.surfaceContainer
+                        if (isCollapsed) MaterialTheme.colorScheme.surfaceContainerHighest
                         else Color.Transparent
                     )
-                    .padding(vertical = 4.dp, horizontal = headerHorizontalPadding)
+                    .padding(vertical = 6.dp, horizontal = headerHorizontalPadding)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -223,7 +215,6 @@ fun ThreadCommentItem(
                         modifier = Modifier.weight(1f, fill = false)
                     )
 
-                    // Expressive OP Badge
                     if (threadAuthorId != 0 && comment.authorId == threadAuthorId) {
                         Text(
                             text = "OP",
@@ -240,26 +231,38 @@ fun ThreadCommentItem(
                     }
                 }
 
-                if (isCollapsed && descendantCount > 0) {
-                    Text(
-                        text = "+$descendantCount",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                if (isCollapsed) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier
                             .background(
                                 MaterialTheme.colorScheme.secondaryContainer,
                                 RoundedCornerShape(100)
                             )
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExpandMore,
+                            contentDescription = "Expand",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        if (descendantCount > 0) {
+                            Text(
+                                text = "+$descendantCount",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    }
                 }
             }
 
             if (!isCollapsed) {
                 Spacer(Modifier.height(4.dp))
 
-                // FIXED: Shift the content and buttons to the right so thread lines drop into empty space
                 Column(
                     modifier = Modifier.padding(
                         start = headerHorizontalPadding + contentIndent,
@@ -281,7 +284,6 @@ fun ThreadCommentItem(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Likes Pill
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -305,7 +307,6 @@ fun ThreadCommentItem(
                             }
                         }
 
-                        // Expressive Reply Button
                         if (onReplyClick != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,

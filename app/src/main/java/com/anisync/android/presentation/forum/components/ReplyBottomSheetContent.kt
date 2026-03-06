@@ -68,7 +68,6 @@ fun ReplyBottomSheetContent(
     val focusRequester = remember { FocusRequester() }
     val haptic = rememberHapticFeedback()
 
-    // Auto-focus the text field when the sheet opens
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
@@ -80,7 +79,6 @@ fun ReplyBottomSheetContent(
             .imePadding()
             .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
-        // Header
         if (replyingToAuthor != null) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
@@ -105,7 +103,6 @@ fun ReplyBottomSheetContent(
 
         Spacer(Modifier.height(12.dp))
 
-        // Markdown toolbar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -169,7 +166,6 @@ fun ReplyBottomSheetContent(
 
             Spacer(Modifier.weight(1f))
 
-            // Preview toggle
             FilledTonalIconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -216,7 +212,6 @@ fun ReplyBottomSheetContent(
             )
         }
 
-        // Character counter
         Text(
             text = "${textFieldValue.text.length} / $MAX_REPLY_LENGTH",
             style = MaterialTheme.typography.labelSmall,
@@ -255,7 +250,9 @@ fun ReplyBottomSheetContent(
             ) {
                 if (isSubmitting) {
                     CircularProgressIndicator(
-                        modifier = Modifier.padding(end = 8.dp).size(20.dp),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(20.dp),
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
@@ -263,7 +260,9 @@ fun ReplyBottomSheetContent(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp).size(18.dp)
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(18.dp)
                     )
                 }
                 Text(
@@ -300,14 +299,16 @@ private fun MarkdownToolbarButton(
 
 /**
  * Wraps the current text selection with [prefix] and [suffix].
- * If no selection, inserts prefix + suffix at cursor and positions cursor between them.
+ * If there is no selection, it inserts the prefix + suffix at the cursor
+ * and positions the cursor between them.
  */
 private fun TextFieldValue.wrapSelection(prefix: String, suffix: String): TextFieldValue {
     val start = selection.min
     val end = selection.max
     val selectedText = text.substring(start, end)
     val newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end)
-    val newCursorPos = if (selectedText.isEmpty()) start + prefix.length else start + prefix.length + selectedText.length + suffix.length
+    val newCursorPos =
+        if (selectedText.isEmpty()) start + prefix.length else start + prefix.length + selectedText.length + suffix.length
     return copy(text = newText, selection = TextRange(newCursorPos))
 }
 
