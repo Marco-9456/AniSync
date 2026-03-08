@@ -9,11 +9,13 @@ import com.anisync.android.type.MediaType
 data class SectionGridUiState(
     val mediaType: MediaType = MediaType.ANIME,
     val items: List<LibraryEntry> = emptyList(),
+    val knownIds: Set<Int> = emptySet(),
     val selectedFormat: MediaFormat? = null,
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
     val hasNextPage: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val currentPage: Int = 1
 )
 
 sealed interface SectionGridAction {

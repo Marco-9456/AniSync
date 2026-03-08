@@ -50,4 +50,16 @@ interface PreferencesRepository {
      * Mark a notification key as sent.
      */
     suspend fun markNotifiedWithKey(key: String)
+
+    // ---- Social/Forum notification tracking ----
+
+    /**
+     * Get the highest notification ID that was already processed for social/forum notifications.
+     */
+    suspend fun getLastSocialNotifiedId(): Int
+
+    /**
+     * Set the highest processed social/forum notification ID.
+     */
+    suspend fun setLastSocialNotifiedId(id: Int)
 }

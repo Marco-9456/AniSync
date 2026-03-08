@@ -6,12 +6,13 @@ import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,18 +35,17 @@ class ForumCategoryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ForumCategoryUiState())
     val uiState: StateFlow<ForumCategoryUiState> = _uiState.asStateFlow()
 
-    private val _actions = MutableSharedFlow<ForumCategoryAction>()
-    val actions: SharedFlow<ForumCategoryAction> = _actions.asSharedFlow()
+    private val _actions = Channel<ForumCategoryAction>(Channel.BUFFERED)
+    val actions: Flow<ForumCategoryAction> = _actions.receiveAsFlow()
 
     private var categoryId: Int = 0
     private var currentSort: String? = null
 
     init {
-        // Debounce search query changes and re-fetch
         _uiState
             .map { it.searchQuery }
             .distinctUntilChanged()
-            .drop(1) // Skip initial empty value
+            .drop(1)
             .debounce(400.milliseconds)
             .onEach { load(page = 1, replaceExisting = true) }
             .launchIn(viewModelScope)
@@ -66,13 +67,17 @@ class ForumCategoryViewModel @Inject constructor(
                 loadSavedIds()
                 load(page = 1, replaceExisting = true)
             }
+
             is ForumCategoryAction.LoadMore -> {
-                if (!_uiState.value.hasNextPage) return
+                if (!_uiState.value.hasNextPage || _uiState.value.isLoading || _uiState.value.isPaginating) return
+                _uiState.update { it.copy(isPaginating = true) }
                 load(page = _uiState.value.currentPage + 1)
             }
+
             is ForumCategoryAction.OnSearchQueryChange -> {
                 _uiState.update { it.copy(searchQuery = action.query) }
             }
+
             is ForumCategoryAction.ToggleSaveThread -> toggleSave(action.thread)
             is ForumCategoryAction.ToggleSubscribeThread -> toggleSubscribe(action.thread)
             is ForumCategoryAction.ChangeSort -> {
@@ -80,10 +85,12 @@ class ForumCategoryViewModel @Inject constructor(
                 _uiState.update { it.copy(sortLabel = action.label, isLoading = true) }
                 load(page = 1, replaceExisting = true)
             }
+
             is ForumCategoryAction.ShowSnackbar -> {
-                viewModelScope.launch { _actions.emit(action) }
+                viewModelScope.launch { _actions.send(action) }
             }
-            else -> viewModelScope.launch { _actions.emit(action) }
+
+            else -> viewModelScope.launch { _actions.send(action) }
         }
     }
 
@@ -98,11 +105,13 @@ class ForumCategoryViewModel @Inject constructor(
                 is Result.Success -> {
                     val data = result.data
                     _uiState.update { current ->
-                        val threads = if (replaceExisting || page == 1) data.items
-                        else current.threads + data.items
+                        val threads =
+                            if (replaceExisting || page == 1) data.items.toPersistentList()
+                            else (current.threads + data.items).toPersistentList()
                         current.copy(
                             isLoading = false,
                             isRefreshing = false,
+                            isPaginating = false,
                             threads = threads,
                             hasNextPage = data.hasNextPage,
                             currentPage = data.currentPage,
@@ -110,9 +119,15 @@ class ForumCategoryViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is Result.Error -> {
                     _uiState.update {
-                        it.copy(isLoading = false, isRefreshing = false, errorMessage = result.message)
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isPaginating = false,
+                            errorMessage = result.message
+                        )
                     }
                 }
             }
@@ -122,7 +137,7 @@ class ForumCategoryViewModel @Inject constructor(
     private fun loadSavedIds() {
         viewModelScope.launch {
             val saved = forumRepository.getSavedThreads()
-            _uiState.update { it.copy(savedThreadIds = saved.map { t -> t.id }.toSet()) }
+            _uiState.update { it.copy(savedThreadIds = saved.map { t -> t.id }.toPersistentSet()) }
         }
     }
 
@@ -131,12 +146,12 @@ class ForumCategoryViewModel @Inject constructor(
             val isSaved = thread.id in _uiState.value.savedThreadIds
             if (isSaved) {
                 forumRepository.unsaveThread(thread.id)
-                _uiState.update { it.copy(savedThreadIds = it.savedThreadIds - thread.id) }
-                _actions.emit(ForumCategoryAction.ShowSnackbar("Thread unsaved"))
+                _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds - thread.id).toPersistentSet()) }
+                _actions.send(ForumCategoryAction.ShowSnackbar("Thread unsaved"))
             } else {
                 forumRepository.saveThread(thread)
-                _uiState.update { it.copy(savedThreadIds = it.savedThreadIds + thread.id) }
-                _actions.emit(ForumCategoryAction.ShowSnackbar("Thread saved"))
+                _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds + thread.id).toPersistentSet()) }
+                _actions.send(ForumCategoryAction.ShowSnackbar("Thread saved"))
             }
         }
     }
@@ -149,25 +164,28 @@ class ForumCategoryViewModel @Inject constructor(
                 state.copy(
                     threads = state.threads.map { t ->
                         if (t.id == thread.id) t.copy(isSubscribed = newState) else t
-                    }
+                    }.toPersistentList()
                 )
             }
             when (forumRepository.toggleThreadSubscription(thread.id, newState)) {
                 is Result.Success -> {
-                    _actions.emit(ForumCategoryAction.ShowSnackbar(
-                        if (newState) "Subscribed to thread" else "Unsubscribed from thread"
-                    ))
+                    _actions.send(
+                        ForumCategoryAction.ShowSnackbar(
+                            if (newState) "Subscribed to thread" else "Unsubscribed from thread"
+                        )
+                    )
                 }
+
                 is Result.Error -> {
                     // Revert optimistic update
                     _uiState.update { state ->
                         state.copy(
                             threads = state.threads.map { t ->
                                 if (t.id == thread.id) t.copy(isSubscribed = !newState) else t
-                            }
+                            }.toPersistentList()
                         )
                     }
-                    _actions.emit(ForumCategoryAction.ShowSnackbar("Failed to update subscription"))
+                    _actions.send(ForumCategoryAction.ShowSnackbar("Failed to update subscription"))
                 }
             }
         }

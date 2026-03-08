@@ -22,8 +22,14 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.AiringSchedule
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.PreferencesRepository
+import com.anisync.android.domain.ThreadCommentLikeNotification
+import com.anisync.android.domain.ThreadCommentMentionNotification
+import com.anisync.android.domain.ThreadCommentReplyNotification
+import com.anisync.android.domain.ThreadLikeNotification
+import com.anisync.android.domain.ThreadSubscribedNotification
 import com.anisync.android.type.MediaType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -57,6 +63,9 @@ class NotificationWorker @AssistedInject constructor(
         private const val PLANNING_NOTIFICATION_BASE_ID = 100000
         private const val UPCOMING_ADVANCE_NOTIFICATION_BASE_ID = 200000  // 12h notice
         private const val UPCOMING_IMMINENT_NOTIFICATION_BASE_ID = 300000 // 2h notice
+        private const val SOCIAL_NOTIFICATION_BASE_ID = 400000
+
+        private const val GROUP_KEY_SOCIAL = "com.anisync.android.SOCIAL_GROUP"
     }
 
     override suspend fun doWork(): androidx.work.ListenableWorker.Result {
@@ -94,6 +103,19 @@ class NotificationWorker @AssistedInject constructor(
                 } else {
                     Log.d(TAG, "Skipping planning notifications - disabled by user")
                 }
+
+                // Social/Forum notifications — check if ANY forum type is enabled
+                val anyForumEnabled = notificationPreferences.threadCommentReplyEnabled.value ||
+                    notificationPreferences.threadSubscribedEnabled.value ||
+                    notificationPreferences.threadCommentMentionEnabled.value ||
+                    notificationPreferences.threadLikeEnabled.value ||
+                    notificationPreferences.threadCommentLikeEnabled.value
+
+                if (anyForumEnabled) {
+                    checkSocialNotifications()
+                } else {
+                    Log.d(TAG, "Skipping social notifications - all forum types disabled")
+                }
             }
 
             androidx.work.ListenableWorker.Result.success()
@@ -122,12 +144,20 @@ class NotificationWorker @AssistedInject constructor(
         // 1. Set baseline for Watching notifications
         val repoResult = notificationRepository.getNotifications(1)
         if (repoResult is DomainResult.Success) {
-            val latestId = repoResult.data
+            val allNotifications = repoResult.data
+            val latestAiringId = allNotifications
                 .filterIsInstance<AiringNotification>()
                 .maxOfOrNull { it.id } ?: 0
-            if (latestId > 0) {
-                preferencesRepository.setLastNotifiedId(latestId)
-                Log.d(TAG, "Baseline: Set lastNotifiedId to $latestId")
+            if (latestAiringId > 0) {
+                preferencesRepository.setLastNotifiedId(latestAiringId)
+                Log.d(TAG, "Baseline: Set lastNotifiedId to $latestAiringId")
+            }
+            val latestSocialId = allNotifications
+                .filter { it is ThreadCommentReplyNotification || it is ThreadSubscribedNotification || it is ThreadCommentMentionNotification || it is ThreadLikeNotification || it is ThreadCommentLikeNotification }
+                .maxOfOrNull { it.id } ?: 0
+            if (latestSocialId > 0) {
+                preferencesRepository.setLastSocialNotifiedId(latestSocialId)
+                Log.d(TAG, "Baseline: Set lastSocialNotifiedId to $latestSocialId")
             }
         }
 
@@ -189,15 +219,22 @@ class NotificationWorker @AssistedInject constructor(
                             !isEpisode1ForPlanning
                         }
                     
-                    if (newOnThisPage.isEmpty()) {
+                    // Check if we've passed all new airing notifications on this page
+                    val allAiringOnPage = notifications.filterIsInstance<AiringNotification>()
+                    val hasOlderAiring = allAiringOnPage.any { it.id <= lastNotifiedId }
+
+                    if (newOnThisPage.isEmpty() && hasOlderAiring) {
+                        // All airing notifications on this page are old
                         hasMore = false
+                    } else if (newOnThisPage.isEmpty() && allAiringOnPage.isEmpty()) {
+                        // No airing notifications on this page at all (e.g. only thread notifications)
+                        // Continue to next page to find airing notifications
+                        currentPage++
+                        if (notifications.size < 20) hasMore = false
                     } else {
                         allNewAiring.addAll(newOnThisPage)
                         currentPage++
-                        
-                        if (notifications.size < 20) {
-                            hasMore = false
-                        }
+                        if (notifications.size < 20) hasMore = false
                     }
                 }
                 is DomainResult.Error -> {
@@ -224,6 +261,176 @@ class NotificationWorker @AssistedInject constructor(
             Log.d(TAG, "Processed ${sortedAiring.size} new airing notifications")
         }
     }
+
+    /**
+     * Check for new social/forum notifications (thread replies, mentions, likes, subscriptions).
+     * Each type is gated behind its own preference toggle.
+     */
+    private suspend fun checkSocialNotifications() {
+        val lastSocialId = preferencesRepository.getLastSocialNotifiedId()
+        val allNewSocial = mutableListOf<Notification>()
+        var currentPage = 1
+        var hasMore = true
+
+        while (hasMore && currentPage <= MAX_NOTIFICATION_PAGES) {
+            val repoResult = notificationRepository.getNotifications(currentPage)
+
+            when (repoResult) {
+                is DomainResult.Success -> {
+                    val notifications = repoResult.data
+
+                    val socialOnPage = notifications.filter { notification ->
+                        notification.id > lastSocialId && isSocialNotification(notification)
+                    }
+
+                    val olderSocialExists = notifications.any { notification ->
+                        notification.id <= lastSocialId && isSocialNotification(notification)
+                    }
+
+                    if (socialOnPage.isEmpty() && olderSocialExists) {
+                        hasMore = false
+                    } else if (socialOnPage.isEmpty()) {
+                        currentPage++
+                        if (notifications.size < 20) hasMore = false
+                    } else {
+                        allNewSocial.addAll(socialOnPage)
+                        currentPage++
+                        if (notifications.size < 20) hasMore = false
+                    }
+                }
+                is DomainResult.Error -> {
+                    Log.e(TAG, "Failed to fetch social notifications page $currentPage: ${repoResult.message}", repoResult.exception)
+                    hasMore = false
+                }
+            }
+        }
+
+        if (allNewSocial.isNotEmpty()) {
+            val sorted = allNewSocial.sortedBy { it.id }
+
+            for (notification in sorted) {
+                // Respect per-type preferences
+                val shouldNotify = when (notification) {
+                    is ThreadCommentReplyNotification -> notificationPreferences.threadCommentReplyEnabled.value
+                    is ThreadSubscribedNotification -> notificationPreferences.threadSubscribedEnabled.value
+                    is ThreadCommentMentionNotification -> notificationPreferences.threadCommentMentionEnabled.value
+                    is ThreadLikeNotification -> notificationPreferences.threadLikeEnabled.value
+                    is ThreadCommentLikeNotification -> notificationPreferences.threadCommentLikeEnabled.value
+                    else -> false
+                }
+                if (shouldNotify) {
+                    showSocialNotification(notification)
+                }
+            }
+
+            val maxId = sorted.maxOf { it.id }
+            preferencesRepository.setLastSocialNotifiedId(maxId)
+            Log.d(TAG, "Processed ${sorted.size} new social notifications")
+        }
+    }
+
+    private fun isSocialNotification(notification: Notification): Boolean {
+        return notification is ThreadCommentReplyNotification ||
+            notification is ThreadSubscribedNotification ||
+            notification is ThreadCommentMentionNotification ||
+            notification is ThreadLikeNotification ||
+            notification is ThreadCommentLikeNotification
+    }
+
+    /**
+     * Display a social/forum notification using the appropriate channel.
+     */
+    private suspend fun showSocialNotification(notification: Notification) {
+        val (title, content, channelId, threadId) = when (notification) {
+            is ThreadCommentReplyNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "💬 Reply on \"${notification.threadTitle}\"",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.THREAD_COMMENT_REPLY_CHANNEL_ID,
+                    threadId = notification.threadId
+                )
+            }
+            is ThreadSubscribedNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "🔔 Update on \"${notification.threadTitle}\"",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.THREAD_SUBSCRIBED_CHANNEL_ID,
+                    threadId = notification.threadId
+                )
+            }
+            is ThreadCommentMentionNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "📢 Mentioned in \"${notification.threadTitle}\"",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.THREAD_COMMENT_MENTION_CHANNEL_ID,
+                    threadId = notification.threadId
+                )
+            }
+            is ThreadLikeNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "❤️ Thread liked",
+                    content = "$userName liked your thread \"${notification.threadTitle}\"",
+                    channelId = NotificationChannels.THREAD_LIKE_CHANNEL_ID,
+                    threadId = notification.threadId
+                )
+            }
+            is ThreadCommentLikeNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "❤️ Comment liked",
+                    content = "$userName liked your comment in \"${notification.threadTitle}\"",
+                    channelId = NotificationChannels.THREAD_COMMENT_LIKE_CHANNEL_ID,
+                    threadId = notification.threadId
+                )
+            }
+            else -> return
+        }
+
+        val notificationId = SOCIAL_NOTIFICATION_BASE_ID + notification.id
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://forum/thread/$threadId"))
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val largeIcon: Bitmap? = when (notification) {
+            is ThreadCommentReplyNotification -> notification.user?.avatarUrl
+            is ThreadSubscribedNotification -> notification.user?.avatarUrl
+            is ThreadCommentMentionNotification -> notification.user?.avatarUrl
+            is ThreadLikeNotification -> notification.user?.avatarUrl
+            is ThreadCommentLikeNotification -> notification.user?.avatarUrl
+            else -> null
+        }?.let { loadImage(it) }
+
+        val builder = NotificationCompat.Builder(applicationContext, channelId)
+            .setSmallIcon(getApplicationIcon())
+            .setContentTitle(title)
+            .setContentText(content)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setGroup(GROUP_KEY_SOCIAL)
+            .setContentIntent(pendingIntent)
+
+        if (largeIcon != null) {
+            builder.setLargeIcon(largeIcon)
+        }
+
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(notificationId, builder.build())
+    }
+
+    private data class SocialNotificationData(
+        val title: String,
+        val content: String,
+        val channelId: String,
+        val threadId: Int
+    )
 
     /**
      * Check for upcoming Episode 1 airings for Planning list items.

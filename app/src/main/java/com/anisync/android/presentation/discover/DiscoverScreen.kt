@@ -87,11 +87,9 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 private const val TAG = "DiscoverScreen"
-private const val SEARCH_DEBOUNCE_MS = 150L
 
 private val TrendingIconColor = Color(0xFFFF5722)
 private val TbaIconColor = Color(0xFF9E9E9E)
@@ -125,14 +123,22 @@ fun DiscoverScreen(
     val focusManager = LocalFocusManager.current
 
     val searchBarState = rememberSearchBarState()
-    val textFieldState = rememberTextFieldState()
+
+    val initialQuery = rememberSaveable { (uiState as? DiscoverUiState.Success)?.searchQuery ?: "" }
+    val textFieldState = rememberTextFieldState(initialText = initialQuery)
+
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
     val pullToRefreshState = rememberPullToRefreshState()
 
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    val mainListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
+    val currentMediaType = (uiState as? DiscoverUiState.Success)?.mediaType ?: MediaType.ANIME
+
+    // Separate scroll state memory for Anime vs Manga tabs
+    val mainListState =
+        rememberSaveable(currentMediaType, saver = LazyListState.Saver) { LazyListState() }
 
     var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -141,13 +147,8 @@ fun DiscoverScreen(
     val upcomingTitle = stringResource(R.string.section_upcoming_season)
     val tbaTitle = stringResource(R.string.section_tba)
 
-    LaunchedEffect(Unit) {
-        viewModel.onAction(DiscoverAction.OnScreenVisible)
-    }
-
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
-            .debounce(SEARCH_DEBOUNCE_MS)
             .collect { viewModel.onAction(DiscoverAction.OnSearchQueryChange(it)) }
     }
 
@@ -165,16 +166,16 @@ fun DiscoverScreen(
         }
     }
 
-    val onRefresh: () -> Unit = remember(viewModel) { { viewModel.onAction(DiscoverAction.Refresh) } }
+    val onRefresh: () -> Unit =
+        remember(viewModel) { { viewModel.onAction(DiscoverAction.Refresh) } }
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         keyboardController?.hide()
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    val currentMediaType = (uiState as? DiscoverUiState.Success)?.mediaType ?: MediaType.ANIME
-    val currentSearchFilters = (uiState as? DiscoverUiState.Success)?.searchFilters ?: com.anisync.android.domain.SearchFilters()
-    val currentIsRefreshing = (uiState as? DiscoverUiState.Success)?.isRefreshing ?: false
+    val currentSearchFilters = (uiState as? DiscoverUiState.Success)?.searchFilters
+        ?: com.anisync.android.domain.SearchFilters()
 
     if (showFilterDialog) {
         SearchFilterDialog(
@@ -204,15 +205,23 @@ fun DiscoverScreen(
             )
         }
     ) { paddingValues ->
+        val successState = uiState as? DiscoverUiState.Success
+
         DiscoverContent(
-            uiState = uiState,
+            isLoading = uiState is DiscoverUiState.Loading,
+            errorMessage = (uiState as? DiscoverUiState.Error)?.message,
+            trending = successState?.trending ?: emptyList(),
+            popular = successState?.popular ?: emptyList(),
+            upcoming = successState?.upcoming ?: emptyList(),
+            tba = successState?.tba ?: emptyList(),
+            mediaType = currentMediaType,
             titleLanguage = titleLanguage,
-            isRefreshing = currentIsRefreshing,
+            isRefreshing = successState?.isRefreshing ?: false,
             mainListState = mainListState,
             pullToRefreshState = pullToRefreshState,
             paddingValues = PaddingValues(
                 top = paddingValues.calculateTopPadding(),
-                bottom = 80.dp 
+                bottom = 80.dp
             ),
             trendingTitle = trendingTitle,
             popularTitle = popularTitle,
@@ -227,7 +236,12 @@ fun DiscoverScreen(
     }
 
     val (searchQuery, searchResults, isSearching) = when (val state = uiState) {
-        is DiscoverUiState.Success -> Triple(state.searchQuery, state.searchResults, state.isSearching)
+        is DiscoverUiState.Success -> Triple(
+            state.searchQuery,
+            state.searchResults,
+            state.isSearching
+        )
+
         else -> Triple("", emptyList<LibraryEntry>(), false)
     }
 
@@ -310,7 +324,6 @@ private fun SearchInputField(
     onShowFilterDialog: () -> Unit
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
-
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
 
     val placeholderTextRes by remember(mediaType) {
@@ -412,7 +425,13 @@ private fun SearchTrailingIcons(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun DiscoverContent(
-    uiState: DiscoverUiState,
+    isLoading: Boolean,
+    errorMessage: String?,
+    trending: List<LibraryEntry>,
+    popular: List<LibraryEntry>,
+    upcoming: List<LibraryEntry>,
+    tba: List<LibraryEntry>,
+    mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     isRefreshing: Boolean,
     mainListState: LazyListState,
@@ -450,19 +469,18 @@ private fun DiscoverContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
-            when (uiState) {
-                is DiscoverUiState.Loading -> {
+            when {
+                isLoading -> {
                     item(key = "shimmer", contentType = "shimmer") { DiscoverShimmer() }
                 }
 
-                is DiscoverUiState.Error -> {
+                errorMessage != null -> {
                     item(key = "error", contentType = "error") {
-                        ErrorContent(message = uiState.message)
+                        ErrorContent(message = errorMessage)
                     }
                 }
 
-                is DiscoverUiState.Success -> {
-                    // Trending Section
+                else -> {
                     item(key = "trending_header", contentType = "section_header") {
                         Spacer(modifier = Modifier.height(24.dp))
                         SectionHeader(
@@ -472,7 +490,7 @@ private fun DiscoverContent(
                                 onSectionSeeAllClick(
                                     trendingTitle,
                                     "trending",
-                                    uiState.mediaType
+                                    mediaType
                                 )
                             },
                             level = HeaderLevel.Section
@@ -481,7 +499,7 @@ private fun DiscoverContent(
                     }
 
                     item(key = "trending_carousel", contentType = "hero_carousel") {
-                        val trendingItems = remember(uiState.trending) { uiState.trending.take(10) }
+                        val trendingItems = remember(trending) { trending.take(10) }
                         DiscoverHeroCarousel(
                             items = trendingItems,
                             onItemClick = onMediaClick,
@@ -492,7 +510,6 @@ private fun DiscoverContent(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // Popular Section
                     item(key = "popular_header", contentType = "section_header") {
                         Spacer(modifier = Modifier.height(48.dp))
                         SectionHeader(
@@ -502,7 +519,7 @@ private fun DiscoverContent(
                                 onSectionSeeAllClick(
                                     popularTitle,
                                     "popular",
-                                    uiState.mediaType
+                                    mediaType
                                 )
                             },
                             level = HeaderLevel.Section
@@ -512,7 +529,7 @@ private fun DiscoverContent(
 
                     item(key = "popular_list", contentType = "media_list") {
                         HorizontalMediaList(
-                            items = uiState.popular,
+                            items = popular,
                             onItemClick = onMediaClick,
                             titleLanguage = titleLanguage,
                             sharedTransitionScope = sharedTransitionScope,
@@ -521,8 +538,7 @@ private fun DiscoverContent(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // Upcoming Section (Anime only)
-                    if (uiState.mediaType == MediaType.ANIME) {
+                    if (mediaType == MediaType.ANIME) {
                         item(key = "upcoming_header", contentType = "section_header") {
                             Spacer(modifier = Modifier.height(48.dp))
                             SectionHeader(
@@ -532,7 +548,7 @@ private fun DiscoverContent(
                                     onSectionSeeAllClick(
                                         upcomingTitle,
                                         "upcoming",
-                                        uiState.mediaType
+                                        mediaType
                                     )
                                 },
                                 level = HeaderLevel.Section
@@ -541,8 +557,7 @@ private fun DiscoverContent(
                         }
 
                         item(key = "upcoming_list", contentType = "media_list") {
-                            val upcomingItems =
-                                remember(uiState.upcoming) { uiState.upcoming.take(10) }
+                            val upcomingItems = remember(upcoming) { upcoming.take(10) }
                             HorizontalMediaList(
                                 items = upcomingItems,
                                 onItemClick = onMediaClick,
@@ -554,20 +569,19 @@ private fun DiscoverContent(
                         }
                     }
 
-                    // TBA Section
                     item(key = "tba_header", contentType = "section_header") {
                         Spacer(modifier = Modifier.height(48.dp))
                         SectionHeader(
                             title = tbaTitle,
                             iconColor = TbaIconColor,
-                            onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", uiState.mediaType) },
+                            onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", mediaType) },
                             level = HeaderLevel.Section
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
                     item(key = "tba_list", contentType = "media_list") {
-                        val tbaItems = remember(uiState.tba) { uiState.tba.take(10) }
+                        val tbaItems = remember(tba) { tba.take(10) }
                         HorizontalMediaList(
                             items = tbaItems,
                             onItemClick = onMediaClick,

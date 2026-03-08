@@ -22,6 +22,7 @@ enum class ForumFeed(val label: String) {
 @Immutable
 data class ForumUiState(
     val isLoading: Boolean = true,
+    val isPaginating: Boolean = false,
     val isRefreshing: Boolean = false,
     val threads: ImmutableList<ForumThread> = persistentListOf(),
     val hasNextPage: Boolean = false,

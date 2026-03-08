@@ -124,7 +124,7 @@ private fun ForumThreadCardContent(
                 AuthorRow(
                     name = thread.authorName,
                     avatarUrl = thread.authorAvatarUrl,
-                    timestampSeconds = thread.updatedAt,
+                    timestampSeconds = thread.createdAt,
                     modifier = Modifier.weight(1f) // Constrains author row so it doesn't push icons off-screen
                 )
 
@@ -395,13 +395,32 @@ fun AuthorRow(
             modifier = Modifier.weight(1f, fill = false)
         )
         Spacer(Modifier.width(6.dp))
+        val formattedTime = remember(timestampSeconds) { formatRelativeTime(timestampSeconds) }
         Text(
-            text = "• 2h ago", // Mock timestamp formatting
+            text = "• $formattedTime",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             softWrap = false // Prevents characters from stacking into a vertical block
         )
+    }
+}
+
+/**
+ * Formats a Unix timestamp (in seconds) as a human-readable relative time string.
+ */
+private fun formatRelativeTime(timestampSeconds: Long): String {
+    val now = System.currentTimeMillis() / 1000
+    val diff = now - timestampSeconds
+    return when {
+        diff < 0 -> "just now"
+        diff < 60 -> "just now"
+        diff < 3600 -> "${diff / 60}m ago"
+        diff < 86400 -> "${diff / 3600}h ago"
+        diff < 604800 -> "${diff / 86400}d ago"
+        diff < 2592000 -> "${diff / 604800}w ago"
+        diff < 31536000 -> "${diff / 2592000}mo ago"
+        else -> "${diff / 31536000}y ago"
     }
 }
 

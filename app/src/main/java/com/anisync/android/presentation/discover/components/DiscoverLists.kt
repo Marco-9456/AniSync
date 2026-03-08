@@ -51,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
@@ -81,7 +82,7 @@ fun HorizontalMediaList(
 ) {
     val placementSpec = AppMotion.rememberOffsetSpatialSpec()
     val fadeSpec = AppMotion.rememberEffectsSpec()
-    
+
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -133,49 +134,40 @@ fun SearchResultItem(
 @Composable
 fun DiscoverShimmer() {
     Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
-        Box(Modifier.fillMaxWidth().height(380.dp).clip(RoundedCornerShape(28.dp)).shimmerEffect())
+        Box(Modifier
+            .fillMaxWidth()
+            .height(380.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .shimmerEffect())
         Spacer(Modifier.height(48.dp))
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Box(Modifier.size(150.dp, 24.dp).clip(RoundedCornerShape(4.dp)).shimmerEffect())
+            Box(Modifier
+                .size(150.dp, 24.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect())
         }
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             repeat(3) {
-                Box(Modifier.width(140.dp).height(200.dp).clip(RoundedCornerShape(16.dp)).shimmerEffect())
+                Box(
+                    Modifier
+                        .width(140.dp)
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .shimmerEffect()
+                )
             }
         }
     }
 }
 
-/**
- * Sealed class defining the card style variants for the unified DiscoverMediaCard.
- */
 sealed class CardStyle {
-    /** Large cinematic hero card for carousels (380dp tall) */
     data class Hero(val height: Dp = 380.dp) : CardStyle()
-    
-    /** Standard vertical card for horizontal lists (150dp wide) */
     data class Standard(val width: Dp = 150.dp) : CardStyle()
-    
-    /** Grid card that fills available width with aspect ratio */
     data class Grid(val aspectRatio: Float = 0.7f) : CardStyle()
-    
-    /** Horizontal list item for search results */
     data object ListItem : CardStyle()
 }
 
-/**
- * A unified, customizable media card component for the Discover screen.
- * Consolidates Hero, Standard, Grid, and ListItem card variants into a single component.
- *
- * @param item The LibraryEntry to display
- * @param style The card style variant to render
- * @param onClick Click handler for the card
- * @param modifier Modifier for the card container
- * @param sharedTransitionScope Optional scope for shared element transitions
- * @param animatedVisibilityScope Optional scope for visibility animations
- * @param transitionPrefix Unique prefix for shared transition keys to avoid collisions
- */
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DiscoverMediaCard(
@@ -190,7 +182,7 @@ fun DiscoverMediaCard(
 ) {
     val cardShape = remember(style) {
         when (style) {
-            is CardStyle.Hero -> RoundedCornerShape(28.dp) // extraLarge
+            is CardStyle.Hero -> RoundedCornerShape(28.dp)
             is CardStyle.Standard, is CardStyle.Grid -> RoundedCornerShape(24.dp)
             is CardStyle.ListItem -> RoundedCornerShape(16.dp)
         }
@@ -199,17 +191,21 @@ fun DiscoverMediaCard(
     val sizeModifier = remember(style) {
         when (style) {
             is CardStyle.Hero -> Modifier.height(style.height)
-            is CardStyle.Standard -> Modifier.width(style.width).aspectRatio(0.6f)
-            is CardStyle.Grid -> Modifier.fillMaxWidth().aspectRatio(style.aspectRatio)
-            is CardStyle.ListItem -> Modifier.fillMaxWidth().height(120.dp)
+            is CardStyle.Standard -> Modifier
+                .width(style.width)
+                .aspectRatio(0.6f)
+            is CardStyle.Grid -> Modifier
+                .fillMaxWidth()
+                .aspectRatio(style.aspectRatio)
+            is CardStyle.ListItem -> Modifier
+                .fillMaxWidth()
+                .height(120.dp)
         }
     }
 
-    // Use memoized motion specs from AppMotion (only when shared transition is enabled)
     val spatialSpec = if (sharedTransitionScope != null) AppMotion.rememberSpatialSpec() else null
     val effectsSpec = if (sharedTransitionScope != null) AppMotion.rememberEffectsSpec() else null
-    
-    // Use TransitionKeys for consistent key generation
+
     val coverKey = TransitionKeys.cover(transitionPrefix, item.mediaId)
     val gradientKey = TransitionKeys.gradient(transitionPrefix, item.mediaId)
     val titleKey = TransitionKeys.title(transitionPrefix, item.mediaId)
@@ -231,19 +227,19 @@ fun DiscoverMediaCard(
             onClickLabel = stringResource(R.string.a11y_action_open_details, title)
         )
 
-    // Apply shared element transition if scopes are provided
-    val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
-        with(sharedTransitionScope) {
-            baseModifier.sharedBounds(
-                sharedContentState = rememberSharedContentState(key = coverKey),
-                animatedVisibilityScope = animatedVisibilityScope,
-                boundsTransform = { _, _ -> spatialSpec },
-                clipInOverlayDuringTransition = OverlayClip(cardShape)
-            )
+    val cardModifier =
+        if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
+            with(sharedTransitionScope) {
+                baseModifier.sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = coverKey),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(cardShape)
+                )
+            }
+        } else {
+            baseModifier
         }
-    } else {
-        baseModifier
-    }
 
     Surface(
         modifier = cardModifier,
@@ -260,6 +256,7 @@ fun DiscoverMediaCard(
                 animatedVisibilityScope = animatedVisibilityScope,
                 spatialSpec = spatialSpec
             )
+
             else -> ImmersiveCardContent(
                 item = item,
                 style = style,
@@ -293,12 +290,12 @@ private fun ImmersiveCardContent(
     effectsSpec: FiniteAnimationSpec<Float>?
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Background Image
         val context = LocalContext.current
         val imageRequest = remember(item.coverUrl, cacheKey) {
             ImageRequest.Builder(context)
                 .data(item.coverUrl)
-                .crossfade(true)
+                .crossfade(200)
+                .memoryCachePolicy(CachePolicy.ENABLED)
                 .placeholderMemoryCacheKey(cacheKey)
                 .memoryCacheKey(cacheKey)
                 .build()
@@ -311,22 +308,22 @@ private fun ImmersiveCardContent(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // 2. Gradient Overlay with shared bounds
-        val gradientModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null && effectsSpec != null) {
-            with(sharedTransitionScope) {
-                Modifier
-                    .fillMaxSize()
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = gradientKey),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        enter = fadeIn(effectsSpec),
-                        exit = fadeOut(effectsSpec)
-                    )
+        val gradientModifier =
+            if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null && effectsSpec != null) {
+                with(sharedTransitionScope) {
+                    Modifier
+                        .fillMaxSize()
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = gradientKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            enter = fadeIn(effectsSpec),
+                            exit = fadeOut(effectsSpec)
+                        )
+                }
+            } else {
+                Modifier.fillMaxSize()
             }
-        } else {
-            Modifier.fillMaxSize()
-        }
 
         val brush = remember {
             Brush.verticalGradient(
@@ -343,7 +340,6 @@ private fun ImmersiveCardContent(
             modifier = gradientModifier.background(brush)
         )
 
-        // 3. Top Badge (status for upcoming content)
         val statusBadge = remember(item.mediaStatus) { item.mediaStatus?.formatAsTitle() }
         if (statusBadge != null && style is CardStyle.Grid) {
             Box(
@@ -368,7 +364,6 @@ private fun ImmersiveCardContent(
             }
         }
 
-        // 4. Content Area
         val contentPadding = remember(style) {
             if (style is CardStyle.Hero) 24.dp else 16.dp
         }
@@ -379,7 +374,6 @@ private fun ImmersiveCardContent(
                 .padding(contentPadding)
                 .fillMaxWidth()
         ) {
-            // Type Chip (Hero style only)
             if (style is CardStyle.Hero && item.format != null) {
                 val formatLabel = item.format.toLabel()
                 Surface(
@@ -397,19 +391,19 @@ private fun ImmersiveCardContent(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Title with shared bounds
-            val titleModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
-                with(sharedTransitionScope) {
-                    Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = titleKey),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                    )
+            val titleModifier =
+                if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = titleKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                        )
+                    }
+                } else {
+                    Modifier
                 }
-            } else {
-                Modifier
-            }
 
             Text(
                 text = item.getTitle(titleLanguage),
@@ -426,7 +420,6 @@ private fun ImmersiveCardContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Subtitle / Metadata
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (style is CardStyle.Hero) {
                     val statusText = item.mediaStatus?.formatAsTitle()
@@ -486,12 +479,12 @@ private fun ListItemContent(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Thumbnail
         val context = LocalContext.current
         val imageRequest = remember(item.coverUrl) {
             ImageRequest.Builder(context)
                 .data(item.coverUrl)
-                .crossfade(true)
+                .crossfade(200)
+                .memoryCachePolicy(CachePolicy.ENABLED)
                 .build()
         }
         AsyncImage(
@@ -506,12 +499,10 @@ private fun ListItemContent(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Info
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
-            // Format label
             item.format?.let { format ->
                 val formatLabel = format.toLabel().uppercase()
                 Text(
@@ -523,19 +514,19 @@ private fun ListItemContent(
                 )
             }
 
-            // Title with shared bounds
-            val titleModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
-                with(sharedTransitionScope) {
-                    Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = titleKey),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                    )
+            val titleModifier =
+                if (sharedTransitionScope != null && animatedVisibilityScope != null && spatialSpec != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = titleKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                        )
+                    }
+                } else {
+                    Modifier
                 }
-            } else {
-                Modifier
-            }
 
             Text(
                 text = item.getTitle(titleLanguage),
@@ -547,7 +538,6 @@ private fun ListItemContent(
                 modifier = titleModifier
             )
 
-            // Status
             val statusText = remember(item.mediaStatus) { item.mediaStatus?.formatAsTitle() }
             if (statusText != null) {
                 Text(
@@ -561,7 +551,6 @@ private fun ListItemContent(
             }
         }
 
-        // Rating
         item.averageScore?.let { score ->
             Column(horizontalAlignment = Alignment.End) {
                 Icon(
@@ -654,7 +643,9 @@ private fun GridCardStylePreview() {
         SharedTransitionLayout {
             AnimatedVisibility(visible = true) {
                 val animatedScope = this
-                Box(modifier = Modifier.padding(16.dp).width(200.dp)) {
+                Box(modifier = Modifier
+                    .padding(16.dp)
+                    .width(200.dp)) {
                     DiscoverMediaCard(
                         item = previewItem.copy(
                             mediaStatus = "NOT_YET_RELEASED",

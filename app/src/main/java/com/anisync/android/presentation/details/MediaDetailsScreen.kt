@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -104,7 +103,6 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.ContentMetadataSection
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
@@ -120,7 +118,6 @@ import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.util.getTitle
 
-private const val MediaStaggerDelay = 15 // Slightly increased for better perception
 
 @OptIn(
     ExperimentalSharedTransitionApi::class,
@@ -150,7 +147,7 @@ fun MediaDetailsScreen(
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    val listState = rememberLazyListState()
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
@@ -234,13 +231,9 @@ fun MediaDetailsScreen(
                                     checked = fabMenuExpanded,
                                     onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
                                 ) {
-                                    val imageVector by remember {
-                                        derivedStateOf {
-                                            if (checkedProgress > 0.5f) Icons.Filled.Close
-                                            else if (details.listEntryId != null) Icons.Filled.Edit
-                                            else Icons.Filled.Add
-                                        }
-                                    }
+                                    val imageVector = if (checkedProgress > 0.5f) Icons.Filled.Close
+                                        else if (details.listEntryId != null) Icons.Filled.Edit
+                                        else Icons.Filled.Add
                                     Icon(
                                         painter = rememberVectorPainter(imageVector),
                                         contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(
@@ -449,31 +442,19 @@ fun DetailsPageContent(
             item(key = "action_buttons") {
                 Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                    StaggeredAnimatedVisibility(
-                        key = "media_action_buttons",
-                        index = 0,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        SmartActionButtonsRow(
-                            isFavorite = details.isFavourite,
-                            onFavoriteClick = onFavouriteClick,
-                            onShareClick = onShareClick
-                        )
-                    }
+                    SmartActionButtonsRow(
+                        isFavorite = details.isFavourite,
+                        onFavoriteClick = onFavouriteClick,
+                        onShareClick = onShareClick
+                    )
                 }
             }
 
             // 3. Information (Info Cards)
             item(key = "info_cards") {
-                StaggeredAnimatedVisibility(
-                    key = "media_info_cards",
-                    index = 1,
-                    delayPerItem = MediaStaggerDelay
-                ) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                        HorizontalInfoCards(details = details)
-                    }
+                Column {
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                    HorizontalInfoCards(details = details)
                 }
             }
 
@@ -481,28 +462,16 @@ fun DetailsPageContent(
             item(key = "synopsis") {
                 Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                    StaggeredAnimatedVisibility(
-                        key = "media_synopsis",
-                        index = 2,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        ExpandableSynopsis(details.description)
-                    }
+                    ExpandableSynopsis(details.description)
                 }
             }
 
             // 5. Categories (Genres & Tags)
             item(key = "metadata") {
                 if (details.tags.isNotEmpty() || displayGenres.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(
-                        key = "media_metadata",
-                        index = 3,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                            ContentMetadataSection(genres = displayGenres, tags = details.tags)
-                        }
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                        ContentMetadataSection(genres = displayGenres, tags = details.tags)
                     }
                 }
             }
@@ -510,18 +479,12 @@ fun DetailsPageContent(
             // 6. External & Streaming Links
             item(key = "external_links") {
                 if (details.externalLinks.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(
-                        key = "media_links",
-                        index = 4,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                            ExternalLinksSection(
-                                externalLinks = details.externalLinks,
-                                mediaType = details.type
-                            )
-                        }
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                        ExternalLinksSection(
+                            externalLinks = details.externalLinks,
+                            mediaType = details.type
+                        )
                     }
                 }
             }
@@ -529,33 +492,27 @@ fun DetailsPageContent(
             // 7. Cast
             item(key = "cast") {
                 if (displayCharacters.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(
-                        key = "media_cast",
-                        index = 5,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                            SectionHeader(
-                                title = stringResource(R.string.section_cast),
-                                level = HeaderLevel.Section,
-                                onActionClick = if (details.characters.size > 10) onCastSeeAllClick else null
-                            )
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                                modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                            ) {
-                                items(items = displayCharacters, key = { it.id }) { character ->
-                                    CharacterItem(
-                                        character = character,
-                                        onClick = { onCharacterClick(character.id) },
-                                        modifier = Modifier.animateItem(), // Expressive motion
-                                        sharedTransitionScope = sharedTransitionScope,
-                                        animatedVisibilityScope = animatedVisibilityScope
-                                    )
-                                }
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                        SectionHeader(
+                            title = stringResource(R.string.section_cast),
+                            level = HeaderLevel.Section,
+                            onActionClick = if (details.characters.size > 10) onCastSeeAllClick else null
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                            modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
+                        ) {
+                            items(items = displayCharacters, key = { it.id }) { character ->
+                                CharacterItem(
+                                    character = character,
+                                    onClick = { onCharacterClick(character.id) },
+                                    modifier = Modifier.animateItem(), // Expressive motion
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
                             }
                         }
                     }
@@ -565,35 +522,29 @@ fun DetailsPageContent(
             // 8. Related (Relations)
             item(key = "relations") {
                 if (displayRelations.isNotEmpty()) {
-                    StaggeredAnimatedVisibility(
-                        key = "media_related",
-                        index = 6,
-                        delayPerItem = MediaStaggerDelay
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                            SectionHeader(
-                                title = stringResource(R.string.section_related),
-                                level = HeaderLevel.Section,
-                                onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
-                            )
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
-                                modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                            ) {
-                                items(
-                                    items = displayRelations,
-                                    key = { "${it.id}_${it.relationType}" }) { relation ->
-                                    RelationItem(
-                                        relation = relation,
-                                        onClick = { onRelationClick(relation.id) },
-                                        modifier = Modifier.animateItem(), // Expressive motion
-                                        sharedTransitionScope = sharedTransitionScope,
-                                        animatedVisibilityScope = animatedVisibilityScope
-                                    )
-                                }
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                        SectionHeader(
+                            title = stringResource(R.string.section_related),
+                            level = HeaderLevel.Section,
+                            onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
+                            modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
+                        ) {
+                            items(
+                                items = displayRelations,
+                                key = { "${it.id}_${it.relationType}" }) { relation ->
+                                RelationItem(
+                                    relation = relation,
+                                    onClick = { onRelationClick(relation.id) },
+                                    modifier = Modifier.animateItem(), // Expressive motion
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
                             }
                         }
                     }

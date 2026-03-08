@@ -35,8 +35,6 @@ class SectionGridViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SectionGridUiState(mediaType = initialMediaType))
     val uiState: StateFlow<SectionGridUiState> = _uiState.asStateFlow()
 
-    private var currentPage = 1
-
     init {
         loadInitialData()
     }
@@ -63,17 +61,21 @@ class SectionGridViewModel @Inject constructor(
                 format = currentState.selectedFormat
             )) {
                 is Result.Success -> {
-                    _uiState.update { 
+                    val initialKnownIds = result.data.items.map { it.mediaId }.toSet()
+
+                    _uiState.update {
                         it.copy(
                             items = result.data.items,
+                            knownIds = initialKnownIds,
                             hasNextPage = result.data.hasNextPage,
+                            currentPage = result.data.currentPage,
                             isLoading = false
                         )
                     }
-                    currentPage = result.data.currentPage
                 }
+
                 is Result.Error -> {
-                    _uiState.update { 
+                    _uiState.update {
                         it.copy(
                             isLoading = false,
                             errorMessage = result.message
@@ -94,23 +96,24 @@ class SectionGridViewModel @Inject constructor(
             when (val result = discoverRepository.getPaginatedSection(
                 sectionType = sectionType,
                 type = currentState.mediaType,
-                page = currentPage + 1,
+                page = currentState.currentPage + 1,
                 format = currentState.selectedFormat
             )) {
                 is Result.Success -> {
-                    // Deduplicate by mediaId
-                    val existingIds = currentState.items.map { it.mediaId }.toSet()
-                    val newItems = result.data.items.filter { it.mediaId !in existingIds }
-                    
+                    val newItems = result.data.items.filter { it.mediaId !in currentState.knownIds }
+                    val updatedKnownIds = currentState.knownIds + newItems.map { it.mediaId }
+
                     _uiState.update {
                         it.copy(
                             items = it.items + newItems,
+                            knownIds = updatedKnownIds,
                             hasNextPage = result.data.hasNextPage,
+                            currentPage = result.data.currentPage,
                             isLoadingMore = false
                         )
                     }
-                    currentPage = result.data.currentPage
                 }
+
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMore = false) }
                 }
@@ -120,23 +123,30 @@ class SectionGridViewModel @Inject constructor(
 
     private fun setFormatFilter(format: MediaFormat?) {
         if (_uiState.value.selectedFormat == format) return
-        
-        _uiState.update { it.copy(selectedFormat = format, items = emptyList()) }
-        currentPage = 1
+
+        _uiState.update {
+            it.copy(
+                selectedFormat = format,
+                items = emptyList(),
+                knownIds = emptySet(),
+                currentPage = 1
+            )
+        }
         loadInitialData()
     }
 
     private fun setMediaType(type: MediaType) {
         if (_uiState.value.mediaType == type) return
-        
-        _uiState.update { 
+
+        _uiState.update {
             it.copy(
-                mediaType = type, 
-                selectedFormat = null, // Reset format filter when switching type
-                items = emptyList()
-            ) 
+                mediaType = type,
+                selectedFormat = null,
+                items = emptyList(),
+                knownIds = emptySet(),
+                currentPage = 1
+            )
         }
-        currentPage = 1
         loadInitialData()
     }
 
@@ -149,11 +159,13 @@ class SectionGridViewModel @Inject constructor(
                 MediaFormat.SPECIAL,
                 MediaFormat.ONA
             )
+
             MediaType.MANGA -> listOf(
                 MediaFormat.MANGA,
                 MediaFormat.NOVEL,
                 MediaFormat.ONE_SHOT
             )
+
             else -> emptyList()
         }
     }

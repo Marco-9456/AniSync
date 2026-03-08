@@ -8,12 +8,12 @@ import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,12 +26,24 @@ class ForumViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ForumUiState())
     val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
 
-    private val _actions = MutableSharedFlow<ForumAction>()
-    val actions: SharedFlow<ForumAction> = _actions.asSharedFlow()
+    private val _actions = Channel<ForumAction>(Channel.BUFFERED)
+    val actions: Flow<ForumAction> = _actions.receiveAsFlow()
+
+    private var hasLoadedInitially = false
 
     init {
         loadSavedIds()
-        load(page = 1)
+    }
+
+    /**
+     * Called from ForumScreen's LaunchedEffect to trigger initial load.
+     * Uses a guard to prevent re-loading when navigating back from a thread.
+     */
+    fun onScreenVisible() {
+        if (!hasLoadedInitially) {
+            hasLoadedInitially = true
+            load(page = 1)
+        }
     }
 
     fun onAction(action: ForumAction) {
@@ -42,7 +54,8 @@ class ForumViewModel @Inject constructor(
             }
 
             is ForumAction.LoadMore -> {
-                if (!_uiState.value.hasNextPage || _uiState.value.isLoading) return
+                if (!_uiState.value.hasNextPage || _uiState.value.isLoading || _uiState.value.isPaginating) return
+                _uiState.update { it.copy(isPaginating = true) }
                 load(page = _uiState.value.currentPage + 1)
             }
 
@@ -69,6 +82,7 @@ class ForumViewModel @Inject constructor(
             }
 
             is ForumAction.OnSearchQueryChange -> {
+                if (_uiState.value.searchQuery == action.query) return
                 _uiState.update {
                     it.copy(
                         searchQuery = action.query,
@@ -87,10 +101,10 @@ class ForumViewModel @Inject constructor(
             }
 
             is ForumAction.ShowSnackbar -> {
-                viewModelScope.launch { _actions.emit(action) }
+                viewModelScope.launch { _actions.send(action) }
             }
             // Navigation actions are forwarded to the UI layer
-            else -> viewModelScope.launch { _actions.emit(action) }
+            else -> viewModelScope.launch { _actions.send(action) }
         }
     }
 
@@ -103,7 +117,7 @@ class ForumViewModel @Inject constructor(
 
     private fun toggleSave(thread: ForumThread) {
         val isCurrentlySaved = _uiState.value.savedThreadIds.contains(thread.id)
-        
+
         // Optimistic update
         _uiState.update { state ->
             if (isCurrentlySaved) {
@@ -129,7 +143,7 @@ class ForumViewModel @Inject constructor(
     private fun toggleSubscribe(thread: ForumThread) {
         val wasSubscribed = thread.isSubscribed
 
-        // Optimistic update — toggle isSubscribed on the thread in the list
+        // Optimistic update
         _uiState.update { state ->
             state.copy(
                 threads = state.threads.map {
@@ -149,7 +163,7 @@ class ForumViewModel @Inject constructor(
                         }.toPersistentList()
                     )
                 }
-                _actions.emit(ForumAction.ShowSnackbar(result.message))
+                _actions.send(ForumAction.ShowSnackbar(result.message))
             } else if (_uiState.value.selectedFeed == ForumFeed.SUBSCRIBED) {
                 // Reload if viewing Subscribed feed
                 load(page = 1, replaceExisting = true)
@@ -173,6 +187,7 @@ class ForumViewModel @Inject constructor(
                     current.copy(
                         isLoading = false,
                         isRefreshing = false,
+                        isPaginating = false,
                         threads = savedThreads.toPersistentList(),
                         hasNextPage = false,
                         currentPage = 1,
@@ -196,6 +211,7 @@ class ForumViewModel @Inject constructor(
                             current.copy(
                                 isLoading = false,
                                 isRefreshing = false,
+                                isPaginating = false,
                                 threads = updatedThreads,
                                 hasNextPage = data.hasNextPage,
                                 currentPage = data.currentPage,
@@ -209,6 +225,7 @@ class ForumViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 isRefreshing = false,
+                                isPaginating = false,
                                 errorMessage = result.message
                             )
                         }
@@ -231,6 +248,7 @@ class ForumViewModel @Inject constructor(
                             current.copy(
                                 isLoading = false,
                                 isRefreshing = false,
+                                isPaginating = false,
                                 threads = updatedThreads,
                                 hasNextPage = data.hasNextPage,
                                 currentPage = data.currentPage,
@@ -244,6 +262,7 @@ class ForumViewModel @Inject constructor(
                             it.copy(
                                 isLoading = false,
                                 isRefreshing = false,
+                                isPaginating = false,
                                 errorMessage = result.message
                             )
                         }
@@ -272,6 +291,7 @@ class ForumViewModel @Inject constructor(
                         current.copy(
                             isLoading = false,
                             isRefreshing = false,
+                            isPaginating = false,
                             threads = updatedThreads,
                             hasNextPage = data.hasNextPage,
                             currentPage = data.currentPage,
@@ -285,6 +305,7 @@ class ForumViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             isRefreshing = false,
+                            isPaginating = false,
                             errorMessage = result.message
                         )
                     }

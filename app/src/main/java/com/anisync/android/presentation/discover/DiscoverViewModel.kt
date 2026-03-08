@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
@@ -30,23 +31,20 @@ class DiscoverViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<DiscoverUiState>(DiscoverUiState.Loading)
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
 
-    private var hasLoadedInitially = false
-
-    // State flow used internally to funnel Debounce logic easily for searching
     private val searchTrigger = MutableStateFlow(SearchTriggerState())
 
     private data class SearchTriggerState(
         val query: String = "",
-        val filterHash: Int = 0 
+        val filterHash: Int = 0
     )
 
     init {
+        loadDiscoveryData()
         observeSearchQuery()
     }
 
     fun onAction(action: DiscoverAction) {
         when (action) {
-            is DiscoverAction.OnScreenVisible -> onScreenVisible()
             is DiscoverAction.OnMediaTypeChange -> onMediaTypeChange(action.type)
             is DiscoverAction.Refresh -> refresh()
             is DiscoverAction.OnSearchQueryChange -> onSearchQueryChange(action.query)
@@ -57,29 +55,19 @@ class DiscoverViewModel @Inject constructor(
         }
     }
 
-    private fun onScreenVisible() {
-        if (!hasLoadedInitially) {
-            hasLoadedInitially = true
-            loadDiscoveryData()
-        }
-    }
-
     private fun onMediaTypeChange(type: com.anisync.android.type.MediaType) {
         val currentState = _uiState.value as? DiscoverUiState.Success
         if (currentState?.mediaType != type) {
-            
-            // Maintain search strings and toggles when switching types if we are in Success
             if (currentState != null) {
-                _uiState.update { 
-                    currentState.copy(mediaType = type, searchResults = emptyList()) 
+                _uiState.update {
+                    currentState.copy(mediaType = type, searchResults = emptyList())
                 }
             } else {
                 _uiState.update { DiscoverUiState.Success(mediaType = type) }
             }
-            
+
             loadDiscoveryData()
-            
-            // Re-trigger search with new type if query exists
+
             if (currentState?.searchQuery?.isNotEmpty() == true) {
                 onSearch(currentState.searchQuery)
             }
@@ -92,14 +80,14 @@ class DiscoverViewModel @Inject constructor(
 
     private fun onSearchQueryChange(query: String) {
         val currentState = _uiState.value as? DiscoverUiState.Success ?: return
-        
-        _uiState.update { 
+
+        _uiState.update {
             currentState.copy(
                 searchQuery = query,
                 searchResults = if (query.isEmpty()) emptyList() else currentState.searchResults
             )
         }
-        
+
         searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
     }
 
@@ -132,30 +120,36 @@ class DiscoverViewModel @Inject constructor(
             searchTrigger
                 .debounce(300L)
                 .distinctUntilChanged()
-                .collect { trigger ->
-                    val currentState = _uiState.value as? DiscoverUiState.Success ?: return@collect
+                .collectLatest { trigger ->
+                    val currentState =
+                        _uiState.value as? DiscoverUiState.Success ?: return@collectLatest
                     val query = currentState.searchQuery
-                    
+
                     if (query.isBlank()) {
-                        _uiState.update { 
-                            currentState.copy(searchResults = emptyList(), isSearching = false) 
+                        _uiState.update {
+                            currentState.copy(searchResults = emptyList(), isSearching = false)
                         }
-                        return@collect
+                        return@collectLatest
                     }
 
                     _uiState.update { currentState.copy(isSearching = true) }
-                    
-                    when (val result = searchRepository.searchMedia(query, currentState.mediaType, currentState.searchFilters)) {
+
+                    when (val result = searchRepository.searchMedia(
+                        query,
+                        currentState.mediaType,
+                        currentState.searchFilters
+                    )) {
                         is Result.Success -> {
-                            _uiState.update { 
+                            _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
                                     searchResults = result.data,
                                     isSearching = false
                                 ) ?: it
                             }
                         }
+
                         is Result.Error -> {
-                            _uiState.update { 
+                            _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
                                     searchResults = emptyList(),
                                     isSearching = false
@@ -169,19 +163,18 @@ class DiscoverViewModel @Inject constructor(
 
     private fun loadDiscoveryData(isRefresh: Boolean = false) {
         val currentState = _uiState.value
-        val mediaType = (currentState as? DiscoverUiState.Success)?.mediaType 
+        val mediaType = (currentState as? DiscoverUiState.Success)?.mediaType
             ?: com.anisync.android.type.MediaType.ANIME
 
         viewModelScope.launch {
             val startTime = if (isRefresh) System.currentTimeMillis() else 0L
-            
+
             if (isRefresh && currentState is DiscoverUiState.Success) {
                 _uiState.update { currentState.copy(isRefreshing = true) }
             } else if (currentState !is DiscoverUiState.Success) {
                 _uiState.update { DiscoverUiState.Loading }
             }
 
-            // Parallel fetching
             val trendingDeferred = async { discoverRepository.getTrending(mediaType) }
             val popularDeferred = async { discoverRepository.getPopular(mediaType) }
             val upcomingDeferred = async { discoverRepository.getUpcoming(mediaType) }
@@ -192,12 +185,12 @@ class DiscoverViewModel @Inject constructor(
             val upcomingResult = upcomingDeferred.await()
             val tbaResult = tbaDeferred.await()
 
-            // Check if all succeeded
-            if (trendingResult is Result.Success && 
-                popularResult is Result.Success && 
+            if (trendingResult is Result.Success &&
+                popularResult is Result.Success &&
                 upcomingResult is Result.Success &&
-                tbaResult is Result.Success) {
-                
+                tbaResult is Result.Success
+            ) {
+
                 _uiState.update {
                     val baseState = it as? DiscoverUiState.Success ?: DiscoverUiState.Success()
                     baseState.copy(
@@ -210,7 +203,6 @@ class DiscoverViewModel @Inject constructor(
                     )
                 }
             } else {
-                // Get first error message
                 val errorMessage = when {
                     trendingResult is Result.Error -> trendingResult.message
                     popularResult is Result.Error -> popularResult.message
@@ -220,18 +212,16 @@ class DiscoverViewModel @Inject constructor(
                 }
                 _uiState.update { DiscoverUiState.Error(errorMessage) }
             }
-            
-            // Ensure minimum display duration for pull-to-refresh indicator (800ms)
+
             if (isRefresh) {
                 val elapsed = System.currentTimeMillis() - startTime
                 val minDisplayDuration = 800L
                 if (elapsed < minDisplayDuration) {
                     delay(minDisplayDuration - elapsed)
                 }
-                
-                // One final safety pass to ensure refreshing ends
-                _uiState.update { 
-                    (it as? DiscoverUiState.Success)?.copy(isRefreshing = false) ?: it 
+
+                _uiState.update {
+                    (it as? DiscoverUiState.Success)?.copy(isRefreshing = false) ?: it
                 }
             }
         }

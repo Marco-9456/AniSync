@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Announcement
@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -59,10 +60,10 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -133,38 +134,22 @@ fun ForumScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val listState = rememberLazyListState()
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Use FocusManager to clear focus and hide keyboard safely
     val focusManager = LocalFocusManager.current
-
-    // Hoist systemBarsPadding here so Scaffold content can account for the navigation bar
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
 
-    // Search bar state
     val searchBarState = rememberSearchBarState()
-    val textFieldState = rememberTextFieldState()
+    val textFieldState = rememberTextFieldState(initialText = uiState.searchQuery)
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
-    // Detect when user scrolls near end for infinite scroll
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val total = layoutInfo.totalItemsCount
-            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            total > 0 && lastVisible >= total - 4
-        }
-    }
-
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
-            viewModel.onAction(ForumAction.LoadMore)
-        }
-    }
-
     LaunchedEffect(Unit) {
+        viewModel.onScreenVisible()
+    }
+
+    LaunchedEffect(viewModel.actions) {
         viewModel.actions.collectLatest { action ->
             when (action) {
                 is ForumAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
@@ -175,7 +160,6 @@ fun ForumScreen(
         }
     }
 
-    // Debounced search
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .debounce(300.milliseconds)
@@ -193,7 +177,6 @@ fun ForumScreen(
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    // Find selected category tab index
     val selectedCategoryIndex = remember(uiState.selectedCategoryId) {
         categoryTabs.indexOfFirst { it.id == uiState.selectedCategoryId }.coerceAtLeast(0)
     }
@@ -251,7 +234,6 @@ fun ForumScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            // Offset the FAB above the app's bottom NavigationBar (~85dp).
             Box(modifier = Modifier.padding(bottom = 85.dp)) {
                 FloatingActionButton(
                     onClick = onCreateThreadClick,
@@ -343,12 +325,10 @@ fun ForumScreen(
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,
-                            // Add navBar padding dynamically so list scrolls over nav bar smoothly
                             bottom = systemBarsPadding.calculateBottomPadding() + 96.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Threads section header
                         item(key = "threads_header") {
                             SectionHeader(
                                 title = when (uiState.selectedFeed) {
@@ -364,7 +344,6 @@ fun ForumScreen(
                             )
                         }
 
-                        // Thread cards or empty state
                         if (uiState.threads.isEmpty()) {
                             item(key = "empty_threads") {
                                 EmptyStateConfigs.ForumNoThreads(
@@ -377,15 +356,52 @@ fun ForumScreen(
                                 key = { _, thread -> "thread_${thread.id}" },
                                 contentType = { _, _ -> "ForumThread" }
                             ) { index, thread ->
+
+                                if (index >= uiState.threads.size - 4 && uiState.hasNextPage && !uiState.isLoading && !uiState.isPaginating) {
+                                    LaunchedEffect(index) {
+                                        viewModel.onAction(ForumAction.LoadMore)
+                                    }
+                                }
+
                                 ForumThreadCard(
                                     thread = thread,
-                                    onClick = { focusManager.clearFocus(); onThreadClick(thread.id, thread.title) },
+                                    onClick = {
+                                        focusManager.clearFocus(); onThreadClick(
+                                        thread.id,
+                                        thread.title
+                                    )
+                                    },
                                     isSaved = thread.id in uiState.savedThreadIds,
-                                    onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
+                                    onSaveClick = {
+                                        viewModel.onAction(
+                                            ForumAction.ToggleSaveThread(
+                                                thread
+                                            )
+                                        )
+                                    },
                                     isSubscribed = thread.isSubscribed,
-                                    onSubscribeClick = { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) },
+                                    onSubscribeClick = {
+                                        viewModel.onAction(
+                                            ForumAction.ToggleSubscribeThread(
+                                                thread
+                                            )
+                                        )
+                                    },
                                     modifier = sharedItemModifier
                                 )
+                            }
+                        }
+
+                        if (uiState.isPaginating) {
+                            item(key = "paginating_indicator") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
                             }
                         }
                     }
@@ -437,19 +453,45 @@ fun ForumScreen(
                         items = uiState.threads,
                         key = { _, thread -> "search_${thread.id}" },
                         contentType = { _, _ -> "ForumThread" }
-                    ) { _, thread ->
+                    ) { index, thread ->
+
+                        if (index >= uiState.threads.size - 4 && uiState.hasNextPage && !uiState.isLoading && !uiState.isPaginating) {
+                            LaunchedEffect(index) {
+                                viewModel.onAction(ForumAction.LoadMore)
+                            }
+                        }
+
                         ForumThreadCard(
                             thread = thread,
-                            onClick = { 
+                            onClick = {
                                 focusManager.clearFocus()
-                                onThreadClick(thread.id, thread.title) 
+                                onThreadClick(thread.id, thread.title)
                             },
                             isSaved = thread.id in uiState.savedThreadIds,
                             onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
                             isSubscribed = thread.isSubscribed,
-                            onSubscribeClick = { viewModel.onAction(ForumAction.ToggleSubscribeThread(thread)) },
+                            onSubscribeClick = {
+                                viewModel.onAction(
+                                    ForumAction.ToggleSubscribeThread(
+                                        thread
+                                    )
+                                )
+                            },
                             modifier = sharedItemModifier
                         )
+                    }
+
+                    if (uiState.isPaginating) {
+                        item(key = "search_paginating_indicator") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
                     }
                 }
             }
@@ -461,7 +503,6 @@ fun ForumScreen(
 private fun ForumLoadingSkeleton(
     contentPadding: PaddingValues? = null
 ) {
-    // Default to including navigation bar padding if not provided explicitly
     val actualPadding = contentPadding ?: PaddingValues(
         start = 16.dp,
         end = 16.dp,

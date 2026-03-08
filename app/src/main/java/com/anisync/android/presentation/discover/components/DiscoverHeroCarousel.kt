@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
@@ -49,10 +50,6 @@ import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
 
-/**
- * A cinematic Hero Carousel component rewritten from scratch according to
- * Material Design 3 guidelines for high-emphasis featured content.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun DiscoverHeroCarousel(
@@ -76,7 +73,7 @@ fun DiscoverHeroCarousel(
         flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState)
     ) { index ->
         val item = items[index]
-        
+
         HeroCarouselItem(
             item = item,
             context = context,
@@ -100,14 +97,12 @@ private fun HeroCarouselItem(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
-    // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()
-    
-    // Use TransitionKeys for consistent key generation
+
     val artKey = "hero_art_${item.mediaId}"
     val titleKey = "hero_title_${item.mediaId}"
     val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.HERO, item.mediaId)
-    
+
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxSize(),
@@ -118,7 +113,8 @@ private fun HeroCarouselItem(
             val imageRequest = remember(item.coverUrl, cacheKey) {
                 ImageRequest.Builder(context)
                     .data(item.coverUrl)
-                    .crossfade(true)
+                    .crossfade(200)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
                     .placeholderMemoryCacheKey(cacheKey)
                     .memoryCacheKey(cacheKey)
                     .build()

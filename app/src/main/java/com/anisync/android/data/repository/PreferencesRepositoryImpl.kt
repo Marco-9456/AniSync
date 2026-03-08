@@ -109,6 +109,16 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    // ---- Social/Forum notification tracking ----
+
+    override suspend fun getLastSocialNotifiedId(): Int = withContext(Dispatchers.IO) {
+        prefs.getInt(KEY_LAST_SOCIAL_NOTIFIED_ID, 0)
+    }
+
+    override suspend fun setLastSocialNotifiedId(id: Int) = withContext(Dispatchers.IO) {
+        prefs.edit().putInt(KEY_LAST_SOCIAL_NOTIFIED_ID, id).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "anisync_prefs"
         private const val KEY_LAST_NOTIFIED_ID = "last_notified_id"
@@ -116,6 +126,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         private const val KEY_NOTIFIED_UPCOMING = "notified_upcoming_airing_ids"
         private const val KEY_HAS_EVER_RUN = "notifications_have_ever_run"
         private const val KEY_NOTIFICATION_KEYS = "notification_keys"
+        private const val KEY_LAST_SOCIAL_NOTIFIED_ID = "last_social_notified_id"
         private const val MAX_NOTIFICATION_KEYS = 350 // ~50 notifications per day * 7 days
     }
 }

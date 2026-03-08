@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.forum
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -9,10 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,9 +30,9 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,32 +63,23 @@ fun ForumCategoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val listState = rememberLazyListState()
+    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val pullToRefreshState = rememberPullToRefreshState()
-
-    // Infinite scroll trigger
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val total = listState.layoutInfo.totalItemsCount
-            total > 0 && lastVisible >= total - 4
-        }
-    }
 
     LaunchedEffect(categoryId) {
         viewModel.onAction(ForumCategoryAction.Load(categoryId, categoryName))
     }
 
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) viewModel.onAction(ForumCategoryAction.LoadMore)
-    }
-
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel.actions) {
         viewModel.actions.collectLatest { action ->
             when (action) {
                 is ForumCategoryAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
-                is ForumCategoryAction.OnThreadClick -> onThreadClick(action.threadId, action.threadTitle)
+                is ForumCategoryAction.OnThreadClick -> onThreadClick(
+                    action.threadId,
+                    action.threadTitle
+                )
+
                 else -> {}
             }
         }
@@ -132,7 +125,9 @@ fun ForumCategoryScreen(
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isRefreshing,
                     state = pullToRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp)
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp)
                 )
             },
             modifier = Modifier
@@ -145,7 +140,14 @@ fun ForumCategoryScreen(
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     item { Spacer(Modifier.height(16.dp)) }
-                    items(8) { ForumThreadCardSkeleton(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) }
+                    items(8) {
+                        ForumThreadCardSkeleton(
+                            Modifier.padding(
+                                horizontal = 16.dp,
+                                vertical = 6.dp
+                            )
+                        )
+                    }
                 }
 
                 uiState.errorMessage != null -> ErrorState(
@@ -164,7 +166,13 @@ fun ForumCategoryScreen(
                         item(key = "search") {
                             SearchField(
                                 query = uiState.searchQuery,
-                                onQueryChange = { viewModel.onAction(ForumCategoryAction.OnSearchQueryChange(it)) },
+                                onQueryChange = {
+                                    viewModel.onAction(
+                                        ForumCategoryAction.OnSearchQueryChange(
+                                            it
+                                        )
+                                    )
+                                },
                                 placeholder = stringResource(R.string.forum_search_threads),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -190,6 +198,13 @@ fun ForumCategoryScreen(
                                 key = { _, t -> "thread_${t.id}" },
                                 contentType = { _, _ -> "ForumThread" }
                             ) { index, thread ->
+
+                                if (index >= uiState.threads.size - 4 && uiState.hasNextPage && !uiState.isLoading && !uiState.isPaginating) {
+                                    LaunchedEffect(index) {
+                                        viewModel.onAction(ForumCategoryAction.LoadMore)
+                                    }
+                                }
+
                                 ForumThreadCard(
                                     thread = thread,
                                     onClick = { onThreadClick(thread.id, thread.title) },
@@ -197,6 +212,19 @@ fun ForumCategoryScreen(
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 6.dp)
                                 )
+                            }
+                        }
+
+                        if (uiState.isPaginating) {
+                            item(key = "paginating_indicator") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
                             }
                         }
                     }

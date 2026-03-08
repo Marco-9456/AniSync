@@ -7,7 +7,7 @@ import com.anisync.android.type.MediaType
 
 sealed interface DiscoverUiState {
     data object Loading : DiscoverUiState
-    
+
     @Stable
     data class Success(
         val trending: List<LibraryEntry> = emptyList(),
@@ -22,12 +22,11 @@ sealed interface DiscoverUiState {
         val isSearching: Boolean = false,
         val searchFilters: SearchFilters = SearchFilters()
     ) : DiscoverUiState
-    
+
     data class Error(val message: String) : DiscoverUiState
 }
 
 sealed interface DiscoverAction {
-    data object OnScreenVisible : DiscoverAction
     data class OnMediaTypeChange(val type: MediaType) : DiscoverAction
     data object Refresh : DiscoverAction
     data class OnSearchQueryChange(val query: String) : DiscoverAction

@@ -31,9 +31,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -49,7 +50,11 @@ import com.anisync.android.presentation.discover.components.SearchFiltersRow
 import com.anisync.android.presentation.util.AppMotion
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun MediaGridContent(
     title: String,
@@ -103,11 +108,13 @@ fun MediaGridContent(
                         CircularProgressIndicator()
                     }
                 }
+
                 errorMessage != null -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
                     }
                 }
+
                 else -> {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 150.dp),
@@ -133,7 +140,11 @@ fun MediaGridContent(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun SectionGridScreen(
     sectionTitle: String,
@@ -146,23 +157,23 @@ fun SectionGridScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
-    
+
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
-    
-    LaunchedEffect(uiState.selectedFormat) {
-        gridState.scrollToItem(0, 0)
+
+    // Efficiently compute when to load more items by caching the threshold state
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val layoutInfo = gridState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisibleItem >= totalItems - 6
+        }
     }
-    
-    LaunchedEffect(gridState) {
-        snapshotFlow {
-            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val totalItems = gridState.layoutInfo.totalItemsCount
-            lastVisibleItem >= totalItems - 6 && totalItems > 0
-        }.collect { shouldLoadMore ->
-            if (shouldLoadMore && !uiState.isLoadingMore && uiState.hasNextPage && !uiState.isLoading) {
-                viewModel.onAction(SectionGridAction.LoadNextPage)
-            }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && !uiState.isLoadingMore && uiState.hasNextPage && !uiState.isLoading) {
+            viewModel.onAction(SectionGridAction.LoadNextPage)
         }
     }
 
@@ -205,37 +216,52 @@ fun SectionGridScreen(
                 selectedFormat = uiState.selectedFormat,
                 onFormatSelected = { format ->
                     coroutineScope.launch {
-                        gridState.scrollToItem(0, 0) // Reset scroll to stop ongoing animations
+                        gridState.scrollToItem(0, 0) // Reset scroll immediately on UI filter click
                         viewModel.onAction(SectionGridAction.SetFormatFilter(format))
                     }
                 },
                 modifier = Modifier.padding(vertical = 8.dp)
             )
-            
+
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     uiState.isLoading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator()
                         }
                     }
+
                     uiState.errorMessage != null -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = uiState.errorMessage!!,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
+
                     uiState.items.isEmpty() -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = "No items found",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+
                     else -> {
                         val placementSpec = AppMotion.rememberOffsetSpatialSpec()
                         val fadeSpec = AppMotion.rememberEffectsSpec()
-                        
+
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 150.dp),
                             contentPadding = PaddingValues(16.dp),
@@ -259,7 +285,7 @@ fun SectionGridScreen(
                                     )
                                 )
                             }
-                            
+
                             if (uiState.isLoadingMore) {
                                 item(span = { GridItemSpan(maxLineSpan) }) {
                                     Box(
@@ -295,7 +321,7 @@ fun FavoritesGridScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
-    
+
     val items = if (uiState is com.anisync.android.presentation.profile.ProfileUiState.Success) {
         (uiState as com.anisync.android.presentation.profile.ProfileUiState.Success).profile.favoriteAnime
     } else emptyList()

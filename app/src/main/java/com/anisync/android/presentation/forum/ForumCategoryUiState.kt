@@ -1,19 +1,24 @@
 package com.anisync.android.presentation.forum
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import com.anisync.android.domain.ForumThread
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 
-@Stable
+@Immutable
 data class ForumCategoryUiState(
     val categoryName: String = "",
     val isLoading: Boolean = true,
+    val isPaginating: Boolean = false,
     val isRefreshing: Boolean = false,
-    val threads: List<ForumThread> = emptyList(),
+    val threads: ImmutableList<ForumThread> = persistentListOf(),
     val hasNextPage: Boolean = false,
     val currentPage: Int = 1,
     val searchQuery: String = "",
     val errorMessage: String? = null,
-    val savedThreadIds: Set<Int> = emptySet(),
+    val savedThreadIds: ImmutableSet<Int> = persistentSetOf(),
     val sortLabel: String = "Recent"
 )
 
