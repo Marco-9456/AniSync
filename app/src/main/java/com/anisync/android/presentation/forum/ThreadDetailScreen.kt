@@ -1,6 +1,9 @@
 package com.anisync.android.presentation.forum
 
 import android.content.Intent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,6 +105,7 @@ fun ThreadDetailScreen(
     threadId: Int,
     threadTitle: String,
     onBackClick: () -> Unit,
+    targetCommentId: Int? = null,
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -137,6 +141,23 @@ fun ThreadDetailScreen(
             flatComments.filter { flat ->
                 flat.ancestorIds.none { it in collapsedIds }
             }
+        }
+    }
+
+    // Scroll-to-comment logic for deep links
+    val highlightAlpha = remember { Animatable(0f) }
+    var hasScrolledToTarget by remember { mutableStateOf(false) }
+
+    LaunchedEffect(visibleComments, targetCommentId) {
+        if (targetCommentId == null || hasScrolledToTarget || visibleComments.isEmpty()) return@LaunchedEffect
+        val targetIndex = visibleComments.indexOfFirst { it.comment.id == targetCommentId }
+        if (targetIndex >= 0) {
+            hasScrolledToTarget = true
+            // +4 to account for thread_header_top, thread_body, thread_header_stats, comments_header
+            listState.scrollToItem(targetIndex + 4)
+            // Flash highlight
+            highlightAlpha.snapTo(1f)
+            highlightAlpha.animateTo(0f, animationSpec = tween(1500))
         }
     }
 
@@ -355,6 +376,12 @@ fun ThreadDetailScreen(
                                 key = { _, c -> "comment_${c.comment.id}" },
                                 contentType = { _, _ -> "Comment" }
                             ) { _, flat ->
+                                val isTarget = targetCommentId != null && flat.comment.id == targetCommentId
+                                val highlightColor = if (isTarget) {
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = highlightAlpha.value * 0.5f)
+                                } else {
+                                    Color.Transparent
+                                }
                                 ThreadCommentItem(
                                     comment = flat.comment,
                                     isCollapsed = collapsedIds.contains(flat.comment.id),
@@ -387,7 +414,9 @@ fun ThreadDetailScreen(
                                     } else null,
                                     threadAuthorId = thread.authorId,
                                     depth = flat.depth,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(highlightColor)
                                 )
                             }
                         }

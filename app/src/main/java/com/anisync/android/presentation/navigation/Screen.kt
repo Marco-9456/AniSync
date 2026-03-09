@@ -121,7 +121,8 @@ data class ForumCategoryBrowse(
 @Serializable
 data class ForumThreadDetail(
     val threadId: Int,
-    val threadTitle: String
+    val threadTitle: String = "",
+    val commentId: Int = 0
 )
 
 /**

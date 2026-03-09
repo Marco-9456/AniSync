@@ -47,6 +47,14 @@
                     android:scheme="anisync"
                     android:host="details" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="anisync"
+                    android:host="forum" />
+            </intent-filter>
             <!-- AniList URL deep links for sharing -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

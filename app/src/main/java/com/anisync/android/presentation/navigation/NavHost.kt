@@ -542,6 +542,9 @@ fun AniSyncNavHost(
             // FORUM THREAD DETAIL - Shared Axis Z (Depth)
             // =================================================================
             composable<ForumThreadDetail>(
+                deepLinks = listOf(
+                    navDeepLink<ForumThreadDetail>(basePath = "anisync://forum/thread"),
+                ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
@@ -551,6 +554,7 @@ fun AniSyncNavHost(
                 ThreadDetailScreen(
                     threadId = route.threadId,
                     threadTitle = route.threadTitle,
+                    targetCommentId = if (route.commentId != 0) route.commentId else null,
                     onBackClick = { navController.popBackStack() }
                 )
             }

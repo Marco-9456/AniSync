@@ -29,7 +29,7 @@ import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadCommentMentionNotification
 import com.anisync.android.domain.ThreadCommentReplyNotification
 import com.anisync.android.domain.ThreadLikeNotification
-import com.anisync.android.domain.ThreadSubscribedNotification
+import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.type.MediaType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -153,7 +153,7 @@ class NotificationWorker @AssistedInject constructor(
                 Log.d(TAG, "Baseline: Set lastNotifiedId to $latestAiringId")
             }
             val latestSocialId = allNotifications
-                .filter { it is ThreadCommentReplyNotification || it is ThreadSubscribedNotification || it is ThreadCommentMentionNotification || it is ThreadLikeNotification || it is ThreadCommentLikeNotification }
+                .filter { it is ThreadCommentReplyNotification || it is ThreadCommentSubscribedNotification || it is ThreadCommentMentionNotification || it is ThreadLikeNotification || it is ThreadCommentLikeNotification }
                 .maxOfOrNull { it.id } ?: 0
             if (latestSocialId > 0) {
                 preferencesRepository.setLastSocialNotifiedId(latestSocialId)
@@ -312,7 +312,7 @@ class NotificationWorker @AssistedInject constructor(
                 // Respect per-type preferences
                 val shouldNotify = when (notification) {
                     is ThreadCommentReplyNotification -> notificationPreferences.threadCommentReplyEnabled.value
-                    is ThreadSubscribedNotification -> notificationPreferences.threadSubscribedEnabled.value
+                    is ThreadCommentSubscribedNotification -> notificationPreferences.threadSubscribedEnabled.value
                     is ThreadCommentMentionNotification -> notificationPreferences.threadCommentMentionEnabled.value
                     is ThreadLikeNotification -> notificationPreferences.threadLikeEnabled.value
                     is ThreadCommentLikeNotification -> notificationPreferences.threadCommentLikeEnabled.value
@@ -331,7 +331,7 @@ class NotificationWorker @AssistedInject constructor(
 
     private fun isSocialNotification(notification: Notification): Boolean {
         return notification is ThreadCommentReplyNotification ||
-            notification is ThreadSubscribedNotification ||
+            notification is ThreadCommentSubscribedNotification ||
             notification is ThreadCommentMentionNotification ||
             notification is ThreadLikeNotification ||
             notification is ThreadCommentLikeNotification
@@ -341,23 +341,25 @@ class NotificationWorker @AssistedInject constructor(
      * Display a social/forum notification using the appropriate channel.
      */
     private suspend fun showSocialNotification(notification: Notification) {
-        val (title, content, channelId, threadId) = when (notification) {
+        val data = when (notification) {
             is ThreadCommentReplyNotification -> {
                 val userName = notification.user?.name ?: "Someone"
                 SocialNotificationData(
                     title = "💬 Reply on \"${notification.threadTitle}\"",
                     content = "$userName ${notification.context}",
                     channelId = NotificationChannels.THREAD_COMMENT_REPLY_CHANNEL_ID,
-                    threadId = notification.threadId
+                    threadId = notification.threadId,
+                    commentId = notification.commentId
                 )
             }
-            is ThreadSubscribedNotification -> {
+            is ThreadCommentSubscribedNotification -> {
                 val userName = notification.user?.name ?: "Someone"
                 SocialNotificationData(
                     title = "🔔 Update on \"${notification.threadTitle}\"",
                     content = "$userName ${notification.context}",
                     channelId = NotificationChannels.THREAD_SUBSCRIBED_CHANNEL_ID,
-                    threadId = notification.threadId
+                    threadId = notification.threadId,
+                    commentId = notification.commentId
                 )
             }
             is ThreadCommentMentionNotification -> {
@@ -366,7 +368,8 @@ class NotificationWorker @AssistedInject constructor(
                     title = "📢 Mentioned in \"${notification.threadTitle}\"",
                     content = "$userName ${notification.context}",
                     channelId = NotificationChannels.THREAD_COMMENT_MENTION_CHANNEL_ID,
-                    threadId = notification.threadId
+                    threadId = notification.threadId,
+                    commentId = notification.commentId
                 )
             }
             is ThreadLikeNotification -> {
@@ -375,7 +378,8 @@ class NotificationWorker @AssistedInject constructor(
                     title = "❤️ Thread liked",
                     content = "$userName liked your thread \"${notification.threadTitle}\"",
                     channelId = NotificationChannels.THREAD_LIKE_CHANNEL_ID,
-                    threadId = notification.threadId
+                    threadId = notification.threadId,
+                    commentId = null
                 )
             }
             is ThreadCommentLikeNotification -> {
@@ -384,14 +388,20 @@ class NotificationWorker @AssistedInject constructor(
                     title = "❤️ Comment liked",
                     content = "$userName liked your comment in \"${notification.threadTitle}\"",
                     channelId = NotificationChannels.THREAD_COMMENT_LIKE_CHANNEL_ID,
-                    threadId = notification.threadId
+                    threadId = notification.threadId,
+                    commentId = notification.commentId
                 )
             }
             else -> return
         }
 
         val notificationId = SOCIAL_NOTIFICATION_BASE_ID + notification.id
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://forum/thread/$threadId"))
+        val deepLinkUri = if (data.commentId != null) {
+            "anisync://forum/thread/${data.threadId}?commentId=${data.commentId}"
+        } else {
+            "anisync://forum/thread/${data.threadId}"
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUri))
         val pendingIntent = PendingIntent.getActivity(
             applicationContext,
             notificationId,
@@ -401,17 +411,17 @@ class NotificationWorker @AssistedInject constructor(
 
         val largeIcon: Bitmap? = when (notification) {
             is ThreadCommentReplyNotification -> notification.user?.avatarUrl
-            is ThreadSubscribedNotification -> notification.user?.avatarUrl
+            is ThreadCommentSubscribedNotification -> notification.user?.avatarUrl
             is ThreadCommentMentionNotification -> notification.user?.avatarUrl
             is ThreadLikeNotification -> notification.user?.avatarUrl
             is ThreadCommentLikeNotification -> notification.user?.avatarUrl
             else -> null
         }?.let { loadImage(it) }
 
-        val builder = NotificationCompat.Builder(applicationContext, channelId)
+        val builder = NotificationCompat.Builder(applicationContext, data.channelId)
             .setSmallIcon(getApplicationIcon())
-            .setContentTitle(title)
-            .setContentText(content)
+            .setContentTitle(data.title)
+            .setContentText(data.content)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setGroup(GROUP_KEY_SOCIAL)
@@ -429,7 +439,8 @@ class NotificationWorker @AssistedInject constructor(
         val title: String,
         val content: String,
         val channelId: String,
-        val threadId: Int
+        val threadId: Int,
+        val commentId: Int?
     )
 
     /**
