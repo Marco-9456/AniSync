@@ -77,7 +77,7 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
           id
         }
       }
-      ... on ThreadSubscribedNotification {
+      ... on ThreadCommentSubscribedNotification {
         id
         type
         context

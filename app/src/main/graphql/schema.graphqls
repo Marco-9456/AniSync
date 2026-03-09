@@ -454,7 +454,7 @@ type AiringSchedule {
     media: Media
 }
 
-union NotificationUnion = AiringNotification | FollowingNotification | ActivityLikeNotification | ActivityReplyNotification | ThreadCommentReplyNotification | ThreadSubscribedNotification | ThreadCommentMentionNotification | ThreadLikeNotification | ThreadCommentLikeNotification
+union NotificationUnion = AiringNotification | FollowingNotification | ActivityLikeNotification | ActivityReplyNotification | ThreadCommentReplyNotification | ThreadCommentSubscribedNotification | ThreadCommentMentionNotification | ThreadLikeNotification | ThreadCommentLikeNotification
 
 type AiringNotification {
     id: Int
@@ -501,7 +501,7 @@ type ThreadCommentReplyNotification {
     comment: ThreadComment
 }
 
-type ThreadSubscribedNotification {
+type ThreadCommentSubscribedNotification {
     id: Int
     type: NotificationType
     context: String

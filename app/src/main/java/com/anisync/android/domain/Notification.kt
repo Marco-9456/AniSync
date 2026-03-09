@@ -54,7 +54,7 @@ data class ThreadCommentReplyNotification(
     val commentId: Int?
 ) : Notification
 
-data class ThreadSubscribedNotification(
+data class ThreadCommentSubscribedNotification(
     override val id: Int,
     override val type: NotificationType,
     override val createdAt: Int,

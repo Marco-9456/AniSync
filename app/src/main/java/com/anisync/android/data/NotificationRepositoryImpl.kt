@@ -17,7 +17,7 @@ import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadCommentMentionNotification
 import com.anisync.android.domain.ThreadCommentReplyNotification
 import com.anisync.android.domain.ThreadLikeNotification
-import com.anisync.android.domain.ThreadSubscribedNotification
+import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo.ApolloClient
@@ -134,9 +134,9 @@ class NotificationRepositoryImpl @Inject constructor(
                             commentId = data.comment?.id
                         )
                     }
-                    notification.onThreadSubscribedNotification != null -> {
-                        val data = notification.onThreadSubscribedNotification!!
-                        ThreadSubscribedNotification(
+                    notification.onThreadCommentSubscribedNotification != null -> {
+                        val data = notification.onThreadCommentSubscribedNotification!!
+                        ThreadCommentSubscribedNotification(
                             id = data.id ?: 0,
                             type = data.type ?: NotificationType.THREAD_SUBSCRIBED,
                             createdAt = data.createdAt ?: 0,
