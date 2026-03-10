@@ -70,14 +70,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
-import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.EditProfileDialog
 import com.anisync.android.presentation.components.ErrorState
-import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.PosterCard
-import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.ui.theme.StarGold
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -88,7 +84,6 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onFavoritesClick: () -> Unit = {},
     onStatisticsClick: (userId: Int) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
@@ -150,7 +145,6 @@ fun ProfileScreen(
                         onSettingsClick = onNavigateToSettings,
                         onEditProfileClick = onShowEditProfile,
                         onMediaClick = onMediaClick,
-                        onFavoritesClick = onFavoritesClick,
                         onStatisticsClick = { onStatisticsClick(state.profile.id) },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -180,7 +174,6 @@ fun ProfileScreenContent(
     onSettingsClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
-    onFavoritesClick: () -> Unit,
     onStatisticsClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -198,26 +191,6 @@ fun ProfileScreenContent(
                 onEditProfileClick = onEditProfileClick,
                 onStatisticsClick = onStatisticsClick
             )
-        }
-
-        // --- Stats Row ---
-        item(key = "profile_stats", contentType = "stats") {
-            ProfileStatsRow(profile = profile)
-        }
-
-        // --- Favorites ---
-        item(key = "profile_favorites", contentType = "favorites") {
-            if (profile.favoriteAnime.isNotEmpty()) {
-                FavoritesSection(
-                    favorites = profile.favoriteAnime,
-                    onMediaClick = onMediaClick,
-                    onFavoritesClick = onFavoritesClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    titleLanguage = titleLanguage,
-                    modifier = Modifier.padding(top = 24.dp)
-                )
-            }
         }
 
         // --- Recent Updates ---
@@ -410,8 +383,8 @@ fun ProfileTopSection(
 
                 // Bio
                 if (!profile.about.isNullOrBlank()) {
-                    StyledBioText(
-                        bio = profile.about,
+                    AsyncRichTextRenderer(
+                        html = profile.about,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -443,56 +416,6 @@ fun ProfileTopSection(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun FavoritesSection(
-    favorites: List<LibraryEntry>,
-    onMediaClick: (Int) -> Unit,
-    onFavoritesClick: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-    modifier: Modifier = Modifier,
-    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI
-) {
-    Column(modifier = modifier) {
-        SectionHeader(
-            title = stringResource(R.string.section_favorites),
-            level = HeaderLevel.Section,
-            iconColor = StarGold,
-            padding = PaddingValues(start = 16.dp, bottom = 12.dp),
-            onActionClick = onFavoritesClick
-        )
-
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            items(
-                items = favorites,
-                key = { it.mediaId },
-                contentType = { "poster" }
-            ) { entry ->
-                // Stable click listener
-                val onClick = remember(entry.mediaId) { { onMediaClick(entry.mediaId) } }
-
-                PosterCard(
-                    item = entry,
-                    titleLanguage = titleLanguage,
-                    onClick = onClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    transitionPrefix = "profile_fav",
-                    aspectRatio = 120f / 180f,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .width(120.dp)
-                        .shadow(2.dp, RoundedCornerShape(16.dp), spotColor = Color.Black.copy(0.2f))
-                )
-            }
-        }
-    }
-}
 
 /**
  * A custom shape that creates a wavy/scalloped circle.
