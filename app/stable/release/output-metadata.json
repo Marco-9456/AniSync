@@ -11,48 +11,9 @@
       "type": "UNIVERSAL",
       "filters": [],
       "attributes": [],
-      "versionCode": 2,
-      "versionName": "1.0.1",
-      "outputFile": "AniSync-v1.0.1-universal-release.apk"
-    },
-    {
-      "type": "ONE_OF_MANY",
-      "filters": [
-        {
-          "filterType": "ABI",
-          "value": "x86_64"
-        }
-      ],
-      "attributes": [],
-      "versionCode": 24,
-      "versionName": "1.0.1",
-      "outputFile": "AniSync-v1.0.1-x86_64-release.apk"
-    },
-    {
-      "type": "ONE_OF_MANY",
-      "filters": [
-        {
-          "filterType": "ABI",
-          "value": "x86"
-        }
-      ],
-      "attributes": [],
-      "versionCode": 23,
-      "versionName": "1.0.1",
-      "outputFile": "AniSync-v1.0.1-x86-release.apk"
-    },
-    {
-      "type": "ONE_OF_MANY",
-      "filters": [
-        {
-          "filterType": "ABI",
-          "value": "armeabi-v7a"
-        }
-      ],
-      "attributes": [],
-      "versionCode": 21,
-      "versionName": "1.0.1",
-      "outputFile": "AniSync-v1.0.1-armeabi-v7a-release.apk"
+      "versionCode": 3,
+      "versionName": "1.1.0",
+      "outputFile": "AniSync-v1.1.0-universal-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -63,9 +24,48 @@
         }
       ],
       "attributes": [],
-      "versionCode": 22,
-      "versionName": "1.0.1",
-      "outputFile": "AniSync-v1.0.1-arm64-v8a-release.apk"
+      "versionCode": 32,
+      "versionName": "1.1.0",
+      "outputFile": "AniSync-v1.1.0-arm64-v8a-release.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "x86"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 33,
+      "versionName": "1.1.0",
+      "outputFile": "AniSync-v1.1.0-x86-release.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "armeabi-v7a"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 31,
+      "versionName": "1.1.0",
+      "outputFile": "AniSync-v1.1.0-armeabi-v7a-release.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "x86_64"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 34,
+      "versionName": "1.1.0",
+      "outputFile": "AniSync-v1.1.0-x86_64-release.apk"
     }
   ],
   "elementType": "File",
@@ -74,22 +74,22 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/AniSync-v1.0.1-universal-release.dm",
-        "baselineProfiles/1/AniSync-v1.0.1-x86_64-release.dm",
-        "baselineProfiles/1/AniSync-v1.0.1-x86-release.dm",
-        "baselineProfiles/1/AniSync-v1.0.1-armeabi-v7a-release.dm",
-        "baselineProfiles/1/AniSync-v1.0.1-arm64-v8a-release.dm"
+        "baselineProfiles/1/AniSync-v1.1.0-universal-release.dm",
+        "baselineProfiles/1/AniSync-v1.1.0-arm64-v8a-release.dm",
+        "baselineProfiles/1/AniSync-v1.1.0-x86-release.dm",
+        "baselineProfiles/1/AniSync-v1.1.0-armeabi-v7a-release.dm",
+        "baselineProfiles/1/AniSync-v1.1.0-x86_64-release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/AniSync-v1.0.1-universal-release.dm",
-        "baselineProfiles/0/AniSync-v1.0.1-x86_64-release.dm",
-        "baselineProfiles/0/AniSync-v1.0.1-x86-release.dm",
-        "baselineProfiles/0/AniSync-v1.0.1-armeabi-v7a-release.dm",
-        "baselineProfiles/0/AniSync-v1.0.1-arm64-v8a-release.dm"
+        "baselineProfiles/0/AniSync-v1.1.0-universal-release.dm",
+        "baselineProfiles/0/AniSync-v1.1.0-arm64-v8a-release.dm",
+        "baselineProfiles/0/AniSync-v1.1.0-x86-release.dm",
+        "baselineProfiles/0/AniSync-v1.1.0-armeabi-v7a-release.dm",
+        "baselineProfiles/0/AniSync-v1.1.0-x86_64-release.dm"
       ]
     }
   ],
