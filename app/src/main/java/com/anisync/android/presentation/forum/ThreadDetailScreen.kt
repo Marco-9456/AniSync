@@ -297,7 +297,7 @@ fun ThreadDetailScreen(
                             )
                         }
 
-                        thread.body?.let { body ->
+                        uiState.parsedBody?.let { body ->
                             item(key = "thread_body") {
                                 ThreadBodyItem(
                                     body = body,

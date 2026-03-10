@@ -3,11 +3,13 @@ package com.anisync.android.presentation.forum
 import androidx.compose.runtime.Stable
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumThread
+import com.anisync.android.domain.parser.ParsedRichText
 
 @Stable
 data class ThreadDetailUiState(
     val isLoading: Boolean = true,
     val thread: ForumThread? = null,
+    val parsedBody: ParsedRichText? = null,
     val comments: List<ForumComment> = emptyList(),
     val isLoadingMoreComments: Boolean = false,
     val hasMoreComments: Boolean = false,

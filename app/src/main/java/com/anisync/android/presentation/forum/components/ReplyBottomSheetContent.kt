@@ -50,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.presentation.components.HtmlText
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
 private const val MAX_REPLY_LENGTH = 2000
@@ -190,7 +190,7 @@ fun ReplyBottomSheetContent(
         Spacer(Modifier.height(12.dp))
 
         if (isPreviewMode) {
-            HtmlText(
+            AsyncRichTextRenderer(
                 html = textFieldValue.text,
                 modifier = Modifier
                     .fillMaxWidth()

@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
-import com.anisync.android.presentation.components.AniListHtmlRenderer
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -270,7 +270,7 @@ fun ThreadCommentItem(
                         bottom = 4.dp
                     )
                 ) {
-                    AniListHtmlRenderer(
+                    AsyncRichTextRenderer(
                         html = comment.body,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.35f

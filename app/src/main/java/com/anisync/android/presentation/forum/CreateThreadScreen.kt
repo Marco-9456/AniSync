@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
-import com.anisync.android.presentation.components.HtmlText
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.forum.components.ForumCategoryChip
 import kotlinx.coroutines.flow.collectLatest
 
@@ -209,7 +209,7 @@ fun CreateThreadScreen(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    HtmlText(
+                    AsyncRichTextRenderer(
                         html = uiState.body,
                         modifier = Modifier.fillMaxWidth()
                     )

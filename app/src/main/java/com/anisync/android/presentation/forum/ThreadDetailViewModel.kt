@@ -2,10 +2,14 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.graphics.Color
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.parser.ParserConfig
+import com.anisync.android.domain.parser.RichTextParser
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +19,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -83,10 +88,24 @@ class ThreadDetailViewModel @Inject constructor(
             val thread = (threadResult as Result.Success).data
             val commentsData = (commentsResult as? Result.Success)?.data
 
+            val parsedBody = thread.body?.let { rawHtml ->
+                withContext(Dispatchers.Default) {
+                    RichTextParser.parse(
+                        html = rawHtml,
+                        config = ParserConfig(
+                            linkColor = Color(0xFF005FB8), // MaterialTheme primary equivalent fallback
+                            codeBackground = Color(0xFFE2E2E2), // MaterialTheme surfaceContainerHighest equivalent fallback
+                            spoilerColor = Color(0xFF44474E) // MaterialTheme onSurfaceVariant equivalent fallback
+                        )
+                    )
+                }
+            }
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     thread = thread,
+                    parsedBody = parsedBody,
                     comments = commentsData?.items ?: emptyList(),
                     hasMoreComments = commentsData?.hasNextPage ?: false,
                     currentCommentPage = 1,

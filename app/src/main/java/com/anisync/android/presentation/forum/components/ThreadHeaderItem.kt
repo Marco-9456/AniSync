@@ -28,8 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.ForumThread
-import com.anisync.android.presentation.components.AniListHtmlRenderer
+import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.RichTextRenderer
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 
@@ -142,7 +143,7 @@ fun ThreadHeaderTop(
  */
 @Composable
 fun ThreadBodyItem(
-    body: String,
+    body: ParsedRichText,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -150,8 +151,8 @@ fun ThreadBodyItem(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        AniListHtmlRenderer(
-            html = body,
+        RichTextRenderer(
+            parsedData = body,
             style = MaterialTheme.typography.bodyLarge.copy(
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4f
             ),
