@@ -139,10 +139,10 @@ fun DeveloperToolsScreen(
                         Text(stringResource(R.string.debug_force_update_check))
                     }
                     FilledTonalButton(
-                        onClick = { viewModel.onAction(SettingsAction.SimulateUpdateAvailable) },
+                        onClick = { viewModel.onAction(SettingsAction.FetchLatestRelease) },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(stringResource(R.string.debug_simulate_update))
+                        Text(stringResource(R.string.debug_fetch_latest_release))
                     }
                 }
             }

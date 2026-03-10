@@ -214,7 +214,7 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.SendTestAdvanceNotification -> notificationDebugService.sendTestAdvanceNotification()
             SettingsAction.SendTestImminentNotification -> notificationDebugService.sendTestImminentNotification()
             SettingsAction.ClearAllNotifications -> notificationDebugService.clearAllNotifications()
-            SettingsAction.SimulateUpdateAvailable -> updateManager.simulateUpdateAvailable()
+            SettingsAction.FetchLatestRelease -> fetchLatestRelease()
         }
     }
 
@@ -222,6 +222,24 @@ class SettingsViewModel @Inject constructor(
         val allowPrerelease = uiState.value.isPrereleaseAllowed
         viewModelScope.launch {
             when (val result = updateManager.checkForUpdate(allowPrerelease)) {
+                is UpdateCheckResult.UpToDate -> {
+                    Toast.makeText(context, R.string.update_is_up_to_date, Toast.LENGTH_SHORT)
+                        .show()
+                }
+                is UpdateCheckResult.Error -> {
+                    Toast.makeText(context, R.string.app_update_failed, Toast.LENGTH_SHORT).show()
+                }
+                is UpdateCheckResult.Available -> {
+                    // State is already updated in UpdateManager; dialog will react
+                }
+            }
+        }
+    }
+
+    private fun fetchLatestRelease() {
+        val allowPrerelease = uiState.value.isPrereleaseAllowed
+        viewModelScope.launch {
+            when (val result = updateManager.fetchLatestRelease(allowPrerelease)) {
                 is UpdateCheckResult.UpToDate -> {
                     Toast.makeText(context, R.string.update_is_up_to_date, Toast.LENGTH_SHORT)
                         .show()

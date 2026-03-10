@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.settings
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,12 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.data.update.UpdateState
-import com.anisync.android.presentation.components.HtmlText
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
 @Composable
 fun UpdatesScreen(
@@ -67,7 +67,7 @@ fun UpdatesScreen(
                 installSettingsLauncher.launch(
                     Intent(
                         Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                        Uri.parse("package:${context.packageName}")
+                        "package:${context.packageName}".toUri()
                     )
                 )
             }
@@ -193,8 +193,8 @@ fun UpdateDialog(
         },
         text = {
             Column {
-                // Render release notes as Markdown via HtmlText
-                HtmlText(
+                // Render release notes as Markdown via AsyncRichTextRenderer
+                AsyncRichTextRenderer(
                     html = releaseBody,
                     modifier = Modifier
                         .heightIn(max = 200.dp)
@@ -221,11 +221,13 @@ fun UpdateDialog(
                         Text(stringResource(R.string.install_update))
                     }
                 }
+
                 isDownloading -> {
                     TextButton(onClick = onCancel) {
                         Text(stringResource(R.string.cancel))
                     }
                 }
+
                 else -> {
                     Button(onClick = onDownload) {
                         Text(stringResource(R.string.download_update))

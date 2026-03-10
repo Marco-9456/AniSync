@@ -299,18 +299,79 @@ class UpdateManager @Inject constructor(
     }
 
     /**
-     * Simulates an available update with a mock release (debug builds only).
-     * Useful for testing the update dialog without actually querying GitHub.
+     * Fetches the actual latest release from GitHub (debug builds only).
+     * Bypasses version comparison so the update dialog can be tested with real release notes.
      */
-    fun simulateUpdateAvailable() {
-        _updateState.value = UpdateState.UpdateAvailable(
-            Release(
-                tagName = "v99.0.0",
-                prerelease = false,
-                body = "## Simulated Release\n\nThis is a **mock update** for testing the update dialog.\n\n- Feature A\n- Feature B\n- Bug fix C",
-                downloadUrl = "https://example.com/fake.apk"
-            )
-        )
+    suspend fun fetchLatestRelease(allowPrerelease: Boolean): UpdateCheckResult {
+        _updateState.value = UpdateState.Checking
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL(
+                    "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
+                )
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    setRequestProperty("Accept", "application/vnd.github.v3+json")
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                }
+
+                try {
+                    if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                        _updateState.value = UpdateState.Idle
+                        return@withContext UpdateCheckResult.Error(
+                            Exception("GitHub API returned HTTP ${connection.responseCode}")
+                        )
+                    }
+
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    val releases = json.parseToJsonElement(response).jsonArray
+
+                    for (element in releases) {
+                        val releaseJson = element.jsonObject
+                        val isPrerelease =
+                            releaseJson["prerelease"]?.jsonPrimitive?.boolean ?: false
+                        if (isPrerelease && !allowPrerelease) continue
+
+                        val tagName =
+                            releaseJson["tag_name"]?.jsonPrimitive?.content ?: continue
+                        val assets = releaseJson["assets"]?.jsonArray ?: continue
+                        val downloadUrl = assets
+                            .mapNotNull { asset ->
+                                val obj = asset.jsonObject
+                                val name =
+                                    obj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
+                                if (name.endsWith(".apk")) {
+                                    obj["browser_download_url"]?.jsonPrimitive?.content
+                                } else null
+                            }
+                            .firstOrNull()
+
+                        if (!downloadUrl.isNullOrEmpty()) {
+                            val release = Release(
+                                tagName = tagName,
+                                prerelease = isPrerelease,
+                                body = releaseJson["body"]?.jsonPrimitive?.content ?: "",
+                                downloadUrl = downloadUrl
+                            )
+                            _updateState.value = UpdateState.UpdateAvailable(release)
+                            return@withContext UpdateCheckResult.Available(release)
+                        }
+                    }
+
+                    _updateState.value = UpdateState.Idle
+                    UpdateCheckResult.UpToDate
+                } finally {
+                    connection.disconnect()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to fetch latest release", e)
+                _updateState.value = UpdateState.Idle
+                UpdateCheckResult.Error(e)
+            }
+        }
     }
 
     // =========================================================================

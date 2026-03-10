@@ -360,7 +360,7 @@
     <string name="debug_build_info">Build Information</string>
     <string name="debug_update_section">Update Debug</string>
     <string name="debug_force_update_check">Force Update Check</string>
-    <string name="debug_simulate_update">Simulate Update Available</string>
+    <string name="debug_fetch_latest_release">Fetch Latest Release</string>
 
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>

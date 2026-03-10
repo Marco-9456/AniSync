@@ -49,7 +49,7 @@ sealed interface SettingsAction {
     data object SendTestImminentNotification : SettingsAction
     data object ClearAllNotifications : SettingsAction
     
-    data object SimulateUpdateAvailable : SettingsAction
+    data object FetchLatestRelease : SettingsAction
 }
 
 data class SettingsUiState(

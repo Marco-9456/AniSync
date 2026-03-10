@@ -150,6 +150,17 @@ class AppSettings @Inject constructor(
     private val _allowPrerelease = MutableStateFlow(prefs.getBoolean(KEY_ALLOW_PRERELEASE, false))
     val allowPrerelease: StateFlow<Boolean> = _allowPrerelease.asStateFlow()
 
+    // Library Custom Lists settings
+    private val _libraryListOrder = MutableStateFlow(
+        prefs.getString(KEY_LIBRARY_LIST_ORDER, "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+    )
+    val libraryListOrder: StateFlow<List<String>> = _libraryListOrder.asStateFlow()
+
+    private val _hiddenLibraryLists = MutableStateFlow(
+        prefs.getStringSet(KEY_HIDDEN_LIBRARY_LISTS, emptySet()) ?: emptySet()
+    )
+    val hiddenLibraryLists: StateFlow<Set<String>> = _hiddenLibraryLists.asStateFlow()
+
     /**
      * Set the app theme mode.
      */
@@ -254,6 +265,16 @@ class AppSettings @Inject constructor(
         _allowPrerelease.value = allowed
         prefs.edit().putBoolean(KEY_ALLOW_PRERELEASE, allowed).apply()
     }
+
+    fun setLibraryListOrder(order: List<String>) {
+        _libraryListOrder.value = order
+        prefs.edit().putString(KEY_LIBRARY_LIST_ORDER, order.joinToString(",")).apply()
+    }
+
+    fun setHiddenLibraryLists(hidden: Set<String>) {
+        _hiddenLibraryLists.value = hidden
+        prefs.edit().putStringSet(KEY_HIDDEN_LIBRARY_LISTS, hidden).apply()
+    }
     
     /**
      * Get the preferred streaming service directly from SharedPreferences.
@@ -304,6 +325,8 @@ companion object {
         private const val KEY_APP_LOCALE = "app_locale"
         private const val KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled"
         private const val KEY_ALLOW_PRERELEASE = "allow_prerelease"
+        private const val KEY_LIBRARY_LIST_ORDER = "library_list_order"
+        private const val KEY_HIDDEN_LIBRARY_LISTS = "hidden_library_lists"
     }
 }
 
