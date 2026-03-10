@@ -279,9 +279,6 @@ fun AniSyncNavHost(
                         }
                     }
                 }
-                val onFavorites = remember(navController) {
-                    { navController.navigate(SectionGrid("Favorites", "favorites")) }
-                }
                 val onStatistics = remember(navController) {
                     { userId: Int -> navController.navigate(Statistics(userId)) }
                 }
@@ -292,7 +289,6 @@ fun AniSyncNavHost(
                 ProfileScreen(
                     onMediaClick = onProfileMediaClick,
                     onLogoutClick = onLogout,
-                    onFavoritesClick = onFavorites,
                     onStatisticsClick = onStatistics,
                     onNavigateToSettings = onNavigateToSettings,
                     sharedTransitionScope = this@SharedTransitionLayout,

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -182,6 +183,7 @@ fun EditLibraryEntrySheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .imePadding() // OPTIMIZATION: Fixes the focus issue where keyboard would hide the TextFields (like Notes).
                     .verticalScroll(state = scrollState)
                     .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)

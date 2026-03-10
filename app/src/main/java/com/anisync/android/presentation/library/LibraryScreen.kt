@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,7 +39,10 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.GridView
@@ -53,6 +57,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -70,6 +75,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -95,6 +101,7 @@ import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.library.components.EmptyLibraryTabState
 import com.anisync.android.presentation.library.components.LibraryListCard
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
+import com.anisync.android.presentation.library.components.ListManagementSheet
 import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
 import com.anisync.android.presentation.library.components.SortBottomSheet
@@ -106,6 +113,21 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
+
+sealed class LibraryTab {
+    data class Standard(val status: LibraryStatus) : LibraryTab()
+    object Favorites : LibraryTab()
+    data class Custom(val name: String) : LibraryTab()
+
+    @Composable
+    fun getLabel(mediaType: MediaType): String {
+        return when (this) {
+            is Standard -> status.toLabel(mediaType)
+            is Favorites -> "Favorites"
+            is Custom -> name
+        }
+    }
+}
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -136,18 +158,28 @@ fun LibraryScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
 
-    val statuses = remember {
+    val tabs = remember(uiState.customListNames, uiState.hiddenListNames) {
+        val list = mutableListOf<LibraryTab>()
         listOf(
             LibraryStatus.CURRENT,
             LibraryStatus.PAUSED,
             LibraryStatus.COMPLETED,
             LibraryStatus.PLANNING,
             LibraryStatus.DROPPED
-        )
+        ).forEach { list.add(LibraryTab.Standard(it)) }
+
+        list.add(LibraryTab.Favorites)
+        uiState.customListNames.forEach {
+            if (!uiState.hiddenListNames.contains(it)) {
+                list.add(LibraryTab.Custom(it))
+            }
+        }
+        list
     }
 
-    val pagerState = rememberPagerState(pageCount = { statuses.size })
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
     var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
+    var showListManagement by remember { mutableStateOf(false) }
 
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
@@ -159,9 +191,25 @@ fun LibraryScreen(
     }
 
     val handleIncrement =
-        remember(viewModel) { { mediaId: Int -> viewModel.onAction(LibraryAction.IncrementProgress(mediaId)) } }
+        remember(viewModel) {
+            { mediaId: Int ->
+                viewModel.onAction(
+                    LibraryAction.IncrementProgress(
+                        mediaId
+                    )
+                )
+            }
+        }
     val handleDecrement =
-        remember(viewModel) { { mediaId: Int -> viewModel.onAction(LibraryAction.DecrementProgress(mediaId)) } }
+        remember(viewModel) {
+            { mediaId: Int ->
+                viewModel.onAction(
+                    LibraryAction.DecrementProgress(
+                        mediaId
+                    )
+                )
+            }
+        }
     val handleEdit = remember { { entry: LibraryEntry -> editingEntry = entry } }
 
     LaunchedEffect(Unit) {
@@ -202,85 +250,31 @@ fun LibraryScreen(
         }
     }
 
-    val gridScrollStates = statuses.associateWith { status ->
-        androidx.compose.runtime.key(status.name + "Grid") {
-            rememberSaveable(sortOption, isAscending, saver = LazyGridState.Saver) { LazyGridState() }
-        }
-    }
-    val listScrollStates = statuses.associateWith { status ->
-        androidx.compose.runtime.key(status.name + "List") {
-            rememberSaveable(sortOption, isAscending, saver = LazyListState.Saver) { LazyListState() }
-        }
-    }
-
-    val inputField = remember(isAscending) {
-        @Composable {
-            val currentSearchBarValue = searchBarState.currentValue
-            val currentIsSearchQueryEmpty = isSearchQueryEmpty
-            val currentIsGridView = isGridView
-            val currentIsAscending = isAscending
-
-            SearchBarDefaults.InputField(
-                searchBarState = searchBarState,
-                textFieldState = textFieldState,
-                onSearch = { keyboardController?.hide() },
-                placeholder = {
-                    if (currentSearchBarValue == SearchBarValue.Collapsed) {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = stringResource(R.string.search_library_placeholder),
-                            textAlign = TextAlign.Center
-                        )
-                    } else {
-                        Text(stringResource(R.string.search_library_placeholder))
-                    }
-                },
-                leadingIcon = if (currentSearchBarValue == SearchBarValue.Expanded) {
-                    {
-                        IconButton(onClick = {
-                            keyboardController?.hide()
-                            coroutineScope.launch { searchBarState.animateToCollapsed() }
-                        }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
-                        }
-                    }
-                } else null,
-                trailingIcon = {
-                    if (currentSearchBarValue == SearchBarValue.Expanded && !currentIsSearchQueryEmpty) {
-                        IconButton(onClick = {
-                            textFieldState.edit { replace(0, length, "") }
-                        }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.clear)
-                            )
-                        }
-                    } else if (currentSearchBarValue == SearchBarValue.Collapsed) {
-                        Row {
-                            IconButton(onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                isGridView = !currentIsGridView
-                            }) {
-                                Icon(
-                                    imageVector = if (currentIsGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
-                                    contentDescription = stringResource(R.string.toggle_view)
-                                )
-                            }
-
-                            IconButton(onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                showSortMenu = true
-                            }) {
-                                SortIcon(isAscending = currentIsAscending)
-                            }
-                        }
-                    }
-                }
-            )
-        }
+    // OPTIMIZATION: Fixed focus loss. Extracting the input field to a standalone composable
+    // function stops Compose from destroying and recreating the node state when captured values change.
+    val inputField = @Composable {
+        LibrarySearchBarInputField(
+            searchBarState = searchBarState,
+            textFieldState = textFieldState,
+            isSearchQueryEmpty = isSearchQueryEmpty,
+            isGridView = isGridView,
+            isAscending = isAscending,
+            showListManagement = showListManagement,
+            onSearch = { keyboardController?.hide() },
+            onBackClick = {
+                keyboardController?.hide()
+                coroutineScope.launch { searchBarState.animateToCollapsed() }
+            },
+            onClearClick = { textFieldState.edit { replace(0, length, "") } },
+            onToggleView = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                isGridView = !isGridView
+            },
+            onToggleSort = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                showSortMenu = true
+            }
+        )
     }
 
     Scaffold(
@@ -293,6 +287,7 @@ fun LibraryScreen(
                 modifier = Modifier.statusBarsPadding()
             ) {
                 AppBarWithSearch(
+                    modifier = Modifier.focusProperties { canFocus = !showListManagement },
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
                     inputField = inputField,
@@ -310,35 +305,62 @@ fun LibraryScreen(
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                 )
 
-                PrimaryScrollableTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    edgePadding = 16.dp,
-                    indicator = {},
-                    divider = {}
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    statuses.forEachIndexed { index, status ->
-                        val statusIcon = when (status) {
-                            LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
-                            LibraryStatus.PAUSED -> Icons.Default.Pause
-                            LibraryStatus.COMPLETED -> Icons.Default.Done
-                            LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
-                            LibraryStatus.DROPPED -> Icons.Default.Close
-                            else -> Icons.Default.Inbox
-                        }
-
-                        AnimatedTab(
-                            index = index,
-                            selectedIndex = pagerState.currentPage,
-                            selected = pagerState.currentPage == index,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
+                    PrimaryScrollableTabRow(
+                        modifier = Modifier.weight(1f),
+                        selectedTabIndex = pagerState.currentPage.coerceAtMost(
+                            tabs.lastIndex.coerceAtLeast(
+                                0
+                            )
+                        ),
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        edgePadding = 16.dp,
+                        indicator = {},
+                        divider = {}
+                    ) {
+                        tabs.forEachIndexed { index, tab ->
+                            val statusIcon = when (tab) {
+                                is LibraryTab.Standard -> {
+                                    when (tab.status) {
+                                        LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
+                                        LibraryStatus.PAUSED -> Icons.Default.Pause
+                                        LibraryStatus.COMPLETED -> Icons.Default.Done
+                                        LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
+                                        LibraryStatus.DROPPED -> Icons.Default.Close
+                                        else -> Icons.Default.Inbox
+                                    }
                                 }
-                            },
-                            icon = statusIcon,
-                            label = status.toLabel(mediaType)
+
+                                is LibraryTab.Favorites -> Icons.Default.Favorite
+                                is LibraryTab.Custom -> Icons.Default.List
+                            }
+
+                            AnimatedTab(
+                                index = index,
+                                selectedIndex = pagerState.currentPage,
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                },
+                                icon = statusIcon,
+                                label = tab.getLabel(mediaType)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { showListManagement = true },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Manage Lists"
                         )
                     }
                 }
@@ -372,17 +394,38 @@ fun LibraryScreen(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { pageIndex ->
-                        val pageStatus = statuses[pageIndex]
-                        val entries = uiState.groupedEntries[pageStatus] ?: emptyList()
+                        if (pageIndex >= tabs.size) return@HorizontalPager
+                        val tab = tabs[pageIndex]
 
-                        val gridState = gridScrollStates[pageStatus]!!
-                        val listState = listScrollStates[pageStatus]!!
+                        val entries = when (tab) {
+                            is LibraryTab.Standard -> uiState.groupedEntries[tab.status]
+                                ?: emptyList()
+
+                            is LibraryTab.Favorites -> uiState.favoriteEntries
+                            is LibraryTab.Custom -> uiState.customListEntries[tab.name]
+                                ?: emptyList()
+                        }
+
+                        val tabLabel = tab.getLabel(mediaType)
+                        val gridState = rememberSaveable(
+                            tabLabel,
+                            sortOption,
+                            isAscending,
+                            saver = LazyGridState.Saver
+                        ) { LazyGridState() }
+                        val listState = rememberSaveable(
+                            tabLabel,
+                            sortOption,
+                            isAscending,
+                            saver = LazyListState.Saver
+                        ) { LazyListState() }
 
                         val cardConfig =
-                            if (pageStatus == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
+                            if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
 
                         if (entries.isEmpty()) {
-                            EmptyLibraryTabState(pageStatus, mediaType)
+                            val emptyStatus = if (tab is LibraryTab.Standard) tab.status else null
+                            EmptyLibraryTabState(emptyStatus, mediaType)
                         } else {
                             AnimatedContent(
                                 targetState = isGridView,
@@ -407,17 +450,17 @@ fun LibraryScreen(
                                     ) {
                                         items(
                                             items = entries,
-                                            key = { "grid_${it.id}" },
+                                            key = { "grid_${tabLabel}_${it.mediaId}" },
                                             contentType = { "LibraryEntry" }
                                         ) { entry ->
                                             LibraryMediaCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { onMediaClick(entry.mediaId) },
-                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                onIncrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
-                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                onDecrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
                                                     { handleDecrement(entry.mediaId) }
                                                 } else null,
                                                 onEdit = { handleEdit(entry) },
@@ -442,17 +485,17 @@ fun LibraryScreen(
                                     ) {
                                         items(
                                             items = entries,
-                                            key = { "list_${it.id}" },
+                                            key = { "list_${tabLabel}_${it.mediaId}" },
                                             contentType = { "LibraryEntry" }
                                         ) { entry ->
                                             LibraryListCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { onMediaClick(entry.mediaId) },
-                                                onIncrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                onIncrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
-                                                onDecrement = if (pageStatus == LibraryStatus.CURRENT) {
+                                                onDecrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
                                                     { handleDecrement(entry.mediaId) }
                                                 } else null,
                                                 onEdit = { handleEdit(entry) },
@@ -550,6 +593,22 @@ fun LibraryScreen(
         }
     )
 
+
+    ListManagementSheet(
+        visible = showListManagement,
+        onDismiss = { showListManagement = false },
+        customLists = uiState.customListNames,
+        hiddenLists = uiState.hiddenListNames,
+        listOrder = uiState.listOrder,
+        onVisibilityChanged = { name, hidden ->
+            viewModel.onAction(LibraryAction.ToggleListVisibility(name, hidden))
+        },
+        onOrderMoveUp = { viewModel.onAction(LibraryAction.MoveListUp(it)) },
+        onOrderMoveDown = { viewModel.onAction(LibraryAction.MoveListDown(it)) },
+        onDeleteList = { viewModel.onAction(LibraryAction.DeleteCustomList(it)) },
+        onCreateList = { viewModel.onAction(LibraryAction.CreateCustomList(it)) }
+    )
+
     editingEntry?.let { entry ->
         LaunchedEffect(Unit) {
             if (searchBarState.currentValue == SearchBarValue.Expanded) {
@@ -570,4 +629,74 @@ fun LibraryScreen(
             }
         )
     }
+}
+
+/**
+ * Isolated Component to fix Compose identity loss and input field focus drops during typing/toggling.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LibrarySearchBarInputField(
+    searchBarState: SearchBarState,
+    textFieldState: TextFieldState,
+    isSearchQueryEmpty: Boolean,
+    isGridView: Boolean,
+    isAscending: Boolean,
+    showListManagement: Boolean,
+    onSearch: () -> Unit,
+    onBackClick: () -> Unit,
+    onClearClick: () -> Unit,
+    onToggleView: () -> Unit,
+    onToggleSort: () -> Unit
+) {
+    SearchBarDefaults.InputField(
+        enabled = !showListManagement,
+        searchBarState = searchBarState,
+        textFieldState = textFieldState,
+        onSearch = { onSearch() },
+        placeholder = {
+            if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.search_library_placeholder),
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Text(stringResource(R.string.search_library_placeholder))
+            }
+        },
+        leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
+            {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
+            }
+        } else null,
+        trailingIcon = {
+            if (searchBarState.currentValue == SearchBarValue.Expanded && !isSearchQueryEmpty) {
+                IconButton(onClick = onClearClick) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.clear)
+                    )
+                }
+            } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+                Row {
+                    IconButton(onClick = onToggleView) {
+                        Icon(
+                            imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
+                            contentDescription = stringResource(R.string.toggle_view)
+                        )
+                    }
+
+                    IconButton(onClick = onToggleSort) {
+                        SortIcon(isAscending = isAscending)
+                    }
+                }
+            }
+        }
+    )
 }

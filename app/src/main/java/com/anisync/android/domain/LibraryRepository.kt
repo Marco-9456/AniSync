@@ -37,4 +37,9 @@ interface LibraryRepository {
      * Delete an entry from the library.
      */
     suspend fun deleteEntry(entryId: Int, mediaId: Int): Result<Unit>
+
+    /**
+     * Delete a custom list from AniList.
+     */
+    suspend fun deleteCustomList(customList: String, type: MediaType): Result<Unit>
 }

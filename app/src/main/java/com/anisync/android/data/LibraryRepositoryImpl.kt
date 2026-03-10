@@ -68,43 +68,56 @@ class LibraryRepositoryImpl @Inject constructor(
 
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
 
-            // Map to domain then to entity
-            val entries = lists.filterNotNull().flatMap { group ->
-                group.entries?.filterNotNull()?.map { entry ->
-                    val media = entry.media
-                    
-                    val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
+            // Group by entry ID to handle duplicates from custom lists
+            val entryMap = mutableMapOf<Int, LibraryEntry>()
+            val standardListNames = setOf("Watching", "Reading", "Completed", "Dropped", "Paused", "Planning", "Repeating")
 
-                    LibraryEntry(
-                        id = entry.id ?: 0,
-                        mediaId = media?.id ?: 0,
-                        titleRomaji = media?.title?.romaji,
-                        titleEnglish = media?.title?.english,
-                        titleNative = media?.title?.native,
-                        titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
-                        coverUrl = media?.coverImage?.extraLarge,
-                        progress = entry.progress ?: 0,
-                        totalEpisodes = media?.episodes,
-                        totalChapters = media?.chapters,
-                        totalVolumes = media?.volumes,
-                        type = media?.type,
-                        status = status,
-                        nextAiringEpisode = media?.nextAiringEpisode?.episode,
-                        timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
-                        mediaStatus = media?.status?.name, // Add media airing status
-                        // Use airingAt directly - absolute Unix timestamp from API
-                        nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
-                        score = entry.score,
-                        rewatches = entry.repeat ?: 0,
-                        notes = entry.notes,
-                        startedAt = entry.startedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
-                        completedAt = entry.completedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
-                        updatedAt = entry.updatedAt?.toLong()?.times(1000L),
-                        createdAt = entry.createdAt?.toLong()?.times(1000L),
-                        mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) }
-                    )
-                } ?: emptyList()
+            lists.filterNotNull().forEach { group ->
+                val listName = group.name ?: return@forEach
+                val isCustom = listName !in standardListNames
+
+                group.entries?.filterNotNull()?.forEach { entry ->
+                    val entryId = entry.id ?: return@forEach
+                    val media = entry.media
+                    val existing = entryMap[entryId]
+
+                    if (existing == null) {
+                        val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
+                        entryMap[entryId] = LibraryEntry(
+                            id = entryId,
+                            mediaId = media?.id ?: 0,
+                            titleRomaji = media?.title?.romaji,
+                            titleEnglish = media?.title?.english,
+                            titleNative = media?.title?.native,
+                            titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
+                            coverUrl = media?.coverImage?.extraLarge,
+                            progress = entry.progress ?: 0,
+                            totalEpisodes = media?.episodes,
+                            totalChapters = media?.chapters,
+                            totalVolumes = media?.volumes,
+                            type = media?.type,
+                            status = status,
+                            nextAiringEpisode = media?.nextAiringEpisode?.episode,
+                            timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
+                            mediaStatus = media?.status?.name,
+                            nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
+                            score = entry.score,
+                            rewatches = entry.repeat ?: 0,
+                            notes = entry.notes,
+                            startedAt = entry.startedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                            completedAt = entry.completedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                            updatedAt = entry.updatedAt?.toLong()?.times(1000L),
+                            createdAt = entry.createdAt?.toLong()?.times(1000L),
+                            mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                            customLists = if (isCustom) listOf(listName) else emptyList()
+                        )
+                    } else if (isCustom && !existing.customLists.contains(listName)) {
+                        entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)
+                    }
+                }
             }
+
+            val entries = entryMap.values.toList()
             
             // Smart merge to preserve locally-added entries during API sync delay
             libraryDao.smartMergeByType(type, entries.map { it.toEntity(type) })
@@ -249,6 +262,24 @@ class LibraryRepositoryImpl @Inject constructor(
                 // Success
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"
+                throw Exception(errorMessage)
+            }
+        }
+    }
+
+    override suspend fun deleteCustomList(customList: String, type: com.anisync.android.type.MediaType): com.anisync.android.domain.Result<Unit> {
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.DeleteCustomListMutation(
+                    customList = customList,
+                    type = type
+                )
+            ).execute()
+
+            if (response.data?.DeleteCustomList?.deleted == true && !response.hasErrors()) {
+                // Success - trigger refresh to update local data
+            } else {
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete custom list failed"
                 throw Exception(errorMessage)
             }
         }

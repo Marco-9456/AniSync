@@ -124,8 +124,8 @@ fun LibraryMediaCard(
     val effectsSpec = AppMotion.rememberSlowEffectsSpec()
 
     // Use TransitionKeys for consistent key generation
-    val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.id)
-    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.id)
+    val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.mediaId)
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId)
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f

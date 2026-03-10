@@ -1,10 +1,13 @@
 package com.anisync.android.presentation.library
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
+import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,11 +30,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.system.measureTimeMillis
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
+    private val profileRepository: ProfileRepository,
     private val appSettings: AppSettings
 ) : ViewModel() {
 
@@ -42,6 +47,14 @@ class LibraryViewModel @Inject constructor(
     val actions: SharedFlow<LibraryAction> = _actions.asSharedFlow()
 
     private var hasLoadedInitially = false
+
+    private data class LibraryCustomData(
+        val customNames: List<String>,
+        val customEntriesMap: Map<String, List<LibraryEntry>>,
+        val sortedFavorites: List<LibraryEntry>,
+        val hiddenListNames: Set<String>,
+        val listOrder: List<String>
+    )
 
     init {
         appSettings.titleLanguage.onEach { lang ->
@@ -56,15 +69,29 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.OnScreenVisible -> onScreenVisible()
             is LibraryAction.Refresh -> refresh()
             is LibraryAction.OnMediaTypeChange -> {
-                _uiState.update { it.copy(mediaType = action.type, isLoading = true, errorMessage = null) }
+                _uiState.update {
+                    it.copy(
+                        mediaType = action.type,
+                        isLoading = true,
+                        errorMessage = null
+                    )
+                }
                 refresh()
             }
+
             is LibraryAction.OnSortOptionChange -> {
-                _uiState.update { it.copy(sortOption = action.sort, isAscending = action.ascending) }
+                _uiState.update {
+                    it.copy(
+                        sortOption = action.sort,
+                        isAscending = action.ascending
+                    )
+                }
             }
+
             is LibraryAction.OnSearchQueryChange -> {
                 _uiState.update { it.copy(searchQuery = action.query) }
             }
+
             is LibraryAction.IncrementProgress -> updateProgress(action.mediaId, 1)
             is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
             is LibraryAction.UpdateEntry -> updateEntry(action.entry)
@@ -72,6 +99,16 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.ShowSnackbar -> {
                 viewModelScope.launch { _actions.emit(LibraryAction.ShowSnackbar(action.message)) }
             }
+
+            is LibraryAction.ToggleListVisibility -> toggleListVisibility(
+                action.listName,
+                action.hidden
+            )
+
+            is LibraryAction.MoveListUp -> moveList(action.listName, -1)
+            is LibraryAction.MoveListDown -> moveList(action.listName, 1)
+            is LibraryAction.CreateCustomList -> createCustomList(action.listName)
+            is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
         }
     }
 
@@ -81,7 +118,16 @@ class LibraryViewModel @Inject constructor(
                 .map { it.mediaType }
                 .distinctUntilChanged()
                 .flatMapLatest { type ->
-                    libraryRepository.observeLibrary("", type)
+                    combine(
+                        libraryRepository.observeLibrary("", type),
+                        profileRepository.observeProfile(),
+                        appSettings.libraryListOrder,
+                        appSettings.hiddenLibraryLists
+                    ) { libraryEntries, profile, listOrder, hiddenLists ->
+                        val favorites =
+                            profile?.favoriteAnime?.filter { it.type == type } ?: emptyList()
+                        Triple(libraryEntries, favorites, listOrder to hiddenLists)
+                    }
                 }
                 .combine(
                     _uiState.map { state ->
@@ -91,72 +137,149 @@ class LibraryViewModel @Inject constructor(
                             state.titleLanguage
                         )
                     }.distinctUntilChanged()
-                ) { entries, (sortParams, query, titleLang) ->
+                ) { (entries, favorites, listPrefs), (sortParams, query, titleLang) ->
                     val (sort, ascending) = sortParams
+                    val (listOrder, hiddenLists) = listPrefs
 
                     if (entries.isEmpty()) {
-                        return@combine Pair(emptyList<LibraryEntry>(), emptyMap())
+                        return@combine Triple(
+                            emptyList<LibraryEntry>(),
+                            emptyMap<LibraryStatus, List<LibraryEntry>>(),
+                            LibraryCustomData(
+                                emptyList(),
+                                emptyMap(),
+                                favorites,
+                                hiddenLists,
+                                listOrder
+                            )
+                        )
                     }
 
-                    // Sorting
-                    val sortedEntries = when (sort) {
-                        LibrarySort.TITLE -> entries.sortedBy {
-                            it.getTitle(titleLang).lowercase()
+                    var pipelineResult: Triple<List<LibraryEntry>, Map<LibraryStatus, List<LibraryEntry>>, LibraryCustomData>? =
+                        null
+
+                    // OPTIMIZATION: Logging performance metric
+                    val timeTaken = measureTimeMillis {
+
+                        // OPTIMIZATION: Pre-calculate localized and lowercase titles to avoid O(N log N) redundant computations.
+                        // Generating strings inside `.thenBy{}` is highly CPU intensive. Caching it upfront fixes the lag spike.
+                        class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
+
+                        val sortableEntries =
+                            entries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
+
+                        // Sorting
+                        val sortedEntries = when (sort) {
+                            LibrarySort.TITLE -> sortableEntries.sortedBy { it.sortTitle }
+                            LibrarySort.PROGRESS -> sortableEntries.sortedWith(
+                                compareByDescending<SortableEntry> { it.entry.progress }
+                                    .thenBy { it.sortTitle }
+                            )
+
+                            LibrarySort.AIRING_SOON -> sortableEntries.sortedWith(
+                                compareBy<SortableEntry, Long?>(nullsLast()) { it.entry.nextAiringEpisodeTime }
+                                    .thenBy { it.sortTitle }
+                            )
+
+                            LibrarySort.SCORE -> sortableEntries.sortedWith(
+                                compareByDescending<SortableEntry> { it.entry.score }
+                                    .thenBy { it.sortTitle }
+                            )
+
+                            LibrarySort.LAST_UPDATED -> sortableEntries.sortedWith(
+                                compareByDescending<SortableEntry> { it.entry.updatedAt }
+                                    .thenBy { it.sortTitle }
+                            )
+
+                            LibrarySort.LAST_ADDED -> sortableEntries.sortedWith(
+                                compareByDescending<SortableEntry> { it.entry.createdAt }
+                                    .thenBy { it.sortTitle }
+                            )
+
+                            LibrarySort.START_DATE -> sortableEntries.sortedWith(
+                                compareByDescending<SortableEntry> { it.entry.startedAt }
+                                    .thenBy { it.sortTitle }
+                            )
+
+                            LibrarySort.RELEASE_DATE -> sortableEntries.sortedWith(
+                                compareByDescending<SortableEntry> { it.entry.mediaStartDate }
+                                    .thenBy { it.sortTitle }
+                            )
                         }
-                        LibrarySort.PROGRESS -> entries.sortedWith(
-                            compareByDescending<LibraryEntry> { it.progress }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                        LibrarySort.AIRING_SOON -> entries.sortedWith(
-                            compareBy<LibraryEntry, Long?>(nullsLast()) { it.nextAiringEpisodeTime }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                        LibrarySort.SCORE -> entries.sortedWith(
-                            compareByDescending<LibraryEntry> { it.score }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                        LibrarySort.LAST_UPDATED -> entries.sortedWith(
-                            compareByDescending<LibraryEntry> { it.updatedAt }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                        LibrarySort.LAST_ADDED -> entries.sortedWith(
-                            compareByDescending<LibraryEntry> { it.createdAt }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                        LibrarySort.START_DATE -> entries.sortedWith(
-                            compareByDescending<LibraryEntry> { it.startedAt }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                        LibrarySort.RELEASE_DATE -> entries.sortedWith(
-                            compareByDescending<LibraryEntry> { it.mediaStartDate }
-                                .thenBy { it.getTitle(titleLang).lowercase() }
-                        )
-                    }
 
-                    // Direction & Filtering
-                    val directedEntries = if (ascending) sortedEntries else sortedEntries.reversed()
-                    val filteredEntries = if (query.isBlank()) {
-                        directedEntries
-                    } else {
-                        directedEntries.filter {
-                            it.getTitle(titleLang).contains(query, ignoreCase = true)
+                        // Direction & Filtering
+                        val directedEntries =
+                            if (ascending) sortedEntries else sortedEntries.reversed()
+                        val filteredEntries = if (query.isBlank()) {
+                            directedEntries.map { it.entry }
+                        } else {
+                            val lowerQuery = query.lowercase()
+                            directedEntries.filter { it.sortTitle.contains(lowerQuery) }
+                                .map { it.entry }
                         }
+
+                        // Grouping
+                        val grouped = filteredEntries.groupBy { it.status }
+
+                        // Custom Lists
+                        val customNames = mutableSetOf<String>()
+                        val customEntriesMap = mutableMapOf<String, MutableList<LibraryEntry>>()
+
+                        filteredEntries.forEach { entry ->
+                            entry.customLists.forEach { customListName ->
+                                customNames.add(customListName)
+                                customEntriesMap.getOrPut(customListName) { mutableListOf() }
+                                    .add(entry)
+                            }
+                        }
+
+                        // Sort custom names according to listOrder, with new lists at the end alphabetically
+                        val sortedCustomNames = customNames.toList().sortedWith(
+                            compareBy<String> { name ->
+                                val index = listOrder.indexOf(name)
+                                if (index == -1) Int.MAX_VALUE else index
+                            }.thenBy { it }
+                        )
+
+                        // Sort favorites (using existing logic since favorites list is typically small)
+                        val sortedFavorites =
+                            favorites.sortedBy { it.getTitle(titleLang).lowercase() }
+
+                        pipelineResult = Triple(
+                            filteredEntries,
+                            grouped,
+                            LibraryCustomData(
+                                sortedCustomNames,
+                                customEntriesMap,
+                                sortedFavorites,
+                                hiddenLists,
+                                listOrder
+                            )
+                        )
                     }
 
-                    // Grouping
-                    val grouped = filteredEntries.groupBy { it.status }
-
-                    Pair(filteredEntries, grouped)
+                    Log.d("Performance", "Library sorting and filtering took ${timeTaken}ms")
+                    pipelineResult!!
                 }
                 .flowOn(Dispatchers.Default)
                 .catch { e ->
-                    _uiState.update { it.copy(isLoading = false, errorMessage = e.message ?: "Unknown error") }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = e.message ?: "Unknown error"
+                        )
+                    }
                 }
-                .collect { (filtered, grouped) ->
+                .collect { (filtered, grouped, customData) ->
                     _uiState.update {
                         it.copy(
                             entries = filtered,
                             groupedEntries = grouped,
+                            customListNames = customData.customNames,
+                            customListEntries = customData.customEntriesMap,
+                            favoriteEntries = customData.sortedFavorites,
+                            hiddenListNames = customData.hiddenListNames,
+                            listOrder = customData.listOrder,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -208,6 +331,69 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = libraryRepository.deleteEntry(entryId, mediaId)) {
                 is Result.Success -> _actions.emit(LibraryAction.ShowSnackbar("Entry removed"))
+                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+            }
+        }
+    }
+
+    private fun toggleListVisibility(listName: String, hidden: Boolean) {
+        val current = _uiState.value.hiddenListNames.toMutableSet()
+        if (hidden) current.add(listName) else current.remove(listName)
+        appSettings.setHiddenLibraryLists(current)
+    }
+
+    private fun moveList(listName: String, direction: Int) {
+        val currentOrder = _uiState.value.listOrder.toMutableList()
+        val allNames = _uiState.value.customListNames.toMutableList()
+
+        // If order is empty, initialize with current custom list names
+        val workingOrder =
+            if (currentOrder.isEmpty()) allNames.toMutableList() else currentOrder.toMutableList()
+
+        // Add any missing names
+        allNames.forEach { if (it !in workingOrder) workingOrder.add(it) }
+
+        val index = workingOrder.indexOf(listName)
+        if (index == -1) return
+        val newIndex = (index + direction).coerceIn(0, workingOrder.lastIndex)
+        if (newIndex == index) return
+
+        workingOrder.removeAt(index)
+        workingOrder.add(newIndex, listName)
+        appSettings.setLibraryListOrder(workingOrder)
+    }
+
+    private fun createCustomList(listName: String) {
+        // Custom lists on AniList are created implicitly when an entry is added to them.
+        // For now, we just add it to the local order so the user sees it.
+        val currentOrder = _uiState.value.listOrder.toMutableList()
+        if (listName !in currentOrder) {
+            currentOrder.add(listName)
+            appSettings.setLibraryListOrder(currentOrder)
+        }
+        viewModelScope.launch {
+            _actions.emit(LibraryAction.ShowSnackbar("List '$listName' created. Add entries to it to sync with AniList."))
+        }
+    }
+
+    private fun deleteCustomList(listName: String) {
+        viewModelScope.launch {
+            when (val result =
+                libraryRepository.deleteCustomList(listName, _uiState.value.mediaType)) {
+                is Result.Success -> {
+                    // Remove from settings
+                    val currentOrder = _uiState.value.listOrder.toMutableList()
+                    currentOrder.remove(listName)
+                    appSettings.setLibraryListOrder(currentOrder)
+
+                    val hiddenLists = _uiState.value.hiddenListNames.toMutableSet()
+                    hiddenLists.remove(listName)
+                    appSettings.setHiddenLibraryLists(hiddenLists)
+
+                    _actions.emit(LibraryAction.ShowSnackbar("List '$listName' deleted"))
+                    refresh()
+                }
+
                 is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
             }
         }

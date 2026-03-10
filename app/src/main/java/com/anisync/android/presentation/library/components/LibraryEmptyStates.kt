@@ -131,7 +131,7 @@ fun LibrarySearchResultCard(
  */
 @Composable
 fun EmptyLibraryTabState(
-    status: LibraryStatus,
+    status: LibraryStatus?,
     type: MediaType,
     modifier: Modifier = Modifier
 ) {

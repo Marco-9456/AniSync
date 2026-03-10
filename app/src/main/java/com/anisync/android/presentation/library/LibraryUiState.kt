@@ -16,6 +16,11 @@ data class LibraryUiState(
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val entries: List<LibraryEntry> = emptyList(),
     val groupedEntries: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+    val customListNames: List<String> = emptyList(),
+    val customListEntries: Map<String, List<LibraryEntry>> = emptyMap(),
+    val favoriteEntries: List<LibraryEntry> = emptyList(),
+    val hiddenListNames: Set<String> = emptySet(),
+    val listOrder: List<String> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null
 )
@@ -42,4 +47,9 @@ sealed interface LibraryAction {
     data class UpdateEntry(val entry: LibraryEntry) : LibraryAction
     data class DeleteEntry(val entryId: Int, val mediaId: Int) : LibraryAction
     data class ShowSnackbar(val message: String) : LibraryAction
+    data class ToggleListVisibility(val listName: String, val hidden: Boolean) : LibraryAction
+    data class MoveListUp(val listName: String) : LibraryAction
+    data class MoveListDown(val listName: String) : LibraryAction
+    data class CreateCustomList(val listName: String) : LibraryAction
+    data class DeleteCustomList(val listName: String) : LibraryAction
 }

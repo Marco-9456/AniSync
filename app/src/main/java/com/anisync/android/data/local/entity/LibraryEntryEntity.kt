@@ -55,5 +55,7 @@ data class LibraryEntryEntity(
     val updatedAt: Long? = null,
     val createdAt: Long? = null,
     val mediaStartDate: Long? = null,
+    @androidx.room.ColumnInfo(defaultValue = "[]")
+    val customLists: List<String> = emptyList(),
     val lastUpdated: Long = System.currentTimeMillis()
 )
