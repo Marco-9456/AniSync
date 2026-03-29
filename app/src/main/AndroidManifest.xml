@@ -68,6 +68,14 @@
                     android:scheme="https"
                     android:host="anilist.co"
                     android:pathPrefix="/manga/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/forum/thread/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/character/" />
             </intent-filter>
         </activity>
 

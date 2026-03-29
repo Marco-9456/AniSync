@@ -47,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -62,6 +61,7 @@ import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.domain.parser.ParserConfig
 import com.anisync.android.domain.parser.RichTextBlock
 import com.anisync.android.domain.parser.RichTextParser
+import com.anisync.android.presentation.util.rememberAniLinkRouter
 import com.anisync.android.presentation.util.shimmerEffect
 
 @Composable
@@ -96,7 +96,7 @@ fun RichTextRenderer(
     spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     var viewerInitialIndex by remember { mutableStateOf<Int?>(null) }
-    val uriHandler = LocalUriHandler.current
+    val linkRouter = rememberAniLinkRouter()
 
     SelectionContainer(modifier = modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -109,7 +109,7 @@ fun RichTextRenderer(
                     val idx = parsedData.imageUrls.indexOf(url)
                     if (idx >= 0) viewerInitialIndex = idx
                 },
-                onLinkClick = { uriHandler.openUri(it) }
+                onLinkClick = { linkRouter.navigate(it) }
             )
         }
     }

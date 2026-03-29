@@ -13,6 +13,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
@@ -48,6 +49,8 @@ import com.anisync.android.presentation.settings.SettingsScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.statistics.StatisticsScreen
+import com.anisync.android.presentation.util.AniLinkCallbacks
+import com.anisync.android.presentation.util.LocalAniLinkCallbacks
 
 // =============================================================================
 // TAB ORDER HELPER
@@ -161,6 +164,29 @@ fun AniSyncNavHost(
     }
 
     SharedTransitionLayout(modifier = modifier) {
+        // Provide centralized link routing callbacks so any screen can navigate
+        // in-app when a recognizable AniList URL is clicked (forum posts, etc.)
+        val aniLinkCallbacks = remember(navController) {
+            AniLinkCallbacks(
+                onMediaClick = { mediaId ->
+                    navController.navigate(MediaDetails(mediaId, "link"))
+                },
+                onThreadClick = { threadId, commentId ->
+                    navController.navigate(
+                        ForumThreadDetail(
+                            threadId = threadId,
+                            threadTitle = "",
+                            commentId = commentId ?: 0
+                        )
+                    )
+                },
+                onCharacterClick = { characterId ->
+                    navController.navigate(CharacterDetails(characterId))
+                }
+            )
+        }
+
+        CompositionLocalProvider(LocalAniLinkCallbacks provides aniLinkCallbacks) {
         NavHost(
             navController = navController,
             startDestination = Library,
@@ -386,6 +412,12 @@ fun AniSyncNavHost(
             // CHARACTER DETAILS SCREEN - Shared Axis Z (Depth)
             // =================================================================
             composable<CharacterDetails>(
+                deepLinks = listOf(
+                    // AniList character URLs (e.g., https://anilist.co/character/40882)
+                    navDeepLink { uriPattern = "https://anilist.co/character/{characterId}" },
+                    // AniList character URLs with slug
+                    navDeepLink { uriPattern = "https://anilist.co/character/{characterId}/{slug}" }
+                ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
@@ -540,6 +572,10 @@ fun AniSyncNavHost(
             composable<ForumThreadDetail>(
                 deepLinks = listOf(
                     navDeepLink<ForumThreadDetail>(basePath = "anisync://forum/thread"),
+                    // AniList forum thread URLs (e.g., https://anilist.co/forum/thread/12345)
+                    navDeepLink { uriPattern = "https://anilist.co/forum/thread/{threadId}" },
+                    // AniList forum thread URLs with slug
+                    navDeepLink { uriPattern = "https://anilist.co/forum/thread/{threadId}/{slug}" },
                 ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
@@ -720,6 +756,7 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() }
                 )
             }
+        }
         }
     }
 }
