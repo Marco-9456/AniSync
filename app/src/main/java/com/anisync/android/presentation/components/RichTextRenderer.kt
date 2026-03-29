@@ -25,7 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -54,12 +56,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.domain.parser.ParserConfig
 import com.anisync.android.domain.parser.RichTextBlock
 import com.anisync.android.domain.parser.RichTextParser
+import com.anisync.android.presentation.util.shimmerEffect
 
 @Composable
 fun AsyncRichTextRenderer(
@@ -458,13 +461,14 @@ private fun RenderBlocks(
                             .clip(RoundedCornerShape(8.dp))
                             .clickable { onLinkClick("https://www.youtube.com/watch?v=$videoId") }
                     ) {
-                        AsyncImage(
+                        SubcomposeAsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data("https://img.youtube.com/vi/$videoId/hqdefault.jpg")
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "YouTube Thumbnail",
                             contentScale = ContentScale.Crop,
+                            loading = { ImageLoadingSkeleton() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(16f / 9f)
@@ -508,17 +512,43 @@ private fun RichImage(
     else if (img.width != null) Modifier.widthIn(max = img.width.dp)
     else Modifier.fillMaxWidth()
 
-    AsyncImage(
+    SubcomposeAsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(img.url)
             .crossfade(true)
             .build(),
         contentDescription = null,
         contentScale = if (img.width != null) ContentScale.Fit else ContentScale.FillWidth,
+        loading = { ImageLoadingSkeleton() },
         modifier = mod
             .clip(RoundedCornerShape(8.dp))
             .clickable {
                 if (img.linkUrl != null) onLinkClick(img.linkUrl) else onClick(img.url)
             }
     )
+}
+
+/**
+ * Shimmer skeleton with MD3 Expressive shape-morphing loading indicator.
+ * Shows while images in threads and comments are loading — gives users
+ * a clear visual cue that content will appear in this area.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ImageLoadingSkeleton(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(8.dp))
+            .shimmerEffect(),
+        contentAlignment = Alignment.Center
+    ) {
+        ContainedLoadingIndicator(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            indicatorColor = MaterialTheme.colorScheme.primary
+        )
+    }
 }

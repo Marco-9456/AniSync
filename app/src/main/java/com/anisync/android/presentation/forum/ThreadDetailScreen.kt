@@ -49,6 +49,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -74,7 +75,9 @@ import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.LocalExoPlayerCache
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.rememberExoPlayerCache
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.SkeletonLine
 import com.anisync.android.presentation.forum.components.ThreadBodyItem
@@ -116,6 +119,7 @@ fun ThreadDetailScreen(
     val context = LocalContext.current
 
     var collapsedIds by remember { mutableStateOf(emptySet<Int>()) }
+    val playerCache = rememberExoPlayerCache()
 
     LaunchedEffect(threadId) {
         viewModel.onAction(ThreadDetailAction.Load(threadId))
@@ -274,6 +278,7 @@ fun ThreadDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            CompositionLocalProvider(LocalExoPlayerCache provides playerCache) {
             when {
                 uiState.isLoading && uiState.thread == null -> ThreadDetailSkeleton()
 
@@ -283,7 +288,7 @@ fun ThreadDetailScreen(
                 )
 
                 else -> {
-                    val thread = uiState.thread ?: return@PullToRefreshBox
+                    val thread = uiState.thread ?: return@CompositionLocalProvider
 
                     LazyColumn(
                         state = listState,
@@ -451,6 +456,7 @@ fun ThreadDetailScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
