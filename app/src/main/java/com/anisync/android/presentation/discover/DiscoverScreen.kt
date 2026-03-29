@@ -235,15 +235,11 @@ fun DiscoverScreen(
         )
     }
 
-    val (searchQuery, searchResults, isSearching) = when (val state = uiState) {
-        is DiscoverUiState.Success -> Triple(
-            state.searchQuery,
-            state.searchResults,
-            state.isSearching
-        )
-
-        else -> Triple("", emptyList<LibraryEntry>(), false)
-    }
+    val successState2 = uiState as? DiscoverUiState.Success
+    val searchQuery = successState2?.searchQuery ?: ""
+    val searchResults = successState2?.searchResults ?: emptyList()
+    val isSearching = successState2?.isSearching ?: false
+    val searchError = successState2?.searchError
 
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
@@ -257,6 +253,7 @@ fun DiscoverScreen(
         searchQuery = searchQuery,
         searchResults = searchResults,
         isSearching = isSearching,
+        searchError = searchError,
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
         onSearchItemClick = onSearchItemClick,
         onShowFilterDialog = { showFilterDialog = true }
@@ -633,6 +630,7 @@ private fun DiscoverSearchOverlay(
     searchQuery: String,
     searchResults: List<LibraryEntry>,
     isSearching: Boolean,
+    searchError: String?,
     onSearch: (String) -> Unit,
     onSearchItemClick: (Int) -> Unit,
     onShowFilterDialog: () -> Unit
@@ -656,6 +654,7 @@ private fun DiscoverSearchOverlay(
             isSearching = isSearching,
             searchResults = searchResults,
             searchQuery = searchQuery,
+            searchError = searchError,
             titleLanguage = titleLanguage,
             listState = listState,
             onSearchItemClick = onSearchItemClick
@@ -668,6 +667,7 @@ private fun SearchResultsContent(
     isSearching: Boolean,
     searchResults: List<LibraryEntry>,
     searchQuery: String,
+    searchError: String?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     listState: LazyListState,
     onSearchItemClick: (Int) -> Unit
@@ -676,6 +676,22 @@ private fun SearchResultsContent(
         isSearching -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        }
+
+        searchError != null -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.error_failed_to_load),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = searchError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 

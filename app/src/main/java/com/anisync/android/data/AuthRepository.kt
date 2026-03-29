@@ -9,7 +9,10 @@ import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
@@ -34,6 +37,23 @@ class AuthRepository @Inject constructor(
 
     private val _isLoggedIn = MutableStateFlow(getToken() != null)
     val isLoggedIn: Flow<Boolean> = _isLoggedIn.asStateFlow()
+
+    /**
+     * Emitted when the API returns HTTP 401 (token expired/revoked).
+     * The UI should collect this to show a "session expired" dialog
+     * and redirect the user to the login screen.
+     */
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
+
+    /**
+     * Called by [AuthorizationInterceptor] when a 401 is received.
+     * Clears the stored token and emits a session-expired event.
+     */
+    fun onSessionExpired() {
+        clearToken()
+        _sessionExpired.tryEmit(Unit)
+    }
 
     fun saveToken(token: String) {
         sharedPreferences.edit().putString(KEY_ACCESS_TOKEN, token).apply()

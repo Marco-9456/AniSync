@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.SearchMediaQuery
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
@@ -11,7 +12,6 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
-import com.apollographql.apollo.exception.ApolloException
 import javax.inject.Inject
 
 class SearchRepositoryImpl @Inject constructor(
@@ -23,7 +23,7 @@ class SearchRepositoryImpl @Inject constructor(
         type: MediaType,
         filters: SearchFilters
     ): Result<List<LibraryEntry>> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 SearchMediaQuery(
                     search = Optional.present(query),
@@ -40,7 +40,7 @@ class SearchRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
-            val entries = response.data?.Page?.media?.filterNotNull()?.map { media ->
+            response.data?.Page?.media?.filterNotNull()?.map { media ->
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
@@ -59,12 +59,6 @@ class SearchRepositoryImpl @Inject constructor(
                     mediaStatus = media.status?.name
                 )
             } ?: emptyList()
-            
-            Result.Success(entries)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 }

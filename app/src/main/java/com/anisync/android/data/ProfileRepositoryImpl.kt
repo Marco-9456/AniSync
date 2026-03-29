@@ -17,7 +17,6 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
-import com.apollographql.apollo.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -33,13 +32,13 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshProfile(username: String): Result<Unit> {
-        return try {
+        return safeApiCall {
             val actualUsername = username.ifBlank {
                 val viewerResponse = apolloClient.query(GetViewerQuery())
                     .fetchPolicy(FetchPolicy.NetworkOnly)
                     .execute()
                 viewerResponse.data?.Viewer?.name
-                    ?: return Result.Error("Unable to get current user")
+                    ?: throw Exception("Unable to get current user")
             }
 
             val response = apolloClient.query(
@@ -49,7 +48,7 @@ class ProfileRepositoryImpl @Inject constructor(
             .execute()
 
             val user = response.data?.User
-                ?: return Result.Error("User not found")
+                ?: throw Exception("User not found")
 
             // Fetch Activities
             val activitiesResponse = apolloClient.query(
@@ -109,11 +108,6 @@ class ProfileRepositoryImpl @Inject constructor(
             )
 
             userProfileDao.insert(profile.toEntity())
-            Result.Success(Unit)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 

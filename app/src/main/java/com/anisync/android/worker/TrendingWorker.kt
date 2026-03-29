@@ -8,6 +8,7 @@ import androidx.work.WorkerParameters
 import com.anisync.android.GetTrendingQuery
 import com.anisync.android.data.local.dao.TrendingDao
 import com.anisync.android.data.local.entity.TrendingEntity
+import com.anisync.android.data.util.ApiError
 import com.anisync.android.type.MediaSeason
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -36,11 +37,6 @@ class TrendingWorker @AssistedInject constructor(
                 6, 7, 8 -> MediaSeason.SUMMER // Jul, Aug, Sep
                 else -> MediaSeason.FALL      // Oct, Nov, Dec
             }
-
-            // Adjust year for Winter (Winter starts in Dec of previous year technically, but typically "Winter X" is start of year X)
-            // But usually "Winter 2024" means Jan-Mar 2024. 
-            // However, December is typically "Winter" of the NEXT year.
-            // Let's keep it simple: based on Month index. 
             
             val response = apolloClient.query(
                 GetTrendingQuery(
@@ -72,13 +68,22 @@ class TrendingWorker @AssistedInject constructor(
             trendingDao.clearAll()
             trendingDao.insertAll(entities)
 
-            // Note: TrendingWidget was removed, data is kept for future reimplementation
-
             Result.success()
+        } catch (e: ApiError.RateLimited) {
+            Log.w("TrendingWorker", "Rate limited, will retry. Wait: ${e.retryAfterSeconds}s")
+            Result.retry()
+        } catch (e: ApiError.Unauthorized) {
+            Log.w("TrendingWorker", "Unauthorized — skipping")
+            Result.failure()
+        } catch (e: ApiError.ServerError) {
+            Log.e("TrendingWorker", "Server error ${e.statusCode}, will retry")
+            Result.retry()
+        } catch (e: java.io.IOException) {
+            Log.w("TrendingWorker", "Network error, will retry", e)
+            Result.retry()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("TrendingWorker", "Unexpected error", e)
             Result.failure()
         }
     }
 }
-

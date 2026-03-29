@@ -20,7 +20,6 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
-import com.apollographql.apollo.exception.ApolloException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -146,7 +145,7 @@ class LibraryRepositoryImpl @Inject constructor(
         val now = System.currentTimeMillis()
 
         // 3. Try sync to network
-        return try {
+        return safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMediaListEntryMutation(
                     mediaId = Optional.present(mediaId),
@@ -156,17 +155,10 @@ class LibraryRepositoryImpl @Inject constructor(
                 )
             ).execute()
 
-            if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
-                Result.Success(Unit)
-            } else {
+            if (response.data?.SaveMediaListEntry == null || response.hasErrors()) {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Sync failed"
-                Result.Error(errorMessage)
+                throw Exception(errorMessage)
             }
-        } catch (e: ApolloException) {
-            // Local updated, network failed
-            Result.Error("Offline: Saved locally", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 

@@ -10,6 +10,7 @@ import com.anisync.android.AiringScheduleQuery
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
+import com.anisync.android.data.util.ApiError
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.widget.AiringTodayWidget
 import com.anisync.android.widget.WeeklyCalendarWidget
@@ -91,8 +92,20 @@ class AiringScheduleWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: ApiError.RateLimited) {
+            Log.w("AiringScheduleWorker", "Rate limited, will retry after backoff. Wait: ${e.retryAfterSeconds}s")
+            Result.retry()
+        } catch (e: ApiError.Unauthorized) {
+            Log.w("AiringScheduleWorker", "Unauthorized — skipping")
+            Result.failure()
+        } catch (e: ApiError.ServerError) {
+            Log.e("AiringScheduleWorker", "Server error ${e.statusCode}, will retry")
+            Result.retry()
+        } catch (e: java.io.IOException) {
+            Log.w("AiringScheduleWorker", "Network error, will retry", e)
+            Result.retry()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("AiringScheduleWorker", "Unexpected error", e)
             Result.failure()
         }
     }

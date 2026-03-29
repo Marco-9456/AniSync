@@ -14,11 +14,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.Lifecycle
@@ -153,6 +162,36 @@ class MainActivity : AppCompatActivity() {
                             val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
                                 initialValue = false
                             )
+
+                            // Session expired dialog — triggered by AuthorizationInterceptor on HTTP 401
+                            var showSessionExpiredDialog by remember { mutableStateOf(false) }
+
+                            LaunchedEffect(Unit) {
+                                authRepository.sessionExpired.collect {
+                                    showSessionExpiredDialog = true
+                                }
+                            }
+
+                            if (showSessionExpiredDialog) {
+                                AlertDialog(
+                                    onDismissRequest = { showSessionExpiredDialog = false },
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Lock,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    title = { Text("Session Expired") },
+                                    text = {
+                                        Text("Your session has expired. Please log in again to continue using AniSync.")
+                                    },
+                                    confirmButton = {
+                                        TextButton(onClick = { showSessionExpiredDialog = false }) {
+                                            Text("OK")
+                                        }
+                                    }
+                                )
+                            }
 
                             if (isLoggedIn) {
                                 MainScreen()

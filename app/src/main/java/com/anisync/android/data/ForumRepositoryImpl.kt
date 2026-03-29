@@ -514,11 +514,11 @@ class ForumRepositoryImpl @Inject constructor(
         siteUrl = siteUrl
     )
 
-    private inline fun <T> runCatchingApi(action: String, block: () -> T): Result<T> {
-        return try {
-            Result.Success(block())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Something went wrong while trying to $action.", e)
-        }
+    /**
+     * Delegates to the centralized [safeApiCall] for consistent error handling.
+     * Kept as a wrapper to preserve the `action` parameter for context in logs.
+     */
+    private suspend inline fun <T> runCatchingApi(action: String, crossinline block: suspend () -> T): Result<T> {
+        return com.anisync.android.data.util.safeApiCall { block() }
     }
 }

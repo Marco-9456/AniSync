@@ -152,7 +152,8 @@ class DiscoverViewModel @Inject constructor(
                             _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
                                     searchResults = emptyList(),
-                                    isSearching = false
+                                    isSearching = false,
+                                    searchError = result.message
                                 ) ?: it
                             }
                         }

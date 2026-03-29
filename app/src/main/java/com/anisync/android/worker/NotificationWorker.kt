@@ -28,8 +28,8 @@ import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadCommentMentionNotification
 import com.anisync.android.domain.ThreadCommentReplyNotification
-import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.ThreadCommentSubscribedNotification
+import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.type.MediaType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -119,6 +119,19 @@ class NotificationWorker @AssistedInject constructor(
             }
 
             androidx.work.ListenableWorker.Result.success()
+        } catch (e: com.anisync.android.data.util.ApiError.RateLimited) {
+            Log.w(TAG, "Rate limited (wait ${e.retryAfterSeconds}s). Scheduling retry (attempt ${runAttemptCount + 1})")
+            androidx.work.ListenableWorker.Result.retry()
+        } catch (e: com.anisync.android.data.util.ApiError.Unauthorized) {
+            Log.w(TAG, "Unauthorized — session expired, skipping notification check")
+            androidx.work.ListenableWorker.Result.failure()
+        } catch (e: com.anisync.android.data.util.ApiError.ServerError) {
+            Log.e(TAG, "Server error ${e.statusCode} on attempt $runAttemptCount")
+            if (runAttemptCount < MAX_RETRY_ATTEMPTS) {
+                androidx.work.ListenableWorker.Result.retry()
+            } else {
+                androidx.work.ListenableWorker.Result.failure()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Worker failed on attempt $runAttemptCount", e)
             

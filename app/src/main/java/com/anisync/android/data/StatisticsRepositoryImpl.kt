@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetUserStatisticsQuery
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
@@ -24,24 +25,24 @@ class StatisticsRepositoryImpl @Inject constructor(
 ) : StatisticsRepository {
 
     override suspend fun getUserStatistics(userId: Int): Result<UserStatistics> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetUserStatisticsQuery(userId = Optional.present(userId))
             ).execute()
 
             val user = response.data?.User
-                ?: return Result.Error("User not found")
+                ?: throw Exception("User not found")
 
             val animeStats = user.statistics?.anime
-                ?: return Result.Error("No anime statistics available")
+                ?: throw Exception("No anime statistics available")
 
             val mangaStats = user.statistics?.manga
 
             val minutesWatched = animeStats.minutesWatched ?: 0
             val daysWatched = minutesWatched / 1440f // Convert minutes to days
 
-            val userStatistics = UserStatistics(
-                userId = user.id ?: return Result.Error("User ID not found"),
+            UserStatistics(
+                userId = user.id ?: throw Exception("User ID not found"),
                 userName = user.name ?: "Unknown",
                 animeStats = AnimeStatistics(
                     totalCount = animeStats.count ?: 0,
@@ -116,10 +117,6 @@ class StatisticsRepositoryImpl @Inject constructor(
                     )
                 }
             )
-
-            Result.Success(userStatistics)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch statistics")
         }
     }
 }

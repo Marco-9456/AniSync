@@ -3,6 +3,7 @@ package com.anisync.android.data
 import com.anisync.android.GetMediaBySortQuery
 import com.anisync.android.GetPaginatedMediaQuery
 import com.anisync.android.GetUpcomingMediaQuery
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -16,7 +17,6 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
-import com.apollographql.apollo.exception.ApolloException
 import javax.inject.Inject
 
 class DiscoverRepositoryImpl @Inject constructor(
@@ -32,7 +32,7 @@ class DiscoverRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUpcoming(type: MediaType): Result<List<LibraryEntry>> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetUpcomingMediaQuery(
                     perPage = Optional.present(10),
@@ -43,24 +43,18 @@ class DiscoverRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
-            val entries = response.data?.Page?.media?.filterNotNull()
-                ?.filter { it.season != null } // Upcoming = has confirmed season
+            response.data?.Page?.media?.filterNotNull()
+                ?.filter { it.season != null }
                 ?.map { media -> media.toLibraryEntry("UPCOMING") }
                 ?: emptyList()
-            
-            Result.Success(entries)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
     override suspend fun getTBA(type: MediaType): Result<List<LibraryEntry>> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetUpcomingMediaQuery(
-                    perPage = Optional.present(20), // Fetch more to ensure we get 10 after filtering
+                    perPage = Optional.present(20),
                     type = Optional.present(type),
                     status = Optional.present(MediaStatus.NOT_YET_RELEASED)
                 )
@@ -68,17 +62,11 @@ class DiscoverRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
-            val entries = response.data?.Page?.media?.filterNotNull()
-                ?.filter { it.season == null } // TBA = no confirmed season
+            response.data?.Page?.media?.filterNotNull()
+                ?.filter { it.season == null }
                 ?.take(10)
                 ?.map { media -> media.toLibraryEntry("TBA") }
                 ?: emptyList()
-            
-            Result.Success(entries)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
@@ -88,7 +76,7 @@ class DiscoverRepositoryImpl @Inject constructor(
         page: Int,
         format: MediaFormat?
     ): Result<PaginatedResult<LibraryEntry>> {
-        return try {
+        return safeApiCall {
             val (sort, status) = when (sectionType) {
                 "trending" -> listOf(MediaSort.TRENDING_DESC) to null
                 "popular" -> listOf(MediaSort.POPULARITY_DESC) to null
@@ -113,7 +101,6 @@ class DiscoverRepositoryImpl @Inject constructor(
             val pageInfo = response.data?.Page?.pageInfo
             val allMedia = response.data?.Page?.media?.filterNotNull() ?: emptyList()
             
-            // For upcoming/tba, we need to filter by season presence
             val filteredMedia = when (sectionType) {
                 "upcoming" -> allMedia.filter { it.season != null }
                 "tba" -> allMedia.filter { it.season == null }
@@ -124,7 +111,6 @@ class DiscoverRepositoryImpl @Inject constructor(
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
-
                     titleRomaji = media.title?.romaji,
                     titleEnglish = media.title?.english,
                     titleNative = media.title?.native,
@@ -146,23 +132,17 @@ class DiscoverRepositoryImpl @Inject constructor(
                 )
             }
 
-            Result.Success(
-                PaginatedResult(
-                    items = entries,
-                    hasNextPage = pageInfo?.hasNextPage ?: false,
-                    currentPage = pageInfo?.currentPage ?: page,
-                    totalPages = pageInfo?.lastPage ?: 1
-                )
+            PaginatedResult(
+                items = entries,
+                hasNextPage = pageInfo?.hasNextPage ?: false,
+                currentPage = pageInfo?.currentPage ?: page,
+                totalPages = pageInfo?.lastPage ?: 1
             )
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 
     private suspend fun fetchMedia(sort: List<MediaSort>, type: MediaType): Result<List<LibraryEntry>> {
-        return try {
+        return safeApiCall {
             val response = apolloClient.query(
                 GetMediaBySortQuery(
                     sort = Optional.present(sort),
@@ -173,11 +153,10 @@ class DiscoverRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
-            val entries = response.data?.Page?.media?.filterNotNull()?.map { media ->
+            response.data?.Page?.media?.filterNotNull()?.map { media ->
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
-
                     titleRomaji = media.title?.romaji,
                     titleEnglish = media.title?.english,
                     titleNative = media.title?.native,
@@ -194,12 +173,6 @@ class DiscoverRepositoryImpl @Inject constructor(
                     averageScore = media.averageScore
                 )
             } ?: emptyList()
-            
-            Result.Success(entries)
-        } catch (e: ApolloException) {
-            Result.Error("Network error: ${e.message}", e)
-        } catch (e: Exception) {
-            Result.Error("Unexpected error: ${e.message}", e)
         }
     }
 

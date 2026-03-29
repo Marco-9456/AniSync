@@ -10,3 +10,7 @@
 -dontwarn com.google.errorprone.annotations.InlineMe
 -dontwarn javax.annotation.Nullable
 -dontwarn javax.annotation.concurrent.GuardedBy
+
+# Jsoup optional re2j regex support (not included as a dependency)
+-dontwarn com.google.re2j.Matcher
+-dontwarn com.google.re2j.Pattern

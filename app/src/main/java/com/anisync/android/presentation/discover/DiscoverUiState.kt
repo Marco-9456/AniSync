@@ -20,7 +20,8 @@ sealed interface DiscoverUiState {
         val isSearchActive: Boolean = false,
         val searchResults: List<LibraryEntry> = emptyList(),
         val isSearching: Boolean = false,
-        val searchFilters: SearchFilters = SearchFilters()
+        val searchFilters: SearchFilters = SearchFilters(),
+        val searchError: String? = null
     ) : DiscoverUiState
 
     data class Error(val message: String) : DiscoverUiState
