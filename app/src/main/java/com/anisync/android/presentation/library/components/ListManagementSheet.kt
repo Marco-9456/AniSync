@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -60,11 +61,12 @@ fun ListManagementSheet(
     onOrderMoveUp: (String) -> Unit,
     onOrderMoveDown: (String) -> Unit,
     onDeleteList: (String) -> Unit,
-    onCreateList: (String) -> Unit,
+    onCreateList: (String, com.anisync.android.type.MediaType) -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 ) {
     var isCreatingList by remember { mutableStateOf(false) }
     var newListTitle by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(com.anisync.android.type.MediaType.ANIME) }
     val focusRequester = remember { FocusRequester() }
 
     if (visible) {
@@ -127,7 +129,7 @@ fun ListManagementSheet(
                                 keyboardActions = KeyboardActions(
                                     onDone = {
                                         if (newListTitle.isNotBlank()) {
-                                            onCreateList(newListTitle.trim())
+                                            onCreateList(newListTitle.trim(), selectedType)
                                         }
                                         isCreatingList = false
                                         newListTitle = ""
@@ -137,6 +139,30 @@ fun ListManagementSheet(
                                     .fillMaxWidth()
                                     .focusRequester(focusRequester)
                             )
+                            
+                            // Media Type Selection for new list
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                androidx.compose.material3.FilterChip(
+                                    selected = selectedType == com.anisync.android.type.MediaType.ANIME,
+                                    onClick = { selectedType = com.anisync.android.type.MediaType.ANIME },
+                                    label = { Text("Anime") },
+                                    leadingIcon = if (selectedType == com.anisync.android.type.MediaType.ANIME) {
+                                        { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                    } else null
+                                )
+                                androidx.compose.material3.FilterChip(
+                                    selected = selectedType == com.anisync.android.type.MediaType.MANGA,
+                                    onClick = { selectedType = com.anisync.android.type.MediaType.MANGA },
+                                    label = { Text("Manga") },
+                                    leadingIcon = if (selectedType == com.anisync.android.type.MediaType.MANGA) {
+                                        { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                    } else null
+                                )
+                            }
+                            
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End
@@ -153,7 +179,7 @@ fun ListManagementSheet(
                                 Button(
                                     onClick = {
                                         if (newListTitle.isNotBlank()) {
-                                            onCreateList(newListTitle.trim())
+                                            onCreateList(newListTitle.trim(), selectedType)
                                         }
                                         isCreatingList = false
                                         newListTitle = ""

@@ -118,6 +118,7 @@ import kotlin.math.roundToInt
 fun EditLibraryEntrySheet(
     entry: LibraryEntry,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    availableCustomLists: List<String> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (LibraryEntry) -> Unit,
     onDelete: () -> Unit,
@@ -134,11 +135,15 @@ fun EditLibraryEntrySheet(
     var startedAt by rememberSaveable(entry.id) { mutableStateOf(entry.startedAt) }
     var completedAt by rememberSaveable(entry.id) { mutableStateOf(entry.completedAt) }
     var rewatches by rememberSaveable(entry.id) { mutableIntStateOf(entry.rewatches) }
+    
+    // Custom lists handled via standard compose states because they are collections
+    var selectedCustomLists by remember(entry.id) { mutableStateOf(entry.customLists.toSet()) }
 
     // Track unsaved changes using derived state for performance
     val hasChanges by remember(entry.id) {
         derivedStateOf {
             status != entry.status ||
+            selectedCustomLists != entry.customLists.toSet() ||
                     progress != entry.progress ||
                     score != (entry.score ?: 0.0) ||
                     notes != (entry.notes.orEmpty()) ||
@@ -207,6 +212,21 @@ fun EditLibraryEntrySheet(
                     }
                 )
 
+                if (availableCustomLists.isNotEmpty()) {
+                    CustomListsSection(
+                        availableCustomLists = availableCustomLists,
+                        selectedCustomLists = selectedCustomLists,
+                        onCustomListToggle = { listName ->
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            selectedCustomLists = if (listName in selectedCustomLists) {
+                                selectedCustomLists - listName
+                            } else {
+                                selectedCustomLists + listName
+                            }
+                        }
+                    )
+                }
+
                 ProgressSection(
                     progressProvider = { progress },
                     total = entry.totalEpisodes ?: entry.totalChapters,
@@ -263,7 +283,8 @@ fun EditLibraryEntrySheet(
                                 notes = notes.takeIf { it.isNotBlank() },
                                 startedAt = startedAt,
                                 completedAt = completedAt,
-                                rewatches = rewatches
+                                rewatches = rewatches,
+                                customLists = selectedCustomLists.toList()
                             )
                         )
                     },
@@ -446,6 +467,11 @@ private fun StatusSection(
                 Icons.Default.PlayArrow,
                 if (isAnime) R.string.status_watching else R.string.status_reading
             ),
+            StatusOption(
+                LibraryStatus.REPEATING,
+                Icons.Default.Refresh,
+                if (isAnime) R.string.status_rewatching else R.string.status_rereading
+            ),
             StatusOption(LibraryStatus.COMPLETED, Icons.Default.Check, R.string.status_completed),
             StatusOption(LibraryStatus.PLANNING, Icons.Default.Schedule, R.string.status_planning),
             StatusOption(LibraryStatus.PAUSED, Icons.Default.Close, R.string.status_paused),
@@ -471,6 +497,7 @@ private fun StatusSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(state = statusScrollState),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             statusOptions.forEach { option ->
@@ -493,6 +520,59 @@ private fun StatusSection(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    border = if (isSelected) null else {
+                        FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = false,
+                            borderColor = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+// ================== CUSTOM LISTS SECTION ==================
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun CustomListsSection(
+    availableCustomLists: List<String>,
+    selectedCustomLists: Set<String>,
+    onCustomListToggle: (String) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        SectionTitle(text = "Custom Lists")
+
+        androidx.compose.foundation.layout.FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            availableCustomLists.forEach { customListName ->
+                val isSelected = customListName in selectedCustomLists
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onCustomListToggle(customListName) },
+                    label = { Text(customListName) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (isSelected) Icons.Default.Check else Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    modifier = Modifier.semantics {
+                        selected = isSelected
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
                     ),
                     border = if (isSelected) null else {
                         FilterChipDefaults.filterChipBorder(

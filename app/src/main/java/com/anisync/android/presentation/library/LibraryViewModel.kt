@@ -107,7 +107,7 @@ class LibraryViewModel @Inject constructor(
 
             is LibraryAction.MoveListUp -> moveList(action.listName, -1)
             is LibraryAction.MoveListDown -> moveList(action.listName, 1)
-            is LibraryAction.CreateCustomList -> createCustomList(action.listName)
+            is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
         }
     }
@@ -118,11 +118,14 @@ class LibraryViewModel @Inject constructor(
                 .map { it.mediaType }
                 .distinctUntilChanged()
                 .flatMapLatest { type ->
+                    val listOrderFlow = if (type == com.anisync.android.type.MediaType.ANIME) appSettings.animeListOrder else appSettings.mangaListOrder
+                    val hiddenListsFlow = if (type == com.anisync.android.type.MediaType.ANIME) appSettings.hiddenAnimeLists else appSettings.hiddenMangaLists
+                    
                     combine(
                         libraryRepository.observeLibrary("", type),
                         profileRepository.observeProfile(),
-                        appSettings.libraryListOrder,
-                        appSettings.hiddenLibraryLists
+                        listOrderFlow,
+                        hiddenListsFlow
                     ) { libraryEntries, profile, listOrder, hiddenLists ->
                         val favorites =
                             profile?.favoriteAnime?.filter { it.type == type } ?: emptyList()
@@ -339,7 +342,12 @@ class LibraryViewModel @Inject constructor(
     private fun toggleListVisibility(listName: String, hidden: Boolean) {
         val current = _uiState.value.hiddenListNames.toMutableSet()
         if (hidden) current.add(listName) else current.remove(listName)
-        appSettings.setHiddenLibraryLists(current)
+        
+        if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
+            appSettings.setHiddenAnimeLists(current)
+        } else {
+            appSettings.setHiddenMangaLists(current)
+        }
     }
 
     private fun moveList(listName: String, direction: Int) {
@@ -360,19 +368,23 @@ class LibraryViewModel @Inject constructor(
 
         workingOrder.removeAt(index)
         workingOrder.add(newIndex, listName)
-        appSettings.setLibraryListOrder(workingOrder)
+        
+        if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
+            appSettings.setAnimeListOrder(workingOrder)
+        } else {
+            appSettings.setMangaListOrder(workingOrder)
+        }
     }
 
-    private fun createCustomList(listName: String) {
-        // Custom lists on AniList are created implicitly when an entry is added to them.
-        // For now, we just add it to the local order so the user sees it.
-        val currentOrder = _uiState.value.listOrder.toMutableList()
-        if (listName !in currentOrder) {
-            currentOrder.add(listName)
-            appSettings.setLibraryListOrder(currentOrder)
-        }
+    private fun createCustomList(listName: String, type: com.anisync.android.type.MediaType) {
         viewModelScope.launch {
-            _actions.emit(LibraryAction.ShowSnackbar("List '$listName' created. Add entries to it to sync with AniList."))
+            when (val result = libraryRepository.createCustomList(listName, type)) {
+                is Result.Success -> {
+                    _actions.emit(LibraryAction.ShowSnackbar("List '$listName' created."))
+                    refresh()
+                }
+                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+            }
         }
     }
 
@@ -384,11 +396,17 @@ class LibraryViewModel @Inject constructor(
                     // Remove from settings
                     val currentOrder = _uiState.value.listOrder.toMutableList()
                     currentOrder.remove(listName)
-                    appSettings.setLibraryListOrder(currentOrder)
-
+                    
                     val hiddenLists = _uiState.value.hiddenListNames.toMutableSet()
                     hiddenLists.remove(listName)
-                    appSettings.setHiddenLibraryLists(hiddenLists)
+                    
+                    if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
+                        appSettings.setAnimeListOrder(currentOrder)
+                        appSettings.setHiddenAnimeLists(hiddenLists)
+                    } else {
+                        appSettings.setMangaListOrder(currentOrder)
+                        appSettings.setHiddenMangaLists(hiddenLists)
+                    }
 
                     _actions.emit(LibraryAction.ShowSnackbar("List '$listName' deleted"))
                     refresh()

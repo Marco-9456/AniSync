@@ -42,4 +42,9 @@ interface LibraryRepository {
      * Delete a custom list from AniList.
      */
     suspend fun deleteCustomList(customList: String, type: MediaType): Result<Unit>
+
+    /**
+     * Create a new custom list on AniList via UpdateUser.
+     */
+    suspend fun createCustomList(customList: String, type: MediaType): Result<Unit>
 }

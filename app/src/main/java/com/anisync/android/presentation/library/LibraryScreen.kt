@@ -162,6 +162,7 @@ fun LibraryScreen(
         val list = mutableListOf<LibraryTab>()
         listOf(
             LibraryStatus.CURRENT,
+            LibraryStatus.REPEATING,
             LibraryStatus.PAUSED,
             LibraryStatus.COMPLETED,
             LibraryStatus.PLANNING,
@@ -606,7 +607,7 @@ fun LibraryScreen(
         onOrderMoveUp = { viewModel.onAction(LibraryAction.MoveListUp(it)) },
         onOrderMoveDown = { viewModel.onAction(LibraryAction.MoveListDown(it)) },
         onDeleteList = { viewModel.onAction(LibraryAction.DeleteCustomList(it)) },
-        onCreateList = { viewModel.onAction(LibraryAction.CreateCustomList(it)) }
+        onCreateList = { listName, type -> viewModel.onAction(LibraryAction.CreateCustomList(listName, type)) }
     )
 
     editingEntry?.let { entry ->
@@ -618,6 +619,7 @@ fun LibraryScreen(
 
         EditLibraryEntrySheet(
             entry = entry,
+            availableCustomLists = uiState.customListNames,
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->
                 viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))

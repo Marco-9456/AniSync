@@ -150,16 +150,26 @@ class AppSettings @Inject constructor(
     private val _allowPrerelease = MutableStateFlow(prefs.getBoolean(KEY_ALLOW_PRERELEASE, false))
     val allowPrerelease: StateFlow<Boolean> = _allowPrerelease.asStateFlow()
 
-    // Library Custom Lists settings
-    private val _libraryListOrder = MutableStateFlow(
-        prefs.getString(KEY_LIBRARY_LIST_ORDER, "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+    // Library Custom Lists settings separated by media type
+    private val _animeListOrder = MutableStateFlow(
+        prefs.getString(KEY_ANIME_LIST_ORDER, "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
     )
-    val libraryListOrder: StateFlow<List<String>> = _libraryListOrder.asStateFlow()
+    val animeListOrder: StateFlow<List<String>> = _animeListOrder.asStateFlow()
 
-    private val _hiddenLibraryLists = MutableStateFlow(
-        prefs.getStringSet(KEY_HIDDEN_LIBRARY_LISTS, emptySet()) ?: emptySet()
+    private val _mangaListOrder = MutableStateFlow(
+        prefs.getString(KEY_MANGA_LIST_ORDER, "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
     )
-    val hiddenLibraryLists: StateFlow<Set<String>> = _hiddenLibraryLists.asStateFlow()
+    val mangaListOrder: StateFlow<List<String>> = _mangaListOrder.asStateFlow()
+
+    private val _hiddenAnimeLists = MutableStateFlow(
+        prefs.getStringSet(KEY_HIDDEN_ANIME_LISTS, emptySet()) ?: emptySet()
+    )
+    val hiddenAnimeLists: StateFlow<Set<String>> = _hiddenAnimeLists.asStateFlow()
+
+    private val _hiddenMangaLists = MutableStateFlow(
+        prefs.getStringSet(KEY_HIDDEN_MANGA_LISTS, emptySet()) ?: emptySet()
+    )
+    val hiddenMangaLists: StateFlow<Set<String>> = _hiddenMangaLists.asStateFlow()
 
     /**
      * Set the app theme mode.
@@ -266,14 +276,24 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_ALLOW_PRERELEASE, allowed).apply()
     }
 
-    fun setLibraryListOrder(order: List<String>) {
-        _libraryListOrder.value = order
-        prefs.edit().putString(KEY_LIBRARY_LIST_ORDER, order.joinToString(",")).apply()
+    fun setAnimeListOrder(order: List<String>) {
+        _animeListOrder.value = order
+        prefs.edit().putString(KEY_ANIME_LIST_ORDER, order.joinToString(",")).apply()
     }
 
-    fun setHiddenLibraryLists(hidden: Set<String>) {
-        _hiddenLibraryLists.value = hidden
-        prefs.edit().putStringSet(KEY_HIDDEN_LIBRARY_LISTS, hidden).apply()
+    fun setMangaListOrder(order: List<String>) {
+        _mangaListOrder.value = order
+        prefs.edit().putString(KEY_MANGA_LIST_ORDER, order.joinToString(",")).apply()
+    }
+
+    fun setHiddenAnimeLists(hidden: Set<String>) {
+        _hiddenAnimeLists.value = hidden
+        prefs.edit().putStringSet(KEY_HIDDEN_ANIME_LISTS, hidden).apply()
+    }
+
+    fun setHiddenMangaLists(hidden: Set<String>) {
+        _hiddenMangaLists.value = hidden
+        prefs.edit().putStringSet(KEY_HIDDEN_MANGA_LISTS, hidden).apply()
     }
     
     /**
@@ -325,8 +345,10 @@ companion object {
         private const val KEY_APP_LOCALE = "app_locale"
         private const val KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled"
         private const val KEY_ALLOW_PRERELEASE = "allow_prerelease"
-        private const val KEY_LIBRARY_LIST_ORDER = "library_list_order"
-        private const val KEY_HIDDEN_LIBRARY_LISTS = "hidden_library_lists"
+        private const val KEY_ANIME_LIST_ORDER = "anime_list_order"
+        private const val KEY_MANGA_LIST_ORDER = "manga_list_order"
+        private const val KEY_HIDDEN_ANIME_LISTS = "hidden_anime_lists"
+        private const val KEY_HIDDEN_MANGA_LISTS = "hidden_manga_lists"
     }
 }
 

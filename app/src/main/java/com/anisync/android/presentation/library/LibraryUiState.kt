@@ -50,6 +50,6 @@ sealed interface LibraryAction {
     data class ToggleListVisibility(val listName: String, val hidden: Boolean) : LibraryAction
     data class MoveListUp(val listName: String) : LibraryAction
     data class MoveListDown(val listName: String) : LibraryAction
-    data class CreateCustomList(val listName: String) : LibraryAction
+    data class CreateCustomList(val listName: String, val type: MediaType) : LibraryAction
     data class DeleteCustomList(val listName: String) : LibraryAction
 }

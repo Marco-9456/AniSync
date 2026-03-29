@@ -27,7 +27,8 @@ import javax.inject.Inject
 
 class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
-    private val libraryDao: LibraryDao
+    private val libraryDao: LibraryDao,
+    private val appSettings: AppSettings
 ) : LibraryRepository {
 
     /**
@@ -66,6 +67,27 @@ class LibraryRepositoryImpl @Inject constructor(
             }
 
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
+            
+            // Extract all defined custom list names to ensure empty lists are also tracked
+            val options = response.data?.MediaListCollection?.user?.mediaListOptions
+            val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
+            val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
+
+            // Update global settings if the network data has changed to persist empty custom lists
+            if (animeCustomLists.isNotEmpty()) {
+                val currentOrder = appSettings.animeListOrder.value
+                val newLists = animeCustomLists.filter { it !in currentOrder }
+                if (newLists.isNotEmpty()) {
+                    appSettings.setAnimeListOrder(currentOrder + newLists)
+                }
+            }
+            if (mangaCustomLists.isNotEmpty()) {
+                val currentOrder = appSettings.mangaListOrder.value
+                val newLists = mangaCustomLists.filter { it !in currentOrder }
+                if (newLists.isNotEmpty()) {
+                    appSettings.setMangaListOrder(currentOrder + newLists)
+                }
+            }
 
             // Group by entry ID to handle duplicates from custom lists
             val entryMap = mutableMapOf<Int, LibraryEntry>()
@@ -225,7 +247,8 @@ class LibraryRepositoryImpl @Inject constructor(
                     repeat = Optional.present(updatedEntry.rewatches),
                     notes = Optional.presentIfNotNull(updatedEntry.notes),
                     startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
-                    completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent()
+                    completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
+                    customLists = Optional.present(updatedEntry.customLists)
                 )
             ).execute()
 
@@ -273,6 +296,41 @@ class LibraryRepositoryImpl @Inject constructor(
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete custom list failed"
                 throw Exception(errorMessage)
+            }
+        }
+    }
+
+    override suspend fun createCustomList(customList: String, type: com.anisync.android.type.MediaType): com.anisync.android.domain.Result<Unit> {
+        return safeApiCall {
+            val isAnime = type == com.anisync.android.type.MediaType.ANIME
+            
+            // First we need to get the user's current lists so we don't overwrite them
+            val currentOrder = if (isAnime) appSettings.animeListOrder.value else appSettings.mangaListOrder.value
+            
+            // Make sure the new list is included
+            val newList = if (customList !in currentOrder) {
+                currentOrder + customList
+            } else {
+                currentOrder
+            }
+            
+            val response = apolloClient.mutation(
+                com.anisync.android.UpdateCustomListsMutation(
+                    animeCustomLists = if (isAnime) Optional.present(newList) else Optional.absent(),
+                    mangaCustomLists = if (!isAnime) Optional.present(newList) else Optional.absent()
+                )
+            ).execute()
+
+            if (response.hasErrors()) {
+                val errorMessage = response.errors?.firstOrNull()?.message ?: "Create custom list failed"
+                throw Exception(errorMessage)
+            } else {
+                // Update local so it doesn't blink out before a refresh
+                if (isAnime) {
+                    appSettings.setAnimeListOrder(newList)
+                } else {
+                    appSettings.setMangaListOrder(newList)
+                }
             }
         }
     }

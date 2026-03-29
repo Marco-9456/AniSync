@@ -1,5 +1,12 @@
 query GetUserLibrary($username: String!, $type: MediaType!) {
   MediaListCollection(userName: $username, type: $type) {
+    user {
+      id
+      mediaListOptions {
+        animeList { customLists }
+        mangaList { customLists }
+      }
+    }
     lists {
       name
       entries {
