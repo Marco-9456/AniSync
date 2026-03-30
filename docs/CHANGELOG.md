@@ -11,6 +11,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-03-30
+
+### Added
+
+#### Library & Custom Lists
+- **Custom Lists Integration** - Full support for creating, syncing, and managing custom AniList library lists.
+- **Type-Specific Preferences** - Separate list ordering and visibility preferences for your Anime and Manga lists.
+
+#### Media Viewing
+- **Immersive Image Viewer** - New fullscreen image viewer supporting pinch-to-zoom, double-tap-to-zoom, panning, and swiping through galleries.
+- **Image Downloads** - Added ability to download images directly to the device's Downloads folder.
+- **Custom Video Player** - Built a custom Material 3 Expressive UI over ExoPlayer with smooth seeking and full playback controls.
+- **ExoPlayer Caching** - Reuses ExoPlayer instances during scrolling for buttery smooth performance.
+
+#### Navigation & Integration
+- **In-App Deep Linking** - AniList URLs for anime, manga, characters, and forum threads now open natively in the app instead of an external browser.
+
+#### Social & Forums
+- **Social Notifications** - Push notifications for forum replies, mentions, comment/thread likes, and thread subscriptions.
+- **Granular Settings** - Redesigned settings to exactly control which types of social notifications you receive.
+- **Performance Improvements** - Re-engineered complex thread rendering to flatten comment trees, drastically improving scrolling performance.
+- **Enhanced Thread Parsing** - Parses native `@User` mentions to properly reconstruct "flat" AniList threads into a Reddit-style comment tree.
+- **Improved UI & Animations** - Added organic curved lines for comment tracking, animated scroll-to highlighted comments.
+
+### Changed
+- **Centralized Errors & Rate Limiting** - A robust networking system that properly handles 429 Rate Limits, 401 Unauthorized errors (with re-auth prompts), network drops, and GraphQL-level structural errors across all repositories.
+- **Html/Markdown Parsing** - Overhauled the underlying `RichTextParser` to fully support recursive structures like nested blockquotes, custom tables, inline images, code blocks, and spoilers without visual glitches.
+- **Media Thumbnails** - Explicit cache policies logic for better UI performance out-of-the-box.
+
 ## [1.1.0] - 2026-03-01
 
 ### Added
