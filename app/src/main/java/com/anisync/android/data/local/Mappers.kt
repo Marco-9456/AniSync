@@ -39,7 +39,8 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     completedAt = completedAt,
     updatedAt = updatedAt,
     createdAt = createdAt,
-    mediaStartDate = mediaStartDate
+    mediaStartDate = mediaStartDate,
+    customLists = customLists
 )
 
 fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEntryEntity(
@@ -69,7 +70,8 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     completedAt = completedAt,
     updatedAt = updatedAt,
     createdAt = createdAt,
-    mediaStartDate = mediaStartDate
+    mediaStartDate = mediaStartDate,
+    customLists = customLists
 )
 
 // --- MediaDetails ---

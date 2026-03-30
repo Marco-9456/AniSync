@@ -73,19 +73,25 @@ class LibraryRepositoryImpl @Inject constructor(
             val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
             val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
 
-            // Update global settings if the network data has changed to persist empty custom lists
-            if (animeCustomLists.isNotEmpty()) {
-                val currentOrder = appSettings.animeListOrder.value
-                val newLists = animeCustomLists.filter { it !in currentOrder }
-                if (newLists.isNotEmpty()) {
-                    appSettings.setAnimeListOrder(currentOrder + newLists)
+            // Sync custom list names with the API source of truth while preserving local order
+            if (animeCustomLists.isNotEmpty() || mangaCustomLists.isNotEmpty()) {
+                val apiAnimeSet = animeCustomLists.toSet()
+                val apiMangaSet = mangaCustomLists.toSet()
+
+                // For anime: keep local order for lists that still exist on API, then append new ones
+                val currentAnimeOrder = appSettings.animeListOrder.value
+                val syncedAnime = currentAnimeOrder.filter { it in apiAnimeSet } +
+                        animeCustomLists.filter { it !in currentAnimeOrder }
+                if (syncedAnime != currentAnimeOrder) {
+                    appSettings.setAnimeListOrder(syncedAnime)
                 }
-            }
-            if (mangaCustomLists.isNotEmpty()) {
-                val currentOrder = appSettings.mangaListOrder.value
-                val newLists = mangaCustomLists.filter { it !in currentOrder }
-                if (newLists.isNotEmpty()) {
-                    appSettings.setMangaListOrder(currentOrder + newLists)
+
+                // For manga: same approach
+                val currentMangaOrder = appSettings.mangaListOrder.value
+                val syncedManga = currentMangaOrder.filter { it in apiMangaSet } +
+                        mangaCustomLists.filter { it !in currentMangaOrder }
+                if (syncedManga != currentMangaOrder) {
+                    appSettings.setMangaListOrder(syncedManga)
                 }
             }
 

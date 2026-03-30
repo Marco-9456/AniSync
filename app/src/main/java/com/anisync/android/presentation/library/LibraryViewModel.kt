@@ -236,6 +236,10 @@ class LibraryViewModel @Inject constructor(
                             }
                         }
 
+                        // Include all defined custom list names from settings (listOrder)
+                        // so that empty lists still appear as tabs and in the edit sheet
+                        customNames.addAll(listOrder)
+
                         // Sort custom names according to listOrder, with new lists at the end alphabetically
                         val sortedCustomNames = customNames.toList().sortedWith(
                             compareBy<String> { name ->
