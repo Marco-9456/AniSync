@@ -5,7 +5,7 @@
 <h1 align="center">AniSync</h1>
 
 <p align="center">
-  <strong>A modern Android client for AniList - Track your anime and manga journey 🌸</strong>
+  <strong>A native Android client for AniList — track your anime and manga the way you want 🌸</strong>
 </p>
 
 <p align="center">
@@ -34,18 +34,18 @@
 
 ## 📖 Overview
 
-**AniSync** is a native Android application for [AniList.co](https://anilist.co) - the popular anime and manga tracking platform. Built with modern Android development practices, AniSync provides a seamless experience for tracking your watching/reading progress, discovering new content, and staying updated with episode releases.
+**AniSync** is a native Android app for [AniList.co](https://anilist.co) — the anime and manga tracking platform. It started as a personal project to sharpen my Android skills and experiment with modern tooling, but the UI grew into something I was genuinely proud of, so I decided to share it.
 
 > [!NOTE]
-> **A note on the project's origins** > This project originally started out as a personal playground—a way for me to experiment, learn new technologies, and hone my Android development skills. It was never initially intended for a public release. However, as the app grew and the UI/UX really started to come together, it felt like a waste to keep it to myself. I decided to polish it up and share it with the community in hopes that others might find it just as useful and enjoyable!
+> **A bit of backstory** — This was never meant to be a public release. It was a playground. But once the UI/UX came together, keeping it to myself felt like a waste. I polished it up and here we are. Hope you enjoy it!
 
 ### 💡 Why AniSync?
 
-* 📶 **Offline-First**: Full functionality even without an internet connection.
-* ✨ **Beautiful UI**: Modern Material 3 design with smooth animations.
-* 🔔 **Smart Notifications**: Know exactly when your favorite shows air.
-* 📱 **Home Screen Widgets**: Quick access to your anime schedule right from your launcher.
-* 🔒 **Privacy-Focused**: Your credentials are encrypted locally.
+* 📶 **Offline-First** — Full functionality even without an internet connection.
+* ✨ **Beautiful UI** — Modern Material 3 design with smooth animations.
+* 🔔 **Smart Notifications** — Know exactly when your favorite shows air, and get notified about forum activity too.
+* 📱 **Home Screen Widgets** — Quick access to your anime schedule right from your launcher.
+* 🔒 **Privacy-Focused** — Your credentials are encrypted locally.
 
 ---
 
@@ -76,6 +76,7 @@ mindmap
       Track Progress
       Score & Review
       Custom Notes
+      Custom Lists
       Multiple Statuses
       Sort & Filter
     (🔍 Discovery)
@@ -89,7 +90,14 @@ mindmap
       Characters & VA
       Related Media
       Streaming Links
+      Image Viewer
       Favorites
+    (💬 Forum)
+      Browse & Search
+      Thread Creation
+      Comment Replies
+      Bookmarks & Subscriptions
+      Inline Images
     (👤 Profile)
       Statistics
       Recent Activity
@@ -103,6 +111,7 @@ mindmap
     (🔔 Notifications)
       Episode Alerts
       Premiere Alerts
+      Social Alerts
       Custom Timing
 ```
 
@@ -110,9 +119,10 @@ mindmap
 
 | Feature | Description |
 | --- | --- |
-| 📚 **Library Management** | Track anime/manga with progress, scores, notes, and custom statuses (Watching, Planning, Completed, Dropped, Paused). |
+| 📚 **Library Management** | Track anime/manga with progress, scores, notes, and custom statuses (Watching, Planning, Completed, Dropped, Paused). Supports custom AniList lists with per-type ordering preferences. |
 | 🔍 **Smart Discovery** | Browse trending, popular, upcoming, and TBA anime/manga with powerful search and filters. |
-| 🎬 **Media Details** | View comprehensive information including characters, voice actors, relations, and streaming links. |
+| 🎬 **Media Details** | Comprehensive info including characters, voice actors, relations, and streaming links. Includes a fullscreen image viewer with pinch-to-zoom and image downloads. |
+| 💬 **Forum** | Full forum integration — browse, search, and post threads. Supports nested replies, markdown, inline images, bookmarks, subscriptions, and social notifications. |
 | 👤 **User Profile** | View your stats, recent activity, favorites, and manage app settings. |
 | 👥 **Character Browser** | Explore character details and their appearances across different media. |
 | 📊 **Statistics** | Detailed breakdown of your watching/reading habits by genre, score, format, and more. |
@@ -128,10 +138,11 @@ mindmap
 
 ### 🔔 Notification System
 
-* 📺 **Watching Notifications**: Get notified when episodes from your watching list air.
-* 📅 **Planning Notifications**: Know when shows in your planning list premiere.
-* 🌟 **Upcoming Notifications**: Discover popular upcoming shows.
-* ⚙️ **Customizable Timing**: Set notification lead time (15min to 1 day before).
+* 📺 **Watching Notifications** — Get notified when episodes from your watching list air.
+* 📅 **Planning Notifications** — Know when shows in your planning list premiere.
+* 🌟 **Upcoming Notifications** — Discover popular upcoming shows.
+* 💬 **Social Notifications** — Forum replies, mentions, comment/thread likes, and thread subscriptions.
+* ⚙️ **Customizable Timing** — Set notification lead time (15min to 1 day before), and choose exactly which social events you care about.
 
 ---
 
@@ -163,6 +174,7 @@ mindmap
 | 🗄️ **Local Database** | Room with KSP |
 | 🖌️ **Theming** | MaterialKolor (dynamic palette styles & seed colors) |
 | 🖼️ **Image Loading** | Coil |
+| ▶️ **Video Playback** | ExoPlayer with custom Material 3 UI |
 | ⏳ **Background Work** | WorkManager |
 | 🧩 **Widgets** | Jetpack Glance |
 | 📦 **Serialization** | Kotlinx Serialization |
@@ -185,22 +197,17 @@ mindmap
 
 1. **Clone the repository**
 ```bash
-git clone [https://github.com/Marco-9456/AniSync.git](https://github.com/Marco-9456/AniSync.git)
+git clone https://github.com/Marco-9456/AniSync.git
 cd AniSync
-
 ```
 
-
 2. **Open in Android Studio**
-* File → Open → Select the project directory.
-* Wait for Gradle sync to complete.
-
+   * File → Open → Select the project directory.
+   * Wait for Gradle sync to complete.
 
 3. **Run the app**
-* Select a device/emulator (API 26+).
-* Click Run (▶) or press `Shift + F10`.
-
-
+   * Select a device/emulator (API 26+).
+   * Click Run (▶) or press `Shift + F10`.
 
 ### ⚙️ Configuration
 
@@ -209,7 +216,7 @@ cd AniSync
 The app uses AniList's public GraphQL API. For authenticated features (library management, profile), users log in with their AniList account via OAuth.
 
 > [!TIP]
-> No additional API configuration is required - the app is pre-configured for AniList right out of the box!
+> No additional API configuration is required — the app is pre-configured for AniList right out of the box!
 
 #### 📦 Build Variants
 
@@ -224,7 +231,7 @@ Both variants can be installed side-by-side for testing.
 
 ## 📚 Documentation
 
-Comprehensive documentation is available in the `docs/` folder:
+Comprehensive documentation lives in the `docs/` folder:
 
 | Document | Description |
 | --- | --- |
@@ -265,14 +272,13 @@ AniSync/
 │   └── schemas/                # Room schema exports (for migrations)
 ├── docs/                       # Documentation
 └── gradle/                     # Gradle configuration
-
 ```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ### 🏃‍♂️ Quick Start for Contributors
 
@@ -285,31 +291,21 @@ We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for
 
 ---
 
-## 🚧 Missing Features (Forum / Posts)
-
-You might notice that certain AniList social features, such as the **Forum** or user **Posts/Status Updates**, are currently missing from the app.
-
-The honest reason is that I don't use these features myself, and I wanted to avoid cluttering the app with tabs and functionality that many users might never touch. I prefer keeping the experience focused on tracking, discovery, and aesthetics.
-
-However, this isn't set in stone. If I can come up with a clean, unobtrusive UI/UX for them—or if there's enough demand and I receive some great design suggestions from the community—I may consider implementing them in the future!
-
----
-
 ## ⚖️ License
 
-This project's source code is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details. 
+This project's source code is licensed under the **GNU General Public License v3.0** — see the [LICENSE](LICENSE) file for details.
 
 > [!WARNING]
 > **Brand & Naming Guidelines**
-> While the source code is freely available under the GPLv3, the **AniSync** name and brand identity are protected. To avoid user confusion, any derivative works—including but not limited to forks and unofficial builds—are strictly prohibited from using "AniSync" as the name for an AniList client application.
+> While the source code is freely available under the GPLv3, the **AniSync** name and brand identity are protected. Any derivative works — including forks and unofficial builds — are strictly prohibited from using "AniSync" as the name for an AniList client application.
 
 ---
 
 ## 🙏 Acknowledgments
 
-* [AniList](https://anilist.co) for providing the excellent GraphQL API.
+* [AniList](https://anilist.co) for the excellent GraphQL API.
 * [Material Design 3](https://m3.material.io) for the design system.
-* [Seal](https://github.com/JunkFood02/Seal) and [ReadYou](https://github.com/ReadYouApp/ReadYou) for serving as great UI/UX inspiration during development.
+* [Seal](https://github.com/JunkFood02/Seal) and [ReadYou](https://github.com/ReadYouApp/ReadYou) for UI/UX inspiration.
 * The Android and Kotlin communities for amazing tools and libraries.
 
 ---
