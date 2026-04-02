@@ -100,8 +100,10 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.ContentMetadataSection
@@ -109,7 +111,10 @@ import com.anisync.android.presentation.details.components.DetailsSkeletonConten
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
+import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
+import com.anisync.android.presentation.details.components.ReviewDetailsSheet
+import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
@@ -337,6 +342,8 @@ fun MediaDetailsScreen(
                                 },
                                 onFavouriteClick = viewModel::toggleFavourite,
                                 onShareClick = { viewModel.shareMedia(context) },
+                                onRateReview = viewModel::rateReview,
+                                onRateRecommendation = viewModel::rateRecommendation,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 titleLanguage = titleLanguage
@@ -385,7 +392,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsPageContent(
     details: MediaDetails,
@@ -397,12 +404,14 @@ fun DetailsPageContent(
     onRelatedSeeAllClick: () -> Unit,
     onFavouriteClick: () -> Unit,
     onShareClick: () -> Unit,
+    onRateReview: (Int, com.anisync.android.type.ReviewRating) -> Unit,
+    onRateRecommendation: (Int, com.anisync.android.type.RecommendationRating) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: TitleLanguage
 ) {
     val displayCharacters = remember(details.characters, titleLanguage) {
-        details.characters.take(10).map { character ->
+        details.characters.distinctBy { it.id }.take(10).map { character ->
             character.copy(
                 nameUserPreferred = when (titleLanguage) {
                     TitleLanguage.ROMAJI -> character.nameUserPreferred
@@ -419,7 +428,22 @@ fun DetailsPageContent(
             .map { relation -> relation.copy(titleUserPreferred = relation.getTitle(titleLanguage)) }
     }
 
-    val displayGenres = remember(details.genres) { details.genres }
+    val displayRecommendations = remember(details.recommendations) {
+        details.recommendations.filter { it.rating > 0 }.distinctBy { it.id }.take(10)
+    }
+
+    val displayReviews = remember(details.reviews) {
+        details.reviews.distinctBy { it.id }.take(5)
+    }
+
+    // ImageViewerDialog state for cover/banner image
+    var showImageViewer by rememberSaveable { mutableStateOf(false) }
+    val viewerImages = remember(details.coverUrl, details.bannerUrl) {
+        listOfNotNull(details.coverUrl, details.bannerUrl)
+    }
+
+    var selectedReview by remember { mutableStateOf<MediaReview?>(null) }
+    var showAllReviewsSheet by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -430,11 +454,12 @@ fun DetailsPageContent(
             // 1. Header (Cover, Banner, Title)
             item(key = "header") {
                 PageHeaderSection(
-                    details,
-                    sourceScreen,
-                    sharedTransitionScope,
-                    animatedVisibilityScope,
-                    titleLanguage
+                    details = details,
+                    sourceScreen = sourceScreen,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    titleLanguage = titleLanguage,
+                    onCoverClick = { showImageViewer = true }
                 )
             }
 
@@ -468,10 +493,10 @@ fun DetailsPageContent(
 
             // 5. Categories (Genres & Tags)
             item(key = "metadata") {
-                if (details.tags.isNotEmpty() || displayGenres.isNotEmpty()) {
+                if (details.tags.isNotEmpty() || details.genres.isNotEmpty()) {
                     Column {
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                        ContentMetadataSection(genres = displayGenres, tags = details.tags)
+                        ContentMetadataSection(genres = details.genres, tags = details.tags)
                     }
                 }
             }
@@ -505,7 +530,7 @@ fun DetailsPageContent(
                             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
                             modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
                         ) {
-                            items(items = displayCharacters, key = { it.id }) { character ->
+                            items(items = displayCharacters, key = { "character_${it.id}" }) { character ->
                                 CharacterItem(
                                     character = character,
                                     onClick = { onCharacterClick(character.id) },
@@ -550,7 +575,142 @@ fun DetailsPageContent(
                     }
                 }
             }
+
+            // 9. Recommendations
+            item(key = "recommendations") {
+                if (displayRecommendations.isNotEmpty()) {
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                        SectionHeader(
+                            title = stringResource(R.string.section_recommendations),
+                            level = HeaderLevel.Section
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
+                            modifier = Modifier.height(240.dp)
+                        ) {
+                            items(
+                                items = displayRecommendations,
+                                key = { "rec_${it.id}" }
+                            ) { recommendation ->
+                                RecommendationItem(
+                                    recommendation = recommendation,
+                                    onClick = { onRelationClick(recommendation.id) },
+                                    onRate = { isUpvote ->
+                                        val rating = when {
+                                            isUpvote && recommendation.userRating == "RATE_UP" ->
+                                                com.anisync.android.type.RecommendationRating.NO_RATING
+                                            isUpvote ->
+                                                com.anisync.android.type.RecommendationRating.RATE_UP
+                                            !isUpvote && recommendation.userRating == "RATE_DOWN" ->
+                                                com.anisync.android.type.RecommendationRating.NO_RATING
+                                            else ->
+                                                com.anisync.android.type.RecommendationRating.RATE_DOWN
+                                        }
+                                        onRateRecommendation(recommendation.id, rating)
+                                    },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 10. Reviews
+            if (displayReviews.isNotEmpty()) {
+                item(key = "reviews_header") {
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                        SectionHeader(
+                            title = stringResource(R.string.section_reviews),
+                            level = HeaderLevel.Section,
+                            onActionClick = if (displayReviews.size >= 5) { { showAllReviewsSheet = true } } else null
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                    }
+                }
+                items(
+                    items = displayReviews,
+                    key = { "review_${it.id}" }
+                ) { review ->
+                    ReviewCard(
+                        review = review,
+                        onClick = { selectedReview = review },
+                        modifier = Modifier
+                            .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                            .padding(bottom = dimensionResource(R.dimen.spacing_normal))
+                            .animateItem()
+                    )
+                }
+            }
         }
+    }
+
+    // Sync selectedReview with the latest data from details.reviews when API refreshed
+    LaunchedEffect(details.reviews) {
+        selectedReview?.let { current ->
+            val updated = details.reviews.find { it.id == current.id }
+            if (updated != null && updated != current) {
+                selectedReview = updated
+            }
+        }
+    }
+
+    selectedReview?.let { review ->
+        ReviewDetailsSheet(
+            review = review,
+            onRateReview = { reviewId, rating ->
+                onRateReview(reviewId, rating)
+                // Optimistic UI update
+                val oldRating = review.userRating
+                val newRatingStr = if (rating.name == "NO_VOTE") null else rating.name
+
+                var updatedRating = review.rating
+                var updatedAmount = review.ratingAmount
+
+                // Remove old vote effect
+                when (oldRating) {
+                    "UP_VOTE" -> updatedRating -= 1
+                    "DOWN_VOTE" -> updatedRating += 1
+                }
+                // Remove old vote from total if transitioning to NO_VOTE
+                if (oldRating != null && newRatingStr == null) updatedAmount -= 1
+                // Add new vote to total if transitioning from NO_VOTE
+                if (oldRating == null && newRatingStr != null) updatedAmount += 1
+
+                // Add new vote effect
+                when (newRatingStr) {
+                    "UP_VOTE" -> updatedRating += 1
+                    "DOWN_VOTE" -> updatedRating -= 1
+                }
+
+                selectedReview = review.copy(
+                    userRating = newRatingStr,
+                    rating = updatedRating,
+                    ratingAmount = updatedAmount
+                )
+            },
+            onDismiss = { selectedReview = null }
+        )
+    }
+
+    if (showAllReviewsSheet) {
+        ReviewsListSheet(
+            mediaId = details.id,
+            onDismiss = { showAllReviewsSheet = false },
+            onReviewClick = { selectedReview = it }
+        )
+    }
+
+    if (showImageViewer) {
+        ImageViewerDialog(
+            imageUrls = viewerImages,
+            initialIndex = 0,
+            onDismiss = { showImageViewer = false }
+        )
     }
 }
 
@@ -562,6 +722,7 @@ fun PageHeaderSection(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     titleLanguage: TitleLanguage,
+    onCoverClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -640,7 +801,8 @@ fun PageHeaderSection(
             coverShape = coverShape,
             spatialSpec = spatialSpec,
             sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope
+            animatedVisibilityScope = animatedVisibilityScope,
+            onCoverClick = onCoverClick
         )
     }
 }
@@ -751,7 +913,8 @@ private fun ContentRow(
     coverShape: RoundedCornerShape,
     spatialSpec: FiniteAnimationSpec<Rect>,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    onCoverClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coverImageRequest = remember(details.coverUrl, cacheKey) {
@@ -789,7 +952,9 @@ private fun ContentRow(
                     model = coverImageRequest,
                     contentDescription = stringResource(R.string.content_description_cover),
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { onCoverClick() }
                 )
             }
         }
@@ -957,6 +1122,112 @@ fun SmartActionButtonsRow(
                 stringResource(R.string.action_share),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
             )
+        }
+    }
+}
+
+@Composable
+fun ReviewCard(
+    review: MediaReview,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val scoreColor = remember(review.score) {
+        when {
+            review.score >= 75 -> Color(0xFF4CAF50) // Green
+            review.score >= 50 -> Color(0xFFFFC107) // Amber
+            else -> Color(0xFFFF5722) // Red-orange
+        }
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // User info row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // User avatar
+                AsyncImage(
+                    model = review.userAvatarUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+
+                Text(
+                    text = review.userName,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Score badge
+                Box(
+                    modifier = Modifier
+                        .background(
+                            scoreColor.copy(alpha = 0.15f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${review.score}/100",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = scoreColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Review summary
+            Text(
+                text = review.summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Rating bar + stats
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Upvote indicator
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = "${review.rating}/${review.ratingAmount}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.found_helpful),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
         }
     }
 }

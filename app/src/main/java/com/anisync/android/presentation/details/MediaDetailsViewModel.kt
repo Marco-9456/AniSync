@@ -162,4 +162,30 @@ class MediaDetailsViewModel @Inject constructor(
             mediaType = details.type
         )
     }
+
+    /**
+     * Rate a review.
+     */
+    fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating) {
+        viewModelScope.launch {
+            when (val result = detailsRepository.rateReview(reviewId, rating)) {
+                is Result.Success -> {
+                    // Update cache for immediate feedback
+                    refresh()
+                }
+                is Result.Error -> {
+                    // Handled implicitly or via snackbar later
+                }
+            }
+        }
+    }
+
+    fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
+        viewModelScope.launch {
+            when (detailsRepository.rateRecommendation(mediaId, recommendationId, rating)) {
+                is Result.Success -> refresh()
+                is Result.Error -> {}
+            }
+        }
+    }
 }

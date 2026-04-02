@@ -69,6 +69,7 @@ import com.anisync.android.presentation.util.TransitionKeys
 @Composable
 fun CharacterHeaderSection(
     character: CharacterDetails,
+    onPosterClick: () -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -181,7 +182,9 @@ fun CharacterHeaderSection(
                     .build(),
                 contentDescription = stringResource(R.string.a11y_character_image, character.name),
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(onClick = onPosterClick)
             )
         }
     }

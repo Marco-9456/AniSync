@@ -6,21 +6,29 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -41,19 +49,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterDescriptionParser
 import com.anisync.android.domain.CharacterDetails
+import com.anisync.android.domain.VoiceActor
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.StaggeredAnimatedVisibility
 import com.anisync.android.presentation.details.components.CharacterHeaderSection
@@ -65,6 +81,8 @@ import com.anisync.android.presentation.details.components.MediaRoleItem
 import com.anisync.android.presentation.details.components.NameSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 // Custom stagger delay for character details (faster reveal)
 private const val CharacterStaggerDelay = 10
@@ -74,6 +92,7 @@ private const val CharacterStaggerDelay = 10
 fun CharacterDetailsScreen(
     characterId: Int,
     onBackClick: () -> Unit,
+    onMediaClick: (Int) -> Unit = {},
     onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     viewModel: CharacterDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -146,6 +165,7 @@ fun CharacterDetailsScreen(
                 is CharacterDetailsUiState.Success -> {
                     CharacterDetailsContent(
                         character = state.details,
+                        onMediaClick = onMediaClick,
                         onMediaSeeAllClick = {
                             onMediaSeeAllClick(
                                 state.details.id,
@@ -173,11 +193,16 @@ fun CharacterDetailsScreen(
 @Composable
 private fun CharacterDetailsContent(
     character: CharacterDetails,
+    onMediaClick: (Int) -> Unit = {},
     onMediaSeeAllClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
+    // ImageViewerDialog state
+    var showImageViewer by rememberSaveable { mutableStateOf(false) }
+    var imageViewerUrl by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Extract colors for parser
     val spoilerBackgroundColor = MaterialTheme.colorScheme.surfaceVariant
@@ -218,6 +243,10 @@ private fun CharacterDetailsContent(
             item {
                 CharacterHeaderSection(
                     character = character,
+                    onPosterClick = {
+                        imageViewerUrl = character.imageUrl
+                        showImageViewer = true
+                    },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope
                 )
@@ -288,13 +317,32 @@ private fun CharacterDetailsContent(
                 }
             }
 
-            // Media Roles (stagger index 4)
+            if (character.media.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    StaggeredAnimatedVisibility(
+                        key = "char_va",
+                        index = 4,
+                        delayPerItem = CharacterStaggerDelay
+                    ) {
+                        VoiceActorsSection(
+                            media = character.media,
+                            onAvatarClick = { avatarUrl ->
+                                imageViewerUrl = avatarUrl
+                                showImageViewer = true
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Media Roles (stagger index 5)
             if (character.media.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(32.dp))
                     StaggeredAnimatedVisibility(
                         key = "char_media",
-                        index = 4,
+                        index = 5,
                         delayPerItem = CharacterStaggerDelay
                     ) {
                         Column {
@@ -309,12 +357,14 @@ private fun CharacterDetailsContent(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 modifier = Modifier.height(180.dp)
                             ) {
-                                // Optimization: Ensure stable keys for list items
                                 items(
-                                    items = character.media.take(10),
+                                    items = character.media.distinctBy { it.id }.take(10),
                                     key = { it.id }
                                 ) { media ->
-                                    MediaRoleItem(media)
+                                    MediaRoleItem(
+                                        media = media,
+                                        onClick = { onMediaClick(media.id) }
+                                    )
                                 }
                             }
                         }
@@ -322,6 +372,18 @@ private fun CharacterDetailsContent(
                 }
             }
         }
+    }
+
+    // ImageViewerDialog
+    if (showImageViewer && imageViewerUrl != null) {
+        ImageViewerDialog(
+            imageUrls = listOf(imageViewerUrl!!),
+            initialIndex = 0,
+            onDismiss = {
+                showImageViewer = false
+                imageViewerUrl = null
+            }
+        )
     }
 }
 
@@ -365,6 +427,86 @@ private fun ErrorState(
             TextButton(onClick = onBackClick) {
                 Text("Go Back")
             }
+        }
+    }
+}
+
+@Composable
+private fun VoiceActorsSection(
+    media: List<com.anisync.android.domain.CharacterMedia>,
+    onAvatarClick: (String) -> Unit = {}
+) {
+    // Extract unique voice actors
+    val voiceActors = remember(media) {
+        media.mapNotNull { it.voiceActor }
+            .distinctBy { it.id }
+            .take(10)
+    }
+
+    if (voiceActors.isEmpty()) return
+
+    Column {
+        SectionHeader(title = stringResource(R.string.section_voice_actors), level = HeaderLevel.Section)
+        Spacer(modifier = Modifier.height(12.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(
+                items = voiceActors,
+                key = { it.id }
+            ) { va ->
+                VoiceActorChip(
+                    voiceActor = va,
+                    onAvatarClick = { va.imageUrl?.let(onAvatarClick) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VoiceActorChip(
+    voiceActor: VoiceActor,
+    onAvatarClick: () -> Unit = {}
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
+        // Circular avatar
+        AsyncImage(
+            model = voiceActor.imageUrl,
+            contentDescription = voiceActor.nameUserPreferred,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(onClick = onAvatarClick)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = voiceActor.nameUserPreferred,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
+        voiceActor.nameNative?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 9.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

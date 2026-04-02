@@ -427,6 +427,9 @@ fun AniSyncNavHost(
                 CharacterDetailsScreen(
                     characterId = character.characterId,
                     onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "character"))
+                    },
                     onMediaSeeAllClick = { characterId, characterName ->
                         navController.navigate(CharacterMediaGrid(characterId, characterName))
                     },

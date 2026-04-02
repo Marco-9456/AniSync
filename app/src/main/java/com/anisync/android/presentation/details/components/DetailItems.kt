@@ -5,8 +5,10 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ThumbDown
+import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +43,7 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
+import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
@@ -113,11 +122,15 @@ fun CharacterItem(
 }
 
 @Composable
-fun MediaRoleItem(media: CharacterMedia) {
+fun MediaRoleItem(
+    media: CharacterMedia,
+    onClick: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .width(100.dp)
             .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
@@ -232,5 +245,104 @@ fun RelationItem(
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+fun RecommendationItem(
+    recommendation: RecommendedMedia,
+    onClick: () -> Unit,
+    onRate: (isUpvote: Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val isUpvoted = recommendation.userRating == "RATE_UP"
+    val isDownvoted = recommendation.userRating == "RATE_DOWN"
+
+    Column(
+        modifier = modifier
+            .width(dimensionResource(R.dimen.character_item_width))
+            .clip(imageShape)
+            .bouncyClickable(
+                onClick = onClick,
+                role = Role.Button,
+                onClickLabel = recommendation.titleUserPreferred
+            )
+            .padding(bottom = dimensionResource(R.dimen.spacing_small))
+    ) {
+        Box(
+            modifier = Modifier
+                .height(dimensionResource(R.dimen.character_image_height))
+                .fillMaxWidth()
+                .clip(imageShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            AsyncImage(
+                model = recommendation.coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+        Text(
+            text = recommendation.format?.formatAsTitle() ?: "",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = recommendation.titleUserPreferred,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        // Rating row: thumbs up, count, thumbs down
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = { onRate(true) },
+                modifier = Modifier.size(28.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = if (isUpvoted) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ThumbUp,
+                    contentDescription = "Like",
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Text(
+                text = "${recommendation.rating}",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                ),
+                color = when {
+                    recommendation.rating > 0 -> MaterialTheme.colorScheme.primary
+                    recommendation.rating < 0 -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            IconButton(
+                onClick = { onRate(false) },
+                modifier = Modifier.size(28.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = if (isDownvoted) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ThumbDown,
+                    contentDescription = "Dislike",
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
     }
 }
