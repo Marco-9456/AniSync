@@ -933,11 +933,14 @@ object RichTextParser {
         val src = element.attr("src")
         if (src.isNotBlank()) {
             val widthAttr = element.attr("width")
+            // AniList uses "#<number>" (e.g. width="#10") to mean full-width images.
+            // Treat any width starting with "#" as no explicit width → defaults to fill.
+            val isHashWidth = widthAttr.startsWith("#")
             ctx.blocks.add(
                 RichTextBlock.Image(
                     src,
-                    widthAttr.replace(NON_DIGIT_REGEX, "").toIntOrNull(),
-                    widthAttr.contains("%"),
+                    if (isHashWidth) null else widthAttr.replace(NON_DIGIT_REGEX, "").toIntOrNull(),
+                    if (isHashWidth) false else widthAttr.contains("%"),
                     linkUrl,
                     ctx.align
                 )
