@@ -2,8 +2,10 @@ package com.anisync.android.presentation.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import com.anisync.android.domain.LinkPreviewProvider
 
 /**
  * Defines actions the [AniLinkRouter] can take when it recognizes a URL.
@@ -23,6 +25,8 @@ data class AniLinkCallbacks(
  * When not provided, the router falls back to opening all links in the browser.
  */
 val LocalAniLinkCallbacks = compositionLocalOf { AniLinkCallbacks() }
+
+val LocalLinkPreviewProvider = staticCompositionLocalOf<LinkPreviewProvider?> { null }
 
 /**
  * Centralized link router that intercepts recognizable AniList URLs and

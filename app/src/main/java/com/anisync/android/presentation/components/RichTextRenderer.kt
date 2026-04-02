@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,15 +53,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.domain.parser.ParserConfig
 import com.anisync.android.domain.parser.RichTextBlock
 import com.anisync.android.domain.parser.RichTextParser
+import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAniLinkRouter
 import com.anisync.android.presentation.util.shimmerEffect
 
@@ -98,6 +100,17 @@ fun RichTextRenderer(
     var viewerInitialIndex by remember { mutableStateOf<Int?>(null) }
     val linkRouter = rememberAniLinkRouter()
 
+    // Batch-fetch link previews for all AniList link blocks in this body
+    val previewProvider = LocalLinkPreviewProvider.current
+    val previews = remember { mutableStateMapOf<Int, LinkPreview>() }
+    LaunchedEffect(parsedData, previewProvider) {
+        if (previewProvider == null) return@LaunchedEffect
+        val anilistLinks = collectAnilistLinks(parsedData.blocks)
+        if (anilistLinks.isEmpty()) return@LaunchedEffect
+        val fetched = previewProvider.getPreviews(anilistLinks)
+        previews.putAll(fetched)
+    }
+
     SelectionContainer(modifier = modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             RenderBlocks(
@@ -105,6 +118,7 @@ fun RichTextRenderer(
                 style = style,
                 color = color,
                 spoilerColor = spoilerColor,
+                previews = previews,
                 onImageClick = { url ->
                     val idx = parsedData.imageUrls.indexOf(url)
                     if (idx >= 0) viewerInitialIndex = idx
@@ -123,6 +137,21 @@ fun RichTextRenderer(
     }
 }
 
+private fun collectAnilistLinks(blocks: List<RichTextBlock>): List<RichTextBlock.AnilistLink> {
+    val result = mutableListOf<RichTextBlock.AnilistLink>()
+    for (block in blocks) {
+        when (block) {
+            is RichTextBlock.AnilistLink -> result.add(block)
+            is RichTextBlock.Spoiler -> result.addAll(collectAnilistLinks(block.children))
+            is RichTextBlock.Blockquote -> result.addAll(collectAnilistLinks(block.children))
+            is RichTextBlock.ListBlock -> block.items.forEach { result.addAll(collectAnilistLinks(it.children)) }
+            is RichTextBlock.Table -> block.rows.forEach { row -> row.cells.forEach { result.addAll(collectAnilistLinks(it.children)) } }
+            else -> {}
+        }
+    }
+    return result
+}
+
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun RenderBlocks(
@@ -130,6 +159,7 @@ private fun RenderBlocks(
     style: TextStyle,
     color: Color,
     spoilerColor: Color,
+    previews: Map<Int, LinkPreview>,
     onImageClick: (String) -> Unit,
     onLinkClick: (String) -> Unit
 ) {
@@ -173,60 +203,12 @@ private fun RenderBlocks(
                 }
 
                 is RichTextBlock.AnilistLink -> {
-                    // Beautiful Placeholder Card for AniList API Embeds
-                    // TODO: Replace with a component that fetches title/coverImage using block.id from your API
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-                            .clickable { onLinkClick(block.url) }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        val typeColor = when (block.type.lowercase()) {
-                            "anime" -> Color(0xFF3DB4F2)
-                            "manga" -> Color(0xFFF2A33D)
-                            "character" -> Color(0xFFE03D51)
-                            "staff" -> Color(0xFF8F56C0)
-                            "user" -> Color(0xFF4CAF50)
-                            else -> MaterialTheme.colorScheme.primary
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(typeColor.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = block.type.take(1).uppercase(),
-                                style = style.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                    color = typeColor
-                                )
-                            )
-                        }
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "AniList ${block.type.replaceFirstChar { it.uppercase() }} #${block.id}",
-                                style = style.copy(fontWeight = FontWeight.Bold, color = typeColor),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Tap to view on AniList",
-                                style = style.copy(
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            )
-                        }
-                    }
+                    AniListLinkCard(
+                        block = block,
+                        preview = previews[block.id],
+                        style = style,
+                        onLinkClick = onLinkClick
+                    )
                 }
 
                 is RichTextBlock.ListBlock -> {
@@ -252,6 +234,7 @@ private fun RenderBlocks(
                                         style,
                                         color,
                                         spoilerColor,
+                                        previews,
                                         onImageClick,
                                         onLinkClick
                                     )
@@ -312,6 +295,7 @@ private fun RenderBlocks(
                                             style = style.copy(fontWeight = if (cell.isHeader) FontWeight.Bold else FontWeight.Normal),
                                             color = color,
                                             spoilerColor = spoilerColor,
+                                            previews = previews,
                                             onImageClick = onImageClick,
                                             onLinkClick = onLinkClick
                                         )
@@ -388,6 +372,7 @@ private fun RenderBlocks(
                                     style,
                                     color,
                                     spoilerColor,
+                                    previews,
                                     onImageClick,
                                     onLinkClick
                                 )
@@ -418,6 +403,7 @@ private fun RenderBlocks(
                             style.copy(fontStyle = FontStyle.Italic),
                             color,
                             spoilerColor,
+                            previews,
                             onImageClick,
                             onLinkClick
                         )

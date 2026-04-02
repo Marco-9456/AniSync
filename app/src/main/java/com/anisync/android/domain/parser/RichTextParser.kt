@@ -84,8 +84,13 @@ sealed interface RichTextBlock {
         val type: String,
         val id: Int,
         val url: String,
+        val slug: String? = null,
         override val align: TextAlign = TextAlign.Start
-    ) : RichTextBlock
+    ) : RichTextBlock {
+        val displayTitle: String
+            get() = slug?.let { decodeSlug(it) }
+                ?: "${type.replaceFirstChar { it.uppercase() }} #$id"
+    }
 }
 
 data class TableRow(val cells: List<TableCell>)
@@ -97,6 +102,13 @@ data class ParserConfig(
     val codeBackground: Color,
     val spoilerColor: Color
 )
+
+private fun decodeSlug(slug: String): String =
+    slug
+        .replace("--", "\u0000")
+        .replace('-', ' ')
+        .replace("\u0000", ": ")
+        .trim()
 
 // =============================================================================
 // Background Parser Engine
@@ -117,7 +129,7 @@ object RichTextParser {
     private val SPOILER_MD_REGEX = Regex("""~!(.*?)!~""", RegexOption.DOT_MATCHES_ALL)
     private val NON_DIGIT_REGEX = Regex("[^0-9]")
     private val ANILIST_LINK_REGEX =
-        Regex("""https?://anilist\.co/(anime|manga|character|staff|user|activity)/([0-9]+)""")
+        Regex("""https?://anilist\.co/(anime|manga|character|staff|user|activity)/([0-9]+)(?:/([A-Za-z0-9][A-Za-z0-9-]*))?/?""")
 
     suspend fun parse(html: String, config: ParserConfig): ParsedRichText =
         withContext(Dispatchers.Default) {
@@ -143,6 +155,20 @@ object RichTextParser {
      */
     private fun preprocessHtml(html: String): String {
         var processed = html.replace("\r", "")
+
+        // Fix AniList's escaped parenthesis leaking into code blocks.
+        // AniList often forgets the trailing semicolon on HTML entities (e.g., &amp;rpar),
+        // so we aggressively strip out all known variations.
+        processed = processed.replace("&amp;rpar;", ")")
+            .replace("&amp;rpar", ")")
+            .replace("&rpar;", ")")
+            .replace("&rpar", ")")
+            .replace("&amp;lpar;", "(")
+            .replace("&amp;lpar", "(")
+            .replace("&lpar;", "(")
+            .replace("&lpar", "(")
+            .replace("&#41;", ")")
+            .replace("&#40;", "(")
 
         // 1. Prevent Jsoup from hoisting YouTube blocks out of inline spoilers
         // Converts `<div class="youtube">...</div>` to `<youtube>...</youtube>`
@@ -374,7 +400,7 @@ object RichTextParser {
 
             "youtube" -> { // Handles preprocessed safe YouTube block
                 workingCtx.flushText()
-                val id = element.id()
+                val id = element.id().trim()
                 if (id.isNotBlank()) {
                     workingCtx.blocks.add(
                         RichTextBlock.YouTube(
@@ -391,11 +417,15 @@ object RichTextParser {
             "span" -> handleSpan(element, workingCtx)
             "video" -> {
                 workingCtx.flushText()
-                val src =
-                    element.attr("src").ifBlank { element.selectFirst("source")?.attr("src") ?: "" }
+                var src = element.attr("src")
+                if (src.isBlank()) {
+                    // Fallback to iterating source tags in case selectFirst fails on certain API levels
+                    src = element.getElementsByTag("source").firstOrNull()?.attr("src") ?: ""
+                }
+
                 if (src.isNotBlank()) workingCtx.blocks.add(
                     RichTextBlock.Video(
-                        src,
+                        src.trim(),
                         workingCtx.align
                     )
                 )
@@ -614,7 +644,7 @@ object RichTextParser {
                 val match = YOUTUBE_REGEX.find(text, i)
                 if (match != null && match.range.first == i) {
                     flush(); ctx.flushText()
-                    var url = match.groupValues[1]
+                    var url = match.groupValues[1].trim()
                     if (!url.startsWith("http")) url =
                         "[https://www.youtube.com/watch?v=$url](https://www.youtube.com/watch?v=$url)"
                     ctx.blocks.add(RichTextBlock.YouTube(url, ctx.align))
@@ -625,7 +655,7 @@ object RichTextParser {
                 val match = WEBM_REGEX.find(text, i)
                 if (match != null && match.range.first == i) {
                     flush(); ctx.flushText()
-                    ctx.blocks.add(RichTextBlock.Video(match.groupValues[1], ctx.align))
+                    ctx.blocks.add(RichTextBlock.Video(match.groupValues[1].trim(), ctx.align))
                     i = match.range.last + 1; lastAppend = i; continue
                 }
             }
@@ -692,7 +722,7 @@ object RichTextParser {
                     val isDouble = text.startsWith("~~", i)
                     val marker = if (isDouble) "~~" else "~"
                     val end = text.indexOf(marker, i + marker.length)
-                    if (end != -1 && i + marker.length < len && !text[i + marker.length].isWhitespace()) {
+                    if (end > i + marker.length && !text[i + marker.length].isWhitespace() && !text[end - 1].isWhitespace()) {
                         flush()
                         ctx.builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
                             val subCtx = ParseContext(
@@ -718,7 +748,7 @@ object RichTextParser {
 
                 if (text.startsWith(marker3, i)) {
                     val end = text.indexOf(marker3, i + 3)
-                    if (end != -1) {
+                    if (end > i + 3 && !text[i + 3].isWhitespace() && !text[end - 1].isWhitespace()) {
                         flush()
                         ctx.builder.withStyle(
                             SpanStyle(
@@ -742,7 +772,7 @@ object RichTextParser {
                 }
                 if (text.startsWith(marker2, i)) {
                     val end = text.indexOf(marker2, i + 2)
-                    if (end != -1) {
+                    if (end > i + 2 && !text[i + 2].isWhitespace() && !text[end - 1].isWhitespace()) {
                         flush()
                         ctx.builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                             val subCtx = ParseContext(
@@ -760,7 +790,7 @@ object RichTextParser {
                     }
                 }
                 val end = text.indexOf(charStr, i + 1)
-                if (end != -1 && i + 1 < len && !text[i + 1].isWhitespace()) {
+                if (end > i + 1 && !text[i + 1].isWhitespace() && !text[end - 1].isWhitespace()) {
                     flush()
                     ctx.builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                         val subCtx = ParseContext(
@@ -821,7 +851,8 @@ object RichTextParser {
                         ctx.flushText()
                         val type = anilistMatch.groupValues[1]
                         val id = anilistMatch.groupValues[2].toIntOrNull() ?: 0
-                        ctx.blocks.add(RichTextBlock.AnilistLink(type, id, url, ctx.align))
+                        val slug = anilistMatch.groupValues.getOrNull(3)?.takeIf { it.isNotEmpty() }
+                        ctx.blocks.add(RichTextBlock.AnilistLink(type, id, url, slug, ctx.align))
                         i = match.range.last + 1
                         lastAppend = i
                         continue

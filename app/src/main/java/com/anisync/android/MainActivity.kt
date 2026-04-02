@@ -43,7 +43,9 @@ import com.anisync.android.data.update.UpdateState
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.settings.UpdateDialog
+import com.anisync.android.domain.LinkPreviewProvider
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
@@ -67,6 +69,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var updateManager: UpdateManager
+
+    @Inject
+    lateinit var linkPreviewProvider: LinkPreviewProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val onCreateTime = measureTimeMillis {
@@ -148,7 +153,10 @@ class MainActivity : AppCompatActivity() {
                     selectedPaletteId == "dynamic"
                 }
 
-                CompositionLocalProvider(LocalAppSettings provides appSettings) {
+                CompositionLocalProvider(
+                    LocalAppSettings provides appSettings,
+                    LocalLinkPreviewProvider provides linkPreviewProvider
+                ) {
                     AppTheme(
                         darkTheme = useDarkTheme,
                         dynamicColor = useDynamicColor,

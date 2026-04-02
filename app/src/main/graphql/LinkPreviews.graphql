@@ -1,0 +1,25 @@
+query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int]) {
+    mediaPage: Page(perPage: 25) {
+        media(id_in: $mediaIds) {
+            id
+            title {
+                userPreferred
+            }
+            coverImage {
+                large
+            }
+            type
+        }
+    }
+    characterPage: Page(perPage: 25) {
+        characters(id_in: $characterIds) {
+            id
+            name {
+                userPreferred
+            }
+            image {
+                large
+            }
+        }
+    }
+}
