@@ -88,6 +88,10 @@ data class MediaDetails(
     val relations: List<RelatedMedia>,
     // External and streaming links
     val externalLinks: List<ExternalLink>,
+    // Recommendations
+    val recommendations: List<RecommendedMedia> = emptyList(),
+    // Reviews
+    val reviews: List<MediaReview> = emptyList(),
     // Whether this media is in user's favorites
     val isFavourite: Boolean = false
 )
@@ -113,4 +117,38 @@ data class RelatedMedia(
     val format: String?,
     val status: String?,
     val relationType: String
+)
+
+/**
+ * Represents a recommended media item from the AniList recommendations system.
+ */
+@Serializable
+data class RecommendedMedia(
+    val id: Int,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
+    val titleUserPreferred: String,
+    val coverUrl: String?,
+    val format: String?,
+    val score: Int?,
+    val rating: Int, // Community recommendation rating
+    val userRating: String? = null // "RATE_UP", "RATE_DOWN", or "NO_RATING"/null
+)
+
+/**
+ * Represents a user review for a media.
+ */
+@Serializable
+data class MediaReview(
+    val id: Int,
+    val summary: String,
+    val body: String? = null,
+    val score: Int,
+    val rating: Int,        // Upvotes
+    val ratingAmount: Int,  // Total votes
+    val userRating: String? = null,
+    val userName: String,
+    val userAvatarUrl: String?,
+    val createdAt: Long     // Unix timestamp
 )

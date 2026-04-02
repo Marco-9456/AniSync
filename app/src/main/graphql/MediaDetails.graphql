@@ -106,6 +106,44 @@ query GetMediaDetails($id: Int) {
             notes
             isDisabled
         }
+        recommendations(sort: [RATING_DESC], perPage: 10) {
+            nodes {
+                rating
+                userRating
+                mediaRecommendation {
+                    id
+                    title {
+                        userPreferred
+                        romaji
+                        english
+                        native
+                    }
+                    coverImage {
+                        large
+                    }
+                    format
+                    averageScore
+                }
+            }
+        }
+        reviews(sort: [RATING_DESC], perPage: 5) {
+            nodes {
+                id
+                summary
+                body(asHtml: true)
+                score
+                rating
+                ratingAmount
+                userRating
+                user {
+                    name
+                    avatar {
+                        medium
+                    }
+                }
+                createdAt
+            }
+        }
         isFavourite
     }
 }

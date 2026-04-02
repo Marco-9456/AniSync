@@ -1,0 +1,27 @@
+query ReviewDetails($id: Int) {
+    Review(id: $id) {
+        id
+        summary
+        body(asHtml: true)
+        score
+        rating
+        ratingAmount
+        createdAt
+        user {
+            name
+            avatar {
+                medium
+                large
+            }
+        }
+        media {
+            id
+            title {
+                userPreferred
+            }
+            coverImage {
+                large
+            }
+        }
+    }
+}

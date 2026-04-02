@@ -20,6 +20,8 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.Tag
@@ -171,6 +173,39 @@ class DetailsRepositoryImpl @Inject constructor(
                 } else null
             }
 
+            // Map recommendations
+            val recommendations = media.recommendations?.nodes?.filterNotNull()?.mapNotNull { node ->
+                val rec = node.mediaRecommendation ?: return@mapNotNull null
+                RecommendedMedia(
+                    id = rec.id,
+                    titleRomaji = rec.title?.romaji,
+                    titleEnglish = rec.title?.english,
+                    titleNative = rec.title?.native,
+                    titleUserPreferred = rec.title?.userPreferred ?: "Unknown",
+                    coverUrl = rec.coverImage?.large,
+                    format = rec.format?.name,
+                    score = rec.averageScore,
+                    rating = node.rating ?: 0,
+                    userRating = node.userRating?.name
+                )
+            } ?: emptyList()
+
+            // Map reviews
+            val reviews = media.reviews?.nodes?.filterNotNull()?.map { node ->
+                MediaReview(
+                    id = node.id,
+                    summary = node.summary ?: "",
+                    body = node.body,
+                    score = node.score ?: 0,
+                    rating = node.rating ?: 0,
+                    ratingAmount = node.ratingAmount ?: 0,
+                    userRating = node.userRating?.name,
+                    userName = node.user?.name ?: "Unknown",
+                    userAvatarUrl = node.user?.avatar?.medium,
+                    createdAt = (node.createdAt ?: 0).toLong()
+                )
+            } ?: emptyList()
+
             val details = MediaDetails(
                 id = media.id ?: 0,
                 titleRomaji = titleRomaji,
@@ -205,6 +240,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 characters = characters,
                 relations = relations,
                 externalLinks = externalLinks,
+                recommendations = recommendations,
+                reviews = reviews,
                 isFavourite = media.isFavourite ?: false
             )
 
@@ -387,4 +424,71 @@ class DetailsRepositoryImpl @Inject constructor(
             )
         }
     }
+    override suspend fun getMediaReviews(mediaId: Int, page: Int): Result<Pair<List<MediaReview>, Boolean>> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                com.anisync.android.GetMediaReviewsQuery(
+                    mediaId = mediaId,
+                    page = page
+                )
+            ).execute()
+
+            if (response.hasErrors() || response.data == null) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to fetch reviews")
+            }
+
+            val pageData = response.data?.Page
+            val hasNextPage = pageData?.pageInfo?.hasNextPage ?: false
+            val nodes = pageData?.reviews?.filterNotNull() ?: emptyList()
+
+            val mappedReviews = nodes.map { node ->
+                MediaReview(
+                    id = node.id,
+                    summary = node.summary ?: "",
+                    body = node.body,
+                    score = node.score ?: 0,
+                    rating = node.rating ?: 0,
+                    ratingAmount = node.ratingAmount ?: 0,
+                    userRating = node.userRating?.name,
+                    userName = node.user?.name ?: "Unknown",
+                    userAvatarUrl = node.user?.avatar?.medium,
+                    createdAt = (node.createdAt ?: 0).toLong()
+                )
+            }
+
+            Pair(mappedReviews, hasNextPage)
+        }
+    }
+
+    override suspend fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating): Result<MediaReview> {
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.RateReviewMutation(
+                    reviewId = com.apollographql.apollo.api.Optional.present(reviewId),
+                    rating = com.apollographql.apollo.api.Optional.present(rating)
+                )
+            ).execute()
+
+            if (response.hasErrors() || response.data == null) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to rate review")
+            }
+
+            val rateReviewData = response.data?.RateReview
+                ?: throw Exception("Failed to rate review")
+
+            MediaReview(
+                id = rateReviewData.id,
+                summary = "", // Empty as not used by the updater
+                body = null,
+                score = 0,
+                rating = rateReviewData.rating ?: 0,
+                ratingAmount = rateReviewData.ratingAmount ?: 0,
+                userRating = rateReviewData.userRating?.name,
+                userName = "",
+                userAvatarUrl = null,
+                createdAt = 0L
+            )
+        }
+    }
+
 }

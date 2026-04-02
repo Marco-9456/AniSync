@@ -7,6 +7,8 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
@@ -125,4 +127,28 @@ class Converters {
 
     @TypeConverter
     fun toForumCategoryList(list: List<ForumCategory>): String = json.encodeToString(list)
+
+    // --- RecommendedMedia Converters ---
+
+    @TypeConverter
+    fun fromRecommendedMediaList(value: String): List<RecommendedMedia> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toRecommendedMediaList(list: List<RecommendedMedia>): String = json.encodeToString(list)
+
+    // --- MediaReview Converters ---
+
+    @TypeConverter
+    fun fromMediaReviewList(value: String): List<MediaReview> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toMediaReviewList(list: List<MediaReview>): String = json.encodeToString(list)
 }

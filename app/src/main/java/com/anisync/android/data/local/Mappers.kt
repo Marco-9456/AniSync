@@ -110,6 +110,8 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     characters = characters,
     relations = relations,
     externalLinks = externalLinks,
+    recommendations = recommendations,
+    reviews = reviews,
     isFavourite = isFavourite
 )
 
@@ -147,6 +149,8 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     characters = characters,
     relations = relations,
     externalLinks = externalLinks,
+    recommendations = recommendations,
+    reviews = reviews,
     isFavourite = isFavourite
 )
 

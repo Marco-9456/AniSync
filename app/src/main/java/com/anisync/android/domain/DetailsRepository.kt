@@ -32,5 +32,17 @@ interface DetailsRepository {
     suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean>
 
     suspend fun getCharacterDetails(id: Int): Result<CharacterDetails>
+
+    /**
+     * Rate a media review.
+     */
+    suspend fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating): Result<MediaReview>
+
+    /**
+     * Get paginated media reviews.
+     * Returns a pair of: List of reviews, and a boolean indicating if there is a next page.
+     */
+    suspend fun getMediaReviews(mediaId: Int, page: Int): Result<Pair<List<MediaReview>, Boolean>>
+
 }
 

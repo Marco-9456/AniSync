@@ -1,0 +1,24 @@
+query GetMediaReviews($mediaId: Int!, $page: Int!) {
+  Page(page: $page, perPage: 20) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    reviews(mediaId: $mediaId, sort: [RATING_DESC]) {
+      id
+      summary
+      body(asHtml: true)
+      score
+      rating
+      ratingAmount
+      userRating
+      user {
+        name
+        avatar {
+          medium
+        }
+      }
+      createdAt
+    }
+  }
+}

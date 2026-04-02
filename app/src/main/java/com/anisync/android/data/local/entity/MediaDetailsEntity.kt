@@ -1,10 +1,13 @@
 package com.anisync.android.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
@@ -49,6 +52,10 @@ data class MediaDetailsEntity(
     val characters: List<CharacterInfo>,
     val relations: List<RelatedMedia>,
     val externalLinks: List<ExternalLink>,
+    @ColumnInfo(defaultValue = "[]")
+    val recommendations: List<RecommendedMedia> = emptyList(),
+    @ColumnInfo(defaultValue = "[]")
+    val reviews: List<MediaReview> = emptyList(),
     val isFavourite: Boolean = false,
     val lastUpdated: Long = System.currentTimeMillis()
 )
