@@ -44,5 +44,17 @@ interface DetailsRepository {
      */
     suspend fun getMediaReviews(mediaId: Int, page: Int): Result<Pair<List<MediaReview>, Boolean>>
 
+    /**
+     * Rate a recommendation (like/dislike/clear).
+     * @param mediaId The source media ID
+     * @param recommendationId The recommended media ID
+     * @param rating The rating to apply
+     * @return Updated rating and userRating
+     */
+    suspend fun rateRecommendation(
+        mediaId: Int,
+        recommendationId: Int,
+        rating: com.anisync.android.type.RecommendationRating
+    ): Result<Pair<Int, String?>>
 }
 

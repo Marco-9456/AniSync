@@ -491,4 +491,28 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun rateRecommendation(
+        mediaId: Int,
+        recommendationId: Int,
+        rating: com.anisync.android.type.RecommendationRating
+    ): Result<Pair<Int, String?>> {
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.SaveRecommendationMutation(
+                    mediaId = com.apollographql.apollo.api.Optional.present(mediaId),
+                    mediaRecommendationId = com.apollographql.apollo.api.Optional.present(recommendationId),
+                    rating = com.apollographql.apollo.api.Optional.present(rating)
+                )
+            ).execute()
+
+            if (response.hasErrors() || response.data == null) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to rate recommendation")
+            }
+
+            val data = response.data?.SaveRecommendation
+                ?: throw Exception("Failed to rate recommendation")
+
+            Pair(data.rating ?: 0, data.userRating?.name)
+        }
+    }
 }
