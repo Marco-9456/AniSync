@@ -196,6 +196,7 @@ dependencies {
     implementation(libs.apollo.normalized.cache)
     implementation(libs.apollo.normalized.cache.sqlite)
     implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
     implementation(libs.materialkolor)
     implementation(libs.jsoup)
     implementation(libs.media3.exoplayer)

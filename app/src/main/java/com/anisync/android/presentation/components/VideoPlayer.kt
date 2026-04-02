@@ -110,6 +110,10 @@ fun VideoPlayer(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    LaunchedEffect(url) {
+        android.util.Log.d("VideoPlayer", "Loading video URL: $url")
+    }
+
     var isMuted by remember { mutableStateOf(true) }
     var isPlaying by remember { mutableStateOf(false) }
     var progress by remember { mutableFloatStateOf(0f) }
@@ -162,6 +166,7 @@ fun VideoPlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                android.util.Log.e("VideoPlayer", "Playback error for URL: $url, code: ${error.errorCode}, message: ${error.message}", error)
                 playerState = PlayerState.Error
                 errorMessage = when (error.errorCode) {
                     PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,

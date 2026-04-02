@@ -1,7 +1,10 @@
 package com.anisync.android.di
 
 import android.content.Context
+import android.os.Build
 import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import dagger.Module
@@ -17,6 +20,7 @@ import javax.inject.Singleton
  * - 25% memory cache of available app heap
  * - 200ms crossfade animation for smooth loading
  * - Hardware bitmaps enabled for GPU-accelerated rendering
+ * - GIF decoding (hardware-accelerated on API 28+)
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -32,6 +36,13 @@ object ImageLoaderModule {
         @ApplicationContext context: Context
     ): ImageLoader {
         return ImageLoader.Builder(context)
+            .components {
+                if (Build.VERSION.SDK_INT >= 28) {
+                    add(ImageDecoderDecoder.Factory())
+                } else {
+                    add(GifDecoder.Factory())
+                }
+            }
             // Smooth crossfade transition when images load
             .crossfade(CROSSFADE_DURATION_MS)
             // Enable hardware bitmaps for faster GPU rendering
