@@ -17,7 +17,9 @@ data class AniLinkCallbacks(
     /** Navigate to a forum thread, optionally scrolling to a specific comment. */
     val onThreadClick: ((threadId: Int, commentId: Int?) -> Unit)? = null,
     /** Navigate to a character details screen. */
-    val onCharacterClick: ((characterId: Int) -> Unit)? = null
+    val onCharacterClick: ((characterId: Int) -> Unit)? = null,
+    /** Navigate to a staff details screen. */
+    val onStaffClick: ((staffId: Int) -> Unit)? = null
 )
 
 /**
@@ -85,6 +87,12 @@ class AniLinkRouter(
             """https?://anilist\.co/character/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
+
+        /** `anilist.co/staff/95075` or `anilist.co/staff/95075/tanaka-mayumi` */
+        private val STAFF_REGEX = Regex(
+            """https?://anilist\.co/staff/(\d+)(?:/[^/]*)?$""",
+            RegexOption.IGNORE_CASE
+        )
     }
 
     /**
@@ -134,6 +142,15 @@ class AniLinkRouter(
             val characterId = match.groupValues[1].toIntOrNull()
             if (characterId != null && callbacks.onCharacterClick != null) {
                 callbacks.onCharacterClick.invoke(characterId)
+                return
+            }
+        }
+
+        // Staff
+        STAFF_REGEX.find(url)?.let { match ->
+            val staffId = match.groupValues[1].toIntOrNull()
+            if (staffId != null && callbacks.onStaffClick != null) {
+                callbacks.onStaffClick.invoke(staffId)
                 return
             }
         }

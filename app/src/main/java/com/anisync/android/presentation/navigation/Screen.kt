@@ -37,6 +37,22 @@ data class CharacterDetails(
     val characterId: Int
 )
 
+@Serializable
+data class StaffDetails(
+    val staffId: Int
+)
+
+/**
+ * Grid screen for displaying all media a staff member voiced characters in.
+ * @param staffId The ID of the staff member
+ * @param staffName The name of the staff member (for display in app bar)
+ */
+@Serializable
+data class StaffMediaGrid(
+    val staffId: Int,
+    val staffName: String
+)
+
 /**
  * Section grid screen route for displaying all items from a Discover section.
  * @param sectionTitle The title of the section to display

@@ -1,0 +1,65 @@
+query GetStaffDetails($id: Int!) {
+    Staff(id: $id) {
+        id
+        name {
+            full
+            native
+            alternative
+        }
+        image {
+            large
+        }
+        description(asHtml: true)
+        gender
+        age
+        bloodType
+        dateOfBirth {
+            year
+            month
+            day
+        }
+        dateOfDeath {
+            year
+            month
+            day
+        }
+        favourites
+        languageV2
+        primaryOccupations
+        yearsActive
+        homeTown
+        characterMedia(sort: [START_DATE_DESC], perPage: 25) {
+            edges {
+                characterRole
+                node {
+                    id
+                    title {
+                        userPreferred
+                    }
+                    coverImage {
+                        large
+                    }
+                    startDate {
+                        year
+                    }
+                    type
+                    popularity
+                    averageScore
+                    favourites
+                    mediaListEntry {
+                        id
+                    }
+                }
+                characters {
+                    id
+                    name {
+                        full
+                    }
+                    image {
+                        medium
+                    }
+                }
+            }
+        }
+    }
+}

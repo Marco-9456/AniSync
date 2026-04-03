@@ -33,6 +33,8 @@ interface DetailsRepository {
 
     suspend fun getCharacterDetails(id: Int): Result<CharacterDetails>
 
+    suspend fun getStaffDetails(id: Int): Result<StaffDetails>
+
     /**
      * Rate a media review.
      */

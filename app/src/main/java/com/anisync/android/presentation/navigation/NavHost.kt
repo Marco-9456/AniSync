@@ -27,6 +27,8 @@ import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaCharactersGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.StaffDetailsScreen
+import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
@@ -182,6 +184,9 @@ fun AniSyncNavHost(
                 },
                 onCharacterClick = { characterId ->
                     navController.navigate(CharacterDetails(characterId))
+                },
+                onStaffClick = { staffId ->
+                    navController.navigate(StaffDetails(staffId))
                 }
             )
         }
@@ -433,8 +438,63 @@ fun AniSyncNavHost(
                     onMediaSeeAllClick = { characterId, characterName ->
                         navController.navigate(CharacterMediaGrid(characterId, characterName))
                     },
+                    onStaffClick = { staffId ->
+                        navController.navigate(StaffDetails(staffId))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // STAFF DETAILS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            composable<StaffDetails>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://anilist.co/staff/{staffId}" },
+                    navDeepLink { uriPattern = "https://anilist.co/staff/{staffId}/{slug}" }
+                ),
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val staff: StaffDetails = backStackEntry.toRoute()
+                StaffDetailsScreen(
+                    staffId = staff.staffId,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "staff"))
+                    },
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
+                    },
+                    onMediaSeeAllClick = { staffId, staffName ->
+                        navController.navigate(StaffMediaGrid(staffId, staffName))
+                    }
+                )
+            }
+
+            // =================================================================
+            // STAFF MEDIA GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<StaffMediaGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: StaffMediaGrid = backStackEntry.toRoute()
+                StaffMediaGridScreen(
+                    staffId = grid.staffId,
+                    staffName = grid.staffName,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "staff_grid"))
+                    },
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
+                    }
                 )
             }
 
@@ -531,7 +591,10 @@ fun AniSyncNavHost(
                 CharacterMediaGridScreen(
                     characterId = grid.characterId,
                     characterName = grid.characterName,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "character_grid"))
+                    }
                 )
             }
 

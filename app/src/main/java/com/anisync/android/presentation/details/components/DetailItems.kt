@@ -148,7 +148,7 @@ fun MediaRoleItem(
             )
 
             // Voice Actor Overlay (Small Bubble)
-            media.voiceActor?.let { va ->
+            media.voiceActors.firstOrNull()?.let { va ->
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
