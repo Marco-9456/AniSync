@@ -7,17 +7,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.SwapVert
@@ -32,11 +33,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -46,19 +49,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterMedia
-import com.anisync.android.domain.CharacterMediaAppearance
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.MediaSort
 import com.anisync.android.presentation.details.components.MediaSortBottomSheet
-import com.anisync.android.presentation.details.components.MediaRoleItem
 import com.anisync.android.presentation.details.components.RelationItem
+import com.anisync.android.presentation.details.components.VoicedCharacterItem
 import com.anisync.android.presentation.util.AppMotion
 
-/**
- * Grid screen displaying all media a character appears in.
- * Includes sort bottom sheet and "On My List" filter.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterMediaGridScreen(
@@ -76,6 +74,20 @@ fun CharacterMediaGridScreen(
     var onlyOnList by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val listState = rememberLazyGridState()
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex != null && uiState is CharacterDetailsUiState.Success) {
+                    val details = (uiState as CharacterDetailsUiState.Success).details
+                    val totalItems = listState.layoutInfo.totalItemsCount
+                    if (lastIndex >= totalItems - 4 && details.hasNextPage) {
+                        viewModel.loadMoreMedia()
+                    }
+                }
+            }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -124,23 +136,29 @@ fun CharacterMediaGridScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 is CharacterDetailsUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
                     }
                 }
+
                 is CharacterDetailsUiState.Success -> {
-                    val sortedMedia = remember(state.details.media, selectedSort, isSortAscending, onlyOnList) {
-                        val filtered = if (onlyOnList) {
-                            state.details.media.filter { it.isOnList }
-                        } else {
-                            state.details.media
+                    val sortedMedia =
+                        remember(state.details.media, selectedSort, isSortAscending, onlyOnList) {
+                            val filtered = if (onlyOnList) {
+                                state.details.media.filter { it.isOnList }
+                            } else {
+                                state.details.media
+                            }
+                            sortCharacterMedia(filtered, selectedSort, isSortAscending)
                         }
-                        sortCharacterMedia(filtered, selectedSort, isSortAscending)
-                    }
 
                     if (sortedMedia.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = if (onlyOnList) "No media on your list" else "No media appearances",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -148,13 +166,18 @@ fun CharacterMediaGridScreen(
                         }
                     } else {
                         LazyVerticalGrid(
+                            state = listState,
                             columns = GridCells.Adaptive(minSize = 100.dp),
-                            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 96.dp),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = 8.dp,
+                                end = 16.dp,
+                                bottom = 96.dp
+                            ),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            // On My List filter chip
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 Row(modifier = Modifier.fillMaxWidth()) {
                                     FilterChip(
@@ -198,21 +221,19 @@ private fun sortCharacterMedia(
     sort: MediaSort,
     ascending: Boolean
 ): List<CharacterMedia> {
-    val sorted = when (sort) {
-        MediaSort.POPULARITY -> media.sortedBy { it.popularity ?: 0 }
-        MediaSort.AVERAGE_SCORE -> media.sortedBy { it.averageScore ?: 0 }
-        MediaSort.FAVORITES -> media.sortedBy { it.favourites ?: 0 }
-        MediaSort.NEWEST -> media.sortedBy { it.startYear ?: 0 }
-        MediaSort.OLDEST -> media.sortedBy { it.startYear ?: Int.MAX_VALUE }
-        MediaSort.TITLE -> media.sortedBy { it.titleUserPreferred.lowercase() }
-    }
+    val sorted = media.sortedWith(compareBy {
+        when (sort) {
+            MediaSort.POPULARITY -> it.popularity ?: 0
+            MediaSort.AVERAGE_SCORE -> it.averageScore ?: 0
+            MediaSort.FAVORITES -> it.favourites ?: 0
+            MediaSort.NEWEST -> it.startYear ?: 0
+            MediaSort.OLDEST -> it.startYear ?: Int.MAX_VALUE
+            MediaSort.TITLE -> it.titleUserPreferred.lowercase()
+        }
+    })
     return if (ascending) sorted else sorted.reversed()
 }
 
-/**
- * Grid screen displaying all media a staff member voiced characters in.
- * Includes sort bottom sheet and "On My List" filter.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StaffMediaGridScreen(
@@ -231,6 +252,21 @@ fun StaffMediaGridScreen(
     var onlyOnList by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex != null && uiState is StaffDetailsUiState.Success) {
+                    val details = (uiState as StaffDetailsUiState.Success).details
+                    val totalItems = listState.layoutInfo.totalItemsCount
+                    if (lastIndex >= totalItems - 3 &&
+                        details.hasNextPage) {
+                        viewModel.loadMoreMedia()
+                    }
+                }
+            }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -279,46 +315,52 @@ fun StaffMediaGridScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 is StaffDetailsUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
                     }
                 }
-                is StaffDetailsUiState.Success -> {
-                    // Flatten voiced characters into media appearances
-                    val allAppearances = remember(state.details.voicedCharacters) {
-                        state.details.voicedCharacters.flatMap { vc ->
-                            vc.mediaAppearances.map { ma -> vc to ma }
-                        }.distinctBy { it.second.mediaId }
-                    }
 
-                    val sortedAppearances = remember(allAppearances, selectedSort, isSortAscending, onlyOnList) {
-                        val filtered = if (onlyOnList) {
-                            allAppearances.filter { it.second.isOnList }
-                        } else {
-                            allAppearances
+                is StaffDetailsUiState.Success -> {
+                    val allAppearances = state.details.voicedCharacters
+
+                    val sortedAppearances =
+                        remember(allAppearances, selectedSort, isSortAscending, onlyOnList) {
+                            val filtered = if (onlyOnList) {
+                                allAppearances.mapNotNull { vc ->
+                                    val filteredApps = vc.mediaAppearances.filter { it.isOnList }
+                                    if (filteredApps.isEmpty()) null else vc.copy(mediaAppearances = filteredApps)
+                                }
+                            } else {
+                                allAppearances
+                            }
+                            sortVoicedCharacters(filtered, selectedSort, isSortAscending)
                         }
-                        sortStaffMedia(filtered, selectedSort, isSortAscending)
-                    }
 
                     if (sortedAppearances.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = if (onlyOnList) "No media on your list" else "No voiced characters",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 100.dp),
-                            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 96.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        LazyColumn(
+                            state = listState,
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            // On My List filter chip
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                Row(modifier = Modifier.fillMaxWidth()) {
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                ) {
                                     FilterChip(
                                         selected = onlyOnList,
                                         onClick = { onlyOnList = !onlyOnList },
@@ -327,13 +369,12 @@ fun StaffMediaGridScreen(
                                 }
                             }
 
-                            items(sortedAppearances, key = { it.second.mediaId }) { (vc, appearance) ->
-                                FeaturedMediaItem(
-                                    coverUrl = appearance.coverUrl,
-                                    title = appearance.mediaTitle,
-                                    role = appearance.characterRole,
-                                    year = appearance.startYear,
-                                    onClick = { onMediaClick(appearance.mediaId) }
+                            items(sortedAppearances, key = { it.characterId }) { vc ->
+                                VoicedCharacterItem(
+                                    voicedCharacter = vc,
+                                    onCharacterClick = { onCharacterClick(vc.characterId) },
+                                    onMediaClick = onMediaClick,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                             }
                         }
@@ -355,25 +396,26 @@ fun StaffMediaGridScreen(
     )
 }
 
-private fun sortStaffMedia(
-    media: List<Pair<com.anisync.android.domain.VoicedCharacter, CharacterMediaAppearance>>,
+private fun sortVoicedCharacters(
+    characters: List<com.anisync.android.domain.VoicedCharacter>,
     sort: MediaSort,
     ascending: Boolean
-): List<Pair<com.anisync.android.domain.VoicedCharacter, CharacterMediaAppearance>> {
-    val sorted = when (sort) {
-        MediaSort.POPULARITY -> media.sortedBy { it.second.popularity ?: 0 }
-        MediaSort.AVERAGE_SCORE -> media.sortedBy { it.second.averageScore ?: 0 }
-        MediaSort.FAVORITES -> media.sortedBy { it.second.favourites ?: 0 }
-        MediaSort.NEWEST -> media.sortedBy { it.second.startYear ?: 0 }
-        MediaSort.OLDEST -> media.sortedBy { it.second.startYear ?: Int.MAX_VALUE }
-        MediaSort.TITLE -> media.sortedBy { it.second.mediaTitle.lowercase() }
-    }
+): List<com.anisync.android.domain.VoicedCharacter> {
+    val sorted = characters.sortedWith(compareBy { vc ->
+        when (sort) {
+            MediaSort.POPULARITY -> vc.mediaAppearances.maxOfOrNull { it.popularity ?: 0 } ?: 0
+            MediaSort.AVERAGE_SCORE -> vc.mediaAppearances.maxOfOrNull { it.averageScore ?: 0 } ?: 0
+            MediaSort.FAVORITES -> vc.mediaAppearances.maxOfOrNull { it.favourites ?: 0 } ?: 0
+            MediaSort.NEWEST -> vc.mediaAppearances.maxOfOrNull { it.startYear ?: 0 } ?: 0
+            MediaSort.OLDEST -> vc.mediaAppearances.minOfOrNull { it.startYear ?: Int.MAX_VALUE }
+                ?: Int.MAX_VALUE
+
+            MediaSort.TITLE -> vc.characterName.lowercase()
+        }
+    })
     return if (ascending) sorted else sorted.reversed()
 }
 
-/**
- * Grid screen displaying all characters from a media's cast.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun MediaCharactersGridScreen(
@@ -429,15 +471,20 @@ fun MediaCharactersGridScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 is DetailsUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
                     }
                 }
+
                 is DetailsUiState.Success -> {
                     val characters = state.details.characters
                     if (characters.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = stringResource(R.string.empty_no_characters),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -449,7 +496,12 @@ fun MediaCharactersGridScreen(
 
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 100.dp),
-                            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = 16.dp,
+                                end = 16.dp,
+                                bottom = 96.dp
+                            ),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
@@ -475,9 +527,6 @@ fun MediaCharactersGridScreen(
     }
 }
 
-/**
- * Grid screen displaying all related media.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun MediaRelationsGridScreen(
@@ -532,15 +581,20 @@ fun MediaRelationsGridScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 is DetailsUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
                     }
                 }
+
                 is DetailsUiState.Success -> {
                     val relations = state.details.relations
                     if (relations.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = stringResource(R.string.empty_no_related),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant

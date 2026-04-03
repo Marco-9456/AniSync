@@ -17,7 +17,11 @@ interface DetailsRepository {
     /**
      * Update media list entry (status, progress).
      */
-    suspend fun updateMediaListEntry(mediaId: Int, status: LibraryStatus, progress: Int): Result<Unit>
+    suspend fun updateMediaListEntry(
+        mediaId: Int,
+        status: LibraryStatus,
+        progress: Int
+    ): Result<Unit>
 
     /**
      * Delete media list entry.
@@ -31,14 +35,17 @@ interface DetailsRepository {
      */
     suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean>
 
-    suspend fun getCharacterDetails(id: Int): Result<CharacterDetails>
+    suspend fun getCharacterDetails(id: Int, page: Int = 1): Result<CharacterDetails>
 
-    suspend fun getStaffDetails(id: Int): Result<StaffDetails>
+    suspend fun getStaffDetails(id: Int, page: Int = 1): Result<StaffDetails>
 
     /**
      * Rate a media review.
      */
-    suspend fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating): Result<MediaReview>
+    suspend fun rateReview(
+        reviewId: Int,
+        rating: com.anisync.android.type.ReviewRating
+    ): Result<MediaReview>
 
     /**
      * Get paginated media reviews.
@@ -59,4 +66,3 @@ interface DetailsRepository {
         rating: com.anisync.android.type.RecommendationRating
     ): Result<Pair<Int, String?>>
 }
-

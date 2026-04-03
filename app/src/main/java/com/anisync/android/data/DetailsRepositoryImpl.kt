@@ -47,27 +47,20 @@ class DetailsRepositoryImpl @Inject constructor(
     private val libraryDao: LibraryDao
 ) : DetailsRepository {
 
-    /**
-     * Observe media details from local cache.
-     */
     override fun observeMediaDetails(id: Int): Flow<MediaDetails?> {
         return mediaDetailsDao.observeById(id)
             .map { entity -> entity?.toDomain() }
     }
 
-    /**
-     * Fetch from network and update local cache.
-     */
     override suspend fun refreshMediaDetails(id: Int): Result<Unit> {
         return safeApiCall {
             val response = apolloClient.query(
                 GetMediaDetailsQuery(id = Optional.present(id))
             )
-            .fetchPolicy(FetchPolicy.NetworkOnly)
-            .execute()
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
 
-            val media = response.data?.Media
-                ?: throw Exception("Media not found")
+            val media = response.data?.Media ?: throw Exception("Media not found")
 
             val listEntry = media.mediaListEntry
             val listStatus = listEntry?.status?.toDomainStatus()
@@ -98,7 +91,6 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            // Map external links, filtering out disabled ones
             val externalLinks = media.externalLinks?.filterNotNull()
                 ?.filter { it.isDisabled != true }
                 ?.map { link ->
@@ -119,42 +111,48 @@ class DetailsRepositoryImpl @Inject constructor(
                     )
                 } ?: emptyList()
 
-            // Title variants
             val titleRomaji = media.title?.romaji
             val titleEnglish = media.title?.english
             val titleNative = media.title?.native
             val titleUserPreferred = media.title?.userPreferred ?: "Unknown"
 
-            val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-            val monthName = media.startDate?.month?.let { if (it in 1..12) months[it - 1] else null }
+            val months = listOf(
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec"
+            )
+            val monthName =
+                media.startDate?.month?.let { if (it in 1..12) months[it - 1] else null }
             val day = media.startDate?.day?.let { if (it < 10) "0$it" else "$it" }
             val yearVal = media.startDate?.year
-            
+
             val formattedDate = if (monthName != null && day != null && yearVal != null) {
                 "$monthName $day, $yearVal"
             } else {
-                 yearVal?.toString()
+                yearVal?.toString()
             }
 
-            // Format end date
-            val endMonthName = media.endDate?.month?.let { if (it in 1..12) months[it - 1] else null }
+            val endMonthName =
+                media.endDate?.month?.let { if (it in 1..12) months[it - 1] else null }
             val endDay = media.endDate?.day?.let { if (it < 10) "0$it" else "$it" }
             val endYearVal = media.endDate?.year
-            
-            val formattedEndDate = if (endMonthName != null && endDay != null && endYearVal != null) {
-                "$endMonthName $endDay, $endYearVal"
-            } else {
-                 endYearVal?.toString()
-            }
 
-            // Format aired date range
-            val airedDate = when {
-                formattedDate != null && formattedEndDate != null -> "$formattedDate - $formattedEndDate"
-                formattedDate != null -> formattedDate
-                else -> null
-            }
+            val formattedEndDate =
+                if (endMonthName != null && endDay != null && endYearVal != null) {
+                    "$endMonthName $endDay, $endYearVal"
+                } else {
+                    endYearVal?.toString()
+                }
 
-            // Map tags
             val tags = media.tags?.filterNotNull()?.map { tag ->
                 Tag(
                     name = tag.name ?: "",
@@ -166,7 +164,6 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            // Map trailer
             val trailer = media.trailer?.let { trailer ->
                 if (trailer.id != null && trailer.site != null) {
                     Trailer(
@@ -177,24 +174,23 @@ class DetailsRepositoryImpl @Inject constructor(
                 } else null
             }
 
-            // Map recommendations
-            val recommendations = media.recommendations?.nodes?.filterNotNull()?.mapNotNull { node ->
-                val rec = node.mediaRecommendation ?: return@mapNotNull null
-                RecommendedMedia(
-                    id = rec.id,
-                    titleRomaji = rec.title?.romaji,
-                    titleEnglish = rec.title?.english,
-                    titleNative = rec.title?.native,
-                    titleUserPreferred = rec.title?.userPreferred ?: "Unknown",
-                    coverUrl = rec.coverImage?.large,
-                    format = rec.format?.name,
-                    score = rec.averageScore,
-                    rating = node.rating ?: 0,
-                    userRating = node.userRating?.name
-                )
-            } ?: emptyList()
+            val recommendations =
+                media.recommendations?.nodes?.filterNotNull()?.mapNotNull { node ->
+                    val rec = node.mediaRecommendation ?: return@mapNotNull null
+                    RecommendedMedia(
+                        id = rec.id,
+                        titleRomaji = rec.title?.romaji,
+                        titleEnglish = rec.title?.english,
+                        titleNative = rec.title?.native,
+                        titleUserPreferred = rec.title?.userPreferred ?: "Unknown",
+                        coverUrl = rec.coverImage?.large,
+                        format = rec.format?.name,
+                        score = rec.averageScore,
+                        rating = node.rating ?: 0,
+                        userRating = node.userRating?.name
+                    )
+                } ?: emptyList()
 
-            // Map reviews
             val reviews = media.reviews?.nodes?.filterNotNull()?.map { node ->
                 MediaReview(
                     id = node.id,
@@ -249,7 +245,6 @@ class DetailsRepositoryImpl @Inject constructor(
                 isFavourite = media.isFavourite ?: false
             )
 
-            // Update cache
             mediaDetailsDao.insert(details.toEntity())
         }
     }
@@ -271,22 +266,15 @@ class DetailsRepositoryImpl @Inject constructor(
             ).execute()
 
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
-                // Refresh cache to get updated list entry
                 refreshMediaDetails(mediaId)
-                
-                // Check if entry already exists in library
                 val existingEntry = libraryDao.getEntry(mediaId)
-                
+
                 if (existingEntry != null) {
-                    // Update existing entry
                     libraryDao.updateStatusAndProgress(mediaId, status, progress)
                 } else {
-                    // Create new entry from cached media details
                     val savedEntry = response.data?.SaveMediaListEntry
                     val cachedMedia = mediaDetailsDao.getById(mediaId)
-                    
-                    android.util.Log.d("DetailsRepo", "Creating new library entry: mediaId=$mediaId, savedEntryId=${savedEntry?.id}, cachedMedia=${cachedMedia != null}")
-                    
+
                     if (cachedMedia != null) {
                         val newEntry = com.anisync.android.data.local.entity.LibraryEntryEntity(
                             id = savedEntry?.id ?: 0,
@@ -303,7 +291,7 @@ class DetailsRepositoryImpl @Inject constructor(
                             mediaType = cachedMedia.mediaType,
                             status = status,
                             nextAiringEpisode = cachedMedia.nextAiringEpisode,
-                            timeUntilAiring = null, // Not available from cached details
+                            timeUntilAiring = null,
                             mediaStatus = cachedMedia.status,
                             nextAiringEpisodeTime = cachedMedia.nextAiringEpisodeTime,
                             score = 0.0,
@@ -315,11 +303,7 @@ class DetailsRepositoryImpl @Inject constructor(
                             createdAt = System.currentTimeMillis(),
                             mediaStartDate = null
                         )
-                        android.util.Log.d("DetailsRepo", "Inserting entry: id=${newEntry.id}, mediaId=${newEntry.mediaId}, type=${newEntry.mediaType}, createdAt=${newEntry.createdAt}")
                         libraryDao.insertOrReplace(newEntry)
-                        android.util.Log.d("DetailsRepo", "Entry inserted successfully")
-                    } else {
-                        android.util.Log.w("DetailsRepo", "No cached media found for mediaId=$mediaId, entry NOT created")
                     }
                 }
             } else {
@@ -336,7 +320,6 @@ class DetailsRepositoryImpl @Inject constructor(
             ).execute()
 
             if (response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()) {
-                // Remove from library cache so LibraryScreen reflects the deletion immediately
                 libraryDao.deleteByMediaId(mediaId)
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"
@@ -344,7 +327,6 @@ class DetailsRepositoryImpl @Inject constructor(
             }
         }
     }
-
 
     override suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean> {
         return safeApiCall {
@@ -363,27 +345,30 @@ class DetailsRepositoryImpl @Inject constructor(
             val response = apolloClient.mutation(mutation).execute()
 
             if (response.hasErrors()) {
-                val errorMessage = response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
+                val errorMessage =
+                    response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
                 throw Exception(errorMessage)
             }
 
-            // Refresh to get the updated isFavourite state
             refreshMediaDetails(mediaId)
-
-            // Return the new favourite state (toggled)
             val currentEntity = mediaDetailsDao.getById(mediaId)
             currentEntity?.isFavourite ?: false
         }
     }
 
-    override suspend fun getCharacterDetails(id: Int): Result<CharacterDetails> {
+    override suspend fun getCharacterDetails(id: Int, page: Int): Result<CharacterDetails> {
         return safeApiCall {
             val response = apolloClient.query(
-                GetCharacterDetailsQuery(id = id)
+                GetCharacterDetailsQuery(id = id, page = Optional.presentIfNotNull(page))
             ).execute()
 
             val charData = response.data?.Character
                 ?: throw Exception("Character not found")
+
+            val alternativeNames = charData.name?.alternative?.filterNotNull() ?: emptyList()
+
+            val pageInfo = charData.media?.pageInfo
+            val hasNextPage = pageInfo?.hasNextPage ?: false
 
             val mediaList = charData.media?.edges?.filterNotNull()?.mapNotNull { edge ->
                 val node = edge.node ?: return@mapNotNull null
@@ -422,22 +407,28 @@ class DetailsRepositoryImpl @Inject constructor(
                 id = charData.id ?: 0,
                 name = charData.name?.full ?: "Unknown",
                 nativeName = charData.name?.native,
+                alternativeNames = alternativeNames,
                 imageUrl = charData.image?.large,
                 description = charData.description,
                 gender = charData.gender,
                 age = charData.age,
                 bloodType = charData.bloodType,
                 dateOfBirth = charData.dateOfBirth?.let { dob ->
-                   if (dob.month != null && dob.day != null) {
-                       "${dob.month}/${dob.day}" + (if (dob.year != null) "/${dob.year}" else "") 
-                   } else null
+                    if (dob.month != null && dob.day != null) {
+                        "${dob.month}/${dob.day}" + (if (dob.year != null) "/${dob.year}" else "")
+                    } else null
                 },
                 favourites = charData.favourites,
-                media = mediaList
+                media = mediaList,
+                hasNextPage = hasNextPage
             )
         }
     }
-    override suspend fun getMediaReviews(mediaId: Int, page: Int): Result<Pair<List<MediaReview>, Boolean>> {
+
+    override suspend fun getMediaReviews(
+        mediaId: Int,
+        page: Int
+    ): Result<Pair<List<MediaReview>, Boolean>> {
         return safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetMediaReviewsQuery(
@@ -447,7 +438,9 @@ class DetailsRepositoryImpl @Inject constructor(
             ).execute()
 
             if (response.hasErrors() || response.data == null) {
-                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to fetch reviews")
+                throw Exception(
+                    response.errors?.firstOrNull()?.message ?: "Failed to fetch reviews"
+                )
             }
 
             val pageData = response.data?.Page
@@ -473,12 +466,15 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating): Result<MediaReview> {
+    override suspend fun rateReview(
+        reviewId: Int,
+        rating: com.anisync.android.type.ReviewRating
+    ): Result<MediaReview> {
         return safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.RateReviewMutation(
-                    reviewId = com.apollographql.apollo.api.Optional.present(reviewId),
-                    rating = com.apollographql.apollo.api.Optional.present(rating)
+                    reviewId = Optional.present(reviewId),
+                    rating = Optional.present(rating)
                 )
             ).execute()
 
@@ -512,14 +508,16 @@ class DetailsRepositoryImpl @Inject constructor(
         return safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.SaveRecommendationMutation(
-                    mediaId = com.apollographql.apollo.api.Optional.present(mediaId),
-                    mediaRecommendationId = com.apollographql.apollo.api.Optional.present(recommendationId),
-                    rating = com.apollographql.apollo.api.Optional.present(rating)
+                    mediaId = Optional.present(mediaId),
+                    mediaRecommendationId = Optional.present(recommendationId),
+                    rating = Optional.present(rating)
                 )
             ).execute()
 
             if (response.hasErrors() || response.data == null) {
-                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to rate recommendation")
+                throw Exception(
+                    response.errors?.firstOrNull()?.message ?: "Failed to rate recommendation"
+                )
             }
 
             val data = response.data?.SaveRecommendation
@@ -529,16 +527,34 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getStaffDetails(id: Int): Result<StaffDetails> {
+    override suspend fun getStaffDetails(id: Int, page: Int): Result<StaffDetails> {
         return safeApiCall {
             val response = apolloClient.query(
-                GetStaffDetailsQuery(id = id)
+                GetStaffDetailsQuery(id = id, page = Optional.presentIfNotNull(page))
             ).execute()
 
             val staffData = response.data?.Staff
                 ?: throw Exception("Staff not found")
 
-            val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            val alternativeNames = staffData.name?.alternative?.filterNotNull() ?: emptyList()
+
+            val pageInfo = staffData.characterMedia?.pageInfo
+            val hasNextPage = pageInfo?.hasNextPage ?: false
+
+            val months = listOf(
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec"
+            )
 
             fun formatFuzzyDate(month: Int?, day: Int?, year: Int?): String? {
                 val monthName = month?.let { if (it in 1..12) months[it - 1] else null }
@@ -550,8 +566,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 }
             }
 
-            // Group character media by character to build VoicedCharacter list
-            val characterMap = linkedMapOf<Int, MutableList<Pair<GetStaffDetailsQuery.Edge, GetStaffDetailsQuery.Character>>>()
+            val characterMap =
+                linkedMapOf<Int, MutableList<Pair<GetStaffDetailsQuery.Edge, GetStaffDetailsQuery.Character>>>()
             staffData.characterMedia?.edges?.filterNotNull()?.forEach { edge ->
                 edge.characters?.filterNotNull()?.forEach { character ->
                     val charId = character.id ?: return@forEach
@@ -586,6 +602,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 id = staffData.id,
                 name = staffData.name?.full ?: "Unknown",
                 nativeName = staffData.name?.native,
+                alternativeNames = alternativeNames,
                 imageUrl = staffData.image?.large,
                 description = staffData.description,
                 gender = staffData.gender,
@@ -602,7 +619,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 primaryOccupations = staffData.primaryOccupations?.filterNotNull() ?: emptyList(),
                 yearsActive = staffData.yearsActive?.filterNotNull() ?: emptyList(),
                 homeTown = staffData.homeTown,
-                voicedCharacters = voicedCharacters
+                voicedCharacters = voicedCharacters,
+                hasNextPage = hasNextPage
             )
         }
     }
