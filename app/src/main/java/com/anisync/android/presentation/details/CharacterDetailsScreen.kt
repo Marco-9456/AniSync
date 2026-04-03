@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -31,13 +32,14 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,7 +49,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,10 +58,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
@@ -177,7 +178,7 @@ fun CharacterDetailsScreen(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CharacterDetailsContent(
     character: CharacterDetails,
@@ -220,32 +221,77 @@ private fun CharacterDetailsContent(
             NameCard(
                 name = character.name,
                 nativeName = character.nativeName,
+                alternativeNames = character.alternativeNames,
                 favourites = character.favourites
             )
         }
 
-        // Tab Row
+        // Button Group
         item(key = "tabs") {
             Spacer(modifier = Modifier.height(16.dp))
-            SecondaryTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                modifier = Modifier.padding(horizontal = 24.dp),
-                containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                divider = {}
+            val uniqueVoiceActorsCount = remember(character.media) {
+                character.media.flatMap { it.voiceActors }.distinctBy { it.id }.size
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Tab(
-                    selected = pagerState.currentPage == 0,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("Character") },
-                    icon = { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                )
-                Tab(
-                    selected = pagerState.currentPage == 1,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
-                    text = { Text("Voice Actors") },
-                    icon = { Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                )
+                ButtonGroup {
+                    val charSelected = pagerState.currentPage == 0
+                    val voiceSelected = pagerState.currentPage == 1
+
+                    Button(
+                        onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (charSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = if (charSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Character")
+                    }
+
+                    Button(
+                        onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (voiceSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = if (voiceSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Mic,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Voice Actors")
+
+                        if (uniqueVoiceActorsCount > 0) {
+                            Spacer(Modifier.width(8.dp))
+                            androidx.compose.material3.Surface(
+                                color = if (voiceSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = uniqueVoiceActorsCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        color = if (voiceSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.surface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -261,6 +307,7 @@ private fun CharacterDetailsContent(
                         onMediaClick = onMediaClick,
                         onMediaSeeAllClick = onMediaSeeAllClick
                     )
+
                     1 -> VoiceActorsTabContent(
                         media = character.media,
                         onStaffClick = onStaffClick
@@ -289,7 +336,21 @@ private fun CharacterTabContent(
     onMediaSeeAllClick: () -> Unit
 ) {
     // Build attributes list from structured API fields
-    val months = listOf("", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+    val months = listOf(
+        "",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+    )
     val displayAttributes = remember(character) {
         buildList {
             character.dateOfBirth?.let { dob ->

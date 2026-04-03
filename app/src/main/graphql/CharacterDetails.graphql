@@ -1,10 +1,11 @@
-query GetCharacterDetails($id: Int!) {
+query GetCharacterDetails($id: Int!, $page: Int = 1) {
     Character(id: $id) {
         id
         name {
             full
             native
             userPreferred
+            alternative
         }
         image {
             large
@@ -19,7 +20,10 @@ query GetCharacterDetails($id: Int!) {
         }
         bloodType
         favourites
-        media(perPage: 25, sort: [POPULARITY_DESC]) {
+        media(page: $page, perPage: 25, sort: [POPULARITY_DESC]) {
+            pageInfo {
+                hasNextPage
+            }
             edges {
                 characterRole
                 node {

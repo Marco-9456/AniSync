@@ -8,6 +8,7 @@ data class CharacterDetails(
     val id: Int,
     val name: String,
     val nativeName: String?,
+    val alternativeNames: List<String> = emptyList(),
     val imageUrl: String?,
     val description: String?,
     val gender: String?,
@@ -15,7 +16,8 @@ data class CharacterDetails(
     val bloodType: String?,
     val dateOfBirth: String?,
     val favourites: Int?,
-    val media: List<CharacterMedia>
+    val media: List<CharacterMedia>,
+    val hasNextPage: Boolean = false
 )
 
 @Serializable

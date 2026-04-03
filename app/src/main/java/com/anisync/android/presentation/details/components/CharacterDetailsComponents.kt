@@ -12,19 +12,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,8 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,123 +70,103 @@ fun DetailHeroImage(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    Box(
+    val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        val spatialSpec = AppMotion.rememberSpatialSpec()
+        with(sharedTransitionScope) {
+            Modifier
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(
+                        key = TransitionKeys.characterImage(
+                            id
+                        )
+                    ),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec }
+                )
+        }
+    } else {
+        Modifier
+    }
+
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(imageUrl)
+            .crossfade(true)
+            .build(),
+        contentDescription = contentDescription,
+        contentScale = ContentScale.FillWidth,
         modifier = Modifier
             .fillMaxWidth()
-            .height(360.dp)
-    ) {
-        val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-            val spatialSpec = AppMotion.rememberSpatialSpec()
-            with(sharedTransitionScope) {
-                Modifier
-                    .fillMaxSize()
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = TransitionKeys.characterImage(id)),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec }
-                    )
-            }
-        } else {
-            Modifier.fillMaxSize()
-        }
-
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
-            modifier = imageModifier
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onImageClick)
-        )
-
-        // Top gradient scrim
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .align(Alignment.TopCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.5f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
-        // Bottom gradient scrim
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-        )
-    }
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .wrapContentHeight()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onImageClick)
+            .then(imageModifier)
+    )
 }
 
 /**
- * Name card with tint showing name, native name, and favorites count.
+ * Name card with tint showing name, native name, alternative names and favorites count.
  */
 @Composable
 fun NameCard(
     name: String,
     nativeName: String?,
+    alternativeNames: List<String> = emptyList(),
     favourites: Int?,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.primaryContainer
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Text(
                 text = name,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             nativeName?.let {
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+            if (alternativeNames.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Also known as: ${alternativeNames.joinToString(", ")}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             }
             favourites?.let { favs ->
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = CircleShape
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Favorite,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = NumberFormat.getNumberInstance(Locale.getDefault()).format(favs),
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
@@ -208,11 +186,11 @@ fun AttributesCard(
 ) {
     if (attributes.isEmpty()) return
 
-    Card(
-        colors = CardDefaults.cardColors(
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -248,9 +226,7 @@ fun AttributesCard(
     }
 }
 
-/**
- * Voice actor card in a grid layout for the Voice Actors tab.
- */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VoiceActorCard(
     name: String,
@@ -259,15 +235,17 @@ fun VoiceActorCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    ElevatedCard(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
         onClick = onClick
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             AsyncImage(
                 model = imageUrl,
@@ -278,7 +256,7 @@ fun VoiceActorCard(
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
@@ -299,9 +277,6 @@ fun VoiceActorCard(
     }
 }
 
-/**
- * Featured media item showing cover, role+year, and title.
- */
 @Composable
 fun FeaturedMediaItem(
     coverUrl: String?,
@@ -314,7 +289,7 @@ fun FeaturedMediaItem(
     Column(
         modifier = modifier
             .width(120.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
     ) {
         AsyncImage(
@@ -324,10 +299,10 @@ fun FeaturedMediaItem(
             modifier = Modifier
                 .height(160.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         val roleText = buildString {
             role?.let { append(it.replace("_", " ")) }
             year?.let {
@@ -354,10 +329,6 @@ fun FeaturedMediaItem(
     }
 }
 
-// ============================================================================
-// Stat item - used by MediaDetailsComponents
-// ============================================================================
-
 @Composable
 fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
@@ -379,10 +350,6 @@ fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
         )
     }
 }
-
-// ============================================================================
-// ExpandableSynopsis - used by MediaDetailsScreen
-// ============================================================================
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -430,7 +397,9 @@ fun ExpandableSynopsis(text: String) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(R.string.synopsis_read_more),
+                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
+                        R.string.synopsis_read_more
+                    ),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
