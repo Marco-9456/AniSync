@@ -9,7 +9,7 @@ query GetCharacterDetails($id: Int!) {
         image {
             large
         }
-        description
+        description(asHtml: true)
         gender
         age
         dateOfBirth {
@@ -21,6 +21,7 @@ query GetCharacterDetails($id: Int!) {
         favourites
         media(perPage: 25, sort: [POPULARITY_DESC]) {
             edges {
+                characterRole
                 node {
                     id
                     title {
@@ -33,8 +34,17 @@ query GetCharacterDetails($id: Int!) {
                         large
                     }
                     type
+                    startDate {
+                        year
+                    }
+                    popularity
+                    averageScore
+                    favourites
+                    mediaListEntry {
+                        id
+                    }
                 }
-                voiceActors(language: JAPANESE, sort: [RELEVANCE, ID]) {
+                voiceActors(sort: [RELEVANCE, ID]) {
                     id
                     name {
                         full
@@ -44,6 +54,7 @@ query GetCharacterDetails($id: Int!) {
                     image {
                         medium
                     }
+                    languageV2
                 }
             }
         }

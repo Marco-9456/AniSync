@@ -27,7 +27,13 @@ data class CharacterMedia(
     val titleUserPreferred: String,
     val coverUrl: String?,
     val type: MediaType?,
-    val voiceActor: VoiceActor?
+    val characterRole: String?,
+    val startYear: Int?,
+    val popularity: Int?,
+    val averageScore: Int?,
+    val favourites: Int?,
+    val isOnList: Boolean,
+    val voiceActors: List<VoiceActor>
 )
 
 @Serializable
@@ -36,5 +42,6 @@ data class VoiceActor(
     val nameFull: String,
     val nameNative: String?,
     val nameUserPreferred: String,
-    val imageUrl: String?
+    val imageUrl: String?,
+    val language: String?
 )

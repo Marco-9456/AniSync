@@ -3,6 +3,7 @@ package com.anisync.android.data
 import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
+import com.anisync.android.GetStaffDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.ToggleFavouriteMutation
 import com.anisync.android.data.local.dao.LibraryDao
@@ -15,6 +16,7 @@ import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
+import com.anisync.android.domain.CharacterMediaAppearance
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
@@ -24,9 +26,11 @@ import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.VoiceActor
+import com.anisync.android.domain.VoicedCharacter
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.stripHtml
 import com.apollographql.apollo.ApolloClient
@@ -383,8 +387,19 @@ class DetailsRepositoryImpl @Inject constructor(
 
             val mediaList = charData.media?.edges?.filterNotNull()?.mapNotNull { edge ->
                 val node = edge.node ?: return@mapNotNull null
-                val voiceActorNode = edge.voiceActors?.firstOrNull() // Get first voice actor
-                
+
+                val voiceActorsList = edge.voiceActors?.mapNotNull { va ->
+                    if (va == null) return@mapNotNull null
+                    VoiceActor(
+                        id = va.id ?: 0,
+                        nameFull = va.name?.full ?: "Unknown",
+                        nameNative = va.name?.native,
+                        nameUserPreferred = va.name?.userPreferred ?: va.name?.full ?: "Unknown",
+                        imageUrl = va.image?.medium,
+                        language = va.languageV2
+                    )
+                } ?: emptyList()
+
                 CharacterMedia(
                     id = node.id ?: 0,
                     titleRomaji = node.title?.romaji,
@@ -393,15 +408,13 @@ class DetailsRepositoryImpl @Inject constructor(
                     titleUserPreferred = node.title?.userPreferred ?: "Unknown",
                     coverUrl = node.coverImage?.large,
                     type = node.type,
-                    voiceActor = voiceActorNode?.let { va -> 
-                        VoiceActor(
-                           id = va.id ?: 0,
-                           nameFull = va.name?.full ?: "Unknown",
-                           nameNative = null, // Not fetching native name for VA list yet to save bandwidth, or add if needed
-                           nameUserPreferred = va.name?.full ?: "Unknown", // Fallback to full
-                           imageUrl = va.image?.medium
-                        ) 
-                    }
+                    characterRole = edge.characterRole?.name,
+                    startYear = node.startDate?.year,
+                    popularity = node.popularity,
+                    averageScore = node.averageScore,
+                    favourites = node.favourites,
+                    isOnList = node.mediaListEntry?.id != null,
+                    voiceActors = voiceActorsList
                 )
             } ?: emptyList()
 
@@ -410,7 +423,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 name = charData.name?.full ?: "Unknown",
                 nativeName = charData.name?.native,
                 imageUrl = charData.image?.large,
-                description = charData.description?.stripHtml(),
+                description = charData.description,
                 gender = charData.gender,
                 age = charData.age,
                 bloodType = charData.bloodType,
@@ -513,6 +526,84 @@ class DetailsRepositoryImpl @Inject constructor(
                 ?: throw Exception("Failed to rate recommendation")
 
             Pair(data.rating ?: 0, data.userRating?.name)
+        }
+    }
+
+    override suspend fun getStaffDetails(id: Int): Result<StaffDetails> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                GetStaffDetailsQuery(id = id)
+            ).execute()
+
+            val staffData = response.data?.Staff
+                ?: throw Exception("Staff not found")
+
+            val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+            fun formatFuzzyDate(month: Int?, day: Int?, year: Int?): String? {
+                val monthName = month?.let { if (it in 1..12) months[it - 1] else null }
+                return when {
+                    monthName != null && day != null && year != null -> "$monthName $day, $year"
+                    monthName != null && day != null -> "$monthName $day"
+                    year != null -> "$year"
+                    else -> null
+                }
+            }
+
+            // Group character media by character to build VoicedCharacter list
+            val characterMap = linkedMapOf<Int, MutableList<Pair<GetStaffDetailsQuery.Edge, GetStaffDetailsQuery.Character>>>()
+            staffData.characterMedia?.edges?.filterNotNull()?.forEach { edge ->
+                edge.characters?.filterNotNull()?.forEach { character ->
+                    val charId = character.id ?: return@forEach
+                    characterMap.getOrPut(charId) { mutableListOf() }.add(edge to character)
+                }
+            }
+
+            val voicedCharacters = characterMap.map { (charId, entries) ->
+                val firstChar = entries.first().second
+                VoicedCharacter(
+                    characterId = charId,
+                    characterName = firstChar.name?.full ?: "Unknown",
+                    characterImageUrl = firstChar.image?.medium,
+                    mediaAppearances = entries.mapNotNull { (edge, _) ->
+                        val node = edge.node ?: return@mapNotNull null
+                        CharacterMediaAppearance(
+                            mediaId = node.id ?: 0,
+                            mediaTitle = node.title?.userPreferred ?: "Unknown",
+                            coverUrl = node.coverImage?.large,
+                            startYear = node.startDate?.year,
+                            characterRole = edge.characterRole?.name,
+                            popularity = node.popularity,
+                            averageScore = node.averageScore,
+                            favourites = node.favourites,
+                            isOnList = node.mediaListEntry?.id != null
+                        )
+                    }
+                )
+            }
+
+            StaffDetails(
+                id = staffData.id,
+                name = staffData.name?.full ?: "Unknown",
+                nativeName = staffData.name?.native,
+                imageUrl = staffData.image?.large,
+                description = staffData.description,
+                gender = staffData.gender,
+                age = staffData.age,
+                bloodType = staffData.bloodType,
+                dateOfBirth = staffData.dateOfBirth?.let {
+                    formatFuzzyDate(it.month, it.day, it.year)
+                },
+                dateOfDeath = staffData.dateOfDeath?.let {
+                    formatFuzzyDate(it.month, it.day, it.year)
+                },
+                favourites = staffData.favourites,
+                language = staffData.languageV2,
+                primaryOccupations = staffData.primaryOccupations?.filterNotNull() ?: emptyList(),
+                yearsActive = staffData.yearsActive?.filterNotNull() ?: emptyList(),
+                homeTown = staffData.homeTown,
+                voicedCharacters = voicedCharacters
+            )
         }
     }
 }
