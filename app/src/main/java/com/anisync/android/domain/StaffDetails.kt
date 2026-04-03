@@ -7,6 +7,7 @@ data class StaffDetails(
     val id: Int,
     val name: String,
     val nativeName: String?,
+    val alternativeNames: List<String> = emptyList(),
     val imageUrl: String?,
     val description: String?,
     val gender: String?,
@@ -19,7 +20,8 @@ data class StaffDetails(
     val primaryOccupations: List<String>,
     val yearsActive: List<Int>,
     val homeTown: String?,
-    val voicedCharacters: List<VoicedCharacter>
+    val voicedCharacters: List<VoicedCharacter>,
+    val hasNextPage: Boolean = false
 )
 
 @Serializable

@@ -1,4 +1,4 @@
-query GetStaffDetails($id: Int!) {
+query GetStaffDetails($id: Int!, $page: Int = 1) {
     Staff(id: $id) {
         id
         name {
@@ -28,7 +28,10 @@ query GetStaffDetails($id: Int!) {
         primaryOccupations
         yearsActive
         homeTown
-        characterMedia(sort: [START_DATE_DESC], perPage: 25) {
+        characterMedia(page: $page, sort: [START_DATE_DESC], perPage: 25) {
+            pageInfo {
+                hasNextPage
+            }
             edges {
                 characterRole
                 node {
