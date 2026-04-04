@@ -1,0 +1,88 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:prePreviewDebugBuild UP-TO-DATE
+> Task :app:mergePreviewDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generatePreviewDebugBuildConfig UP-TO-DATE
+> Task :app:checkApolloVersions UP-TO-DATE
+> Task :app:generateServiceApolloOptions UP-TO-DATE
+> Task :app:generateServiceApolloSources UP-TO-DATE
+> Task :app:checkPreviewDebugAarMetadata UP-TO-DATE
+> Task :app:processPreviewDebugNavigationResources UP-TO-DATE
+> Task :app:compilePreviewDebugNavigationResources UP-TO-DATE
+> Task :app:generatePreviewDebugResValues UP-TO-DATE
+> Task :app:mapPreviewDebugSourceSetPaths UP-TO-DATE
+> Task :app:generatePreviewDebugResources UP-TO-DATE
+> Task :app:mergePreviewDebugResources UP-TO-DATE
+> Task :app:packagePreviewDebugResources UP-TO-DATE
+> Task :app:parsePreviewDebugLocalResources UP-TO-DATE
+> Task :app:createPreviewDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksPreviewDebug UP-TO-DATE
+> Task :app:processPreviewDebugMainManifest UP-TO-DATE
+> Task :app:processPreviewDebugManifest UP-TO-DATE
+> Task :app:processPreviewDebugManifestForPackage UP-TO-DATE
+> Task :app:processPreviewDebugResources UP-TO-DATE
+> Task :app:kspPreviewDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompilePreviewDebug UP-TO-DATE
+> Task :app:mergePreviewDebugShaders UP-TO-DATE
+> Task :app:compilePreviewDebugShaders NO-SOURCE
+> Task :app:generatePreviewDebugAssets UP-TO-DATE
+> Task :app:mergePreviewDebugAssets UP-TO-DATE
+> Task :app:compressPreviewDebugAssets UP-TO-DATE
+> Task :app:checkPreviewDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarPreviewDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexPreviewDebug UP-TO-DATE
+> Task :app:mergeLibDexPreviewDebug UP-TO-DATE
+> Task :app:mergePreviewDebugJniLibFolders UP-TO-DATE
+> Task :app:mergePreviewDebugNativeLibs UP-TO-DATE
+> Task :app:stripPreviewDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningPreviewDebug UP-TO-DATE
+> Task :app:writePreviewDebugAppMetadata UP-TO-DATE
+> Task :app:writePreviewDebugSigningConfigVersions UP-TO-DATE
+> Task :app:preStableDebugBuild UP-TO-DATE
+> Task :app:mergeStableDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateStableDebugBuildConfig UP-TO-DATE
+> Task :app:checkStableDebugAarMetadata UP-TO-DATE
+> Task :app:processStableDebugNavigationResources UP-TO-DATE
+> Task :app:compileStableDebugNavigationResources UP-TO-DATE
+> Task :app:generateStableDebugResValues UP-TO-DATE
+> Task :app:mapStableDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateStableDebugResources UP-TO-DATE
+> Task :app:mergeStableDebugResources UP-TO-DATE
+> Task :app:packageStableDebugResources UP-TO-DATE
+> Task :app:parseStableDebugLocalResources UP-TO-DATE
+> Task :app:createStableDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksStableDebug UP-TO-DATE
+> Task :app:processStableDebugMainManifest UP-TO-DATE
+> Task :app:processStableDebugManifest UP-TO-DATE
+> Task :app:processStableDebugManifestForPackage UP-TO-DATE
+> Task :app:processStableDebugResources UP-TO-DATE
+> Task :app:kspStableDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileStableDebug UP-TO-DATE
+> Task :app:mergeStableDebugShaders UP-TO-DATE
+> Task :app:compileStableDebugShaders NO-SOURCE
+> Task :app:generateStableDebugAssets UP-TO-DATE
+> Task :app:mergeStableDebugAssets UP-TO-DATE
+> Task :app:compressStableDebugAssets UP-TO-DATE
+> Task :app:checkStableDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarStableDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexStableDebug UP-TO-DATE
+> Task :app:mergeLibDexStableDebug UP-TO-DATE
+> Task :app:mergeStableDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeStableDebugNativeLibs UP-TO-DATE
+> Task :app:stripStableDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningStableDebug UP-TO-DATE
+> Task :app:writeStableDebugAppMetadata UP-TO-DATE
+> Task :app:writeStableDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:compilePreviewDebugKotlin FAILED
+
+> Task :app:compileStableDebugKotlin FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/Mohammed.Aldakhil/Desktop/Android/AniSync/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+67 actionable tasks: 2 executed, 65 up-to-date

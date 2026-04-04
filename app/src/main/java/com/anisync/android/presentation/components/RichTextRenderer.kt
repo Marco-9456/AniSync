@@ -111,22 +111,33 @@ fun RichTextRenderer(
         previews.putAll(fetched)
     }
 
-    SelectionContainer(modifier = modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            RenderBlocks(
-                blocks = parsedData.blocks,
-                style = style,
-                color = color,
-                spoilerColor = spoilerColor,
-                previews = previews,
-                onImageClick = { url ->
-                    val idx = parsedData.imageUrls.indexOf(url)
-                    if (idx >= 0) viewerInitialIndex = idx
-                },
-                onLinkClick = { linkRouter.navigate(it) }
-            )
+    val customUriHandler = remember(linkRouter) {
+        object : androidx.compose.ui.platform.UriHandler {
+            override fun openUri(uri: String) {
+                linkRouter.navigate(uri)
+            }
         }
     }
+
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalUriHandler provides customUriHandler) {
+        SelectionContainer(modifier = modifier) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                RenderBlocks(
+                    blocks = parsedData.blocks,
+                    style = style,
+                    color = color,
+                    spoilerColor = spoilerColor,
+                    previews = previews,
+                    onImageClick = { url ->
+                        val idx = parsedData.imageUrls.indexOf(url)
+                        if (idx >= 0) viewerInitialIndex = idx
+                    },
+                    onLinkClick = { linkRouter.navigate(it) }
+                )
+            }
+        }
+    }
+
 
     viewerInitialIndex?.let { index ->
         ImageViewerDialog(

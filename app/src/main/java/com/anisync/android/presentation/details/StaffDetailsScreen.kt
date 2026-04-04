@@ -75,6 +75,7 @@ fun StaffDetailsScreen(
     viewModel: StaffDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
@@ -117,7 +118,7 @@ fun StaffDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO Share */ }) {
+                    IconButton(onClick = { viewModel.shareStaff(context) }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share",
@@ -276,7 +277,8 @@ private fun StaffDetailsContent(
                         SectionHeader(
                             title = "Voiced Characters",
                             level = HeaderLevel.Section,
-                            iconColor = MaterialTheme.colorScheme.primary
+                            iconColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(

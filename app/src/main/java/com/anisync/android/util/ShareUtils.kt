@@ -24,6 +24,20 @@ object AniListUrls {
         }
         return "$BASE_URL/$typePath/$mediaId"
     }
+
+    /**
+     * Builds the AniList URL for a character.
+     */
+    fun characterUrl(characterId: Int): String {
+        return "$BASE_URL/character/$characterId"
+    }
+
+    /**
+     * Builds the AniList URL for a staff member.
+     */
+    fun staffUrl(staffId: Int): String {
+        return "$BASE_URL/staff/$staffId"
+    }
 }
 
 /**
@@ -47,6 +61,36 @@ object ShareUtils {
     ) {
         val url = AniListUrls.mediaUrl(mediaId, mediaType)
         val shareText = "$title\n$url"
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent, null))
+    }
+
+    /**
+     * Shares character content using Android's share sheet.
+     */
+    fun shareCharacter(context: Context, name: String, characterId: Int) {
+        val url = AniListUrls.characterUrl(characterId)
+        val shareText = "$name\n$url"
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent, null))
+    }
+
+    /**
+     * Shares staff content using Android's share sheet.
+     */
+    fun shareStaff(context: Context, name: String, staffId: Int) {
+        val url = AniListUrls.staffUrl(staffId)
+        val shareText = "$name\n$url"
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
