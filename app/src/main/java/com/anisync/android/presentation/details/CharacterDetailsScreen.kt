@@ -28,16 +28,20 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -58,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,13 +72,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterMedia
-import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
 import com.anisync.android.presentation.details.components.CharacterSkeletonContent
 import com.anisync.android.presentation.details.components.DetailHeroImage
+import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoiceActorCard
@@ -129,6 +134,18 @@ fun CharacterDetailsScreen(
                             tint = androidx.compose.animation.animateColorAsState(
                                 if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
                                 label = "navIconTint"
+                            ).value
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* TODO Share */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = androidx.compose.animation.animateColorAsState(
+                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                label = "actionIconTint"
                             ).value
                         )
                     }
@@ -191,6 +208,10 @@ private fun CharacterDetailsContent(
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
     var imageViewerUrl by rememberSaveable { mutableStateOf<String?>(null) }
 
+    val seriesBackdropUrl = remember(character.media) {
+        character.media.firstOrNull()?.bannerUrl
+    }
+
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
 
@@ -210,6 +231,7 @@ private fun CharacterDetailsContent(
                     imageViewerUrl = character.imageUrl
                     showImageViewer = true
                 },
+                backdropUrl = seriesBackdropUrl,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope
             )
@@ -233,63 +255,57 @@ private fun CharacterDetailsContent(
                 character.media.flatMap { it.voiceActors }.distinctBy { it.id }.size
             }
 
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
             ) {
-                ButtonGroup {
-                    val charSelected = pagerState.currentPage == 0
-                    val voiceSelected = pagerState.currentPage == 1
-
-                    Button(
-                        onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (charSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-                            contentColor = if (charSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                ToggleButton(
+                    checked = pagerState.currentPage == 0,
+                    onCheckedChange = {
+                        scope.launch { pagerState.animateScrollToPage(0) }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shapes = ButtonGroupDefaults.connectedLeadingButtonShapes()
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Character",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                ToggleButton(
+                    checked = pagerState.currentPage == 1,
+                    onCheckedChange = {
+                        scope.launch { pagerState.animateScrollToPage(1) }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shapes = ButtonGroupDefaults.connectedTrailingButtonShapes()
+                ) {
+                    Icon(
+                        Icons.Default.Mic,
+                        contentDescription = null
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Voice Actors",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (uniqueVoiceActorsCount > 0) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = uniqueVoiceActorsCount.toString(),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Character")
-                    }
-
-                    Button(
-                        onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (voiceSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-                            contentColor = if (voiceSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Mic,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Voice Actors")
-
-                        if (uniqueVoiceActorsCount > 0) {
-                            Spacer(Modifier.width(8.dp))
-                            androidx.compose.material3.Surface(
-                                color = if (voiceSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                                modifier = Modifier.size(20.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = uniqueVoiceActorsCount.toString(),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                        color = if (voiceSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.surface
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -381,19 +397,10 @@ private fun CharacterTabContent(
     }
 
     Column(modifier = Modifier.padding(top = 16.dp)) {
-        // Biography - rendered with rich text renderer
+        // Biography - expandable box with rich text renderer
         if (!character.description.isNullOrBlank()) {
-            SectionHeader(
-                title = "Biography",
-                level = HeaderLevel.Section,
-                iconColor = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
             Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-                AsyncRichTextRenderer(
-                    html = character.description,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                ExpandableBiography(html = character.description)
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -412,30 +419,69 @@ private fun CharacterTabContent(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Featured Media (preview with See All)
+        // Featured Media (expandable preview with See All)
         if (previewMedia.isNotEmpty()) {
-            SectionHeader(
-                title = "Featured Media",
-                level = HeaderLevel.Section,
-                iconColor = MaterialTheme.colorScheme.primary,
-                onActionClick = if (character.media.size > 10) onMediaSeeAllClick else null
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            var mediaExpanded by rememberSaveable { mutableStateOf(true) }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(
-                    items = previewMedia,
-                    key = { it.id }
-                ) { media ->
-                    FeaturedMediaItem(
-                        coverUrl = media.coverUrl,
-                        title = media.titleUserPreferred,
-                        role = media.characterRole,
-                        year = media.startYear,
-                        onClick = { onMediaClick(media.id) }
-                    )
+                SectionHeader(
+                    title = "Featured Media",
+                    level = HeaderLevel.Section,
+                    iconColor = MaterialTheme.colorScheme.primary
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { mediaExpanded = !mediaExpanded },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (mediaExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = if (mediaExpanded) "Collapse" else "Expand"
+                        )
+                    }
+                    if (character.media.size > 10) {
+                        IconButton(
+                            onClick = onMediaSeeAllClick,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "See All"
+                            )
+                        }
+                    }
+                }
+            }
+            androidx.compose.animation.AnimatedVisibility(visible = mediaExpanded) {
+                Column {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            items = previewMedia,
+                            key = { it.id }
+                        ) { media ->
+                            FeaturedMediaItem(
+                                coverUrl = media.coverUrl,
+                                title = media.titleUserPreferred,
+                                role = media.characterRole,
+                                year = media.startYear,
+                                type = media.type?.name,
+                                onClick = { onMediaClick(media.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -501,7 +547,7 @@ private fun VoiceActorsTabContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Voice actors grid
-        val rows = filteredActors.chunked(2)
+        val rows = filteredActors.chunked(3)
         rows.forEach { rowItems ->
             Row(
                 modifier = Modifier
@@ -518,11 +564,11 @@ private fun VoiceActorsTabContent(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                if (rowItems.size == 1) {
+                repeat(3 - rowItems.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

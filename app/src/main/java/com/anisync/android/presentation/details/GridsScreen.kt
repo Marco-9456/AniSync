@@ -192,6 +192,7 @@ fun CharacterMediaGridScreen(
                                 FeaturedMediaItem(
                                     coverUrl = mediaItem.coverUrl,
                                     title = mediaItem.titleUserPreferred,
+                                    type = mediaItem.type?.name,
                                     role = mediaItem.characterRole,
                                     year = mediaItem.startYear,
                                     onClick = { onMediaClick(mediaItem.id) }

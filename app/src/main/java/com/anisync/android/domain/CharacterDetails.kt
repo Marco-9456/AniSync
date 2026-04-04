@@ -28,6 +28,7 @@ data class CharacterMedia(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    val bannerUrl: String?,
     val type: MediaType?,
     val characterRole: String?,
     val startYear: Int?,

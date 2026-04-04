@@ -821,8 +821,7 @@ object RichTextParser {
                                 url,
                                 TextLinkStyles(
                                     SpanStyle(
-                                        color = ctx.config.linkColor,
-                                        textDecoration = TextDecoration.Underline
+                                        color = ctx.config.linkColor
                                     )
                                 )
                             )
@@ -863,8 +862,7 @@ object RichTextParser {
                             url,
                             TextLinkStyles(
                                 SpanStyle(
-                                    color = ctx.config.linkColor,
-                                    textDecoration = TextDecoration.Underline
+                                    color = ctx.config.linkColor
                                 )
                             )
                         )
@@ -901,8 +899,7 @@ object RichTextParser {
                     href,
                     TextLinkStyles(
                         SpanStyle(
-                            color = ctx.config.linkColor,
-                            textDecoration = TextDecoration.Underline
+                            color = ctx.config.linkColor
                         )
                     )
                 )

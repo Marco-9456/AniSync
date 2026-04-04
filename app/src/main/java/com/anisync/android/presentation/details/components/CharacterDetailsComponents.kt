@@ -6,12 +6,14 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -38,7 +40,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -67,9 +72,11 @@ fun DetailHeroImage(
     contentDescription: String,
     id: Int,
     onImageClick: () -> Unit = {},
+    backdropUrl: String? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
+    val bannerImageUrl = backdropUrl ?: imageUrl
     val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         val spatialSpec = AppMotion.rememberSpatialSpec()
         with(sharedTransitionScope) {
@@ -88,23 +95,65 @@ fun DetailHeroImage(
         Modifier
     }
 
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageUrl)
-            .crossfade(true)
-            .build(),
-        contentDescription = contentDescription,
-        contentScale = ContentScale.FillWidth,
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(top = 16.dp)
-            .clip(RoundedCornerShape(32.dp))
             .wrapContentHeight()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onImageClick)
-            .then(imageModifier)
-    )
+            .padding(bottom = 24.dp)
+    ) {
+        // Background Banner
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(bannerImageUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .graphicsLayer {
+                    scaleX = 1.1f
+                    scaleY = 1.1f
+                }
+                .then(if (backdropUrl == null) Modifier.blur(24.dp) else Modifier)
+        )
+
+        // Dark gradient overlay for the banner
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY
+                    )
+                )
+        )
+
+        // Overlapping Portrait
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 220.dp)
+                .width(140.dp)
+                .height(200.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(4.dp, MaterialTheme.colorScheme.background, RoundedCornerShape(28.dp))
+                .clickable(onClick = onImageClick)
+                .then(imageModifier)
+        )
+    }
 }
 
 /**
@@ -235,41 +284,40 @@ fun VoiceActorCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(
-        modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        onClick = onClick
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.clickable(onClick = onClick)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-            language?.let {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(140f / 200f)
+                .clip(RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
+        language?.let {
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = CircleShape
+            ) {
                 Text(
                     text = it.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     maxLines = 1
                 )
             }
@@ -283,6 +331,7 @@ fun FeaturedMediaItem(
     title: String,
     role: String?,
     year: Int?,
+    type: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -326,6 +375,14 @@ fun FeaturedMediaItem(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+        if (type != null) {
+            Text(
+                text = type,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp
+            )
+        }
     }
 }
 
@@ -348,6 +405,74 @@ fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ExpandableBiography(html: String) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = effectsSpec,
+        label = "ArrowRotation"
+    )
+
+    Surface(
+        onClick = { expanded = !expanded },
+        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
+            )
+    ) {
+        Column(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
+            Text(
+                "BIOGRAPHY",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 1.sp
+            )
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+
+            Box(
+                modifier = if (!expanded) Modifier
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(0.dp))
+                else Modifier
+            ) {
+                com.anisync.android.presentation.components.AsyncRichTextRenderer(
+                    html = html,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
+                        R.string.synopsis_read_more
+                    ),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .size(dimensionResource(R.dimen.icon_size_tiny))
+                        .graphicsLayer { rotationZ = arrowRotation }
+                )
+            }
+        }
     }
 }
 

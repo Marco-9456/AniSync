@@ -392,6 +392,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     titleNative = node.title?.native,
                     titleUserPreferred = node.title?.userPreferred ?: "Unknown",
                     coverUrl = node.coverImage?.large,
+                    bannerUrl = node.bannerImage,
                     type = node.type,
                     characterRole = edge.characterRole?.name,
                     startYear = node.startDate?.year,

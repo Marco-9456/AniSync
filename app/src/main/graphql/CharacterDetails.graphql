@@ -37,6 +37,7 @@ query GetCharacterDetails($id: Int!, $page: Int = 1) {
                     coverImage {
                         large
                     }
+                    bannerImage
                     type
                     startDate {
                         year
