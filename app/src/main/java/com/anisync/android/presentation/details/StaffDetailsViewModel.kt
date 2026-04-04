@@ -97,6 +97,31 @@ class StaffDetailsViewModel @Inject constructor(
         return map.values.toList()
     }
 
+    fun toggleFavourite() {
+        viewModelScope.launch {
+            val currentState =
+                _uiState.value as? StaffDetailsUiState.Success ?: return@launch
+            // Optimistic update
+            _uiState.value = StaffDetailsUiState.Success(
+                currentState.details.copy(isFavourite = !currentState.details.isFavourite)
+            )
+            when (val result = detailsRepository.toggleStaffFavourite(staffId)) {
+                is Result.Success -> {
+                    val state =
+                        _uiState.value as? StaffDetailsUiState.Success ?: return@launch
+                    _uiState.value = StaffDetailsUiState.Success(
+                        state.details.copy(isFavourite = result.data)
+                    )
+                }
+
+                is Result.Error -> {
+                    // Revert optimistic update
+                    _uiState.value = currentState
+                }
+            }
+        }
+    }
+
     fun shareStaff(context: android.content.Context) {
         val details = (_uiState.value as? StaffDetailsUiState.Success)?.details ?: return
         val name = details.name

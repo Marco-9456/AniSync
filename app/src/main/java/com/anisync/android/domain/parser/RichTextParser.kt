@@ -180,7 +180,17 @@ object RichTextParser {
             "<youtube${match.groupValues[1]}class=\"youtube\"${match.groupValues[2]}>${match.groupValues[3]}</youtube>"
         }
 
-        // 2. Convert markdown quotes to blocks to prevent inline breakages
+        // 2. Prevent Jsoup from hoisting block elements out of span-based spoilers
+        // Converts `<span class='markdown_spoiler'>...</span>` to `<spoiler>...</spoiler>`
+        val spoilerSpanRegex = Regex(
+            """<span\s+class\s*=\s*['"]markdown_spoiler['"]>(.*?)</span>""",
+            RegexOption.DOT_MATCHES_ALL
+        )
+        processed = processed.replace(spoilerSpanRegex) { match ->
+            "<spoiler>${match.groupValues[1]}</spoiler>"
+        }
+
+        // 3. Convert markdown quotes to blocks to prevent inline breakages
         val lines = processed.split("\n")
         val sb = StringBuilder()
         var currentDepth = 0
@@ -317,6 +327,21 @@ object RichTextParser {
                 }
                 workingCtx.hasContent = true
                 workingCtx.flushText()
+            }
+
+            "spoiler" -> {
+                workingCtx.flushText()
+                val spoilerCtx = ParseContext(
+                    workingCtx.config,
+                    align = workingCtx.align,
+                    currentLinkUrl = workingCtx.currentLinkUrl,
+                    listDepth = workingCtx.listDepth
+                )
+                walkChildren(element, spoilerCtx)
+                spoilerCtx.flushText()
+                if (spoilerCtx.blocks.isNotEmpty()) workingCtx.blocks.add(
+                    RichTextBlock.Spoiler(spoilerCtx.blocks, workingCtx.align)
+                )
             }
 
             "blockquote" -> {
@@ -706,7 +731,8 @@ object RichTextParser {
                         val spoilerCtx = ParseContext(
                             ctx.config,
                             align = ctx.align,
-                            currentLinkUrl = ctx.currentLinkUrl
+                            currentLinkUrl = ctx.currentLinkUrl,
+                            listDepth = ctx.listDepth
                         )
                         parseInlineMarkdown(match.groupValues[1], spoilerCtx)
                         spoilerCtx.flushText()
@@ -988,7 +1014,7 @@ object RichTextParser {
                 currentLinkUrl = ctx.currentLinkUrl,
                 listDepth = ctx.listDepth
             )
-            walkChildren(element.selectFirst(":root > span") ?: element, spoilerCtx)
+            walkChildren(element, spoilerCtx)
             spoilerCtx.flushText()
             if (spoilerCtx.blocks.isNotEmpty()) ctx.blocks.add(
                 RichTextBlock.Spoiler(

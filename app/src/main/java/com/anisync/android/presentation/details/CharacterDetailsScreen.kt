@@ -175,6 +175,7 @@ fun CharacterDetailsScreen(
                             onMediaSeeAllClick(state.details.id, state.details.name)
                         },
                         onStaffClick = onStaffClick,
+                        onFavouriteClick = viewModel::toggleFavourite,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
@@ -199,6 +200,7 @@ private fun CharacterDetailsContent(
     onMediaClick: (Int) -> Unit,
     onMediaSeeAllClick: () -> Unit,
     onStaffClick: (Int) -> Unit,
+    onFavouriteClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -241,7 +243,9 @@ private fun CharacterDetailsContent(
                 name = character.name,
                 nativeName = character.nativeName,
                 alternativeNames = character.alternativeNames,
-                favourites = character.favourites
+                favourites = character.favourites,
+                isFavourite = character.isFavourite,
+                onFavouriteClick = onFavouriteClick
             )
         }
 

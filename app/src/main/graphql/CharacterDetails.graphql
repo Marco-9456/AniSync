@@ -20,6 +20,7 @@ query GetCharacterDetails($id: Int!, $page: Int = 1) {
         }
         bloodType
         favourites
+        isFavourite
         media(page: $page, perPage: 25, sort: [POPULARITY_DESC]) {
             pageInfo {
                 hasNextPage

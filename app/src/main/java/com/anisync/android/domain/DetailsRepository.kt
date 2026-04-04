@@ -35,6 +35,10 @@ interface DetailsRepository {
      */
     suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean>
 
+    suspend fun toggleCharacterFavourite(characterId: Int): Result<Boolean>
+
+    suspend fun toggleStaffFavourite(staffId: Int): Result<Boolean>
+
     suspend fun getCharacterDetails(id: Int, page: Int = 1): Result<CharacterDetails>
 
     suspend fun getStaffDetails(id: Int, page: Int = 1): Result<StaffDetails>

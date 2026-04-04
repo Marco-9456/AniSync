@@ -24,6 +24,7 @@ query GetStaffDetails($id: Int!, $page: Int = 1) {
             day
         }
         favourites
+        isFavourite
         languageV2
         primaryOccupations
         yearsActive

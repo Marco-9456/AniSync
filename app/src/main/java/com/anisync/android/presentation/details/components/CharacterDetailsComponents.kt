@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import java.text.NumberFormat
@@ -165,6 +166,8 @@ fun NameCard(
     nativeName: String?,
     alternativeNames: List<String> = emptyList(),
     favourites: Int?,
+    isFavourite: Boolean = false,
+    onFavouriteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -203,16 +206,16 @@ fun NameCard(
                     shape = CircleShape
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Favorite,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
+                        AnimatedFavoriteButton(
+                            isFavorite = isFavourite,
+                            onClick = { onFavouriteClick?.invoke() },
+                            iconSize = 18.dp,
+                            activeColor = MaterialTheme.colorScheme.error
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = NumberFormat.getNumberInstance(Locale.getDefault()).format(favs),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),

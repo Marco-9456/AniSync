@@ -149,7 +149,8 @@ fun StaffDetailsScreen(
                         onCharacterClick = onCharacterClick,
                         onMediaSeeAllClick = {
                             onMediaSeeAllClick(state.details.id, state.details.name)
-                        }
+                        },
+                        onFavouriteClick = viewModel::toggleFavourite
                     )
                 }
 
@@ -170,7 +171,8 @@ private fun StaffDetailsContent(
     staff: StaffDetails,
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
-    onMediaSeeAllClick: () -> Unit
+    onMediaSeeAllClick: () -> Unit,
+    onFavouriteClick: () -> Unit
 ) {
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
 
@@ -223,7 +225,9 @@ private fun StaffDetailsContent(
                 name = staff.name,
                 nativeName = staff.nativeName,
                 alternativeNames = staff.alternativeNames,
-                favourites = staff.favourites
+                favourites = staff.favourites,
+                isFavourite = staff.isFavourite,
+                onFavouriteClick = onFavouriteClick
             )
         }
 

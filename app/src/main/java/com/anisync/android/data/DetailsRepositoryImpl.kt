@@ -333,12 +333,16 @@ class DetailsRepositoryImpl @Inject constructor(
             val mutation = if (mediaType == MediaType.MANGA) {
                 ToggleFavouriteMutation(
                     animeId = Optional.absent(),
-                    mangaId = Optional.present(mediaId)
+                    mangaId = Optional.present(mediaId),
+                    characterId = Optional.absent(),
+                    staffId = Optional.absent()
                 )
             } else {
                 ToggleFavouriteMutation(
                     animeId = Optional.present(mediaId),
-                    mangaId = Optional.absent()
+                    mangaId = Optional.absent(),
+                    characterId = Optional.absent(),
+                    staffId = Optional.absent()
                 )
             }
 
@@ -353,6 +357,50 @@ class DetailsRepositoryImpl @Inject constructor(
             refreshMediaDetails(mediaId)
             val currentEntity = mediaDetailsDao.getById(mediaId)
             currentEntity?.isFavourite ?: false
+        }
+    }
+
+    override suspend fun toggleCharacterFavourite(characterId: Int): Result<Boolean> {
+        return safeApiCall {
+            val mutation = ToggleFavouriteMutation(
+                animeId = Optional.absent(),
+                mangaId = Optional.absent(),
+                characterId = Optional.present(characterId),
+                staffId = Optional.absent()
+            )
+
+            val response = apolloClient.mutation(mutation).execute()
+
+            if (response.hasErrors()) {
+                val errorMessage =
+                    response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
+                throw Exception(errorMessage)
+            }
+
+            response.data?.ToggleFavourite?.characters?.nodes
+                ?.any { it?.id == characterId } ?: false
+        }
+    }
+
+    override suspend fun toggleStaffFavourite(staffId: Int): Result<Boolean> {
+        return safeApiCall {
+            val mutation = ToggleFavouriteMutation(
+                animeId = Optional.absent(),
+                mangaId = Optional.absent(),
+                characterId = Optional.absent(),
+                staffId = Optional.present(staffId)
+            )
+
+            val response = apolloClient.mutation(mutation).execute()
+
+            if (response.hasErrors()) {
+                val errorMessage =
+                    response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
+                throw Exception(errorMessage)
+            }
+
+            response.data?.ToggleFavourite?.staff?.nodes
+                ?.any { it?.id == staffId } ?: false
         }
     }
 
@@ -420,6 +468,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     } else null
                 },
                 favourites = charData.favourites,
+                isFavourite = charData.isFavourite ?: false,
                 media = mediaList,
                 hasNextPage = hasNextPage
             )
@@ -616,6 +665,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     formatFuzzyDate(it.month, it.day, it.year)
                 },
                 favourites = staffData.favourites,
+                isFavourite = staffData.isFavourite ?: false,
                 language = staffData.languageV2,
                 primaryOccupations = staffData.primaryOccupations?.filterNotNull() ?: emptyList(),
                 yearsActive = staffData.yearsActive?.filterNotNull() ?: emptyList(),

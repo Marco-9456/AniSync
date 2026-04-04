@@ -16,6 +16,7 @@ data class CharacterDetails(
     val bloodType: String?,
     val dateOfBirth: String?,
     val favourites: Int?,
+    val isFavourite: Boolean = false,
     val media: List<CharacterMedia>,
     val hasNextPage: Boolean = false
 )

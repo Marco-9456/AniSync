@@ -76,6 +76,31 @@ class CharacterDetailsViewModel @Inject constructor(
         }
     }
 
+    fun toggleFavourite() {
+        viewModelScope.launch {
+            val currentState =
+                _uiState.value as? CharacterDetailsUiState.Success ?: return@launch
+            // Optimistic update
+            _uiState.value = CharacterDetailsUiState.Success(
+                currentState.details.copy(isFavourite = !currentState.details.isFavourite)
+            )
+            when (val result = detailsRepository.toggleCharacterFavourite(characterId)) {
+                is Result.Success -> {
+                    val state =
+                        _uiState.value as? CharacterDetailsUiState.Success ?: return@launch
+                    _uiState.value = CharacterDetailsUiState.Success(
+                        state.details.copy(isFavourite = result.data)
+                    )
+                }
+
+                is Result.Error -> {
+                    // Revert optimistic update
+                    _uiState.value = currentState
+                }
+            }
+        }
+    }
+
     fun shareCharacter(context: android.content.Context) {
         val details = (_uiState.value as? CharacterDetailsUiState.Success)?.details ?: return
         val name = details.name

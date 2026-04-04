@@ -76,6 +76,10 @@
                     android:scheme="https"
                     android:host="anilist.co"
                     android:pathPrefix="/character/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/staff/" />
             </intent-filter>
         </activity>
 

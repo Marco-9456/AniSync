@@ -16,6 +16,7 @@ data class StaffDetails(
     val dateOfBirth: String?,
     val dateOfDeath: String?,
     val favourites: Int?,
+    val isFavourite: Boolean = false,
     val language: String?,
     val primaryOccupations: List<String>,
     val yearsActive: List<Int>,
