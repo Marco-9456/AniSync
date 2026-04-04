@@ -28,24 +28,21 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -66,7 +63,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
@@ -420,69 +416,32 @@ private fun CharacterTabContent(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Featured Media (expandable preview with See All)
+        // Featured Media (preview with See All)
         if (previewMedia.isNotEmpty()) {
-            var mediaExpanded by rememberSaveable { mutableStateOf(true) }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column {
                 SectionHeader(
                     title = "Featured Media",
                     level = HeaderLevel.Section,
                     iconColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
+                    onActionClick = if (character.media.size > 10) onMediaSeeAllClick else null
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { mediaExpanded = !mediaExpanded },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (mediaExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = if (mediaExpanded) "Collapse" else "Expand"
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = previewMedia,
+                        key = { it.id }
+                    ) { media ->
+                        FeaturedMediaItem(
+                            coverUrl = media.coverUrl,
+                            title = media.titleUserPreferred,
+                            role = media.characterRole,
+                            year = media.startYear,
+                            type = media.type?.name,
+                            onClick = { onMediaClick(media.id) }
                         )
-                    }
-                    if (character.media.size > 10) {
-                        IconButton(
-                            onClick = onMediaSeeAllClick,
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "See All"
-                            )
-                        }
-                    }
-                }
-            }
-            androidx.compose.animation.AnimatedVisibility(visible = mediaExpanded) {
-                Column {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(
-                            items = previewMedia,
-                            key = { it.id }
-                        ) { media ->
-                            FeaturedMediaItem(
-                                coverUrl = media.coverUrl,
-                                title = media.titleUserPreferred,
-                                role = media.characterRole,
-                                year = media.startYear,
-                                type = media.type?.name,
-                                onClick = { onMediaClick(media.id) }
-                            )
-                        }
                     }
                 }
             }
