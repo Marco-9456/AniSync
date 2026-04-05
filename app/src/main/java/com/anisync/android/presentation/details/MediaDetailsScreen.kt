@@ -147,6 +147,8 @@ fun MediaDetailsScreen(
     val showEditSheet by viewModel.showEditSheet.collectAsStateWithLifecycle()
     val draftEntry by viewModel.draftEntry.collectAsStateWithLifecycle()
     val userScoreFormat by viewModel.userScoreFormat.collectAsStateWithLifecycle()
+    val animeCustomLists by viewModel.animeCustomLists.collectAsStateWithLifecycle()
+    val mangaCustomLists by viewModel.mangaCustomLists.collectAsStateWithLifecycle()
 
     LaunchedEffect(mediaId) {
         viewModel.loadMedia(mediaId)
@@ -386,11 +388,19 @@ fun MediaDetailsScreen(
 
         if (showEditSheet) {
             draftEntry?.let { entry ->
+                val details = (uiState as? DetailsUiState.Success)?.details
+                val mediaType = details?.type ?: entry.type
+                val availableLists = when (mediaType) {
+                    com.anisync.android.type.MediaType.ANIME -> animeCustomLists
+                    com.anisync.android.type.MediaType.MANGA -> mangaCustomLists
+                    else -> emptyList()
+                }
+                
                 com.anisync.android.presentation.library.components.EditLibraryEntrySheet(
                     entry = entry,
                     titleLanguage = titleLanguage,
                     scoreFormat = userScoreFormat,
-                    availableCustomLists = emptyList(), // Can add custom lists from VM later
+                    availableCustomLists = availableLists,
                     onDismiss = viewModel::closeEditSheet,
                     onSave = viewModel::saveLibraryEntry,
                     onDelete = {

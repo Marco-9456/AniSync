@@ -50,6 +50,9 @@ class MediaDetailsViewModel @Inject constructor(
     val draftEntry: StateFlow<LibraryEntry?> = _draftEntry.asStateFlow()
 
     val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
+    
+    val animeCustomLists: StateFlow<List<String>> = appSettings.animeListOrder
+    val mangaCustomLists: StateFlow<List<String>> = appSettings.mangaListOrder
 
     // Get the ID directly from the navigation route "details/{mediaId}"
     private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
