@@ -9,6 +9,7 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +64,10 @@ class LibraryViewModel @Inject constructor(
         
         appSettings.showPrivateEntries.onEach { show ->
             _uiState.update { it.copy(showPrivateEntries = show) }
+        }.launchIn(viewModelScope)
+        
+        appSettings.userScoreFormat.onEach { format ->
+            _uiState.update { it.copy(userScoreFormat = format) }
         }.launchIn(viewModelScope)
 
         observeLibraryData()
@@ -224,9 +229,19 @@ class LibraryViewModel @Inject constructor(
                         // Direction & Filtering
                         val directedEntries =
                             if (ascending) sortedEntries else sortedEntries.reversed()
-                            
-                        val visibilityFiltered = if (showPrivate) directedEntries else directedEntries.filter { it.entry.isPrivate != true }
-                            
+                        
+                        // Filter for standard status lists only (applying both private and hiddenFromStatusLists)
+                        // This is used for standard lists like Watching, Completed, etc.
+                        val visibilityFiltered = directedEntries.filter { entry ->
+                            // Filter for private entries based on toggle
+                            val showThisPrivate = showPrivate || entry.entry.isPrivate != true
+                            // Filter for hiddenFromStatusLists: hide from standard lists entirely
+                            // Custom lists handle showing hidden entries separately via directedEntries
+                            val showThisHidden = !entry.entry.hiddenFromStatusLists
+                            showThisPrivate && showThisHidden
+                        }
+                        
+                        // For search filtering - use visibilityFiltered (standard lists)
                         val filteredEntries = if (query.isBlank()) {
                             visibilityFiltered.map { it.entry }
                         } else {
@@ -235,18 +250,23 @@ class LibraryViewModel @Inject constructor(
                                 .map { it.entry }
                         }
 
-                        // Grouping
+                        // Grouping for standard status lists
                         val grouped = filteredEntries.groupBy { it.status }
 
-                        // Custom Lists
+                        // Custom Lists - use directedEntries filtered by private toggle
+                        // This ensures hiddenFromStatusLists entries are still visible in their custom lists
+                        // but respects the private visibility toggle
                         val customNames = mutableSetOf<String>()
                         val customEntriesMap = mutableMapOf<String, MutableList<LibraryEntry>>()
 
-                        filteredEntries.forEach { entry ->
-                            entry.customLists.forEach { customListName ->
+                        directedEntries.filter { entry ->
+                            // Include in custom lists if: private toggle is ON OR entry is not private
+                            showPrivate || entry.entry.isPrivate != true
+                        }.forEach { entry ->
+                            entry.entry.customLists.forEach { customListName ->
                                 customNames.add(customListName)
                                 customEntriesMap.getOrPut(customListName) { mutableListOf() }
-                                    .add(entry)
+                                    .add(entry.entry)
                             }
                         }
 
