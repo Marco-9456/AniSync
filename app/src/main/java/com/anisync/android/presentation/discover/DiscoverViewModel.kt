@@ -127,23 +127,43 @@ class DiscoverViewModel @Inject constructor(
 
                     if (query.isBlank()) {
                         _uiState.update {
-                            currentState.copy(searchResults = emptyList(), isSearching = false)
+                            currentState.copy(
+                                searchResults = emptyList(),
+                                groupedResults = com.anisync.android.domain.GroupedSearchResults(),
+                                isSearching = false
+                            )
                         }
                         return@collectLatest
                     }
 
                     _uiState.update { currentState.copy(isSearching = true) }
 
-                    when (val result = searchRepository.searchMedia(
-                        query,
-                        currentState.mediaType,
-                        currentState.searchFilters
-                    )) {
+                    val mediaDeferred = async {
+                        searchRepository.searchMedia(
+                            query,
+                            currentState.mediaType,
+                            currentState.searchFilters
+                        )
+                    }
+                    val allDeferred = async {
+                        searchRepository.searchAll(query)
+                    }
+
+                    val mediaResult = mediaDeferred.await()
+                    val allResult = allDeferred.await()
+
+                    when (mediaResult) {
                         is Result.Success -> {
+                            val grouped = when (allResult) {
+                                is Result.Success -> allResult.data
+                                is Result.Error -> com.anisync.android.domain.GroupedSearchResults()
+                            }
                             _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
-                                    searchResults = result.data,
-                                    isSearching = false
+                                    searchResults = mediaResult.data,
+                                    groupedResults = grouped,
+                                    isSearching = false,
+                                    searchError = null
                                 ) ?: it
                             }
                         }
@@ -152,8 +172,9 @@ class DiscoverViewModel @Inject constructor(
                             _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
                                     searchResults = emptyList(),
+                                    groupedResults = com.anisync.android.domain.GroupedSearchResults(),
                                     isSearching = false,
-                                    searchError = result.message
+                                    searchError = mediaResult.message
                                 ) ?: it
                             }
                         }

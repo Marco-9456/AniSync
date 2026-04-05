@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.discover
 
 import androidx.compose.runtime.Stable
+import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.type.MediaType
@@ -19,6 +20,7 @@ sealed interface DiscoverUiState {
         val searchQuery: String = "",
         val isSearchActive: Boolean = false,
         val searchResults: List<LibraryEntry> = emptyList(),
+        val groupedResults: GroupedSearchResults = GroupedSearchResults(),
         val isSearching: Boolean = false,
         val searchFilters: SearchFilters = SearchFilters(),
         val searchError: String? = null

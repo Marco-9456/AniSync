@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -33,6 +37,7 @@ import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -62,14 +67,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
@@ -103,6 +112,8 @@ private val TbaIconColor = Color(0xFF9E9E9E)
 @Composable
 fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit = {},
+    onStaffClick: (Int) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
@@ -238,8 +249,23 @@ fun DiscoverScreen(
     val successState2 = uiState as? DiscoverUiState.Success
     val searchQuery = successState2?.searchQuery ?: ""
     val searchResults = successState2?.searchResults ?: emptyList()
+    val groupedResults = successState2?.groupedResults
+        ?: com.anisync.android.domain.GroupedSearchResults()
     val isSearching = successState2?.isSearching ?: false
     val searchError = successState2?.searchError
+
+    val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, keyboardController) {
+        { id ->
+            keyboardController?.hide()
+            onCharacterClick(id)
+        }
+    }
+    val onStaffItemClick: (Int) -> Unit = remember(onStaffClick, keyboardController) {
+        { id ->
+            keyboardController?.hide()
+            onStaffClick(id)
+        }
+    }
 
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
@@ -252,10 +278,13 @@ fun DiscoverScreen(
         listState = listState,
         searchQuery = searchQuery,
         searchResults = searchResults,
+        groupedResults = groupedResults,
         isSearching = isSearching,
         searchError = searchError,
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
         onSearchItemClick = onSearchItemClick,
+        onCharacterClick = onCharacterItemClick,
+        onStaffClick = onStaffItemClick,
         onShowFilterDialog = { showFilterDialog = true }
     )
 }
@@ -629,10 +658,13 @@ private fun DiscoverSearchOverlay(
     listState: LazyListState,
     searchQuery: String,
     searchResults: List<LibraryEntry>,
+    groupedResults: com.anisync.android.domain.GroupedSearchResults,
     isSearching: Boolean,
     searchError: String?,
     onSearch: (String) -> Unit,
     onSearchItemClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
     onShowFilterDialog: () -> Unit
 ) {
     ExpandedFullScreenSearchBar(
@@ -653,11 +685,14 @@ private fun DiscoverSearchOverlay(
         SearchResultsContent(
             isSearching = isSearching,
             searchResults = searchResults,
+            groupedResults = groupedResults,
             searchQuery = searchQuery,
             searchError = searchError,
             titleLanguage = titleLanguage,
             listState = listState,
-            onSearchItemClick = onSearchItemClick
+            onSearchItemClick = onSearchItemClick,
+            onCharacterClick = onCharacterClick,
+            onStaffClick = onStaffClick
         )
     }
 }
@@ -666,12 +701,17 @@ private fun DiscoverSearchOverlay(
 private fun SearchResultsContent(
     isSearching: Boolean,
     searchResults: List<LibraryEntry>,
+    groupedResults: com.anisync.android.domain.GroupedSearchResults,
     searchQuery: String,
     searchError: String?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     listState: LazyListState,
-    onSearchItemClick: (Int) -> Unit
+    onSearchItemClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit
 ) {
+    val hasAnyResults = searchResults.isNotEmpty() || !groupedResults.isEmpty
+
     when {
         isSearching -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -695,7 +735,7 @@ private fun SearchResultsContent(
             }
         }
 
-        searchResults.isEmpty() && searchQuery.isNotEmpty() -> {
+        !hasAnyResults && searchQuery.isNotEmpty() -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.search_no_results),
@@ -718,18 +758,179 @@ private fun SearchResultsContent(
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
-                items(
-                    items = searchResults,
-                    key = { it.mediaId },
-                    contentType = { "search_result" }
-                ) { item ->
-                    val onClick = remember(item.mediaId, onSearchItemClick) {
-                        { onSearchItemClick(item.mediaId) }
+                // Anime / Manga results
+                if (searchResults.isNotEmpty()) {
+                    item(key = "header_media") {
+                        SearchSectionHeader(title = "Anime & Manga")
                     }
-                    SearchResultItem(
-                        item = item,
-                        onClick = onClick,
-                        titleLanguage = titleLanguage
+                    items(
+                        items = searchResults,
+                        key = { "media_${it.mediaId}" },
+                        contentType = { "search_result" }
+                    ) { item ->
+                        val onClick = remember(item.mediaId, onSearchItemClick) {
+                            { onSearchItemClick(item.mediaId) }
+                        }
+                        SearchResultItem(
+                            item = item,
+                            onClick = onClick,
+                            titleLanguage = titleLanguage
+                        )
+                    }
+                }
+
+                // Characters
+                if (groupedResults.characters.isNotEmpty()) {
+                    item(key = "header_characters") {
+                        SearchSectionHeader(title = "Characters")
+                    }
+                    items(
+                        items = groupedResults.characters,
+                        key = { "char_${it.id}" },
+                        contentType = { "character_result" }
+                    ) { character ->
+                        GenericSearchResultItem(
+                            name = character.displayName,
+                            subtitle = character.nativeName,
+                            imageUrl = character.imageUrl,
+                            onClick = { onCharacterClick(character.id) }
+                        )
+                    }
+                }
+
+                // Staff
+                if (groupedResults.staff.isNotEmpty()) {
+                    item(key = "header_staff") {
+                        SearchSectionHeader(title = "Staff")
+                    }
+                    items(
+                        items = groupedResults.staff,
+                        key = { "staff_${it.id}" },
+                        contentType = { "staff_result" }
+                    ) { staff ->
+                        GenericSearchResultItem(
+                            name = staff.displayName,
+                            subtitle = staff.primaryOccupations.firstOrNull()
+                                ?: staff.nativeName,
+                            imageUrl = staff.imageUrl,
+                            onClick = { onStaffClick(staff.id) }
+                        )
+                    }
+                }
+
+                // Users
+                if (groupedResults.users.isNotEmpty()) {
+                    item(key = "header_users") {
+                        SearchSectionHeader(title = "Users")
+                    }
+                    items(
+                        items = groupedResults.users,
+                        key = { "user_${it.id}" },
+                        contentType = { "user_result" }
+                    ) { user ->
+                        GenericSearchResultItem(
+                            name = user.displayName,
+                            subtitle = null,
+                            imageUrl = user.imageUrl,
+                            onClick = {}
+                        )
+                    }
+                }
+
+                // Studios
+                if (groupedResults.studios.isNotEmpty()) {
+                    item(key = "header_studios") {
+                        SearchSectionHeader(title = "Studios")
+                    }
+                    items(
+                        items = groupedResults.studios,
+                        key = { "studio_${it.id}" },
+                        contentType = { "studio_result" }
+                    ) { studio ->
+                        GenericSearchResultItem(
+                            name = studio.displayName,
+                            subtitle = studio.favourites?.let { "$it favourites" },
+                            imageUrl = null,
+                            onClick = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun GenericSearchResultItem(
+    name: String,
+    subtitle: String?,
+    imageUrl: String?,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
