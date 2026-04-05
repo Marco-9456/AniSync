@@ -7,6 +7,7 @@ data class StaffDetails(
     val id: Int,
     val name: String,
     val nativeName: String?,
+    val nameUserPreferred: String,
     val alternativeNames: List<String> = emptyList(),
     val imageUrl: String?,
     val description: String?,
@@ -29,6 +30,8 @@ data class StaffDetails(
 data class VoicedCharacter(
     val characterId: Int,
     val characterName: String,
+    val characterNameNative: String?,
+    val characterNameUserPreferred: String,
     val characterImageUrl: String?,
     val mediaAppearances: List<CharacterMediaAppearance>
 )
@@ -37,6 +40,9 @@ data class VoicedCharacter(
 data class CharacterMediaAppearance(
     val mediaId: Int,
     val mediaTitle: String,
+    val mediaTitleRomaji: String?,
+    val mediaTitleEnglish: String?,
+    val mediaTitleNative: String?,
     val coverUrl: String?,
     val startYear: Int?,
     val characterRole: String?,

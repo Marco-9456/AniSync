@@ -8,6 +8,7 @@ data class CharacterDetails(
     val id: Int,
     val name: String,
     val nativeName: String?,
+    val nameUserPreferred: String,
     val alternativeNames: List<String> = emptyList(),
     val imageUrl: String?,
     val description: String?,

@@ -61,6 +61,8 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.util.getName
+import com.anisync.android.util.getTitle
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -372,6 +374,7 @@ fun RecommendationItem(
 @Composable
 fun VoicedCharacterItem(
     voicedCharacter: VoicedCharacter,
+    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
     onCharacterClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -397,7 +400,7 @@ fun VoicedCharacterItem(
             ) {
                 AsyncImage(
                     model = voicedCharacter.characterImageUrl,
-                    contentDescription = voicedCharacter.characterName,
+                    contentDescription = voicedCharacter.getName(titleLanguage),
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier
                         .width(56.dp)
@@ -407,7 +410,7 @@ fun VoicedCharacterItem(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = voicedCharacter.characterName,
+                    text = voicedCharacter.getName(titleLanguage),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -460,7 +463,7 @@ fun VoicedCharacterItem(
                                 )
                             }
                             Text(
-                                text = appearance.mediaTitle,
+                                text = appearance.getTitle(titleLanguage),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

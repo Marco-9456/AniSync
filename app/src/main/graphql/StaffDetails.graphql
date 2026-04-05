@@ -4,6 +4,7 @@ query GetStaffDetails($id: Int!, $page: Int = 1) {
         name {
             full
             native
+            userPreferred
             alternative
         }
         image {
@@ -39,6 +40,9 @@ query GetStaffDetails($id: Int!, $page: Int = 1) {
                     id
                     title {
                         userPreferred
+                        romaji
+                        english
+                        native
                     }
                     coverImage {
                         large
@@ -58,6 +62,8 @@ query GetStaffDetails($id: Int!, $page: Int = 1) {
                     id
                     name {
                         full
+                        native
+                        userPreferred
                     }
                     image {
                         medium

@@ -48,6 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.util.getName
+import com.anisync.android.util.getTitle
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
@@ -68,6 +70,7 @@ fun StaffDetailsScreen(
     viewModel: StaffDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -81,7 +84,8 @@ fun StaffDetailsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            val title = (uiState as? StaffDetailsUiState.Success)?.details?.name ?: ""
+            val title = (uiState as? StaffDetailsUiState.Success)?.details
+                ?.getName(titleLanguage) ?: ""
 
             TopAppBar(
                 title = {
@@ -145,10 +149,11 @@ fun StaffDetailsScreen(
                 is StaffDetailsUiState.Success -> {
                     StaffDetailsContent(
                         staff = state.details,
+                        titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
                         onMediaSeeAllClick = {
-                            onMediaSeeAllClick(state.details.id, state.details.name)
+                            onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
                         },
                         onFavouriteClick = viewModel::toggleFavourite
                     )
@@ -169,6 +174,7 @@ fun StaffDetailsScreen(
 @Composable
 private fun StaffDetailsContent(
     staff: StaffDetails,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onMediaSeeAllClick: () -> Unit,
@@ -212,7 +218,7 @@ private fun StaffDetailsContent(
         item(key = "hero") {
             DetailHeroImage(
                 imageUrl = staff.imageUrl,
-                contentDescription = staff.name,
+                contentDescription = staff.getName(titleLanguage),
                 id = staff.id,
                 onImageClick = { showImageViewer = true }
             )
@@ -222,7 +228,7 @@ private fun StaffDetailsContent(
         item(key = "name") {
             Spacer(modifier = Modifier.height(12.dp))
             NameCard(
-                name = staff.name,
+                name = staff.getName(titleLanguage),
                 nativeName = staff.nativeName,
                 alternativeNames = staff.alternativeNames,
                 favourites = staff.favourites,
@@ -272,6 +278,7 @@ private fun StaffDetailsContent(
                     previewCharacters.forEach { voicedChar ->
                         VoicedCharacterItem(
                             voicedCharacter = voicedChar,
+                            titleLanguage = titleLanguage,
                             onCharacterClick = { onCharacterClick(voicedChar.characterId) },
                             onMediaClick = onMediaClick,
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)

@@ -56,6 +56,7 @@ import com.anisync.android.presentation.details.components.MediaSortBottomSheet
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.details.components.VoicedCharacterItem
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.util.getTitle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +68,7 @@ fun CharacterMediaGridScreen(
     viewModel: CharacterDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
 
     var showSortSheet by rememberSaveable { mutableStateOf(false) }
     var selectedSort by rememberSaveable { mutableStateOf(MediaSort.POPULARITY) }
@@ -191,7 +193,7 @@ fun CharacterMediaGridScreen(
                             items(sortedMedia, key = { it.id }) { mediaItem ->
                                 FeaturedMediaItem(
                                     coverUrl = mediaItem.coverUrl,
-                                    title = mediaItem.titleUserPreferred,
+                                    title = mediaItem.getTitle(titleLanguage),
                                     type = mediaItem.type?.name,
                                     role = mediaItem.characterRole,
                                     year = mediaItem.startYear,
@@ -246,6 +248,7 @@ fun StaffMediaGridScreen(
     viewModel: StaffDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
 
     var showSortSheet by rememberSaveable { mutableStateOf(false) }
     var selectedSort by rememberSaveable { mutableStateOf(MediaSort.NEWEST) }
@@ -373,6 +376,7 @@ fun StaffMediaGridScreen(
                             items(sortedAppearances, key = { it.characterId }) { vc ->
                                 VoicedCharacterItem(
                                     voicedCharacter = vc,
+                                    titleLanguage = titleLanguage,
                                     onCharacterClick = { onCharacterClick(vc.characterId) },
                                     onMediaClick = onMediaClick,
                                     modifier = Modifier.padding(horizontal = 16.dp)

@@ -16,8 +16,11 @@ import javax.inject.Inject
 @HiltViewModel
 class StaffDetailsViewModel @Inject constructor(
     private val detailsRepository: DetailsRepository,
+    appSettings: com.anisync.android.data.AppSettings,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    val titleLanguage = appSettings.titleLanguage
 
     private val staffId: Int = checkNotNull(savedStateHandle["staffId"]) {
         "Staff ID is required"

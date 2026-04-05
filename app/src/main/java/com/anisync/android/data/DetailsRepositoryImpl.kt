@@ -456,6 +456,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 id = charData.id ?: 0,
                 name = charData.name?.full ?: "Unknown",
                 nativeName = charData.name?.native,
+                nameUserPreferred = charData.name?.userPreferred ?: charData.name?.full ?: "Unknown",
                 alternativeNames = alternativeNames,
                 imageUrl = charData.image?.large,
                 description = charData.description,
@@ -630,12 +631,18 @@ class DetailsRepositoryImpl @Inject constructor(
                 VoicedCharacter(
                     characterId = charId,
                     characterName = firstChar.name?.full ?: "Unknown",
+                    characterNameNative = firstChar.name?.native,
+                    characterNameUserPreferred = firstChar.name?.userPreferred
+                        ?: firstChar.name?.full ?: "Unknown",
                     characterImageUrl = firstChar.image?.medium,
                     mediaAppearances = entries.mapNotNull { (edge, _) ->
                         val node = edge.node ?: return@mapNotNull null
                         CharacterMediaAppearance(
                             mediaId = node.id ?: 0,
                             mediaTitle = node.title?.userPreferred ?: "Unknown",
+                            mediaTitleRomaji = node.title?.romaji,
+                            mediaTitleEnglish = node.title?.english,
+                            mediaTitleNative = node.title?.native,
                             coverUrl = node.coverImage?.large,
                             startYear = node.startDate?.year,
                             characterRole = edge.characterRole?.name,
@@ -652,6 +659,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 id = staffData.id,
                 name = staffData.name?.full ?: "Unknown",
                 nativeName = staffData.name?.native,
+                nameUserPreferred = staffData.name?.userPreferred ?: staffData.name?.full ?: "Unknown",
                 alternativeNames = alternativeNames,
                 imageUrl = staffData.image?.large,
                 description = staffData.description,

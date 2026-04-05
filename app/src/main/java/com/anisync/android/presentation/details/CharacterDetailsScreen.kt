@@ -69,6 +69,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.util.getName
+import com.anisync.android.util.getTitle
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
@@ -93,6 +95,7 @@ fun CharacterDetailsScreen(
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -106,7 +109,8 @@ fun CharacterDetailsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            val title = (uiState as? CharacterDetailsUiState.Success)?.details?.name ?: ""
+            val title = (uiState as? CharacterDetailsUiState.Success)?.details
+                ?.getName(titleLanguage) ?: ""
 
             TopAppBar(
                 title = {
@@ -170,9 +174,10 @@ fun CharacterDetailsScreen(
                 is CharacterDetailsUiState.Success -> {
                     CharacterDetailsContent(
                         character = state.details,
+                        titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
                         onMediaSeeAllClick = {
-                            onMediaSeeAllClick(state.details.id, state.details.name)
+                            onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
                         },
                         onStaffClick = onStaffClick,
                         onFavouriteClick = viewModel::toggleFavourite,
@@ -197,6 +202,7 @@ fun CharacterDetailsScreen(
 @Composable
 private fun CharacterDetailsContent(
     character: CharacterDetails,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     onMediaClick: (Int) -> Unit,
     onMediaSeeAllClick: () -> Unit,
     onStaffClick: (Int) -> Unit,
@@ -224,7 +230,7 @@ private fun CharacterDetailsContent(
         item(key = "hero") {
             DetailHeroImage(
                 imageUrl = character.imageUrl,
-                contentDescription = character.name,
+                contentDescription = character.getName(titleLanguage),
                 id = character.id,
                 onImageClick = {
                     imageViewerUrl = character.imageUrl
@@ -240,7 +246,7 @@ private fun CharacterDetailsContent(
         item(key = "name") {
             Spacer(modifier = Modifier.height(12.dp))
             NameCard(
-                name = character.name,
+                name = character.getName(titleLanguage),
                 nativeName = character.nativeName,
                 alternativeNames = character.alternativeNames,
                 favourites = character.favourites,
@@ -321,12 +327,14 @@ private fun CharacterDetailsContent(
                 when (page) {
                     0 -> CharacterTabContent(
                         character = character,
+                        titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
                         onMediaSeeAllClick = onMediaSeeAllClick
                     )
 
                     1 -> VoiceActorsTabContent(
                         media = character.media,
+                        titleLanguage = titleLanguage,
                         onStaffClick = onStaffClick
                     )
                 }
@@ -349,6 +357,7 @@ private fun CharacterDetailsContent(
 @Composable
 private fun CharacterTabContent(
     character: CharacterDetails,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     onMediaClick: (Int) -> Unit,
     onMediaSeeAllClick: () -> Unit
 ) {
@@ -440,7 +449,7 @@ private fun CharacterTabContent(
                     ) { media ->
                         FeaturedMediaItem(
                             coverUrl = media.coverUrl,
-                            title = media.titleUserPreferred,
+                            title = media.getTitle(titleLanguage),
                             role = media.characterRole,
                             year = media.startYear,
                             type = media.type?.name,
@@ -456,6 +465,7 @@ private fun CharacterTabContent(
 @Composable
 private fun VoiceActorsTabContent(
     media: List<CharacterMedia>,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
     onStaffClick: (Int) -> Unit
 ) {
     val allVoiceActors = remember(media) {
@@ -522,7 +532,7 @@ private fun VoiceActorsTabContent(
             ) {
                 rowItems.forEach { va ->
                     VoiceActorCard(
-                        name = va.nameFull,
+                        name = va.getName(titleLanguage),
                         language = va.language,
                         imageUrl = va.imageUrl,
                         onClick = { onStaffClick(va.id) },
