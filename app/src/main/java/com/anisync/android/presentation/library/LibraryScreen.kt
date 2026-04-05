@@ -619,6 +619,7 @@ fun LibraryScreen(
 
         EditLibraryEntrySheet(
             entry = entry,
+            scoreFormat = uiState.userScoreFormat,
             availableCustomLists = uiState.customListNames,
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->

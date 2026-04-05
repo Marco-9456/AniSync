@@ -4,6 +4,7 @@ import androidx.compose.runtime.Stable
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.type.MediaType
 
 @Stable
@@ -14,6 +15,7 @@ data class LibraryUiState(
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    val userScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     val entries: List<LibraryEntry> = emptyList(),
     val groupedEntries: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
     val customListNames: List<String> = emptyList(),
