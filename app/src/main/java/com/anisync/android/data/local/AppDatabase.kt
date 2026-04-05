@@ -64,13 +64,14 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
         androidx.room.AutoMigration(from = 3, to = 4),
         androidx.room.AutoMigration(from = 4, to = 5),
-        androidx.room.AutoMigration(from = 5, to = 7)
+        androidx.room.AutoMigration(from = 5, to = 7),
+        androidx.room.AutoMigration(from = 7, to = 8)
     ]
 )
 @TypeConverters(Converters::class)

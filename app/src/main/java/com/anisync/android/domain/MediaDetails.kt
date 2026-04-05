@@ -82,6 +82,8 @@ data class MediaDetails(
     val listEntryId: Int?,
     val listStatus: LibraryStatus?,
     val listProgress: Int?,
+    val listEntryPrivate: Boolean? = null,
+    val listEntryHiddenFromStatusLists: Boolean? = null,
     // Characters
     val characters: List<CharacterInfo>,
     // Related media

@@ -40,7 +40,9 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     updatedAt = updatedAt,
     createdAt = createdAt,
     mediaStartDate = mediaStartDate,
-    customLists = customLists
+    customLists = customLists,
+    isPrivate = isPrivate,
+    hiddenFromStatusLists = hiddenFromStatusLists
 )
 
 fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEntryEntity(
@@ -71,7 +73,9 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     updatedAt = updatedAt,
     createdAt = createdAt,
     mediaStartDate = mediaStartDate,
-    customLists = customLists
+    customLists = customLists,
+    isPrivate = isPrivate,
+    hiddenFromStatusLists = hiddenFromStatusLists
 )
 
 // --- MediaDetails ---
@@ -107,6 +111,8 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     listEntryId = listEntryId,
     listStatus = listStatus,
     listProgress = listProgress,
+    listEntryPrivate = listEntryPrivate,
+    listEntryHiddenFromStatusLists = listEntryHiddenFromStatusLists,
     characters = characters,
     relations = relations,
     externalLinks = externalLinks,
@@ -146,6 +152,8 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     listEntryId = listEntryId,
     listStatus = listStatus,
     listProgress = listProgress,
+    listEntryPrivate = listEntryPrivate,
+    listEntryHiddenFromStatusLists = listEntryHiddenFromStatusLists,
     characters = characters,
     relations = relations,
     externalLinks = externalLinks,

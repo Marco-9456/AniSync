@@ -49,6 +49,8 @@ data class MediaDetailsEntity(
     val listEntryId: Int?,
     val listStatus: LibraryStatus?,
     val listProgress: Int?,
+    val listEntryPrivate: Boolean? = null,
+    val listEntryHiddenFromStatusLists: Boolean? = null,
     val characters: List<CharacterInfo>,
     val relations: List<RelatedMedia>,
     val externalLinks: List<ExternalLink>,

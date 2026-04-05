@@ -45,7 +45,9 @@ data class LibraryEntry(
     val updatedAt: Long? = null,
     val createdAt: Long? = null,
     val mediaStartDate: Long? = null,
-    val customLists: List<String> = emptyList()
+    val customLists: List<String> = emptyList(),
+    val isPrivate: Boolean = false,
+    val hiddenFromStatusLists: Boolean = false
 ) {
     /**
      * Computes the dynamic time until airing based on the absolute timestamp.
