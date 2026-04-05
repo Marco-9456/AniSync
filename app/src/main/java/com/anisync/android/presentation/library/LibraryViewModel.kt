@@ -60,6 +60,10 @@ class LibraryViewModel @Inject constructor(
         appSettings.titleLanguage.onEach { lang ->
             _uiState.update { it.copy(titleLanguage = lang) }
         }.launchIn(viewModelScope)
+        
+        appSettings.showPrivateEntries.onEach { show ->
+            _uiState.update { it.copy(showPrivateEntries = show) }
+        }.launchIn(viewModelScope)
 
         observeLibraryData()
     }
@@ -109,6 +113,7 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.MoveListDown -> moveList(action.listName, 1)
             is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
+            is LibraryAction.TogglePrivateVisibility -> appSettings.setShowPrivateEntries(action.show)
         }
     }
 
@@ -134,14 +139,20 @@ class LibraryViewModel @Inject constructor(
                 }
                 .combine(
                     _uiState.map { state ->
-                        Triple(
-                            state.sortOption to state.isAscending,
+                        listOf(
+                            state.sortOption,
+                            state.isAscending,
                             state.searchQuery,
-                            state.titleLanguage
+                            state.titleLanguage,
+                            state.showPrivateEntries
                         )
                     }.distinctUntilChanged()
-                ) { (entries, favorites, listPrefs), (sortParams, query, titleLang) ->
-                    val (sort, ascending) = sortParams
+                ) { (entries, favorites, listPrefs), combinedState ->
+                    val sort = combinedState[0] as LibrarySort
+                    val ascending = combinedState[1] as Boolean
+                    val query = combinedState[2] as String
+                    val titleLang = combinedState[3] as com.anisync.android.data.TitleLanguage
+                    val showPrivate = combinedState[4] as Boolean
                     val (listOrder, hiddenLists) = listPrefs
 
                     if (entries.isEmpty()) {
@@ -213,11 +224,14 @@ class LibraryViewModel @Inject constructor(
                         // Direction & Filtering
                         val directedEntries =
                             if (ascending) sortedEntries else sortedEntries.reversed()
+                            
+                        val visibilityFiltered = if (showPrivate) directedEntries else directedEntries.filter { it.entry.isPrivate != true }
+                            
                         val filteredEntries = if (query.isBlank()) {
-                            directedEntries.map { it.entry }
+                            visibilityFiltered.map { it.entry }
                         } else {
                             val lowerQuery = query.lowercase()
-                            directedEntries.filter { it.sortTitle.contains(lowerQuery) }
+                            visibilityFiltered.filter { it.sortTitle.contains(lowerQuery) }
                                 .map { it.entry }
                         }
 

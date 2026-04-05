@@ -144,6 +144,9 @@ fun MediaDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
+    val showEditSheet by viewModel.showEditSheet.collectAsStateWithLifecycle()
+    val draftEntry by viewModel.draftEntry.collectAsStateWithLifecycle()
+    val userScoreFormat by viewModel.userScoreFormat.collectAsStateWithLifecycle()
 
     LaunchedEffect(mediaId) {
         viewModel.loadMedia(mediaId)
@@ -278,6 +281,28 @@ fun MediaDetailsScreen(
                                     containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
                                 )
                             }
+                            FloatingActionButtonMenuItem(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                    viewModel.openEditSheet()
+                                    fabMenuExpanded = false
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Custom",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                text = {
+                                    Text(
+                                        text = "Custom",
+                                        fontWeight = FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            )
                             if (details.listEntryId != null) {
                                 FloatingActionButtonMenuItem(
                                     onClick = {
@@ -356,6 +381,23 @@ fun MediaDetailsScreen(
                         )
                     }
                 }
+            }
+        }
+
+        if (showEditSheet) {
+            draftEntry?.let { entry ->
+                com.anisync.android.presentation.library.components.EditLibraryEntrySheet(
+                    entry = entry,
+                    titleLanguage = titleLanguage,
+                    scoreFormat = userScoreFormat,
+                    availableCustomLists = emptyList(), // Can add custom lists from VM later
+                    onDismiss = viewModel::closeEditSheet,
+                    onSave = viewModel::saveLibraryEntry,
+                    onDelete = {
+                        viewModel.deleteMediaListEntry()
+                        viewModel.closeEditSheet()
+                    }
+                )
             }
         }
     }

@@ -101,6 +101,10 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.formatScore
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.clickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
@@ -118,6 +122,7 @@ import kotlin.math.roundToInt
 fun EditLibraryEntrySheet(
     entry: LibraryEntry,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    scoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     availableCustomLists: List<String> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (LibraryEntry) -> Unit,
@@ -135,6 +140,8 @@ fun EditLibraryEntrySheet(
     var startedAt by rememberSaveable(entry.id) { mutableStateOf(entry.startedAt) }
     var completedAt by rememberSaveable(entry.id) { mutableStateOf(entry.completedAt) }
     var rewatches by rememberSaveable(entry.id) { mutableIntStateOf(entry.rewatches) }
+    var isPrivate by rememberSaveable(entry.id) { mutableStateOf(entry.isPrivate ?: false) }
+    var hiddenFromStatusLists by rememberSaveable(entry.id) { mutableStateOf(entry.hiddenFromStatusLists ?: false) }
     
     // Custom lists handled via standard compose states because they are collections
     var selectedCustomLists by remember(entry.id) { mutableStateOf(entry.customLists.toSet()) }
@@ -149,7 +156,9 @@ fun EditLibraryEntrySheet(
                     notes != (entry.notes.orEmpty()) ||
                     startedAt != entry.startedAt ||
                     completedAt != entry.completedAt ||
-                    rewatches != entry.rewatches
+                    rewatches != entry.rewatches ||
+                    isPrivate != entry.isPrivate ||
+                    hiddenFromStatusLists != entry.hiddenFromStatusLists
         }
     }
 
@@ -170,6 +179,8 @@ fun EditLibraryEntrySheet(
         startedAt = entry.startedAt
         completedAt = entry.completedAt
         rewatches = entry.rewatches
+        isPrivate = entry.isPrivate ?: false
+        hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
     }
 
     ModalBottomSheet(
@@ -239,6 +250,7 @@ fun EditLibraryEntrySheet(
 
                 ScoreSection(
                     scoreProvider = { score },
+                    scoreFormat = scoreFormat,
                     onScoreChange = {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         score = it
@@ -268,6 +280,13 @@ fun EditLibraryEntrySheet(
                     modifier = Modifier.heightIn(min = 120.dp, max = 200.dp)
                 )
 
+                PrivacySection(
+                    isPrivateProvider = { isPrivate },
+                    hiddenFromStatusListsProvider = { hiddenFromStatusLists },
+                    onPrivateChange = { isPrivate = it },
+                    onHiddenChange = { hiddenFromStatusLists = it }
+                )
+
                 ActionButtons(
                     onDelete = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -284,7 +303,9 @@ fun EditLibraryEntrySheet(
                                 startedAt = startedAt,
                                 completedAt = completedAt,
                                 rewatches = rewatches,
-                                customLists = selectedCustomLists.toList()
+                                customLists = selectedCustomLists.toList(),
+                                isPrivate = isPrivate,
+                                hiddenFromStatusLists = hiddenFromStatusLists
                             )
                         )
                     },
@@ -698,6 +719,7 @@ private fun ProgressSection(
 @Composable
 private fun ScoreSection(
     scoreProvider: () -> Double,
+    scoreFormat: ScoreFormat,
     onScoreChange: (Double) -> Unit
 ) {
     val score = scoreProvider()
@@ -737,9 +759,14 @@ private fun ScoreSection(
                 )
             }
 
-            val displayScore = if (score > 0) {
-                if (score % 1.0 == 0.0) "${score.toInt()}.0" else score.toString()
-            } else stringResource(R.string.no_score)
+            val maxScore = when (scoreFormat) {
+                ScoreFormat.POINT_100 -> 100f
+                ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10f
+                ScoreFormat.POINT_5 -> 5f
+                ScoreFormat.POINT_3 -> 3f
+            }
+            
+            val displayScore = formatScore(if (score > 0) score else null, scoreFormat)
 
             Text(
                 text = displayScore,
@@ -749,14 +776,33 @@ private fun ScoreSection(
             )
         }
 
+        val maxScore = when (scoreFormat) {
+            ScoreFormat.POINT_100 -> 100f
+            ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10f
+            ScoreFormat.POINT_5 -> 5f
+            ScoreFormat.POINT_3 -> 3f
+        }
+
+        val steps = when (scoreFormat) {
+            ScoreFormat.POINT_100 -> 99
+            ScoreFormat.POINT_10_DECIMAL -> 99 // 0.1 increments
+            ScoreFormat.POINT_10 -> 9
+            ScoreFormat.POINT_5 -> 4
+            ScoreFormat.POINT_3 -> 2
+        }
+
         Slider(
-            value = score.toFloat(),
+            value = score.toFloat().coerceIn(0f, maxScore),
             onValueChange = {
-                val rounded = (it * 2).roundToInt() / 2.0
-                onScoreChange(rounded.coerceIn(0.0, 10.0))
+                val rounded = if (scoreFormat == ScoreFormat.POINT_10_DECIMAL) {
+                    (it * 10).roundToInt() / 10.0
+                } else {
+                    it.roundToInt().toDouble()
+                }
+                onScoreChange(rounded.coerceIn(0.0, maxScore.toDouble()))
             },
-            valueRange = 0f..10f,
-            steps = 19, // 0.5 increments
+            valueRange = 0f..maxScore,
+            steps = steps,
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(
                 thumbColor = scoreColor,
@@ -775,9 +821,75 @@ private fun ScoreSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
             Text(
-                text = "10",
+                text = maxScore.toInt().toString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+// ================== PRIVACY SECTION ==================
+
+@Composable
+private fun PrivacySection(
+    isPrivateProvider: () -> Boolean,
+    hiddenFromStatusListsProvider: () -> Boolean,
+    onPrivateChange: (Boolean) -> Unit,
+    onHiddenChange: (Boolean) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        SectionTitle(text = "Privacy")
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onPrivateChange(!isPrivateProvider()) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Private Entry",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Hide this entry from other users",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = isPrivateProvider(),
+                onCheckedChange = { onPrivateChange(it) }
+            )
+        }
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onHiddenChange(!hiddenFromStatusListsProvider()) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Hide from Status Lists",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Do not display in global recent updates",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = hiddenFromStatusListsProvider(),
+                onCheckedChange = { onHiddenChange(it) }
             )
         }
     }

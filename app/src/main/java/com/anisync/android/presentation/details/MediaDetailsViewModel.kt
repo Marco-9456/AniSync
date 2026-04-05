@@ -10,6 +10,11 @@ import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryRepository
+import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.data.local.toDomain
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +32,8 @@ import javax.inject.Inject
 class MediaDetailsViewModel @Inject constructor(
     private val getMediaDetailsUseCase: GetMediaDetailsUseCase,
     private val detailsRepository: DetailsRepository,
+    private val libraryRepository: LibraryRepository,
+    private val libraryDao: LibraryDao,
     private val appSettings: AppSettings,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -35,6 +42,14 @@ class MediaDetailsViewModel @Inject constructor(
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
+    private val _showEditSheet = MutableStateFlow(false)
+    val showEditSheet: StateFlow<Boolean> = _showEditSheet.asStateFlow()
+
+    private val _draftEntry = MutableStateFlow<LibraryEntry?>(null)
+    val draftEntry: StateFlow<LibraryEntry?> = _draftEntry.asStateFlow()
+
+    val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
 
     // Get the ID directly from the navigation route "details/{mediaId}"
     private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
@@ -78,7 +93,7 @@ class MediaDetailsViewModel @Inject constructor(
 
     // Kept for compatibility with DetailsScreen's LaunchedEffect
     fun loadMedia(id: Int) {
-        // Since we use stateIn with mediaId from constructor, 
+        // Since we use stateIn with mediaId from constructor,
         // this is mostly a no-op but can trigger a refresh
         if (id == mediaId) {
             refresh()
@@ -102,13 +117,62 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 
+    fun openEditSheet() {
+        viewModelScope.launch {
+            val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
+            
+            val existingEntry = libraryDao.getEntry(mediaId)
+            val draft = existingEntry?.toDomain() ?: LibraryEntry(
+                id = 0,
+                mediaId = details.id,
+                titleRomaji = details.titleRomaji,
+                titleEnglish = details.titleEnglish,
+                titleNative = details.titleNative,
+                titleUserPreferred = details.titleUserPreferred,
+                coverUrl = details.coverUrl,
+                progress = 0,
+                totalEpisodes = details.episodes,
+                totalChapters = details.chapters,
+                totalVolumes = details.volumes,
+                type = details.type,
+                status = LibraryStatus.PLANNING,
+                isPrivate = false,
+                hiddenFromStatusLists = false
+            )
+
+            _draftEntry.value = draft
+            _showEditSheet.value = true
+        }
+    }
+
+    fun closeEditSheet() {
+        _showEditSheet.value = false
+        _draftEntry.value = null
+    }
+
+    fun saveLibraryEntry(entry: LibraryEntry) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            when (val result = libraryRepository.updateEntry(entry)) {
+                is Result.Success -> {
+                    refresh()
+                    closeEditSheet()
+                }
+                is Result.Error -> {
+                    // Handle error
+                }
+            }
+            _isSaving.value = false
+        }
+    }
+
     fun deleteMediaListEntry() {
         viewModelScope.launch {
             val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
             val listEntryId = details.listEntryId ?: return@launch
 
             _isSaving.value = true
-            
+
             when (val result = detailsRepository.deleteMediaListEntry(listEntryId, mediaId)) {
                 is Result.Success -> {
                     // Refresh to update the UI
@@ -118,7 +182,7 @@ class MediaDetailsViewModel @Inject constructor(
                     // Could handle error
                 }
             }
-            
+
             _isSaving.value = false
         }
     }
@@ -132,7 +196,7 @@ class MediaDetailsViewModel @Inject constructor(
             val mediaType = details.type ?: return@launch
 
             _isSaving.value = true
-            
+
             when (val result = detailsRepository.toggleFavourite(mediaId, mediaType)) {
                 is Result.Success -> {
                     // Cache updated via refresh, Flow emits automatically
@@ -141,7 +205,7 @@ class MediaDetailsViewModel @Inject constructor(
                     // Could emit a one-time event for error (e.g., Snackbar)
                 }
             }
-            
+
             _isSaving.value = false
         }
     }
@@ -154,7 +218,7 @@ class MediaDetailsViewModel @Inject constructor(
      */
     fun shareMedia(context: Context) {
         val details = (uiState.value as? DetailsUiState.Success)?.details ?: return
-        
+
         ShareUtils.shareMedia(
             context = context,
             title = details.titleUserPreferred,
