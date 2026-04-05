@@ -53,6 +53,8 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
           month
           day
         }
+        private
+        hiddenFromStatusLists
         updatedAt
         createdAt
       }

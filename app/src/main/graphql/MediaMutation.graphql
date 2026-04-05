@@ -1,5 +1,5 @@
-mutation SaveMediaListEntry($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float, $repeat: Int, $notes: String, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput, $customLists: [String]) {
-  SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress, score: $score, repeat: $repeat, notes: $notes, startedAt: $startedAt, completedAt: $completedAt, customLists: $customLists) {
+mutation SaveMediaListEntry($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float, $repeat: Int, $notes: String, $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput, $customLists: [String], $private: Boolean, $hiddenFromStatusLists: Boolean) {
+  SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress, score: $score, repeat: $repeat, notes: $notes, startedAt: $startedAt, completedAt: $completedAt, customLists: $customLists, private: $private, hiddenFromStatusLists: $hiddenFromStatusLists) {
     id
     status
     progress
@@ -9,5 +9,7 @@ mutation SaveMediaListEntry($mediaId: Int, $status: MediaListStatus, $progress: 
     startedAt { year month day }
     completedAt { year month day }
     customLists
+    private
+    hiddenFromStatusLists
   }
 }

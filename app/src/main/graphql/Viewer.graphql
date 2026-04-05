@@ -1,5 +1,8 @@
 query GetViewer {
   Viewer {
     name
+    mediaListOptions {
+      scoreFormat
+    }
   }
 }

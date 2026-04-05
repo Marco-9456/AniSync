@@ -59,6 +59,8 @@ query GetMediaDetails($id: Int) {
             status
             progress
             score
+            private
+            hiddenFromStatusLists
         }
         characters(sort: [ROLE, RELEVANCE], perPage: 25) {
             edges {
