@@ -237,6 +237,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 listEntryId = listEntry?.id,
                 listStatus = listStatus,
                 listProgress = listEntry?.progress,
+                listEntryPrivate = listEntry?.`private`,
+                listEntryHiddenFromStatusLists = listEntry?.hiddenFromStatusLists,
                 characters = characters,
                 relations = relations,
                 externalLinks = externalLinks,

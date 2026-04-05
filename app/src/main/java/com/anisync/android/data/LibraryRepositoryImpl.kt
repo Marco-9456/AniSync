@@ -68,8 +68,25 @@ class LibraryRepositoryImpl @Inject constructor(
 
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
             
-            // Extract all defined custom list names to ensure empty lists are also tracked
+            // Extract options including scoreFormat
             val options = response.data?.MediaListCollection?.user?.mediaListOptions
+            
+            // If we don't have it locally, fetch the Viewer settings to get the score format
+            val scoreFormatResp = apolloClient.query(GetViewerQuery()).fetchPolicy(FetchPolicy.NetworkOnly).execute()
+            val scoreFormatApi = scoreFormatResp.data?.Viewer?.mediaListOptions?.scoreFormat
+            if (scoreFormatApi != null) {
+                // Map the API ScoreFormat to our domain ScoreFormat
+                val domainFormat = when (scoreFormatApi.name) {
+                    "POINT_100" -> com.anisync.android.domain.ScoreFormat.POINT_100
+                    "POINT_10_DECIMAL" -> com.anisync.android.domain.ScoreFormat.POINT_10_DECIMAL
+                    "POINT_10" -> com.anisync.android.domain.ScoreFormat.POINT_10
+                    "POINT_5" -> com.anisync.android.domain.ScoreFormat.POINT_5
+                    "POINT_3" -> com.anisync.android.domain.ScoreFormat.POINT_3
+                    else -> com.anisync.android.domain.ScoreFormat.POINT_100
+                }
+                appSettings.setUserScoreFormat(domainFormat)
+            }
+
             val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
             val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
 
@@ -136,7 +153,9 @@ class LibraryRepositoryImpl @Inject constructor(
                             updatedAt = entry.updatedAt?.toLong()?.times(1000L),
                             createdAt = entry.createdAt?.toLong()?.times(1000L),
                             mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
-                            customLists = if (isCustom) listOf(listName) else emptyList()
+                            customLists = if (isCustom) listOf(listName) else emptyList(),
+                            isPrivate = entry.`private` ?: false,
+                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
                         )
                     } else if (isCustom && !existing.customLists.contains(listName)) {
                         entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)
@@ -254,7 +273,9 @@ class LibraryRepositoryImpl @Inject constructor(
                     notes = Optional.presentIfNotNull(updatedEntry.notes),
                     startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
                     completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
-                    customLists = Optional.present(updatedEntry.customLists)
+                    customLists = Optional.present(updatedEntry.customLists),
+                    `private` = Optional.present(updatedEntry.isPrivate),
+                    hiddenFromStatusLists = Optional.present(updatedEntry.hiddenFromStatusLists)
                 )
             ).execute()
 

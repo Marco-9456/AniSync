@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.anisync.android.domain.ScoreFormat
 
 /**
  * Theme mode options for the app.
@@ -101,6 +102,12 @@ class AppSettings @Inject constructor(
     // Notifications setting
     private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, false))
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+
+    // Score Format setting
+    private val _userScoreFormat = MutableStateFlow(
+        ScoreFormat.entries.getOrElse(prefs.getInt(KEY_USER_SCORE_FORMAT, ScoreFormat.POINT_100.ordinal)) { ScoreFormat.POINT_100 }
+    )
+    val userScoreFormat: StateFlow<ScoreFormat> = _userScoreFormat.asStateFlow()
     
     // Title language setting
     private val _titleLanguage = MutableStateFlow(
@@ -171,6 +178,11 @@ class AppSettings @Inject constructor(
     )
     val hiddenMangaLists: StateFlow<Set<String>> = _hiddenMangaLists.asStateFlow()
 
+    private val _showPrivateEntries = MutableStateFlow(
+        prefs.getBoolean(KEY_SHOW_PRIVATE_ENTRIES, true)
+    )
+    val showPrivateEntries: StateFlow<Boolean> = _showPrivateEntries.asStateFlow()
+
     /**
      * Set the app theme mode.
      */
@@ -193,6 +205,14 @@ class AppSettings @Inject constructor(
     fun setNotificationsEnabled(enabled: Boolean) {
         _notificationsEnabled.value = enabled
         prefs.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled).apply()
+    }
+    
+    /**
+     * Set the preferred score format.
+     */
+    fun setUserScoreFormat(format: ScoreFormat) {
+        _userScoreFormat.value = format
+        prefs.edit().putInt(KEY_USER_SCORE_FORMAT, format.ordinal).apply()
     }
     
     /**
@@ -296,6 +316,11 @@ class AppSettings @Inject constructor(
         prefs.edit().putStringSet(KEY_HIDDEN_MANGA_LISTS, hidden).apply()
     }
     
+    fun setShowPrivateEntries(show: Boolean) {
+        _showPrivateEntries.value = show
+        prefs.edit().putBoolean(KEY_SHOW_PRIVATE_ENTRIES, show).apply()
+    }
+    
     /**
      * Get the preferred streaming service directly from SharedPreferences.
      * Use this for widgets to ensure the latest value is always read.
@@ -349,6 +374,8 @@ companion object {
         private const val KEY_MANGA_LIST_ORDER = "manga_list_order"
         private const val KEY_HIDDEN_ANIME_LISTS = "hidden_anime_lists"
         private const val KEY_HIDDEN_MANGA_LISTS = "hidden_manga_lists"
+        private const val KEY_USER_SCORE_FORMAT = "user_score_format"
+        private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
     }
 }
 
