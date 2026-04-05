@@ -275,6 +275,12 @@ fun AniSyncNavHost(
 
                 DiscoverScreen(
                     onMediaClick = onDiscoverMediaClick,
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
+                    },
+                    onStaffClick = { staffId ->
+                        navController.navigate(StaffDetails(staffId))
+                    },
                     onSectionSeeAllClick = onSectionClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
