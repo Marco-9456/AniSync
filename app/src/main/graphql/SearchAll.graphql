@@ -1,0 +1,47 @@
+query SearchAll($search: String, $page: Int, $perPage: Int) {
+  characters: Page(page: $page, perPage: $perPage) {
+    characters(search: $search, sort: [FAVOURITES_DESC]) {
+      id
+      name {
+        full
+        native
+        userPreferred
+      }
+      image {
+        medium
+      }
+      favourites
+    }
+  }
+  staff: Page(page: $page, perPage: $perPage) {
+    staff(search: $search, sort: [FAVOURITES_DESC]) {
+      id
+      name {
+        full
+        native
+        userPreferred
+      }
+      image {
+        medium
+      }
+      primaryOccupations
+      favourites
+    }
+  }
+  users: Page(page: $page, perPage: $perPage) {
+    users(search: $search, sort: [SEARCH_MATCH]) {
+      id
+      name
+      avatar {
+        medium
+      }
+    }
+  }
+  studios: Page(page: $page, perPage: $perPage) {
+    studios(search: $search, sort: [SEARCH_MATCH]) {
+      id
+      name
+      favourites
+    }
+  }
+}

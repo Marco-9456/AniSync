@@ -15,8 +15,13 @@ interface SearchRepository {
      * @return List of matching media entries or error
      */
     suspend fun searchMedia(
-        query: String, 
+        query: String,
         type: MediaType,
         filters: SearchFilters = SearchFilters()
     ): Result<List<LibraryEntry>>
+
+    /**
+     * Search for characters, staff, users, and studios.
+     */
+    suspend fun searchAll(query: String): Result<GroupedSearchResults>
 }
