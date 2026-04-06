@@ -9,7 +9,9 @@ data class Release(
     val tagName: String,
     val prerelease: Boolean,
     val body: String,
-    val downloadUrl: String
+    val downloadUrl: String,
+    val authorName: String? = null,
+    val authorAvatarUrl: String? = null
 )
 
 /**
@@ -18,8 +20,8 @@ data class Release(
  * State machine:
  * ```
  * Idle -> Checking -> UpdateAvailable -> Downloading -> ReadyToInstall
- *                  -> Idle (up to date)
- *                  -> Idle (error)
+ * -> Idle (up to date)
+ * -> Idle (error)
  * ```
  */
 sealed class UpdateState {

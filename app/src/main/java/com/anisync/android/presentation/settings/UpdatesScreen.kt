@@ -5,36 +5,69 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.data.update.Release
 import com.anisync.android.data.update.UpdateState
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
@@ -151,8 +184,7 @@ fun UpdatesScreen(
             if (dialogRelease != null) {
                 UpdateDialog(
                     updateState = updateState,
-                    tagName = dialogRelease.tagName,
-                    releaseBody = dialogRelease.body,
+                    release = dialogRelease,
                     onDismiss = { viewModel.onAction(SettingsAction.DismissUpdate) },
                     onDownload = { viewModel.onAction(SettingsAction.StartDownload(dialogRelease)) },
                     onCancel = { viewModel.onAction(SettingsAction.CancelDownload) },
@@ -163,84 +195,276 @@ fun UpdatesScreen(
     }
 }
 
-// =============================================================================
-// Reusable Update Dialog
-// =============================================================================
-
 /**
- * Dialog that shows release notes, download progress, and install actions.
- * Used from both the UpdatesScreen (manual check) and MainActivity (auto-check on launch).
+ * Highly polished Material Design 3 Modal Bottom Sheet for app updates.
+ * Displays release notes, smooth download progress, and animated install actions.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateDialog(
     updateState: UpdateState,
-    tagName: String,
-    releaseBody: String,
+    release: Release,
     onDismiss: () -> Unit,
     onDownload: () -> Unit,
     onCancel: () -> Unit,
-    onInstall: () -> Unit
+    onInstall: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isDownloading = updateState is UpdateState.Downloading
-    val isReadyToInstall = updateState is UpdateState.ReadyToInstall
+    // Ensure the sheet state dynamically responds to the latest downloading status
+    val isDownloadingState by rememberUpdatedState(isDownloading)
 
-    AlertDialog(
+    // Prevent accidental swipe dismissal while a download is actively in progress
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false, // Changed to false to allow dragging to full screen
+        confirmValueChange = { sheetValue ->
+            if (isDownloadingState && sheetValue == SheetValue.Hidden) false else true
+        }
+    )
+
+    ModalBottomSheet(
         onDismissRequest = {
             if (!isDownloading) onDismiss()
         },
-        title = {
-            Text(text = "${stringResource(R.string.new_update_available)}: $tagName")
-        },
-        text = {
-            Column {
-                // Render release notes as Markdown via AsyncRichTextRenderer
-                AsyncRichTextRenderer(
-                    html = releaseBody,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .navigationBarsPadding() // Adapts gracefully to edge-to-edge displays
+                .padding(bottom = 24.dp)
+            // REMOVED .animateContentSize() from the root layout to fix the bottom sheet reset bug
+        ) {
+            // --- Header Section ---
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
                     modifier = Modifier
-                        .heightIn(max = 200.dp)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SystemUpdate,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
+                    Text(
+                        text = stringResource(R.string.new_update_available),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        // Version Pill Badge
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                text = release.tagName,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+
+                        // Author Info
+                        if (release.authorName != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (release.authorAvatarUrl != null) {
+                                    AsyncImage(
+                                        model = release.authorAvatarUrl,
+                                        contentDescription = "Author Avatar",
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .clip(CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                }
+                                Text(
+                                    text = "by ${release.authorName}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // --- Markdown Release Notes Body ---
+            // Weight handles graceful expansion when the user drags the sheet up
+            Surface(
+                modifier = Modifier
+                    .weight(
+                        1f,
+                        fill = false
+                    ) // Allows height to wrap content, up to max screen space
+                    .fillMaxWidth(), // Removed heightIn restriction to allow full screen expansion
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                AsyncRichTextRenderer(
+                    html = release.body,
+                    modifier = Modifier
+                        .padding(16.dp)
                         .verticalScroll(rememberScrollState())
                 )
-
-                if (isDownloading) {
-                    val progress = (updateState as UpdateState.Downloading).progress
-                    Spacer(modifier = Modifier.height(16.dp))
-                    LinearProgressIndicator(
-                        progress = { progress / 100f },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = stringResource(R.string.downloading_update, progress)
-                    )
-                }
             }
-        },
-        confirmButton = {
-            when {
-                isReadyToInstall -> {
-                    Button(onClick = onInstall) {
-                        Text(stringResource(R.string.install_update))
+
+            // Wrap ONLY the animated sections in their own animateContentSize so the sheet doesn't collapse
+            Column(modifier = Modifier.animateContentSize()) {
+                // --- Download Progress Indicator ---
+                AnimatedVisibility(
+                    visible = isDownloading,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    val targetProgress = when (updateState) {
+                        is UpdateState.Downloading -> updateState.progress / 100f
+                        is UpdateState.ReadyToInstall -> 1f
+                        else -> 0f
+                    }
+
+                    val animatedProgress by animateFloatAsState(
+                        targetValue = targetProgress,
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                        label = "DownloadProgressAnimation"
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    R.string.downloading_update,
+                                    (animatedProgress * 100).toInt()
+                                ),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${(animatedProgress * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            strokeCap = StrokeCap.Round,
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
                     }
                 }
 
-                isDownloading -> {
-                    TextButton(onClick = onCancel) {
-                        Text(stringResource(R.string.cancel))
-                    }
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- Animated Actions Footer ---
+                // Map the update state to a stable integer to prevent the buttons from recomposing
+                // rapidly on every single progress tick.
+                val actionButtonsState = when (updateState) {
+                    is UpdateState.ReadyToInstall -> 2
+                    is UpdateState.Downloading -> 1
+                    else -> 0
                 }
 
-                else -> {
-                    Button(onClick = onDownload) {
-                        Text(stringResource(R.string.download_update))
+                AnimatedContent(
+                    targetState = actionButtonsState,
+                    label = "UpdateActionsTransition",
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(
+                            animationSpec = tween(
+                                300
+                            )
+                        )
                     }
-                }
-            }
-        },
-        dismissButton = {
-            if (!isDownloading) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
+                ) { state ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        when (state) {
+                            2 -> { // ReadyToInstall
+                                OutlinedButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                                Button(
+                                    onClick = onInstall,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.install_update))
+                                }
+                            }
+
+                            1 -> { // Downloading
+                                Button(
+                                    onClick = onCancel,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                ) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                            }
+
+                            else -> { // UpdateAvailable
+                                TextButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                                Button(
+                                    onClick = onDownload,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(stringResource(R.string.download_update))
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-    )
+    }
 }

@@ -63,9 +63,6 @@ class UpdateManager @Inject constructor(
 
     private var downloadJob: Job? = null
 
-    // =========================================================================
-    // Check for update
-    // =========================================================================
 
     /**
      * Queries the GitHub Releases API and returns a typed result.
@@ -119,7 +116,8 @@ class UpdateManager @Inject constructor(
                                 .mapNotNull { asset ->
                                     val obj = asset.jsonObject
                                     val name =
-                                        obj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
+                                        obj["name"]?.jsonPrimitive?.content
+                                            ?: return@mapNotNull null
                                     if (name.endsWith(".apk")) {
                                         obj["browser_download_url"]?.jsonPrimitive?.content
                                     } else null
@@ -127,12 +125,19 @@ class UpdateManager @Inject constructor(
                                 .firstOrNull()
 
                             if (!downloadUrl.isNullOrEmpty()) {
+                                val authorObj = releaseJson["author"]?.jsonObject
+                                val authorName = authorObj?.get("login")?.jsonPrimitive?.content
+                                val authorAvatarUrl =
+                                    authorObj?.get("avatar_url")?.jsonPrimitive?.content
+
                                 latestVersionCode = versionCode
                                 latestRelease = Release(
                                     tagName = tagName,
                                     prerelease = isPrerelease,
                                     body = releaseJson["body"]?.jsonPrimitive?.content ?: "",
-                                    downloadUrl = downloadUrl
+                                    downloadUrl = downloadUrl,
+                                    authorName = authorName,
+                                    authorAvatarUrl = authorAvatarUrl
                                 )
                             }
                         }
@@ -158,9 +163,6 @@ class UpdateManager @Inject constructor(
         }
     }
 
-    // =========================================================================
-    // Download
-    // =========================================================================
 
     /**
      * Starts downloading the APK for [release] in the background.
@@ -248,9 +250,6 @@ class UpdateManager @Inject constructor(
         downloadJob = null
     }
 
-    // =========================================================================
-    // Install
-    // =========================================================================
 
     /**
      * Launches the system package installer for the downloaded APK.
@@ -281,9 +280,6 @@ class UpdateManager @Inject constructor(
         }
     }
 
-    // =========================================================================
-    // State management
-    // =========================================================================
 
     /**
      * Dismisses the current update dialog / state.
@@ -348,11 +344,18 @@ class UpdateManager @Inject constructor(
                             .firstOrNull()
 
                         if (!downloadUrl.isNullOrEmpty()) {
+                            val authorObj = releaseJson["author"]?.jsonObject
+                            val authorName = authorObj?.get("login")?.jsonPrimitive?.content
+                            val authorAvatarUrl =
+                                authorObj?.get("avatar_url")?.jsonPrimitive?.content
+
                             val release = Release(
                                 tagName = tagName,
                                 prerelease = isPrerelease,
                                 body = releaseJson["body"]?.jsonPrimitive?.content ?: "",
-                                downloadUrl = downloadUrl
+                                downloadUrl = downloadUrl,
+                                authorName = authorName,
+                                authorAvatarUrl = authorAvatarUrl
                             )
                             _updateState.value = UpdateState.UpdateAvailable(release)
                             return@withContext UpdateCheckResult.Available(release)
@@ -374,9 +377,6 @@ class UpdateManager @Inject constructor(
         }
     }
 
-    // =========================================================================
-    // Version comparison
-    // =========================================================================
 
     /**
      * Converts a semver-like version string to a comparable integer code.

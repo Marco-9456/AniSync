@@ -40,10 +40,10 @@ import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.data.update.UpdateState
+import com.anisync.android.domain.LinkPreviewProvider
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.settings.UpdateDialog
-import com.anisync.android.domain.LinkPreviewProvider
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.ui.theme.AppTheme
@@ -227,8 +227,7 @@ class MainActivity : AppCompatActivity() {
                             if (dialogRelease != null) {
                                 UpdateDialog(
                                     updateState = updateState,
-                                    tagName = dialogRelease.tagName,
-                                    releaseBody = dialogRelease.body,
+                                    release = dialogRelease,
                                     onDismiss = { updateManager.dismissUpdate() },
                                     onDownload = {
                                         updateManager.startDownload(dialogRelease)
