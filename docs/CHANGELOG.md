@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-04-06
+
+### Added
+
+#### Library & Tracking
+- **Notes and Custom Lists Editing** - Added notes and AniList custom list support across library and media details editing flows.
+- **Score Format Awareness** - `EditLibraryEntrySheet` now receives and applies score format from the library context.
+
+#### Discovery & Search
+- **Enhanced Discover Search** - Improved Discover with better integrated search behavior.
+- **SearchAll Integration** - Added `SearchAll` GraphQL query and unified search result modeling.
+
+#### Media Details & Rich Content
+- **Character & Staff Expansion** - Added and enhanced staff details plus richer character details with voice actor filtering.
+- **Recommendations & Reviews UI** - Added recommendations and reviews sections with voting support.
+- **Richer Link Cards** - AniList links now render with cover images and titles in rich text.
+
+### Changed
+- **Update Dialog Redesign** - Reworked update UX with a `ModalBottomSheet` implementation.
+- **Details UI Refactors** - Simplified section structure and extracted reusable grid/item components.
+- **Library Data Pipeline** - Extended GraphQL, data, and repository layers to carry notes and custom list metadata end-to-end.
+- **Database Schema** - Added Room schema exports for database version 8.
+
+### Fixed
+- **Custom List Visibility Logic** - Standard lists now correctly hide `hiddenFromStatusLists` entries while preserving visibility in custom lists.
+- **Entry Editing from Details FAB** - Fixed missing custom list context when opening `EditLibraryEntrySheet` from media details.
+- **Staff/Character Navigation & Links** - Fixed deep links, visibility, sharing, and related navigation issues.
+- **Rich Text Image Width Parsing** - Correctly handles AniList hash-prefixed width image syntax.
+
 ---
 
 ## [1.2.0] - 2026-03-30
