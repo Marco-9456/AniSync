@@ -91,34 +91,33 @@ class LibraryRepositoryImpl @Inject constructor(
             val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
 
             // Sync custom list names with the API source of truth while preserving local order
-            if (animeCustomLists.isNotEmpty() || mangaCustomLists.isNotEmpty()) {
-                val apiAnimeSet = animeCustomLists.toSet()
-                val apiMangaSet = mangaCustomLists.toSet()
+            val apiAnimeSet = animeCustomLists.toSet()
+            val apiMangaSet = mangaCustomLists.toSet()
+            val apiCustomNamesForType = if (type == MediaType.ANIME) apiAnimeSet else apiMangaSet
 
-                // For anime: keep local order for lists that still exist on API, then append new ones
-                val currentAnimeOrder = appSettings.animeListOrder.value
-                val syncedAnime = currentAnimeOrder.filter { it in apiAnimeSet } +
-                        animeCustomLists.filter { it !in currentAnimeOrder }
-                if (syncedAnime != currentAnimeOrder) {
-                    appSettings.setAnimeListOrder(syncedAnime)
-                }
+            // For anime: keep local order for lists that still exist on API, then append new ones
+            val currentAnimeOrder = appSettings.animeListOrder.value
+            val syncedAnime = currentAnimeOrder.filter { it in apiAnimeSet } +
+                    animeCustomLists.filter { it !in currentAnimeOrder }
+            if (syncedAnime != currentAnimeOrder) {
+                appSettings.setAnimeListOrder(syncedAnime)
+            }
 
-                // For manga: same approach
-                val currentMangaOrder = appSettings.mangaListOrder.value
-                val syncedManga = currentMangaOrder.filter { it in apiMangaSet } +
-                        mangaCustomLists.filter { it !in currentMangaOrder }
-                if (syncedManga != currentMangaOrder) {
-                    appSettings.setMangaListOrder(syncedManga)
-                }
+            // For manga: same approach
+            val currentMangaOrder = appSettings.mangaListOrder.value
+            val syncedManga = currentMangaOrder.filter { it in apiMangaSet } +
+                    mangaCustomLists.filter { it !in currentMangaOrder }
+            if (syncedManga != currentMangaOrder) {
+                appSettings.setMangaListOrder(syncedManga)
             }
 
             // Group by entry ID to handle duplicates from custom lists
             val entryMap = mutableMapOf<Int, LibraryEntry>()
-            val standardListNames = setOf("Watching", "Reading", "Completed", "Dropped", "Paused", "Planning", "Repeating")
 
             lists.filterNotNull().forEach { group ->
                 val listName = group.name ?: return@forEach
-                val isCustom = listName !in standardListNames
+                val isCustom = group.isCustomList == true ||
+                        (group.isCustomList != false && listName in apiCustomNamesForType)
 
                 group.entries?.filterNotNull()?.forEach { entry ->
                     val entryId = entry.id ?: return@forEach

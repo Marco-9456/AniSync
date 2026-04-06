@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-04-06
+
+### Fixed
+- **Custom List Classification** - Library grouping now uses AniList `isCustomList` metadata (with a safe fallback) instead of name matching, preventing status lists like Rewatching/Rereading from being misclassified as custom lists.
+- **Custom List Order Sync** - Custom list order now reconciles against API results even when the API list is empty, removing stale local ghost custom lists.
+
 ## [1.3.1] - 2026-04-06
 
 ### Fixed

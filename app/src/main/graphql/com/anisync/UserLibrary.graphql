@@ -9,6 +9,7 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
     }
     lists {
       name
+      isCustomList
       entries {
         id
         media {
