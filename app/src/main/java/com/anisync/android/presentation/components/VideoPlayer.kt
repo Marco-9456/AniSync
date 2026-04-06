@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.components
 
-import android.view.ViewGroup
-import android.widget.FrameLayout
+import android.view.LayoutInflater
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -73,6 +72,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.anisync.android.R
 import com.anisync.android.presentation.util.shimmerEffect
 import kotlinx.coroutines.delay
 
@@ -241,13 +241,14 @@ fun VideoPlayer(
         if (playerState != PlayerState.Error) {
             AndroidView(
                 factory = { ctx ->
-                    PlayerView(ctx).apply {
+                    (LayoutInflater.from(ctx).inflate(
+                        R.layout.view_texture_player,
+                        null,
+                        false
+                    ) as PlayerView).apply {
                         player = exoPlayer
                         useController = false
-                        layoutParams = FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
+                        setEnableComposeSurfaceSyncWorkaround(true)
                     }
                 },
                 update = { view -> view.player = exoPlayer },
