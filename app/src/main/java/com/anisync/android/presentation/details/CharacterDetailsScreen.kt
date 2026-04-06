@@ -69,8 +69,6 @@ import com.anisync.android.R
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.util.getName
-import com.anisync.android.util.getTitle
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
@@ -80,6 +78,8 @@ import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoiceActorCard
+import com.anisync.android.util.getName
+import com.anisync.android.util.getTitle
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)

@@ -38,8 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
-import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.util.rememberHapticFeedback
 

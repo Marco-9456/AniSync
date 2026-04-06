@@ -1,12 +1,12 @@
 package com.anisync.android.data
 
-import com.apollographql.apollo.ApolloClient
-import com.apollographql.apollo.api.Optional
 import com.anisync.android.GetLinkPreviewsQuery
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.LinkPreviewProvider
 import com.anisync.android.domain.parser.RichTextBlock
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
 import javax.inject.Inject
 import javax.inject.Singleton
 

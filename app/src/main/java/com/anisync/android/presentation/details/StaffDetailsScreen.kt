@@ -48,8 +48,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.util.getName
-import com.anisync.android.util.getTitle
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
@@ -58,6 +56,7 @@ import com.anisync.android.presentation.details.components.DetailHeroImage
 import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoicedCharacterItem
+import com.anisync.android.util.getName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

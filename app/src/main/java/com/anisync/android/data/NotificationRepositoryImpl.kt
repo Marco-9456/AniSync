@@ -16,8 +16,8 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadCommentMentionNotification
 import com.anisync.android.domain.ThreadCommentReplyNotification
-import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.ThreadCommentSubscribedNotification
+import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.User
 import com.anisync.android.type.NotificationType
 import com.apollographql.apollo.ApolloClient
