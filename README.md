@@ -96,20 +96,17 @@ Never miss an episode. AniSync sends two-tier notifications — an advance alert
 ## :camera: Screenshots
 
 <p align="center">
-<img src="docs/assets/screenshot-library.png" width="200" alt="Library">
-<img src="docs/assets/screenshot-discover.png" width="200" alt="Discover">
-<img src="docs/assets/screenshot-details.png" width="200" alt="Details">
-<img src="docs/assets/screenshot-profile.png" width="200" alt="Profile">
-<img src="docs/assets/screenshot-search.png" width="200" alt="Search">
-<img src="docs/assets/screenshot-statistics.png" width="200" alt="Statistics">
-<img src="docs/assets/screenshot-sort.png" width="200" alt="Sort">
-<img src="docs/assets/screenshot-settings.png" width="200" alt="Settings">
-<!-- Placeholder screenshots - add your own -->
-<!-- <img src="docs/assets/screenshot-character.png" width="200" alt="Character"> -->
-<!-- <img src="docs/assets/screenshot-staff.png" width="200" alt="Staff"> -->
-<!-- <img src="docs/assets/screenshot-forum-thread.png" width="200" alt="Forum Thread"> -->
-<!-- <img src="docs/assets/screenshot-widgets.png" width="200" alt="Widgets"> -->
-<!-- <img src="docs/assets/screenshot-theme.png" width="200" alt="Theme"> -->
+  <img src="docs/assets/01_Library_View.jpg" width="200" alt="Library View">
+  <img src="docs/assets/02_Library_Sort_Options.jpg" width="200" alt="Library Sort Options">
+  <img src="docs/assets/03_Discover_Tab.jpg" width="200" alt="Discover Tab">
+  <img src="docs/assets/04_Search_Results.jpg" width="200" alt="Search Results">
+  <img src="docs/assets/05_Anime_Details_Synopsis.jpg" width="200" alt="Anime Details - Synopsis">
+  <img src="docs/assets/06_Anime_Details_Recs_and_Reviews.jpg" width="200" alt="Anime Details - Recommendations and Reviews">
+  <img src="docs/assets/07_Full_Review_View.jpg" width="200" alt="Full Review View">
+  <img src="docs/assets/08_Forum_Discussions.jpg" width="200" alt="Forum Discussions">
+  <img src="docs/assets/09_User_Profile.jpg" width="200" alt="User Profile">
+  <img src="docs/assets/10_User_Statistics.jpg" width="200" alt="User Statistics">
+  <img src="docs/assets/11_Settings_Page.jpg" width="200" alt="Settings Page">
 </p>
 
 ---
