@@ -723,13 +723,20 @@ private fun ScoreSection(
     onScoreChange: (Double) -> Unit
 ) {
     val score = scoreProvider()
+    val maxScore = when (scoreFormat) {
+        ScoreFormat.POINT_100 -> 100f
+        ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10f
+        ScoreFormat.POINT_5 -> 5f
+        ScoreFormat.POINT_3 -> 3f
+    }
+    val normalizedScore = if (score > 0) (score / maxScore.toDouble()).coerceIn(0.0, 1.0) else 0.0
 
     val scoreColor by animateColorAsState(
         targetValue = when {
-            score >= 8.0 -> MaterialTheme.colorScheme.primary
-            score >= 6.0 -> MaterialTheme.colorScheme.tertiary
-            score >= 4.0 -> MaterialTheme.colorScheme.secondary
-            score > 0 -> MaterialTheme.colorScheme.error
+            normalizedScore >= 0.8 -> MaterialTheme.colorScheme.primary
+            normalizedScore >= 0.6 -> MaterialTheme.colorScheme.tertiary
+            normalizedScore >= 0.4 -> MaterialTheme.colorScheme.secondary
+            normalizedScore > 0.0 -> MaterialTheme.colorScheme.error
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         },
         label = "score_color"
@@ -759,13 +766,6 @@ private fun ScoreSection(
                 )
             }
 
-            val maxScore = when (scoreFormat) {
-                ScoreFormat.POINT_100 -> 100f
-                ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10f
-                ScoreFormat.POINT_5 -> 5f
-                ScoreFormat.POINT_3 -> 3f
-            }
-            
             val displayScore = formatScore(if (score > 0) score else null, scoreFormat)
 
             Text(
@@ -774,13 +774,6 @@ private fun ScoreSection(
                 fontWeight = FontWeight.SemiBold,
                 color = scoreColor
             )
-        }
-
-        val maxScore = when (scoreFormat) {
-            ScoreFormat.POINT_100 -> 100f
-            ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10f
-            ScoreFormat.POINT_5 -> 5f
-            ScoreFormat.POINT_3 -> 3f
         }
 
         val steps = when (scoreFormat) {

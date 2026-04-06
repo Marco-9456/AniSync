@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-04-06
+
+### Fixed
+- **Score Slider Color Mapping** - Normalized score color thresholds against each active score format (`POINT_3`, `POINT_5`, `POINT_10`, `POINT_10_DECIMAL`, `POINT_100`) so visual feedback now scales consistently.
+
 ## [1.3.0] - 2026-04-06
 
 ### Added
