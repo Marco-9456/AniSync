@@ -57,16 +57,43 @@ class ProfileRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
-            val activities = activitiesResponse.data?.Page?.activities?.filterNotNull()?.mapNotNull { it.onListActivity }?.map { activity ->
-                com.anisync.android.domain.UserActivity(
-                    id = activity.id ?: 0,
-                    status = activity.status,
-                    progress = activity.progress,
-                    mediaTitle = activity.media?.title?.userPreferred ?: "Unknown",
-                    mediaCoverUrl = activity.media?.coverImage?.medium,
-                    timestamp = (activity.createdAt?.toLong() ?: 0L) * 1000L,
-                    mediaScore = null
-                )
+            val activities = activitiesResponse.data?.Page?.activities?.filterNotNull()?.mapNotNull { activity ->
+                when {
+                    activity.onListActivity != null -> {
+                        com.anisync.android.domain.UserActivity(
+                            id = activity.onListActivity.id ?: 0,
+                            type = com.anisync.android.domain.ActivityType.MEDIA_LIST,
+                            status = activity.onListActivity.status,
+                            progress = activity.onListActivity.progress,
+                            mediaTitle = activity.onListActivity.media?.title?.userPreferred ?: "Unknown",
+                            mediaCoverUrl = activity.onListActivity.media?.coverImage?.medium,
+                            timestamp = (activity.onListActivity.createdAt?.toLong() ?: 0L) * 1000L,
+                            mediaScore = null
+                        )
+                    }
+                    activity.onTextActivity != null -> {
+                        com.anisync.android.domain.UserActivity(
+                            id = activity.onTextActivity.id ?: 0,
+                            type = com.anisync.android.domain.ActivityType.TEXT,
+                            text = activity.onTextActivity.text,
+                            timestamp = (activity.onTextActivity.createdAt?.toLong() ?: 0L) * 1000L,
+                            userName = activity.onTextActivity.user?.name,
+                            userAvatarUrl = activity.onTextActivity.user?.avatar?.medium
+                        )
+                    }
+                    activity.onMessageActivity != null -> {
+                        com.anisync.android.domain.UserActivity(
+                            id = activity.onMessageActivity.id ?: 0,
+                            type = com.anisync.android.domain.ActivityType.MESSAGE,
+                            text = activity.onMessageActivity.message,
+                            timestamp = (activity.onMessageActivity.createdAt?.toLong() ?: 0L) * 1000L,
+                            userName = activity.onMessageActivity.messenger?.name,
+                            userAvatarUrl = activity.onMessageActivity.messenger?.avatar?.medium,
+                            recipientName = activity.onMessageActivity.recipient?.name
+                        )
+                    }
+                    else -> null
+                }
             } ?: emptyList()
 
             val stats = user.statistics?.anime
@@ -86,9 +113,69 @@ class ProfileRepositoryImpl @Inject constructor(
                 dropped = statusCounts[com.anisync.android.type.MediaListStatus.DROPPED] ?: 0,
                 planning = statusCounts[com.anisync.android.type.MediaListStatus.PLANNING] ?: 0
             )
+            
+            val topGenres = stats?.genres?.filterNotNull()?.map { genre ->
+                com.anisync.android.domain.GenreStat(
+                    genre = genre.genre ?: "Unknown",
+                    count = genre.count ?: 0,
+                    meanScore = genre.meanScore?.toFloat() ?: 0f
+                )
+            } ?: emptyList()
 
             // Fetch all favorites recursively
             val favorites = fetchFavorites(user.id ?: 0)
+            
+                    val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
+                        com.anisync.android.domain.LibraryEntry(
+                            id = 0,
+                            mediaId = media.id,
+                            titleRomaji = media.title?.romaji,
+                            titleEnglish = media.title?.english,
+                            titleNative = media.title?.native,
+                            titleUserPreferred = media.title?.userPreferred ?: "Unknown",
+                            coverUrl = media.coverImage?.large,
+                            progress = 0,
+                            totalEpisodes = null,
+                            totalChapters = media.chapters,
+                            totalVolumes = media.volumes,
+                            type = media.type,
+                            format = null,
+                            status = com.anisync.android.domain.LibraryStatus.UNKNOWN
+                        )
+                    } ?: emptyList()
+
+            val overviewCharacters = user.favourites?.characters?.nodes?.filterNotNull()?.map { char ->
+                com.anisync.android.domain.CharacterInfo(
+                    id = char.id ?: 0,
+                    nameFull = char.name?.userPreferred ?: "Unknown",
+                    nameNative = null,
+                    nameUserPreferred = char.name?.userPreferred ?: "Unknown",
+                    imageUrl = char.image?.large,
+                    role = ""
+                )
+            } ?: emptyList()
+
+            val overviewStaff = user.favourites?.staff?.nodes?.filterNotNull()?.map { staff ->
+                com.anisync.android.domain.StaffDetails(
+                    id = staff.id ?: 0,
+                    name = staff.name?.userPreferred ?: "Unknown",
+                    nativeName = null,
+                    nameUserPreferred = staff.name?.userPreferred ?: "Unknown",
+                    imageUrl = staff.image?.large,
+                    description = null,
+                    gender = null,
+                    age = null,
+                    bloodType = null,
+                    dateOfBirth = null,
+                    dateOfDeath = null,
+                    favourites = null,
+                    language = null,
+                    primaryOccupations = emptyList(),
+                    yearsActive = emptyList(),
+                    homeTown = null,
+                    voicedCharacters = emptyList()
+                )
+            } ?: emptyList()
 
             val profile = UserProfile(
                 id = user.id ?: 0,
@@ -104,7 +191,11 @@ class ProfileRepositoryImpl @Inject constructor(
                 meanScore = stats?.meanScore?.toFloat() ?: 0f,
                 animeStatusCounts = animeStatusCounts,
                 favoriteAnime = favorites,
-                activities = activities
+                activities = activities,
+                topGenres = topGenres,
+                favoriteMangaOverview = overviewManga,
+                favoriteCharactersOverview = overviewCharacters,
+                favoriteStaffOverview = overviewStaff
             )
 
             userProfileDao.insert(profile.toEntity())

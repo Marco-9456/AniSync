@@ -18,7 +18,11 @@ data class UserProfile(
     val meanScore: Float,
     val animeStatusCounts: AnimeStatusCounts,
     val favoriteAnime: List<LibraryEntry>,
-    val activities: List<UserActivity>
+    val activities: List<UserActivity>,
+    val topGenres: List<GenreStat> = emptyList(),
+    val favoriteMangaOverview: List<LibraryEntry> = emptyList(),
+    val favoriteCharactersOverview: List<CharacterInfo> = emptyList(),
+    val favoriteStaffOverview: List<StaffDetails> = emptyList()
 )
 
 /**
@@ -34,14 +38,26 @@ data class AnimeStatusCounts(
     val planning: Int = 0
 )
 
+enum class ActivityType {
+    TEXT,
+    MESSAGE,
+    MEDIA_LIST,
+    UNKNOWN
+}
+
 @Immutable
 @Serializable
 data class UserActivity(
     val id: Int,
-    val status: String?, // e.g. "watched episode", "read chapter"
-    val progress: String?, // "1", "12 - 13"
-    val mediaTitle: String,
-    val mediaCoverUrl: String?,
+    val type: ActivityType = ActivityType.MEDIA_LIST,
+    val status: String? = null, // e.g. "watched episode", "read chapter"
+    val progress: String? = null, // "1", "12 - 13"
+    val mediaTitle: String = "",
+    val mediaCoverUrl: String? = null,
     val timestamp: Long,
-    val mediaScore: Int? = null
+    val mediaScore: Int? = null,
+    val text: String? = null,
+    val userName: String? = null,
+    val userAvatarUrl: String? = null,
+    val recipientName: String? = null
 )

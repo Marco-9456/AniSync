@@ -151,4 +151,24 @@ class Converters {
 
     @TypeConverter
     fun toMediaReviewList(list: List<MediaReview>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromStaffDetailsList(value: String): List<com.anisync.android.domain.StaffDetails> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toStaffDetailsList(list: List<com.anisync.android.domain.StaffDetails>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromGenreStatList(value: String): List<com.anisync.android.domain.GenreStat> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toGenreStatList(list: List<com.anisync.android.domain.GenreStat>): String = json.encodeToString(list)
 }

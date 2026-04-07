@@ -1,9 +1,13 @@
 package com.anisync.android.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.anisync.android.domain.AnimeStatusCounts
+import com.anisync.android.domain.CharacterInfo
+import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.UserActivity
 
 /**
@@ -25,5 +29,17 @@ data class UserProfileEntity(
     val animeStatusCounts: AnimeStatusCounts = AnimeStatusCounts(),
     val favoriteAnime: List<LibraryEntry>,
     val activities: List<UserActivity> = emptyList(),
-    val lastUpdated: Long = System.currentTimeMillis()
+    val lastUpdated: Long = System.currentTimeMillis(),
+    
+    @ColumnInfo(defaultValue = "[]")
+    val topGenres: List<GenreStat> = emptyList(),
+    
+    @ColumnInfo(defaultValue = "[]")
+    val favoriteMangaOverview: List<LibraryEntry> = emptyList(),
+    
+    @ColumnInfo(defaultValue = "[]")
+    val favoriteCharactersOverview: List<CharacterInfo> = emptyList(),
+    
+    @ColumnInfo(defaultValue = "[]")
+    val favoriteStaffOverview: List<StaffDetails> = emptyList()
 )

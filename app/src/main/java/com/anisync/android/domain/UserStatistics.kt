@@ -55,11 +55,12 @@ data class StatusStat(
  * Statistics for a specific genre.
  */
 @Immutable
+@kotlinx.serialization.Serializable
 data class GenreStat(
     val genre: String,
     val count: Int,
     val meanScore: Float,
-    val hoursWatched: Float // Converted from minutes
+    val hoursWatched: Float = 0f // Converted from minutes
 )
 
 /**

@@ -17,6 +17,11 @@ query GetUserProfile($name: String) {
           count
           status
         }
+        genres(sort: [COUNT_DESC], limit: 5) {
+          genre
+          count
+          meanScore
+        }
       }
       manga {
         count
@@ -53,6 +58,49 @@ query GetUserProfile($name: String) {
           coverImage {
              large
              extraLarge
+          }
+        }
+      }
+      manga(page: 1, perPage: 5) {
+        nodes {
+          id
+          type
+          status
+          format
+          chapters
+          volumes
+          averageScore
+          title {
+            userPreferred
+            romaji
+            english
+            native
+          }
+          coverImage {
+            large
+            extraLarge
+          }
+        }
+      }
+      characters(page: 1, perPage: 5) {
+        nodes {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+        }
+      }
+      staff(page: 1, perPage: 5) {
+        nodes {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
           }
         }
       }
@@ -100,8 +148,8 @@ query GetUserFavorites($userId: Int, $page: Int) {
 }
 
 query GetUserActivities($userId: Int) {
-  Page(perPage: 5) {
-    activities(userId: $userId, sort: [ID_DESC], type: MEDIA_LIST) {
+  Page(perPage: 50) {
+    activities(userId: $userId, sort: [ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
       ... on ListActivity {
         id
         type
@@ -120,6 +168,36 @@ query GetUserActivities($userId: Int) {
              medium
           }
           type
+        }
+      }
+      ... on TextActivity {
+        id
+        type
+        text
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            medium
+          }
+        }
+      }
+      ... on MessageActivity {
+        id
+        type
+        message
+        createdAt
+        messenger {
+          id
+          name
+          avatar {
+            medium
+          }
+        }
+        recipient {
+          id
+          name
         }
       }
     }
