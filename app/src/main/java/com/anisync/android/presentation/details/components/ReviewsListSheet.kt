@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
-import com.anisync.android.presentation.details.ReviewCard
+import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.details.ReviewsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

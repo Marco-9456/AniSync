@@ -370,4 +370,40 @@ class ProfileRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override suspend fun getUserReviews(userId: Int, page: Int): Result<List<com.anisync.android.domain.MediaReview>> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                com.anisync.android.GetUserReviewsQuery(
+                    userId = userId,
+                    page = Optional.present(page)
+                )
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.first()?.message ?: "Failed to fetch user reviews")
+            }
+
+            val data = response.data ?: throw Exception("Empty response data")
+
+            data.Page?.reviews?.filterNotNull()?.map { review ->
+                com.anisync.android.domain.MediaReview(
+                    id = review.id,
+                    summary = review.summary ?: "",
+                    body = null, // the query doesn't fetch body
+                    score = review.score ?: 0,
+                    rating = review.rating ?: 0,
+                    ratingAmount = review.ratingAmount ?: 0,
+                    userRating = review.userRating?.name,
+                    userName = review.user?.name ?: "Unknown",
+                    userAvatarUrl = review.user?.avatar?.large,
+                    createdAt = review.createdAt.toLong(),
+                    mediaTitle = review.media?.title?.userPreferred,
+                    mediaCoverUrl = review.media?.coverImage?.large
+                )
+            } ?: emptyList()
+        }
+    }
 }

@@ -165,7 +165,7 @@ fun ProfileContent(
 
             ProfileTab.REVIEWS -> {
                 profileReviewsTab(
-                    profile = profile
+                    uiState = uiState
                 )
             }
 

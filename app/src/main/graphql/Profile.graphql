@@ -320,3 +320,40 @@ query GetUserSocialData($userId: Int!, $page: Int = 1) {
     }
   }
 }
+
+query GetUserReviews($userId: Int!, $page: Int = 1) {
+  Page(page: $page, perPage: 20) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    reviews(userId: $userId, sort: ID_DESC) {
+      id
+      summary
+      rating
+      ratingAmount
+      userRating
+      score
+      createdAt
+      updatedAt
+      media {
+        id
+        title {
+          userPreferred
+        }
+        coverImage {
+          large
+        }
+        type
+        bannerImage
+      }
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+    }
+  }
+}

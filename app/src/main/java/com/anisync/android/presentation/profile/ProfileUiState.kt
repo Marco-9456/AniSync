@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.R
+import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.SocialUser
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.ForumThread
@@ -26,7 +27,10 @@ data class ProfileUiState(
     val socialThreads: List<ForumThread> = emptyList(),
     val socialComments: List<SocialThreadComment> = emptyList(),
     val isSocialLoading: Boolean = false,
-    val socialErrorMessage: String? = null
+    val socialErrorMessage: String? = null,
+    val reviews: List<MediaReview> = emptyList(),
+    val isReviewsLoading: Boolean = false,
+    val reviewsErrorMessage: String? = null
 )
 
 @Immutable

@@ -152,5 +152,7 @@ data class MediaReview(
     val userRating: String? = null,
     val userName: String,
     val userAvatarUrl: String?,
-    val createdAt: Long     // Unix timestamp
+    val createdAt: Long,    // Unix timestamp
+    val mediaTitle: String? = null,
+    val mediaCoverUrl: String? = null
 )

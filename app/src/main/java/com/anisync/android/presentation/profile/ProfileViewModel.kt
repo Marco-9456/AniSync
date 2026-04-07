@@ -57,6 +57,15 @@ class ProfileViewModel @Inject constructor(
 
     private val socialState = MutableStateFlow(SocialState())
 
+    private data class ReviewsState(
+        val isReviewsLoading: Boolean = false,
+        val reviews: List<com.anisync.android.domain.MediaReview> = emptyList(),
+        val reviewsErrorMessage: String? = null,
+        val hasFetchedReviews: Boolean = false
+    )
+
+    private val reviewsState = MutableStateFlow(ReviewsState())
+
     private val profileState = getProfileUseCase()
         .map { profileResult ->
             if (profileResult != null) {
@@ -71,7 +80,7 @@ class ProfileViewModel @Inject constructor(
         .onStart { emit(ProfileUiState(isLoading = true)) }
         .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
 
-    val uiState: StateFlow<ProfileUiState> = combine(profileState, localState, socialState) { remote, local, social ->
+    val uiState: StateFlow<ProfileUiState> = combine(profileState, localState, socialState, reviewsState) { remote, local, social, reviews ->
         remote.copy(
             isRefreshing = local.isRefreshing,
             selectedTab = local.selectedTab,
@@ -85,7 +94,10 @@ class ProfileViewModel @Inject constructor(
             socialThreads = social.socialThreads,
             socialComments = social.socialComments,
             isSocialLoading = social.isSocialLoading,
-            socialErrorMessage = social.socialErrorMessage
+            socialErrorMessage = social.socialErrorMessage,
+            reviews = reviews.reviews,
+            isReviewsLoading = reviews.isReviewsLoading,
+            reviewsErrorMessage = reviews.reviewsErrorMessage
         )
     }.stateIn(
         scope = viewModelScope,
@@ -108,6 +120,8 @@ class ProfileViewModel @Inject constructor(
                 }
                 if (action.tab == ProfileTab.SOCIAL && !socialState.value.hasFetchedSocialData) {
                     fetchSocialData()
+                } else if (action.tab == ProfileTab.REVIEWS && !reviewsState.value.hasFetchedReviews) {
+                    fetchReviews()
                 }
             }
 
@@ -154,10 +168,43 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
+            val reviewsJob = launch {
+                if (localState.value.selectedTab == ProfileTab.REVIEWS || reviewsState.value.hasFetchedReviews) {
+                    fetchReviews()
+                }
+            }
+
             refreshJob.join()
             socialJob.join()
+            reviewsJob.join()
             
             localState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    private fun fetchReviews() {
+        viewModelScope.launch {
+            reviewsState.update { it.copy(isReviewsLoading = true, reviewsErrorMessage = null) }
+            val userId = uiState.value.profile?.id ?: return@launch
+            when (val result = profileRepository.getUserReviews(userId)) {
+                is Result.Success -> {
+                    reviewsState.update {
+                        it.copy(
+                            isReviewsLoading = false,
+                            reviews = result.data,
+                            hasFetchedReviews = true
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    reviewsState.update {
+                        it.copy(
+                            isReviewsLoading = false,
+                            reviewsErrorMessage = result.message
+                        )
+                    }
+                }
+            }
         }
     }
 

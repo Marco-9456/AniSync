@@ -22,4 +22,8 @@ interface ProfileRepository {
      * Fetch social data.
      */
     suspend fun getSocialData(userId: Int, page: Int = 1): Result<UserSocialData>
+    /**
+     * Fetch user's reviews.
+     */
+    suspend fun getUserReviews(userId: Int, page: Int = 1): Result<List<MediaReview>>
 }

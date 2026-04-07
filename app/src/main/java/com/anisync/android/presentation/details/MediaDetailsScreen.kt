@@ -102,6 +102,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.SectionHeader
@@ -1174,112 +1175,6 @@ fun SmartActionButtonsRow(
                 stringResource(R.string.action_share),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
             )
-        }
-    }
-}
-
-@Composable
-fun ReviewCard(
-    review: MediaReview,
-    onClick: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    val scoreColor = remember(review.score) {
-        when {
-            review.score >= 75 -> Color(0xFF4CAF50) // Green
-            review.score >= 50 -> Color(0xFFFFC107) // Amber
-            else -> Color(0xFFFF5722) // Red-orange
-        }
-    }
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // User info row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // User avatar
-                AsyncImage(
-                    model = review.userAvatarUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-
-                Text(
-                    text = review.userName,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Score badge
-                Box(
-                    modifier = Modifier
-                        .background(
-                            scoreColor.copy(alpha = 0.15f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "${review.score}/100",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = scoreColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Review summary
-            Text(
-                text = review.summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Rating bar + stats
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Upvote indicator
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = "${review.rating}/${review.ratingAmount}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.found_helpful),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-            }
         }
     }
 }
