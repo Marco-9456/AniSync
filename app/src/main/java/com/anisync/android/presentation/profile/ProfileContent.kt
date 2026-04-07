@@ -17,7 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RateReview
@@ -46,7 +46,10 @@ import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.profileMediaTab
-import com.anisync.android.presentation.profile.sections.ProfileSocialSection
+import com.anisync.android.presentation.profile.sections.profileSocialTab
+import com.anisync.android.presentation.profile.sections.profileCastTab
+import com.anisync.android.presentation.profile.sections.profileReviewsTab
+import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
@@ -120,12 +123,10 @@ fun ProfileContent(
             }
 
             ProfileTab.SOCIAL -> {
-                item(key = "tab_social", contentType = "social") {
-                    ProfileSocialSection(
-                        selectedTab = uiState.selectedSocialTab,
-                        onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) }
-                    )
-                }
+                profileSocialTab(
+                    selectedTab = uiState.selectedSocialTab,
+                    onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) }
+                )
             }
 
             ProfileTab.ANIME -> {
@@ -150,22 +151,28 @@ fun ProfileContent(
                 )
             }
 
-            ProfileTab.FAVORITES -> {
-                item(key = "tab_favorites") {
-                    PlaceholderTabContent(stringResource(R.string.profile_placeholder_favorites))
-                }
+            ProfileTab.CAST -> {
+                profileCastTab(
+                    profile = profile,
+                    selectedFilter = uiState.selectedCastFilter,
+                    onFilterSelected = { onAction(ProfileAction.SelectCastFilter(it)) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    onCharacterClick = onCharacterClick,
+                    onStaffClick = onStaffClick
+                )
             }
 
             ProfileTab.REVIEWS -> {
-                item(key = "tab_reviews") {
-                    PlaceholderTabContent(stringResource(R.string.profile_placeholder_reviews))
-                }
+                profileReviewsTab(
+                    profile = profile
+                )
             }
 
             ProfileTab.STATS -> {
-                item(key = "tab_stats") {
-                    PlaceholderTabContent(stringResource(R.string.profile_placeholder_stats))
-                }
+                profileStatsTab(
+                    profile = profile
+                )
             }
         }
     }
@@ -186,7 +193,7 @@ private fun profileTabIcon(tab: ProfileTab): ImageVector {
         ProfileTab.ACTIVITY -> Icons.Default.Schedule
         ProfileTab.ANIME -> Icons.Default.Tv
         ProfileTab.MANGA -> Icons.AutoMirrored.Filled.MenuBook
-        ProfileTab.FAVORITES -> Icons.Default.Favorite
+        ProfileTab.CAST -> Icons.Default.Group
         ProfileTab.SOCIAL -> Icons.Default.Forum
         ProfileTab.REVIEWS -> Icons.Default.RateReview
         ProfileTab.STATS -> Icons.Default.BarChart

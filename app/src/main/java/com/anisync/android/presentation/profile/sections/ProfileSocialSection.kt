@@ -3,10 +3,9 @@ package com.anisync.android.presentation.profile.sections
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -15,8 +14,6 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -27,21 +24,19 @@ import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun ProfileSocialSection(
+fun LazyListScope.profileSocialTab(
     selectedTab: ProfileSocialTab,
     onTabSelected: (ProfileSocialTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabs = remember { ProfileSocialTab.entries }
-    val selectedIndex = remember(selectedTab) { tabs.indexOf(selectedTab).coerceAtLeast(0) }
+    val tabs = ProfileSocialTab.entries
+    val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-    ) {
+    item(key = "social_tabs") {
         LazyRow(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -56,15 +51,21 @@ fun ProfileSocialSection(
                 )
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        PlaceholderTabContent(
-            message = stringResource(
-                R.string.profile_social_placeholder,
-                stringResource(selectedTab.labelRes)
+    item(key = "social_placeholder") {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+            PlaceholderTabContent(
+                message = stringResource(
+                    R.string.profile_social_placeholder,
+                    stringResource(selectedTab.labelRes)
+                )
             )
-        )
+        }
     }
 }
 
