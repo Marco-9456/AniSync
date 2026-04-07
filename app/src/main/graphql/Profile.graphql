@@ -147,59 +147,78 @@ query GetUserFavorites($userId: Int, $page: Int) {
   }
 }
 
+fragment ActivityFields on ActivityUnion {
+  ... on ListActivity {
+    id
+    type
+    status
+    progress
+    createdAt
+    media {
+      id
+      title {
+        userPreferred
+        romaji
+        english
+        native
+      }
+      coverImage {
+         medium
+      }
+      type
+    }
+  }
+  ... on TextActivity {
+    id
+    type
+    text
+    createdAt
+    user {
+      id
+      name
+      avatar {
+        medium
+      }
+    }
+  }
+  ... on MessageActivity {
+    id
+    type
+    message
+    createdAt
+    messenger {
+      id
+      name
+      avatar {
+        medium
+      }
+    }
+    recipient {
+      id
+      name
+    }
+  }
+}
+
 query GetUserActivities($userId: Int) {
-  Page(perPage: 50) {
+  allActivities: Page(perPage: 50) {
     activities(userId: $userId, sort: [ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
-      ... on ListActivity {
-        id
-        type
-        status
-        progress
-        createdAt
-        media {
-          id
-          title {
-            userPreferred
-            romaji
-            english
-            native
-          }
-          coverImage {
-             medium
-          }
-          type
-        }
-      }
-      ... on TextActivity {
-        id
-        type
-        text
-        createdAt
-        user {
-          id
-          name
-          avatar {
-            medium
-          }
-        }
-      }
-      ... on MessageActivity {
-        id
-        type
-        message
-        createdAt
-        messenger {
-          id
-          name
-          avatar {
-            medium
-          }
-        }
-        recipient {
-          id
-          name
-        }
-      }
+      ...ActivityFields
+    }
+  }
+  textActivities: Page(perPage: 20) {
+    activities(userId: $userId, sort: [ID_DESC], type_in: [TEXT]) {
+      ...ActivityFields
+    }
+  }
+  messageReceived: Page(perPage: 20) {
+    activities(userId: $userId, sort: [ID_DESC], type_in: [MESSAGE]) {
+      ...ActivityFields
+    }
+  }
+  messageSent: Page(perPage: 20) {
+    activities(messengerId: $userId, sort: [ID_DESC], type_in: [MESSAGE]) {
+      ...ActivityFields
     }
   }
 }

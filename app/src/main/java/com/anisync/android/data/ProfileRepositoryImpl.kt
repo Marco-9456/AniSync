@@ -57,44 +57,61 @@ class ProfileRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
-            val activities = activitiesResponse.data?.Page?.activities?.filterNotNull()?.mapNotNull { activity ->
+            val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
+            
+            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { 
+                rawActivities.add(it.activityFields) 
+            }
+            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { 
+                rawActivities.add(it.activityFields) 
+            }
+            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { 
+                rawActivities.add(it.activityFields) 
+            }
+            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { 
+                rawActivities.add(it.activityFields) 
+            }
+
+            val activities = rawActivities.mapNotNull { activityFields ->
                 when {
-                    activity.onListActivity != null -> {
+                    activityFields.onListActivity != null -> {
                         com.anisync.android.domain.UserActivity(
-                            id = activity.onListActivity.id ?: 0,
+                            id = activityFields.onListActivity.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.MEDIA_LIST,
-                            status = activity.onListActivity.status,
-                            progress = activity.onListActivity.progress,
-                            mediaTitle = activity.onListActivity.media?.title?.userPreferred ?: "Unknown",
-                            mediaCoverUrl = activity.onListActivity.media?.coverImage?.medium,
-                            timestamp = (activity.onListActivity.createdAt?.toLong() ?: 0L) * 1000L,
+                            status = activityFields.onListActivity.status,
+                            progress = activityFields.onListActivity.progress,
+                            mediaTitle = activityFields.onListActivity.media?.title?.userPreferred ?: "Unknown",
+                            mediaCoverUrl = activityFields.onListActivity.media?.coverImage?.medium,
+                            timestamp = (activityFields.onListActivity.createdAt?.toLong() ?: 0L) * 1000L,
                             mediaScore = null
                         )
                     }
-                    activity.onTextActivity != null -> {
+                    activityFields.onTextActivity != null -> {
                         com.anisync.android.domain.UserActivity(
-                            id = activity.onTextActivity.id ?: 0,
+                            id = activityFields.onTextActivity.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.TEXT,
-                            text = activity.onTextActivity.text,
-                            timestamp = (activity.onTextActivity.createdAt?.toLong() ?: 0L) * 1000L,
-                            userName = activity.onTextActivity.user?.name,
-                            userAvatarUrl = activity.onTextActivity.user?.avatar?.medium
+                            text = activityFields.onTextActivity.text,
+                            timestamp = (activityFields.onTextActivity.createdAt?.toLong() ?: 0L) * 1000L,
+                            userName = activityFields.onTextActivity.user?.name,
+                            userAvatarUrl = activityFields.onTextActivity.user?.avatar?.medium
                         )
                     }
-                    activity.onMessageActivity != null -> {
+                    activityFields.onMessageActivity != null -> {
                         com.anisync.android.domain.UserActivity(
-                            id = activity.onMessageActivity.id ?: 0,
+                            id = activityFields.onMessageActivity.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.MESSAGE,
-                            text = activity.onMessageActivity.message,
-                            timestamp = (activity.onMessageActivity.createdAt?.toLong() ?: 0L) * 1000L,
-                            userName = activity.onMessageActivity.messenger?.name,
-                            userAvatarUrl = activity.onMessageActivity.messenger?.avatar?.medium,
-                            recipientName = activity.onMessageActivity.recipient?.name
+                            text = activityFields.onMessageActivity.message,
+                            timestamp = (activityFields.onMessageActivity.createdAt?.toLong() ?: 0L) * 1000L,
+                            userName = activityFields.onMessageActivity.messenger?.name,
+                            userAvatarUrl = activityFields.onMessageActivity.messenger?.avatar?.medium,
+                            recipientName = activityFields.onMessageActivity.recipient?.name
                         )
                     }
                     else -> null
                 }
-            } ?: emptyList()
+            }
+            .distinctBy { it.id }
+            .sortedByDescending { it.timestamp }
 
             val stats = user.statistics?.anime
             val mangaStats = user.statistics?.manga
