@@ -295,16 +295,18 @@ fun SocialThreadCommentCard(
                 timestampSeconds = comment.createdAt
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Text(
-                text = "Replied to: ${comment.threadTitle}",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (comment.threadTitle.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "Replied to: ${comment.threadTitle}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             
             Spacer(modifier = Modifier.height(4.dp))
             
