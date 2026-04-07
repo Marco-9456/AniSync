@@ -14,6 +14,7 @@ data class ProfileUiState(
     val errorMessage: String? = null,
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
+    val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val isEditProfileDialogVisible: Boolean = false,
     val isBiographySheetVisible: Boolean = false
@@ -25,10 +26,16 @@ enum class ProfileTab(@StringRes val titleRes: Int) {
     ACTIVITY(R.string.profile_tab_activity),
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
-    FAVORITES(R.string.section_favorites),
+    CAST(R.string.section_cast),
     SOCIAL(R.string.profile_tab_social),
     REVIEWS(R.string.section_reviews),
     STATS(R.string.statistics_title)
+}
+
+@Immutable
+enum class ProfileCastFilter(@StringRes val labelRes: Int) {
+    CHARACTERS(R.string.profile_cast_characters),
+    STAFF(R.string.profile_cast_staff)
 }
 
 @Immutable
@@ -52,6 +59,7 @@ sealed interface ProfileAction {
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
+    data class SelectCastFilter(val filter: ProfileCastFilter) : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction

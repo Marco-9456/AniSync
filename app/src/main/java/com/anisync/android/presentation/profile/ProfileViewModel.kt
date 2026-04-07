@@ -36,6 +36,7 @@ class ProfileViewModel @Inject constructor(
     private data class ProfileUiLocalState(
         val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
         val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
+        val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
@@ -63,6 +64,7 @@ class ProfileViewModel @Inject constructor(
             isRefreshing = local.isRefreshing,
             selectedTab = local.selectedTab,
             selectedActivityFilter = local.selectedActivityFilter,
+            selectedCastFilter = local.selectedCastFilter,
             selectedSocialTab = local.selectedSocialTab,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible
@@ -91,6 +93,12 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SelectActivityFilter -> {
                 localState.update {
                     it.copy(selectedActivityFilter = action.filter)
+                }
+            }
+
+            is ProfileAction.SelectCastFilter -> {
+                localState.update {
+                    it.copy(selectedCastFilter = action.filter)
                 }
             }
 

@@ -398,9 +398,13 @@
     <string name="profile_social_placeholder">Content for %1$s will appear here.</string>
     <string name="profile_placeholder_anime">Anime list content will appear here.</string>
     <string name="profile_placeholder_manga">Manga list content will appear here.</string>
+    <string name="profile_placeholder_cast">Cast content will appear here.</string>
     <string name="profile_placeholder_favorites">Favorites content will appear here.</string>
     <string name="profile_placeholder_reviews">Reviews content will appear here.</string>
     <string name="profile_placeholder_stats">Detailed stats content will appear here.</string>
+
+    <string name="profile_cast_characters">Characters</string>
+    <string name="profile_cast_staff">Staff</string>
     <string name="stat_days_watched">Days Watched</string>
     <string name="stat_manga_read">Manga Read</string>
     <string name="section_anime_status">Anime Status</string>
