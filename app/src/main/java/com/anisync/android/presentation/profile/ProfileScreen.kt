@@ -34,6 +34,7 @@ fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
+    onUserClick: (String) -> Unit = {},
     onLogoutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -80,7 +81,11 @@ fun ProfileScreen(
 
                 uiState.errorMessage != null && profile == null -> {
                     ErrorState(
-                        message = uiState.errorMessage ?: stringResource(R.string.profile_unknown_error),
+                        message = uiState.errorMessage ?: if (isOwnProfile) {
+                            stringResource(R.string.profile_unknown_error)
+                        } else {
+                            stringResource(R.string.profile_user_load_error)
+                        },
                         onRetry = { viewModel.onAction(ProfileAction.Refresh) }
                     )
                 }
@@ -96,13 +101,18 @@ fun ProfileScreen(
                         onSettingsClick = onNavigateToSettings,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick
+                        onStaffClick = onStaffClick,
+                        onUserClick = onUserClick
                     )
                 }
 
                 else -> {
                     ErrorState(
-                        message = stringResource(R.string.profile_unknown_error),
+                        message = if (isOwnProfile) {
+                            stringResource(R.string.profile_unknown_error)
+                        } else {
+                            stringResource(R.string.profile_user_load_error)
+                        },
                         onRetry = { viewModel.onAction(ProfileAction.Refresh) }
                     )
                 }

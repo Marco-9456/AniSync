@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +49,8 @@ import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 @Composable
 fun RecentUpdatesSection(
     activities: List<UserActivity>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     Column(modifier = modifier) {
         SectionHeader(
@@ -62,7 +64,7 @@ fun RecentUpdatesSection(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             displayedActivities.forEach { activity ->
                 key(activity.id) {
-                    UpdateItem(activity = activity)
+                    RecentUpdateCard(activity = activity, onUserClick = onUserClick)
                 }
             }
         }
@@ -73,9 +75,10 @@ fun RecentUpdatesSection(
  * An expressive, standalone activity card.
  */
 @Composable
-fun UpdateItem(
+fun RecentUpdateCard(
     activity: UserActivity,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     val cardShape = remember {
         RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
@@ -101,6 +104,15 @@ fun UpdateItem(
                 activity.userName?.take(2)?.uppercase() ?: "??"
             }
 
+            val onUserClicked = {
+                if (!isMedia) {
+                    val username = activity.userName?.trim().orEmpty()
+                    if (username.isNotEmpty()) {
+                        onUserClick(username)
+                    }
+                }
+            }
+
             Box(
                 modifier = if (isMedia) {
                     Modifier
@@ -113,6 +125,7 @@ fun UpdateItem(
                         .size(56.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .clickable { onUserClicked() }
                 },
                 contentAlignment = Alignment.Center
             ) {
@@ -221,7 +234,8 @@ fun UpdateItem(
                     Text(
                         text = titleText,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.clickable { onUserClicked() }
                     )
                     
                     if (activity.text != null) {

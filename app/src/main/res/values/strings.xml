@@ -374,6 +374,7 @@
     <string name="profile_active">Active %1$s</string>
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
+    <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable, or temporarily rate-limited.</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_activity">Activity</string>
     <string name="profile_tab_social">Social</string>
@@ -388,6 +389,7 @@
     <string name="profile_view_biography">View Biography</string>
     <string name="profile_biography_title">Biography</string>
     <string name="profile_follow">Follow</string>
+    <string name="profile_following">Following</string>
     <string name="profile_message">Message</string>
     <string name="profile_more_options">More options</string>
     <string name="profile_no_recent_updates">No recent updates.</string>

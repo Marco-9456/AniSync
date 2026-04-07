@@ -1,6 +1,8 @@
 package com.anisync.android.presentation.profile
 
 import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
@@ -12,6 +14,7 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.StatisticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,17 +25,23 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val profileRepository: ProfileRepository,
     private val statisticsRepository: StatisticsRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     // Settings from AppSettings (needed for display in profile)
@@ -46,7 +55,9 @@ class ProfileViewModel @Inject constructor(
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
-        val isRefreshing: Boolean = false
+        val isRefreshing: Boolean = false,
+        val isFollowingUser: Boolean = false,
+        val isFollowLoading: Boolean = false
     )
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
@@ -81,19 +92,49 @@ class ProfileViewModel @Inject constructor(
 
     private val statsState = MutableStateFlow(StatsState())
 
-    private val profileState = getProfileUseCase()
-        .map { profileResult ->
-            if (profileResult != null) {
-                ProfileUiState(
-                    isLoading = false,
-                    profile = profileResult
-                )
-            } else {
-                ProfileUiState(isLoading = true)
+    private val targetUsername: String? = savedStateHandle.get<String>("username")
+        ?.let(Uri::decode)
+        ?.trim()
+        ?.removePrefix("@")
+        ?.takeIf { it.isNotBlank() }
+    private val targetRefreshSignal = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
+
+    private val profileState = if (targetUsername.isNullOrBlank()) {
+        getProfileUseCase()
+            .map { profileResult ->
+                if (profileResult != null) {
+                    ProfileUiState(
+                        isLoading = false,
+                        profile = profileResult
+                    )
+                } else {
+                    ProfileUiState(isLoading = true)
+                }
             }
-        }
-        .onStart { emit(ProfileUiState(isLoading = true)) }
-        .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
+            .onStart { emit(ProfileUiState(isLoading = true)) }
+            .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
+    } else {
+        targetRefreshSignal
+            .onStart { emit(Unit) }
+            .flatMapLatest {
+                kotlinx.coroutines.flow.flow {
+                    emit(ProfileUiState(isLoading = true))
+                    when (val result = profileRepository.fetchUserProfile(targetUsername)) {
+                        is Result.Success -> emit(ProfileUiState(isLoading = false, profile = result.data))
+                        is Result.Error -> {
+                            val message = if (
+                                result.message.contains("not found", ignoreCase = true)
+                            ) {
+                                "Could not load @$targetUsername right now. The account may be private, temporarily unavailable, or rate-limited."
+                            } else {
+                                result.message
+                            }
+                            emit(ProfileUiState(isLoading = false, errorMessage = message))
+                        }
+                    }
+                }
+            }
+    }
 
     val uiState: StateFlow<ProfileUiState> = combine(
         profileState,
@@ -104,6 +145,8 @@ class ProfileViewModel @Inject constructor(
     ) { remote, local, social, reviews, stats ->
         remote.copy(
             isRefreshing = local.isRefreshing,
+            isFollowingUser = local.isFollowingUser,
+            isFollowLoading = local.isFollowLoading,
             selectedTab = local.selectedTab,
             selectedActivityFilter = local.selectedActivityFilter,
             selectedCastFilter = local.selectedCastFilter,
@@ -133,11 +176,14 @@ class ProfileViewModel @Inject constructor(
     init {
         // Trigger initial refresh
         onAction(ProfileAction.Refresh)
+
+        observeTargetProfileForFollowState()
     }
 
     fun onAction(action: ProfileAction) {
         when (action) {
             is ProfileAction.Refresh -> refresh()
+            is ProfileAction.ToggleFollow -> toggleFollow()
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {
                 localState.update {
@@ -193,7 +239,13 @@ class ProfileViewModel @Inject constructor(
     private fun refresh() {
         viewModelScope.launch {
             localState.update { it.copy(isRefreshing = true) }
-            val refreshJob = launch { profileRepository.refreshProfile("") }
+            val refreshJob = launch {
+                if (targetUsername.isNullOrBlank()) {
+                    profileRepository.refreshProfile("")
+                } else {
+                    targetRefreshSignal.tryEmit(Unit)
+                }
+            }
             
             val socialJob = launch {
                 if (localState.value.selectedTab == ProfileTab.SOCIAL || socialState.value.hasFetchedSocialData) {
@@ -219,6 +271,63 @@ class ProfileViewModel @Inject constructor(
             statsJob.join()
             
             localState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    private fun observeTargetProfileForFollowState() {
+        if (targetUsername.isNullOrBlank()) return
+
+        viewModelScope.launch {
+            uiState
+                .map { it.profile?.id }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { userId ->
+                    fetchFollowState(userId)
+                }
+        }
+    }
+
+    private fun fetchFollowState(userId: Int) {
+        viewModelScope.launch {
+            localState.update { it.copy(isFollowLoading = true) }
+            when (val result = profileRepository.getFollowState(userId)) {
+                is Result.Success -> {
+                    localState.update {
+                        it.copy(
+                            isFollowingUser = result.data,
+                            isFollowLoading = false
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    localState.update { it.copy(isFollowLoading = false) }
+                }
+            }
+        }
+    }
+
+    private fun toggleFollow() {
+        if (targetUsername.isNullOrBlank()) return
+
+        viewModelScope.launch {
+            val userId = uiState.value.profile?.id ?: return@launch
+            localState.update { it.copy(isFollowLoading = true) }
+            when (val result = profileRepository.toggleFollow(userId)) {
+                is Result.Success -> {
+                    localState.update {
+                        it.copy(
+                            isFollowingUser = result.data,
+                            isFollowLoading = false
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    localState.update { it.copy(isFollowLoading = false) }
+                }
+            }
         }
     }
 

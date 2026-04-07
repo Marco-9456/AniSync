@@ -27,7 +27,7 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileActivityFilter
-import com.anisync.android.presentation.profile.UpdateItem
+import com.anisync.android.presentation.profile.RecentUpdateCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -35,6 +35,7 @@ fun LazyListScope.profileActivityTab(
     profile: UserProfile,
     selectedFilter: ProfileActivityFilter,
     onFilterSelected: (ProfileActivityFilter) -> Unit,
+    onUserClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     item(key = "activity_filters", contentType = "filters") {
@@ -89,9 +90,10 @@ fun LazyListScope.profileActivityTab(
             key = { "activity_${it.id}" },
             contentType = { "activity_item" }
         ) { activity ->
-            UpdateItem(
+            RecentUpdateCard(
                 activity = activity,
-                modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                onUserClick = onUserClick
             )
         }
         

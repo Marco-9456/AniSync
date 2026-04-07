@@ -58,7 +58,8 @@ import org.jsoup.Jsoup
 fun LazyListScope.profileSocialTab(
     uiState: ProfileUiState,
     onTabSelected: (ProfileSocialTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     val selectedTab = uiState.selectedSocialTab
     val tabs = ProfileSocialTab.entries
@@ -118,8 +119,8 @@ fun LazyListScope.profileSocialTab(
     }
 
     when (selectedTab) {
-        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier)
-        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier)
+        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick)
+        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick)
         ProfileSocialTab.FORUM_THREADS -> {
             if (uiState.socialThreads.isEmpty()) {
                 item(key = "social_threads_empty") {
@@ -138,7 +139,8 @@ fun LazyListScope.profileSocialTab(
                     ForumThreadCard(
                         thread = thread,
                         onClick = {},
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        onUserClick = onUserClick
                     )
                     if (index == uiState.socialThreads.lastIndex) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -164,7 +166,8 @@ fun LazyListScope.profileSocialTab(
                     SocialThreadCommentCard(
                         comment = comment,
                         onClick = {},
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        onUserClick = onUserClick
                     )
                     if (index == uiState.socialComments.lastIndex) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -175,7 +178,12 @@ fun LazyListScope.profileSocialTab(
     }
 }
 
-private fun LazyListScope.renderSocialUsers(users: List<SocialUser>, selectedTab: ProfileSocialTab, modifier: Modifier) {
+private fun LazyListScope.renderSocialUsers(
+    users: List<SocialUser>,
+    selectedTab: ProfileSocialTab,
+    modifier: Modifier,
+    onUserClick: (String) -> Unit
+) {
     if (users.isEmpty()) {
         item(key = "social_users_empty") {
             Spacer(modifier = Modifier.height(16.dp))
@@ -203,7 +211,7 @@ private fun LazyListScope.renderSocialUsers(users: List<SocialUser>, selectedTab
                     Box(modifier = Modifier.weight(1f)) {
                         SocialUserItem(
                             user = user,
-                            onClick = {},
+                            onClick = { onUserClick(user.name) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -271,7 +279,8 @@ private fun SocialUserItem(
 fun SocialThreadCommentCard(
     comment: SocialThreadComment,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     val cleanText = remember(comment.commentHtml) {
         Jsoup.parse(comment.commentHtml ?: "").text()
@@ -290,7 +299,8 @@ fun SocialThreadCommentCard(
             AuthorRow(
                 name = comment.authorName,
                 avatarUrl = comment.authorAvatarUrl,
-                timestampSeconds = comment.createdAt
+                timestampSeconds = comment.createdAt,
+                onUserClick = onUserClick
             )
             
             if (comment.threadTitle.isNotBlank()) {

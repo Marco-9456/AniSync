@@ -357,3 +357,17 @@ query GetUserReviews($userId: Int!, $page: Int = 1) {
     }
   }
 }
+
+query GetUserFollowState($userId: Int!) {
+  User(id: $userId) {
+    id
+    isFollowing
+  }
+}
+
+mutation ToggleUserFollow($userId: Int!) {
+  ToggleFollow(userId: $userId) {
+    id
+    isFollowing
+  }
+}

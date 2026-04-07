@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -31,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -49,6 +52,7 @@ import com.anisync.android.presentation.profile.sections.profileReviewsTab
 import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.util.ShareUtils
 
 @OptIn(
     ExperimentalFoundationApi::class,
@@ -67,8 +71,11 @@ fun ProfileContent(
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
+    onUserClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 48.dp)
@@ -83,6 +90,20 @@ fun ProfileContent(
                 },
                 onShowBiography = {
                     onAction(ProfileAction.SetBiographySheetVisible(true))
+                },
+                isFollowing = uiState.isFollowingUser,
+                isFollowLoading = uiState.isFollowLoading,
+                onFollowClick = { onAction(ProfileAction.ToggleFollow) },
+                topActionIcon = if (isOwnProfile) Icons.Default.Settings else Icons.Default.Share,
+                onTopActionClick = {
+                    if (isOwnProfile) {
+                        onSettingsClick()
+                    } else {
+                        ShareUtils.shareText(
+                            context = context,
+                            text = "${profile.name}\nhttps://anilist.co/user/${profile.name}"
+                        )
+                    }
                 }
             )
         }
@@ -109,7 +130,8 @@ fun ProfileContent(
                         onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick
+                        onStaffClick = onStaffClick,
+                        onUserClick = onUserClick
                     )
                 }
             }
@@ -118,14 +140,16 @@ fun ProfileContent(
                 profileActivityTab(
                     profile = profile,
                     selectedFilter = uiState.selectedActivityFilter,
-                    onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) }
+                    onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
+                    onUserClick = onUserClick
                 )
             }
 
             ProfileTab.SOCIAL -> {
                 profileSocialTab(
                     uiState = uiState,
-                    onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) }
+                    onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
+                    onUserClick = onUserClick
                 )
             }
 
@@ -165,7 +189,8 @@ fun ProfileContent(
 
             ProfileTab.REVIEWS -> {
                 profileReviewsTab(
-                    uiState = uiState
+                    uiState = uiState,
+                    onUserClick = onUserClick
                 )
             }
 

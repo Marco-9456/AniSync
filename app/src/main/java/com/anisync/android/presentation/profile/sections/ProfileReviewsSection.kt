@@ -19,7 +19,8 @@ import com.anisync.android.presentation.profile.ProfileUiState
 
 fun LazyListScope.profileReviewsTab(
     uiState: ProfileUiState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     if (uiState.isReviewsLoading && uiState.reviews.isEmpty()) {
         item(key = "reviews_loading") {
@@ -80,7 +81,8 @@ fun LazyListScope.profileReviewsTab(
             onClick = { /* TODO: Open review details */ },
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .animateItem()
+                .animateItem(),
+            onUserClick = onUserClick
         )
     }
 }

@@ -17,13 +17,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mail
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -38,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +57,11 @@ fun ProfileTopSection(
     onSettingsClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     onShowBiography: () -> Unit,
+    isFollowing: Boolean = false,
+    isFollowLoading: Boolean = false,
+    onFollowClick: () -> Unit = {},
+    topActionIcon: ImageVector = Icons.Default.Settings,
+    onTopActionClick: () -> Unit = onSettingsClick,
     modifier: Modifier = Modifier
 ) {
     val surfaceColor = MaterialTheme.colorScheme.background
@@ -103,11 +110,9 @@ fun ProfileTopSection(
                 )
             }
 
-            // Settings / More Options button at top right
+            // Top action button (settings/share)
             FilledTonalIconButton(
-                onClick = if (isOwnProfile) onSettingsClick else {
-                    {}
-                },
+                onClick = onTopActionClick,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
@@ -120,10 +125,8 @@ fun ProfileTopSection(
                 )
             ) {
                 Icon(
-                    imageVector = if (isOwnProfile) Icons.Default.Settings else Icons.Default.MoreVert,
-                    contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(
-                        R.string.profile_more_options
-                    ),
+                    imageVector = topActionIcon,
+                    contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(R.string.action_share),
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -262,18 +265,26 @@ fun ProfileTopSection(
                     }
                 } else {
                     Button(
-                        onClick = { },
+                        onClick = onFollowClick,
+                        enabled = !isFollowLoading,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.height(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PersonAdd,
-                            contentDescription = stringResource(R.string.profile_follow),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (isFollowLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = if (isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
+                                contentDescription = if (isFollowing) stringResource(R.string.profile_following) else stringResource(R.string.profile_follow),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.profile_follow),
+                            text = if (isFollowing) stringResource(R.string.profile_following) else stringResource(R.string.profile_follow),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     }

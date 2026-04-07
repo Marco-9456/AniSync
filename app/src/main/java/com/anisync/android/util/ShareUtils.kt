@@ -45,6 +45,15 @@ object AniListUrls {
  */
 object ShareUtils {
 
+    fun shareText(context: Context, text: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent, null))
+    }
+
     /**
      * Shares media content using Android's share sheet.
      *
@@ -60,14 +69,7 @@ object ShareUtils {
         mediaType: MediaType?
     ) {
         val url = AniListUrls.mediaUrl(mediaId, mediaType)
-        val shareText = "$title\n$url"
-
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-        }
-
-        context.startActivity(Intent.createChooser(shareIntent, null))
+        shareText(context, "$title\n$url")
     }
 
     /**
@@ -75,14 +77,7 @@ object ShareUtils {
      */
     fun shareCharacter(context: Context, name: String, characterId: Int) {
         val url = AniListUrls.characterUrl(characterId)
-        val shareText = "$name\n$url"
-
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-        }
-
-        context.startActivity(Intent.createChooser(shareIntent, null))
+        shareText(context, "$name\n$url")
     }
 
     /**
@@ -90,13 +85,6 @@ object ShareUtils {
      */
     fun shareStaff(context: Context, name: String, staffId: Int) {
         val url = AniListUrls.staffUrl(staffId)
-        val shareText = "$name\n$url"
-
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-        }
-
-        context.startActivity(Intent.createChooser(shareIntent, null))
+        shareText(context, "$name\n$url")
     }
 }

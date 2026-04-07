@@ -1,9 +1,11 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetUserActivitiesQuery
+import com.anisync.android.GetUserFollowStateQuery
 import com.anisync.android.GetUserFavoritesQuery
 import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetViewerQuery
+import com.anisync.android.ToggleUserFollowMutation
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
@@ -31,7 +33,7 @@ class ProfileRepositoryImpl @Inject constructor(
             .map { entity -> entity?.toDomain() }
     }
 
-    override suspend fun refreshProfile(username: String): Result<Unit> {
+    override suspend fun fetchUserProfile(username: String): Result<UserProfile> {
         return safeApiCall {
             val actualUsername = username.ifBlank {
                 val viewerResponse = apolloClient.query(GetViewerQuery())
@@ -47,8 +49,13 @@ class ProfileRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
 
+            if (response.hasErrors()) {
+                val firstError = response.errors?.firstOrNull()?.message
+                throw Exception(firstError ?: "Failed to load user profile")
+            }
+
             val user = response.data?.User
-                ?: throw Exception("User not found")
+                ?: throw Exception("User not found: @$actualUsername")
 
             // Fetch Activities
             val activitiesResponse = apolloClient.query(
@@ -194,7 +201,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            val profile = UserProfile(
+            UserProfile(
                 id = user.id ?: 0,
                 name = user.name ?: "Unknown",
                 avatarUrl = user.avatar?.large,
@@ -214,8 +221,16 @@ class ProfileRepositoryImpl @Inject constructor(
                 favoriteCharactersOverview = overviewCharacters,
                 favoriteStaffOverview = overviewStaff
             )
+        }
+    }
 
-            userProfileDao.insert(profile.toEntity())
+    override suspend fun refreshProfile(username: String): Result<Unit> {
+        return when (val result = fetchUserProfile(username)) {
+            is Result.Success -> {
+                userProfileDao.insert(result.data.toEntity())
+                Result.Success(Unit)
+            }
+            is Result.Error -> result
         }
     }
 
@@ -368,6 +383,28 @@ class ProfileRepositoryImpl @Inject constructor(
                 threads = threads,
                 comments = comments
             )
+        }
+    }
+
+    override suspend fun getFollowState(userId: Int): Result<Boolean> {
+        return safeApiCall {
+            val response = apolloClient.query(GetUserFollowStateQuery(userId = userId)).execute()
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to get follow state")
+            }
+
+            response.data?.User?.isFollowing ?: false
+        }
+    }
+
+    override suspend fun toggleFollow(userId: Int): Result<Boolean> {
+        return safeApiCall {
+            val response = apolloClient.mutation(ToggleUserFollowMutation(userId = userId)).execute()
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to toggle follow")
+            }
+
+            response.data?.ToggleFollow?.isFollowing ?: false
         }
     }
 

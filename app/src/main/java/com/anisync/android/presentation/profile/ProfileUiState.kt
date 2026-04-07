@@ -19,6 +19,8 @@ data class ProfileUiState(
     val isRefreshing: Boolean = false,
     val profile: UserProfile? = null,
     val errorMessage: String? = null,
+    val isFollowingUser: Boolean = false,
+    val isFollowLoading: Boolean = false,
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
     val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
@@ -117,6 +119,7 @@ enum class ProfileStatsType(@StringRes val labelRes: Int) {
 
 sealed interface ProfileAction {
     data object Refresh : ProfileAction
+    data object ToggleFollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
