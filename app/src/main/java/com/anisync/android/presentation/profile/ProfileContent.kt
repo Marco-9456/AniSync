@@ -45,6 +45,7 @@ import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
+import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.ProfileSocialSection
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
@@ -128,15 +129,25 @@ fun ProfileContent(
             }
 
             ProfileTab.ANIME -> {
-                item(key = "tab_anime") {
-                    PlaceholderTabContent(stringResource(R.string.profile_placeholder_anime))
-                }
+                profileMediaTab(
+                    items = profile.favoriteAnime,
+                    emptyMessageRes = R.string.profile_placeholder_anime,
+                    onMediaClick = onMediaClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    transitionPrefix = "profile_anime"
+                )
             }
 
             ProfileTab.MANGA -> {
-                item(key = "tab_manga") {
-                    PlaceholderTabContent(stringResource(R.string.profile_placeholder_manga))
-                }
+                profileMediaTab(
+                    items = profile.favoriteMangaOverview,
+                    emptyMessageRes = R.string.profile_placeholder_manga,
+                    onMediaClick = onMediaClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    transitionPrefix = "profile_manga"
+                )
             }
 
             ProfileTab.FAVORITES -> {
