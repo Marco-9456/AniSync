@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.profile
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,15 +48,20 @@ import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.ProfileSocialSection
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileContent(
     profile: UserProfile,
     uiState: ProfileUiState,
     isOwnProfile: Boolean,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onAction: (ProfileAction) -> Unit,
     onStatisticsClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onMediaClick: (Int) -> Unit = {},
+    onCharacterClick: (Int) -> Unit = {},
+    onStaffClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -90,7 +98,15 @@ fun ProfileContent(
         when (uiState.selectedTab) {
             ProfileTab.OVERVIEW -> {
                 item(key = "tab_overview", contentType = "overview") {
-                    ProfileOverviewSection(profile = profile)
+                    ProfileOverviewSection(
+                        profile = profile,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
+                        onMediaClick = onMediaClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick
+                    )
                 }
             }
 

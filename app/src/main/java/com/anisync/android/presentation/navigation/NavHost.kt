@@ -325,6 +325,12 @@ fun AniSyncNavHost(
 
                 ProfileScreen(
                     onMediaClick = onProfileMediaClick,
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
+                    },
+                    onStaffClick = { staffId ->
+                        navController.navigate(StaffDetails(staffId))
+                    },
                     onLogoutClick = onLogout,
                     onStatisticsClick = onStatistics,
                     onNavigateToSettings = onNavigateToSettings,

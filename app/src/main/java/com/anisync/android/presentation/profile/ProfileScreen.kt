@@ -32,6 +32,8 @@ import com.anisync.android.presentation.components.ErrorState
 @Composable
 fun ProfileScreen(
     onMediaClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit = {},
+    onStaffClick: (Int) -> Unit = {},
     onLogoutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -89,9 +91,14 @@ fun ProfileScreen(
                         profile = profile,
                         uiState = uiState,
                         isOwnProfile = isOwnProfile,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
                         onAction = viewModel::onAction,
                         onStatisticsClick = { onStatisticsClick(profile.id) },
-                        onSettingsClick = onNavigateToSettings
+                        onSettingsClick = onNavigateToSettings,
+                        onMediaClick = onMediaClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick
                     )
                 }
 

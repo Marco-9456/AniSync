@@ -78,10 +78,6 @@ fun UpdateItem(activity: UserActivity) {
         RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
     }
 
-    val imageShape = remember {
-        RoundedCornerShape(16.dp)
-    }
-
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = cardShape,
@@ -94,26 +90,39 @@ fun UpdateItem(activity: UserActivity) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val isMedia = activity.type == com.anisync.android.domain.ActivityType.MEDIA_LIST
+            val imageUrl = if (isMedia) activity.mediaCoverUrl else activity.userAvatarUrl
+            val fallbackText = if (isMedia) {
+                if (activity.mediaTitle.isNotEmpty()) activity.mediaTitle.take(2).uppercase() else "??"
+            } else {
+                activity.userName?.take(2)?.uppercase() ?: "??"
+            }
+
             Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(imageShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                modifier = if (isMedia) {
+                    Modifier
+                        .width(48.dp)
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                } else {
+                    Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                },
                 contentAlignment = Alignment.Center
             ) {
-                if (activity.mediaCoverUrl != null) {
+                if (imageUrl != null) {
                     AsyncImage(
-                        model = activity.mediaCoverUrl,
-                        contentDescription = stringResource(
-                            R.string.content_description_media_cover,
-                            activity.mediaTitle
-                        ),
+                        model = imageUrl,
+                        contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
                     Text(
-                        text = activity.mediaTitle.take(2).uppercase(),
+                        text = fallbackText,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -139,61 +148,87 @@ fun UpdateItem(activity: UserActivity) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 val primaryColor = MaterialTheme.colorScheme.primary
-                val styledActivityText = remember(
-                    activity.status,
-                    activity.progress,
-                    activity.mediaTitle,
-                    primaryColor
-                ) {
-                    val statusText = activity.status ?: "Updated"
-                    val progressText = activity.progress ?: ""
-                    val capStatus =
-                        statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                
+                if (isMedia) {
+                    val styledActivityText = remember(
+                        activity.status,
+                        activity.progress,
+                        activity.mediaTitle,
+                        primaryColor
+                    ) {
+                        val statusText = activity.status ?: "Updated"
+                        val progressText = activity.progress ?: ""
+                        val capStatus =
+                            statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
-                    buildAnnotatedString {
-                        append("$capStatus ")
-                        if (progressText.isNotEmpty()) {
+                        buildAnnotatedString {
+                            append("$capStatus ")
+                            if (progressText.isNotEmpty()) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = primaryColor,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                ) {
+                                    append(progressText)
+                                }
+                                append(" of ")
+                            }
                             withStyle(
                                 SpanStyle(
-                                    color = primaryColor,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Unspecified
                                 )
                             ) {
-                                append(progressText)
+                                append(activity.mediaTitle)
                             }
-                            append(" of ")
-                        }
-                        withStyle(
-                            SpanStyle(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Unspecified
-                            )
-                        ) {
-                            append(activity.mediaTitle)
                         }
                     }
-                }
 
-                Text(
-                    text = styledActivityText,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = 22.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    Text(
+                        text = styledActivityText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 22.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-                if (activity.mediaScore != null && activity.mediaScore > 0) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        shape = CircleShape
-                    ) {
+                    if (activity.mediaScore != null && activity.mediaScore > 0) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                text = "Score: ${activity.mediaScore}",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                } else {
+                    val titleText = if (activity.type == com.anisync.android.domain.ActivityType.MESSAGE) {
+                        "${activity.userName} \u2192 ${activity.recipientName}"
+                    } else {
+                        activity.userName ?: "Unknown"
+                    }
+                    
+                    Text(
+                        text = titleText,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    if (activity.text != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Score: ${activity.mediaScore}",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            text = activity.text.replace(Regex("<.*?>"), ""),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
