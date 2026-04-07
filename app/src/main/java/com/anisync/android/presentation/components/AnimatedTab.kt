@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,17 +66,20 @@ fun AnimatedTab(
 ) {
     val hapticFeedback = rememberHapticFeedback()
     val isSelected = selected
-    
+
     // Stretch animation (scaleX for horizontal expansion)
     val scale = remember { Animatable(1f) }
     // Neighbor displacement
     val offsetX = remember { Animatable(0f) }
-    
+
+    var isInitialRenderScale by remember { androidx.compose.runtime.mutableStateOf(true) }
+    var isInitialRenderOffset by remember { androidx.compose.runtime.mutableStateOf(true) }
+
     // Use M3 Expressive motion specs instead of hardcoded tween
     val motionScheme = MaterialTheme.motionScheme
     val scaleAnimationSpec = remember(motionScheme) { motionScheme.fastSpatialSpec<Float>() }
     val colorAnimationSpec = remember(motionScheme) { motionScheme.defaultEffectsSpec<Color>() }
-    
+
     // Color transitions using M3 Expressive effects spec
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
@@ -86,7 +90,7 @@ fun AnimatedTab(
         animationSpec = colorAnimationSpec,
         label = "TabBackground"
     )
-    
+
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) {
             MaterialTheme.colorScheme.onPrimaryContainer
@@ -96,10 +100,13 @@ fun AnimatedTab(
         animationSpec = colorAnimationSpec,
         label = "TabContent"
     )
-    
+
     // Handles the "stretch" animation for the selected tab
     LaunchedEffect(isSelected) {
-        if (isSelected) {
+        if (isInitialRenderScale) {
+            isInitialRenderScale = false
+            scale.snapTo(1f)
+        } else if (isSelected) {
             launch {
                 scale.animateTo(1.15f, animationSpec = scaleAnimationSpec)
                 scale.animateTo(1f, animationSpec = scaleAnimationSpec)
@@ -109,10 +116,13 @@ fun AnimatedTab(
             scale.snapTo(1f)
         }
     }
-    
+
     // Handles the offset for neighbor tabs when selection changes
     LaunchedEffect(selectedIndex) {
-        if (!isSelected) {
+        if (isInitialRenderOffset) {
+            isInitialRenderOffset = false
+            offsetX.snapTo(0f)
+        } else if (!isSelected) {
             val distance = index - selectedIndex
             if (abs(distance) == 1) {
                 // Only affect direct neighbors
@@ -131,7 +141,7 @@ fun AnimatedTab(
             offsetX.snapTo(0f)
         }
     }
-    
+
     Tab(
         modifier = modifier
             .padding(horizontal = 8.dp, vertical = 12.dp)
