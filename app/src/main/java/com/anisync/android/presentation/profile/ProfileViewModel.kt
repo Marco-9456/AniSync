@@ -45,6 +45,18 @@ class ProfileViewModel @Inject constructor(
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
 
+    private data class SocialState(
+        val isSocialLoading: Boolean = false,
+        val socialFollowing: List<com.anisync.android.domain.SocialUser> = emptyList(),
+        val socialFollowers: List<com.anisync.android.domain.SocialUser> = emptyList(),
+        val socialThreads: List<com.anisync.android.domain.ForumThread> = emptyList(),
+        val socialComments: List<com.anisync.android.domain.SocialThreadComment> = emptyList(),
+        val socialErrorMessage: String? = null,
+        val hasFetchedSocialData: Boolean = false
+    )
+
+    private val socialState = MutableStateFlow(SocialState())
+
     private val profileState = getProfileUseCase()
         .map { profileResult ->
             if (profileResult != null) {
@@ -59,7 +71,7 @@ class ProfileViewModel @Inject constructor(
         .onStart { emit(ProfileUiState(isLoading = true)) }
         .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
 
-    val uiState: StateFlow<ProfileUiState> = combine(profileState, localState) { remote, local ->
+    val uiState: StateFlow<ProfileUiState> = combine(profileState, localState, socialState) { remote, local, social ->
         remote.copy(
             isRefreshing = local.isRefreshing,
             selectedTab = local.selectedTab,
@@ -67,7 +79,13 @@ class ProfileViewModel @Inject constructor(
             selectedCastFilter = local.selectedCastFilter,
             selectedSocialTab = local.selectedSocialTab,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
-            isBiographySheetVisible = local.isBiographySheetVisible
+            isBiographySheetVisible = local.isBiographySheetVisible,
+            socialFollowing = social.socialFollowing,
+            socialFollowers = social.socialFollowers,
+            socialThreads = social.socialThreads,
+            socialComments = social.socialComments,
+            isSocialLoading = social.isSocialLoading,
+            socialErrorMessage = social.socialErrorMessage
         )
     }.stateIn(
         scope = viewModelScope,
@@ -87,6 +105,9 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SelectTab -> {
                 localState.update {
                     it.copy(selectedTab = action.tab)
+                }
+                if (action.tab == ProfileTab.SOCIAL && !socialState.value.hasFetchedSocialData) {
+                    fetchSocialData()
                 }
             }
 
@@ -125,15 +146,47 @@ class ProfileViewModel @Inject constructor(
     private fun refresh() {
         viewModelScope.launch {
             localState.update { it.copy(isRefreshing = true) }
-            when (val result = profileRepository.refreshProfile("")) {
-                is Result.Success -> {
-                    // Cache updated, Flow emits automatically
-                }
-                is Result.Error -> {
-                    // Could show snackbar
+            val refreshJob = launch { profileRepository.refreshProfile("") }
+            
+            val socialJob = launch {
+                if (localState.value.selectedTab == ProfileTab.SOCIAL || socialState.value.hasFetchedSocialData) {
+                    fetchSocialData()
                 }
             }
+
+            refreshJob.join()
+            socialJob.join()
+            
             localState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    private fun fetchSocialData() {
+        viewModelScope.launch {
+            socialState.update { it.copy(isSocialLoading = true, socialErrorMessage = null) }
+            val userId = uiState.value.profile?.id ?: return@launch
+            when (val result = profileRepository.getSocialData(userId)) {
+                is Result.Success -> {
+                    socialState.update {
+                        it.copy(
+                            isSocialLoading = false,
+                            socialFollowing = result.data.following,
+                            socialFollowers = result.data.followers,
+                            socialThreads = result.data.threads,
+                            socialComments = result.data.comments,
+                            hasFetchedSocialData = true
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    socialState.update {
+                        it.copy(
+                            isSocialLoading = false,
+                            socialErrorMessage = result.message
+                        )
+                    }
+                }
+            }
         }
     }
 

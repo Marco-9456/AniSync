@@ -281,4 +281,93 @@ class ProfileRepositoryImpl @Inject constructor(
 
         return allFavorites
     }
+
+    override suspend fun getSocialData(userId: Int, page: Int): Result<com.anisync.android.domain.UserSocialData> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                com.anisync.android.GetUserSocialDataQuery(
+                    userId = userId,
+                    page = Optional.present(page)
+                )
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.first()?.message ?: "Unknown API Error")
+            }
+
+            val data = response.data ?: throw Exception("Empty response data")
+
+            val following = data.following?.following?.filterNotNull()?.map {
+                com.anisync.android.domain.SocialUser(
+                    id = it.id,
+                    name = it.name,
+                    avatarUrl = it.avatar?.large
+                )
+            } ?: emptyList()
+
+            val followers = data.followers?.followers?.filterNotNull()?.map {
+                com.anisync.android.domain.SocialUser(
+                    id = it.id,
+                    name = it.name,
+                    avatarUrl = it.avatar?.large
+                )
+            } ?: emptyList()
+
+            val threads = data.threads?.threads?.filterNotNull()?.map { thread ->
+                com.anisync.android.domain.ForumThread(
+                    id = thread.id,
+                    title = thread.title ?: "",
+                    body = null,
+                    replyCount = thread.replyCount ?: 0,
+                    viewCount = thread.viewCount ?: 0,
+                    likeCount = thread.likeCount ?: 0,
+                    isLiked = thread.isLiked ?: false,
+                    isSubscribed = thread.isSubscribed ?: false,
+                    isLocked = thread.isLocked ?: false,
+                    isSticky = thread.isSticky ?: false,
+                    authorId = thread.user?.id ?: 0,
+                    authorName = thread.user?.name ?: "Unknown",
+                    authorAvatarUrl = thread.user?.avatar?.large,
+                    repliedAt = thread.repliedAt?.toLong(),
+                    replyUserName = thread.replyUser?.name,
+                    replyUserAvatarUrl = thread.replyUser?.avatar?.large,
+                    categories = thread.categories?.filterNotNull()?.map {
+                        com.anisync.android.domain.ForumCategory(
+                            id = it.id,
+                            name = it.name ?: ""
+                        )
+                    } ?: emptyList(),
+                    createdAt = thread.createdAt.toLong(),
+                    updatedAt = thread.updatedAt.toLong(),
+                    siteUrl = thread.siteUrl,
+                    mediaTitle = null,
+                    mediaCoverUrl = null
+                )
+            } ?: emptyList()
+
+            val comments = data.comments?.threadComments?.filterNotNull()?.map { comment ->
+                com.anisync.android.domain.SocialThreadComment(
+                    id = comment.id,
+                    threadId = comment.thread?.id ?: 0,
+                    threadTitle = comment.thread?.title ?: "",
+                    commentHtml = comment.comment,
+                    likeCount = comment.likeCount,
+                    isLiked = comment.isLiked ?: false,
+                    createdAt = comment.createdAt.toLong(),
+                    authorId = comment.user?.id ?: 0,
+                    authorName = comment.user?.name ?: "Unknown",
+                    authorAvatarUrl = comment.user?.avatar?.large
+                )
+            } ?: emptyList()
+
+            com.anisync.android.domain.UserSocialData(
+                following = following,
+                followers = followers,
+                threads = threads,
+                comments = comments
+            )
+        }
+    }
 }

@@ -124,7 +124,7 @@ fun ProfileContent(
 
             ProfileTab.SOCIAL -> {
                 profileSocialTab(
-                    selectedTab = uiState.selectedSocialTab,
+                    uiState = uiState,
                     onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) }
                 )
             }

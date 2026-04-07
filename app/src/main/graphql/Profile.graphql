@@ -229,3 +229,94 @@ mutation UpdateAbout($about: String) {
     about
   }
 }
+query GetUserSocialData($userId: Int!, $page: Int = 1) {
+  following: Page(page: $page, perPage: 25) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    following(userId: $userId) {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+  }
+  followers: Page(page: $page, perPage: 25) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    followers(userId: $userId) {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+  }
+  threads: Page(page: $page, perPage: 15) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    threads(userId: $userId, sort: ID_DESC) {
+      id
+      title
+      replyCount
+      viewCount
+      likeCount
+      isLiked
+      isLocked
+      isSticky
+      isSubscribed
+      createdAt
+      updatedAt
+      siteUrl
+      categories {
+        id
+        name
+      }
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      replyUser {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      repliedAt
+    }
+  }
+  comments: Page(page: $page, perPage: 15) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    threadComments(userId: $userId, sort: ID_DESC) {
+      id
+      comment(asHtml: true)
+      likeCount
+      createdAt
+      isLiked
+      thread {
+        id
+        title
+      }
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+    }
+  }
+}

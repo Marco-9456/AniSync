@@ -17,4 +17,9 @@ interface ProfileRepository {
      * Update user's about section.
      */
     suspend fun updateAbout(about: String): Result<Unit>
+
+    /**
+     * Fetch social data.
+     */
+    suspend fun getSocialData(userId: Int, page: Int = 1): Result<UserSocialData>
 }

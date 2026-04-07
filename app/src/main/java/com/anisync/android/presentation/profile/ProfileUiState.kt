@@ -4,6 +4,9 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.R
+import com.anisync.android.domain.SocialUser
+import com.anisync.android.domain.SocialThreadComment
+import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.UserProfile
 
 @Stable
@@ -17,7 +20,13 @@ data class ProfileUiState(
     val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val isEditProfileDialogVisible: Boolean = false,
-    val isBiographySheetVisible: Boolean = false
+    val isBiographySheetVisible: Boolean = false,
+    val socialFollowing: List<SocialUser> = emptyList(),
+    val socialFollowers: List<SocialUser> = emptyList(),
+    val socialThreads: List<ForumThread> = emptyList(),
+    val socialComments: List<SocialThreadComment> = emptyList(),
+    val isSocialLoading: Boolean = false,
+    val socialErrorMessage: String? = null
 )
 
 @Immutable
