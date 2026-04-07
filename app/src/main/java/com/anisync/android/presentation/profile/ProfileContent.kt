@@ -79,7 +79,6 @@ fun ProfileContent(
                 onEditProfileClick = {
                     onAction(ProfileAction.SetEditProfileDialogVisible(true))
                 },
-                onStatisticsClick = { onAction(ProfileAction.SelectTab(ProfileTab.STATS)) },
                 onShowBiography = {
                     onAction(ProfileAction.SetBiographySheetVisible(true))
                 }

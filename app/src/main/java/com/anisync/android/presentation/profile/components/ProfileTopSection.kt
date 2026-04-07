@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mail
@@ -54,7 +53,6 @@ fun ProfileTopSection(
     isOwnProfile: Boolean,
     onSettingsClick: () -> Unit,
     onEditProfileClick: () -> Unit,
-    onStatisticsClick: () -> Unit,
     onShowBiography: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -349,22 +347,6 @@ fun ProfileTopSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(bottom = 12.dp)
             ) {
-                FilledTonalIconButton(
-                    onClick = onStatisticsClick,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    ),
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.BarChart,
-                        contentDescription = stringResource(R.string.statistics_view),
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
                 FilledTonalIconButton(
                     onClick = if (isOwnProfile) {
                         onSettingsClick

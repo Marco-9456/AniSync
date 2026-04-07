@@ -56,6 +56,8 @@ import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.StudioStat
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.profile.ScoreUiModel
+import com.anisync.android.presentation.profile.YearUiModel
 import com.anisync.android.presentation.util.formatDecimal
 
 @Composable

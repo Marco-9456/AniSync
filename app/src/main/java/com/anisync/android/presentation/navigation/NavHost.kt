@@ -331,7 +331,6 @@ fun AniSyncNavHost(
                         navController.navigate(StaffDetails(staffId))
                     },
                     onLogoutClick = onLogout,
-                    onStatisticsClick = onStatistics,
                     onNavigateToSettings = onNavigateToSettings,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
@@ -606,20 +605,6 @@ fun AniSyncNavHost(
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "character_grid"))
                     }
-                )
-            }
-
-            // =================================================================
-            // STATISTICS SCREEN - Shared Axis Z (Depth)
-            // =================================================================
-            composable<Statistics>(
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                StatisticsScreen(
-                    onBackClick = { navController.popBackStack() }
                 )
             }
 
