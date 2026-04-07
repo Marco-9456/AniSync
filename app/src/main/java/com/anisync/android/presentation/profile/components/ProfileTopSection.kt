@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -103,10 +102,12 @@ fun ProfileTopSection(
                         )
                 )
             }
-            
+
             // Settings / More Options button at top right
             FilledTonalIconButton(
-                onClick = if (isOwnProfile) onSettingsClick else { {} },
+                onClick = if (isOwnProfile) onSettingsClick else {
+                    {}
+                },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
@@ -120,7 +121,9 @@ fun ProfileTopSection(
             ) {
                 Icon(
                     imageVector = if (isOwnProfile) Icons.Default.Settings else Icons.Default.MoreVert,
-                    contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(R.string.profile_more_options),
+                    contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(
+                        R.string.profile_more_options
+                    ),
                     modifier = Modifier.size(24.dp)
                 )
             }

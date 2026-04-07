@@ -17,7 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -25,7 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityType
-import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileActivityFilter

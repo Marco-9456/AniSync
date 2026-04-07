@@ -102,9 +102,9 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
-import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
+import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.ContentMetadataSection

@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
+import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.MangaStatistics
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StatisticsRepository
-import com.anisync.android.domain.AnimeStatistics
-import com.anisync.android.domain.MangaStatistics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

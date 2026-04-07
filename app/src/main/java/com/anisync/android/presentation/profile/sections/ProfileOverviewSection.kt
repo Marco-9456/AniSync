@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
-import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.HeaderLevel
@@ -49,7 +46,6 @@ import com.anisync.android.presentation.profile.RecentUpdatesSection
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.statistics.GenreCardModern
 import com.anisync.android.presentation.statistics.HeroDashboard
-import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatDecimal
 

@@ -4,14 +4,14 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.R
-import com.anisync.android.domain.MediaReview
-import com.anisync.android.domain.SocialUser
-import com.anisync.android.domain.SocialThreadComment
-import com.anisync.android.domain.ForumThread
-import com.anisync.android.domain.UserProfile
 import com.anisync.android.domain.FormatStat
+import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.SocialThreadComment
+import com.anisync.android.domain.SocialUser
 import com.anisync.android.domain.StudioStat
+import com.anisync.android.domain.UserProfile
 
 @Stable
 data class ProfileUiState(

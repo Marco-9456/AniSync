@@ -17,8 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Schedule
@@ -31,28 +31,30 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
-import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
-import com.anisync.android.presentation.profile.sections.profileMediaTab
-import com.anisync.android.presentation.profile.sections.profileSocialTab
+import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileCastTab
+import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.profileReviewsTab
+import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun ProfileContent(
     profile: UserProfile,
@@ -87,7 +89,7 @@ fun ProfileContent(
 
         stickyHeader {
             Surface(
-                color = Color.Transparent,
+                color = MaterialTheme.colorScheme.background,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 ProfileTabsButtonGroup(
