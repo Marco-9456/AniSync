@@ -73,13 +73,16 @@ fun RecentUpdatesSection(
  * An expressive, standalone activity card.
  */
 @Composable
-fun UpdateItem(activity: UserActivity) {
+fun UpdateItem(
+    activity: UserActivity,
+    modifier: Modifier = Modifier
+) {
     val cardShape = remember {
         RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = cardShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 0.dp

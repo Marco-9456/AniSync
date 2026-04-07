@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -22,80 +24,81 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileActivityFilter
-import com.anisync.android.presentation.profile.RecentUpdatesSection
+import com.anisync.android.presentation.profile.UpdateItem
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun ProfileActivitySection(
+fun LazyListScope.profileActivityTab(
     profile: UserProfile,
     selectedFilter: ProfileActivityFilter,
     onFilterSelected: (ProfileActivityFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val filters = remember { ProfileActivityFilter.entries }
-    val selectedIndex = remember(selectedFilter) { filters.indexOf(selectedFilter).coerceAtLeast(0) }
+    item(key = "activity_filters", contentType = "filters") {
+        val filters = remember { ProfileActivityFilter.entries }
+        val selectedIndex = remember(selectedFilter) { filters.indexOf(selectedFilter).coerceAtLeast(0) }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-    ) {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
         ) {
-            itemsIndexed(filters) { index, filter ->
-                AnimatedTab(
-                    index = index,
-                    selectedIndex = selectedIndex,
-                    selected = selectedFilter == filter,
-                    onClick = { onFilterSelected(filter) },
-                    icon = activityFilterIcon(filter),
-                    label = stringResource(filter.labelRes)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when (selectedFilter) {
-            ProfileActivityFilter.ALL -> {
-                if (profile.activities.isNotEmpty()) {
-                    RecentUpdatesSection(
-                        activities = profile.activities,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                } else {
-                    PlaceholderTabContent(
-                        message = stringResource(
-                            R.string.profile_no_activity_for_filter,
-                            stringResource(selectedFilter.labelRes)
-                        )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                itemsIndexed(filters) { index, filter ->
+                    AnimatedTab(
+                        index = index,
+                        selectedIndex = selectedIndex,
+                        selected = selectedFilter == filter,
+                        onClick = { onFilterSelected(filter) },
+                        icon = activityFilterIcon(filter),
+                        label = stringResource(filter.labelRes)
                     )
                 }
             }
 
-            ProfileActivityFilter.STATUS -> {
-                PlaceholderTabContent(
-                    message = stringResource(R.string.profile_placeholder_activity_status)
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
 
-            ProfileActivityFilter.MESSAGES -> {
-                PlaceholderTabContent(
-                    message = stringResource(R.string.profile_placeholder_activity_messages)
-                )
-            }
+    val filteredActivities = when (selectedFilter) {
+        ProfileActivityFilter.ALL -> profile.activities
+        ProfileActivityFilter.STATUS -> profile.activities.filter { it.type == ActivityType.TEXT }
+        ProfileActivityFilter.MESSAGES -> profile.activities.filter { it.type == ActivityType.MESSAGE }
+        ProfileActivityFilter.LISTS -> profile.activities.filter { it.type == ActivityType.MEDIA_LIST }
+    }
 
-            ProfileActivityFilter.LISTS -> {
-                PlaceholderTabContent(
-                    message = stringResource(R.string.profile_placeholder_activity_lists)
-                )
-            }
+    if (filteredActivities.isEmpty()) {
+        item(key = "activity_empty", contentType = "empty") {
+            PlaceholderTabContent(
+                message = stringResource(
+                    R.string.profile_no_activity_for_filter,
+                    stringResource(selectedFilter.labelRes)
+                ),
+                modifier = modifier
+            )
+        }
+    } else {
+        items(
+            items = filteredActivities,
+            key = { "activity_${it.id}" },
+            contentType = { "activity_item" }
+        ) { activity ->
+            UpdateItem(
+                activity = activity,
+                modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+        
+        item(key = "activity_bottom_spacer") {
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -108,3 +111,4 @@ private fun activityFilterIcon(filter: ProfileActivityFilter): ImageVector {
         ProfileActivityFilter.LISTS -> Icons.AutoMirrored.Filled.List
     }
 }
+

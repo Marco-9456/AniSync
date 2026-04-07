@@ -43,7 +43,7 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
-import com.anisync.android.presentation.profile.sections.ProfileActivitySection
+import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.ProfileSocialSection
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -111,13 +111,11 @@ fun ProfileContent(
             }
 
             ProfileTab.ACTIVITY -> {
-                item(key = "tab_activity", contentType = "activity") {
-                    ProfileActivitySection(
-                        profile = profile,
-                        selectedFilter = uiState.selectedActivityFilter,
-                        onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) }
-                    )
-                }
+                profileActivityTab(
+                    profile = profile,
+                    selectedFilter = uiState.selectedActivityFilter,
+                    onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) }
+                )
             }
 
             ProfileTab.SOCIAL -> {
