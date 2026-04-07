@@ -9,6 +9,9 @@ import com.anisync.android.domain.SocialUser
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.domain.FormatStat
+import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.StudioStat
 
 @Stable
 data class ProfileUiState(
@@ -20,6 +23,7 @@ data class ProfileUiState(
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
     val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
+    val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val isEditProfileDialogVisible: Boolean = false,
     val isBiographySheetVisible: Boolean = false,
     val socialFollowing: List<SocialUser> = emptyList(),
@@ -30,7 +34,45 @@ data class ProfileUiState(
     val socialErrorMessage: String? = null,
     val reviews: List<MediaReview> = emptyList(),
     val isReviewsLoading: Boolean = false,
-    val reviewsErrorMessage: String? = null
+    val reviewsErrorMessage: String? = null,
+    val statsData: StatisticsUiModel? = null,
+    val isStatsLoading: Boolean = false,
+    val statsErrorMessage: String? = null
+)
+
+data class StatisticsUiModel(
+    val animeStats: AnimeStatisticsUi,
+    val mangaStats: MangaStatisticsUi?
+)
+
+data class AnimeStatisticsUi(
+    val totalCount: Int,
+    val daysWatched: Double, // Kept as Double for consistency/formatting
+    val meanScore: Double,   // Changed to Double to match daysWatched and formatter
+    val episodesWatched: Int,
+    val scoreDistribution: List<ScoreUiModel>,
+    val genreDistribution: List<GenreStat>,
+    val formatDistribution: List<FormatStat>,
+    val releaseYearDistribution: List<YearUiModel>,
+    val studioDistribution: List<StudioStat>
+)
+
+data class MangaStatisticsUi(
+    val totalCount: Int,
+    val chaptersRead: Int,
+    val meanScore: Double // Changed to Double
+)
+
+data class ScoreUiModel(
+    val score: Int,
+    val count: Int,
+    val heightFraction: Float
+)
+
+data class YearUiModel(
+    val year: Int,
+    val count: Int,
+    val heightFraction: Float
 )
 
 @Immutable
@@ -67,6 +109,12 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
     FORUM_COMMENTS(R.string.profile_social_forum_comments)
 }
 
+@Immutable
+enum class ProfileStatsType(@StringRes val labelRes: Int) {
+    ANIME(R.string.statistics_anime),
+    MANGA(R.string.statistics_manga)
+}
+
 sealed interface ProfileAction {
     data object Refresh : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
@@ -74,6 +122,7 @@ sealed interface ProfileAction {
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectCastFilter(val filter: ProfileCastFilter) : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
+    data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
 }

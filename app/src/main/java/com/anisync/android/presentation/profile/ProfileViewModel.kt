@@ -7,8 +7,12 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.StatisticsRepository
+import com.anisync.android.domain.AnimeStatistics
+import com.anisync.android.domain.MangaStatistics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +29,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val profileRepository: ProfileRepository,
+    private val statisticsRepository: StatisticsRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
     @ApplicationContext private val context: Context
@@ -38,6 +43,7 @@ class ProfileViewModel @Inject constructor(
         val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
         val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
+        val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
         val isRefreshing: Boolean = false
@@ -66,6 +72,15 @@ class ProfileViewModel @Inject constructor(
 
     private val reviewsState = MutableStateFlow(ReviewsState())
 
+    private data class StatsState(
+        val isStatsLoading: Boolean = false,
+        val statsData: StatisticsUiModel? = null,
+        val statsErrorMessage: String? = null,
+        val hasFetchedStats: Boolean = false
+    )
+
+    private val statsState = MutableStateFlow(StatsState())
+
     private val profileState = getProfileUseCase()
         .map { profileResult ->
             if (profileResult != null) {
@@ -80,13 +95,20 @@ class ProfileViewModel @Inject constructor(
         .onStart { emit(ProfileUiState(isLoading = true)) }
         .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
 
-    val uiState: StateFlow<ProfileUiState> = combine(profileState, localState, socialState, reviewsState) { remote, local, social, reviews ->
+    val uiState: StateFlow<ProfileUiState> = combine(
+        profileState,
+        localState,
+        socialState,
+        reviewsState,
+        statsState
+    ) { remote, local, social, reviews, stats ->
         remote.copy(
             isRefreshing = local.isRefreshing,
             selectedTab = local.selectedTab,
             selectedActivityFilter = local.selectedActivityFilter,
             selectedCastFilter = local.selectedCastFilter,
             selectedSocialTab = local.selectedSocialTab,
+            selectedStatsType = local.selectedStatsType,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
             socialFollowing = social.socialFollowing,
@@ -97,7 +119,10 @@ class ProfileViewModel @Inject constructor(
             socialErrorMessage = social.socialErrorMessage,
             reviews = reviews.reviews,
             isReviewsLoading = reviews.isReviewsLoading,
-            reviewsErrorMessage = reviews.reviewsErrorMessage
+            reviewsErrorMessage = reviews.reviewsErrorMessage,
+            statsData = stats.statsData,
+            isStatsLoading = stats.isStatsLoading,
+            statsErrorMessage = stats.statsErrorMessage
         )
     }.stateIn(
         scope = viewModelScope,
@@ -122,6 +147,14 @@ class ProfileViewModel @Inject constructor(
                     fetchSocialData()
                 } else if (action.tab == ProfileTab.REVIEWS && !reviewsState.value.hasFetchedReviews) {
                     fetchReviews()
+                } else if (action.tab == ProfileTab.STATS && !statsState.value.hasFetchedStats) {
+                    fetchStats()
+                }
+            }
+
+            is ProfileAction.SelectStatsType -> {
+                localState.update {
+                    it.copy(selectedStatsType = action.type)
                 }
             }
 
@@ -174,9 +207,16 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
+            val statsJob = launch {
+                if (localState.value.selectedTab == ProfileTab.STATS || statsState.value.hasFetchedStats) {
+                    fetchStats()
+                }
+            }
+
             refreshJob.join()
             socialJob.join()
             reviewsJob.join()
+            statsJob.join()
             
             localState.update { it.copy(isRefreshing = false) }
         }
@@ -206,6 +246,79 @@ class ProfileViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun fetchStats() {
+        viewModelScope.launch {
+            statsState.update { it.copy(isStatsLoading = true, statsErrorMessage = null) }
+            val userId = uiState.value.profile?.id ?: return@launch
+            when (val result = statisticsRepository.getUserStatistics(userId)) {
+                is Result.Success -> {
+                    // Process data on default dispatcher
+                    val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
+                        val animeUi = processAnimeStats(result.data.animeStats)
+                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it) }
+                        StatisticsUiModel(animeUi, mangaUi)
+                    }
+
+                    statsState.update {
+                        it.copy(
+                            isStatsLoading = false,
+                            statsData = processedData,
+                            hasFetchedStats = true
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    statsState.update {
+                        it.copy(
+                            isStatsLoading = false,
+                            statsErrorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun processAnimeStats(stats: AnimeStatistics): AnimeStatisticsUi {
+        val maxScoreCount = stats.scoreDistribution.maxOfOrNull { it.count } ?: 1
+        val fullScoreDistribution = (1..10).map { score ->
+            val count = stats.scoreDistribution.find { it.score == score }?.count ?: 0
+            ScoreUiModel(score, count, count.toFloat() / maxScoreCount.coerceAtLeast(1))
+        }
+
+        val sortedYears = stats.releaseYearDistribution
+            .sortedBy { it.year }
+            .takeLast(10)
+
+        val maxYearCount = sortedYears.maxOfOrNull { it.count } ?: 1
+        val processedYears = sortedYears.map {
+            YearUiModel(it.year, it.count, it.count.toFloat() / maxYearCount.coerceAtLeast(1))
+        }
+
+        val topGenres = stats.genreDistribution.take(20)
+        val topStudios = stats.studioDistribution.take(20)
+
+        return AnimeStatisticsUi(
+            totalCount = stats.totalCount,
+            daysWatched = stats.daysWatched.toDouble(),
+            meanScore = stats.meanScore.toDouble(),
+            episodesWatched = stats.episodesWatched,
+            scoreDistribution = fullScoreDistribution,
+            genreDistribution = topGenres,
+            formatDistribution = stats.formatDistribution,
+            releaseYearDistribution = processedYears,
+            studioDistribution = topStudios
+        )
+    }
+
+    private fun processMangaStats(stats: MangaStatistics): MangaStatisticsUi {
+        return MangaStatisticsUi(
+            totalCount = stats.totalCount,
+            chaptersRead = stats.chaptersRead,
+            meanScore = stats.meanScore.toDouble()
+        )
     }
 
     private fun fetchSocialData() {

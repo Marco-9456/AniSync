@@ -50,7 +50,6 @@ import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
-import com.anisync.android.presentation.statistics.StatisticsScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
 import com.anisync.android.presentation.util.LocalAniLinkCallbacks
 

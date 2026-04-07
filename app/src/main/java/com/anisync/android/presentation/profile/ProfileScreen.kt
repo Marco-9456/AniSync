@@ -37,7 +37,6 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onStatisticsClick: (userId: Int) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     isOwnProfile: Boolean = true,
     viewModel: ProfileViewModel = hiltViewModel()
@@ -94,7 +93,6 @@ fun ProfileScreen(
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
                         onAction = viewModel::onAction,
-                        onStatisticsClick = { onStatisticsClick(profile.id) },
                         onSettingsClick = onNavigateToSettings,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,

@@ -61,7 +61,6 @@ fun ProfileContent(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onAction: (ProfileAction) -> Unit,
-    onStatisticsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
@@ -80,7 +79,7 @@ fun ProfileContent(
                 onEditProfileClick = {
                     onAction(ProfileAction.SetEditProfileDialogVisible(true))
                 },
-                onStatisticsClick = onStatisticsClick,
+                onStatisticsClick = { onAction(ProfileAction.SelectTab(ProfileTab.STATS)) },
                 onShowBiography = {
                     onAction(ProfileAction.SetBiographySheetVisible(true))
                 }
@@ -171,7 +170,8 @@ fun ProfileContent(
 
             ProfileTab.STATS -> {
                 profileStatsTab(
-                    profile = profile
+                    uiState = uiState,
+                    onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) }
                 )
             }
         }
