@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -49,7 +49,7 @@ fun ForumFeedSelector(
 
     val options = remember {
         listOf(
-            FeedOption(ForumFeed.OVERVIEW, Icons.Default.ViewList),
+            FeedOption(ForumFeed.OVERVIEW, Icons.AutoMirrored.Filled.ViewList),
             FeedOption(ForumFeed.RECENT, Icons.Default.Schedule),
             FeedOption(ForumFeed.NEW, Icons.Default.NewReleases),
             FeedOption(ForumFeed.SUBSCRIBED, Icons.Default.Notifications),
