@@ -1,8 +1,7 @@
 package com.anisync.android.presentation.profile
 
-import android.content.Context
-import android.text.format.DateUtils
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,8 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -40,159 +39,165 @@ import com.anisync.android.R
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 
 /**
- * Displays a list of recent user activities in a timeline format.
+ * Redesigned Expressive Updates Section.
+ * Ditches the traditional dot-timeline for bold, chunky, asymmetrical cards.
  */
 @Composable
 fun RecentUpdatesSection(
     activities: List<UserActivity>,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    
     Column(modifier = modifier) {
         SectionHeader(
             title = stringResource(R.string.section_recent_updates),
             level = HeaderLevel.Section,
-            padding = PaddingValues(bottom = 16.dp)
+            padding = PaddingValues(bottom = 20.dp)
         )
-        
-        // PERF: Memoize the sliced list to prevent recalculation on recomposition
+
         val displayedActivities = remember(activities) { activities.take(5) }
 
-        displayedActivities.forEach { activity ->
-            // PERF: Using key() helps Compose track items and skip unchanged ones
-            key(activity.id) {
-                UpdateItem(activity = activity, context = context)
-                Spacer(modifier = Modifier.height(16.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            displayedActivities.forEach { activity ->
+                key(activity.id) {
+                    UpdateItem(activity = activity)
+                }
             }
         }
     }
 }
 
 /**
- * A single activity/update item in the timeline.
- *
- * @param activity The user activity to display.
- * @param context Context for formatting relative time.
+ * An expressive, standalone activity card.
  */
 @Composable
-fun UpdateItem(activity: UserActivity, context: Context) {
-    
-    Row(modifier = Modifier.fillMaxWidth()) {
-        // Timeline Dot
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
+fun UpdateItem(activity: UserActivity) {
+    val cardShape = remember {
+        RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
+    }
+
+    val imageShape = remember {
+        RoundedCornerShape(16.dp)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
-                    .padding(top = 24.dp)
-                    .size(8.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-            )
+                    .size(72.dp)
+                    .clip(imageShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center
+            ) {
+                if (activity.mediaCoverUrl != null) {
+                    AsyncImage(
+                        model = activity.mediaCoverUrl,
+                        contentDescription = stringResource(
+                            R.string.content_description_media_cover,
+                            activity.mediaTitle
+                        ),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = activity.mediaTitle.take(2).uppercase(),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                val timeAgo = remember(activity.timestamp) {
+                    formatProfileRelativeTime(activity.timestamp)
+                }
+
+                Text(
+                    text = timeAgo.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val styledActivityText = remember(
+                    activity.status,
+                    activity.progress,
+                    activity.mediaTitle,
+                    primaryColor
+                ) {
+                    val statusText = activity.status ?: "Updated"
+                    val progressText = activity.progress ?: ""
+                    val capStatus =
+                        statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+                    buildAnnotatedString {
+                        append("$capStatus ")
+                        if (progressText.isNotEmpty()) {
+                            withStyle(
+                                SpanStyle(
+                                    color = primaryColor,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
+                                append(progressText)
+                            }
+                            append(" of ")
+                        }
+                        withStyle(
+                            SpanStyle(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Unspecified
+                            )
+                        ) {
+                            append(activity.mediaTitle)
+                        }
+                    }
+                }
+
+                Text(
+                    text = styledActivityText,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 22.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                if (activity.mediaScore != null && activity.mediaScore > 0) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        shape = CircleShape
+                    ) {
+                        Text(
+                            text = "Score: ${activity.mediaScore}",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
         }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Card Content
-        Row(modifier = Modifier.fillMaxWidth()) {
-             // Media Image Box
-             Box(
-                 modifier = Modifier
-                     .size(56.dp)
-                     .clip(RoundedCornerShape(12.dp))
-                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                 contentAlignment = Alignment.Center
-             ) {
-                 if (activity.mediaCoverUrl != null) {
-                     AsyncImage(
-                         model = activity.mediaCoverUrl,
-                         contentDescription = stringResource(R.string.content_description_media_cover, activity.mediaTitle),
-                         contentScale = ContentScale.Crop,
-                         modifier = Modifier.fillMaxSize()
-                     )
-                 } else {
-                     // Fallback Initials
-                     Text(
-                         text = activity.mediaTitle.take(2).uppercase(),
-                         style = MaterialTheme.typography.titleMedium,
-                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                     )
-                 }
-             }
-
-             Spacer(modifier = Modifier.width(16.dp))
-
-             Column {
-                 // Memoize relative time calculation
-                 val timeAgo = remember(activity.timestamp) {
-                     formatRelativeTime(activity.timestamp, context)
-                 }
-                 
-                 Text(
-                     text = timeAgo,
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                 )
-                 
-                 // PERF: Memoize the entire AnnotatedString to avoid rebuilding on recomposition
-                 // buildAnnotatedString is expensive and should only run when activity changes
-                 val primaryColor = MaterialTheme.colorScheme.primary
-                 val styledActivityText = remember(activity.status, activity.progress, activity.mediaTitle, primaryColor) {
-                     val statusText = activity.status ?: "Updated"
-                     val progressText = activity.progress ?: ""
-                     val capStatus = statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                     
-                     buildAnnotatedString {
-                         append("$capStatus ")
-                         if (progressText.isNotEmpty()) {
-                             withStyle(SpanStyle(color = primaryColor, fontWeight = FontWeight.SemiBold)) {
-                                 append(progressText)
-                             }
-                             append(" of ")
-                         }
-                         withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                             append(activity.mediaTitle)
-                         }
-                     }
-                 }
-                 
-                 Text(
-                     text = styledActivityText,
-                     style = MaterialTheme.typography.bodyMedium,
-                     color = MaterialTheme.colorScheme.onSurface,
-                     lineHeight = 20.sp,
-                     maxLines = 2,
-                     overflow = TextOverflow.Ellipsis
-                 )
-                 
-                 if (activity.mediaScore != null && activity.mediaScore > 0) {
-                     Spacer(modifier = Modifier.height(8.dp))
-                     Surface(
-                         color = MaterialTheme.colorScheme.surfaceVariant,
-                         shape = RoundedCornerShape(8.dp)
-                     ) {
-                         Text(
-                             text = "Score: ${activity.mediaScore}",
-                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                         )
-                     }
-                 }
-             }
-        }
-    }
-}
-
-/**
- * Formats a timestamp as a relative time string (e.g., "5 minutes ago").
- */
-fun formatRelativeTime(timeMillis: Long?, context: Context): String {
-    if (timeMillis == null || timeMillis == 0L) return "Unknown"
-    return try {
-        val now = System.currentTimeMillis()
-        DateUtils.getRelativeTimeSpanString(timeMillis, now, DateUtils.MINUTE_IN_MILLIS).toString()
-    } catch (e: Exception) {
-        "Unknown"
     }
 }

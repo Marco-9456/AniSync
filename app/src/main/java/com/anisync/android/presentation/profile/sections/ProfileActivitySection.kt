@@ -1,0 +1,110 @@
+package com.anisync.android.presentation.profile.sections
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.anisync.android.R
+import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.profile.ProfileActivityFilter
+import com.anisync.android.presentation.profile.RecentUpdatesSection
+import com.anisync.android.presentation.profile.components.PlaceholderTabContent
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ProfileActivitySection(
+    profile: UserProfile,
+    selectedFilter: ProfileActivityFilter,
+    onFilterSelected: (ProfileActivityFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val filters = remember { ProfileActivityFilter.entries }
+    val selectedIndex = remember(selectedFilter) { filters.indexOf(selectedFilter).coerceAtLeast(0) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+    ) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            itemsIndexed(filters) { index, filter ->
+                AnimatedTab(
+                    index = index,
+                    selectedIndex = selectedIndex,
+                    selected = selectedFilter == filter,
+                    onClick = { onFilterSelected(filter) },
+                    icon = activityFilterIcon(filter),
+                    label = stringResource(filter.labelRes)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when (selectedFilter) {
+            ProfileActivityFilter.ALL -> {
+                if (profile.activities.isNotEmpty()) {
+                    RecentUpdatesSection(
+                        activities = profile.activities,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                } else {
+                    PlaceholderTabContent(
+                        message = stringResource(
+                            R.string.profile_no_activity_for_filter,
+                            stringResource(selectedFilter.labelRes)
+                        )
+                    )
+                }
+            }
+
+            ProfileActivityFilter.STATUS -> {
+                PlaceholderTabContent(
+                    message = stringResource(R.string.profile_placeholder_activity_status)
+                )
+            }
+
+            ProfileActivityFilter.MESSAGES -> {
+                PlaceholderTabContent(
+                    message = stringResource(R.string.profile_placeholder_activity_messages)
+                )
+            }
+
+            ProfileActivityFilter.LISTS -> {
+                PlaceholderTabContent(
+                    message = stringResource(R.string.profile_placeholder_activity_lists)
+                )
+            }
+        }
+    }
+}
+
+private fun activityFilterIcon(filter: ProfileActivityFilter): ImageVector {
+    return when (filter) {
+        ProfileActivityFilter.ALL -> Icons.AutoMirrored.Filled.ViewList
+        ProfileActivityFilter.STATUS -> Icons.Default.Schedule
+        ProfileActivityFilter.MESSAGES -> Icons.Default.ChatBubbleOutline
+        ProfileActivityFilter.LISTS -> Icons.AutoMirrored.Filled.List
+    }
+}

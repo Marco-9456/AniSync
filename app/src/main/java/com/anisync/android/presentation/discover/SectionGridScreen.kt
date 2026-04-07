@@ -322,16 +322,14 @@ fun FavoritesGridScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle(initialValue = TitleLanguage.ROMAJI)
 
-    val items = if (uiState is com.anisync.android.presentation.profile.ProfileUiState.Success) {
-        (uiState as com.anisync.android.presentation.profile.ProfileUiState.Success).profile.favoriteAnime
-    } else emptyList()
+    val items = uiState.profile?.favoriteAnime.orEmpty()
 
     MediaGridContent(
         title = sectionTitle,
         items = items,
-        isLoading = uiState is com.anisync.android.presentation.profile.ProfileUiState.Loading,
+        isLoading = uiState.isLoading,
         titleLanguage = titleLanguage,
-        errorMessage = (uiState as? com.anisync.android.presentation.profile.ProfileUiState.Error)?.message,
+        errorMessage = uiState.errorMessage,
         onBackClick = onBackClick,
         onMediaClick = onMediaClick,
         sharedTransitionScope = sharedTransitionScope,
