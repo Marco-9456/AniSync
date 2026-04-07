@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,8 @@ import com.anisync.android.domain.MediaReview
 fun ReviewCard(
     review: MediaReview,
     onClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     val scoreColor = remember(review.score) {
         when {
@@ -95,7 +97,11 @@ fun ReviewCard(
             // User info row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onUserClick(review.userName) }
+                    .padding(vertical = 4.dp)
             ) {
                 // User avatar
                 AsyncImage(

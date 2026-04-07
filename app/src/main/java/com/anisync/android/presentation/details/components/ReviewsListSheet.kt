@@ -40,6 +40,7 @@ fun ReviewsListSheet(
     mediaId: Int,
     onDismiss: () -> Unit,
     onReviewClick: (MediaReview) -> Unit,
+    onUserClick: (String) -> Unit = {},
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
     viewModel: ReviewsViewModel = hiltViewModel()
 ) {
@@ -89,7 +90,8 @@ fun ReviewsListSheet(
                 items(reviews, key = { it.id }) { review ->
                     ReviewCard(
                         review = review,
-                        onClick = { onReviewClick(review) }
+                        onClick = { onReviewClick(review) },
+                        onUserClick = onUserClick
                     )
                 }
 

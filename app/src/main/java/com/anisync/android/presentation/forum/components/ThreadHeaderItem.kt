@@ -41,7 +41,8 @@ import com.anisync.android.presentation.forum.components.shared.StatBadge
 @Composable
 fun ThreadHeaderTop(
     thread: ForumThread,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -60,7 +61,8 @@ fun ThreadHeaderTop(
                 name = thread.authorName,
                 avatarUrl = thread.authorAvatarUrl,
                 timestampSeconds = thread.createdAt,
-                avatarSize = 44.dp
+                avatarSize = 44.dp,
+                onUserClick = onUserClick
             )
 
             Spacer(Modifier.height(20.dp))

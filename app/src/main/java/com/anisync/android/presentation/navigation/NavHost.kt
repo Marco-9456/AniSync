@@ -87,6 +87,12 @@ fun AniSyncNavHost(
     onMediaClick: (mediaId: Int, sourceScreen: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val navigateToUserProfile: (String) -> Unit = { username ->
+        username.trim().takeIf { it.isNotEmpty() }?.let { nonEmptyUsername ->
+            navController.navigate(UserProfile(nonEmptyUsername))
+        }
+    }
+
     // =============================================================================
     // MATERIAL 3 MOTION SPECS (Memoized)
     // =============================================================================
@@ -280,6 +286,7 @@ fun AniSyncNavHost(
                     onStaffClick = { staffId ->
                         navController.navigate(StaffDetails(staffId))
                     },
+                    onUserClick = navigateToUserProfile,
                     onSectionSeeAllClick = onSectionClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
@@ -330,8 +337,36 @@ fun AniSyncNavHost(
                     onStaffClick = { staffId ->
                         navController.navigate(StaffDetails(staffId))
                     },
+                    onUserClick = navigateToUserProfile,
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
+
+            composable<UserProfile>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                val onProfileMediaClick = remember(onMediaClick) { 
+                    { mediaId: Int -> onMediaClick(mediaId, "user_profile") } 
+                }
+                
+                ProfileScreen(
+                    onMediaClick = onProfileMediaClick,
+                    onCharacterClick = { characterId ->
+                        navController.navigate(CharacterDetails(characterId))
+                    },
+                    onStaffClick = { staffId ->
+                        navController.navigate(StaffDetails(staffId))
+                    },
+                    onUserClick = navigateToUserProfile,
+                    onLogoutClick = { }, // Not used for other users
+                    onNavigateToSettings = { }, // Not used for other users
+                    isOwnProfile = false,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -370,7 +405,8 @@ fun AniSyncNavHost(
 
                 ForumScreen(
                     onThreadClick = onThreadClick,
-                    onCreateThreadClick = onCreateThreadClick
+                    onCreateThreadClick = onCreateThreadClick,
+                    onUserClick = navigateToUserProfile
                 )
             }
 
@@ -418,6 +454,7 @@ fun AniSyncNavHost(
                     onRelatedSeeAllClick = { mediaId, mediaTitle ->
                         navController.navigate(MediaRelationsGrid(mediaId, mediaTitle))
                     },
+                    onUserClick = navigateToUserProfile,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -624,7 +661,8 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onThreadClick = { threadId, threadTitle ->
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
-                    }
+                    },
+                    onUserClick = navigateToUserProfile
                 )
             }
 
@@ -649,7 +687,8 @@ fun AniSyncNavHost(
                     threadId = route.threadId,
                     threadTitle = route.threadTitle,
                     targetCommentId = if (route.commentId != 0) route.commentId else null,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onUserClick = navigateToUserProfile
                 )
             }
 

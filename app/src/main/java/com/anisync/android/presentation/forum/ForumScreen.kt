@@ -130,6 +130,7 @@ private val categoryTabs = listOf(
 fun ForumScreen(
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
     onCreateThreadClick: () -> Unit,
+    onUserClick: (String) -> Unit,
     viewModel: ForumViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -371,6 +372,7 @@ fun ForumScreen(
                                         thread.title
                                     )
                                     },
+                                    onUserClick = onUserClick,
                                     isSaved = thread.id in uiState.savedThreadIds,
                                     onSaveClick = {
                                         viewModel.onAction(
@@ -467,6 +469,7 @@ fun ForumScreen(
                                 focusManager.clearFocus()
                                 onThreadClick(thread.id, thread.title)
                             },
+                            onUserClick = onUserClick,
                             isSaved = thread.id in uiState.savedThreadIds,
                             onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
                             isSubscribed = thread.isSubscribed,

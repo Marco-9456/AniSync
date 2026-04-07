@@ -114,6 +114,7 @@ fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
+    onUserClick: (String) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
@@ -285,6 +286,7 @@ fun DiscoverScreen(
         onSearchItemClick = onSearchItemClick,
         onCharacterClick = onCharacterItemClick,
         onStaffClick = onStaffItemClick,
+        onUserClick = onUserClick,
         onShowFilterDialog = { showFilterDialog = true }
     )
 }
@@ -665,6 +667,7 @@ private fun DiscoverSearchOverlay(
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit,
     onShowFilterDialog: () -> Unit
 ) {
     ExpandedFullScreenSearchBar(
@@ -692,7 +695,8 @@ private fun DiscoverSearchOverlay(
             listState = listState,
             onSearchItemClick = onSearchItemClick,
             onCharacterClick = onCharacterClick,
-            onStaffClick = onStaffClick
+            onStaffClick = onStaffClick,
+            onUserClick = onUserClick
         )
     }
 }
@@ -708,7 +712,8 @@ private fun SearchResultsContent(
     listState: LazyListState,
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
-    onStaffClick: (Int) -> Unit
+    onStaffClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     val hasAnyResults = searchResults.isNotEmpty() || !groupedResults.isEmpty
 
@@ -832,7 +837,7 @@ private fun SearchResultsContent(
                             name = user.displayName,
                             subtitle = null,
                             imageUrl = user.imageUrl,
-                            onClick = {}
+                            onClick = { onUserClick(user.displayName) }
                         )
                     }
                 }

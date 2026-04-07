@@ -139,6 +139,7 @@ fun MediaDetailsScreen(
     onCharacterClick: (Int) -> Unit = {},
     onCastSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onUserClick: (String) -> Unit = {},
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -368,6 +369,7 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
+                                onUserClick = onUserClick,
                                 onFavouriteClick = viewModel::toggleFavourite,
                                 onShareClick = { viewModel.shareMedia(context) },
                                 onRateReview = viewModel::rateReview,
@@ -455,6 +457,7 @@ fun DetailsPageContent(
     onCharacterClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
+    onUserClick: (String) -> Unit,
     onFavouriteClick: () -> Unit,
     onShareClick: () -> Unit,
     onRateReview: (Int, com.anisync.android.type.ReviewRating) -> Unit,
@@ -692,6 +695,7 @@ fun DetailsPageContent(
                     ReviewCard(
                         review = review,
                         onClick = { selectedReview = review },
+                        onUserClick = onUserClick,
                         modifier = Modifier
                             .padding(horizontal = dimensionResource(R.dimen.spacing_large))
                             .padding(bottom = dimensionResource(R.dimen.spacing_normal))
@@ -746,6 +750,7 @@ fun DetailsPageContent(
                     ratingAmount = updatedAmount
                 )
             },
+            onUserClick = onUserClick,
             onDismiss = { selectedReview = null }
         )
     }
@@ -754,7 +759,8 @@ fun DetailsPageContent(
         ReviewsListSheet(
             mediaId = details.id,
             onDismiss = { showAllReviewsSheet = false },
-            onReviewClick = { selectedReview = it }
+            onReviewClick = { selectedReview = it },
+            onUserClick = onUserClick
         )
     }
 

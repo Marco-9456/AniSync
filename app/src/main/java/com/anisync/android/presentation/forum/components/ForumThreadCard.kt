@@ -3,6 +3,7 @@ package com.anisync.android.presentation.forum.components
 import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +64,8 @@ fun ForumThreadCard(
     isSaved: Boolean = false,
     onSaveClick: (() -> Unit)? = null,
     isSubscribed: Boolean = false,
-    onSubscribeClick: (() -> Unit)? = null
+    onSubscribeClick: (() -> Unit)? = null,
+    onUserClick: (String) -> Unit = {}
 ) {
     // PERFORMANCE METRICS: Track recomposition counts
     if (DEBUG_PERFORMANCE) {
@@ -84,6 +86,7 @@ fun ForumThreadCard(
         onSaveClick = onSaveClick,
         isSubscribed = isSubscribed,
         onSubscribeClick = onSubscribeClick,
+        onUserClick = onUserClick,
         modifier = modifier
     )
 }
@@ -96,6 +99,7 @@ private fun ForumThreadCardContent(
     onSaveClick: (() -> Unit)?,
     isSubscribed: Boolean,
     onSubscribeClick: (() -> Unit)?,
+    onUserClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -125,7 +129,8 @@ private fun ForumThreadCardContent(
                     name = thread.authorName,
                     avatarUrl = thread.authorAvatarUrl,
                     timestampSeconds = thread.createdAt,
-                    modifier = Modifier.weight(1f) // Constrains author row so it doesn't push icons off-screen
+                    modifier = Modifier.weight(1f), // Constrains author row so it doesn't push icons off-screen
+                    onUserClick = onUserClick
                 )
 
                 // Action Icons Row
@@ -209,7 +214,8 @@ private fun ForumThreadCardContent(
                             avatarUrl = thread.replyUserAvatarUrl,
                             timestampSeconds = thread.repliedAt,
                             avatarSize = 16.dp,
-                            modifier = Modifier.padding(start = if (thread.isSticky || thread.isLocked) 24.dp else 0.dp)
+                            modifier = Modifier.padding(start = if (thread.isSticky || thread.isLocked) 24.dp else 0.dp),
+                            onUserClick = { onUserClick(thread.replyUserName!!) }
                         )
                     }
                 }
@@ -357,9 +363,15 @@ fun AuthorRow(
     avatarUrl: String?,
     timestampSeconds: Long,
     modifier: Modifier = Modifier,
-    avatarSize: Dp = 24.dp
+    avatarSize: Dp = 24.dp,
+    onUserClick: ((String) -> Unit)? = null
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.then(
+            if (onUserClick != null) Modifier.clickable { onUserClick(name) } else Modifier
+        )
+    ) {
         Box(
             modifier = Modifier
                 .size(avatarSize)

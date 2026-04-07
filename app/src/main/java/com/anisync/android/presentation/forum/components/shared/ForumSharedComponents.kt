@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.forum.components.shared
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,11 +62,14 @@ fun AuthorRow(
     avatarUrl: String?,
     timestampSeconds: Long,
     modifier: Modifier = Modifier,
-    avatarSize: Dp = 24.dp
+    avatarSize: Dp = 24.dp,
+    onUserClick: ((String) -> Unit)? = null
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+        modifier = modifier.then(
+            if (onUserClick != null) Modifier.clickable { onUserClick(name) } else Modifier
+        )
     ) {
         if (avatarUrl != null) {
             AsyncImage(

@@ -108,6 +108,7 @@ fun ThreadDetailScreen(
     threadId: Int,
     threadTitle: String,
     onBackClick: () -> Unit,
+    onUserClick: (String) -> Unit,
     targetCommentId: Int? = null,
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
@@ -298,6 +299,7 @@ fun ThreadDetailScreen(
                         item(key = "thread_header_top") {
                             ThreadHeaderTop(
                                 thread = thread,
+                                onUserClick = onUserClick,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -390,6 +392,7 @@ fun ThreadDetailScreen(
                                 ThreadCommentItem(
                                     comment = flat.comment,
                                     isCollapsed = collapsedIds.contains(flat.comment.id),
+                                    onUserClick = onUserClick,
                                     onToggleCollapse = {
                                         collapsedIds = if (collapsedIds.contains(flat.comment.id)) {
                                             collapsedIds - flat.comment.id

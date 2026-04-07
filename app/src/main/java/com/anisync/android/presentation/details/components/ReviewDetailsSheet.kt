@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.details.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,7 @@ import java.util.Date
 fun ReviewDetailsSheet(
     review: MediaReview,
     onRateReview: (Int, com.anisync.android.type.ReviewRating) -> Unit = { _, _ -> },
+    onUserClick: (String) -> Unit = {},
     onDismiss: () -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 ) {
@@ -83,7 +85,8 @@ fun ReviewDetailsSheet(
                     Text(
                         text = review.userName,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.clickable { onUserClick(review.userName) }
                     )
 
                     val dateStr = remember(review.createdAt) {

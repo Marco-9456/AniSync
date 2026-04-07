@@ -56,7 +56,8 @@ fun ThreadCommentItem(
     onReplyClick: ((commentId: Int, authorName: String) -> Unit)?,
     modifier: Modifier = Modifier,
     threadAuthorId: Int = 0,
-    depth: Int = 0
+    depth: Int = 0,
+    onUserClick: (String) -> Unit = {}
 ) {
     val haptic = rememberHapticFeedback()
     val basePadding = 16.dp
@@ -212,7 +213,8 @@ fun ThreadCommentItem(
                         avatarUrl = comment.authorAvatarUrl,
                         timestampSeconds = comment.createdAt,
                         avatarSize = avatarRadius * 2,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f, fill = false),
+                        onUserClick = onUserClick
                     )
 
                     if (threadAuthorId != 0 && comment.authorId == threadAuthorId) {

@@ -59,6 +59,7 @@ fun ForumCategoryScreen(
     categoryName: String,
     onBackClick: () -> Unit,
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
+    onUserClick: (String) -> Unit,
     viewModel: ForumCategoryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -208,6 +209,7 @@ fun ForumCategoryScreen(
                                 ForumThreadCard(
                                     thread = thread,
                                     onClick = { onThreadClick(thread.id, thread.title) },
+                                    onUserClick = onUserClick,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 6.dp)

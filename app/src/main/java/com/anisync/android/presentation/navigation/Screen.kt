@@ -20,6 +20,9 @@ object Discover
 @Serializable
 object Profile
 
+@Serializable
+data class UserProfile(val username: String)
+
 /**
  * Details screen route with media ID and source screen for shared element matching.
  * @param mediaId The ID of the media to display
