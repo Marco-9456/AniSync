@@ -8,6 +8,7 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.StaffDetails
+import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserActivity
 
 /**
@@ -41,5 +42,8 @@ data class UserProfileEntity(
     val favoriteCharactersOverview: List<CharacterInfo> = emptyList(),
     
     @ColumnInfo(defaultValue = "[]")
-    val favoriteStaffOverview: List<StaffDetails> = emptyList()
+    val favoriteStaffOverview: List<StaffDetails> = emptyList(),
+
+    @ColumnInfo(defaultValue = "[]")
+    val favoriteStudiosOverview: List<StudioInfo> = emptyList()
 )

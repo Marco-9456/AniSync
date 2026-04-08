@@ -8,9 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MangaStatistics
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.StatisticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -44,13 +48,19 @@ class ProfileViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    companion object {
+        private const val LIST_REFRESH_INTERVAL_MS = 5 * 60 * 1000L
+    }
+
     // Settings from AppSettings (needed for display in profile)
     val titleLanguage: StateFlow<com.anisync.android.data.TitleLanguage> = appSettings.titleLanguage
 
     private data class ProfileUiLocalState(
         val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
         val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
-        val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
+        val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
+        val selectedAnimeStatus: LibraryStatus = LibraryStatus.CURRENT,
+        val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val isEditProfileDialogVisible: Boolean = false,
@@ -91,6 +101,21 @@ class ProfileViewModel @Inject constructor(
     )
 
     private val statsState = MutableStateFlow(StatsState())
+
+    private data class MediaListState(
+        val userAnimeList: List<LibraryEntry> = emptyList(),
+        val userAnimeListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+        val isUserAnimeListLoading: Boolean = false,
+        val hasFetchedAnimeList: Boolean = false,
+        val lastAnimeListFetchAtMs: Long = 0L,
+        val userMangaList: List<LibraryEntry> = emptyList(),
+        val userMangaListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+        val isUserMangaListLoading: Boolean = false,
+        val hasFetchedMangaList: Boolean = false,
+        val lastMangaListFetchAtMs: Long = 0L
+    )
+
+    private val mediaListState = MutableStateFlow(MediaListState())
 
     private val targetUsername: String? = savedStateHandle.get<String>("username")
         ?.let(Uri::decode)
@@ -141,15 +166,25 @@ class ProfileViewModel @Inject constructor(
         localState,
         socialState,
         reviewsState,
-        statsState
-    ) { remote, local, social, reviews, stats ->
+        statsState,
+        mediaListState
+    ) { params ->
+        val remote = params[0] as ProfileUiState
+        val local = params[1] as ProfileUiLocalState
+        val social = params[2] as SocialState
+        val reviews = params[3] as ReviewsState
+        val stats = params[4] as StatsState
+        val mediaLists = params[5] as MediaListState
+
         remote.copy(
             isRefreshing = local.isRefreshing,
             isFollowingUser = local.isFollowingUser,
             isFollowLoading = local.isFollowLoading,
             selectedTab = local.selectedTab,
             selectedActivityFilter = local.selectedActivityFilter,
-            selectedCastFilter = local.selectedCastFilter,
+            selectedFavoritesFilter = local.selectedFavoritesFilter,
+            selectedAnimeStatus = local.selectedAnimeStatus,
+            selectedMangaStatus = local.selectedMangaStatus,
             selectedSocialTab = local.selectedSocialTab,
             selectedStatsType = local.selectedStatsType,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
@@ -165,7 +200,13 @@ class ProfileViewModel @Inject constructor(
             reviewsErrorMessage = reviews.reviewsErrorMessage,
             statsData = stats.statsData,
             isStatsLoading = stats.isStatsLoading,
-            statsErrorMessage = stats.statsErrorMessage
+            statsErrorMessage = stats.statsErrorMessage,
+            userAnimeList = mediaLists.userAnimeList,
+            userAnimeListByStatus = mediaLists.userAnimeListByStatus,
+            isUserAnimeListLoading = mediaLists.isUserAnimeListLoading,
+            userMangaList = mediaLists.userMangaList,
+            userMangaListByStatus = mediaLists.userMangaListByStatus,
+            isUserMangaListLoading = mediaLists.isUserMangaListLoading
         )
     }.stateIn(
         scope = viewModelScope,
@@ -195,6 +236,16 @@ class ProfileViewModel @Inject constructor(
                     fetchReviews()
                 } else if (action.tab == ProfileTab.STATS && !statsState.value.hasFetchedStats) {
                     fetchStats()
+                } else if (action.tab == ProfileTab.ANIME &&
+                    shouldRefreshAnimeList() &&
+                    !mediaListState.value.isUserAnimeListLoading
+                ) {
+                    fetchUserAnimeList(forceRefresh = true)
+                } else if (action.tab == ProfileTab.MANGA &&
+                    shouldRefreshMangaList() &&
+                    !mediaListState.value.isUserMangaListLoading
+                ) {
+                    fetchUserMangaList(forceRefresh = true)
                 }
             }
 
@@ -210,9 +261,21 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
-            is ProfileAction.SelectCastFilter -> {
+            is ProfileAction.SelectFavoritesFilter -> {
                 localState.update {
-                    it.copy(selectedCastFilter = action.filter)
+                    it.copy(selectedFavoritesFilter = action.filter)
+                }
+            }
+
+            is ProfileAction.SelectAnimeStatus -> {
+                localState.update {
+                    it.copy(selectedAnimeStatus = action.status)
+                }
+            }
+
+            is ProfileAction.SelectMangaStatus -> {
+                localState.update {
+                    it.copy(selectedMangaStatus = action.status)
                 }
             }
 
@@ -239,6 +302,8 @@ class ProfileViewModel @Inject constructor(
     private fun refresh() {
         viewModelScope.launch {
             localState.update { it.copy(isRefreshing = true) }
+            val selectedTab = localState.value.selectedTab
+
             val refreshJob = launch {
                 if (targetUsername.isNullOrBlank()) {
                     profileRepository.refreshProfile("")
@@ -246,29 +311,20 @@ class ProfileViewModel @Inject constructor(
                     targetRefreshSignal.tryEmit(Unit)
                 }
             }
-            
-            val socialJob = launch {
-                if (localState.value.selectedTab == ProfileTab.SOCIAL || socialState.value.hasFetchedSocialData) {
-                    fetchSocialData()
-                }
-            }
 
-            val reviewsJob = launch {
-                if (localState.value.selectedTab == ProfileTab.REVIEWS || reviewsState.value.hasFetchedReviews) {
-                    fetchReviews()
-                }
-            }
-
-            val statsJob = launch {
-                if (localState.value.selectedTab == ProfileTab.STATS || statsState.value.hasFetchedStats) {
-                    fetchStats()
+            val activeTabJob = launch {
+                when (selectedTab) {
+                    ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
+                    ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
+                    ProfileTab.STATS -> fetchStats(forceRefresh = true)
+                    ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
+                    ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
+                    else -> Unit
                 }
             }
 
             refreshJob.join()
-            socialJob.join()
-            reviewsJob.join()
-            statsJob.join()
+            activeTabJob.join()
 
             if (!targetUsername.isNullOrBlank()) {
                 uiState.value.profile?.id?.let { userId ->
@@ -337,10 +393,18 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun fetchReviews() {
+    private fun fetchReviews(forceRefresh: Boolean = false) {
+        if (reviewsState.value.isReviewsLoading) return
+        if (!forceRefresh && reviewsState.value.hasFetchedReviews) return
+
         viewModelScope.launch {
             reviewsState.update { it.copy(isReviewsLoading = true, reviewsErrorMessage = null) }
-            val userId = uiState.value.profile?.id ?: return@launch
+            val userId = uiState.value.profile?.id
+            if (userId == null) {
+                reviewsState.update { it.copy(isReviewsLoading = false) }
+                return@launch
+            }
+
             when (val result = profileRepository.getUserReviews(userId)) {
                 is Result.Success -> {
                     reviewsState.update {
@@ -363,15 +427,23 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun fetchStats() {
+    private fun fetchStats(forceRefresh: Boolean = false) {
+        if (statsState.value.isStatsLoading) return
+        if (!forceRefresh && statsState.value.hasFetchedStats) return
+
         viewModelScope.launch {
             statsState.update { it.copy(isStatsLoading = true, statsErrorMessage = null) }
-            val userId = uiState.value.profile?.id ?: return@launch
+            val userId = uiState.value.profile?.id
+            if (userId == null) {
+                statsState.update { it.copy(isStatsLoading = false) }
+                return@launch
+            }
+
             when (val result = statisticsRepository.getUserStatistics(userId)) {
                 is Result.Success -> {
                     // Process data on default dispatcher
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
-                        val animeUi = processAnimeStats(result.data.animeStats)
+                        val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats)
                         val mangaUi = result.data.mangaStats?.let { processMangaStats(it) }
                         StatisticsUiModel(animeUi, mangaUi)
                     }
@@ -396,11 +468,54 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun processAnimeStats(stats: AnimeStatistics): AnimeStatisticsUi {
-        val maxScoreCount = stats.scoreDistribution.maxOfOrNull { it.count } ?: 1
-        val fullScoreDistribution = (1..10).map { score ->
-            val count = stats.scoreDistribution.find { it.score == score }?.count ?: 0
-            ScoreUiModel(score, count, count.toFloat() / maxScoreCount.coerceAtLeast(1))
+    private fun processAnimeStats(scoreFormat: ScoreFormat?, stats: AnimeStatistics): AnimeStatisticsUi {
+        val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats)
+
+        val bucketCount = when (effectiveScoreFormat) {
+            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10
+            ScoreFormat.POINT_5 -> 5
+            ScoreFormat.POINT_3 -> 3
+        }
+
+        val maxRawScore = when (effectiveScoreFormat) {
+            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> 100
+            ScoreFormat.POINT_10 -> 10
+            ScoreFormat.POINT_5 -> 5
+            ScoreFormat.POINT_3 -> 3
+        }
+
+        val countsByBucket = IntArray(bucketCount)
+        stats.scoreDistribution.forEach { stat ->
+            val rawScore = stat.score.coerceIn(1, maxRawScore)
+            val bucketIndex = when (effectiveScoreFormat) {
+                ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> ((rawScore - 1) / 10).coerceIn(0, bucketCount - 1)
+                ScoreFormat.POINT_10, ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> (rawScore - 1).coerceIn(0, bucketCount - 1)
+            }
+            countsByBucket[bucketIndex] += stat.count
+        }
+
+        val maxScoreCount = countsByBucket.maxOrNull()?.coerceAtLeast(1) ?: 1
+        val fullScoreDistribution = (1..bucketCount).map { bucket ->
+            val count = countsByBucket[bucket - 1]
+            val label = when (effectiveScoreFormat) {
+                ScoreFormat.POINT_100 -> (bucket * 10).toString()
+                ScoreFormat.POINT_10_DECIMAL -> String.format(Locale.US, "%.1f", bucket.toDouble())
+                ScoreFormat.POINT_10, ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> bucket.toString()
+            }
+            val normalizedScore = when (effectiveScoreFormat) {
+                ScoreFormat.POINT_100 -> (bucket * 10) / 100f
+                ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> bucket / 10f
+                ScoreFormat.POINT_5 -> bucket / 5f
+                ScoreFormat.POINT_3 -> bucket / 3f
+            }
+
+            ScoreUiModel(
+                score = bucket,
+                label = label,
+                normalizedScore = normalizedScore,
+                count = count,
+                heightFraction = count.toFloat() / maxScoreCount
+            )
         }
 
         val sortedYears = stats.releaseYearDistribution
@@ -436,10 +551,92 @@ class ProfileViewModel @Inject constructor(
         )
     }
 
-    private fun fetchSocialData() {
+    private fun inferScoreFormat(stats: AnimeStatistics): ScoreFormat {
+        val maxScore = stats.scoreDistribution.maxOfOrNull { it.score } ?: 10
+        return when {
+            maxScore > 10 -> ScoreFormat.POINT_100
+            maxScore > 5 -> ScoreFormat.POINT_10
+            maxScore > 3 -> ScoreFormat.POINT_5
+            else -> ScoreFormat.POINT_3
+        }
+    }
+
+    private fun fetchUserAnimeList(forceRefresh: Boolean = false) {
+        if (mediaListState.value.isUserAnimeListLoading) return
+        if (!forceRefresh && mediaListState.value.hasFetchedAnimeList) return
+
+        viewModelScope.launch {
+            mediaListState.update { it.copy(isUserAnimeListLoading = true) }
+            val username = uiState.value.profile?.name
+            if (username.isNullOrBlank()) {
+                mediaListState.update { it.copy(isUserAnimeListLoading = false) }
+                return@launch
+            }
+
+            when (val result = profileRepository.getUserAnimeList(username)) {
+                is Result.Success -> {
+                    val grouped = groupEntriesByStatus(result.data)
+                    mediaListState.update {
+                        it.copy(
+                            isUserAnimeListLoading = false,
+                            userAnimeList = result.data,
+                            userAnimeListByStatus = grouped,
+                            hasFetchedAnimeList = true,
+                            lastAnimeListFetchAtMs = System.currentTimeMillis()
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    mediaListState.update { it.copy(isUserAnimeListLoading = false) }
+                }
+            }
+        }
+    }
+
+    private fun fetchUserMangaList(forceRefresh: Boolean = false) {
+        if (mediaListState.value.isUserMangaListLoading) return
+        if (!forceRefresh && mediaListState.value.hasFetchedMangaList) return
+
+        viewModelScope.launch {
+            mediaListState.update { it.copy(isUserMangaListLoading = true) }
+            val username = uiState.value.profile?.name
+            if (username.isNullOrBlank()) {
+                mediaListState.update { it.copy(isUserMangaListLoading = false) }
+                return@launch
+            }
+
+            when (val result = profileRepository.getUserMangaList(username)) {
+                is Result.Success -> {
+                    val grouped = groupEntriesByStatus(result.data)
+                    mediaListState.update {
+                        it.copy(
+                            isUserMangaListLoading = false,
+                            userMangaList = result.data,
+                            userMangaListByStatus = grouped,
+                            hasFetchedMangaList = true,
+                            lastMangaListFetchAtMs = System.currentTimeMillis()
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    mediaListState.update { it.copy(isUserMangaListLoading = false) }
+                }
+            }
+        }
+    }
+
+    private fun fetchSocialData(forceRefresh: Boolean = false) {
+        if (socialState.value.isSocialLoading) return
+        if (!forceRefresh && socialState.value.hasFetchedSocialData) return
+
         viewModelScope.launch {
             socialState.update { it.copy(isSocialLoading = true, socialErrorMessage = null) }
-            val userId = uiState.value.profile?.id ?: return@launch
+            val userId = uiState.value.profile?.id
+            if (userId == null) {
+                socialState.update { it.copy(isSocialLoading = false) }
+                return@launch
+            }
+
             when (val result = profileRepository.getSocialData(userId)) {
                 is Result.Success -> {
                     socialState.update {
@@ -478,5 +675,41 @@ class ProfileViewModel @Inject constructor(
             authRepository.logout()
             onComplete()
         }
+    }
+
+    private fun groupEntriesByStatus(entries: List<LibraryEntry>): Map<LibraryStatus, List<LibraryEntry>> {
+        val grouped = entries.groupBy { it.status }
+        val orderedStatuses = listOf(
+            LibraryStatus.CURRENT,
+            LibraryStatus.REPEATING,
+            LibraryStatus.PAUSED,
+            LibraryStatus.COMPLETED,
+            LibraryStatus.PLANNING,
+            LibraryStatus.DROPPED
+        )
+
+        val ordered = linkedMapOf<LibraryStatus, List<LibraryEntry>>()
+        orderedStatuses.forEach { status ->
+            ordered[status] = grouped[status].orEmpty()
+        }
+
+        val unknownItems = grouped[LibraryStatus.UNKNOWN].orEmpty()
+        if (unknownItems.isNotEmpty()) {
+            ordered[LibraryStatus.UNKNOWN] = unknownItems
+        }
+
+        return ordered
+    }
+
+    private fun shouldRefreshAnimeList(): Boolean {
+        val state = mediaListState.value
+        if (!state.hasFetchedAnimeList) return true
+        return System.currentTimeMillis() - state.lastAnimeListFetchAtMs >= LIST_REFRESH_INTERVAL_MS
+    }
+
+    private fun shouldRefreshMangaList(): Boolean {
+        val state = mediaListState.value
+        if (!state.hasFetchedMangaList) return true
+        return System.currentTimeMillis() - state.lastMangaListFetchAtMs >= LIST_REFRESH_INTERVAL_MS
     }
 }

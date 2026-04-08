@@ -46,13 +46,14 @@ import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
-import com.anisync.android.presentation.profile.sections.profileCastTab
+import com.anisync.android.presentation.profile.sections.profileFavoritesTab
 import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.profileReviewsTab
 import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.util.ShareUtils
+import com.anisync.android.type.MediaType
 
 @OptIn(
     ExperimentalFoundationApi::class,
@@ -155,7 +156,11 @@ fun ProfileContent(
 
             ProfileTab.ANIME -> {
                 profileMediaTab(
-                    items = profile.favoriteAnime,
+                    itemsByStatus = uiState.userAnimeListByStatus,
+                    selectedStatus = uiState.selectedAnimeStatus,
+                    onStatusSelected = { onAction(ProfileAction.SelectAnimeStatus(it)) },
+                    isLoading = uiState.isUserAnimeListLoading,
+                    mediaType = MediaType.ANIME,
                     emptyMessageRes = R.string.profile_placeholder_anime,
                     onMediaClick = onMediaClick,
                     sharedTransitionScope = sharedTransitionScope,
@@ -166,7 +171,11 @@ fun ProfileContent(
 
             ProfileTab.MANGA -> {
                 profileMediaTab(
-                    items = profile.favoriteMangaOverview,
+                    itemsByStatus = uiState.userMangaListByStatus,
+                    selectedStatus = uiState.selectedMangaStatus,
+                    onStatusSelected = { onAction(ProfileAction.SelectMangaStatus(it)) },
+                    isLoading = uiState.isUserMangaListLoading,
+                    mediaType = MediaType.MANGA,
                     emptyMessageRes = R.string.profile_placeholder_manga,
                     onMediaClick = onMediaClick,
                     sharedTransitionScope = sharedTransitionScope,
@@ -175,13 +184,14 @@ fun ProfileContent(
                 )
             }
 
-            ProfileTab.CAST -> {
-                profileCastTab(
+            ProfileTab.FAVORITES -> {
+                profileFavoritesTab(
                     profile = profile,
-                    selectedFilter = uiState.selectedCastFilter,
-                    onFilterSelected = { onAction(ProfileAction.SelectCastFilter(it)) },
+                    selectedFilter = uiState.selectedFavoritesFilter,
+                    onFilterSelected = { onAction(ProfileAction.SelectFavoritesFilter(it)) },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
+                    onMediaClick = onMediaClick,
                     onCharacterClick = onCharacterClick,
                     onStaffClick = onStaffClick
                 )
@@ -219,7 +229,7 @@ private fun profileTabIcon(tab: ProfileTab): ImageVector {
         ProfileTab.ACTIVITY -> Icons.Default.Schedule
         ProfileTab.ANIME -> Icons.Default.Tv
         ProfileTab.MANGA -> Icons.AutoMirrored.Filled.MenuBook
-        ProfileTab.CAST -> Icons.Default.Group
+        ProfileTab.FAVORITES -> Icons.Default.Group
         ProfileTab.SOCIAL -> Icons.Default.Forum
         ProfileTab.REVIEWS -> Icons.Default.RateReview
         ProfileTab.STATS -> Icons.Default.BarChart

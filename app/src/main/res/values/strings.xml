@@ -522,6 +522,7 @@
     <string name="statistics_top_genres">Top Genres</string>
     <string name="statistics_formats">Formats</string>
     <string name="statistics_top_studios">Top Studios</string>
+    <string name="profile_favorites_studios">Studios</string>
     <string name="statistics_by_year">By Release Year</string>
     <string name="statistics_anime_label">anime</string>
     <string name="statistics_view">View Statistics</string>

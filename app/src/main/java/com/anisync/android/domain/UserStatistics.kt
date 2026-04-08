@@ -10,6 +10,7 @@ import androidx.compose.runtime.Immutable
 data class UserStatistics(
     val userId: Int,
     val userName: String,
+    val scoreFormat: ScoreFormat? = null,
     val animeStats: AnimeStatistics,
     val mangaStats: MangaStatistics?
 )

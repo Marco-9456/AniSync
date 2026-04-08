@@ -2,6 +2,9 @@ query GetUserStatistics($userId: Int) {
   User(id: $userId) {
     id
     name
+    mediaListOptions {
+      scoreFormat
+    }
     statistics {
       anime {
         count
@@ -18,7 +21,7 @@ query GetUserStatistics($userId: Int) {
           meanScore
           minutesWatched
         }
-        scores(limit: 10, sort: [MEAN_SCORE_DESC]) {
+        scores(sort: [MEAN_SCORE_DESC]) {
           score
           count
           meanScore

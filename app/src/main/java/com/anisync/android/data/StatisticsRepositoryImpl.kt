@@ -41,9 +41,22 @@ class StatisticsRepositoryImpl @Inject constructor(
             val minutesWatched = animeStats.minutesWatched ?: 0
             val daysWatched = minutesWatched / 1440f // Convert minutes to days
 
+            val scoreFormatApi = user.mediaListOptions?.scoreFormat
+            val domainScoreFormat = scoreFormatApi?.let { format ->
+                when (format.name) {
+                    "POINT_100" -> com.anisync.android.domain.ScoreFormat.POINT_100
+                    "POINT_10_DECIMAL" -> com.anisync.android.domain.ScoreFormat.POINT_10_DECIMAL
+                    "POINT_10" -> com.anisync.android.domain.ScoreFormat.POINT_10
+                    "POINT_5" -> com.anisync.android.domain.ScoreFormat.POINT_5
+                    "POINT_3" -> com.anisync.android.domain.ScoreFormat.POINT_3
+                    else -> null
+                }
+            }
+
             UserStatistics(
                 userId = user.id ?: throw Exception("User ID not found"),
                 userName = user.name ?: "Unknown",
+                scoreFormat = domainScoreFormat,
                 animeStats = AnimeStatistics(
                     totalCount = animeStats.count ?: 0,
                     episodesWatched = animeStats.episodesWatched ?: 0,

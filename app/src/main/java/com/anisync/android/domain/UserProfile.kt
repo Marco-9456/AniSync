@@ -22,7 +22,15 @@ data class UserProfile(
     val topGenres: List<GenreStat> = emptyList(),
     val favoriteMangaOverview: List<LibraryEntry> = emptyList(),
     val favoriteCharactersOverview: List<CharacterInfo> = emptyList(),
-    val favoriteStaffOverview: List<StaffDetails> = emptyList()
+    val favoriteStaffOverview: List<StaffDetails> = emptyList(),
+    val favoriteStudiosOverview: List<StudioInfo> = emptyList()
+)
+
+@Immutable
+@Serializable
+data class StudioInfo(
+    val id: Int,
+    val name: String
 )
 
 /**

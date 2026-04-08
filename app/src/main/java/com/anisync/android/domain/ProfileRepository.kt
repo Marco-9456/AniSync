@@ -42,4 +42,14 @@ interface ProfileRepository {
      * Fetch user's reviews.
      */
     suspend fun getUserReviews(userId: Int, page: Int = 1): Result<List<MediaReview>>
+
+    /**
+     * Fetch user's anime list.
+     */
+    suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>>
+
+    /**
+     * Fetch user's manga list.
+     */
+    suspend fun getUserMangaList(username: String): Result<List<LibraryEntry>>
 }

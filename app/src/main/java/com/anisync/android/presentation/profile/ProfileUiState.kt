@@ -7,6 +7,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.SocialUser
@@ -23,11 +25,19 @@ data class ProfileUiState(
     val isFollowLoading: Boolean = false,
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
-    val selectedCastFilter: ProfileCastFilter = ProfileCastFilter.CHARACTERS,
+    val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
+    val selectedAnimeStatus: LibraryStatus = LibraryStatus.CURRENT,
+    val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val isEditProfileDialogVisible: Boolean = false,
     val isBiographySheetVisible: Boolean = false,
+    val userAnimeList: List<LibraryEntry> = emptyList(),
+    val userAnimeListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+    val isUserAnimeListLoading: Boolean = false,
+    val userMangaList: List<LibraryEntry> = emptyList(),
+    val userMangaListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+    val isUserMangaListLoading: Boolean = false,
     val socialFollowing: List<SocialUser> = emptyList(),
     val socialFollowers: List<SocialUser> = emptyList(),
     val socialThreads: List<ForumThread> = emptyList(),
@@ -67,6 +77,8 @@ data class MangaStatisticsUi(
 
 data class ScoreUiModel(
     val score: Int,
+    val label: String,
+    val normalizedScore: Float,
     val count: Int,
     val heightFraction: Float
 )
@@ -83,16 +95,19 @@ enum class ProfileTab(@StringRes val titleRes: Int) {
     ACTIVITY(R.string.profile_tab_activity),
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
-    CAST(R.string.section_cast),
+    FAVORITES(R.string.section_favorites),
     SOCIAL(R.string.profile_tab_social),
     REVIEWS(R.string.section_reviews),
     STATS(R.string.statistics_title)
 }
 
 @Immutable
-enum class ProfileCastFilter(@StringRes val labelRes: Int) {
+enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
+    ANIME(R.string.media_type_anime),
+    MANGA(R.string.media_type_manga),
     CHARACTERS(R.string.profile_cast_characters),
-    STAFF(R.string.profile_cast_staff)
+    STAFF(R.string.profile_cast_staff),
+    STUDIOS(R.string.profile_favorites_studios)
 }
 
 @Immutable
@@ -123,7 +138,9 @@ sealed interface ProfileAction {
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
-    data class SelectCastFilter(val filter: ProfileCastFilter) : ProfileAction
+    data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
+    data class SelectAnimeStatus(val status: LibraryStatus) : ProfileAction
+    data class SelectMangaStatus(val status: LibraryStatus) : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction

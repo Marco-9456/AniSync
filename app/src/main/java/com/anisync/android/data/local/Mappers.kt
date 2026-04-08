@@ -182,7 +182,8 @@ fun UserProfileEntity.toDomain(): UserProfile = UserProfile(
     topGenres = topGenres,
     favoriteMangaOverview = favoriteMangaOverview,
     favoriteCharactersOverview = favoriteCharactersOverview,
-    favoriteStaffOverview = favoriteStaffOverview
+    favoriteStaffOverview = favoriteStaffOverview,
+    favoriteStudiosOverview = favoriteStudiosOverview
 )
 
 fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
@@ -203,5 +204,6 @@ fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
     topGenres = topGenres,
     favoriteMangaOverview = favoriteMangaOverview,
     favoriteCharactersOverview = favoriteCharactersOverview,
-    favoriteStaffOverview = favoriteStaffOverview
+    favoriteStaffOverview = favoriteStaffOverview,
+    favoriteStudiosOverview = favoriteStudiosOverview
 )

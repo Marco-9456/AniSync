@@ -193,7 +193,7 @@ fun ProfileOverviewSection(
         if (profile.favoriteCharactersOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
                 title = "Characters",
-                onActionClick = { onNavigateToTab(ProfileTab.CAST) }
+                onActionClick = { onNavigateToTab(ProfileTab.FAVORITES) }
             ) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -215,7 +215,7 @@ fun ProfileOverviewSection(
         if (profile.favoriteStaffOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
                 title = "Staff",
-                onActionClick = { onNavigateToTab(ProfileTab.CAST) }
+                onActionClick = { onNavigateToTab(ProfileTab.FAVORITES) }
             ) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),

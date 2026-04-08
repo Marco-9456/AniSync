@@ -201,6 +201,13 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
+            val overviewStudios = user.favourites?.studios?.nodes?.filterNotNull()?.map { studio ->
+                com.anisync.android.domain.StudioInfo(
+                    id = studio.id,
+                    name = studio.name
+                )
+            } ?: emptyList()
+
             UserProfile(
                 id = user.id ?: 0,
                 name = user.name ?: "Unknown",
@@ -219,7 +226,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 topGenres = topGenres,
                 favoriteMangaOverview = overviewManga,
                 favoriteCharactersOverview = overviewCharacters,
-                favoriteStaffOverview = overviewStaff
+                favoriteStaffOverview = overviewStaff,
+                favoriteStudiosOverview = overviewStudios
             )
         }
     }
@@ -444,6 +452,94 @@ class ProfileRepositoryImpl @Inject constructor(
                     mediaBannerUrl = review.media?.bannerImage
                 )
             } ?: emptyList()
+        }
+    }
+
+    override suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>> {
+        return fetchUserList(username, com.anisync.android.type.MediaType.ANIME)
+    }
+
+    override suspend fun getUserMangaList(username: String): Result<List<LibraryEntry>> {
+        return fetchUserList(username, com.anisync.android.type.MediaType.MANGA)
+    }
+
+    private suspend fun fetchUserList(username: String, type: com.anisync.android.type.MediaType): Result<List<LibraryEntry>> {
+        return safeApiCall {
+            val query = com.anisync.android.GetUserLibraryQuery(username = username, type = type)
+
+            val cacheResponse = apolloClient.query(query)
+                .fetchPolicy(FetchPolicy.CacheFirst)
+                .execute()
+
+            val networkResponse = apolloClient.query(query)
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val response = when {
+                networkResponse.data?.MediaListCollection != null -> networkResponse
+                cacheResponse.data?.MediaListCollection != null -> cacheResponse
+                else -> networkResponse
+            }
+
+            val lists = response.data?.MediaListCollection?.lists?.filterNotNull() ?: emptyList()
+            val entryMap = mutableMapOf<Int, LibraryEntry>()
+
+            lists.forEach { group ->
+                val listName = group.name ?: return@forEach
+                val isCustom = group.isCustomList ?: false
+                
+                group.entries?.filterNotNull()?.forEach { entry ->
+                    val entryId = entry.id ?: return@forEach
+                    val media = entry.media
+                    val existing = entryMap[entryId]
+
+                    if (existing == null) {
+                        val status = entry.status?.let {
+                            when (it.name) {
+                                "CURRENT" -> LibraryStatus.CURRENT
+                                "PLANNING" -> LibraryStatus.PLANNING
+                                "COMPLETED" -> LibraryStatus.COMPLETED
+                                "DROPPED" -> LibraryStatus.DROPPED
+                                "PAUSED" -> LibraryStatus.PAUSED
+                                "REPEATING" -> LibraryStatus.REPEATING
+                                else -> LibraryStatus.UNKNOWN
+                            }
+                        } ?: LibraryStatus.UNKNOWN
+                        
+                        entryMap[entryId] = LibraryEntry(
+                            id = entryId,
+                            mediaId = media?.id ?: 0,
+                            titleRomaji = media?.title?.romaji,
+                            titleEnglish = media?.title?.english,
+                            titleNative = media?.title?.native,
+                            titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
+                            coverUrl = media?.coverImage?.extraLarge,
+                            progress = entry.progress ?: 0,
+                            totalEpisodes = media?.episodes,
+                            totalChapters = media?.chapters,
+                            totalVolumes = media?.volumes,
+                            type = media?.type,
+                            status = status,
+                            nextAiringEpisode = media?.nextAiringEpisode?.episode,
+                            timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
+                            mediaStatus = media?.status?.name,
+                            nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
+                            score = entry.score,
+                            rewatches = entry.repeat ?: 0,
+                            notes = entry.notes,
+                            updatedAt = entry.updatedAt?.toLong()?.times(1000L),
+                            createdAt = entry.createdAt?.toLong()?.times(1000L),
+                            customLists = if (isCustom) listOf(listName) else emptyList(),
+                            isPrivate = entry.`private` ?: false,
+                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
+                        )
+                    } else if (isCustom && !existing.customLists.contains(listName)) {
+                        entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)
+                    }
+                }
+            }
+            
+            entryMap.values.toList().sortedByDescending { it.updatedAt }
         }
     }
 }

@@ -61,7 +61,7 @@ query GetUserProfile($name: String) {
           }
         }
       }
-      manga(page: 1, perPage: 5) {
+      manga(page: 1, perPage: 25) {
         nodes {
           id
           type
@@ -82,7 +82,7 @@ query GetUserProfile($name: String) {
           }
         }
       }
-      characters(page: 1, perPage: 5) {
+      characters(page: 1, perPage: 25) {
         nodes {
           id
           name {
@@ -93,7 +93,7 @@ query GetUserProfile($name: String) {
           }
         }
       }
-      staff(page: 1, perPage: 5) {
+      staff(page: 1, perPage: 25) {
         nodes {
           id
           name {
@@ -102,6 +102,12 @@ query GetUserProfile($name: String) {
           image {
             large
           }
+        }
+      }
+      studios(page: 1, perPage: 25) {
+        nodes {
+          id
+          name
         }
       }
     }

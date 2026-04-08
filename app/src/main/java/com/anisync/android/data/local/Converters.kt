@@ -10,6 +10,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.UserActivity
@@ -171,4 +172,14 @@ class Converters {
 
     @TypeConverter
     fun toGenreStatList(list: List<com.anisync.android.domain.GenreStat>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromStudioInfoList(value: String): List<StudioInfo> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toStudioInfoList(list: List<StudioInfo>): String = json.encodeToString(list)
 }

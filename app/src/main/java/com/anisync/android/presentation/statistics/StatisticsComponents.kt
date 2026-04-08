@@ -263,8 +263,8 @@ fun ScoreHistogramSection(scores: List<ScoreUiModel>) {
                                             alpha = 0.2f
                                         )
 
-                                        item.score >= 8 -> MaterialTheme.colorScheme.primary
-                                        item.score >= 5 -> MaterialTheme.colorScheme.secondary
+                                        item.normalizedScore >= 80 -> MaterialTheme.colorScheme.primary
+                                        item.normalizedScore >= 50 -> MaterialTheme.colorScheme.secondary
                                         else -> MaterialTheme.colorScheme.tertiary
                                     }
                                 )
@@ -273,10 +273,12 @@ fun ScoreHistogramSection(scores: List<ScoreUiModel>) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = item.score.toString(),
+                            text = item.label,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (item.count > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
-                            fontWeight = if (item.count > 0) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (item.count > 0) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Visible
                         )
                     }
                 }

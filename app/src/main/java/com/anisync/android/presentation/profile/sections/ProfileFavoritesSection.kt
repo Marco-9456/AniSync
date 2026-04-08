@@ -18,8 +18,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,26 +42,28 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.StaffDetails
+import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.details.components.CharacterItem
-import com.anisync.android.presentation.profile.ProfileCastFilter
+import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.util.bouncyClickable
 
 @OptIn(ExperimentalSharedTransitionApi::class)
-fun LazyListScope.profileCastTab(
+fun LazyListScope.profileFavoritesTab(
     profile: UserProfile,
-    selectedFilter: ProfileCastFilter,
-    onFilterSelected: (ProfileCastFilter) -> Unit,
+    selectedFilter: ProfileFavoritesFilter,
+    onFilterSelected: (ProfileFavoritesFilter) -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    item(key = "cast_filters", contentType = "filters") {
-        val filters = remember { ProfileCastFilter.entries }
+    item(key = "favorites_filters", contentType = "filters") {
+        val filters = remember { ProfileFavoritesFilter.entries }
         val selectedIndex = remember(selectedFilter) { filters.indexOf(selectedFilter).coerceAtLeast(0) }
 
         Column(
@@ -76,7 +81,7 @@ fun LazyListScope.profileCastTab(
                         selectedIndex = selectedIndex,
                         selected = selectedFilter == filter,
                         onClick = { onFilterSelected(filter) },
-                        icon = castFilterIcon(filter),
+                        icon = favoritesFilterIcon(filter),
                         label = stringResource(filter.labelRes)
                     )
                 }
@@ -85,23 +90,45 @@ fun LazyListScope.profileCastTab(
     }
 
     when (selectedFilter) {
-        ProfileCastFilter.CHARACTERS -> {
+        ProfileFavoritesFilter.ANIME -> {
+            profileMediaTab(
+                items = profile.favoriteAnime,
+                emptyMessageRes = R.string.profile_placeholder_anime,
+                onMediaClick = onMediaClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                transitionPrefix = "fav_anime"
+            )
+        }
+
+        ProfileFavoritesFilter.MANGA -> {
+            profileMediaTab(
+                items = profile.favoriteMangaOverview,
+                emptyMessageRes = R.string.profile_placeholder_manga,
+                onMediaClick = onMediaClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                transitionPrefix = "fav_manga"
+            )
+        }
+
+        ProfileFavoritesFilter.CHARACTERS -> {
             if (profile.favoriteCharactersOverview.isEmpty()) {
-                item(key = "cast_empty_characters", contentType = "empty") {
+                item(key = "fav_empty_characters", contentType = "empty") {
                     Spacer(modifier = Modifier.height(16.dp))
                     PlaceholderTabContent(
-                        message = stringResource(R.string.profile_placeholder_cast),
+                        message = stringResource(R.string.profile_placeholder_favorites),
                         modifier = modifier
                     )
                 }
             } else {
                 val rowItems = profile.favoriteCharactersOverview.chunked(3)
-                item(key = "cast_top_spacer_characters") { Spacer(modifier = Modifier.height(16.dp)) }
+                item(key = "fav_top_spacer_characters") { Spacer(modifier = Modifier.height(16.dp)) }
 
                 itemsIndexed(
                     items = rowItems,
-                    key = { index, _ -> "cast_row_characters_$index" },
-                    contentType = { _, _ -> "cast_row" }
+                    key = { index, _ -> "fav_row_characters_$index" },
+                    contentType = { _, _ -> "fav_row" }
                 ) { _, row ->
                     Row(
                         modifier = Modifier
@@ -129,23 +156,23 @@ fun LazyListScope.profileCastTab(
             }
         }
 
-        ProfileCastFilter.STAFF -> {
+        ProfileFavoritesFilter.STAFF -> {
             if (profile.favoriteStaffOverview.isEmpty()) {
-                item(key = "cast_empty_staff", contentType = "empty") {
+                item(key = "fav_empty_staff", contentType = "empty") {
                     Spacer(modifier = Modifier.height(16.dp))
                     PlaceholderTabContent(
-                        message = stringResource(R.string.profile_placeholder_cast),
+                        message = stringResource(R.string.profile_placeholder_favorites),
                         modifier = modifier
                     )
                 }
             } else {
                 val rowItems = profile.favoriteStaffOverview.chunked(3)
-                item(key = "cast_top_spacer_staff") { Spacer(modifier = Modifier.height(16.dp)) }
+                item(key = "fav_top_spacer_staff") { Spacer(modifier = Modifier.height(16.dp)) }
 
                 itemsIndexed(
                     items = rowItems,
-                    key = { index, _ -> "cast_row_staff_$index" },
-                    contentType = { _, _ -> "cast_row" }
+                    key = { index, _ -> "fav_row_staff_$index" },
+                    contentType = { _, _ -> "fav_row" }
                 ) { _, row ->
                     Row(
                         modifier = Modifier
@@ -170,13 +197,54 @@ fun LazyListScope.profileCastTab(
                 }
             }
         }
+
+        ProfileFavoritesFilter.STUDIOS -> {
+            if (profile.favoriteStudiosOverview.isEmpty()) {
+                item(key = "fav_empty_studios", contentType = "empty") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PlaceholderTabContent(
+                        message = stringResource(R.string.profile_placeholder_favorites),
+                        modifier = modifier
+                    )
+                }
+            } else {
+                val rowItems = profile.favoriteStudiosOverview.chunked(2)
+                item(key = "fav_top_spacer_studios") { Spacer(modifier = Modifier.height(16.dp)) }
+
+                itemsIndexed(
+                    items = rowItems,
+                    key = { index, _ -> "fav_row_studios_$index" },
+                    contentType = { _, _ -> "fav_row" }
+                ) { _, row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        row.forEach { studio ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                StudioItem(studio = studio, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                        repeat(2 - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
     }
 }
 
-private fun castFilterIcon(filter: ProfileCastFilter): ImageVector {
+private fun favoritesFilterIcon(filter: ProfileFavoritesFilter): ImageVector {
     return when (filter) {
-        ProfileCastFilter.CHARACTERS -> Icons.Default.Person
-        ProfileCastFilter.STAFF -> Icons.Default.Group
+        ProfileFavoritesFilter.ANIME -> Icons.Default.Tv
+        ProfileFavoritesFilter.MANGA -> Icons.AutoMirrored.Filled.MenuBook
+        ProfileFavoritesFilter.CHARACTERS -> Icons.Default.Person
+        ProfileFavoritesFilter.STAFF -> Icons.Default.Group
+        ProfileFavoritesFilter.STUDIOS -> Icons.Default.Business
     }
 }
 
@@ -228,5 +296,26 @@ private fun CastStaffItem(
                 overflow = TextOverflow.Ellipsis
             )
         }
+    }
+}
+
+@Composable
+private fun StudioItem(
+    studio: StudioInfo,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Text(
+            text = studio.name,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
