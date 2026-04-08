@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -51,6 +50,9 @@ fun ReviewCard(
             else -> Color(0xFFFF5722) // Red-orange
         }
     }
+    val mediaHeaderImageUrl = remember(review.mediaBannerUrl, review.mediaCoverUrl) {
+        review.mediaBannerUrl ?: review.mediaCoverUrl
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -61,119 +63,123 @@ fun ReviewCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Optional Media Thumbnail and Title header (Used mainly in Profile Reviews Tab)
+            // Optional Media Banner/Title header (Used mainly in Profile Reviews Tab)
             if (review.mediaTitle != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (review.mediaCoverUrl != null) {
-                        AsyncImage(
-                            model = review.mediaCoverUrl,
-                            contentDescription = review.mediaTitle,
-                            modifier = Modifier
-                                .size(width = 40.dp, height = 56.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                    }
-                    Text(
-                        text = review.mediaTitle,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                if (mediaHeaderImageUrl != null) {
+                    AsyncImage(
+                        model = mediaHeaderImageUrl,
+                        contentDescription = review.mediaTitle,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(132.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(132.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            // User info row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onUserClick(review.userName) }
-                    .padding(vertical = 4.dp)
-            ) {
-                // User avatar
-                AsyncImage(
-                    model = review.userAvatarUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
 
                 Text(
-                    text = review.userName,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                    text = review.mediaTitle,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
-
-                // Score badge
-                Box(
-                    modifier = Modifier
-                        .background(
-                            scoreColor.copy(alpha = 0.15f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "${review.score}/100",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = scoreColor
-                    )
-                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
 
-            // Review summary
-            Text(
-                text = review.summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 18.sp
-            )
+                // User info row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onUserClick(review.userName) }
+                        .padding(vertical = 4.dp)
+                ) {
+                    // User avatar
+                    AsyncImage(
+                        model = review.userAvatarUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = review.userName,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
 
-            // Rating bar + stats
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Upvote indicator
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(14.dp)
+                    // Score badge
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                scoreColor.copy(alpha = 0.15f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "${review.score}/100",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = scoreColor
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Review summary
+                Text(
+                    text = review.summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Rating bar + stats
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Upvote indicator
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
                     Text(
                         text = "${review.rating}/${review.ratingAmount}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                Text(
-                    text = stringResource(R.string.found_helpful),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+                    Text(
+                        text = stringResource(R.string.found_helpful),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }

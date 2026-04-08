@@ -66,7 +66,7 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(bottom = 80.dp)
+                .padding(bottom = if (isOwnProfile) 80.dp else 0.dp)
         ) {
             val profile = uiState.profile
             when {

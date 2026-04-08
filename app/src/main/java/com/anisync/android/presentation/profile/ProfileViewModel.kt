@@ -269,6 +269,12 @@ class ProfileViewModel @Inject constructor(
             socialJob.join()
             reviewsJob.join()
             statsJob.join()
+
+            if (!targetUsername.isNullOrBlank()) {
+                uiState.value.profile?.id?.let { userId ->
+                    fetchFollowState(userId)
+                }
+            }
             
             localState.update { it.copy(isRefreshing = false) }
         }

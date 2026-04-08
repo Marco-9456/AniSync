@@ -388,7 +388,9 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun getFollowState(userId: Int): Result<Boolean> {
         return safeApiCall {
-            val response = apolloClient.query(GetUserFollowStateQuery(userId = userId)).execute()
+            val response = apolloClient.query(GetUserFollowStateQuery(userId = userId))
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
             if (response.hasErrors()) {
                 throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to get follow state")
             }
@@ -438,7 +440,8 @@ class ProfileRepositoryImpl @Inject constructor(
                     userAvatarUrl = review.user?.avatar?.large,
                     createdAt = review.createdAt.toLong(),
                     mediaTitle = review.media?.title?.userPreferred,
-                    mediaCoverUrl = review.media?.coverImage?.large
+                    mediaCoverUrl = review.media?.coverImage?.large,
+                    mediaBannerUrl = review.media?.bannerImage
                 )
             } ?: emptyList()
         }
