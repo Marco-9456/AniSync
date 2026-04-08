@@ -48,20 +48,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.LinkPreview
+import com.anisync.android.domain.parser.LinkPreviewKey
 import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.domain.parser.ParserConfig
+import com.anisync.android.domain.parser.RichTextAlignment
 import com.anisync.android.domain.parser.RichTextBlock
+import com.anisync.android.domain.parser.RichTextInline
 import com.anisync.android.domain.parser.RichTextParser
+import com.anisync.android.domain.parser.RichTextTextKind
 import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAniLinkRouter
 import com.anisync.android.presentation.util.shimmerEffect
@@ -76,15 +87,22 @@ fun AsyncRichTextRenderer(
     codeBackground: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    var parsedText by remember { mutableStateOf<ParsedRichText?>(null) }
+    var parsedText by remember(html) { mutableStateOf<ParsedRichText?>(null) }
 
-    LaunchedEffect(html, linkColor, codeBackground, spoilerColor) {
-        val config = ParserConfig(linkColor, codeBackground, spoilerColor)
-        parsedText = RichTextParser.parse(html, config)
+    LaunchedEffect(html) {
+        parsedText = RichTextParser.parse(html, ParserConfig())
     }
 
     parsedText?.let {
-        RichTextRenderer(it, modifier, style, color, spoilerColor)
+        RichTextRenderer(
+            parsedData = it,
+            modifier = modifier,
+            style = style,
+            color = color,
+            linkColor = linkColor,
+            codeBackground = codeBackground,
+            spoilerColor = spoilerColor
+        )
     }
 }
 
@@ -95,14 +113,15 @@ fun RichTextRenderer(
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyMedium,
     color: Color = MaterialTheme.colorScheme.onSurface,
+    linkColor: Color = MaterialTheme.colorScheme.primary,
+    codeBackground: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     var viewerInitialIndex by remember { mutableStateOf<Int?>(null) }
     val linkRouter = rememberAniLinkRouter()
 
-    // Batch-fetch link previews for all AniList link blocks in this body
     val previewProvider = LocalLinkPreviewProvider.current
-    val previews = remember { mutableStateMapOf<Int, LinkPreview>() }
+    val previews = remember { mutableStateMapOf<LinkPreviewKey, LinkPreview>() }
     LaunchedEffect(parsedData, previewProvider) {
         if (previewProvider == null) return@LaunchedEffect
         val anilistLinks = collectAnilistLinks(parsedData.blocks)
@@ -119,13 +138,17 @@ fun RichTextRenderer(
         }
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalUriHandler provides customUriHandler) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalUriHandler provides customUriHandler
+    ) {
         SelectionContainer(modifier = modifier) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 RenderBlocks(
                     blocks = parsedData.blocks,
                     style = style,
                     color = color,
+                    linkColor = linkColor,
+                    codeBackground = codeBackground,
                     spoilerColor = spoilerColor,
                     previews = previews,
                     onImageClick = { url ->
@@ -137,7 +160,6 @@ fun RichTextRenderer(
             }
         }
     }
-
 
     viewerInitialIndex?.let { index ->
         ImageViewerDialog(
@@ -156,8 +178,17 @@ private fun collectAnilistLinks(blocks: List<RichTextBlock>): List<RichTextBlock
             is RichTextBlock.Spoiler -> result.addAll(collectAnilistLinks(block.children))
             is RichTextBlock.Blockquote -> result.addAll(collectAnilistLinks(block.children))
             is RichTextBlock.ListBlock -> block.items.forEach { result.addAll(collectAnilistLinks(it.children)) }
-            is RichTextBlock.Table -> block.rows.forEach { row -> row.cells.forEach { result.addAll(collectAnilistLinks(it.children)) } }
-            else -> {}
+            is RichTextBlock.Table -> block.rows.forEach { row ->
+                row.cells.forEach { cell ->
+                    result.addAll(collectAnilistLinks(cell.children))
+                }
+            }
+
+            is RichTextBlock.InlineGroup -> block.children.forEach {
+                if (it is RichTextBlock.AnilistLink) result.add(it)
+            }
+
+            else -> Unit
         }
     }
     return result
@@ -169,13 +200,15 @@ private fun RenderBlocks(
     blocks: List<RichTextBlock>,
     style: TextStyle,
     color: Color,
+    linkColor: Color,
+    codeBackground: Color,
     spoilerColor: Color,
-    previews: Map<Int, LinkPreview>,
+    previews: Map<LinkPreviewKey, LinkPreview>,
     onImageClick: (String) -> Unit,
     onLinkClick: (String) -> Unit
 ) {
     for (block in blocks) {
-        val blockAlignment = when (block.align) {
+        val blockAlignment = when (block.align.toTextAlign()) {
             TextAlign.Center -> Alignment.CenterHorizontally
             TextAlign.Right -> Alignment.End
             else -> Alignment.Start
@@ -189,9 +222,15 @@ private fun RenderBlocks(
             when (block) {
                 is RichTextBlock.Text -> {
                     Text(
-                        text = block.text,
+                        text = block.inlines.toAnnotatedString(
+                            baseStyle = style,
+                            baseColor = color,
+                            linkColor = linkColor,
+                            codeBackground = codeBackground,
+                            headingKind = block.kind
+                        ),
                         style = style.copy(color = color),
-                        textAlign = block.align,
+                        textAlign = block.align.toTextAlign(),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -200,23 +239,56 @@ private fun RenderBlocks(
                     RichImage(block, onImageClick, onLinkClick)
                 }
 
-                is RichTextBlock.ImageGroup -> {
+                is RichTextBlock.InlineGroup -> {
                     FlowRow(
-                        horizontalArrangement = when (block.align) {
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = when (block.align.toTextAlign()) {
                             TextAlign.Center -> Arrangement.Center
                             TextAlign.Right -> Arrangement.End
-                            else -> Arrangement.spacedBy(6.dp)
+                            else -> Arrangement.Start
                         },
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        block.images.forEach { RichImage(it, onImageClick, onLinkClick) }
+                        block.children.forEach { child ->
+                            when (child) {
+                                is RichTextBlock.Text -> {
+                                    Text(
+                                        text = child.inlines.toAnnotatedString(
+                                            baseStyle = style,
+                                            baseColor = color,
+                                            linkColor = linkColor,
+                                            codeBackground = codeBackground,
+                                            headingKind = child.kind
+                                        ),
+                                        style = style.copy(color = color),
+                                        textAlign = child.align.toTextAlign(),
+                                        modifier = Modifier.align(Alignment.CenterVertically)
+                                    )
+                                }
+
+                                is RichTextBlock.Image -> {
+                                    RichImage(child, onImageClick, onLinkClick)
+                                }
+
+                                is RichTextBlock.AnilistLink -> {
+                                    AniListLinkCard(
+                                        block = child,
+                                        preview = previews[child.previewKey],
+                                        style = style,
+                                        onLinkClick = onLinkClick
+                                    )
+                                }
+
+                                else -> Unit
+                            }
+                        }
                     }
                 }
 
                 is RichTextBlock.AnilistLink -> {
                     AniListLinkCard(
                         block = block,
-                        preview = previews[block.id],
+                        preview = previews[block.previewKey],
                         style = style,
                         onLinkClick = onLinkClick
                     )
@@ -241,13 +313,15 @@ private fun RenderBlocks(
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     RenderBlocks(
-                                        item.children,
-                                        style,
-                                        color,
-                                        spoilerColor,
-                                        previews,
-                                        onImageClick,
-                                        onLinkClick
+                                        blocks = item.children,
+                                        style = style,
+                                        color = color,
+                                        linkColor = linkColor,
+                                        codeBackground = codeBackground,
+                                        spoilerColor = spoilerColor,
+                                        previews = previews,
+                                        onImageClick = onImageClick,
+                                        onLinkClick = onLinkClick
                                     )
                                 }
                             }
@@ -298,13 +372,20 @@ private fun RenderBlocks(
                                                     )
                                                 }
                                             }
-                                            .background(if (cell.isHeader) spoilerColor.copy(alpha = 0.05f) else Color.Transparent)
+                                            .background(
+                                                if (cell.isHeader) spoilerColor.copy(alpha = 0.05f)
+                                                else Color.Transparent
+                                            )
                                             .padding(8.dp)
                                     ) {
                                         RenderBlocks(
                                             blocks = cell.children,
-                                            style = style.copy(fontWeight = if (cell.isHeader) FontWeight.Bold else FontWeight.Normal),
+                                            style = style.copy(
+                                                fontWeight = if (cell.isHeader) FontWeight.Bold else FontWeight.Normal
+                                            ),
                                             color = color,
+                                            linkColor = linkColor,
+                                            codeBackground = codeBackground,
                                             spoilerColor = spoilerColor,
                                             previews = previews,
                                             onImageClick = onImageClick,
@@ -322,20 +403,16 @@ private fun RenderBlocks(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .background(codeBackground)
                             .horizontalScroll(rememberScrollState())
                             .padding(12.dp)
                     ) {
-                        val isLightBackground =
-                            MaterialTheme.colorScheme.surfaceContainerHighest.luminance() > 0.5f
-                        val textColor = if (isLightBackground) Color.Black else Color.White
-
                         Text(
                             text = block.code,
                             style = style.copy(
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 13.sp,
-                                color = textColor
+                                color = if (codeBackground.luminance() > 0.5f) Color.Black else Color.White
                             )
                         )
                     }
@@ -371,21 +448,19 @@ private fun RenderBlocks(
                             exit = fadeOut() + shrinkVertically()
                         ) {
                             Column(
-                                modifier = Modifier.padding(
-                                    start = 12.dp,
-                                    end = 12.dp,
-                                    bottom = 12.dp
-                                ),
+                                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 RenderBlocks(
-                                    block.children,
-                                    style,
-                                    color,
-                                    spoilerColor,
-                                    previews,
-                                    onImageClick,
-                                    onLinkClick
+                                    blocks = block.children,
+                                    style = style,
+                                    color = color,
+                                    linkColor = linkColor,
+                                    codeBackground = codeBackground,
+                                    spoilerColor = spoilerColor,
+                                    previews = previews,
+                                    onImageClick = onImageClick,
+                                    onLinkClick = onLinkClick
                                 )
                             }
                         }
@@ -410,20 +485,25 @@ private fun RenderBlocks(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         RenderBlocks(
-                            block.children,
-                            style.copy(fontStyle = FontStyle.Italic),
-                            color,
-                            spoilerColor,
-                            previews,
-                            onImageClick,
-                            onLinkClick
+                            blocks = block.children,
+                            style = style.copy(fontStyle = FontStyle.Italic),
+                            color = color,
+                            linkColor = linkColor,
+                            codeBackground = codeBackground,
+                            spoilerColor = spoilerColor,
+                            previews = previews,
+                            onImageClick = onImageClick,
+                            onLinkClick = onLinkClick
                         )
                     }
                 }
 
                 is RichTextBlock.HorizontalRule -> {
-                    val mod =
-                        if (block.widthPercent != null) Modifier.fillMaxWidth(block.widthPercent / 100f) else Modifier.fillMaxWidth()
+                    val mod = if (block.widthPercent != null) {
+                        Modifier.fillMaxWidth(block.widthPercent / 100f)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
                     HorizontalDivider(
                         modifier = mod.padding(vertical = 8.dp),
                         color = spoilerColor.copy(alpha = 0.3f),
@@ -432,24 +512,8 @@ private fun RenderBlocks(
                 }
 
                 is RichTextBlock.YouTube -> {
-                    val videoId = remember(block.videoId) {
-                        var id = block.videoId
-
-                        // AniList's API sometimes dumps raw URLs into the ID field if a user formatted it weirdly inside a spoiler.
-                        // We loop to aggressively strip all YouTube domains and parameters until we isolate the core ID.
-                        while (id.contains("v=") || id.contains("youtu.be/") || id.contains("embed/")) {
-                            if (id.contains("v=")) id = id.substringAfterLast("v=")
-                            else if (id.contains("youtu.be/")) id =
-                                id.substringAfterLast("youtu.be/")
-                            else if (id.contains("embed/")) id = id.substringAfterLast("embed/")
-                        }
-
-                        id = id.substringBefore("&").substringBefore("?")
-
-                        // YouTube IDs are strictly 11 characters (base64-encoded 64-bit ints).
-                        // This regex and length check strips away leftover markdown syntax, quotes, or HTML artifacts.
-                        val cleanId = id.replace(Regex("[^a-zA-Z0-9_-]"), "")
-                        if (cleanId.length >= 11) cleanId.takeLast(11) else cleanId
+                    val videoId = remember(block.videoIdOrUrl) {
+                        extractYouTubeVideoId(block.videoIdOrUrl)
                     }
 
                     Box(
@@ -465,7 +529,7 @@ private fun RenderBlocks(
                                 .build(),
                             contentDescription = "YouTube Thumbnail",
                             contentScale = ContentScale.Crop,
-                            loading = { ImageLoadingSkeleton() },
+                            loading = { ImageLoadingSkeleton(Modifier.fillMaxWidth()) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(16f / 9f)
@@ -507,7 +571,7 @@ private fun RichImage(
 ) {
     val mod = if (img.isPercent && img.width != null) Modifier.fillMaxWidth(img.width / 100f)
     else if (img.width != null) Modifier.widthIn(max = img.width.dp)
-    else Modifier.fillMaxWidth()
+    else Modifier
 
     SubcomposeAsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
@@ -515,8 +579,12 @@ private fun RichImage(
             .crossfade(true)
             .build(),
         contentDescription = null,
-        contentScale = if (img.width != null) ContentScale.Fit else ContentScale.FillWidth,
-        loading = { ImageLoadingSkeleton() },
+        contentScale = if (img.width != null) ContentScale.Fit else ContentScale.Inside,
+        loading = {
+            ImageLoadingSkeleton(
+                if (img.width == null) Modifier.size(48.dp) else Modifier.fillMaxWidth()
+            )
+        },
         modifier = mod
             .clip(RoundedCornerShape(8.dp))
             .clickable {
@@ -525,11 +593,6 @@ private fun RichImage(
     )
 }
 
-/**
- * Shimmer skeleton with MD3 Expressive shape-morphing loading indicator.
- * Shows while images in threads and comments are loading — gives users
- * a clear visual cue that content will appear in this area.
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ImageLoadingSkeleton(
@@ -537,7 +600,6 @@ private fun ImageLoadingSkeleton(
 ) {
     Box(
         modifier = modifier
-            .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(8.dp))
             .shimmerEffect(),
@@ -548,4 +610,112 @@ private fun ImageLoadingSkeleton(
             indicatorColor = MaterialTheme.colorScheme.primary
         )
     }
+}
+
+private fun RichTextAlignment.toTextAlign(): TextAlign = when (this) {
+    RichTextAlignment.Start -> TextAlign.Start
+    RichTextAlignment.Center -> TextAlign.Center
+    RichTextAlignment.End -> TextAlign.Right
+    RichTextAlignment.Justify -> TextAlign.Justify
+}
+
+private fun List<RichTextInline>.toAnnotatedString(
+    baseStyle: TextStyle,
+    baseColor: Color,
+    linkColor: Color,
+    codeBackground: Color,
+    headingKind: RichTextTextKind
+): AnnotatedString = buildAnnotatedString {
+    withStyle(headingKind.toSpanStyle(baseStyle)) {
+        appendInlines(
+            inlines = this@toAnnotatedString,
+            baseColor = baseColor,
+            linkColor = linkColor,
+            codeBackground = codeBackground
+        )
+    }
+}
+
+private fun AnnotatedString.Builder.appendInlines(
+    inlines: List<RichTextInline>,
+    baseColor: Color,
+    linkColor: Color,
+    codeBackground: Color
+) {
+    for (inline in inlines) {
+        when (inline) {
+            is RichTextInline.Text -> append(inline.value)
+            is RichTextInline.LineBreak -> append("\n")
+            is RichTextInline.Bold -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+            }
+
+            is RichTextInline.Italic -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+            }
+
+            is RichTextInline.BoldItalic -> withStyle(
+                SpanStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontStyle = FontStyle.Italic
+                )
+            ) {
+                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+            }
+
+            is RichTextInline.Strikethrough -> withStyle(
+                SpanStyle(textDecoration = TextDecoration.LineThrough)
+            ) {
+                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+            }
+
+            is RichTextInline.Link -> {
+                pushLink(
+                    LinkAnnotation.Url(
+                        inline.url,
+                        TextLinkStyles(style = SpanStyle(color = linkColor))
+                    )
+                )
+                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+                pop()
+            }
+
+            is RichTextInline.InlineCode -> {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        background = codeBackground,
+                        color = if (codeBackground.luminance() > 0.5f) Color.Black else Color.White,
+                        fontSize = 13.sp
+                    )
+                ) {
+                    append(inline.code)
+                }
+            }
+        }
+    }
+}
+
+private fun RichTextTextKind.toSpanStyle(base: TextStyle): SpanStyle = when (this) {
+    RichTextTextKind.Paragraph -> SpanStyle()
+    RichTextTextKind.Heading1 -> SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+    RichTextTextKind.Heading2 -> SpanStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    RichTextTextKind.Heading3 -> SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    RichTextTextKind.Heading4 -> SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+    RichTextTextKind.Heading5 -> SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+}
+
+private fun extractYouTubeVideoId(value: String): String {
+    var id = value
+    while (id.contains("v=") || id.contains("youtu.be/") || id.contains("embed/")) {
+        id = when {
+            id.contains("v=") -> id.substringAfterLast("v=")
+            id.contains("youtu.be/") -> id.substringAfterLast("youtu.be/")
+            id.contains("embed/") -> id.substringAfterLast("embed/")
+            else -> id
+        }
+    }
+    id = id.substringBefore("&").substringBefore("?")
+    val clean = id.replace(Regex("[^a-zA-Z0-9_-]"), "")
+    return if (clean.length >= 11) clean.takeLast(11) else clean
 }

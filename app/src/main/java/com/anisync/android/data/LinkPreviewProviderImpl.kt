@@ -4,6 +4,7 @@ import com.anisync.android.GetLinkPreviewsQuery
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.LinkPreviewProvider
+import com.anisync.android.domain.parser.LinkPreviewKey
 import com.anisync.android.domain.parser.RichTextBlock
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -18,11 +19,11 @@ class LinkPreviewProviderImpl @Inject constructor(
 
     override suspend fun getPreviews(
         links: List<RichTextBlock.AnilistLink>
-    ): Map<Int, LinkPreview> {
+    ): Map<LinkPreviewKey, LinkPreview> {
         if (links.isEmpty()) return emptyMap()
 
-        val uniqueLinks = links.distinctBy { it.id }
-        val result = mutableMapOf<Int, LinkPreview>()
+        val uniqueLinks = links.distinctBy { it.previewKey }
+        val result = mutableMapOf<LinkPreviewKey, LinkPreview>()
 
         // Phase 1: Check Room cache for media (anime/manga)
         val mediaLinks = uniqueLinks.filter { it.type == "anime" || it.type == "manga" }
@@ -31,7 +32,7 @@ class LinkPreviewProviderImpl @Inject constructor(
         for (link in mediaLinks) {
             val entity = mediaDetailsDao.getById(link.id)
             if (entity != null) {
-                result[link.id] = LinkPreview(
+                result[link.previewKey] = LinkPreview(
                     title = entity.titleUserPreferred,
                     imageUrl = entity.coverUrl
                 )
@@ -56,7 +57,8 @@ class LinkPreviewProviderImpl @Inject constructor(
 
                 response.data?.mediaPage?.media?.filterNotNull()?.forEach { media ->
                     val id = media.id
-                    result[id] = LinkPreview(
+                    val type = media.type?.name?.lowercase() ?: "anime"
+                    result[LinkPreviewKey(type, id)] = LinkPreview(
                         title = media.title?.userPreferred ?: return@forEach,
                         imageUrl = media.coverImage?.large
                     )
@@ -64,7 +66,7 @@ class LinkPreviewProviderImpl @Inject constructor(
 
                 response.data?.characterPage?.characters?.filterNotNull()?.forEach { character ->
                     val id = character.id
-                    result[id] = LinkPreview(
+                    result[LinkPreviewKey("character", id)] = LinkPreview(
                         title = character.name?.userPreferred ?: return@forEach,
                         imageUrl = character.image?.large
                     )
