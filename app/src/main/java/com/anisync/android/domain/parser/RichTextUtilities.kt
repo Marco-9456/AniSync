@@ -40,12 +40,9 @@ internal fun trimEdgeInlineText(inlines: List<RichTextInline>): List<RichTextInl
 
 internal fun isBlankInlineList(inlines: List<RichTextInline>): Boolean {
     if (inlines.isEmpty()) return true
+    // Explicit LineBreaks are formatting blocks and should not be swallowed/treated as completely blank
     return inlines.all { inline ->
-        when (inline) {
-            is RichTextInline.Text -> inline.value.isBlank()
-            is RichTextInline.LineBreak -> true
-            else -> false
-        }
+        inline is RichTextInline.Text && inline.value.isBlank()
     }
 }
 

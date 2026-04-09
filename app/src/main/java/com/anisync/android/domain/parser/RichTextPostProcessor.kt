@@ -7,15 +7,15 @@ internal object RichTextPostProcessor {
 
         while (index < blocks.size) {
             val block = blocks[index]
-            if (isInlineGroupCandidate(block)) {
+
+            // Only group contiguous Images together to prevent buggy text wrapping
+            if (block is RichTextBlock.Image) {
                 val group = mutableListOf<RichTextBlock>()
                 val align = block.align
-
-                while (index < blocks.size && isInlineGroupCandidate(blocks[index]) && blocks[index].align == align) {
+                while (index < blocks.size && blocks[index] is RichTextBlock.Image && blocks[index].align == align) {
                     group.add(blocks[index])
                     index++
                 }
-
                 if (group.size > 1) {
                     result.add(RichTextBlock.InlineGroup(group, align))
                 } else {
@@ -24,6 +24,23 @@ internal object RichTextPostProcessor {
                 continue
             }
 
+            // Group contiguous AnilistLinks together
+            if (block is RichTextBlock.AnilistLink) {
+                val group = mutableListOf<RichTextBlock>()
+                val align = block.align
+                while (index < blocks.size && blocks[index] is RichTextBlock.AnilistLink && blocks[index].align == align) {
+                    group.add(blocks[index])
+                    index++
+                }
+                if (group.size > 1) {
+                    result.add(RichTextBlock.InlineGroup(group, align))
+                } else {
+                    result.add(group.first())
+                }
+                continue
+            }
+
+            // Text blocks are NO LONGER grouped here to ensure explicit block-level vertical alignment
             result.add(recursivelyGroupChildren(block))
             index++
         }
@@ -36,9 +53,6 @@ internal object RichTextPostProcessor {
         collectImageUrls(blocks, urls)
         return urls
     }
-
-    private fun isInlineGroupCandidate(block: RichTextBlock): Boolean =
-        block is RichTextBlock.Text || block is RichTextBlock.Image || block is RichTextBlock.AnilistLink
 
     private fun recursivelyGroupChildren(block: RichTextBlock): RichTextBlock = when (block) {
         is RichTextBlock.Spoiler -> block.copy(children = groupInlineBlocks(block.children))
@@ -60,6 +74,10 @@ internal object RichTextPostProcessor {
                     bullet = item.bullet
                 )
             }
+        )
+
+        is RichTextBlock.InlineGroup -> block.copy(
+            children = groupInlineBlocks(block.children)
         )
 
         else -> block
