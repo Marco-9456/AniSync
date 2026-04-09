@@ -74,6 +74,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -590,7 +591,10 @@ fun ExternalLinkChip(
         ) {
             if (link.icon != null) {
                 AsyncImage(
-                    model = link.icon,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(link.icon)
+                        .allowHardware(false)
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     contentScale = ContentScale.Fit,
