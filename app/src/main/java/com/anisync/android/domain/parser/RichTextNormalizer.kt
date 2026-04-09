@@ -3,6 +3,7 @@ package com.anisync.android.domain.parser
 internal object RichTextNormalizer {
     fun normalize(html: String): String {
         var processed = html.replace("\r", "")
+        processed = fixMangledMarkdownLinks(processed)
         processed = decodeAniListEscapedParenthesis(processed)
         processed = convertLinkedImages(processed)
         processed = convertMarkdownSpoilerSpans(processed)
@@ -12,6 +13,90 @@ internal object RichTextNormalizer {
         processed = preserveYoutubeDivs(processed)
         processed = normalizeMarkdownBlockquotes(processed)
         return processed
+    }
+
+    /**
+     * AniList's backend often auto-links URLs *inside* markdown link syntax, replacing
+     * the URL with full HTML <a> and <em> tags. This rebuilds the raw markdown link.
+     */
+    private fun fixMangledMarkdownLinks(html: String): String {
+        val sb = StringBuilder()
+        var i = 0
+        while (i < html.length) {
+            if (html[i] == '[') {
+                var closeBracket = -1
+                var bracketDepth = 1
+                var j = i + 1
+                while (j < html.length) {
+                    if (html[j] == '[') bracketDepth++
+                    else if (html[j] == ']') {
+                        bracketDepth--
+                        if (bracketDepth == 0) {
+                            closeBracket = j
+                            break
+                        }
+                    }
+                    j++
+                }
+
+                if (closeBracket != -1 && closeBracket + 1 < html.length && html[closeBracket + 1] == '(') {
+                    val closeParen = findBalancedCloseParen(html, closeBracket + 1)
+                    if (closeParen != -1) {
+                        val linkText = html.substring(i + 1, closeBracket)
+                        val mangledUrl = html.substring(closeBracket + 2, closeParen)
+
+                        if (mangledUrl.contains("<")) {
+                            var restoredUrl = mangledUrl
+                                .replace("<em>", "_")
+                                .replace("</em>", "_")
+                                .replace("<i>", "_")
+                                .replace("</i>", "_")
+                                .replace("<strong>", "**")
+                                .replace("</strong>", "**")
+                                .replace("<b>", "**")
+                                .replace("</b>", "**")
+
+                            // Strip any remaining HTML tags (like <a>)
+                            restoredUrl = restoredUrl.replace(Regex("""<[^>]+>"""), "").trim()
+
+                            sb.append("[$linkText]($restoredUrl)")
+                            i = closeParen + 1
+                            continue
+                        }
+                    }
+                }
+            }
+            sb.append(html[i])
+            i++
+        }
+        return sb.toString()
+    }
+
+    private fun findBalancedCloseParen(text: String, openParenIndex: Int): Int {
+        var depth = 1
+        var i = openParenIndex + 1
+        while (i < text.length) {
+            when {
+                text[i] == '(' -> depth++
+                text[i] == ')' -> {
+                    depth--; if (depth == 0) return i
+                }
+
+                i + 2 < text.length && text[i] == '%' && text[i + 1] == '2' -> {
+                    when (text[i + 2]) {
+                        '8' -> {
+                            depth++; i += 2
+                        }
+
+                        '9' -> {
+                            depth--; if (depth == 0) return i + 2; i += 2
+                        }
+                    }
+                }
+            }
+            i++
+        }
+        return -1
     }
 
     private fun decodeAniListEscapedParenthesis(text: String): String =

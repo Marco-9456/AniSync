@@ -26,14 +26,15 @@ internal class RichTextInlineParser(
         while (index < length) {
             val startOfLine =
                 (index == 0 && (!ctx.hasBufferedInlineContent || ctx.endsWithNewline())) ||
-                    (index > 0 && preparedText[index - 1] == '\n')
+                        (index > 0 && preparedText[index - 1] == '\n')
 
             if (startOfLine) {
                 var ws = index
                 while (ws < length && (preparedText[ws] == ' ' || preparedText[ws] == '\t')) ws++
 
                 if (ws < length) {
-                    val currentLineEnd = preparedText.indexOf('\n', ws).let { if (it == -1) length else it }
+                    val currentLineEnd =
+                        preparedText.indexOf('\n', ws).let { if (it == -1) length else it }
                     val lineTextRaw = preparedText.substring(ws, currentLineEnd)
                     val lineText = lineTextRaw.trim()
                     val lineChar = preparedText[ws]
@@ -132,7 +133,14 @@ internal class RichTextInlineParser(
                 val end = preparedText.indexOf('`', index + 1)
                 if (end != -1 && end > index) {
                     flushPlain()
-                    ctx.appendInline(RichTextInline.InlineCode(preparedText.substring(index + 1, end)))
+                    ctx.appendInline(
+                        RichTextInline.InlineCode(
+                            preparedText.substring(
+                                index + 1,
+                                end
+                            )
+                        )
+                    )
                     index = end + 1
                     lastAppend = index
                     continue
@@ -255,7 +263,10 @@ internal class RichTextInlineParser(
                         !preparedText[end - 1].isWhitespace()
                     ) {
                         flushPlain()
-                        val child = parseInlineOnly(preparedText.substring(index + 3, end), ctx.currentLinkUrl)
+                        val child = parseInlineOnly(
+                            preparedText.substring(index + 3, end),
+                            ctx.currentLinkUrl
+                        )
                         ctx.appendInline(RichTextInline.BoldItalic(child))
                         index = end + 3
                         lastAppend = index
@@ -270,7 +281,10 @@ internal class RichTextInlineParser(
                         !preparedText[end - 1].isWhitespace()
                     ) {
                         flushPlain()
-                        val child = parseInlineOnly(preparedText.substring(index + 2, end), ctx.currentLinkUrl)
+                        val child = parseInlineOnly(
+                            preparedText.substring(index + 2, end),
+                            ctx.currentLinkUrl
+                        )
                         ctx.appendInline(RichTextInline.Bold(child))
                         index = end + 2
                         lastAppend = index
@@ -284,7 +298,8 @@ internal class RichTextInlineParser(
                     !preparedText[end - 1].isWhitespace()
                 ) {
                     flushPlain()
-                    val child = parseInlineOnly(preparedText.substring(index + 1, end), ctx.currentLinkUrl)
+                    val child =
+                        parseInlineOnly(preparedText.substring(index + 1, end), ctx.currentLinkUrl)
                     ctx.appendInline(RichTextInline.Italic(child))
                     index = end + 1
                     lastAppend = index
@@ -292,16 +307,23 @@ internal class RichTextInlineParser(
                 }
             }
 
-            if (c == '[' && preparedText.indexOf("](", index) != -1) {
-                val closeBracket = preparedText.indexOf(']', index + 1)
+            if (c == '!' && preparedText.startsWith("![", index)) {
+                val closeBracket = findBalancedCloseBracket(preparedText, index + 1)
                 if (closeBracket != -1 && closeBracket + 1 < length && preparedText[closeBracket + 1] == '(') {
                     val closeParen = findBalancedCloseParen(preparedText, closeBracket + 1)
                     if (closeParen != -1) {
                         flushPlain()
-                        val linkText = preparedText.substring(index + 1, closeBracket)
+                        ctx.flushText()
                         val url = preparedText.substring(closeBracket + 2, closeParen)
-                        val linkChildren = parseInlineOnly(linkText, url)
-                        ctx.appendInline(RichTextInline.Link(url = url, children = linkChildren))
+                        ctx.emitBlock(
+                            RichTextBlock.Image(
+                                url = url,
+                                width = null,
+                                isPercent = false,
+                                linkUrl = ctx.currentLinkUrl,
+                                align = ctx.align
+                            )
+                        )
                         index = closeParen + 1
                         lastAppend = index
                         continue
@@ -309,7 +331,61 @@ internal class RichTextInlineParser(
                 }
             }
 
-            if (c == 'h' && (preparedText.startsWith("http://", index) || preparedText.startsWith("https://", index))) {
+            if (c == '[' && preparedText.indexOf("](", index) != -1) {
+                val closeBracket = findBalancedCloseBracket(preparedText, index)
+                if (closeBracket != -1 && closeBracket + 1 < length && preparedText[closeBracket + 1] == '(') {
+                    val closeParen = findBalancedCloseParen(preparedText, closeBracket + 1)
+                    if (closeParen != -1) {
+                        flushPlain()
+                        val linkText = preparedText.substring(index + 1, closeBracket)
+                        val url = preparedText.substring(closeBracket + 2, closeParen)
+
+                        var isJustImage = false
+                        if (linkText.startsWith("![")) {
+                            val innerCloseBracket = findBalancedCloseBracket(linkText, 1)
+                            if (innerCloseBracket != -1 && innerCloseBracket + 1 < linkText.length && linkText[innerCloseBracket + 1] == '(') {
+                                val innerCloseParen =
+                                    findBalancedCloseParen(linkText, innerCloseBracket + 1)
+                                if (innerCloseParen == linkText.length - 1) {
+                                    ctx.flushText()
+                                    val imgUrl =
+                                        linkText.substring(innerCloseBracket + 2, innerCloseParen)
+                                    ctx.emitBlock(
+                                        RichTextBlock.Image(
+                                            url = imgUrl,
+                                            width = null,
+                                            isPercent = false,
+                                            linkUrl = url,
+                                            align = ctx.align
+                                        )
+                                    )
+                                    isJustImage = true
+                                }
+                            }
+                        }
+
+                        if (!isJustImage) {
+                            val linkChildren = parseInlineOnly(linkText, url)
+                            ctx.appendInline(
+                                RichTextInline.Link(
+                                    url = url,
+                                    children = linkChildren
+                                )
+                            )
+                        }
+
+                        index = closeParen + 1
+                        lastAppend = index
+                        continue
+                    }
+                }
+            }
+
+            if (c == 'h' && (preparedText.startsWith(
+                    "http://",
+                    index
+                ) || preparedText.startsWith("https://", index))
+            ) {
                 val match = bareUrlRegex.find(preparedText, index)
                 if (match != null && match.range.first == index) {
                     flushPlain()
@@ -356,7 +432,10 @@ internal class RichTextInlineParser(
             if (isSetext) {
                 val level = if (next.first() == '=') 1 else 2
                 val currentTrimmed = current.trimStart()
-                if (!currentTrimmed.startsWith("#") && !currentTrimmed.contains('<') && !currentTrimmed.contains('>')) {
+                if (!currentTrimmed.startsWith("#") && !currentTrimmed.contains('<') && !currentTrimmed.contains(
+                        '>'
+                    )
+                ) {
                     val prefixWhitespace = current.takeWhile { it == ' ' || it == '\t' }
                     lines[i] = "$prefixWhitespace${"#".repeat(level)} ${current.trim()}"
                     lines.removeAt(i + 1)
@@ -513,8 +592,29 @@ internal class RichTextInlineParser(
                 }
             }
 
+            if (c == '!' && text.startsWith("![", index)) {
+                val closeBracket = findBalancedCloseBracket(text, index + 1)
+                if (closeBracket != -1 && closeBracket + 1 < length && text[closeBracket + 1] == '(') {
+                    val closeParen = findBalancedCloseParen(text, closeBracket + 1)
+                    if (closeParen != -1) {
+                        flushPlain()
+                        val altText = text.substring(index + 2, closeBracket)
+                        val url = text.substring(closeBracket + 2, closeParen)
+                        result.add(
+                            RichTextInline.Link(
+                                url = url,
+                                children = listOf(RichTextInline.Text(altText.ifEmpty { "Image" }))
+                            )
+                        )
+                        index = closeParen + 1
+                        lastAppend = index
+                        continue
+                    }
+                }
+            }
+
             if (c == '[' && text.indexOf("](", index) != -1) {
-                val closeBracket = text.indexOf(']', index + 1)
+                val closeBracket = findBalancedCloseBracket(text, index)
                 if (closeBracket != -1 && closeBracket + 1 < length && text[closeBracket + 1] == '(') {
                     val closeParen = findBalancedCloseParen(text, closeBracket + 1)
                     if (closeParen != -1) {
@@ -530,12 +630,21 @@ internal class RichTextInlineParser(
                 }
             }
 
-            if (c == 'h' && (text.startsWith("http://", index) || text.startsWith("https://", index))) {
+            if (c == 'h' && (text.startsWith("http://", index) || text.startsWith(
+                    "https://",
+                    index
+                ))
+            ) {
                 val match = bareUrlRegex.find(text, index)
                 if (match != null && match.range.first == index) {
                     flushPlain()
                     val url = match.value
-                    result.add(RichTextInline.Link(url = url, children = listOf(RichTextInline.Text(url))))
+                    result.add(
+                        RichTextInline.Link(
+                            url = url,
+                            children = listOf(RichTextInline.Text(url))
+                        )
+                    )
                     index = match.range.last + 1
                     lastAppend = index
                     continue
@@ -549,17 +658,39 @@ internal class RichTextInlineParser(
         return result
     }
 
+    private fun findBalancedCloseBracket(text: String, openBracketIndex: Int): Int {
+        var depth = 1
+        var i = openBracketIndex + 1
+        while (i < text.length) {
+            if (text[i] == '[') depth++
+            else if (text[i] == ']') {
+                depth--
+                if (depth == 0) return i
+            }
+            i++
+        }
+        return -1
+    }
+
     private fun findBalancedCloseParen(text: String, openParenIndex: Int): Int {
         var depth = 1
         var i = openParenIndex + 1
         while (i < text.length) {
             when {
                 text[i] == '(' -> depth++
-                text[i] == ')' -> { depth--; if (depth == 0) return i }
+                text[i] == ')' -> {
+                    depth--; if (depth == 0) return i
+                }
+
                 i + 2 < text.length && text[i] == '%' && text[i + 1] == '2' -> {
                     when (text[i + 2]) {
-                        '8' -> { depth++; i += 2 }
-                        '9' -> { depth--; i += 2 }
+                        '8' -> {
+                            depth++; i += 2
+                        }
+
+                        '9' -> {
+                            depth--; if (depth == 0) return i + 2; i += 2
+                        }
                     }
                 }
             }
