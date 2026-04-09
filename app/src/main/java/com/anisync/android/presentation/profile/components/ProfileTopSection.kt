@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,13 +34,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -49,7 +60,11 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileTopSection(
     profile: UserProfile,
@@ -164,7 +179,10 @@ fun ProfileTopSection(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             val level = remember(profile.animeCount, profile.mangaCount) {
                                 (profile.animeCount + profile.mangaCount) / 10
                             }
@@ -180,8 +198,105 @@ fun ProfileTopSection(
                                 )
                             }
 
-                            if (!isOwnProfile) {
-                                Spacer(modifier = Modifier.width(12.dp))
+                            if (profile.donatorTier > 0) {
+                                val badgeText = profile.donatorBadge?.takeIf { it.isNotBlank() } ?: "Donator"
+                                val isRainbow = profile.donatorTier >= 5
+
+                                if (isRainbow) {
+                                    val rainbowColors = remember {
+                                        listOf(
+                                            Color(0xFFE91E63),
+                                            Color(0xFFFF9800),
+                                            Color(0xFFFFEB3B),
+                                            Color(0xFF4CAF50),
+                                            Color(0xFF2196F3),
+                                            Color(0xFF9C27B0)
+                                        )
+                                    }
+                                    val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
+                                    val progress by infiniteTransition.animateFloat(
+                                        initialValue = 0f,
+                                        targetValue = rainbowColors.size.toFloat(),
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(
+                                                durationMillis = rainbowColors.size * 1000,
+                                                easing = LinearEasing
+                                            ),
+                                            repeatMode = RepeatMode.Restart
+                                        ),
+                                        label = "rainbowProgress"
+                                    )
+                                    val colorIndex = progress.toInt() % rainbowColors.size
+                                    val nextIndex = (colorIndex + 1) % rainbowColors.size
+                                    val fraction = progress - progress.toInt()
+                                    val animatedColor = lerp(rainbowColors[colorIndex], rainbowColors[nextIndex], fraction)
+
+                                    Surface(
+                                        color = animatedColor,
+                                        shape = CircleShape
+                                    ) {
+                                        Text(
+                                            text = badgeText,
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                } else {
+                                    val donatorColor = when (profile.donatorTier) {
+                                        1 -> Color(0xFF78909C) // Blue-grey for $1
+                                        2 -> Color(0xFF5C6BC0) // Indigo for $3
+                                        3 -> Color(0xFFFFB300) // Amber for $5
+                                        else -> Color(0xFFFF6F00) // Deep amber for $10
+                                    }
+                                    Surface(
+                                        color = donatorColor,
+                                        shape = CircleShape
+                                    ) {
+                                        Text(
+                                            text = badgeText,
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (profile.moderatorRoles.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                profile.moderatorRoles.forEach { role ->
+                                    val formattedRole = remember(role) {
+                                        role.replace("_", " ").lowercase()
+                                            .replaceFirstChar { it.uppercase() }
+                                            .replace(" [a-z]".toRegex()) { it.value.uppercase() }
+                                    }
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = formattedRole,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!isOwnProfile) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 val activeTime = remember(profile.activeAt) {
                                     formatProfileRelativeTime(profile.activeAt)
                                 }
@@ -190,7 +305,29 @@ fun ProfileTopSection(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                if (profile.createdAt != null) {
+                                    val joinedDate = remember(profile.createdAt) {
+                                        val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+                                        "Joined ${sdf.format(Date(profile.createdAt))}"
+                                    }
+                                    Text(
+                                        text = joinedDate,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
+                        } else if (profile.createdAt != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val joinedDate = remember(profile.createdAt) {
+                                val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+                                "Joined ${sdf.format(Date(profile.createdAt))}"
+                            }
+                            Text(
+                                text = joinedDate,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

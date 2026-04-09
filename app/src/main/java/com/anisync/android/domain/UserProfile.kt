@@ -23,7 +23,11 @@ data class UserProfile(
     val favoriteMangaOverview: List<LibraryEntry> = emptyList(),
     val favoriteCharactersOverview: List<CharacterInfo> = emptyList(),
     val favoriteStaffOverview: List<StaffDetails> = emptyList(),
-    val favoriteStudiosOverview: List<StudioInfo> = emptyList()
+    val favoriteStudiosOverview: List<StudioInfo> = emptyList(),
+    val donatorTier: Int = 0,
+    val donatorBadge: String? = null,
+    val moderatorRoles: List<String> = emptyList(),
+    val createdAt: Long? = null
 )
 
 @Immutable

@@ -183,7 +183,11 @@ fun UserProfileEntity.toDomain(): UserProfile = UserProfile(
     favoriteMangaOverview = favoriteMangaOverview,
     favoriteCharactersOverview = favoriteCharactersOverview,
     favoriteStaffOverview = favoriteStaffOverview,
-    favoriteStudiosOverview = favoriteStudiosOverview
+    favoriteStudiosOverview = favoriteStudiosOverview,
+    donatorTier = donatorTier,
+    donatorBadge = donatorBadge,
+    moderatorRoles = moderatorRoles,
+    createdAt = createdAt
 )
 
 fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
@@ -205,5 +209,9 @@ fun UserProfile.toEntity(): UserProfileEntity = UserProfileEntity(
     favoriteMangaOverview = favoriteMangaOverview,
     favoriteCharactersOverview = favoriteCharactersOverview,
     favoriteStaffOverview = favoriteStaffOverview,
-    favoriteStudiosOverview = favoriteStudiosOverview
+    favoriteStudiosOverview = favoriteStudiosOverview,
+    donatorTier = donatorTier,
+    donatorBadge = donatorBadge,
+    moderatorRoles = moderatorRoles,
+    createdAt = createdAt
 )

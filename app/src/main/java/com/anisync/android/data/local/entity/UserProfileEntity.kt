@@ -45,5 +45,17 @@ data class UserProfileEntity(
     val favoriteStaffOverview: List<StaffDetails> = emptyList(),
 
     @ColumnInfo(defaultValue = "[]")
-    val favoriteStudiosOverview: List<StudioInfo> = emptyList()
+    val favoriteStudiosOverview: List<StudioInfo> = emptyList(),
+
+    @ColumnInfo(defaultValue = "0")
+    val donatorTier: Int = 0,
+
+    @ColumnInfo(defaultValue = "")
+    val donatorBadge: String? = null,
+
+    @ColumnInfo(defaultValue = "[]")
+    val moderatorRoles: List<String> = emptyList(),
+
+    @ColumnInfo(defaultValue = "0")
+    val createdAt: Long? = null
 )

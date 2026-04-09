@@ -227,7 +227,11 @@ class ProfileRepositoryImpl @Inject constructor(
                 favoriteMangaOverview = overviewManga,
                 favoriteCharactersOverview = overviewCharacters,
                 favoriteStaffOverview = overviewStaff,
-                favoriteStudiosOverview = overviewStudios
+                favoriteStudiosOverview = overviewStudios,
+                donatorTier = user.donatorTier ?: 0,
+                donatorBadge = user.donatorBadge,
+                moderatorRoles = user.moderatorRoles?.filterNotNull()?.map { it.name } ?: emptyList(),
+                createdAt = user.createdAt?.toLong()?.times(1000)
             )
         }
     }

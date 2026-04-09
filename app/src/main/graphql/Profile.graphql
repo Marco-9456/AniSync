@@ -8,6 +8,10 @@ query GetUserProfile($name: String) {
     bannerImage
     about(asHtml: true)
     updatedAt
+    donatorTier
+    donatorBadge
+    moderatorRoles
+    createdAt
     statistics {
       anime {
         count
