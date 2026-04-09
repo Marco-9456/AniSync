@@ -553,9 +553,15 @@ internal class RichTextInlineParser(
         var depth = 1
         var i = openParenIndex + 1
         while (i < text.length) {
-            when (text[i]) {
-                '(' -> depth++
-                ')' -> { depth--; if (depth == 0) return i }
+            when {
+                text[i] == '(' -> depth++
+                text[i] == ')' -> { depth--; if (depth == 0) return i }
+                i + 2 < text.length && text[i] == '%' && text[i + 1] == '2' -> {
+                    when (text[i + 2]) {
+                        '8' -> { depth++; i += 2 }
+                        '9' -> { depth--; i += 2 }
+                    }
+                }
             }
             i++
         }

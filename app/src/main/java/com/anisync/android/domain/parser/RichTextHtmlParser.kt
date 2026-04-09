@@ -1,5 +1,6 @@
 package com.anisync.android.domain.parser
 
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
@@ -91,12 +92,21 @@ internal class RichTextHtmlParser(
                 workingCtx.flushText()
                 val code = element.selectFirst("code")?.wholeText() ?: element.wholeText()
                 if (code.isNotBlank()) {
-                    workingCtx.emitBlock(
-                        RichTextBlock.CodeBlock(
-                            code = code.trim(),
-                            align = workingCtx.align
+                    val trimmed = code.trim()
+                    if (looksLikeEscapedHtml(trimmed)) {
+                        val reparsed = Jsoup.parseBodyFragment(
+                            RichTextNormalizer.normalize(trimmed)
+                        ).body()
+                        walkChildren(reparsed, workingCtx)
+                        workingCtx.flushText()
+                    } else {
+                        workingCtx.emitBlock(
+                            RichTextBlock.CodeBlock(
+                                code = trimmed,
+                                align = workingCtx.align
+                            )
                         )
-                    )
+                    }
                 }
             }
 
@@ -129,6 +139,8 @@ internal class RichTextHtmlParser(
             }
 
             "iframe" -> handleIframe(element, workingCtx)
+            "style", "head", "script" -> { /* strip CSS/JS blocks entirely */ }
+            "html", "body" -> walkChildren(element, workingCtx)
             else -> walkChildren(element, workingCtx)
         }
 
@@ -261,13 +273,14 @@ internal class RichTextHtmlParser(
             val cells = mutableListOf<TableCell>()
             for (td in tr.children()) {
                 if (td.tagName() !in listOf("td", "th")) continue
+                val cellAlign = parseAlignment(td.tagName(), td.attr("align"), ctx.align)
                 val cellCtx = ctx.detached(
-                    align = ctx.align,
+                    align = cellAlign,
                     currentLinkUrl = ctx.currentLinkUrl
                 )
                 walkChildren(td, cellCtx)
                 cellCtx.flushText()
-                cells.add(TableCell(cellCtx.blocks.toList(), td.tagName() == "th"))
+                cells.add(TableCell(cellCtx.blocks.toList(), td.tagName() == "th", cellAlign))
             }
             if (cells.isNotEmpty()) {
                 rows.add(TableRow(cells))
@@ -373,13 +386,16 @@ internal class RichTextHtmlParser(
         )
     }
 
+    private fun youtubeUrl(id: String): String =
+        if (id.contains("://")) id else "https://www.youtube.com/watch?v=$id"
+
     private fun handleYoutubeElement(element: Element, ctx: ParseContext) {
         ctx.flushText()
         val id = element.id().trim()
         if (id.isNotBlank()) {
             ctx.emitBlock(
                 RichTextBlock.YouTube(
-                    videoIdOrUrl = "https://www.youtube.com/watch?v=$id",
+                    videoIdOrUrl = youtubeUrl(id),
                     align = ctx.align
                 )
             )
@@ -395,7 +411,7 @@ internal class RichTextHtmlParser(
             if (id.isNotBlank()) {
                 ctx.emitBlock(
                     RichTextBlock.YouTube(
-                        videoIdOrUrl = "https://www.youtube.com/watch?v=$id",
+                        videoIdOrUrl = youtubeUrl(id),
                         align = ctx.align
                     )
                 )
@@ -417,7 +433,11 @@ internal class RichTextHtmlParser(
             return
         }
 
-        walkInlineChildren(element, ctx)
+        if (hasBlockChildren(element)) {
+            walkChildren(element, ctx)
+        } else {
+            walkInlineChildren(element, ctx)
+        }
     }
 
     private fun handleVideoElement(element: Element, ctx: ParseContext) {
@@ -546,4 +566,18 @@ internal class RichTextHtmlParser(
 
     private fun decodeHtmlAttribute(value: String): String =
         org.jsoup.parser.Parser.unescapeEntities(value, false)
+
+    private fun looksLikeEscapedHtml(text: String): Boolean {
+        val sample = if (text.length > 500) text.substring(0, 500) else text
+        val tagCount = Regex("""<[a-zA-Z/][^>]*>""").findAll(sample).count()
+        return tagCount >= 3
+    }
+
+    private val blockTags = setOf(
+        "p", "div", "ul", "ol", "li", "table", "blockquote",
+        "h1", "h2", "h3", "h4", "h5", "hr", "pre", "img", "br"
+    )
+
+    private fun hasBlockChildren(element: Element): Boolean =
+        element.children().any { it.tagName().lowercase() in blockTags }
 }

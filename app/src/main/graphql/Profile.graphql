@@ -6,7 +6,7 @@ query GetUserProfile($name: String) {
       large
     }
     bannerImage
-    about
+    about(asHtml: true)
     updatedAt
     statistics {
       anime {
@@ -232,7 +232,7 @@ query GetUserActivities($userId: Int) {
 mutation UpdateAbout($about: String) {
   UpdateUser(about: $about) {
     id
-    about
+    about(asHtml: true)
   }
 }
 query GetUserSocialData($userId: Int!, $page: Int = 1) {

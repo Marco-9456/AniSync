@@ -47,10 +47,7 @@ internal object RichTextPostProcessor {
             rows = block.rows.map { row ->
                 TableRow(
                     row.cells.map { cell ->
-                        TableCell(
-                            children = groupInlineBlocks(cell.children),
-                            isHeader = cell.isHeader
-                        )
+                        cell.copy(children = groupInlineBlocks(cell.children))
                     }
                 )
             }

@@ -4,6 +4,8 @@ internal object RichTextNormalizer {
     fun normalize(html: String): String {
         var processed = html.replace("\r", "")
         processed = decodeAniListEscapedParenthesis(processed)
+        processed = convertLinkedImages(processed)
+        processed = convertMarkdownSpoilerSpans(processed)
         processed = replaceCenterTags(processed)
         processed = replaceCenterMarkdownBlocks(processed)
         processed = replaceMarkdownSpoilers(processed)
@@ -24,6 +26,17 @@ internal object RichTextNormalizer {
             .replace("&lpar", "(")
             .replace("&#41;", ")")
             .replace("&#40;", "(")
+
+    private val linkedImgRegex = Regex(
+        """\[\s*(<img\s[^>]*>)\s*]\(([^)]+)\)"""
+    )
+
+    private fun convertLinkedImages(text: String): String =
+        text.replace(linkedImgRegex) { match ->
+            val imgTag = match.groupValues[1]
+            val linkUrl = match.groupValues[2]
+            "<a href=\"$linkUrl\">$imgTag</a>"
+        }
 
     private fun replaceCenterTags(text: String): String =
         text
@@ -52,6 +65,36 @@ internal object RichTextNormalizer {
         return text.replace(youtubeRegex) { match ->
             "<youtube${match.groupValues[1]}class=\"youtube\"${match.groupValues[2]}>${match.groupValues[3]}</youtube>"
         }
+    }
+
+    private val markdownSpoilerOpenRegex = Regex(
+        """<span\s+class=['"]markdown_spoiler['"]\s*>\s*<span\s*>"""
+    )
+
+    private fun convertMarkdownSpoilerSpans(html: String): String {
+        val openMatches = markdownSpoilerOpenRegex.findAll(html).toList()
+        if (openMatches.isEmpty()) return html
+
+        val sb = StringBuilder()
+        var lastEnd = 0
+        for (match in openMatches) {
+            sb.append(html, lastEnd, match.range.first)
+            sb.append("<div rel=\"spoiler\">")
+            lastEnd = match.range.last + 1
+        }
+        sb.append(html, lastEnd, html.length)
+
+        var result = sb.toString()
+        val closeTag = "</span></span>"
+        var remaining = openMatches.size
+        while (remaining > 0) {
+            val idx = result.indexOf(closeTag)
+            if (idx == -1) break
+            result = result.substring(0, idx) + "</div>" + result.substring(idx + closeTag.length)
+            remaining--
+        }
+
+        return result
     }
 
     private fun normalizeMarkdownBlockquotes(text: String): String {

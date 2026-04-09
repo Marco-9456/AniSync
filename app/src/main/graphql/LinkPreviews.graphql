@@ -1,4 +1,4 @@
-query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int]) {
+query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int], $staffIds: [Int]) {
     mediaPage: Page(perPage: 25) {
         media(id_in: $mediaIds) {
             id
@@ -13,6 +13,17 @@ query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int]) {
     }
     characterPage: Page(perPage: 25) {
         characters(id_in: $characterIds) {
+            id
+            name {
+                userPreferred
+            }
+            image {
+                large
+            }
+        }
+    }
+    staffPage: Page(perPage: 25) {
+        staff(id_in: $staffIds) {
             id
             name {
                 userPreferred

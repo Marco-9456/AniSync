@@ -46,9 +46,17 @@ fun ProfileScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
+        var wasInBackground = false
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onAction(ProfileAction.Refresh)
+            when (event) {
+                Lifecycle.Event.ON_STOP -> wasInBackground = true
+                Lifecycle.Event.ON_RESUME -> {
+                    if (wasInBackground) {
+                        wasInBackground = false
+                        viewModel.onAction(ProfileAction.Refresh)
+                    }
+                }
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

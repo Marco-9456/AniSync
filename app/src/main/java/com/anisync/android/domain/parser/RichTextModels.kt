@@ -122,7 +122,11 @@ data class LinkPreviewKey(
 )
 
 data class TableRow(val cells: List<TableCell>)
-data class TableCell(val children: List<RichTextBlock>, val isHeader: Boolean)
+data class TableCell(
+    val children: List<RichTextBlock>,
+    val isHeader: Boolean,
+    val align: RichTextAlignment = RichTextAlignment.Start
+)
 data class ListItem(val children: List<RichTextBlock>, val bullet: String?)
 
 private fun decodeSlug(slug: String): String =

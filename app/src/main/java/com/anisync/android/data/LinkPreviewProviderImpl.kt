@@ -42,16 +42,23 @@ class LinkPreviewProviderImpl @Inject constructor(
         }
 
         // Phase 2: Collect character/staff IDs that need network fetch
-        val characterLinks = uniqueLinks.filter { it.type == "character" || it.type == "staff" }
-        val characterIds = characterLinks.map { it.id }
+        val characterIds = uniqueLinks
+            .filter { it.type == "character" }
+            .map { it.id }
+            .distinct()
+        val staffIds = uniqueLinks
+            .filter { it.type == "staff" }
+            .map { it.id }
+            .distinct()
 
         // Phase 3: Batch fetch uncached media + characters from API
-        if (uncachedMediaIds.isNotEmpty() || characterIds.isNotEmpty()) {
+        if (uncachedMediaIds.isNotEmpty() || characterIds.isNotEmpty() || staffIds.isNotEmpty()) {
             try {
                 val response = apolloClient.query(
                     GetLinkPreviewsQuery(
                         mediaIds = Optional.presentIfNotNull(uncachedMediaIds.takeIf { it.isNotEmpty() }),
-                        characterIds = Optional.presentIfNotNull(characterIds.takeIf { it.isNotEmpty() })
+                        characterIds = Optional.presentIfNotNull(characterIds.takeIf { it.isNotEmpty() }),
+                        staffIds = Optional.presentIfNotNull(staffIds.takeIf { it.isNotEmpty() })
                     )
                 ).execute()
 
@@ -69,6 +76,14 @@ class LinkPreviewProviderImpl @Inject constructor(
                     result[LinkPreviewKey("character", id)] = LinkPreview(
                         title = character.name?.userPreferred ?: return@forEach,
                         imageUrl = character.image?.large
+                    )
+                }
+
+                response.data?.staffPage?.staff?.filterNotNull()?.forEach { staff ->
+                    val id = staff.id
+                    result[LinkPreviewKey("staff", id)] = LinkPreview(
+                        title = staff.name?.userPreferred ?: return@forEach,
+                        imageUrl = staff.image?.large
                     )
                 }
             } catch (_: Exception) {

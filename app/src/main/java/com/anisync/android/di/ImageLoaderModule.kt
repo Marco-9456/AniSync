@@ -5,6 +5,7 @@ import android.os.Build
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
+import coil.decode.SvgDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import dagger.Module
@@ -42,6 +43,7 @@ object ImageLoaderModule {
                 } else {
                     add(GifDecoder.Factory())
                 }
+                add(SvgDecoder.Factory())
             }
             // Smooth crossfade transition when images load
             .crossfade(CROSSFADE_DURATION_MS)
