@@ -63,6 +63,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
+import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.parser.LinkPreviewKey
@@ -142,7 +143,7 @@ fun RichTextRenderer(
         androidx.compose.ui.platform.LocalUriHandler provides customUriHandler
     ) {
         SelectionContainer(modifier = modifier) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 RenderBlocks(
                     blocks = parsedData.blocks,
                     style = style,
@@ -217,7 +218,7 @@ private fun RenderBlocks(
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = blockAlignment,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             when (block) {
                 is RichTextBlock.Text -> {
@@ -240,73 +241,50 @@ private fun RenderBlocks(
                 }
 
                 is RichTextBlock.InlineGroup -> {
-                    val imageOnly = block.children.size >= 2 &&
-                        block.children.all { it is RichTextBlock.Image }
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = when (block.align.toTextAlign()) {
+                            TextAlign.Center -> Arrangement.spacedBy(
+                                8.dp,
+                                Alignment.CenterHorizontally
+                            )
 
-                    if (imageOnly) {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            block.children.chunked(2).forEach { rowItems ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    rowItems.forEach { child ->
-                                        if (child is RichTextBlock.Image) {
-                                            Box(modifier = Modifier.weight(1f)) {
-                                                RichImage(
-                                                    child,
-                                                    onImageClick,
-                                                    onLinkClick,
-                                                    fillWidth = true
-                                                )
-                                            }
-                                        }
-                                    }
+                            TextAlign.Right -> Arrangement.spacedBy(8.dp, Alignment.End)
+                            else -> Arrangement.spacedBy(8.dp, Alignment.Start)
+                        },
+                        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
+                    ) {
+                        block.children.forEach { child ->
+                            when (child) {
+                                is RichTextBlock.Text -> {
+                                    Text(
+                                        text = child.inlines.toAnnotatedString(
+                                            baseStyle = style,
+                                            baseColor = color,
+                                            linkColor = linkColor,
+                                            codeBackground = codeBackground,
+                                            headingKind = child.kind
+                                        ),
+                                        style = style.copy(color = color),
+                                        textAlign = child.align.toTextAlign(),
+                                        modifier = Modifier.align(Alignment.CenterVertically)
+                                    )
                                 }
-                            }
-                        }
-                    } else {
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = when (block.align.toTextAlign()) {
-                                TextAlign.Center -> Arrangement.Center
-                                TextAlign.Right -> Arrangement.End
-                                else -> Arrangement.Start
-                            },
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            block.children.forEach { child ->
-                                when (child) {
-                                    is RichTextBlock.Text -> {
-                                        Text(
-                                            text = child.inlines.toAnnotatedString(
-                                                baseStyle = style,
-                                                baseColor = color,
-                                                linkColor = linkColor,
-                                                codeBackground = codeBackground,
-                                                headingKind = child.kind
-                                            ),
-                                            style = style.copy(color = color),
-                                            textAlign = child.align.toTextAlign(),
-                                            modifier = Modifier.align(Alignment.CenterVertically)
-                                        )
-                                    }
 
-                                    is RichTextBlock.Image -> {
-                                        RichImage(child, onImageClick, onLinkClick)
-                                    }
-
-                                    is RichTextBlock.AnilistLink -> {
-                                        AniListLinkCard(
-                                            block = child,
-                                            preview = previews[child.previewKey],
-                                            style = style,
-                                            onLinkClick = onLinkClick
-                                        )
-                                    }
-
-                                    else -> Unit
+                                is RichTextBlock.Image -> {
+                                    RichImage(child, onImageClick, onLinkClick)
                                 }
+
+                                is RichTextBlock.AnilistLink -> {
+                                    AniListLinkCard(
+                                        block = child,
+                                        preview = previews[child.previewKey],
+                                        style = style,
+                                        onLinkClick = onLinkClick
+                                    )
+                                }
+
+                                else -> Unit
                             }
                         }
                     }
@@ -324,7 +302,7 @@ private fun RenderBlocks(
                 is RichTextBlock.ListBlock -> {
                     Column(
                         modifier = Modifier.padding(start = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         block.items.forEach { item ->
                             Row(modifier = Modifier.fillMaxWidth()) {
@@ -338,7 +316,10 @@ private fun RenderBlocks(
                                         modifier = Modifier.padding(end = 8.dp)
                                     )
                                 }
-                                Column(modifier = Modifier.weight(1f)) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     RenderBlocks(
                                         blocks = item.children,
                                         style = style,
@@ -411,19 +392,21 @@ private fun RenderBlocks(
                                             .padding(8.dp),
                                         contentAlignment = cellHorizontalAlignment
                                     ) {
-                                        RenderBlocks(
-                                            blocks = cell.children,
-                                            style = style.copy(
-                                                fontWeight = if (cell.isHeader) FontWeight.Bold else FontWeight.Normal
-                                            ),
-                                            color = color,
-                                            linkColor = linkColor,
-                                            codeBackground = codeBackground,
-                                            spoilerColor = spoilerColor,
-                                            previews = previews,
-                                            onImageClick = onImageClick,
-                                            onLinkClick = onLinkClick
-                                        )
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            RenderBlocks(
+                                                blocks = cell.children,
+                                                style = style.copy(
+                                                    fontWeight = if (cell.isHeader) FontWeight.Bold else FontWeight.Normal
+                                                ),
+                                                color = color,
+                                                linkColor = linkColor,
+                                                codeBackground = codeBackground,
+                                                spoilerColor = spoilerColor,
+                                                previews = previews,
+                                                onImageClick = onImageClick,
+                                                onLinkClick = onLinkClick
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -481,8 +464,12 @@ private fun RenderBlocks(
                             exit = fadeOut() + shrinkVertically()
                         ) {
                             Column(
-                                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                modifier = Modifier.padding(
+                                    start = 12.dp,
+                                    end = 12.dp,
+                                    bottom = 12.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 RenderBlocks(
                                     blocks = block.children,
@@ -515,7 +502,7 @@ private fun RenderBlocks(
                                 )
                             }
                             .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         RenderBlocks(
                             blocks = block.children,
@@ -610,13 +597,19 @@ private fun RichImage(
         else -> Modifier
     }
 
-    val isSvg = img.url.endsWith(".svg", ignoreCase = true)
+    val isSvg =
+        img.url.endsWith(".svg", ignoreCase = true) || img.url.contains("spotify-github-profile")
 
     SubcomposeAsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(img.url)
             .crossfade(true)
-            .apply { if (isSvg) allowHardware(false) }
+            .apply {
+                if (isSvg) {
+                    decoderFactory(SvgDecoder.Factory())
+                    allowHardware(false)
+                }
+            }
             .build(),
         contentDescription = null,
         contentScale = if (fillWidth || img.width != null) ContentScale.Fit else ContentScale.Inside,
