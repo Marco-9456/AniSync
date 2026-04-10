@@ -53,15 +53,20 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -91,7 +96,10 @@ import com.anisync.android.presentation.forum.components.ThreadHeaderTop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private const val DEPTH_WINDOW_SIZE = 5
+// Base indent per depth level (must match ThreadCommentItem.indentSize + basePadding overhead)
+private const val INDENT_PER_LEVEL_DP = 32
+// Minimum content width (dp) to keep comments readable at max indent
+private const val MIN_CONTENT_WIDTH_DP = 200
 
 /** Internal data model representing a flattened comment tree node for optimal LazyColumn rendering. */
 internal data class FlatComment(
@@ -125,13 +133,29 @@ fun ThreadDetailScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
-    var collapsedIds by remember { mutableStateOf(emptySet<Int>()) }
+    var collapsedIds by rememberSaveable(
+        saver = listSaver<MutableState<Set<Int>>, Int>(
+            save = { it.value.toList() },
+            restore = { mutableStateOf(it.toHashSet()) }
+        )
+    ) { mutableStateOf(emptySet<Int>()) }
     val playerCache = rememberExoPlayerCache()
 
+    // Adaptive depth: compute max visible depth from screen width
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val depthWindowSize = remember(screenWidthDp) {
+        ((screenWidthDp - MIN_CONTENT_WIDTH_DP) / INDENT_PER_LEVEL_DP).coerceIn(3, 12)
+    }
+
     // Drill-down stack: each entry is a comment ID whose subtree we "drilled into"
-    var drillDownStack by remember { mutableStateOf(emptyList<Int>()) }
+    var drillDownStack by rememberSaveable(
+        saver = listSaver<MutableState<List<Int>>, Int>(
+            save = { it.value },
+            restore = { mutableStateOf(it.toList()) }
+        )
+    ) { mutableStateOf(emptyList<Int>()) }
     // Track previous stack size to detect navigation direction for scroll positioning
-    var prevDrillDownSize by remember { mutableIntStateOf(0) }
+    var prevDrillDownSize by rememberSaveable { mutableIntStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(threadId) {
@@ -220,11 +244,11 @@ fun ThreadDetailScreen(
         if (targetCommentId == null || hasScrolledToTarget || visibleComments.isEmpty()) return@LaunchedEffect
         // Auto drill-down if target is deeper than visible depth limit
         val targetFlat = flatComments.firstOrNull { it.comment.id == targetCommentId }
-        if (targetFlat != null && targetFlat.depth >= DEPTH_WINDOW_SIZE) {
+        if (targetFlat != null && targetFlat.depth >= depthWindowSize) {
             val chain = mutableListOf<Int>()
             for (ancestorId in targetFlat.ancestorIds) {
                 val ancestor = flatComments.firstOrNull { it.comment.id == ancestorId } ?: continue
-                if (ancestor.depth > 0 && ancestor.depth % DEPTH_WINDOW_SIZE == 0) {
+                if (ancestor.depth > 0 && ancestor.depth % depthWindowSize == 0) {
                     chain.add(ancestorId)
                 }
             }
@@ -481,7 +505,7 @@ fun ThreadDetailScreen(
                                 }
                                 // Determine drill-down eligibility: at max visual depth with children
                                 val rebasedDepth = flat.depth - depthOffset
-                                val isAtMaxDepth = rebasedDepth >= DEPTH_WINDOW_SIZE - 1
+                                val isAtMaxDepth = rebasedDepth >= depthWindowSize - 1
                                 val canDrillDown = isAtMaxDepth && flat.descendantCount > 0
 
                                 ThreadCommentItem(
@@ -518,6 +542,7 @@ fun ThreadDetailScreen(
                                     threadAuthorId = thread.authorId,
                                     depth = flat.depth,
                                     depthOffset = depthOffset,
+                                    maxVisualDepth = depthWindowSize,
                                     onDrillDown = if (canDrillDown) {
                                         {
                                             drillDownStack = drillDownStack + flat.comment.id

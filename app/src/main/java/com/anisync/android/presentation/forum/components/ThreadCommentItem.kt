@@ -74,6 +74,7 @@ fun ThreadCommentItem(
     threadAuthorId: Int = 0,
     depth: Int = 0,
     depthOffset: Int = 0,
+    maxVisualDepth: Int = 5,
     onDrillDown: (() -> Unit)? = null,
     onUserClick: (String) -> Unit = {}
 ) {
@@ -87,8 +88,6 @@ fun ThreadCommentItem(
     val headerHorizontalPadding = 4.dp
 
     val contentIndent = 32.dp
-
-    val maxVisualDepth = 5
     val windowedDepth = (depth - depthOffset).coerceAtLeast(0)
     val displayDepth = windowedDepth.coerceAtMost(maxVisualDepth)
 
