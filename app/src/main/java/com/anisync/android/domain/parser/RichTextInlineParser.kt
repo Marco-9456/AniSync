@@ -189,6 +189,7 @@ internal class RichTextInlineParser(
                             RichTextBlock.Image(
                                 url = url,
                                 width = size.replace("%", "").toIntOrNull(),
+                                height = null,
                                 isPercent = size.endsWith("%"),
                                 linkUrl = ctx.currentLinkUrl,
                                 align = ctx.align
@@ -319,6 +320,7 @@ internal class RichTextInlineParser(
                             RichTextBlock.Image(
                                 url = url,
                                 width = null,
+                                height = null,
                                 isPercent = false,
                                 linkUrl = ctx.currentLinkUrl,
                                 align = ctx.align
@@ -354,6 +356,7 @@ internal class RichTextInlineParser(
                                         RichTextBlock.Image(
                                             url = imgUrl,
                                             width = null,
+                                            height = null,
                                             isPercent = false,
                                             linkUrl = url,
                                             align = ctx.align

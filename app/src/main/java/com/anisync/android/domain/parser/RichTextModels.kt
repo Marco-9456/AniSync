@@ -55,6 +55,7 @@ sealed interface RichTextBlock {
     data class Image(
         val url: String,
         val width: Int?,
+        val height: Int?,
         val isPercent: Boolean,
         val linkUrl: String?,
         override val align: RichTextAlignment = RichTextAlignment.Start

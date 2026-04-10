@@ -374,11 +374,13 @@ internal class RichTextHtmlParser(
         if (src.isBlank()) return
 
         val widthAttr = element.attr("width")
+        val heightAttr = element.attr("height")
         val hashWidth = widthAttr.startsWith("#")
         ctx.emitBlock(
             RichTextBlock.Image(
                 url = src,
                 width = if (hashWidth) null else widthAttr.replace(nonDigitRegex, "").toIntOrNull(),
+                height = heightAttr.replace(nonDigitRegex, "").toIntOrNull(),
                 isPercent = if (hashWidth) false else widthAttr.contains("%"),
                 linkUrl = linkUrl,
                 align = ctx.align

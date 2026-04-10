@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -94,16 +95,26 @@ fun AsyncRichTextRenderer(
         parsedText = RichTextParser.parse(html, ParserConfig())
     }
 
-    parsedText?.let {
-        RichTextRenderer(
-            parsedData = it,
-            modifier = modifier,
-            style = style,
-            color = color,
-            linkColor = linkColor,
-            codeBackground = codeBackground,
-            spoilerColor = spoilerColor
+    val estimatedMinHeight = remember(html) {
+        val lineEstimate = (html.length / 50).coerceIn(1, 15)
+        (lineEstimate * 20).dp
+    }
+
+    Box(
+        modifier = modifier.then(
+            if (parsedText == null) Modifier.heightIn(min = estimatedMinHeight) else Modifier
         )
+    ) {
+        parsedText?.let {
+            RichTextRenderer(
+                parsedData = it,
+                style = style,
+                color = color,
+                linkColor = linkColor,
+                codeBackground = codeBackground,
+                spoilerColor = spoilerColor
+            )
+        }
     }
 }
 
@@ -600,6 +611,14 @@ private fun RichImage(
     val isSvg =
         img.url.endsWith(".svg", ignoreCase = true) || img.url.contains("spotify-github-profile")
 
+    val placeholderAspectRatio = if (img.width != null && img.height != null && img.height > 0) {
+        img.width.toFloat() / img.height.toFloat()
+    } else {
+        null
+    }
+
+    val isSmallUnknown = img.width == null && !fillWidth
+
     SubcomposeAsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(img.url)
@@ -615,7 +634,8 @@ private fun RichImage(
         contentScale = if (fillWidth || img.width != null) ContentScale.Fit else ContentScale.Inside,
         loading = {
             ImageLoadingSkeleton(
-                if (img.width == null && !fillWidth) Modifier.size(48.dp) else Modifier.fillMaxWidth()
+                modifier = if (isSmallUnknown) Modifier.size(48.dp) else Modifier.fillMaxWidth(),
+                aspectRatio = if (isSmallUnknown) null else placeholderAspectRatio
             )
         },
         modifier = mod
@@ -629,11 +649,16 @@ private fun RichImage(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ImageLoadingSkeleton(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    aspectRatio: Float? = 16f / 9f
 ) {
+    val sizedModifier = if (aspectRatio != null) {
+        modifier.aspectRatio(aspectRatio)
+    } else {
+        modifier.heightIn(min = 120.dp)
+    }
     Box(
-        modifier = modifier
-            .aspectRatio(16f / 9f)
+        modifier = sizedModifier
             .clip(RoundedCornerShape(8.dp))
             .shimmerEffect(),
         contentAlignment = Alignment.Center
