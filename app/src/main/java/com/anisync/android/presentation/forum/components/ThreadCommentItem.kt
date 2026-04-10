@@ -1,9 +1,16 @@
 package com.anisync.android.presentation.forum.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.HorizontalDivider
@@ -19,7 +27,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,12 +42,16 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
+import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.launch
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
@@ -57,9 +73,12 @@ fun ThreadCommentItem(
     modifier: Modifier = Modifier,
     threadAuthorId: Int = 0,
     depth: Int = 0,
+    depthOffset: Int = 0,
+    onDrillDown: (() -> Unit)? = null,
     onUserClick: (String) -> Unit = {}
 ) {
     val haptic = rememberHapticFeedback()
+    val scope = rememberCoroutineScope()
     val basePadding = 16.dp
 
     val indentSize = 32.dp
@@ -70,7 +89,13 @@ fun ThreadCommentItem(
     val contentIndent = 32.dp
 
     val maxVisualDepth = 5
-    val displayDepth = depth.coerceAtMost(maxVisualDepth)
+    val windowedDepth = (depth - depthOffset).coerceAtLeast(0)
+    val displayDepth = windowedDepth.coerceAtMost(maxVisualDepth)
+
+    // Swipe-to-drill-down state — reset when eligibility changes to prevent stale values
+    val canDrillDown = onDrillDown != null
+    val swipeOffset = remember(canDrillDown) { Animatable(0f) }
+    var swipeHapticFired by remember(canDrillDown) { mutableStateOf(false) }
 
     val branchPath = remember { Path() }
 
@@ -98,8 +123,70 @@ fun ThreadCommentItem(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
+            .then(
+                if (canDrillDown) {
+                    Modifier
+                        .graphicsLayer {
+                            val progress = swipeOffset.value.coerceIn(0f, 1f)
+                            if (progress > 0f) {
+                                scaleX = lerp(1f, 0.92f, progress)
+                                translationX = lerp(0f, -size.width * 0.25f, progress)
+                                alpha = lerp(1f, 0.4f, progress)
+                            }
+                        }
+                        .pointerInput(onDrillDown) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { swipeHapticFired = false },
+                                onDragEnd = {
+                                    scope.launch {
+                                        if (swipeOffset.value > 0.4f) {
+                                            swipeOffset.animateTo(
+                                                1f,
+                                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                                            )
+                                            onDrillDown()
+                                            swipeOffset.snapTo(0f)
+                                        } else {
+                                            swipeOffset.animateTo(
+                                                0f,
+                                                animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                                            )
+                                        }
+                                        swipeHapticFired = false
+                                    }
+                                },
+                                onDragCancel = {
+                                    scope.launch {
+                                        swipeOffset.animateTo(
+                                            0f,
+                                            animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                                        )
+                                        swipeHapticFired = false
+                                    }
+                                },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    if (dragAmount < 0) { // Left swipe only
+                                        change.consume()
+                                        scope.launch {
+                                            val normalized = -dragAmount / size.width.toFloat()
+                                            val newValue = (swipeOffset.value + normalized)
+                                                .coerceIn(0f, 1.2f)
+                                            swipeOffset.snapTo(newValue)
+                                            if (!swipeHapticFired && newValue > 0.4f) {
+                                                haptic.performHapticFeedback(
+                                                    HapticFeedbackType.TextHandleMove
+                                                )
+                                                swipeHapticFired = true
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                } else Modifier
+            )
     ) {
-        if (depth == 0) {
+        if (windowedDepth == 0) {
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 thickness = 1.dp,
@@ -127,7 +214,7 @@ fun ThreadCommentItem(
                     for (i in 0 until displayDepth) {
                         val x = getAvatarCenterX(i)
                         drawLine(
-                            color = lineColors[i % lineColors.size].copy(alpha = 0.25f),
+                            color = lineColors[(i + depthOffset) % lineColors.size].copy(alpha = 0.25f),
                             start = Offset(x, 0f),
                             end = Offset(x, size.height),
                             strokeWidth = strokeStyle.width,
@@ -135,8 +222,11 @@ fun ThreadCommentItem(
                         )
                     }
 
-                    if (depth > 0) {
-                        val parentVisualDepth = (depth - 1).coerceAtMost(maxVisualDepth)
+                    if (windowedDepth > 0) {
+                        val parentWindowedDepth = ((depth - 1) - depthOffset)
+                            .coerceAtLeast(0)
+                            .coerceAtMost(maxVisualDepth)
+                        val parentVisualDepth = parentWindowedDepth
 
                         if (displayDepth > parentVisualDepth) {
                             val parentX = getAvatarCenterX(parentVisualDepth)
@@ -154,13 +244,13 @@ fun ThreadCommentItem(
 
                             drawPath(
                                 path = branchPath,
-                                color = lineColors[parentVisualDepth % lineColors.size].copy(alpha = 0.6f),
+                                color = lineColors[(parentVisualDepth + depthOffset) % lineColors.size].copy(alpha = 0.6f),
                                 style = strokeStyle
                             )
                         } else {
                             val myX = getAvatarCenterX(displayDepth)
                             drawLine(
-                                color = lineColors[displayDepth % lineColors.size].copy(alpha = 0.6f),
+                                color = lineColors[(displayDepth + depthOffset) % lineColors.size].copy(alpha = 0.6f),
                                 start = Offset(myX, 0f),
                                 end = Offset(myX, avatarCenterY - avatarRadiusPx - curvePaddingPx),
                                 strokeWidth = strokeStyle.width,
@@ -172,7 +262,7 @@ fun ThreadCommentItem(
                     if (descendantCount > 0 && !isCollapsed) {
                         val myX = getAvatarCenterX(displayDepth)
                         drawLine(
-                            color = lineColors[displayDepth % lineColors.size].copy(alpha = 0.25f),
+                            color = lineColors[(displayDepth + depthOffset) % lineColors.size].copy(alpha = 0.25f),
                             start = Offset(myX, avatarCenterY + avatarRadiusPx + 4.dp.toPx()),
                             end = Offset(myX, size.height),
                             strokeWidth = strokeStyle.width,
@@ -282,9 +372,10 @@ fun ThreadCommentItem(
 
                     Spacer(Modifier.height(12.dp))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -304,7 +395,8 @@ fun ThreadCommentItem(
                                     text = comment.likeCount.toString(),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = if (comment.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = if (comment.isLiked) FontWeight.Black else FontWeight.Bold
+                                    fontWeight = if (comment.isLiked) FontWeight.Black else FontWeight.Bold,
+                                    maxLines = 1
                                 )
                             }
                         }
@@ -312,7 +404,7 @@ fun ThreadCommentItem(
                         if (onReplyClick != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(100))
                                     .background(MaterialTheme.colorScheme.surfaceContainer)
@@ -320,7 +412,7 @@ fun ThreadCommentItem(
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         onReplyClick(comment.id, comment.authorName)
                                     }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                                    .padding(horizontal = 10.dp, vertical = 8.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Reply,
@@ -332,7 +424,38 @@ fun ThreadCommentItem(
                                     text = stringResource(R.string.forum_reply),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        // Inline "Continue thread" for drill-down eligible comments
+                        if (onDrillDown != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100))
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        onDrillDown()
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "$descendantCount",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1
+                                )
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = "Continue thread",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }

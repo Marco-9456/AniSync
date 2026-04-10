@@ -53,8 +53,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +69,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
@@ -78,6 +81,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.LocalExoPlayerCache
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.rememberExoPlayerCache
+import com.anisync.android.presentation.forum.components.FoldedAncestorStrip
 import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.SkeletonLine
 import com.anisync.android.presentation.forum.components.ThreadBodyItem
@@ -86,6 +90,8 @@ import com.anisync.android.presentation.forum.components.ThreadHeaderStats
 import com.anisync.android.presentation.forum.components.ThreadHeaderTop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+private const val DEPTH_WINDOW_SIZE = 5
 
 /** Internal data model representing a flattened comment tree node for optimal LazyColumn rendering. */
 internal data class FlatComment(
@@ -122,6 +128,12 @@ fun ThreadDetailScreen(
     var collapsedIds by remember { mutableStateOf(emptySet<Int>()) }
     val playerCache = rememberExoPlayerCache()
 
+    // Drill-down stack: each entry is a comment ID whose subtree we "drilled into"
+    var drillDownStack by remember { mutableStateOf(emptyList<Int>()) }
+    // Track previous stack size to detect navigation direction for scroll positioning
+    var prevDrillDownSize by remember { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(threadId) {
         viewModel.onAction(ThreadDetailAction.Load(threadId))
     }
@@ -141,11 +153,62 @@ fun ThreadDetailScreen(
         }
     }
 
+    // Build drill-down context: which comment is the focus root and its depth offset
+    val focusRootId = drillDownStack.lastOrNull()
+    val focusFlat = remember(flatComments, focusRootId) {
+        if (focusRootId == null) null
+        else flatComments.firstOrNull { it.comment.id == focusRootId }
+    }
+    val depthOffset = focusFlat?.depth ?: 0
+
+    // Build breadcrumb info for the drill-down chain
+    val drillDownBreadcrumbs = remember(flatComments, drillDownStack) {
+        drillDownStack.mapNotNull { id ->
+            flatComments.firstOrNull { it.comment.id == id }?.comment
+        }
+    }
+
     val visibleComments by remember {
         derivedStateOf {
+            val collapsed = collapsedIds
+            val focusId = drillDownStack.lastOrNull()
             flatComments.filter { flat ->
-                flat.ancestorIds.none { it in collapsedIds }
+                flat.ancestorIds.none { it in collapsed } &&
+                (focusId == null || flat.comment.id == focusId || focusId in flat.ancestorIds)
             }
+        }
+    }
+
+    // Reset drill-down when comment sort changes
+    LaunchedEffect(uiState.commentSortLabel) {
+        drillDownStack = emptyList()
+    }
+
+    // Smooth scroll positioning after drill-down navigation
+    LaunchedEffect(drillDownStack) {
+        val newSize = drillDownStack.size
+        val oldSize = prevDrillDownSize
+        prevDrillDownSize = newSize
+
+        if (newSize == oldSize) return@LaunchedEffect
+
+        // Wait one frame for recomposition to settle with new items
+        kotlinx.coroutines.yield()
+
+        // Count header items before comments
+        val headerCount = buildList {
+            add("thread_header_top")
+            if (uiState.parsedBody != null) add("thread_body")
+            add("thread_header_stats")
+            add("comments_header")
+            if (newSize > 0) add("drill_down_breadcrumb")
+        }.size
+
+        // Scroll so the first comment in the new view is near the top
+        val targetScrollIndex = headerCount
+        val totalItems = listState.layoutInfo.totalItemsCount
+        if (targetScrollIndex < totalItems) {
+            listState.scrollToItem(targetScrollIndex)
         }
     }
 
@@ -155,12 +218,23 @@ fun ThreadDetailScreen(
 
     LaunchedEffect(visibleComments, targetCommentId) {
         if (targetCommentId == null || hasScrolledToTarget || visibleComments.isEmpty()) return@LaunchedEffect
+        // Auto drill-down if target is deeper than visible depth limit
+        val targetFlat = flatComments.firstOrNull { it.comment.id == targetCommentId }
+        if (targetFlat != null && targetFlat.depth >= DEPTH_WINDOW_SIZE) {
+            val chain = mutableListOf<Int>()
+            for (ancestorId in targetFlat.ancestorIds) {
+                val ancestor = flatComments.firstOrNull { it.comment.id == ancestorId } ?: continue
+                if (ancestor.depth > 0 && ancestor.depth % DEPTH_WINDOW_SIZE == 0) {
+                    chain.add(ancestorId)
+                }
+            }
+            if (chain.isNotEmpty()) drillDownStack = chain
+        }
         val targetIndex = visibleComments.indexOfFirst { it.comment.id == targetCommentId }
         if (targetIndex >= 0) {
             hasScrolledToTarget = true
-            // +4 to account for thread_header_top, thread_body, thread_header_stats, comments_header
-            listState.scrollToItem(targetIndex + 4)
-            // Flash highlight
+            val headerItems = if (drillDownStack.isEmpty()) 4 else 5
+            listState.scrollToItem(targetIndex + headerItems)
             highlightAlpha.snapTo(1f)
             highlightAlpha.animateTo(0f, animationSpec = tween(1500))
         }
@@ -366,6 +440,22 @@ fun ThreadDetailScreen(
                             }
                         }
 
+                        // Drill-down breadcrumb when viewing a focused subtree
+                        if (drillDownStack.isNotEmpty()) {
+                            item(key = "drill_down_breadcrumb") {
+                                FoldedAncestorStrip(
+                                    breadcrumbs = drillDownBreadcrumbs,
+                                    onNavigateBack = {
+                                        drillDownStack = drillDownStack.dropLast(1)
+                                    },
+                                    onNavigateToLevel = { index ->
+                                        drillDownStack = drillDownStack.take(index)
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
                         if (visibleComments.isEmpty() && !uiState.isLoadingMoreComments) {
                             item(key = "empty_comments") {
                                 Box(
@@ -389,6 +479,11 @@ fun ThreadDetailScreen(
                                 } else {
                                     Color.Transparent
                                 }
+                                // Determine drill-down eligibility: at max visual depth with children
+                                val rebasedDepth = flat.depth - depthOffset
+                                val isAtMaxDepth = rebasedDepth >= DEPTH_WINDOW_SIZE - 1
+                                val canDrillDown = isAtMaxDepth && flat.descendantCount > 0
+
                                 ThreadCommentItem(
                                     comment = flat.comment,
                                     isCollapsed = collapsedIds.contains(flat.comment.id),
@@ -422,6 +517,12 @@ fun ThreadDetailScreen(
                                     } else null,
                                     threadAuthorId = thread.authorId,
                                     depth = flat.depth,
+                                    depthOffset = depthOffset,
+                                    onDrillDown = if (canDrillDown) {
+                                        {
+                                            drillDownStack = drillDownStack + flat.comment.id
+                                        }
+                                    } else null,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .background(highlightColor)
