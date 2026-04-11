@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-04-11
+
+### Added
+
+#### Profile & Navigation
+- **Profile System Redesign** - Expanded profile support from self-profile viewing to full public user profile support.
+- **Cross-Surface User Navigation** - User entities are now tappable across Forum, Reviews, and Discover user results, and open the redesigned profile screen.
+- **Public Profile Actions** - Added follow/unfollow and share actions for public profiles.
+- **Profile Identity Metadata** - Added donator tier/badge, moderator roles, and account creation date in profile UI/data models.
+
+#### Profile Content
+- **Favorites Expansion** - Replaced cast-only flow with unified Favorites sections for Anime, Manga, Characters, Staff, and Studios.
+- **Studios Favorites Support** - Added studio favorites through GraphQL, domain models, mappers, converters, and Room schema.
+- **Status-Based Media Tabs** - Anime/Manga profile tabs now load real user lists by AniList statuses with refresh-aware caching behavior.
+
+#### Forum
+- **Deep Thread Drill-Down Navigation** - Added per-branch drill-down for deeply nested comment trees.
+- **Ancestor Breadcrumb Strip** - Added folded ancestor navigation to move through focused deep-thread levels.
+- **Adaptive Thread Depth Window** - Visible depth now adapts by device width while preserving drill-down state.
+
+#### Rich Text & Parsing
+- **Parser Architecture Refactor** - Split RichText parser into modular components (normalizer, HTML parser, inline parser, post-processor, models/context/utilities).
+- **Parser Test Coverage** - Added dedicated parser regression test suite for markdown/HTML edge cases.
+- **Typed AniList Link Preview Keys** - Migrated preview lookup to typed keys and expanded link preview fetching to include staff.
+
+### Changed
+- **Profile About Rendering** - Switched to richer HTML-based about retrieval/update flow.
+- **Review Presentation** - Review cards now prefer media banners (when available) and expose user navigation interactions.
+- **Statistics Score Handling** - Histogram display now aligns with AniList score format variants.
+- **Database Schema** - Bumped Room database to version 11 with auto-migrations (9->10, 10->11) and schema exports.
+- **SVG Media Pipeline** - Added SVG decoder support in image loading stack and related UI surfaces.
+- **Localization Coverage** - Expanded string coverage in German and Arabic resources.
+
+### Fixed
+- **Profile Resume Reloading** - Prevented unnecessary profile refresh when app resumes.
+- **Follow-State Consistency** - Improved correctness and refresh behavior for follow state in profile flows.
+- **Markdown Recovery** - Fixed mangled markdown links and nested markdown image parsing issues.
+- **Rich Text Line Breaks** - Preserved expected line breaks and tightened inline grouping behavior.
+- **SVG Rendering Issues** - Fixed SVG icon/image rendering in details external-link chips and rich content contexts.
+- **Layout Stability** - Reduced visual layout shifts during image/video/rich-content loading.
+
 ## [1.3.2] - 2026-04-06
 
 ### Fixed
