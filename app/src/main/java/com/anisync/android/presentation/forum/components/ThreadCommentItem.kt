@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -51,13 +50,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.compose.ui.util.lerp
-import kotlinx.coroutines.launch
 import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import kotlinx.coroutines.launch
 
 /**
  * Modern Reddit-style comment item supporting curved tree branches and strict top-level boundaries.

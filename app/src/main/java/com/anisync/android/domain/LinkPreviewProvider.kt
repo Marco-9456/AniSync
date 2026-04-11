@@ -1,7 +1,7 @@
 package com.anisync.android.domain
 
-import com.anisync.android.domain.parser.RichTextBlock
 import com.anisync.android.domain.parser.LinkPreviewKey
+import com.anisync.android.domain.parser.RichTextBlock
 
 data class LinkPreview(
     val title: String,

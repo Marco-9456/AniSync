@@ -1,8 +1,8 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetUserActivitiesQuery
-import com.anisync.android.GetUserFollowStateQuery
 import com.anisync.android.GetUserFavoritesQuery
+import com.anisync.android.GetUserFollowStateQuery
 import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.ToggleUserFollowMutation
