@@ -76,24 +76,33 @@ internal class RichTextInlineParser(
                         var j = ws
                         while (j < length && preparedText[j] == '#') j++
                         val level = j - ws
-                        if (level in 1..5 && j < length && preparedText[j] == ' ') {
+                        // Removed strict space requirement to accommodate heading variants like #### without space
+                        if (level in 1..5) {
                             var eol = preparedText.indexOf('\n', j)
                             if (eol == -1) eol = length
 
                             flushPlain()
                             ctx.flushText()
 
-                            val headingText = preparedText.substring(j + 1, eol)
+                            val contentStart =
+                                if (j < length && preparedText[j] == ' ') j + 1 else j
+                            val headingText = if (contentStart < eol) preparedText.substring(
+                                contentStart,
+                                eol
+                            ) else ""
                             val headingInlines = parseInlineOnly(headingText, ctx.currentLinkUrl)
-                            if (!isBlankInlineList(headingInlines)) {
-                                ctx.emitBlock(
-                                    RichTextBlock.Text(
-                                        inlines = headingInlines,
-                                        kind = headingKind(level),
-                                        align = ctx.align
-                                    )
+
+                            ctx.emitBlock(
+                                RichTextBlock.Text(
+                                    inlines = if (headingInlines.isEmpty()) listOf(
+                                        RichTextInline.Text(
+                                            "\u200B"
+                                        )
+                                    ) else headingInlines,
+                                    kind = headingKind(level),
+                                    align = ctx.align
                                 )
-                            }
+                            )
 
                             index = eol
                             if (index < length && preparedText[index] == '\n') index++
@@ -105,6 +114,17 @@ internal class RichTextInlineParser(
             }
 
             val c = preparedText[index]
+
+            // Intercept Double-Newline at top level BEFORE it gets buffered.
+            // Provides visual block breaks without destroying active Markdown boundaries.
+            if (c == '\n' && index + 1 < length && preparedText[index + 1] == '\n') {
+                flushPlain()
+                ctx.flushText()
+                ctx.emitBlock(RichTextBlock.Text(listOf(RichTextInline.Text("\u200B"))))
+                while (index < length && preparedText[index] == '\n') index++
+                lastAppend = index
+                continue
+            }
 
             if (c == '\\' && index + 1 < length) {
                 flushPlain()

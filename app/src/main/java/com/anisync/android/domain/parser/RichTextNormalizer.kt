@@ -3,6 +3,7 @@ package com.anisync.android.domain.parser
 internal object RichTextNormalizer {
     fun normalize(html: String): String {
         var processed = html.replace("\r", "")
+        processed = convertMixedMarkdownLinksToHtml(processed)
         processed = fixMangledMarkdownLinks(processed)
         processed = decodeAniListEscapedParenthesis(processed)
         processed = convertLinkedImages(processed)
@@ -13,6 +14,52 @@ internal object RichTextNormalizer {
         processed = preserveYoutubeDivs(processed)
         processed = normalizeMarkdownBlockquotes(processed)
         return processed
+    }
+
+    /**
+     * Converts raw markdown links that contain HTML tags inside them into pure HTML <a> tags.
+     * Example: `[ <img src='...'> Instagram ](https://...)` -> `<a href="https://..."><img src='...'> Instagram</a>`
+     * This ensures Jsoup parses both the image and the surrounding text together as an anchor.
+     */
+    private fun convertMixedMarkdownLinksToHtml(html: String): String {
+        val sb = StringBuilder()
+        var i = 0
+        while (i < html.length) {
+            if (html[i] == '[') {
+                var closeBracket = -1
+                var bracketDepth = 1
+                var j = i + 1
+                while (j < html.length) {
+                    if (html[j] == '[') bracketDepth++
+                    else if (html[j] == ']') {
+                        bracketDepth--
+                        if (bracketDepth == 0) {
+                            closeBracket = j
+                            break
+                        }
+                    }
+                    j++
+                }
+
+                if (closeBracket != -1 && closeBracket + 1 < html.length && html[closeBracket + 1] == '(') {
+                    val closeParen = findBalancedCloseParen(html, closeBracket + 1)
+                    if (closeParen != -1) {
+                        val linkText = html.substring(i + 1, closeBracket)
+                        val url = html.substring(closeBracket + 2, closeParen)
+
+                        if (linkText.contains("<") && linkText.contains(">")) {
+                            sb.append("<a href=\"").append(url).append("\">").append(linkText)
+                                .append("</a>")
+                            i = closeParen + 1
+                            continue
+                        }
+                    }
+                }
+            }
+            sb.append(html[i])
+            i++
+        }
+        return sb.toString()
     }
 
     /**

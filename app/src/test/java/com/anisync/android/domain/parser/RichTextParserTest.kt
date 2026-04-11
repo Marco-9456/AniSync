@@ -32,7 +32,8 @@ class RichTextParserTest {
 
     @Test
     fun `body level markdown links become inline links`() = runBlocking {
-        val parsed = RichTextParser.parse("[__All AWC Challenges__](https://anilist.co/activity/26266744)")
+        val parsed =
+            RichTextParser.parse("[__All AWC Challenges__](https://anilist.co/activity/26266744)")
         val textBlock = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
 
         assertTrue(textBlock.debugInlineText().contains("All AWC Challenges"))
@@ -44,7 +45,8 @@ class RichTextParserTest {
     fun `anilist media urls become preview blocks`() = runBlocking {
         val parsed = RichTextParser.parse("Visit https://anilist.co/anime/16498/attack-on-titan")
 
-        val linkBlock = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.AnilistLink>().first()
+        val linkBlock =
+            parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.AnilistLink>().first()
         assertEquals("anime", linkBlock.type)
         assertEquals(16498, linkBlock.id)
         assertEquals(LinkPreviewKey("anime", 16498), linkBlock.previewKey)
@@ -74,13 +76,16 @@ class RichTextParserTest {
 
         val quote = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Blockquote>().first()
         val quoteDescendants = quote.children.deepBlocks()
-        assertTrue(quoteDescendants.any { it is RichTextBlock.Text && it.debugInlineText().contains("Quoted") })
+        assertTrue(quoteDescendants.any {
+            it is RichTextBlock.Text && it.debugInlineText().contains("Quoted")
+        })
         assertTrue(quoteDescendants.any { it is RichTextBlock.Image && it.url == "https://example.com/img.png" })
     }
 
     @Test
     fun `parses youtube and webm markdown as media blocks`() = runBlocking {
-        val parsed = RichTextParser.parse("youtube(dQw4w9WgXcQ)\nwebm(https://example.com/clip.webm)")
+        val parsed =
+            RichTextParser.parse("youtube(dQw4w9WgXcQ)\nwebm(https://example.com/clip.webm)")
 
         val youtube = parsed.blocks.filterIsInstance<RichTextBlock.YouTube>().first()
         val video = parsed.blocks.filterIsInstance<RichTextBlock.Video>().first()
@@ -123,7 +128,8 @@ class RichTextParserTest {
 
     @Test
     fun `parses html table with headers`() = runBlocking {
-        val parsed = RichTextParser.parse("<table><tr><th>Name</th></tr><tr><td>Value</td></tr></table>")
+        val parsed =
+            RichTextParser.parse("<table><tr><th>Name</th></tr><tr><td>Value</td></tr></table>")
         val table = parsed.blocks.filterIsInstance<RichTextBlock.Table>().first()
         assertEquals(2, table.rows.size)
         assertTrue(table.rows[0].cells[0].isHeader)
@@ -202,9 +208,49 @@ class RichTextParserTest {
         assertFalse(text.debugInlineText().contains("`"))
     }
 
+    @Test
+    fun `mixed markdown and html link becomes inline group`() = runBlocking {
+        val parsed =
+            RichTextParser.parse("[ <img src='https://example.com/icon.png' width='16'> Instagram](https://instagram.com)")
+
+        val group = parsed.blocks.filterIsInstance<RichTextBlock.InlineGroup>().first()
+
+        val image = group.children.filterIsInstance<RichTextBlock.Image>().first()
+        assertEquals("https://example.com/icon.png", image.url)
+        assertEquals("https://instagram.com", image.linkUrl)
+
+        val text = group.children.filterIsInstance<RichTextBlock.Text>().first()
+        assertTrue(text.debugInlineText().contains("Instagram"))
+        assertTrue(text.hasLink("https://instagram.com"))
+    }
+
+    @Test
+    fun `contiguous inline blocks are grouped together`() = runBlocking {
+        val parsed =
+            RichTextParser.parse("Some text <img src='https://example.com/img.png' width='32'> **bold**")
+
+        val group = parsed.blocks.filterIsInstance<RichTextBlock.InlineGroup>().first()
+        assertTrue(group.children.any {
+            it is RichTextBlock.Text && it.debugInlineText().contains("Some text")
+        })
+        assertTrue(group.children.any { it is RichTextBlock.Image })
+        assertTrue(group.children.any { it is RichTextBlock.Text && it.hasBold() })
+    }
+
+    @Test
+    fun `block level elements break inline grouping`() = runBlocking {
+        val parsed = RichTextParser.parse("<p>Line 1</p><div>Line 2</div><p>Line 3</p>")
+        val textBlocks = parsed.blocks.filterIsInstance<RichTextBlock.Text>()
+
+        assertEquals(3, textBlocks.size)
+        // Ensures no InlineGroup was artificially created to bundle these blocks
+        assertTrue(parsed.blocks.none { it is RichTextBlock.InlineGroup })
+    }
+
     private fun RichTextBlock.Text.debugInlineText(): String = inlines.toDebugPlainText()
 
-    private fun RichTextBlock.Text.hasBold(): Boolean = inlines.containsInline { it is RichTextInline.Bold || it is RichTextInline.BoldItalic }
+    private fun RichTextBlock.Text.hasBold(): Boolean =
+        inlines.containsInline { it is RichTextInline.Bold || it is RichTextInline.BoldItalic }
 
     private fun RichTextBlock.Text.hasLink(url: String): Boolean = inlines.containsInline {
         it is RichTextInline.Link && it.url == url
@@ -243,7 +289,14 @@ class RichTextParserTest {
                 is RichTextBlock.Spoiler -> block.children.forEach(::walk)
                 is RichTextBlock.Blockquote -> block.children.forEach(::walk)
                 is RichTextBlock.ListBlock -> block.items.forEach { item -> item.children.forEach(::walk) }
-                is RichTextBlock.Table -> block.rows.forEach { row -> row.cells.forEach { cell -> cell.children.forEach(::walk) } }
+                is RichTextBlock.Table -> block.rows.forEach { row ->
+                    row.cells.forEach { cell ->
+                        cell.children.forEach(
+                            ::walk
+                        )
+                    }
+                }
+
                 else -> Unit
             }
         }

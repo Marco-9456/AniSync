@@ -15,6 +15,13 @@ internal class RichTextHtmlParser(
 ) {
     private val nonDigitRegex = Regex("[^0-9]")
 
+    // Defines elements that inherently break inline flow
+    private val blockTags = setOf(
+        "p", "div", "ul", "ol", "li", "table", "blockquote",
+        "h1", "h2", "h3", "h4", "h5", "hr", "pre", "center",
+        "youtube", "video", "iframe"
+    )
+
     fun parse(root: Element): HtmlParseResult {
         val rootContext = ParseContext(inlineParser.config)
         walkChildren(root, rootContext)
@@ -26,9 +33,91 @@ internal class RichTextHtmlParser(
     }
 
     private fun walkChildren(parent: Element, ctx: ParseContext) {
-        for (node in parent.childNodes()) {
-            walkNode(node, ctx)
+        ctx.flushText()
+        var inlineCtx = ctx.detached(
+            align = ctx.align,
+            currentLinkUrl = ctx.currentLinkUrl,
+            listDepth = ctx.listDepth
+        )
+
+        fun flushInlineCtx() {
+            inlineCtx.flushText()
+            val blocks = inlineCtx.blocks
+            if (blocks.isNotEmpty()) {
+                val currentGroup = mutableListOf<RichTextBlock>()
+
+                fun emitGroup() {
+                    if (currentGroup.isEmpty()) return
+                    val containsText = currentGroup.any { it is RichTextBlock.Text }
+                    if (containsText && currentGroup.size > 1) {
+                        ctx.emitBlock(
+                            RichTextBlock.InlineGroup(
+                                currentGroup.toList(),
+                                inlineCtx.align
+                            )
+                        )
+                    } else {
+                        currentGroup.forEach { ctx.emitBlock(it) }
+                    }
+                    currentGroup.clear()
+                }
+
+                for (block in blocks) {
+                    val isInlineable =
+                        (block is RichTextBlock.Text && block.kind == RichTextTextKind.Paragraph) ||
+                                block is RichTextBlock.Image ||
+                                block is RichTextBlock.AnilistLink
+
+                    if (isInlineable) {
+                        if (isStealthBreak(block)) {
+                            emitGroup()
+                            ctx.emitBlock(block)
+                        } else if (block is RichTextBlock.Image) {
+                            // Only small, absolute-sized images should naturally flow inline with text (like icons).
+                            // Large/unknown images or percents should break the flow to prevent buggy Compose wrapping
+                            // and to allow the PostProcessor to assemble adjacent images into grids.
+                            val isIcon =
+                                block.width != null && !block.isPercent && block.width <= 128
+
+                            if (isIcon) {
+                                currentGroup.add(block)
+                            } else {
+                                emitGroup()
+                                ctx.emitBlock(block)
+                            }
+                        } else if (block is RichTextBlock.AnilistLink) {
+                            // Anilist links render as large cards. They must break inline flow.
+                            emitGroup()
+                            ctx.emitBlock(block)
+                        } else {
+                            currentGroup.add(block)
+                        }
+                    } else {
+                        emitGroup()
+                        ctx.emitBlock(block)
+                    }
+                }
+                emitGroup()
+
+                inlineCtx = ctx.detached(
+                    align = ctx.align,
+                    currentLinkUrl = ctx.currentLinkUrl,
+                    listDepth = ctx.listDepth
+                )
+            }
         }
+
+        for (node in parent.childNodes()) {
+            val isBlockNode = node is Element && node.tagName().lowercase() in blockTags
+
+            if (isBlockNode) {
+                flushInlineCtx()
+                walkNode(node, ctx)
+            } else {
+                walkNode(node, inlineCtx)
+            }
+        }
+        flushInlineCtx()
     }
 
     private fun walkNode(node: Node, ctx: ParseContext) {
@@ -139,7 +228,9 @@ internal class RichTextHtmlParser(
             }
 
             "iframe" -> handleIframe(element, workingCtx)
-            "style", "head", "script" -> { /* strip CSS/JS blocks entirely */ }
+            "style", "head", "script" -> { /* strip CSS/JS blocks entirely */
+            }
+
             "html", "body" -> walkChildren(element, workingCtx)
             else -> walkChildren(element, workingCtx)
         }
@@ -172,7 +263,11 @@ internal class RichTextHtmlParser(
         when (element.tagName().lowercase()) {
             "b", "strong" -> handleInlineWrapper(element, ctx) { RichTextInline.Bold(it) }
             "i", "em" -> handleInlineWrapper(element, ctx) { RichTextInline.Italic(it) }
-            "del", "strike", "s" -> handleInlineWrapper(element, ctx) { RichTextInline.Strikethrough(it) }
+            "del", "strike", "s" -> handleInlineWrapper(
+                element,
+                ctx
+            ) { RichTextInline.Strikethrough(it) }
+
             "a" -> handleAnchor(element, ctx)
             "code" -> {
                 val code = element.wholeText()
@@ -217,16 +312,17 @@ internal class RichTextHtmlParser(
         }
     }
 
-    private fun applyHeadingKind(block: RichTextBlock, kind: RichTextTextKind): RichTextBlock = when (block) {
-        is RichTextBlock.Text -> block.copy(kind = kind)
-        is RichTextBlock.InlineGroup -> block.copy(
-            children = block.children.map { child ->
-                if (child is RichTextBlock.Text) child.copy(kind = kind) else child
-            }
-        )
+    private fun applyHeadingKind(block: RichTextBlock, kind: RichTextTextKind): RichTextBlock =
+        when (block) {
+            is RichTextBlock.Text -> block.copy(kind = kind)
+            is RichTextBlock.InlineGroup -> block.copy(
+                children = block.children.map { child ->
+                    if (child is RichTextBlock.Text) child.copy(kind = kind) else child
+                }
+            )
 
-        else -> block
-    }
+            else -> block
+        }
 
     private fun handleSpoilerBlock(element: Element, ctx: ParseContext) {
         ctx.flushText()
@@ -547,7 +643,12 @@ internal class RichTextHtmlParser(
             rows = block.rows.map { row ->
                 row.copy(
                     cells = row.cells.map { cell ->
-                        cell.copy(children = cell.children.map { transformTextInlines(it, transform) })
+                        cell.copy(children = cell.children.map {
+                            transformTextInlines(
+                                it,
+                                transform
+                            )
+                        })
                     }
                 )
             }
@@ -559,7 +660,11 @@ internal class RichTextHtmlParser(
     private fun handleIframe(element: Element, ctx: ParseContext) {
         ctx.flushText()
         val src = element.attr("src")
-        if (src.contains("youtube", ignoreCase = true) || src.contains("youtu.be", ignoreCase = true)) {
+        if (src.contains("youtube", ignoreCase = true) || src.contains(
+                "youtu.be",
+                ignoreCase = true
+            )
+        ) {
             ctx.emitBlock(RichTextBlock.YouTube(videoIdOrUrl = src, align = ctx.align))
         } else if (src.isNotBlank()) {
             ctx.emitBlock(RichTextBlock.Video(url = src, align = ctx.align))
@@ -575,11 +680,33 @@ internal class RichTextHtmlParser(
         return tagCount >= 3
     }
 
-    private val blockTags = setOf(
-        "p", "div", "ul", "ol", "li", "table", "blockquote",
-        "h1", "h2", "h3", "h4", "h5", "hr", "pre", "img", "br"
-    )
-
     private fun hasBlockChildren(element: Element): Boolean =
         element.children().any { it.tagName().lowercase() in blockTags }
+
+    private fun isStealthBreak(block: RichTextBlock): Boolean {
+        if (block !is RichTextBlock.Text || block.kind != RichTextTextKind.Paragraph) return false
+        if (block.inlines.size != 1) return false
+        var current: RichTextInline = block.inlines.first()
+        while (true) {
+            when (current) {
+                is RichTextInline.Text -> return current.value == "\u200B"
+                is RichTextInline.Link -> if (current.children.size == 1) current =
+                    current.children.first() else return false
+
+                is RichTextInline.Bold -> if (current.children.size == 1) current =
+                    current.children.first() else return false
+
+                is RichTextInline.Italic -> if (current.children.size == 1) current =
+                    current.children.first() else return false
+
+                is RichTextInline.BoldItalic -> if (current.children.size == 1) current =
+                    current.children.first() else return false
+
+                is RichTextInline.Strikethrough -> if (current.children.size == 1) current =
+                    current.children.first() else return false
+
+                else -> return false
+            }
+        }
+    }
 }
