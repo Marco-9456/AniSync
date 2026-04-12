@@ -3,10 +3,12 @@ package com.anisync.android.presentation.details
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -78,6 +80,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -161,7 +164,83 @@ fun MediaDetailsScreen(
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
+    var shouldKeepChromeOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedDetailsReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToRelationDetails: (Int) -> Unit = remember(onRelationClick) {
+        { relationMediaId ->
+            shouldKeepChromeOverlayForReturn = true
+            hasObservedDetailsReEnter = false
+            onRelationClick(relationMediaId)
+        }
+    }
+
+    val navigateToCharacterDetails: (Int) -> Unit = remember(onCharacterClick) {
+        { characterId ->
+            shouldKeepChromeOverlayForReturn = true
+            hasObservedDetailsReEnter = false
+            onCharacterClick(characterId)
+        }
+    }
+
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+
+    val isDetailsEnteringFromBackStack by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isDetailsTargetingVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isDetailsFullyVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember {
+        derivedStateOf { sharedTransitionScope.isTransitionActive }
+    }
+    val shouldRenderChromeInOverlay by remember {
+        derivedStateOf {
+            shouldKeepChromeOverlayForReturn &&
+                isDetailsTargetingVisible &&
+                (
+                    isDetailsEnteringFromBackStack ||
+                        (hasObservedDetailsReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val chromeOverlayAlpha by animatedVisibilityScope.transition.animateFloat(label = "DetailsChromeOverlayAlpha") { state ->
+        if (state == EnterExitState.Visible) 1f else 0f
+    }
+
+    LaunchedEffect(shouldKeepChromeOverlayForReturn, isDetailsEnteringFromBackStack) {
+        if (shouldKeepChromeOverlayForReturn && isDetailsEnteringFromBackStack) {
+            hasObservedDetailsReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepChromeOverlayForReturn,
+        hasObservedDetailsReEnter,
+        isDetailsFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepChromeOverlayForReturn &&
+            hasObservedDetailsReEnter &&
+            isDetailsFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepChromeOverlayForReturn = false
+            hasObservedDetailsReEnter = false
+        }
+    }
 
     val statuses = remember {
         listOf(
@@ -187,48 +266,68 @@ fun MediaDetailsScreen(
                         (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
                     }
 
-                    TopAppBar(
-                        title = {
-                            AnimatedVisibility(
-                                visible = isScrolled,
-                                enter = fadeIn(),
-                                exit = fadeOut()
-                            ) {
-                                Text(
-                                    text = appBarTitle,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.titleLarge
+                    with(sharedTransitionScope) {
+                        TopAppBar(
+                            modifier = Modifier
+                                .renderInSharedTransitionScopeOverlay(
+                                    zIndexInOverlay = 1f,
+                                    renderInOverlay = { shouldRenderChromeInOverlay }
                                 )
-                            }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = onBackClick) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.back),
-                                    tint = animateColorAsState(
-                                        if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                        label = "navIconTint"
-                                    ).value
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                            titleContentColor = MaterialTheme.colorScheme.onSurface,
-                            actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        scrollBehavior = scrollBehavior,
-                        windowInsets = WindowInsets.statusBars
-                    )
+                                .graphicsLayer {
+                                    alpha = if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
+                                },
+                            title = {
+                                AnimatedVisibility(
+                                    visible = isScrolled,
+                                    enter = fadeIn(),
+                                    exit = fadeOut()
+                                ) {
+                                    Text(
+                                        text = appBarTitle,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                }
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = onBackClick) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.back),
+                                        tint = animateColorAsState(
+                                            if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                            label = "navIconTint"
+                                        ).value
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = Color.Transparent,
+                                scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            scrollBehavior = scrollBehavior,
+                            windowInsets = WindowInsets.statusBars
+                        )
+                    }
                 },
                 floatingActionButton = {
                     val state = uiState
                     if (state is DetailsUiState.Success) {
                         val details = state.details
                         val haptic = rememberHapticFeedback()
+                        val fabOverlayModifier = with(sharedTransitionScope) {
+                            Modifier
+                                .renderInSharedTransitionScopeOverlay(
+                                    zIndexInOverlay = 1f,
+                                    renderInOverlay = { shouldRenderChromeInOverlay }
+                                )
+                                .graphicsLayer {
+                                    alpha = if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
+                                }
+                        }
 
                         BackHandler(enabled = fabMenuExpanded) {
                             fabMenuExpanded = false
@@ -237,7 +336,8 @@ fun MediaDetailsScreen(
                         // Library Management FAB
                         FloatingActionButtonMenu(
                             expanded = fabMenuExpanded,
-                            modifier = Modifier.padding(dimensionResource(R.dimen.fab_menu_padding)),
+                            modifier = fabOverlayModifier
+                                .padding(dimensionResource(R.dimen.fab_menu_padding)),
                             button = {
                                 ToggleFloatingActionButton(
                                     checked = fabMenuExpanded,
@@ -355,15 +455,19 @@ fun MediaDetailsScreen(
                                 details = state.details,
                                 sourceScreen = sourceScreen,
                                 listState = listState,
-                                onRelationClick = onRelationClick,
-                                onCharacterClick = onCharacterClick,
+                                onRelationClick = navigateToRelationDetails,
+                                onCharacterClick = navigateToCharacterDetails,
                                 onCastSeeAllClick = {
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
                                     onCastSeeAllClick(
                                         state.details.id,
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
                                 onRelatedSeeAllClick = {
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
                                     onRelatedSeeAllClick(
                                         state.details.id,
                                         state.details.getTitle(titleLanguage)
@@ -622,6 +726,7 @@ fun DetailsPageContent(
                                 RelationItem(
                                     relation = relation,
                                     onClick = { onRelationClick(relation.id) },
+                                    transitionPrefix = TransitionKeys.MEDIA_DETAILS,
                                     modifier = Modifier.animateItem(), // Expressive motion
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope

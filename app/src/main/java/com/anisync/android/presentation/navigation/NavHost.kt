@@ -480,7 +480,7 @@ fun AniSyncNavHost(
                     characterId = character.characterId,
                     onBackClick = { navController.popBackStack() },
                     onMediaClick = { mediaId ->
-                        navController.navigate(MediaDetails(mediaId, "character"))
+                        navController.navigate(MediaDetails(mediaId, com.anisync.android.presentation.util.TransitionKeys.CHARACTER))
                     },
                     onMediaSeeAllClick = { characterId, characterName ->
                         navController.navigate(CharacterMediaGrid(characterId, characterName))
@@ -541,7 +541,9 @@ fun AniSyncNavHost(
                     },
                     onCharacterClick = { characterId ->
                         navController.navigate(CharacterDetails(characterId))
-                    }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 
@@ -640,8 +642,10 @@ fun AniSyncNavHost(
                     characterName = grid.characterName,
                     onBackClick = { navController.popBackStack() },
                     onMediaClick = { mediaId ->
-                        navController.navigate(MediaDetails(mediaId, "character_grid"))
-                    }
+                        navController.navigate(MediaDetails(mediaId, com.anisync.android.presentation.util.TransitionKeys.CHARACTER_GRID))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 

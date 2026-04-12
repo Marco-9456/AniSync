@@ -56,6 +56,7 @@ import com.anisync.android.presentation.details.components.DetailHeroImage
 import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoicedCharacterItem
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.util.getName
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -154,6 +155,7 @@ fun StaffDetailsScreen(
                         onMediaSeeAllClick = {
                             onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
                         },
+                        transitionPrefix = TransitionKeys.STAFF,
                         onFavouriteClick = viewModel::toggleFavourite
                     )
                 }
@@ -177,6 +179,7 @@ private fun StaffDetailsContent(
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onMediaSeeAllClick: () -> Unit,
+    transitionPrefix: String,
     onFavouriteClick: () -> Unit
 ) {
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
@@ -280,6 +283,7 @@ private fun StaffDetailsContent(
                             titleLanguage = titleLanguage,
                             onCharacterClick = { onCharacterClick(voicedChar.characterId) },
                             onMediaClick = onMediaClick,
+                            transitionPrefix = transitionPrefix,
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                         )
                     }

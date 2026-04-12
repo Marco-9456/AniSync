@@ -38,6 +38,18 @@ object TransitionKeys {
     
     /** Media details screen prefix */
     const val MEDIA_DETAILS = "media_details"
+
+    /** Character details screen prefix */
+    const val CHARACTER = "character"
+
+    /** Character media grid screen prefix */
+    const val CHARACTER_GRID = "character_grid"
+
+    /** Staff details screen prefix */
+    const val STAFF = "staff"
+
+    /** Staff media grid screen prefix */
+    const val STAFF_GRID = "staff_grid"
     
     /** Hero carousel prefix */
     const val HERO = "hero"

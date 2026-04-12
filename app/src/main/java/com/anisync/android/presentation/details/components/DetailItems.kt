@@ -211,6 +211,7 @@ fun MediaRoleItem(
 fun RelationItem(
     relation: RelatedMedia,
     onClick: () -> Unit,
+    transitionPrefix: String = TransitionKeys.MEDIA_DETAILS,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
@@ -232,9 +233,7 @@ fun RelationItem(
                     .fillMaxWidth()
                     .sharedBounds(
                         sharedContentState = rememberSharedContentState(
-                            key = TransitionKeys.relationCover(
-                                relation.id
-                            )
+                            key = TransitionKeys.cover(transitionPrefix, relation.id)
                         ),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
@@ -377,9 +376,45 @@ fun VoicedCharacterItem(
     titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI,
     onCharacterClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
+    transitionPrefix: String = TransitionKeys.STAFF,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    val cardShape = RoundedCornerShape(8.dp)
+    val titleSpatialSpec = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        AppMotion.rememberSpatialSpec()
+    } else {
+        null
+    }
+    val characterImageModifier = if (
+        sharedTransitionScope != null &&
+        animatedVisibilityScope != null
+    ) {
+        val characterSpatialSpec = AppMotion.rememberSpatialSpec()
+        with(sharedTransitionScope) {
+            Modifier
+                .width(56.dp)
+                .wrapContentHeight()
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(
+                        key = TransitionKeys.characterImage(voicedCharacter.characterId)
+                    ),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> characterSpatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(cardShape)
+                )
+                .clip(cardShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        }
+    } else {
+        Modifier
+            .width(56.dp)
+            .wrapContentHeight()
+            .clip(cardShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    }
 
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
@@ -402,11 +437,7 @@ fun VoicedCharacterItem(
                     model = voicedCharacter.characterImageUrl,
                     contentDescription = voicedCharacter.getName(titleLanguage),
                     contentScale = ContentScale.FillWidth,
-                    modifier = Modifier
-                        .width(56.dp)
-                        .wrapContentHeight()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier = characterImageModifier
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
@@ -446,10 +477,29 @@ fun VoicedCharacterItem(
 
                     // Media appearances
                     voicedCharacter.mediaAppearances.forEach { appearance ->
+                        val rowModifier = if (
+                            sharedTransitionScope != null &&
+                            animatedVisibilityScope != null &&
+                            titleSpatialSpec != null
+                        ) {
+                            with(sharedTransitionScope) {
+                                Modifier.sharedBounds(
+                                    sharedContentState = rememberSharedContentState(
+                                        key = TransitionKeys.title(transitionPrefix, appearance.mediaId)
+                                    ),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    boundsTransform = { _, _ -> titleSpatialSpec },
+                                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(cardShape)
                                 .clickable { onMediaClick(appearance.mediaId) }
                                 .padding(horizontal = 8.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -467,7 +517,8 @@ fun VoicedCharacterItem(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = rowModifier
                             )
                         }
                     }

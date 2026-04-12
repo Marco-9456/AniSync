@@ -3,6 +3,7 @@ package com.anisync.android.presentation.details.components
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -329,19 +331,70 @@ fun VoiceActorCard(
 
 @Composable
 fun FeaturedMediaItem(
+    mediaId: Int,
     coverUrl: String?,
     title: String,
     role: String?,
     year: Int?,
     type: String? = null,
     onClick: () -> Unit,
+    transitionPrefix: String = TransitionKeys.CHARACTER,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
+    val cardShape = RoundedCornerShape(16.dp)
+    val spatialSpec = if (sharedTransitionScope != null) {
+        AppMotion.rememberSpatialSpec()
+    } else {
+        null
+    }
+    val coverKey = TransitionKeys.cover(transitionPrefix, mediaId)
+    val titleKey = TransitionKeys.title(transitionPrefix, mediaId)
+
+    val cardModifier = if (
+        sharedTransitionScope != null &&
+        animatedVisibilityScope != null &&
+        spatialSpec != null
+    ) {
+        with(sharedTransitionScope) {
+            modifier
+                .width(120.dp)
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = coverKey),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(cardShape)
+                )
+                .clip(cardShape)
+                .clickable(onClick = onClick)
+        }
+    } else {
+        modifier
             .width(120.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(cardShape)
             .clickable(onClick = onClick)
+    }
+
+    val titleModifier = if (
+        sharedTransitionScope != null &&
+        animatedVisibilityScope != null &&
+        spatialSpec != null
+    ) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = titleKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+            )
+        }
+    } else {
+        Modifier
+    }
+
+    Column(
+        modifier = cardModifier
     ) {
         AsyncImage(
             model = coverUrl,
@@ -350,7 +403,7 @@ fun FeaturedMediaItem(
             modifier = Modifier
                 .height(160.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(cardShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -375,7 +428,8 @@ fun FeaturedMediaItem(
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = titleModifier
         )
         if (type != null) {
             Text(

@@ -1,8 +1,10 @@
 package com.anisync.android.presentation.details
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -58,14 +62,16 @@ import com.anisync.android.presentation.details.components.VoicedCharacterItem
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.util.getTitle
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterMediaGridScreen(
     characterId: Int,
     characterName: String,
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
-    viewModel: CharacterDetailsViewModel = hiltViewModel()
+    viewModel: CharacterDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
@@ -75,8 +81,101 @@ fun CharacterMediaGridScreen(
     var isSortAscending by rememberSaveable { mutableStateOf(false) }
     var onlyOnList by rememberSaveable { mutableStateOf(false) }
 
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
+        { mediaId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onMediaClick(mediaId)
+        }
+    }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val listState = rememberLazyGridState()
+
+    val isGridEnteringFromBackStack by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridTargetingVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridFullyVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember(sharedTransitionScope) {
+        derivedStateOf { sharedTransitionScope?.isTransitionActive == true }
+    }
+    val shouldRenderTopBarInOverlay by remember(
+        sharedTransitionScope,
+        animatedVisibilityScope
+    ) {
+        derivedStateOf {
+            sharedTransitionScope != null &&
+                animatedVisibilityScope != null &&
+                shouldKeepTopBarOverlayForReturn &&
+                isGridTargetingVisible &&
+                (
+                    isGridEnteringFromBackStack ||
+                        (hasObservedGridReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha = if (animatedVisibilityScope != null) {
+        val alpha by animatedVisibilityScope.transition.animateFloat(label = "CharacterMediaGridTopBarOverlayAlpha") { state ->
+            if (state == EnterExitState.Visible) 1f else 0f
+        }
+        alpha
+    } else {
+        1f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isGridEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isGridEnteringFromBackStack) {
+            hasObservedGridReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedGridReEnter,
+        isGridFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedGridReEnter &&
+            isGridFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedGridReEnter = false
+        }
+    }
+
+    val topBarOverlayModifier = if (sharedTransitionScope != null) {
+        with(sharedTransitionScope) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(
+                    zIndexInOverlay = 1f,
+                    renderInOverlay = { shouldRenderTopBarInOverlay }
+                )
+                .graphicsLayer {
+                    alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                }
+        }
+    } else {
+        Modifier
+    }
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
@@ -97,6 +196,7 @@ fun CharacterMediaGridScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
+                modifier = topBarOverlayModifier,
                 title = {
                     Text(
                         text = "Featured Media",
@@ -192,12 +292,16 @@ fun CharacterMediaGridScreen(
 
                             items(sortedMedia, key = { it.id }) { mediaItem ->
                                 FeaturedMediaItem(
+                                    mediaId = mediaItem.id,
                                     coverUrl = mediaItem.coverUrl,
                                     title = mediaItem.getTitle(titleLanguage),
                                     type = mediaItem.type?.name,
                                     role = mediaItem.characterRole,
                                     year = mediaItem.startYear,
-                                    onClick = { onMediaClick(mediaItem.id) }
+                                    onClick = { navigateToMediaDetails(mediaItem.id) },
+                                    transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.CHARACTER_GRID,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
                                 )
                             }
                         }
@@ -237,7 +341,7 @@ private fun sortCharacterMedia(
     return if (ascending) sorted else sorted.reversed()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun StaffMediaGridScreen(
     staffId: Int,
@@ -245,7 +349,9 @@ fun StaffMediaGridScreen(
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
-    viewModel: StaffDetailsViewModel = hiltViewModel()
+    viewModel: StaffDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
@@ -255,8 +361,108 @@ fun StaffMediaGridScreen(
     var isSortAscending by rememberSaveable { mutableStateOf(false) }
     var onlyOnList by rememberSaveable { mutableStateOf(false) }
 
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
+        { mediaId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onMediaClick(mediaId)
+        }
+    }
+    val navigateToCharacterDetails: (Int) -> Unit = remember(onCharacterClick) {
+        { characterId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onCharacterClick(characterId)
+        }
+    }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val listState = rememberLazyListState()
+
+    val isGridEnteringFromBackStack by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridTargetingVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridFullyVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember(sharedTransitionScope) {
+        derivedStateOf { sharedTransitionScope?.isTransitionActive == true }
+    }
+    val shouldRenderTopBarInOverlay by remember(
+        sharedTransitionScope,
+        animatedVisibilityScope
+    ) {
+        derivedStateOf {
+            sharedTransitionScope != null &&
+                animatedVisibilityScope != null &&
+                shouldKeepTopBarOverlayForReturn &&
+                isGridTargetingVisible &&
+                (
+                    isGridEnteringFromBackStack ||
+                        (hasObservedGridReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha = if (animatedVisibilityScope != null) {
+        val alpha by animatedVisibilityScope.transition.animateFloat(label = "StaffMediaGridTopBarOverlayAlpha") { state ->
+            if (state == EnterExitState.Visible) 1f else 0f
+        }
+        alpha
+    } else {
+        1f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isGridEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isGridEnteringFromBackStack) {
+            hasObservedGridReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedGridReEnter,
+        isGridFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedGridReEnter &&
+            isGridFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedGridReEnter = false
+        }
+    }
+
+    val topBarOverlayModifier = if (sharedTransitionScope != null) {
+        with(sharedTransitionScope) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(
+                    zIndexInOverlay = 1f,
+                    renderInOverlay = { shouldRenderTopBarInOverlay }
+                )
+                .graphicsLayer {
+                    alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                }
+        }
+    } else {
+        Modifier
+    }
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
@@ -278,6 +484,7 @@ fun StaffMediaGridScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
+                modifier = topBarOverlayModifier,
                 title = {
                     Text(
                         text = "Voiced Characters",
@@ -377,8 +584,11 @@ fun StaffMediaGridScreen(
                                 VoicedCharacterItem(
                                     voicedCharacter = vc,
                                     titleLanguage = titleLanguage,
-                                    onCharacterClick = { onCharacterClick(vc.characterId) },
-                                    onMediaClick = onMediaClick,
+                                    onCharacterClick = { navigateToCharacterDetails(vc.characterId) },
+                                    onMediaClick = navigateToMediaDetails,
+                                    transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.STAFF_GRID,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                             }
@@ -436,12 +646,106 @@ fun MediaCharactersGridScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToCharacterDetails: (Int) -> Unit = remember(onCharacterClick) {
+        { characterId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onCharacterClick(characterId)
+        }
+    }
+
+    val isGridEnteringFromBackStack by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridTargetingVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridFullyVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember(sharedTransitionScope) {
+        derivedStateOf { sharedTransitionScope?.isTransitionActive == true }
+    }
+    val shouldRenderTopBarInOverlay by remember(
+        sharedTransitionScope,
+        animatedVisibilityScope
+    ) {
+        derivedStateOf {
+            sharedTransitionScope != null &&
+                animatedVisibilityScope != null &&
+                shouldKeepTopBarOverlayForReturn &&
+                isGridTargetingVisible &&
+                (
+                    isGridEnteringFromBackStack ||
+                        (hasObservedGridReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha = if (animatedVisibilityScope != null) {
+        val alpha by animatedVisibilityScope.transition.animateFloat(label = "MediaCharactersGridTopBarOverlayAlpha") { state ->
+            if (state == EnterExitState.Visible) 1f else 0f
+        }
+        alpha
+    } else {
+        1f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isGridEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isGridEnteringFromBackStack) {
+            hasObservedGridReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedGridReEnter,
+        isGridFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedGridReEnter &&
+            isGridFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedGridReEnter = false
+        }
+    }
+
+    val topBarOverlayModifier = if (sharedTransitionScope != null) {
+        with(sharedTransitionScope) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(
+                    zIndexInOverlay = 1f,
+                    renderInOverlay = { shouldRenderTopBarInOverlay }
+                )
+                .graphicsLayer {
+                    alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                }
+        }
+    } else {
+        Modifier
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
+                modifier = topBarOverlayModifier,
                 title = {
                     Text(
                         text = stringResource(R.string.section_cast),
@@ -514,7 +818,7 @@ fun MediaCharactersGridScreen(
                             items(characters, key = { it.id }) { character ->
                                 CharacterItem(
                                     character = character,
-                                    onClick = { onCharacterClick(character.id) },
+                                    onClick = { navigateToCharacterDetails(character.id) },
                                     modifier = Modifier.animateItem(
                                         fadeInSpec = fadeSpec,
                                         fadeOutSpec = fadeSpec,
@@ -547,12 +851,106 @@ fun MediaRelationsGridScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToRelationDetails: (Int) -> Unit = remember(onRelationClick) {
+        { relationMediaId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onRelationClick(relationMediaId)
+        }
+    }
+
+    val isGridEnteringFromBackStack by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridTargetingVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridFullyVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember(sharedTransitionScope) {
+        derivedStateOf { sharedTransitionScope?.isTransitionActive == true }
+    }
+    val shouldRenderTopBarInOverlay by remember(
+        sharedTransitionScope,
+        animatedVisibilityScope
+    ) {
+        derivedStateOf {
+            sharedTransitionScope != null &&
+                animatedVisibilityScope != null &&
+                shouldKeepTopBarOverlayForReturn &&
+                isGridTargetingVisible &&
+                (
+                    isGridEnteringFromBackStack ||
+                        (hasObservedGridReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha = if (animatedVisibilityScope != null) {
+        val alpha by animatedVisibilityScope.transition.animateFloat(label = "MediaRelationsGridTopBarOverlayAlpha") { state ->
+            if (state == EnterExitState.Visible) 1f else 0f
+        }
+        alpha
+    } else {
+        1f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isGridEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isGridEnteringFromBackStack) {
+            hasObservedGridReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedGridReEnter,
+        isGridFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedGridReEnter &&
+            isGridFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedGridReEnter = false
+        }
+    }
+
+    val topBarOverlayModifier = if (sharedTransitionScope != null) {
+        with(sharedTransitionScope) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(
+                    zIndexInOverlay = 1f,
+                    renderInOverlay = { shouldRenderTopBarInOverlay }
+                )
+                .graphicsLayer {
+                    alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                }
+        }
+    } else {
+        Modifier
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             LargeTopAppBar(
+                modifier = topBarOverlayModifier,
                 title = {
                     Text(
                         text = stringResource(R.string.section_related),
@@ -619,7 +1017,8 @@ fun MediaRelationsGridScreen(
                             items(relations, key = { "${it.id}_${it.relationType}" }) { relation ->
                                 RelationItem(
                                     relation = relation,
-                                    onClick = { onRelationClick(relation.id) },
+                                    onClick = { navigateToRelationDetails(relation.id) },
+                                    transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.RELATIONS_GRID,
                                     modifier = Modifier.animateItem(
                                         fadeInSpec = fadeSpec,
                                         fadeOutSpec = fadeSpec,

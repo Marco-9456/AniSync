@@ -78,6 +78,7 @@ import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoiceActorCard
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
 import kotlinx.coroutines.launch
@@ -181,6 +182,7 @@ fun CharacterDetailsScreen(
                         },
                         onStaffClick = onStaffClick,
                         onFavouriteClick = viewModel::toggleFavourite,
+                        transitionPrefix = TransitionKeys.CHARACTER,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
@@ -207,6 +209,7 @@ private fun CharacterDetailsContent(
     onMediaSeeAllClick: () -> Unit,
     onStaffClick: (Int) -> Unit,
     onFavouriteClick: () -> Unit,
+    transitionPrefix: String,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -329,7 +332,10 @@ private fun CharacterDetailsContent(
                         character = character,
                         titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
-                        onMediaSeeAllClick = onMediaSeeAllClick
+                        onMediaSeeAllClick = onMediaSeeAllClick,
+                        transitionPrefix = transitionPrefix,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
 
                     1 -> VoiceActorsTabContent(
@@ -359,7 +365,10 @@ private fun CharacterTabContent(
     character: CharacterDetails,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     onMediaClick: (Int) -> Unit,
-    onMediaSeeAllClick: () -> Unit
+    onMediaSeeAllClick: () -> Unit,
+    transitionPrefix: String,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     // Build attributes list from structured API fields
     val months = listOf(
@@ -448,12 +457,16 @@ private fun CharacterTabContent(
                         key = { it.id }
                     ) { media ->
                         FeaturedMediaItem(
+                            mediaId = media.id,
                             coverUrl = media.coverUrl,
                             title = media.getTitle(titleLanguage),
                             role = media.characterRole,
                             year = media.startYear,
                             type = media.type?.name,
-                            onClick = { onMediaClick(media.id) }
+                            onClick = { onMediaClick(media.id) },
+                            transitionPrefix = transitionPrefix,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope
                         )
                     }
                 }
