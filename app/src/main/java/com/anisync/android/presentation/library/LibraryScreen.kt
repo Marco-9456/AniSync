@@ -2,8 +2,10 @@ package com.anisync.android.presentation.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -61,6 +63,7 @@ import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
@@ -77,6 +80,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -244,10 +248,21 @@ fun LibraryScreen(
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick) {
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedLibraryReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
+        { id ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedLibraryReEnter = false
+            onMediaClick(id)
+        }
+    }
+
+    val onSearchResultClick: (Int) -> Unit = remember(navigateToMediaDetails) {
         { id ->
             keyboardController?.hide()
-            onMediaClick(id)
+            navigateToMediaDetails(id)
         }
     }
 
@@ -277,6 +292,62 @@ fun LibraryScreen(
             }
         )
     }
+    val isLibraryEnteringFromBackStack by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isLibraryTargetingVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isLibraryFullyVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember {
+        derivedStateOf { sharedTransitionScope.isTransitionActive }
+    }
+    val shouldRenderTopBarInOverlay by remember {
+        derivedStateOf {
+            shouldKeepTopBarOverlayForReturn &&
+                isLibraryTargetingVisible &&
+                (
+                    isLibraryEnteringFromBackStack ||
+                        (hasObservedLibraryReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha by animatedVisibilityScope.transition.animateFloat(label = "TopBarOverlayAlpha") { state ->
+        if (state == EnterExitState.Visible) 1f else 0f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isLibraryEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isLibraryEnteringFromBackStack) {
+            hasObservedLibraryReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedLibraryReEnter,
+        isLibraryFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedLibraryReEnter &&
+            isLibraryFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedLibraryReEnter = false
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -284,88 +355,105 @@ fun LibraryScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Column(
-                modifier = Modifier.statusBarsPadding()
-            ) {
-                AppBarWithSearch(
-                    modifier = Modifier.focusProperties { canFocus = !showListManagement },
-                    scrollBehavior = scrollBehavior,
-                    state = searchBarState,
-                    inputField = inputField,
-                    colors = SearchBarDefaults.appBarWithSearchColors(
-                        appBarContainerColor = Color.Transparent,
-                        scrolledAppBarContainerColor = Color.Transparent
-                    ),
-                )
-
-                MediaTypeSelector(
-                    selected = mediaType,
-                    onSelect = { viewModel.onAction(LibraryAction.OnMediaTypeChange(it)) },
+            with(sharedTransitionScope) {
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                        .renderInSharedTransitionScopeOverlay(
+                            zIndexInOverlay = 1f,
+                            renderInOverlay = { shouldRenderTopBarInOverlay }
+                        )
+                        .graphicsLayer {
+                            alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                        },
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    PrimaryScrollableTabRow(
-                        modifier = Modifier.weight(1f),
-                        selectedTabIndex = pagerState.currentPage.coerceAtMost(
-                            tabs.lastIndex.coerceAtLeast(
-                                0
-                            )
-                        ),
-                        containerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        edgePadding = 16.dp,
-                        indicator = {},
-                        divider = {}
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
                     ) {
-                        tabs.forEachIndexed { index, tab ->
-                            val statusIcon = when (tab) {
-                                is LibraryTab.Standard -> {
-                                    when (tab.status) {
-                                        LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
-                                        LibraryStatus.PAUSED -> Icons.Default.Pause
-                                        LibraryStatus.COMPLETED -> Icons.Default.Done
-                                        LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
-                                        LibraryStatus.DROPPED -> Icons.Default.Close
-                                        else -> Icons.Default.Inbox
-                                    }
-                                }
+                        AppBarWithSearch(
+                            modifier = Modifier.focusProperties { canFocus = !showListManagement },
+                            scrollBehavior = scrollBehavior,
+                            state = searchBarState,
+                            inputField = inputField,
+                            colors = SearchBarDefaults.appBarWithSearchColors(
+                                appBarContainerColor = Color.Transparent,
+                                scrolledAppBarContainerColor = Color.Transparent
+                            ),
+                        )
 
-                                is LibraryTab.Favorites -> Icons.Default.Favorite
-                                is LibraryTab.Custom -> Icons.AutoMirrored.Filled.List
+                        MediaTypeSelector(
+                            selected = mediaType,
+                            onSelect = { viewModel.onAction(LibraryAction.OnMediaTypeChange(it)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            PrimaryScrollableTabRow(
+                                modifier = Modifier.weight(1f),
+                                selectedTabIndex = pagerState.currentPage.coerceAtMost(
+                                    tabs.lastIndex.coerceAtLeast(
+                                        0
+                                    )
+                                ),
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                                edgePadding = 16.dp,
+                                indicator = {},
+                                divider = {}
+                            ) {
+                                tabs.forEachIndexed { index, tab ->
+                                    val statusIcon = when (tab) {
+                                        is LibraryTab.Standard -> {
+                                            when (tab.status) {
+                                                LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
+                                                LibraryStatus.PAUSED -> Icons.Default.Pause
+                                                LibraryStatus.COMPLETED -> Icons.Default.Done
+                                                LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
+                                                LibraryStatus.DROPPED -> Icons.Default.Close
+                                                else -> Icons.Default.Inbox
+                                            }
+                                        }
+
+                                        is LibraryTab.Favorites -> Icons.Default.Favorite
+                                        is LibraryTab.Custom -> Icons.AutoMirrored.Filled.List
+                                    }
+
+                                    AnimatedTab(
+                                        index = index,
+                                        selectedIndex = pagerState.currentPage,
+                                        selected = pagerState.currentPage == index,
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(index)
+                                            }
+                                        },
+                                        icon = statusIcon,
+                                        label = tab.getLabel(mediaType)
+                                    )
+                                }
                             }
 
-                            AnimatedTab(
-                                index = index,
-                                selectedIndex = pagerState.currentPage,
-                                selected = pagerState.currentPage == index,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(index)
-                                    }
-                                },
-                                icon = statusIcon,
-                                label = tab.getLabel(mediaType)
-                            )
+                            IconButton(
+                                onClick = { showListManagement = true },
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = "Manage Lists"
+                                )
+                            }
                         }
-                    }
-
-                    IconButton(
-                        onClick = { showListManagement = true },
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "Manage Lists"
-                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     ) { innerPadding ->
@@ -457,7 +545,7 @@ fun LibraryScreen(
                                             LibraryMediaCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
-                                                onClick = { onMediaClick(entry.mediaId) },
+                                                onClick = { navigateToMediaDetails(entry.mediaId) },
                                                 onIncrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
@@ -492,7 +580,7 @@ fun LibraryScreen(
                                             LibraryListCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
-                                                onClick = { onMediaClick(entry.mediaId) },
+                                                onClick = { navigateToMediaDetails(entry.mediaId) },
                                                 onIncrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
@@ -607,7 +695,14 @@ fun LibraryScreen(
         onOrderMoveUp = { viewModel.onAction(LibraryAction.MoveListUp(it)) },
         onOrderMoveDown = { viewModel.onAction(LibraryAction.MoveListDown(it)) },
         onDeleteList = { viewModel.onAction(LibraryAction.DeleteCustomList(it)) },
-        onCreateList = { listName, type -> viewModel.onAction(LibraryAction.CreateCustomList(listName, type)) }
+        onCreateList = { listName, type ->
+            viewModel.onAction(
+                LibraryAction.CreateCustomList(
+                    listName,
+                    type
+                )
+            )
+        }
     )
 
     editingEntry?.let { entry ->

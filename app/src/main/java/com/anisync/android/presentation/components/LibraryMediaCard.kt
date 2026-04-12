@@ -125,6 +125,8 @@ fun LibraryMediaCard(
 
     // Use TransitionKeys for consistent key generation
     val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.mediaId)
+    val coverKey = TransitionKeys.cover(TransitionKeys.LIBRARY, entry.mediaId)
+    val titleKey = TransitionKeys.title(TransitionKeys.LIBRARY, entry.mediaId)
     val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId)
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
@@ -193,6 +195,32 @@ fun LibraryMediaCard(
             )
     }
 
+    val coverShape = RoundedCornerShape(16.dp)
+    val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = coverKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                clipInOverlayDuringTransition = OverlayClip(coverShape)
+            )
+        }
+    } else {
+        Modifier
+    }
+    val titleSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = titleKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -205,7 +233,8 @@ fun LibraryMediaCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(0.7f) // Ensure image is never cropped differently across lists
-                    .clip(RoundedCornerShape(16.dp))
+                    .then(coverSharedModifier)
+                    .clip(coverShape)
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -236,6 +265,7 @@ fun LibraryMediaCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
+                        .then(titleSharedModifier)
                         .align(Alignment.BottomStart)
                         .padding(12.dp)
                 )

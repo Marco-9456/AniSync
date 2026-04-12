@@ -3,8 +3,10 @@ package com.anisync.android.presentation.discover
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,6 +71,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -154,6 +157,74 @@ fun DiscoverScreen(
 
     var showFilterDialog by rememberSaveable { mutableStateOf(false) }
 
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedDiscoverReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
+        { mediaId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedDiscoverReEnter = false
+            onMediaClick(mediaId)
+        }
+    }
+
+    val isDiscoverEnteringFromBackStack by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isDiscoverTargetingVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isDiscoverFullyVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember {
+        derivedStateOf { sharedTransitionScope.isTransitionActive }
+    }
+    val shouldRenderTopBarInOverlay by remember {
+        derivedStateOf {
+            shouldKeepTopBarOverlayForReturn &&
+                isDiscoverTargetingVisible &&
+                (
+                    isDiscoverEnteringFromBackStack ||
+                        (hasObservedDiscoverReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha by animatedVisibilityScope.transition.animateFloat(label = "DiscoverTopBarOverlayAlpha") { state ->
+        if (state == EnterExitState.Visible) 1f else 0f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isDiscoverEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isDiscoverEnteringFromBackStack) {
+            hasObservedDiscoverReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedDiscoverReEnter,
+        isDiscoverFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedDiscoverReEnter &&
+            isDiscoverFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedDiscoverReEnter = false
+        }
+    }
+
     val trendingTitle = stringResource(R.string.section_trending_now)
     val popularTitle = stringResource(R.string.section_all_time_popular)
     val upcomingTitle = stringResource(R.string.section_upcoming_season)
@@ -171,10 +242,10 @@ fun DiscoverScreen(
         }
     }
 
-    val onSearchItemClick: (Int) -> Unit = remember(onMediaClick, keyboardController) {
+    val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, keyboardController) {
         { id ->
             keyboardController?.hide()
-            onMediaClick(id)
+            navigateToMediaDetails(id)
         }
     }
 
@@ -203,18 +274,33 @@ fun DiscoverScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            DiscoverTopBar(
-                scrollBehavior = scrollBehavior,
-                searchBarState = searchBarState,
-                textFieldState = textFieldState,
-                mediaType = currentMediaType,
-                searchFilters = currentSearchFilters,
-                coroutineScope = coroutineScope,
-                keyboardController = keyboardController,
-                onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
-                onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
-                onShowFilterDialog = { showFilterDialog = true }
-            )
+            with(sharedTransitionScope) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .renderInSharedTransitionScopeOverlay(
+                            zIndexInOverlay = 1f,
+                            renderInOverlay = { shouldRenderTopBarInOverlay }
+                        )
+                        .graphicsLayer {
+                            alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                        },
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    DiscoverTopBar(
+                        scrollBehavior = scrollBehavior,
+                        searchBarState = searchBarState,
+                        textFieldState = textFieldState,
+                        mediaType = currentMediaType,
+                        searchFilters = currentSearchFilters,
+                        coroutineScope = coroutineScope,
+                        keyboardController = keyboardController,
+                        onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
+                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
+                        onShowFilterDialog = { showFilterDialog = true }
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         val successState = uiState as? DiscoverUiState.Success
@@ -240,7 +326,7 @@ fun DiscoverScreen(
             upcomingTitle = upcomingTitle,
             tbaTitle = tbaTitle,
             onRefresh = onRefresh,
-            onMediaClick = onMediaClick,
+            onMediaClick = navigateToMediaDetails,
             onSectionSeeAllClick = onSectionSeeAllClick,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope

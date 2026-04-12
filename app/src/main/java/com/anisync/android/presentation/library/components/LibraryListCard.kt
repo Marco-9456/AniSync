@@ -89,8 +89,10 @@ fun LibraryListCard(
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val effectsSpec = AppMotion.rememberSlowEffectsSpec()
 
-    val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.id)
-    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.id)
+    val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.mediaId)
+    val coverKey = TransitionKeys.cover(TransitionKeys.LIBRARY, entry.mediaId)
+    val titleKey = TransitionKeys.title(TransitionKeys.LIBRARY, entry.mediaId)
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId)
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
@@ -138,6 +140,32 @@ fun LibraryListCard(
         baseModifier
     }
 
+    val coverShape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+    val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = coverKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                clipInOverlayDuringTransition = OverlayClip(coverShape)
+            )
+        }
+    } else {
+        Modifier
+    }
+    val titleSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(key = titleKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -154,7 +182,8 @@ fun LibraryListCard(
                 modifier = Modifier
                     .width(96.dp)
                     .aspectRatio(0.7f) // Dynamically sets Row height and prevents image cropping
-                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    .then(coverSharedModifier)
+                    .clip(coverShape)
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -184,7 +213,8 @@ fun LibraryListCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
+                    modifier = titleSharedModifier
                 )
 
                 // Badges and Airing Info

@@ -1,8 +1,10 @@
 package com.anisync.android.presentation.discover
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,16 +29,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -179,31 +186,121 @@ fun SectionGridScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
+        { mediaId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onMediaClick(mediaId)
+        }
+    }
+
+    val isGridEnteringFromBackStack by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridTargetingVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridFullyVisible by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember {
+        derivedStateOf { sharedTransitionScope.isTransitionActive }
+    }
+    val shouldRenderTopBarInOverlay by remember {
+        derivedStateOf {
+            shouldKeepTopBarOverlayForReturn &&
+                isGridTargetingVisible &&
+                (
+                    isGridEnteringFromBackStack ||
+                        (hasObservedGridReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha by animatedVisibilityScope.transition.animateFloat(label = "SectionGridTopBarOverlayAlpha") { state ->
+        if (state == EnterExitState.Visible) 1f else 0f
+    }
+
+    val filtersOverlayModifier = with(sharedTransitionScope) {
+        Modifier
+            .fillMaxWidth()
+            .renderInSharedTransitionScopeOverlay(
+                zIndexInOverlay = 2f,
+                renderInOverlay = { shouldRenderTopBarInOverlay }
+            )
+            .graphicsLayer {
+                alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+            }
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isGridEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isGridEnteringFromBackStack) {
+            hasObservedGridReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedGridReEnter,
+        isGridFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedGridReEnter &&
+            isGridFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedGridReEnter = false
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        text = sectionTitle,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+            with(sharedTransitionScope) {
+                LargeTopAppBar(
+                    modifier = Modifier
+                        .renderInSharedTransitionScopeOverlay(
+                            zIndexInOverlay = 1f,
+                            renderInOverlay = { shouldRenderTopBarInOverlay }
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                ),
-                scrollBehavior = scrollBehavior
-            )
+                        .graphicsLayer {
+                            alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                        },
+                    title = {
+                        Text(
+                            text = sectionTitle,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    ),
+                    scrollBehavior = scrollBehavior
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -211,17 +308,22 @@ fun SectionGridScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            SearchFiltersRow(
-                mediaType = uiState.mediaType,
-                selectedFormat = uiState.selectedFormat,
-                onFormatSelected = { format ->
-                    coroutineScope.launch {
-                        gridState.scrollToItem(0, 0) // Reset scroll immediately on UI filter click
-                        viewModel.onAction(SectionGridAction.SetFormatFilter(format))
-                    }
-                },
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Surface(
+                modifier = filtersOverlayModifier,
+                color = MaterialTheme.colorScheme.background
+            ) {
+                SearchFiltersRow(
+                    mediaType = uiState.mediaType,
+                    selectedFormat = uiState.selectedFormat,
+                    onFormatSelected = { format ->
+                        coroutineScope.launch {
+                            gridState.scrollToItem(0, 0) // Reset scroll immediately on UI filter click
+                            viewModel.onAction(SectionGridAction.SetFormatFilter(format))
+                        }
+                    },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
@@ -274,7 +376,7 @@ fun SectionGridScreen(
                                 PosterCard(
                                     item = item,
                                     titleLanguage = titleLanguage,
-                                    onClick = { onMediaClick(item.mediaId) },
+                                    onClick = { navigateToMediaDetails(item.mediaId) },
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope,
                                     transitionPrefix = "sectiongrid",

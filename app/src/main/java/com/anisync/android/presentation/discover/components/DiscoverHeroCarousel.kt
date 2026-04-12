@@ -99,9 +99,9 @@ private fun HeroCarouselItem(
 ) {
     val spatialSpec = AppMotion.rememberSpatialSpec()
 
-    val artKey = "hero_art_${item.mediaId}"
-    val titleKey = "hero_title_${item.mediaId}"
-    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.HERO, item.mediaId)
+    val artKey = TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId)
+    val titleKey = TransitionKeys.title(TransitionKeys.DISCOVER, item.mediaId)
+    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId)
 
     Surface(
         onClick = onClick,
