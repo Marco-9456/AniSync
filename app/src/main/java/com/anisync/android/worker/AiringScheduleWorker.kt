@@ -4,7 +4,12 @@ import android.content.Context
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.hilt.work.HiltWorker
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.anisync.android.AiringScheduleQuery
 import com.anisync.android.data.local.dao.AiringScheduleDao
@@ -28,6 +33,26 @@ class AiringScheduleWorker @AssistedInject constructor(
     private val libraryDao: LibraryDao
 ) : CoroutineWorker(appContext, workerParams) {
 
+    companion object {
+        private const val INITIAL_WORK_NAME = "AiringScheduleWorkerInitial"
+
+        fun enqueueImmediate(context: Context) {
+            val request = OneTimeWorkRequestBuilder<AiringScheduleWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .build()
+
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+                INITIAL_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        }
+    }
+
     override suspend fun doWork(): Result {
         return try {
             val calendar = java.util.Calendar.getInstance()
@@ -39,44 +64,57 @@ class AiringScheduleWorker @AssistedInject constructor(
             // Fetch 7 days of data for future widget support
             val endOfWeekSeconds = startOfDaySeconds + (7 * 86400)
 
-            val response = apolloClient.query(
-                AiringScheduleQuery(
-                    page = Optional.present(1),
-                    perPage = Optional.present(100),  // Increased for 7-day range
-                    airingAtGreater = Optional.present(startOfDaySeconds.toInt()),
-                    airingAtLesser = Optional.present(endOfWeekSeconds.toInt())
-                )
-            ).execute()
+            val entities = mutableListOf<AiringScheduleEntity>()
+            var page = 1
+            var hasNextPage = true
 
-            if (response.hasErrors()) {
-                Log.e("AiringScheduleWorker", "API Error: ${response.errors?.firstOrNull()?.message}")
-                return Result.retry()
-            }
+            while (page <= 3 && hasNextPage) {
+                val response = apolloClient.query(
+                    AiringScheduleQuery(
+                        page = Optional.present(page),
+                        perPage = Optional.present(50),
+                        airingAtGreater = Optional.present(startOfDaySeconds.toInt()),
+                        airingAtLesser = Optional.present(endOfWeekSeconds.toInt())
+                    )
+                ).execute()
 
-            val schedules = response.data?.Page?.airingSchedules?.filterNotNull() ?: emptyList()
-            
-            val entities = schedules.mapNotNull { schedule ->
-                val media = schedule.media
-                if (media == null) return@mapNotNull null
+                if (response.hasErrors()) {
+                    Log.e(
+                        "AiringScheduleWorker",
+                        "API Error on page $page: ${response.errors?.firstOrNull()?.message}"
+                    )
+                    return Result.retry()
+                }
 
-                // Safely handle nullable ids from GraphQL
-                val sId = schedule.id ?: return@mapNotNull null
-                val mId = media.id ?: return@mapNotNull null
-                
-                // Check if user is actively watching this anime (only CURRENT status, not PLANNING)
-                val libraryEntry = libraryDao.getEntry(mId)
-                val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
+                val pageData = response.data?.Page
+                val schedules = pageData?.airingSchedules?.filterNotNull() ?: emptyList()
 
-                AiringScheduleEntity(
-                    id = sId,
-                    mediaId = mId,
-                    airingAt = schedule.airingAt?.toLong() ?: 0L,
-                    episode = schedule.episode ?: 0,
-                    titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                    coverUrl = media.coverImage?.extraLarge,
-                    format = media.format?.rawValue,
-                    isWatching = isWatching
-                )
+                val pageEntities = schedules.mapNotNull { schedule ->
+                    val media = schedule.media ?: return@mapNotNull null
+
+                    // Safely handle nullable ids from GraphQL
+                    val sId = schedule.id ?: return@mapNotNull null
+                    val mId = media.id ?: return@mapNotNull null
+
+                    // Check if user is actively watching this anime (only CURRENT status, not PLANNING)
+                    val libraryEntry = libraryDao.getEntry(mId)
+                    val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
+
+                    AiringScheduleEntity(
+                        id = sId,
+                        mediaId = mId,
+                        airingAt = schedule.airingAt?.toLong() ?: 0L,
+                        episode = schedule.episode ?: 0,
+                        titleUserPreferred = media.title?.userPreferred ?: "Unknown",
+                        coverUrl = media.coverImage?.extraLarge,
+                        format = media.format?.rawValue,
+                        isWatching = isWatching
+                    )
+                }
+
+                entities.addAll(pageEntities)
+                hasNextPage = pageData?.pageInfo?.hasNextPage == true
+                page++
             }
 
             airingScheduleDao.clearAll() // Simple cache strategy: replace all

@@ -75,6 +75,8 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
             airingRequest
         )
 
+        com.anisync.android.worker.AiringScheduleWorker.enqueueImmediate(this@AniSyncApplication)
+
         // Schedule Trending Worker
         val trendingRequest = PeriodicWorkRequestBuilder<com.anisync.android.worker.TrendingWorker>(
             12, TimeUnit.HOURS

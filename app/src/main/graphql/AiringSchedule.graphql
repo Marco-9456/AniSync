@@ -1,20 +1,43 @@
 query AiringSchedule($page: Int, $perPage: Int, $airingAtGreater: Int, $airingAtLesser: Int) {
-  Page(page: $page, perPage: $perPage) {
-    airingSchedules(airingAt_greater: $airingAtGreater, airingAt_lesser: $airingAtLesser, sort: TIME) {
-        id
-        episode
-        airingAt
-        media {
+    Page(page: $page, perPage: $perPage) {
+        pageInfo {
+            total
+            currentPage
+            hasNextPage
+        }
+        airingSchedules(airingAt_greater: $airingAtGreater, airingAt_lesser: $airingAtLesser, sort: TIME) {
             id
-            title {
-                userPreferred
+            episode
+            airingAt
+            timeUntilAiring
+
+            media {
+                id
+                isAdult
+                status
+                format
+                episodes
+                popularity
+                averageScore
+                streamingEpisodes {
+                    site
+                    thumbnail
+                    title
+                    url
+                }
+
+                title {
+                    userPreferred
+                    english
+                }
+                coverImage {
+                    extraLarge
+                }
+                genres
+                mediaListEntry {
+                    status
+                }
             }
-            coverImage {
-                extraLarge
-            }
-            format
-            episodes
         }
     }
-  }
 }
