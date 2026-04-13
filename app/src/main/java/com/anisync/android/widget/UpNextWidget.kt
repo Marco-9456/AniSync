@@ -3,24 +3,17 @@ package com.anisync.android.widget
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.SystemClock
-import android.widget.RemoteViews
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.graphics.toColorInt
-import androidx.core.net.toUri
-import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
@@ -29,40 +22,36 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.itemsIndexed
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.background
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
-import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.anisync.android.MainActivity
 import com.anisync.android.R
-import com.anisync.android.data.AppSettings
-import com.anisync.android.data.StreamingService
 import com.anisync.android.data.local.dao.AiringScheduleDao
-import com.anisync.android.data.local.dao.LibraryDao
-import com.anisync.android.data.local.dao.MediaDetailsDao
-import com.anisync.android.data.local.entity.LibraryEntryEntity
-import com.anisync.android.domain.ExternalLinkType
-import com.anisync.android.widget.config.UpNextWidgetConfig
+import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.widget.core.SizeClass
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntentUtils
 import com.anisync.android.widget.core.toSizeClass
-import com.anisync.android.widget.designsystem.components.WidgetProgressBar
+import com.anisync.android.widget.designsystem.components.EmptyStateConfig
+import com.anisync.android.widget.designsystem.components.MediaPoster
+import com.anisync.android.widget.designsystem.components.StandardEpisodeBadge
+import com.anisync.android.widget.designsystem.components.TimeBadgeFromString
+import com.anisync.android.widget.designsystem.components.WidgetEmptyState
 import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
+import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -70,38 +59,32 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
+/**
+ * Hilt entry point used to inject dependencies directly into the widget.
+ */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface UpNextWidgetEntryPoint {
-    fun libraryDao(): LibraryDao
-    fun mediaDetailsDao(): MediaDetailsDao
-    fun airingScheduleDao(): AiringScheduleDao // Added for airing times
-    fun appSettings(): AppSettings
+    fun airingScheduleDao(): AiringScheduleDao
 }
 
-// Helper class to hold calculated display data
-private data class UpNextDisplayItem(
-    val entry: LibraryEntryEntity,
-    val displayEpisode: Int,
-    val airingTime: Long,
-    val bitmap: Bitmap? = null,
-    val streamingUrl: String? = null
-)
-
+/**
+ * A Jetpack Glance widget that displays the user's immediate upcoming watch-list schedule.
+ * Automatically adapts between a single-item compact view and a multi-item expanded view.
+ */
 class UpNextWidget : GlanceAppWidget() {
+
+    override val stateDefinition = PreferencesGlanceStateDefinition
 
     override val sizeMode = SizeMode.Responsive(
         setOf(
-            DpSize(110.dp, 100.dp),
-            DpSize(250.dp, 100.dp),
-            DpSize(250.dp, 300.dp)
+            DpSize(110.dp, 100.dp),  // Compact (1 item)
+            DpSize(250.dp, 100.dp),  // Medium (1 wide item)
+            DpSize(250.dp, 250.dp),  // Expanded (List of items)
+            DpSize(310.dp, 310.dp)   // Large Expanded
         )
     )
 
@@ -111,871 +94,355 @@ class UpNextWidget : GlanceAppWidget() {
             appContext,
             UpNextWidgetEntryPoint::class.java
         )
-        val dao = entryPoint.libraryDao()
-        val mediaDetailsDao = entryPoint.mediaDetailsDao()
-        val airingScheduleDao = entryPoint.airingScheduleDao()
-        val appSettings = entryPoint.appSettings()
+        val dao = entryPoint.airingScheduleDao()
 
-        val streamingService = appSettings.getPreferredStreamingServiceDirect()
+        // Safely extract preferences (e.g., config targets) if the state file exists
+        try {
+            getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
+        } catch (e: Exception) {
+            null
+        }
 
-        // Fetch airing schedules for a longer time range (30 days) to capture all upcoming episodes
-        val allAiringSchedules = withContext(Dispatchers.IO) {
+        val nowSeconds = System.currentTimeMillis() / 1000
+        // Look ahead up to 30 days to find the next airing episodes for the user
+        val futureSeconds = nowSeconds + (30L * 24 * 60 * 60)
+
+        // Fetch "Up Next" schedule from DB.
+        // getAiringBetweenForUser automatically filters by isWatching = 1
+        val upcomingSchedules = withContext(Dispatchers.IO) {
             try {
-                val currentTimeSeconds = System.currentTimeMillis() / 1000
-                // Start looking from the past (30 days ago) to capture episodes that have already aired
-                val startTimeSeconds = currentTimeSeconds - (30 * 24 * 60 * 60)
-                airingScheduleDao.getAiringBetweenForUser(
-                    startTimeSeconds,
-                    currentTimeSeconds + 30L * 24 * 60 * 60 // 30 days ahead
-                )
+                dao.getAiringBetweenForUser(nowSeconds, futureSeconds)
             } catch (e: Exception) {
                 emptyList()
             }
         }
 
-        // Get all entries from the up next list
-        // Filtering by mediaStatus/includePlanning happens in provideContent
-        // where we can read widget configuration preferences
-        val entries = withContext(Dispatchers.IO) {
-            try {
-                dao.getUpNext()
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
+        // We only need at most the next 3 items, even in the largest layout.
+        val itemsToDisplay = upcomingSchedules.take(3)
 
-        val currentTimeSeconds = System.currentTimeMillis() / 1000
-
-        // Build display items with smart episode logic
-        val unsortedDisplayItems = entries.map { entry ->
-            val nextEpNumber = entry.progress + 1
-
-            // Try to find schedule for the immediate next episode
-            var schedule = allAiringSchedules.find {
-                it.mediaId == entry.mediaId && it.episode == nextEpNumber
-            }
-
-            var displayEpisode = nextEpNumber
-            var airingAt = schedule?.airingAt ?: 0L
-
-            // Logic: If the episode aired more than 30 minutes ago,
-            // we assume the user missed it or it's "Available Now" time has passed.
-            // We switch to displaying the NEXT episode.
-            if (airingAt > 0 && airingAt < (currentTimeSeconds - 1800)) {
-                val nextNextEpNumber = nextEpNumber + 1
-                schedule = allAiringSchedules.find {
-                    it.mediaId == entry.mediaId && it.episode == nextNextEpNumber
-                }
-                displayEpisode = nextNextEpNumber
-                airingAt = schedule?.airingAt ?: 0L
-            }
-
-            // Fallback logic for missing schedule data
-            if (airingAt == 0L) {
-                val nextAiringEp = entry.nextAiringEpisode
-                if (nextAiringEp != null) {
-                    if (nextAiringEp == displayEpisode) {
-                        // This IS the next airing episode, use the cached time
-                        airingAt = entry.nextAiringEpisodeTime ?: 0L
-                    } else if (nextAiringEp > displayEpisode) {
-                        // The next airing episode is FUTURE to this one -> This one is released
-                        // Set to a past time (e.g., 1 hour ago) to trigger "Available Now"
-                        airingAt = currentTimeSeconds - 3600
+        // Safely preload the cover images. Using supervisorScope prevents a single network
+        // failure from terminating the entire widget update session.
+        val loadedImages = supervisorScope {
+            itemsToDisplay.map { entry ->
+                async(Dispatchers.IO) {
+                    val bitmap = try {
+                        WidgetImageLoader.loadBitmap(
+                            appContext,
+                            entry.coverUrl,
+                            width = 120,
+                            height = 180
+                        )
+                    } catch (e: Exception) {
+                        null
                     }
+                    entry.id to bitmap
                 }
-            }
-
-            UpNextDisplayItem(entry, displayEpisode, airingAt)
-        }
-
-        // Sort items by airing time (soonest first), items with unknown time go last
-        val sortedDisplayItems = unsortedDisplayItems.sortedWith(
-            compareBy<UpNextDisplayItem> { it.airingTime == 0L }
-                .thenBy { it.airingTime }
-        ).take(10)
-
-        val streamingIconBitmap = loadStreamingServiceIcon(appContext, streamingService)
-
-        val streamingUrls = withContext(Dispatchers.IO) {
-            sortedDisplayItems.associate { item ->
-                val url = findStreamingUrl(mediaDetailsDao, item.entry.mediaId, streamingService)
-                item.entry.mediaId to url
-            }
-        }
-
-        val finalDisplayItems = coroutineScope {
-            sortedDisplayItems.map { item ->
-                async {
-                    val bitmap = WidgetImageLoader.loadBitmap(
-                        appContext,
-                        item.entry.coverUrl,
-                        width = 300,
-                        height = 450
-                    )
-                    item.copy(
-                        bitmap = bitmap,
-                        streamingUrl = streamingUrls[item.entry.mediaId]
-                    )
-                }
-            }.awaitAll()
+            }.awaitAll().toMap()
         }
 
         provideContent {
             GlanceTheme {
                 val sizeClass = LocalSize.current.toSizeClass()
-                
-                // Read configuration from widget state
-                val prefs = currentState<Preferences>()
-                val showCountdown = prefs[UpNextWidgetConfig.ShowCountdownKey] 
-                    ?: UpNextWidgetConfig.DEFAULT_SHOW_COUNTDOWN
-                val maxItems = prefs[UpNextWidgetConfig.MaxItemsKey] 
-                    ?: UpNextWidgetConfig.DEFAULT_MAX_ITEMS
-                val showAvailableNow = prefs[UpNextWidgetConfig.ShowAvailableNowKey]
-                    ?: UpNextWidgetConfig.DEFAULT_SHOW_AVAILABLE_NOW
-                val includePlanning = prefs[UpNextWidgetConfig.IncludePlanningKey]
-                    ?: UpNextWidgetConfig.DEFAULT_INCLUDE_PLANNING
 
-                // Filter items based on configuration
-                val filteredByPlanning = if (includePlanning) {
-                    finalDisplayItems
+                if (itemsToDisplay.isEmpty()) {
+                    WidgetEmptyState(
+                        config = EmptyStateConfig(
+                            iconResId = R.drawable.calendar_view_week_24px, // Fallback icon
+                            title = "You're all caught up!",
+                            subtitle = "No upcoming favorites"
+                        ),
+                        sizeClass = sizeClass,
+                        modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
+                            .background(GlanceTheme.colors.surface)
+                    )
                 } else {
-                    finalDisplayItems.filter { item ->
-                        val status = item.entry.mediaStatus
-                        status == null || status == "RELEASING"
+                    when (sizeClass) {
+                        SizeClass.COMPACT, SizeClass.MEDIUM -> {
+                            // Show only the single most immediate episode
+                            UpNextSingleItem(
+                                episode = itemsToDisplay.first(),
+                                bitmap = loadedImages[itemsToDisplay.first().id],
+                                nowSeconds = nowSeconds
+                            )
+                        }
+
+                        SizeClass.EXPANDED -> {
+                            // Show a list of the next 3 episodes
+                            UpNextList(
+                                episodes = itemsToDisplay,
+                                loadedImages = loadedImages,
+                                nowSeconds = nowSeconds
+                            )
+                        }
                     }
                 }
-
-                val displayItems = if (showAvailableNow) {
-                    filteredByPlanning.take(maxItems)
-                } else {
-                    val currentTime = System.currentTimeMillis() / 1000
-                    filteredByPlanning
-                        .filter { it.airingTime == 0L || it.airingTime > currentTime }
-                        .take(maxItems)
-                }
-
-                when (sizeClass) {
-                    SizeClass.COMPACT -> UpNextCompact(
-                        displayItems,
-                        streamingService,
-                        streamingIconBitmap
-                    )
-
-                    SizeClass.MEDIUM -> UpNextMedium(
-                        displayItems,
-                        streamingService,
-                        streamingIconBitmap
-                    )
-
-                    SizeClass.EXPANDED -> UpNextExpanded(
-                        displayItems,
-                        streamingService,
-                        streamingIconBitmap,
-                        showCountdown = showCountdown
-                    )
-                }
             }
         }
     }
-
-    private suspend fun loadStreamingServiceIcon(
-        context: Context,
-        service: StreamingService
-    ): Bitmap? {
-        if (service == StreamingService.NONE || service.iconUrl == null) return null
-        return try {
-            // Skip cache to ensure fresh icon when streaming service changes
-            WidgetImageLoader.loadBitmap(context, service.iconUrl, width = 64, height = 64, skipCache = true)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private suspend fun findStreamingUrl(
-        mediaDetailsDao: MediaDetailsDao,
-        mediaId: Int,
-        preferredService: StreamingService
-    ): String? {
-        if (preferredService == StreamingService.NONE) return null
-        val mediaDetails = mediaDetailsDao.getById(mediaId) ?: return null
-        return mediaDetails.externalLinks
-            .filter { it.type == ExternalLinkType.STREAMING && it.url != null }
-            .find { link ->
-                link.site.equals(preferredService.displayName, ignoreCase = true) ||
-                        link.site.contains(
-                            preferredService.displayName.split(" ").first(),
-                            ignoreCase = true
-                        )
-            }?.url
-    }
 }
 
+// -------------------------------------------------------------------------
+// LAYOUTS
+// -------------------------------------------------------------------------
+
+/**
+ * Compact/Medium layout that highlights exactly ONE upcoming episode.
+ */
 @Composable
-private fun UpNextCompact(
-    items: List<UpNextDisplayItem>,
-    streamingService: StreamingService,
-    streamingIconBitmap: Bitmap?
+private fun UpNextSingleItem(
+    episode: AiringScheduleEntity,
+    bitmap: Bitmap?,
+    nowSeconds: Long
 ) {
     val context = LocalContext.current
-    if (items.isEmpty()) {
-        EmptyStateCompact()
-        return
-    }
-
-    val item = items.first()
-    val intent = createStreamingOrDetailsIntent(context, item.streamingUrl, item.entry.mediaId)
+    val detailsIntent = WidgetIntentUtils.createDetailsIntent(context, episode.mediaId)
+    val watchIntent = createWatchIntent(episode.streamingSeriesUrl)
 
     Row(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
             .background(GlanceTheme.colors.surface)
-            .padding(12.dp),
+            .padding(WidgetDimensions.paddingMedium),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        Row(
             modifier = GlanceModifier
-                .size(48.dp)
-                .cornerRadius(12.dp)
-                .background(GlanceTheme.colors.primaryContainer),
-            contentAlignment = Alignment.Center
+                .defaultWeight()
+                .clickable(actionStartActivity(detailsIntent)),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "${item.displayEpisode}",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onPrimaryContainer,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            MediaPoster(
+                bitmap = bitmap,
+                width = WidgetDimensions.Poster.widthCompact,
+                height = WidgetDimensions.Poster.heightCompact,
+                cornerRadius = WidgetDimensions.cornerRadiusSmall
             )
-        }
 
-        Spacer(modifier = GlanceModifier.width(12.dp))
+            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
 
-        Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = "Up Next",
-                style = TextStyle(
-                    color = GlanceTheme.colors.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-            Text(
-                text = item.entry.titleUserPreferred,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 1
-            )
-            Text(
-                text = "Episode ${item.displayEpisode}",
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
-                maxLines = 1
-            )
-        }
-
-        Box(
-            modifier = GlanceModifier
-                .size(48.dp)
-                .cornerRadius(24.dp)
-                .background(GlanceTheme.colors.primary)
-                .clickable(actionStartActivity(intent)),
-            contentAlignment = Alignment.Center
-        ) {
-            getStreamingIconProvider(streamingService, streamingIconBitmap).let { (provider, isFallback) ->
-                Image(
-                    provider = provider,
-                    contentDescription = "Watch",
-                    modifier = GlanceModifier.size(24.dp),
-                    colorFilter = if (isFallback) androidx.glance.ColorFilter.tint(
-                        GlanceTheme.colors.onPrimary
-                    ) else null
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun UpNextMedium(
-    items: List<UpNextDisplayItem>,
-    streamingService: StreamingService,
-    streamingIconBitmap: Bitmap?
-) {
-    val context = LocalContext.current
-    if (items.isEmpty()) {
-        EmptyStateMedium()
-        return
-    }
-
-    val item = items.first()
-    val playIntent = createStreamingOrDetailsIntent(context, item.streamingUrl, item.entry.mediaId)
-    val totalEp = item.entry.totalEpisodes
-    // Calculate progress based on user's actual progress, not the displayed episode
-    val progressPercent =
-        if (totalEp != null && totalEp > 0) item.entry.progress.toFloat() / totalEp else 0f
-
-    Row(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = GlanceModifier
-                .width(48.dp)
-                .fillMaxHeight()
-                .cornerRadius(12.dp)
-                .background(GlanceTheme.colors.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(modifier = GlanceModifier.defaultWeight()) {
                 Text(
-                    text = "EP",
+                    text = "Up Next",
                     style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
-                        fontSize = 10.sp
-                    )
-                )
-                Text(
-                    text = "${item.displayEpisode}",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
-                        fontSize = 20.sp,
+                        color = GlanceTheme.colors.primary,
+                        fontSize = WidgetTypography.Caption.large,
                         fontWeight = FontWeight.Bold
                     )
                 )
-            }
-        }
-
-        Spacer(modifier = GlanceModifier.width(16.dp))
-
-        Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = item.entry.titleUserPreferred,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 1
-            )
-            if (totalEp != null) {
-                Spacer(modifier = GlanceModifier.height(6.dp))
-                WidgetProgressBar(
-                    progress = progressPercent,
-                    height = WidgetDimensions.progressBarHeight
-                )
-                Spacer(modifier = GlanceModifier.height(4.dp))
+                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
                 Text(
-                    text = "${item.entry.progress}/$totalEp watched",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 11.sp)
+                    text = episode.titleUserPreferred,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = WidgetTypography.Body.large,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    maxLines = 1
                 )
-            }
-        }
 
-        Spacer(modifier = GlanceModifier.width(12.dp))
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = GlanceModifier.size(56.dp, 48.dp).cornerRadius(16.dp)
-                    .background(GlanceTheme.colors.primary)
-                    .clickable(actionStartActivity(playIntent)),
-                contentAlignment = Alignment.Center
-            ) {
-                getStreamingIconProvider(streamingService, streamingIconBitmap).let { (provider, isFallback) ->
-                    Image(
-                        provider = provider,
-                        contentDescription = "Play",
-                        modifier = GlanceModifier.size(24.dp),
-                        colorFilter = if (isFallback) androidx.glance.ColorFilter.tint(
-                            GlanceTheme.colors.onPrimary
-                        ) else null
-                    )
-                }
-            }
-            if (items.size > 1) {
-                Spacer(modifier = GlanceModifier.height(4.dp))
-                Box(
-                    modifier = GlanceModifier.size(48.dp).cornerRadius(12.dp)
-                        .background(GlanceTheme.colors.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
+                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StandardEpisodeBadge(episodeNumber = episode.episode)
+                    Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.small))
                     Text(
-                        text = "+${items.size - 1}",
+                        text = formatTimeUntil(episode.airingAt, nowSeconds),
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                            fontSize = WidgetTypography.Caption.large
+                        ),
+                        maxLines = 1
                     )
                 }
             }
+        }
+
+        if (watchIntent != null) {
+            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+            WatchButton(
+                intent = watchIntent,
+                fontSize = WidgetTypography.Body.medium
+            )
         }
     }
 }
 
+/**
+ * Expanded layout that shows a timeline of the next several upcoming episodes.
+ */
 @Composable
-private fun UpNextExpanded(
-    items: List<UpNextDisplayItem>,
-    streamingService: StreamingService,
-    streamingIconBitmap: Bitmap?,
-    showCountdown: Boolean = true
+private fun UpNextList(
+    episodes: List<AiringScheduleEntity>,
+    loadedImages: Map<Int, Bitmap?>,
+    nowSeconds: Long
 ) {
-    if (items.isEmpty()) {
-        EmptyStateExpanded()
-        return
-    }
-
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
             .background(GlanceTheme.colors.widgetBackground)
-            // .padding(16.dp) removed to allow LazyColumn to be full width
     ) {
+        // --- Header Section ---
         Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp), // Added padding here
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = WidgetDimensions.paddingLarge,
+                    vertical = WidgetDimensions.paddingLarge
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                provider = ImageProvider(R.drawable.upcoming_24px),
-                contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
-                modifier = GlanceModifier.size(24.dp)
-            )
-            Spacer(modifier = GlanceModifier.width(8.dp))
             Text(
                 text = "Up Next",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = 18.sp,
+                    fontSize = WidgetTypography.Title.large,
                     fontWeight = FontWeight.Bold
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
         }
 
-        val currentTimeSeconds = System.currentTimeMillis() / 1000
-        val firstFutureIndex = items.indexOfFirst { it.airingTime > currentTimeSeconds }
-        // If no future items, no hero (or fall back to 0 if preferred, but user dislikes available now being hero)
-        // Let's assume strict "Future = Hero" logic.
+        // --- Episode List Timeline ---
+        LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+            itemsIndexed(episodes) { index, episode ->
+                val context = LocalContext.current
+                val detailsIntent = WidgetIntentUtils.createDetailsIntent(context, episode.mediaId)
+                val watchIntent = createWatchIntent(episode.streamingSeriesUrl)
 
-        LazyColumn(
-            modifier = GlanceModifier.fillMaxSize()
-        ) {
-            itemsIndexed(items) { index: Int, item: UpNextDisplayItem ->
-                val isHero = index == firstFutureIndex
-                // Wrap card in Column with padding
-                Column(
-                    modifier = GlanceModifier.fillMaxWidth().padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = if (index < items.lastIndex) 12.dp else 16.dp
-                    )
-                ) {
-                    CountdownCard(
-                        item = item,
-                        isHero = isHero,
-                        streamingService = streamingService,
-                        streamingIconBitmap = streamingIconBitmap,
-                        showCountdown = showCountdown
-                    )
-                }
-            }
-        }
-    }
-}
+                // Wrapping the Row and Divider in a Column prevents Glance overlay issues
+                Column(modifier = GlanceModifier.fillMaxWidth()) {
+                    Row(
+                        modifier = GlanceModifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = WidgetDimensions.paddingLarge,
+                                vertical = WidgetDimensions.paddingMedium
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = GlanceModifier
+                                .defaultWeight()
+                                .clickable(actionStartActivity(detailsIntent)),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            MediaPoster(
+                                bitmap = loadedImages[episode.id],
+                                width = WidgetDimensions.Poster.widthMedium,
+                                height = WidgetDimensions.Poster.heightMedium,
+                                cornerRadius = WidgetDimensions.cornerRadiusSmall
+                            )
 
-@Composable
-private fun CountdownCard(
-    item: UpNextDisplayItem,
-    isHero: Boolean,
-    streamingService: StreamingService,
-    streamingIconBitmap: Bitmap?,
-    showCountdown: Boolean = true
-) {
-    val context = LocalContext.current
-    val detailsIntent = createDetailsIntent(context, item.entry.mediaId)
-    val playIntent = createStreamingOrDetailsIntent(context, item.streamingUrl, item.entry.mediaId)
+                            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
 
-    val currentTime = System.currentTimeMillis() / 1000L
-    val diffSeconds = item.airingTime - currentTime
+                            Column(modifier = GlanceModifier.defaultWeight()) {
+                                Text(
+                                    text = episode.titleUserPreferred,
+                                    style = TextStyle(
+                                        color = GlanceTheme.colors.onSurface,
+                                        fontSize = WidgetTypography.Title.small,
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    maxLines = 2
+                                )
 
-    // Hero uses dark surfaceVariant for better contrast with timer
-    val posterWidth = if (isHero) 80.dp else 60.dp
-    val posterHeight = if (isHero) 120.dp else 90.dp
-    val titleSize = if (isHero) 18.sp else 16.sp
-    val titleWeight = if (isHero) FontWeight.Bold else FontWeight.Medium
-    val timerSize = if (isHero) 22.sp else 18.sp
+                                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
 
-    // Text colors: both use standard colors since both have dark backgrounds
-    val titleColor = GlanceTheme.colors.onSurface
-    val secondaryTextColor = GlanceTheme.colors.onSurfaceVariant
-
-    val badgeBackground =
-        if (isHero) GlanceTheme.colors.primary else GlanceTheme.colors.tertiaryContainer
-    val badgeTextColor =
-        if (isHero) GlanceTheme.colors.onPrimary else GlanceTheme.colors.onTertiaryContainer
-
-    // Both hero and non-hero cards use dark background for consistency
-    val cardModifier = GlanceModifier
-        .fillMaxWidth()
-        .background(GlanceTheme.colors.surfaceVariant)
-        .cornerRadius(16.dp)
-
-    val padding = if (isHero) 16.dp else 12.dp
-    val crButtonSize = if (isHero) 44.dp else 36.dp
-    val crIconSize = if (isHero) 24.dp else 20.dp
-
-    // FIX: Wrap in Box for hero border effect
-    Box(
-        modifier = if (isHero) {
-            GlanceModifier
-                .fillMaxWidth()
-                .background(GlanceTheme.colors.primary)
-                .cornerRadius(18.dp)
-                .padding(2.dp)
-        } else GlanceModifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = cardModifier
-                .clickable(actionStartActivity(detailsIntent))
-                .padding(padding),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = GlanceModifier
-                    .width(posterWidth)
-                    .height(posterHeight)
-                    .cornerRadius(8.dp)
-                    .background(GlanceTheme.colors.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (item.bitmap != null) {
-                    Image(
-                        provider = ImageProvider(item.bitmap),
-                        contentDescription = null,
-                        modifier = GlanceModifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-
-            Spacer(modifier = GlanceModifier.width(16.dp))
-
-            Column(
-                modifier = GlanceModifier.defaultWeight(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = item.entry.titleUserPreferred,
-                    style = TextStyle(
-                        color = titleColor,
-                        fontSize = titleSize,
-                        fontWeight = titleWeight
-                    ),
-                    maxLines = if (isHero) 2 else 1
-                )
-
-                Spacer(modifier = GlanceModifier.height(6.dp))
-
-                Box(
-                    modifier = GlanceModifier
-                        .background(badgeBackground)
-                        .cornerRadius(99.dp)
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "EPISODE ${item.displayEpisode}",
-                        style = TextStyle(
-                            color = badgeTextColor,
-                            fontSize = if (isHero) 12.sp else 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-
-                Spacer(modifier = GlanceModifier.height(8.dp))
-
-                // Show time/countdown information if enabled
-                if (showCountdown) {
-                    // FIX: Check if airingTime is valid (greater than 0)
-                    if (item.airingTime > 0) {
-                        if (diffSeconds > 0) {
-                            // Future: Episode is airing in the future
-                            val days = TimeUnit.SECONDS.toDays(diffSeconds)
-
-                            if (days > 0) {
-                                // Show formatted date for > 24 hours
-                                val date = Date(item.airingTime * 1000L)
-                                val format = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = format.format(date),
-                                        style = TextStyle(
-                                            color = GlanceTheme.colors.primary,
-                                            fontSize = if (isHero) 16.sp else 14.sp,
-                                            fontWeight = FontWeight.Bold
+                                    StandardEpisodeBadge(episodeNumber = episode.episode)
+                                    Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.small))
+                                    TimeBadgeFromString(
+                                        timeString = formatTimeUntil(
+                                            episode.airingAt,
+                                            nowSeconds
                                         )
                                     )
                                 }
-                            } else {
-                                // < 1 day: Use real-time Chronometer for HH:MM:SS countdown
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    CountdownChronometer(
-                                        targetEpochSeconds = item.airingTime
-                                    )
-                                }
-                            }
-                        } else {
-                            // Past: Episode has already aired.
-                            // Since we filtered "stale" episodes in provideGlance,
-                            // if we are here, it means the episode aired within the last 30 minutes.
-                            // Display "AVAILABLE NOW".
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "AVAILABLE NOW",
-                                    style = TextStyle(
-                                        color = GlanceTheme.colors.primary,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
                             }
                         }
-                    } else {
-                        // No airing time available? Check if we have *any* date
-                        Text(
-                            text = "Unknown Date",
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
+
+                        if (watchIntent != null) {
+                            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+                            WatchButton(
+                                intent = watchIntent,
+                                fontSize = WidgetTypography.Caption.large
                             )
-                        )
+                        }
+                    }
+
+                    // Divider between items
+                    if (index < episodes.size - 1) {
+                        Box(
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .padding(horizontal = WidgetDimensions.paddingLarge)
+                        ) {
+                            Spacer(
+                                modifier = GlanceModifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(GlanceTheme.colors.surfaceVariant)
+                            )
+                        }
                     }
                 }
             }
-
-            Spacer(modifier = GlanceModifier.width(12.dp))
-
-            Box(
-                modifier = GlanceModifier
-                    .size(crButtonSize)
-                    .cornerRadius(if (isHero) 22.dp else 18.dp)
-                    .background(GlanceTheme.colors.surfaceVariant)
-                    .clickable(actionStartActivity(playIntent)),
-                contentAlignment = Alignment.Center
-            ) {
-                getStreamingIconProvider(
-                    streamingService,
-                    streamingIconBitmap
-                ).let { (provider, isFallback) ->
-                    Image(
-                        provider = provider,
-                        contentDescription = "Watch",
-                        modifier = GlanceModifier.size(crIconSize),
-                        colorFilter = if (isFallback) androidx.glance.ColorFilter.tint(
-                            GlanceTheme.colors.primary
-                        ) else null
-                    )
-                }
-            }
         }
     }
 }
 
+// -------------------------------------------------------------------------
+// HELPERS
+// -------------------------------------------------------------------------
+
 /**
- * Returns a pair of (ImageProvider, isFallback) where isFallback indicates
- * whether the fallback drawable is being used (which should be tinted).
+ * Calculates and formats the time remaining until an episode airs.
+ * Returns values like "In 2d 5h", "In 3h 15m", or "In 45m".
  */
-@Composable
-private fun getStreamingIconProvider(
-    service: StreamingService,
-    iconBitmap: Bitmap?
-): Pair<ImageProvider, Boolean> {
-    return if (iconBitmap != null) {
-        Pair(ImageProvider(iconBitmap), false)
-    } else {
-        Pair(ImageProvider(service.fallbackDrawable), true)
+private fun formatTimeUntil(airingAtSeconds: Long, nowSeconds: Long): String {
+    val diffSeconds = airingAtSeconds - nowSeconds
+    if (diffSeconds <= 0) return "Airing now"
+
+    val days = diffSeconds / (24 * 3600)
+    val hours = (diffSeconds % (24 * 3600)) / 3600
+    val minutes = (diffSeconds % 3600) / 60
+
+    return when {
+        days > 0 -> "In ${days}d ${hours}h"
+        hours > 0 -> "In ${hours}h ${minutes}m"
+        else -> "In ${minutes}m"
+    }
+}
+
+private fun createWatchIntent(url: String?): Intent? {
+    val safeUrl = url
+        ?.trim()
+        ?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+        ?: return null
+
+    return Intent(Intent.ACTION_VIEW, Uri.parse(safeUrl)).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
 }
 
 @Composable
-private fun EmptyStateCompact() {
-    val context = LocalContext.current
+private fun WatchButton(intent: Intent, fontSize: TextUnit) {
     Box(
-        modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
-            .background(GlanceTheme.colors.surfaceVariant)
-            .clickable(actionStartActivity(openMainAppIntent(context))),
+        modifier = GlanceModifier
+            .cornerRadius(WidgetDimensions.cornerRadiusPill)
+            .background(GlanceTheme.colors.primary)
+            .clickable(actionStartActivity(intent))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            provider = ImageProvider(R.drawable.ic_check_circle_24px),
-            contentDescription = "All caught up",
-            colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
-            modifier = GlanceModifier.size(32.dp)
+        Text(
+            text = "Watch",
+            style = TextStyle(
+                color = GlanceTheme.colors.onPrimary,
+                fontSize = fontSize,
+                fontWeight = FontWeight.Bold
+            )
         )
     }
-}
-
-@Composable
-private fun EmptyStateMedium() {
-    val context = LocalContext.current
-    Row(
-        modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
-            .clickable(actionStartActivity(openMainAppIntent(context))).padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = GlanceModifier.size(48.dp).cornerRadius(12.dp)
-                .background(GlanceTheme.colors.tertiaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                    provider = ImageProvider(R.drawable.upcoming_24px),
-                    contentDescription = null,
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
-                    modifier = GlanceModifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = GlanceModifier.width(16.dp))
-            Column {
-                Text(
-                    text = "All Caught Up!",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = "You're up to date with your watchlist",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                    maxLines = 2
-                )
-            }
-        }
-    }
-
-    @Composable
-    private fun EmptyStateExpanded() {
-        val context = LocalContext.current
-        Box(
-            modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
-                .background(GlanceTheme.colors.surface).cornerRadius(28.dp)
-                .clickable(actionStartActivity(openMainAppIntent(context))),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = GlanceModifier.size(72.dp).cornerRadius(24.dp)
-                        .background(GlanceTheme.colors.tertiaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        provider = ImageProvider(R.drawable.upcoming_24px),
-                    contentDescription = null,
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer),
-                    modifier = GlanceModifier.size(40.dp)
-                )
-            }
-            Spacer(modifier = GlanceModifier.height(16.dp))
-            Text(
-                text = "You're All Caught Up!",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-            Spacer(modifier = GlanceModifier.height(4.dp))
-            Text(
-                text = "Check back later for new episodes",
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 14.sp),
-                modifier = GlanceModifier.padding(horizontal = 24.dp)
-            )
-        }
-    }
-}
-
-private fun createDetailsIntent(context: Context, mediaId: Int) =
-    WidgetIntentUtils.createDetailsIntent(context, mediaId)
-
-private fun createStreamingOrDetailsIntent(
-    context: Context,
-    streamingUrl: String?,
-    mediaId: Int
-): Intent {
-    return if (streamingUrl != null) {
-        Intent(Intent.ACTION_VIEW, streamingUrl.toUri()).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-    } else {
-        createDetailsIntent(context, mediaId)
-    }
-}
-
-private fun openMainAppIntent(context: Context): Intent {
-    // Use explicit intent with context to correctly target debug/release builds
-    return Intent(context, MainActivity::class.java).apply {
-        action = Intent.ACTION_MAIN
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    }
-}
-
-/**
- * A Glance composable that wraps Android's native Chronometer widget
- * to display a real-time countdown that updates every second.
- *
- * @param targetEpochSeconds The target time in Unix seconds (epoch time)
- */
-@Composable
-private fun CountdownChronometer(
-    targetEpochSeconds: Long,
-    modifier: GlanceModifier = GlanceModifier
-) {
-    val context = LocalContext.current
-
-    // Calculate the base time for Chronometer
-    // Chronometer uses SystemClock.elapsedRealtime() as reference
-    val elapsedNow = SystemClock.elapsedRealtime()
-    val currentTimeMs = System.currentTimeMillis()
-    val targetTimeMs = targetEpochSeconds * 1000
-    val diffMs = targetTimeMs - currentTimeMs
-    val base = elapsedNow + diffMs
-
-    // Resolve the primary color from the context's theme at runtime
-    // to correctly match the user's chosen MaterialKolor seed color
-    val textColor = run {
-        val typedValue = android.util.TypedValue()
-        context.theme.resolveAttribute(android.R.attr.colorPrimary, typedValue, true)
-        if (typedValue.resourceId != 0) {
-            context.getColor(typedValue.resourceId)
-        } else if (typedValue.data != 0) {
-            typedValue.data
-        } else {
-            // Fallback: detect dark mode and use reasonable M3 defaults
-            val isDarkMode = (context.resources.configuration.uiMode and
-                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES
-            if (isDarkMode) "#D0BCFF".toColorInt() else "#6750A4".toColorInt()
-        }
-    }
-
-    // Create RemoteViews with the Chronometer
-    val remoteViews = RemoteViews(context.packageName, R.layout.widget_chronometer).apply {
-        setChronometer(R.id.countdown_timer, base, null, true)
-        setTextColor(R.id.countdown_timer, textColor)
-    }
-
-    AndroidRemoteViews(remoteViews, modifier)
 }

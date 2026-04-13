@@ -19,10 +19,10 @@ query AiringSchedule($page: Int, $perPage: Int, $airingAtGreater: Int, $airingAt
                 episodes
                 popularity
                 averageScore
-                streamingEpisodes {
+                externalLinks {
+                    type
+                    icon
                     site
-                    thumbnail
-                    title
                     url
                 }
 

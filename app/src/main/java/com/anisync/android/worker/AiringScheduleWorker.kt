@@ -1,7 +1,6 @@
 package com.anisync.android.worker
 
 import android.content.Context
-import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
@@ -12,12 +11,15 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.anisync.android.AiringScheduleQuery
+import com.anisync.android.data.AppSettings
+import com.anisync.android.data.StreamingService
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.widget.AiringTodayWidget
+import com.anisync.android.widget.UpNextWidget
 import com.anisync.android.widget.WeeklyCalendarWidget
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -30,7 +32,8 @@ class AiringScheduleWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val apolloClient: ApolloClient,
     private val airingScheduleDao: AiringScheduleDao,
-    private val libraryDao: LibraryDao
+    private val libraryDao: LibraryDao,
+    private val appSettings: AppSettings
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -67,6 +70,7 @@ class AiringScheduleWorker @AssistedInject constructor(
             val entities = mutableListOf<AiringScheduleEntity>()
             var page = 1
             var hasNextPage = true
+            val preferredStreamingService = appSettings.getPreferredStreamingServiceDirect()
 
             while (page <= 3 && hasNextPage) {
                 val response = apolloClient.query(
@@ -79,10 +83,6 @@ class AiringScheduleWorker @AssistedInject constructor(
                 ).execute()
 
                 if (response.hasErrors()) {
-                    Log.e(
-                        "AiringScheduleWorker",
-                        "API Error on page $page: ${response.errors?.firstOrNull()?.message}"
-                    )
                     return Result.retry()
                 }
 
@@ -100,6 +100,11 @@ class AiringScheduleWorker @AssistedInject constructor(
                     val libraryEntry = libraryDao.getEntry(mId)
                     val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
 
+                    val streamingSeriesUrl = selectStreamingSeriesUrl(
+                        externalLinks = media.externalLinks,
+                        preferredService = preferredStreamingService
+                    )
+
                     AiringScheduleEntity(
                         id = sId,
                         mediaId = mId,
@@ -108,7 +113,8 @@ class AiringScheduleWorker @AssistedInject constructor(
                         titleUserPreferred = media.title?.userPreferred ?: "Unknown",
                         coverUrl = media.coverImage?.extraLarge,
                         format = media.format?.rawValue,
-                        isWatching = isWatching
+                        isWatching = isWatching,
+                        streamingSeriesUrl = streamingSeriesUrl
                     )
                 }
 
@@ -125,26 +131,71 @@ class AiringScheduleWorker @AssistedInject constructor(
             manager.getGlanceIds(AiringTodayWidget::class.java).forEach { id ->
                 AiringTodayWidget().update(appContext, id)
             }
+            manager.getGlanceIds(UpNextWidget::class.java).forEach { id ->
+                UpNextWidget().update(appContext, id)
+            }
             manager.getGlanceIds(WeeklyCalendarWidget::class.java).forEach { id ->
                 WeeklyCalendarWidget().update(appContext, id)
             }
 
             Result.success()
         } catch (e: ApiError.RateLimited) {
-            Log.w("AiringScheduleWorker", "Rate limited, will retry after backoff. Wait: ${e.retryAfterSeconds}s")
             Result.retry()
         } catch (e: ApiError.Unauthorized) {
-            Log.w("AiringScheduleWorker", "Unauthorized — skipping")
             Result.failure()
         } catch (e: ApiError.ServerError) {
-            Log.e("AiringScheduleWorker", "Server error ${e.statusCode}, will retry")
             Result.retry()
         } catch (e: java.io.IOException) {
-            Log.w("AiringScheduleWorker", "Network error, will retry", e)
             Result.retry()
         } catch (e: Exception) {
-            Log.e("AiringScheduleWorker", "Unexpected error", e)
             Result.failure()
         }
+    }
+
+    private data class StreamingCandidate(
+        val site: String?,
+        val url: String
+    )
+
+    private fun selectStreamingSeriesUrl(
+        externalLinks: List<AiringScheduleQuery.ExternalLink?>?,
+        preferredService: StreamingService
+    ): String? {
+        val candidates = externalLinks
+            .orEmpty()
+            .asSequence()
+            .filterNotNull()
+            .filter { link -> link.type?.rawValue == "STREAMING" }
+            .mapNotNull { link ->
+                val validUrl = link.url
+                    ?.trim()
+                    ?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+                    ?: return@mapNotNull null
+
+                StreamingCandidate(
+                    site = link.site?.trim()?.takeIf { it.isNotBlank() },
+                    url = validUrl
+                )
+            }
+            .toList()
+
+        if (candidates.isEmpty()) {
+            return null
+        }
+
+        if (preferredService != StreamingService.NONE) {
+            val preferredName = preferredService.displayName.trim()
+            val preferredCandidate = candidates.firstOrNull { candidate ->
+                val site = candidate.site ?: return@firstOrNull false
+                site.equals(preferredName, ignoreCase = true) ||
+                    site.contains(preferredName, ignoreCase = true) ||
+                    preferredName.contains(site, ignoreCase = true)
+            }
+            if (preferredCandidate != null) {
+                return preferredCandidate.url
+            }
+        }
+
+        return candidates.first().url
     }
 }
