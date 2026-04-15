@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import com.android.build.api.artifact.ArtifactTransformationRequest
+import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.FilterConfiguration
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.FileInputStream
@@ -7,7 +9,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.apollo)
@@ -18,14 +19,54 @@ plugins {
 // Map unique integers to each architecture for dynamic version codes
 val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
 
+abstract class RenameApksTask : DefaultTask() {
+    @get:InputDirectory
+    abstract val inputApkFolder: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val outputApkFolder: DirectoryProperty
+
+    @get:Input
+    abstract val appName: Property<String>
+
+    @get:Input
+    abstract val flavorSuffix: Property<String>
+
+    @get:Input
+    abstract val buildTypeName: Property<String>
+
+    @get:Input
+    abstract val fallbackVersionName: Property<String>
+
+    @get:Internal
+    abstract val apkTransformationRequest: Property<ArtifactTransformationRequest<RenameApksTask>>
+
+    @TaskAction
+    fun renameApks() {
+        apkTransformationRequest.get().submit(this) { builtArtifact ->
+            val sourceFile = builtArtifact.path.toFile()
+            val abi =
+                builtArtifact.filters
+                    .firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }
+                    ?.identifier ?: "universal"
+            val versionName = builtArtifact.versionName ?: fallbackVersionName.get()
+            val renamedFileName =
+                "${appName.get()}${flavorSuffix.get()}-v${versionName}-${abi}-${buildTypeName.get()}.apk"
+            val outputFile = outputApkFolder.file(renamedFileName).get().asFile
+            sourceFile.copyTo(outputFile, overwrite = true)
+            outputFile
+        }
+    }
+}
+
 android {
     namespace = "com.anisync.android"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.anisync.android"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 8
         versionName = "1.4.0"
 
@@ -60,6 +101,35 @@ android {
                     // This ensures the device always prefers the optimized split over the universal APK.
                     output.versionCode.set((output.versionCode.get() ?: 0) * 10 + baseAbiCode)
                 }
+            }
+
+            val channelFlavor = variant.productFlavors.firstOrNull { it.first == "channel" }?.second
+            val flavorSuffixValue =
+                channelFlavor
+                    ?.takeIf { it != "stable" }
+                    ?.let { "-$it" }
+                    ?: ""
+            val versionNameFallback = variant.outputs.firstOrNull()?.versionName?.orNull ?: "unknown"
+            val variantNameTitle =
+                variant.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+            val renameApksTask = tasks.register<RenameApksTask>("rename${variantNameTitle}Apks") {
+                appName.set("AniSync")
+                flavorSuffix.set(flavorSuffixValue)
+                buildTypeName.set(variant.buildType)
+                fallbackVersionName.set(versionNameFallback)
+            }
+
+            val renameRequest =
+                variant.artifacts
+                    .use(renameApksTask)
+                    .wiredWithDirectories(
+                        RenameApksTask::inputApkFolder,
+                        RenameApksTask::outputApkFolder,
+                    ).toTransformMany(SingleArtifact.APK)
+
+            renameApksTask.configure {
+                apkTransformationRequest.set(renameRequest)
             }
         }
     }
@@ -121,27 +191,6 @@ android {
         }
     }
 
-    // Custom APK naming to include the Flavor and the ABI string
-    applicationVariants.all {
-        val variant = this
-        variant.outputs.all {
-            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            val appName = "AniSync"
-            // Grabs the flavor (e.g., "-preview") or leaves blank if stable
-            val flavor =
-                variant.flavorName.takeIf { it.isNotEmpty() && it != "stable" }?.let { "-$it" }
-                    ?: ""
-            // Grabs the ABI (e.g., "arm64-v8a") or defaults to "universal"
-            val abi =
-                output.filters.find { it.filterType == FilterConfiguration.FilterType.ABI.name }?.identifier
-                    ?: "universal"
-
-            // Result: AniSync-preview-v1.0.1-arm64-v8a-release.apk
-            output.outputFileName =
-                "${appName}${flavor}-v${variant.versionName}-${abi}-${variant.buildType.name}.apk"
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -149,6 +198,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
     packaging {
         resources {
