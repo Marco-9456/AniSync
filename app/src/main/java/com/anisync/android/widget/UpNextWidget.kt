@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
@@ -33,6 +35,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
@@ -50,7 +53,6 @@ import com.anisync.android.widget.designsystem.components.MediaPoster
 import com.anisync.android.widget.designsystem.components.StandardEpisodeBadge
 import com.anisync.android.widget.designsystem.components.TimeBadgeFromString
 import com.anisync.android.widget.designsystem.components.WidgetEmptyState
-import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
 import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -72,8 +74,8 @@ interface UpNextWidgetEntryPoint {
 }
 
 /**
- * A Jetpack Glance widget that displays the user's immediate upcoming watch-list schedule.
- * Automatically adapts between a single-item compact view and a multi-item expanded view.
+ * A beautifully redesigned Jetpack Glance widget that displays the user's immediate upcoming watch-list schedule.
+ * Adapts seamlessly across Compact, Medium, and Expanded states using a modern card-based UI.
  */
 class UpNextWidget : GlanceAppWidget() {
 
@@ -81,9 +83,9 @@ class UpNextWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Responsive(
         setOf(
-            DpSize(110.dp, 100.dp),  // Compact (1 item)
-            DpSize(250.dp, 100.dp),  // Medium (1 wide item)
-            DpSize(250.dp, 250.dp),  // Expanded (List of items)
+            DpSize(110.dp, 100.dp),  // Compact (1 item Card)
+            DpSize(250.dp, 100.dp),  // Medium (1 wide item Card)
+            DpSize(250.dp, 250.dp),  // Expanded (List of Cards)
             DpSize(310.dp, 310.dp)   // Large Expanded
         )
     )
@@ -96,7 +98,6 @@ class UpNextWidget : GlanceAppWidget() {
         )
         val dao = entryPoint.airingScheduleDao()
 
-        // Safely extract preferences (e.g., config targets) if the state file exists
         try {
             getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
         } catch (e: Exception) {
@@ -104,11 +105,8 @@ class UpNextWidget : GlanceAppWidget() {
         }
 
         val nowSeconds = System.currentTimeMillis() / 1000
-        // Look ahead up to 30 days to find the next airing episodes for the user
         val futureSeconds = nowSeconds + (30L * 24 * 60 * 60)
 
-        // Fetch "Up Next" schedule from DB.
-        // getAiringBetweenForUser automatically filters by isWatching = 1
         val upcomingSchedules = withContext(Dispatchers.IO) {
             try {
                 dao.getAiringBetweenForUser(nowSeconds, futureSeconds)
@@ -117,11 +115,8 @@ class UpNextWidget : GlanceAppWidget() {
             }
         }
 
-        // We only need at most the next 3 items, even in the largest layout.
         val itemsToDisplay = upcomingSchedules.take(3)
 
-        // Safely preload the cover images. Using supervisorScope prevents a single network
-        // failure from terminating the entire widget update session.
         val loadedImages = supervisorScope {
             itemsToDisplay.map { entry ->
                 async(Dispatchers.IO) {
@@ -129,8 +124,8 @@ class UpNextWidget : GlanceAppWidget() {
                         WidgetImageLoader.loadBitmap(
                             appContext,
                             entry.coverUrl,
-                            width = 120,
-                            height = 180
+                            width = 200, // Higher res for beautiful rendering on rounded cards
+                            height = 300
                         )
                     } catch (e: Exception) {
                         null
@@ -147,32 +142,39 @@ class UpNextWidget : GlanceAppWidget() {
                 if (itemsToDisplay.isEmpty()) {
                     WidgetEmptyState(
                         config = EmptyStateConfig(
-                            iconResId = R.drawable.calendar_view_week_24px, // Fallback icon
+                            iconResId = R.drawable.calendar_view_week_24px,
                             title = "You're all caught up!",
                             subtitle = "No upcoming favorites"
                         ),
                         sizeClass = sizeClass,
-                        modifier = GlanceModifier.fillMaxSize().appWidgetBackground()
-                            .background(GlanceTheme.colors.surface)
+                        modifier = GlanceModifier
+                            .fillMaxSize()
+                            .appWidgetBackground()
+                            .background(GlanceTheme.colors.widgetBackground)
                     )
                 } else {
-                    when (sizeClass) {
-                        SizeClass.COMPACT, SizeClass.MEDIUM -> {
-                            // Show only the single most immediate episode
-                            UpNextSingleItem(
-                                episode = itemsToDisplay.first(),
-                                bitmap = loadedImages[itemsToDisplay.first().id],
-                                nowSeconds = nowSeconds
-                            )
-                        }
+                    Box(
+                        modifier = GlanceModifier
+                            .fillMaxSize()
+                            .appWidgetBackground()
+                            .background(GlanceTheme.colors.widgetBackground)
+                    ) {
+                        when (sizeClass) {
+                            SizeClass.COMPACT, SizeClass.MEDIUM -> {
+                                UpNextSingleItem(
+                                    episode = itemsToDisplay.first(),
+                                    bitmap = loadedImages[itemsToDisplay.first().id],
+                                    nowSeconds = nowSeconds
+                                )
+                            }
 
-                        SizeClass.EXPANDED -> {
-                            // Show a list of the next 3 episodes
-                            UpNextList(
-                                episodes = itemsToDisplay,
-                                loadedImages = loadedImages,
-                                nowSeconds = nowSeconds
-                            )
+                            SizeClass.EXPANDED -> {
+                                UpNextList(
+                                    episodes = itemsToDisplay,
+                                    loadedImages = loadedImages,
+                                    nowSeconds = nowSeconds
+                                )
+                            }
                         }
                     }
                 }
@@ -186,7 +188,7 @@ class UpNextWidget : GlanceAppWidget() {
 // -------------------------------------------------------------------------
 
 /**
- * Compact/Medium layout that highlights exactly ONE upcoming episode.
+ * Compact/Medium layout that highlights exactly ONE upcoming episode in a premium card.
  */
 @Composable
 private fun UpNextSingleItem(
@@ -198,77 +200,95 @@ private fun UpNextSingleItem(
     val detailsIntent = WidgetIntentUtils.createDetailsIntent(context, episode.mediaId)
     val watchIntent = createWatchIntent(episode.streamingSeriesUrl)
 
-    Row(
+    Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
-            .padding(WidgetDimensions.paddingMedium),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
     ) {
+        // Inner Card Container
         Row(
             modifier = GlanceModifier
-                .defaultWeight()
-                .clickable(actionStartActivity(detailsIntent)),
+                .fillMaxSize()
+                .background(GlanceTheme.colors.surface)
+                .cornerRadius(20.dp) // Large premium rounding
+                .clickable(actionStartActivity(detailsIntent))
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             MediaPoster(
                 bitmap = bitmap,
-                width = WidgetDimensions.Poster.widthCompact,
-                height = WidgetDimensions.Poster.heightCompact,
-                cornerRadius = WidgetDimensions.cornerRadiusSmall
+                width = 64.dp, // Slightly larger poster
+                height = 96.dp,
+                cornerRadius = 12.dp
             )
 
-            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+            Spacer(modifier = GlanceModifier.width(12.dp))
 
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = "Up Next",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.primary,
-                        fontSize = WidgetTypography.Caption.large,
-                        fontWeight = FontWeight.Bold
+            Column(
+                modifier = GlanceModifier.defaultWeight(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        provider = ImageProvider(R.drawable.calendar_view_week_24px),
+                        contentDescription = null,
+                        colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
+                        modifier = GlanceModifier.size(16.dp)
                     )
-                )
-                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
+                    Spacer(modifier = GlanceModifier.width(4.dp))
+                    Text(
+                        text = "Up Next",
+                        style = TextStyle(
+                            color = GlanceTheme.colors.primary,
+                            fontSize = WidgetTypography.Caption.large,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+
+                Spacer(modifier = GlanceModifier.height(6.dp))
+
                 Text(
                     text = episode.titleUserPreferred,
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
                         fontSize = WidgetTypography.Body.large,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold
                     ),
-                    maxLines = 1
+                    maxLines = 2
                 )
 
-                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
+                Spacer(modifier = GlanceModifier.height(6.dp))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StandardEpisodeBadge(episodeNumber = episode.episode)
-                    Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.small))
+                    Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
                         text = formatTimeUntil(episode.airingAt, nowSeconds),
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = WidgetTypography.Caption.large
+                            fontSize = WidgetTypography.Caption.large,
+                            fontWeight = FontWeight.Medium
                         ),
                         maxLines = 1
                     )
                 }
             }
-        }
 
-        if (watchIntent != null) {
-            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
-            WatchButton(
-                intent = watchIntent,
-                fontSize = WidgetTypography.Body.medium
-            )
+            if (watchIntent != null) {
+                Spacer(modifier = GlanceModifier.width(12.dp))
+                WatchButton(
+                    intent = watchIntent,
+                    fontSize = WidgetTypography.Caption.large
+                )
+            }
         }
     }
 }
 
 /**
- * Expanded layout that shows a timeline of the next several upcoming episodes.
+ * Expanded layout featuring a floating header and modern card-based list of episodes.
  */
 @Composable
 private fun UpNextList(
@@ -276,22 +296,31 @@ private fun UpNextList(
     loadedImages: Map<Int, Bitmap?>,
     nowSeconds: Long
 ) {
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.widgetBackground)
-    ) {
+    Column(modifier = GlanceModifier.fillMaxSize()) {
         // --- Header Section ---
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = WidgetDimensions.paddingLarge,
-                    vertical = WidgetDimensions.paddingLarge
-                ),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = GlanceModifier
+                    .size(32.dp)
+                    .background(GlanceTheme.colors.primary)
+                    .cornerRadius(10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.calendar_view_week_24px),
+                    contentDescription = null,
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                    modifier = GlanceModifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = GlanceModifier.width(12.dp))
+
             Text(
                 text = "Up Next",
                 style = TextStyle(
@@ -303,89 +332,75 @@ private fun UpNextList(
             )
         }
 
-        // --- Episode List Timeline ---
+        // --- Episode List Cards ---
         LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
             itemsIndexed(episodes) { index, episode ->
                 val context = LocalContext.current
                 val detailsIntent = WidgetIntentUtils.createDetailsIntent(context, episode.mediaId)
                 val watchIntent = createWatchIntent(episode.streamingSeriesUrl)
 
-                // Wrapping the Row and Divider in a Column prevents Glance overlay issues
-                Column(modifier = GlanceModifier.fillMaxWidth()) {
+                // Render as elevated, isolated cards instead of flat dividers
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
                     Row(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .padding(
-                                horizontal = WidgetDimensions.paddingLarge,
-                                vertical = WidgetDimensions.paddingMedium
-                            ),
+                            .background(GlanceTheme.colors.surface)
+                            .cornerRadius(16.dp)
+                            .clickable(actionStartActivity(detailsIntent))
+                            .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = GlanceModifier
-                                .defaultWeight()
-                                .clickable(actionStartActivity(detailsIntent)),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            MediaPoster(
-                                bitmap = loadedImages[episode.id],
-                                width = WidgetDimensions.Poster.widthMedium,
-                                height = WidgetDimensions.Poster.heightMedium,
-                                cornerRadius = WidgetDimensions.cornerRadiusSmall
+                        MediaPoster(
+                            bitmap = loadedImages[episode.id],
+                            width = 56.dp,
+                            height = 80.dp,
+                            cornerRadius = 8.dp
+                        )
+
+                        Spacer(modifier = GlanceModifier.width(16.dp))
+
+                        Column(modifier = GlanceModifier.defaultWeight()) {
+                            Text(
+                                text = episode.titleUserPreferred,
+                                style = TextStyle(
+                                    color = GlanceTheme.colors.onSurface,
+                                    fontSize = WidgetTypography.Body.large,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                maxLines = 2
                             )
 
-                            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+                            Spacer(modifier = GlanceModifier.height(6.dp))
 
-                            Column(modifier = GlanceModifier.defaultWeight()) {
-                                Text(
-                                    text = episode.titleUserPreferred,
-                                    style = TextStyle(
-                                        color = GlanceTheme.colors.onSurface,
-                                        fontSize = WidgetTypography.Title.small,
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    maxLines = 2
-                                )
-
-                                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    StandardEpisodeBadge(episodeNumber = episode.episode)
-                                    Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.small))
-                                    TimeBadgeFromString(
-                                        timeString = formatTimeUntil(
-                                            episode.airingAt,
-                                            nowSeconds
-                                        )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                StandardEpisodeBadge(episodeNumber = episode.episode)
+                                Spacer(modifier = GlanceModifier.width(6.dp))
+                                TimeBadgeFromString(
+                                    timeString = formatTimeUntil(
+                                        episode.airingAt,
+                                        nowSeconds
                                     )
-                                }
+                                )
                             }
                         }
 
                         if (watchIntent != null) {
-                            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+                            Spacer(modifier = GlanceModifier.width(12.dp))
                             WatchButton(
                                 intent = watchIntent,
                                 fontSize = WidgetTypography.Caption.large
                             )
                         }
                     }
+                }
 
-                    // Divider between items
-                    if (index < episodes.size - 1) {
-                        Box(
-                            modifier = GlanceModifier
-                                .fillMaxWidth()
-                                .padding(horizontal = WidgetDimensions.paddingLarge)
-                        ) {
-                            Spacer(
-                                modifier = GlanceModifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(GlanceTheme.colors.surfaceVariant)
-                            )
-                        }
-                    }
+                // Add bottom padding for the very last item so it doesn't hug the edge
+                if (index == episodes.size - 1) {
+                    Spacer(modifier = GlanceModifier.height(12.dp))
                 }
             }
         }
@@ -430,10 +445,10 @@ private fun createWatchIntent(url: String?): Intent? {
 private fun WatchButton(intent: Intent, fontSize: TextUnit) {
     Box(
         modifier = GlanceModifier
-            .cornerRadius(WidgetDimensions.cornerRadiusPill)
+            .cornerRadius(100.dp) // Maximum pill shape rounding
             .background(GlanceTheme.colors.primary)
             .clickable(actionStartActivity(intent))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(

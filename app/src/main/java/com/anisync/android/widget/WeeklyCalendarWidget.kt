@@ -58,7 +58,6 @@ import com.anisync.android.widget.designsystem.components.EmptyStateConfig
 import com.anisync.android.widget.designsystem.components.MediaPoster
 import com.anisync.android.widget.designsystem.components.StandardEpisodeBadge
 import com.anisync.android.widget.designsystem.components.WidgetEmptyState
-import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
 import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -112,7 +111,8 @@ class ChangeSelectedDayAction : ActionCallback {
 
 /**
  * A Jetpack Glance widget that displays an interactive 7-day schedule of airing anime.
- * It strictly requires a minimum size of 4x4 launcher cells.
+ * Uses the modern card-based Material 3 design system. It strictly requires a minimum size
+ * of 4x4 launcher cells.
  */
 class WeeklyCalendarWidget : GlanceAppWidget() {
 
@@ -128,11 +128,6 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
         )
     )
 
-    /**
-     * Called to fetch the data and provide the composed UI for the widget.
-     * This function fetches the schedule from the local database, selectively preloads
-     * necessary images, and supplies the reactive content block.
-     */
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appContext = context.applicationContext
         val entryPoint = EntryPointAccessors.fromApplication(
@@ -141,8 +136,7 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
         )
         val dao = entryPoint.airingScheduleDao()
 
-        // Safely extract preferences before loading data. If the widget was just placed,
-        // the state file might not exist yet, so we fall back to null gracefully.
+        // Safely extract preferences before loading data
         val prefs = try {
             getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
         } catch (e: Exception) {
@@ -179,10 +173,7 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
 
         val selectedEpisodes = groupedByDate[selectedDate] ?: emptyList()
 
-        // Pre-load all cover images safely using a supervisorScope.
-        // We only preload images for the currently selected day to prevent memory exhaustion
-        // and connection timeouts. A supervisorScope ensures that if a single image fails to load,
-        // it doesn't crash the entire coroutine and the widget session worker.
+        // Pre-load all cover images safely using a supervisorScope with higher res for cards
         val loadedImages = supervisorScope {
             selectedEpisodes.map { entry ->
                 async(Dispatchers.IO) {
@@ -190,8 +181,8 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
                         WidgetImageLoader.loadBitmap(
                             appContext,
                             entry.coverUrl,
-                            width = 120, // Smaller image size optimized for widget list items
-                            height = 180
+                            width = 200,
+                            height = 300
                         )
                     } catch (e: Exception) {
                         null
@@ -203,34 +194,31 @@ class WeeklyCalendarWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
-                // Reading state dynamically here ensures that user interactions (like clicking
-                // a different day or toggling a filter) immediately trigger a UI update
-                // without having to re-run the suspend database queries above.
                 val currentPrefs = currentState<Preferences>()
                 val isMyList = currentPrefs[ToggleCalendarFilterAction.CalendarFilterKey] ?: false
 
-                CalendarExpanded(
-                    today = today,
-                    selectedDate = selectedDate,
-                    selectedEpisodes = selectedEpisodes,
-                    loadedImages = loadedImages,
-                    isMyList = isMyList
-                )
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .appWidgetBackground()
+                        .background(GlanceTheme.colors.widgetBackground)
+                ) {
+                    CalendarExpanded(
+                        today = today,
+                        selectedDate = selectedDate,
+                        selectedEpisodes = selectedEpisodes,
+                        loadedImages = loadedImages,
+                        isMyList = isMyList
+                    )
+                }
             }
         }
     }
 }
 
-
 /**
  * The primary fully-expanded layout for the Weekly Calendar Widget.
- * Displays a 7-day interactive selector strip and a scrollable timeline of episodes.
- *
- * @param today The current local date.
- * @param selectedDate The currently highlighted date in the calendar.
- * @param selectedEpisodes The list of episodes airing on the selected date.
- * @param loadedImages A map of pre-fetched [Bitmap] cover images for the selected episodes.
- * @param isMyList Whether the "My List" filter is currently active.
+ * Displays a 7-day interactive selector strip and a scrollable timeline of beautifully styled cards.
  */
 @Composable
 private fun CalendarExpanded(
@@ -240,29 +228,31 @@ private fun CalendarExpanded(
     loadedImages: Map<Int, Bitmap?>,
     isMyList: Boolean
 ) {
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.widgetBackground)
-    ) {
+    Column(modifier = GlanceModifier.fillMaxSize()) {
         // --- Header Section ---
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = WidgetDimensions.paddingLarge,
-                    vertical = WidgetDimensions.paddingLarge
-                ),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                provider = ImageProvider(R.drawable.calendar_view_week_24px),
-                contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
-                modifier = GlanceModifier.size(WidgetDimensions.Icon.large)
-            )
-            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.small))
+            Box(
+                modifier = GlanceModifier
+                    .size(32.dp)
+                    .background(GlanceTheme.colors.primary)
+                    .cornerRadius(10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.calendar_view_week_24px),
+                    contentDescription = null,
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                    modifier = GlanceModifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = GlanceModifier.width(12.dp))
+
             Text(
                 text = "Weekly Schedule",
                 style = TextStyle(
@@ -273,16 +263,16 @@ private fun CalendarExpanded(
                 modifier = GlanceModifier.defaultWeight()
             )
 
-            // Filter Toggle Button
+            // Dynamic Filter Toggle Pill
             Box(
                 modifier = GlanceModifier
-                    .cornerRadius(WidgetDimensions.cornerRadiusPill)
+                    .cornerRadius(100.dp) // Full pill shape
                     .background(
                         if (isMyList) GlanceTheme.colors.primary
                         else GlanceTheme.colors.surfaceVariant
                     )
                     .clickable(actionRunCallback<ToggleCalendarFilterAction>())
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -290,7 +280,7 @@ private fun CalendarExpanded(
                     style = TextStyle(
                         color = if (isMyList) GlanceTheme.colors.onPrimary
                         else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Body.large,
+                        fontSize = WidgetTypography.Caption.large,
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -317,7 +307,7 @@ private fun CalendarExpanded(
                         .padding(horizontal = 2.dp)
                         .cornerRadius(12.dp)
                         .background(
-                            if (isSelected) GlanceTheme.colors.primaryContainer
+                            if (isSelected) GlanceTheme.colors.primary
                             else ColorProvider(Color.Transparent, Color.Transparent)
                         )
                         .clickable(
@@ -334,7 +324,7 @@ private fun CalendarExpanded(
                         Text(
                             text = dayChar,
                             style = TextStyle(
-                                color = if (isSelected) GlanceTheme.colors.onPrimaryContainer
+                                color = if (isSelected) GlanceTheme.colors.onPrimary
                                 else GlanceTheme.colors.onSurfaceVariant,
                                 fontSize = WidgetTypography.Caption.large,
                                 fontWeight = FontWeight.Medium
@@ -344,7 +334,7 @@ private fun CalendarExpanded(
                         Text(
                             text = dateNum,
                             style = TextStyle(
-                                color = if (isSelected) GlanceTheme.colors.onPrimaryContainer
+                                color = if (isSelected) GlanceTheme.colors.onPrimary
                                 else GlanceTheme.colors.onSurface,
                                 fontSize = WidgetTypography.Body.large,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -355,17 +345,18 @@ private fun CalendarExpanded(
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.small))
+        Spacer(modifier = GlanceModifier.height(8.dp))
 
-        // --- Episode List Timeline ---
+        // --- Episode List Cards ---
         if (selectedEpisodes.isEmpty()) {
             WidgetEmptyState(
                 config = EmptyStateConfig(
+                    iconResId = R.drawable.calendar_view_week_24px,
                     title = if (isMyList) "No favorites airing" else "No episodes scheduled",
                     subtitle = "Try selecting another day"
                 ),
                 sizeClass = SizeClass.EXPANDED,
-                modifier = GlanceModifier.defaultWeight()
+                modifier = GlanceModifier.fillMaxSize()
             )
         } else {
             LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
@@ -375,17 +366,19 @@ private fun CalendarExpanded(
                         WidgetIntentUtils.createDetailsIntent(context, episode.mediaId)
                     val bitmap = loadedImages[episode.id]
 
-                    // Wrapping the Row and the Divider within a parent Column ensures that
-                    // the divider is rendered cleanly underneath the row, rather than overlapping it.
-                    Column(modifier = GlanceModifier.fillMaxWidth()) {
+                    // Render as elevated, isolated cards
+                    Box(
+                        modifier = GlanceModifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
                         Row(
                             modifier = GlanceModifier
                                 .fillMaxWidth()
-                                .padding(
-                                    horizontal = WidgetDimensions.paddingLarge,
-                                    vertical = WidgetDimensions.paddingMedium
-                                )
-                                .clickable(actionStartActivity(detailsIntent)),
+                                .background(GlanceTheme.colors.surface)
+                                .cornerRadius(16.dp)
+                                .clickable(actionStartActivity(detailsIntent))
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -398,54 +391,58 @@ private fun CalendarExpanded(
                                 modifier = GlanceModifier.width(48.dp)
                             )
 
-                            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+                            Spacer(modifier = GlanceModifier.width(12.dp))
 
                             MediaPoster(
                                 bitmap = bitmap,
-                                width = WidgetDimensions.Poster.widthMedium,
-                                height = WidgetDimensions.Poster.heightMedium,
-                                cornerRadius = WidgetDimensions.cornerRadiusSmall
+                                width = 56.dp,
+                                height = 80.dp,
+                                cornerRadius = 8.dp
                             )
 
-                            Spacer(modifier = GlanceModifier.width(WidgetDimensions.Spacer.medium))
+                            Spacer(modifier = GlanceModifier.width(16.dp))
 
                             Column(modifier = GlanceModifier.defaultWeight()) {
                                 Text(
                                     text = episode.titleUserPreferred,
                                     style = TextStyle(
                                         color = GlanceTheme.colors.onSurface,
-                                        fontSize = WidgetTypography.Title.small,
-                                        fontWeight = FontWeight.Medium
+                                        fontSize = WidgetTypography.Body.large,
+                                        fontWeight = FontWeight.Bold
                                     ),
                                     maxLines = 2
                                 )
-                                Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
-                                StandardEpisodeBadge(episodeNumber = episode.episode)
-                            }
-                        }
 
-                        // Render a subtle 1dp divider line between items (skipping the last item)
-                        if (index < selectedEpisodes.size - 1) {
-                            Box(
-                                modifier = GlanceModifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = WidgetDimensions.paddingLarge)
-                            ) {
-                                Spacer(
-                                    modifier = GlanceModifier
-                                        .fillMaxWidth()
-                                        .height(1.dp)
-                                        .background(GlanceTheme.colors.surfaceVariant)
-                                )
+                                Spacer(modifier = GlanceModifier.height(6.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    StandardEpisodeBadge(episodeNumber = episode.episode)
+
+                                    if (episode.isWatching) {
+                                        Spacer(modifier = GlanceModifier.width(8.dp))
+                                        Image(
+                                            provider = ImageProvider(R.drawable.ic_bookmark_24px),
+                                            contentDescription = "On My List",
+                                            colorFilter = androidx.glance.ColorFilter.tint(
+                                                GlanceTheme.colors.primary
+                                            ),
+                                            modifier = GlanceModifier.size(14.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
+                    }
+
+                    // Add bottom padding for the very last item so it doesn't hug the edge
+                    if (index == selectedEpisodes.size - 1) {
+                        Spacer(modifier = GlanceModifier.height(12.dp))
                     }
                 }
             }
         }
     }
 }
-
 
 /**
  * Formats a Unix timestamp into a compact standard time string.

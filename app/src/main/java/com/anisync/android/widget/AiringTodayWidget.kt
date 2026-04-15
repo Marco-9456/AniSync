@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -29,7 +28,6 @@ import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxHeight
@@ -39,6 +37,7 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -50,6 +49,11 @@ import com.anisync.android.widget.core.SizeClass
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntentUtils
 import com.anisync.android.widget.core.toSizeClass
+import com.anisync.android.widget.designsystem.components.EmptyStateConfig
+import com.anisync.android.widget.designsystem.components.MediaPoster
+import com.anisync.android.widget.designsystem.components.StandardEpisodeBadge
+import com.anisync.android.widget.designsystem.components.WidgetEmptyState
+import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -69,13 +73,21 @@ interface AiringTodayWidgetEntryPoint {
     fun airingScheduleDao(): AiringScheduleDao
 }
 
+/**
+ * A beautifully redesigned Jetpack Glance widget that displays today's anime airing schedule.
+ * Adapts seamlessly across Compact, Medium, and Expanded states using a modern card-based UI
+ * and an elegant timeline layout.
+ */
 class AiringTodayWidget : GlanceAppWidget() {
+
+    override val stateDefinition = PreferencesGlanceStateDefinition
 
     override val sizeMode = SizeMode.Responsive(
         setOf(
-            DpSize(110.dp, 100.dp),
-            DpSize(250.dp, 100.dp),
-            DpSize(250.dp, 220.dp)
+            DpSize(110.dp, 100.dp),  // Compact (1 immediate item Card)
+            DpSize(250.dp, 100.dp),  // Medium (1 wide immediate item Card)
+            DpSize(250.dp, 220.dp),  // Expanded (Timeline List)
+            DpSize(310.dp, 310.dp)   // Large Expanded
         )
     )
 
@@ -104,15 +116,20 @@ class AiringTodayWidget : GlanceAppWidget() {
             }
         }
 
+        // Higher res fetch for premium rendering on rounded cards
         val schedulesWithImages = coroutineScope {
             allSchedules.map { entry ->
-                async {
-                    val bitmap = WidgetImageLoader.loadBitmap(
-                        appContext,
-                        entry.coverUrl,
-                        width = 150,
-                        height = 220
-                    )
+                async(Dispatchers.IO) {
+                    val bitmap = try {
+                        WidgetImageLoader.loadBitmap(
+                            appContext,
+                            entry.coverUrl,
+                            width = 200,
+                            height = 300
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
                     entry to bitmap
                 }
             }.awaitAll()
@@ -131,264 +148,155 @@ class AiringTodayWidget : GlanceAppWidget() {
 
                 val sizeClass = LocalSize.current.toSizeClass()
 
-                when (sizeClass) {
-                    SizeClass.COMPACT -> AiringCompact(
-                        entries = filteredData,
-                        isMyList = filterMyList,
-                        allCount = allSchedules.size
-                    )
-                    SizeClass.MEDIUM -> AiringMedium(
-                        entries = filteredData,
-                        isMyList = filterMyList,
-                        allCount = allSchedules.size
-                    )
-                    SizeClass.EXPANDED -> AiringExpanded(
-                        entries = filteredData,
-                        isMyList = filterMyList
-                    )
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .appWidgetBackground()
+                        .background(GlanceTheme.colors.widgetBackground)
+                ) {
+                    when (sizeClass) {
+                        SizeClass.COMPACT, SizeClass.MEDIUM -> {
+                            AiringImmediateItem(
+                                entries = filteredData,
+                                isMyList = filterMyList,
+                                sizeClass = sizeClass
+                            )
+                        }
+
+                        SizeClass.EXPANDED -> {
+                            AiringExpanded(
+                                entries = filteredData,
+                                isMyList = filterMyList
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+// -------------------------------------------------------------------------
+// LAYOUTS
+// -------------------------------------------------------------------------
+
 /**
- * COMPACT VIEW: Minimalist single item or count
+ * Compact/Medium layout that finds and highlights the single most immediate upcoming episode in a premium card.
+ * Intelligently scales dimensions based on available SizeClass to prevent truncation.
  */
 @Composable
-private fun AiringCompact(
+private fun AiringImmediateItem(
     entries: List<Pair<AiringScheduleEntity, Bitmap?>>,
     isMyList: Boolean,
-    allCount: Int
+    sizeClass: SizeClass
 ) {
     val context = LocalContext.current
+
+    // Find the next airing item today, or fallback to the first item if all have already aired.
     val entry = entries.firstOrNull { (it.first.airingAt * 1000) > System.currentTimeMillis() }
         ?: entries.firstOrNull()
 
     if (entry == null) {
-        EmptyStateCompact(isMyList)
+        // Tappable empty state that toggles the filter
+        WidgetEmptyState(
+            config = EmptyStateConfig(
+                iconResId = R.drawable.today_24px,
+                title = if (isMyList) "No favorites today" else "Nothing today",
+                subtitle = if (isMyList) "Tap to view global schedule" else "Check back later"
+            ),
+            sizeClass = SizeClass.COMPACT,
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .clickable(actionRunCallback<ToggleFilterAction>())
+        )
         return
     }
 
-    val (schedule, _) = entry
+    val (schedule, bitmap) = entry
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val timeString = timeFormat.format(Date(schedule.airingAt * 1000))
-    val detailsIntent = createDetailsIntent(context, schedule.mediaId)
+    val detailsIntent = WidgetIntentUtils.createDetailsIntent(context, schedule.mediaId)
 
-    Row(
+    // Dynamic sizing to prevent cramping in COMPACT mode
+    val isCompact = sizeClass == SizeClass.COMPACT
+    val cardPadding = if (isCompact) 8.dp else 12.dp
+    val posterWidth = if (isCompact) 52.dp else 64.dp
+    val posterHeight = if (isCompact) 76.dp else 96.dp
+    val spacing = if (isCompact) 8.dp else 12.dp
+    val iconSize = if (isCompact) 14.dp else 16.dp
+    val headerText = if (isCompact) timeString else "Airing at $timeString"
+
+    Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
-            .clickable(actionStartActivity(detailsIntent))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        // Time Badge
-        Box(
-            modifier = GlanceModifier
-                .cornerRadius(8.dp)
-                .background(GlanceTheme.colors.primaryContainer)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = timeString,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onPrimaryContainer,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
-
-        Spacer(modifier = GlanceModifier.width(12.dp))
-
-        // Content
-        Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = schedule.titleUserPreferred,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 1
-            )
-            Text(
-                text = "Ep ${schedule.episode}",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 12.sp
-                ),
-                maxLines = 1
-            )
-        }
-    }
-}
-
-/**
- * MEDIUM VIEW: Simple list or cards
- */
-@Composable
-private fun AiringMedium(
-    entries: List<Pair<AiringScheduleEntity, Bitmap?>>,
-    isMyList: Boolean,
-    allCount: Int
-) {
-    // Reusing the compact style but with a header for consistency with the new design language
-    // In a real medium widget, we might show 2 items vertically.
-    val context = LocalContext.current
-
-    if (entries.isEmpty()) {
-        EmptyStateMedium(isMyList)
-        return
-    }
-
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp)
-    ) {
+        // Inner Card Container
         Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .background(GlanceTheme.colors.surface)
+                .cornerRadius(20.dp) // Premium large rounding
+                .clickable(actionStartActivity(detailsIntent))
+                .padding(cardPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                provider = ImageProvider(R.drawable.today_24px),
-                contentDescription = null,
-                modifier = GlanceModifier.size(16.dp),
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary)
+            MediaPoster(
+                bitmap = bitmap,
+                width = posterWidth,
+                height = posterHeight,
+                cornerRadius = 12.dp
             )
-            Spacer(modifier = GlanceModifier.width(8.dp))
-            Text(
-                text = "Airing Today",
-                style = TextStyle(
-                    color = GlanceTheme.colors.primary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+            Spacer(modifier = GlanceModifier.width(spacing))
 
-        // Show first 1-2 items
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        entries.take(2).forEach { (schedule, _) ->
-            val timeStr = timeFormat.format(Date(schedule.airingAt * 1000))
-
-            Row(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+            Column(
+                modifier = GlanceModifier.defaultWeight(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = timeStr,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.primary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = GlanceModifier.width(40.dp)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        provider = ImageProvider(R.drawable.today_24px),
+                        contentDescription = null,
+                        colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
+                        modifier = GlanceModifier.size(iconSize)
+                    )
+                    Spacer(modifier = GlanceModifier.width(4.dp))
+                    Text(
+                        text = headerText,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.primary,
+                            fontSize = WidgetTypography.Caption.large,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        maxLines = 1
+                    )
+                }
+
+                Spacer(modifier = GlanceModifier.height(6.dp))
+
                 Text(
                     text = schedule.titleUserPreferred,
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
-                        fontSize = 12.sp
-                    ),
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}
-
-/**
- * EXPANDED VIEW: Detailed Timeline Design (Matches Reference Image)
- */
-@Composable
-private fun AiringExpanded(
-    entries: List<Pair<AiringScheduleEntity, Bitmap?>>,
-    isMyList: Boolean
-) {
-    val context = LocalContext.current
-
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.widgetBackground)
-    ) {
-        // --- Header Section with Pill Toggle ---
-        Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                provider = ImageProvider(R.drawable.today_24px),
-                contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
-                modifier = GlanceModifier.size(24.dp)
-            )
-            Spacer(modifier = GlanceModifier.width(8.dp))
-            Text(
-                text = "Airing Today",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = GlanceModifier.defaultWeight()
-            )
-
-            // Filter Toggle Pill (All / My List) - same style as WeeklyCalendarWidget
-            Box(
-                modifier = GlanceModifier
-                    .cornerRadius(16.dp)
-                    .background(
-                        if (isMyList) GlanceTheme.colors.primary
-                        else GlanceTheme.colors.surfaceVariant
-                    )
-                    .clickable(actionRunCallback<ToggleFilterAction>())
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (isMyList) "My List" else "All",
-                    style = TextStyle(
-                        color = if (isMyList) GlanceTheme.colors.onPrimary
-                               else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 13.sp,
+                        fontSize = WidgetTypography.Body.large,
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    maxLines = 2
                 )
-            }
-        }
 
-        // --- Timeline List ---
-        if (entries.isEmpty()) {
-            EmptyStateExpanded(isMyList)
-        } else {
-            LazyColumn(
-                modifier = GlanceModifier.fillMaxSize()
-            ) {
-                itemsIndexed(entries) { index, item ->
-                    // Wrap each item in Column with padding to prevent scrollbar overlap
-                    Column(
-                        modifier = GlanceModifier.fillMaxWidth().padding(
-                            start = 16.dp,
-                            end = 16.dp
-                        )
-                    ) {
-                        TimelineItem(
-                            item = item,
-                            isFirst = index == 0,
-                            isLast = index == entries.lastIndex
+                Spacer(modifier = GlanceModifier.height(6.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StandardEpisodeBadge(episodeNumber = schedule.episode)
+                    if (schedule.isWatching) {
+                        Spacer(modifier = GlanceModifier.width(6.dp))
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_bookmark_24px),
+                            contentDescription = "On My List",
+                            colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
+                            modifier = GlanceModifier.size(14.dp)
                         )
                     }
                 }
@@ -397,7 +305,105 @@ private fun AiringExpanded(
     }
 }
 
+/**
+ * Expanded layout featuring a floating header, interactive toggle pill, and a beautiful modern timeline.
+ */
+@Composable
+private fun AiringExpanded(
+    entries: List<Pair<AiringScheduleEntity, Bitmap?>>,
+    isMyList: Boolean
+) {
+    Column(modifier = GlanceModifier.fillMaxSize()) {
+        // --- Header Section ---
+        Row(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = GlanceModifier
+                    .size(32.dp)
+                    .background(GlanceTheme.colors.primary)
+                    .cornerRadius(10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.today_24px),
+                    contentDescription = null,
+                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                    modifier = GlanceModifier.size(20.dp)
+                )
+            }
 
+            Spacer(modifier = GlanceModifier.width(12.dp))
+
+            Text(
+                text = "Airing Today",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = WidgetTypography.Title.large,
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = GlanceModifier.defaultWeight()
+            )
+
+            // Dynamic Filter Toggle Pill
+            Box(
+                modifier = GlanceModifier
+                    .cornerRadius(100.dp) // Full pill shape
+                    .background(
+                        if (isMyList) GlanceTheme.colors.primary
+                        else GlanceTheme.colors.surfaceVariant
+                    )
+                    .clickable(actionRunCallback<ToggleFilterAction>())
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isMyList) "My List" else "All",
+                    style = TextStyle(
+                        color = if (isMyList) GlanceTheme.colors.onPrimary
+                        else GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = WidgetTypography.Caption.large,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+        }
+
+        // --- Timeline List ---
+        if (entries.isEmpty()) {
+            WidgetEmptyState(
+                config = EmptyStateConfig(
+                    iconResId = R.drawable.today_24px,
+                    title = if (isMyList) "No favorites today" else "Nothing today",
+                    subtitle = if (isMyList) "Tap 'All' above for global schedule" else "Check back tomorrow"
+                ),
+                sizeClass = SizeClass.EXPANDED,
+                modifier = GlanceModifier.fillMaxSize()
+            )
+        } else {
+            LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
+                itemsIndexed(entries) { index, item ->
+                    TimelineItem(
+                        item = item,
+                        isFirst = index == 0,
+                        isLast = index == entries.lastIndex
+                    )
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------------------
+// REUSABLE UI COMPONENTS
+// -------------------------------------------------------------------------
+
+/**
+ * A beautiful, integrated timeline cell that blends the vertical line, time badge, and elevated media card.
+ */
 @Composable
 private fun TimelineItem(
     item: Pair<AiringScheduleEntity, Bitmap?>,
@@ -406,225 +412,130 @@ private fun TimelineItem(
 ) {
     val (schedule, bitmap) = item
     val context = LocalContext.current
-    val detailsIntent = createDetailsIntent(context, schedule.mediaId)
+    val detailsIntent = WidgetIntentUtils.createDetailsIntent(context, schedule.mediaId)
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val timeString = timeFormat.format(Date(schedule.airingAt * 1000))
 
-    // Fixed height for consistent timeline alignment
-    val rowHeight = 88.dp
-
-    Row(
+    // Wrapping Column handles the start/end padding to prevent scrollbar overlap
+    Column(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .height(rowHeight),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(start = 16.dp, end = 16.dp)
     ) {
-        // --- Timeline Column (Line + Time Badge) ---
-        Box(
-            modifier = GlanceModifier.width(56.dp).fillMaxHeight(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Vertical line segments
-            Column(
-                modifier = GlanceModifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Top half line
-                Box(
-                    modifier = GlanceModifier
-                        .width(2.dp)
-                        .defaultWeight()
-                        .background(
-                            if (isFirst) GlanceTheme.colors.widgetBackground
-                            else GlanceTheme.colors.outline
-                        )
-                ) {}
-
-                // Bottom half line
-                Box(
-                    modifier = GlanceModifier
-                        .width(2.dp)
-                        .defaultWeight()
-                        .background(
-                            if (isLast) GlanceTheme.colors.widgetBackground
-                            else GlanceTheme.colors.outline
-                        )
-                ) {}
-            }
-
-            // Time Badge (sits on top of line)
-            Box(
-                modifier = GlanceModifier
-                    .background(GlanceTheme.colors.primaryContainer)
-                    .cornerRadius(8.dp)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = timeString,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-        }
-
-        Spacer(modifier = GlanceModifier.width(8.dp))
-
-        // --- Card Content with vertical padding for spacing ---
-        Box(
+        Row(
             modifier = GlanceModifier
-                .defaultWeight()
-                .fillMaxHeight()
-                .padding(vertical = 4.dp), // Creates gap between cards
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .height(104.dp), // Fixed height ensures the timeline stem connects perfectly
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .background(GlanceTheme.colors.surface)
-                    .cornerRadius(16.dp)
-                    .clickable(actionStartActivity(detailsIntent))
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-            // Poster Image
+            // --- Timeline Stem (Line + Time Badge) ---
             Box(
                 modifier = GlanceModifier
                     .width(48.dp)
-                    .height(64.dp)
-                    .cornerRadius(8.dp)
-                    .background(GlanceTheme.colors.surfaceVariant),
+                    .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
-                if (bitmap != null) {
-                    Image(
-                        provider = ImageProvider(bitmap),
-                        contentDescription = null,
-                        modifier = GlanceModifier.fillMaxSize().cornerRadius(8.dp),
-                        contentScale = ContentScale.Crop
+                // Background Line Stems
+                Column(
+                    modifier = GlanceModifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = GlanceModifier
+                            .width(2.dp)
+                            .defaultWeight()
+                            .background(
+                                if (isFirst) GlanceTheme.colors.widgetBackground
+                                else GlanceTheme.colors.surfaceVariant
+                            )
+                    ) {}
+                    Box(
+                        modifier = GlanceModifier
+                            .width(2.dp)
+                            .defaultWeight()
+                            .background(
+                                if (isLast) GlanceTheme.colors.widgetBackground
+                                else GlanceTheme.colors.surfaceVariant
+                            )
+                    ) {}
+                }
+
+                // Centered Time Badge
+                Box(
+                    modifier = GlanceModifier
+                        .background(GlanceTheme.colors.primaryContainer)
+                        .cornerRadius(6.dp)
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = timeString,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onPrimaryContainer,
+                            fontSize = WidgetTypography.Caption.medium,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 }
             }
 
             Spacer(modifier = GlanceModifier.width(12.dp))
 
-            // Text Info
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = schedule.titleUserPreferred,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    maxLines = 2
-                )
-                Text(
-                    text = "Episode ${schedule.episode}",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 12.sp
-                    ),
-                    maxLines = 1
-                )
-            }
-
-            // Star Icon for watching items
-            if (schedule.isWatching) {
-                Image(
-                    provider = ImageProvider(R.drawable.ic_bookmark_24px),
-                    contentDescription = null,
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
-                    modifier = GlanceModifier.size(20.dp)
-                )
-            }
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun EmptyStateCompact(isMyList: Boolean) {
-    Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.surface)
-            .clickable(actionRunCallback<ToggleFilterAction>()),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = if (isMyList) "No favorites" else "Nothing today",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyStateMedium(isMyList: Boolean) {
-    Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(GlanceTheme.colors.surface),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = if (isMyList) "No favorites airing today" else "No shows airing today",
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-        )
-    }
-}
-
-@Composable
-private fun EmptyStateExpanded(isMyList: Boolean) {
-    Box(
-        modifier = GlanceModifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                provider = ImageProvider(R.drawable.today_24px),
-                contentDescription = null,
-                colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
-                modifier = GlanceModifier.size(48.dp)
-            )
-            Spacer(modifier = GlanceModifier.height(8.dp))
-            Text(
-                text = if (isMyList) "No favorites airing today" else "No schedule today",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-            if (isMyList) {
-                Spacer(modifier = GlanceModifier.height(4.dp))
-                Text(
-                    text = "Tap 'All' to see global schedule",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 12.sp
+            // --- Media Card ---
+            Box(
+                modifier = GlanceModifier
+                    .defaultWeight()
+                    .fillMaxHeight()
+                    .padding(vertical = 6.dp), // Gap between stacked cards
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .background(GlanceTheme.colors.surface)
+                        .cornerRadius(16.dp)
+                        .clickable(actionStartActivity(detailsIntent))
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MediaPoster(
+                        bitmap = bitmap,
+                        width = 56.dp,
+                        height = 80.dp,
+                        cornerRadius = 8.dp
                     )
-                )
+
+                    Spacer(modifier = GlanceModifier.width(16.dp))
+
+                    Column(modifier = GlanceModifier.defaultWeight()) {
+                        Text(
+                            text = schedule.titleUserPreferred,
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurface,
+                                fontSize = WidgetTypography.Body.large,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            maxLines = 2
+                        )
+
+                        Spacer(modifier = GlanceModifier.height(4.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            StandardEpisodeBadge(episodeNumber = schedule.episode)
+
+                            if (schedule.isWatching) {
+                                Spacer(modifier = GlanceModifier.width(8.dp))
+                                Image(
+                                    provider = ImageProvider(R.drawable.ic_bookmark_24px),
+                                    contentDescription = "On My List",
+                                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.primary),
+                                    modifier = GlanceModifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
-
-private fun createDetailsIntent(context: Context, mediaId: Int) = 
-    WidgetIntentUtils.createDetailsIntent(context, mediaId)
