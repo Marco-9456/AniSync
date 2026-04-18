@@ -340,6 +340,7 @@ query GetUserReviews($userId: Int!, $page: Int = 1) {
     reviews(userId: $userId, sort: ID_DESC) {
       id
       summary
+      body(asHtml: true)
       rating
       ratingAmount
       userRating

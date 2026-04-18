@@ -443,7 +443,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.MediaReview(
                     id = review.id,
                     summary = review.summary ?: "",
-                    body = null, // the query doesn't fetch body
+                    body = review.body,
                     score = review.score ?: 0,
                     rating = review.rating ?: 0,
                     ratingAmount = review.ratingAmount ?: 0,
