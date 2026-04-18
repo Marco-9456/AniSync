@@ -66,6 +66,10 @@ class ProfileViewModel @Inject constructor(
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
         val selectedReview: com.anisync.android.domain.MediaReview? = null,
+        val isMessageComposerVisible: Boolean = false,
+        val isSendingMessage: Boolean = false,
+        val messageSendError: String? = null,
+        val messageSentEvent: Long? = null,
         val isRefreshing: Boolean = false,
         val isFollowingUser: Boolean = false,
         val isFollowLoading: Boolean = false
@@ -200,6 +204,10 @@ class ProfileViewModel @Inject constructor(
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
             selectedReview = local.selectedReview,
+            isMessageComposerVisible = local.isMessageComposerVisible,
+            isSendingMessage = local.isSendingMessage,
+            messageSendError = local.messageSendError,
+            messageSentEvent = local.messageSentEvent,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialThreads = social.socialThreads,
@@ -321,8 +329,65 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
+            is ProfileAction.ShowMessageComposer -> {
+                localState.update {
+                    it.copy(
+                        isMessageComposerVisible = true,
+                        messageSendError = null
+                    )
+                }
+            }
+
+            is ProfileAction.HideMessageComposer -> {
+                localState.update {
+                    it.copy(
+                        isMessageComposerVisible = false,
+                        messageSendError = null
+                    )
+                }
+            }
+
+            is ProfileAction.SendMessage -> sendMessage(action.text, action.isPrivate)
+
+            is ProfileAction.ConsumeMessageSentEvent -> {
+                localState.update { it.copy(messageSentEvent = null) }
+            }
+
             is ProfileAction.LoadMoreSocial -> loadMoreSocial()
             is ProfileAction.LoadMoreReviews -> loadMoreReviews()
+        }
+    }
+
+    private fun sendMessage(text: String, isPrivate: Boolean) {
+        val recipientId = uiState.value.profile?.id ?: return
+        viewModelScope.launch {
+            localState.update {
+                it.copy(isSendingMessage = true, messageSendError = null)
+            }
+            when (val result = profileRepository.sendMessageActivity(
+                recipientId = recipientId,
+                message = text,
+                isPrivate = isPrivate
+            )) {
+                is Result.Success -> {
+                    localState.update {
+                        it.copy(
+                            isSendingMessage = false,
+                            isMessageComposerVisible = false,
+                            messageSendError = null,
+                            messageSentEvent = System.currentTimeMillis()
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    localState.update {
+                        it.copy(
+                            isSendingMessage = false,
+                            messageSendError = result.message
+                        )
+                    }
+                }
+            }
         }
     }
 

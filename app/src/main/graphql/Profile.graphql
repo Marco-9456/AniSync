@@ -382,3 +382,17 @@ mutation ToggleUserFollow($userId: Int!) {
     isFollowing
   }
 }
+
+mutation SaveMessageActivity(
+  $recipientId: Int!,
+  $message: String!,
+  $private: Boolean = false
+) {
+  SaveMessageActivity(
+    recipientId: $recipientId,
+    message: $message,
+    private: $private
+  ) {
+    id
+  }
+}

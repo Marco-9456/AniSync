@@ -557,4 +557,26 @@ class ProfileRepositoryImpl @Inject constructor(
             entryMap.values.toList().sortedByDescending { it.updatedAt }
         }
     }
+
+    override suspend fun sendMessageActivity(
+        recipientId: Int,
+        message: String,
+        isPrivate: Boolean
+    ): Result<Unit> {
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.SaveMessageActivityMutation(
+                    recipientId = recipientId,
+                    message = message,
+                    `private` = Optional.present(isPrivate)
+                )
+            ).execute()
+            if (response.hasErrors()) {
+                throw Exception(
+                    response.errors?.firstOrNull()?.message ?: "Failed to send message"
+                )
+            }
+            Unit
+        }
+    }
 }

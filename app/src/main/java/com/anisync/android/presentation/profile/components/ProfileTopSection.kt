@@ -74,6 +74,7 @@ fun ProfileTopSection(
     isFollowing: Boolean = false,
     isFollowLoading: Boolean = false,
     onFollowClick: () -> Unit = {},
+    onMessageClick: () -> Unit = {},
     topActionIcon: ImageVector = Icons.Default.Settings,
     onTopActionClick: () -> Unit = onSettingsClick,
     modifier: Modifier = Modifier
@@ -425,7 +426,7 @@ fun ProfileTopSection(
                         )
                     }
                     FilledTonalIconButton(
-                        onClick = { },
+                        onClick = onMessageClick,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.size(48.dp)
                     ) {

@@ -55,6 +55,10 @@ data class ProfileUiState(
     val reviewsHasNextPage: Boolean = false,
     val isReviewsPaginating: Boolean = false,
     val selectedReview: MediaReview? = null,
+    val isMessageComposerVisible: Boolean = false,
+    val isSendingMessage: Boolean = false,
+    val messageSendError: String? = null,
+    val messageSentEvent: Long? = null,
     val statsData: StatisticsUiModel? = null,
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null
@@ -154,6 +158,10 @@ sealed interface ProfileAction {
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
     data class SelectReview(val review: MediaReview?) : ProfileAction
+    data object ShowMessageComposer : ProfileAction
+    data object HideMessageComposer : ProfileAction
+    data class SendMessage(val text: String, val isPrivate: Boolean) : ProfileAction
+    data object ConsumeMessageSentEvent : ProfileAction
     data object LoadMoreSocial : ProfileAction
     data object LoadMoreReviews : ProfileAction
 }

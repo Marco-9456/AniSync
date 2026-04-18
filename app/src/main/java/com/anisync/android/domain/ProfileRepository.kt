@@ -52,4 +52,13 @@ interface ProfileRepository {
      * Fetch user's manga list.
      */
     suspend fun getUserMangaList(username: String): Result<List<LibraryEntry>>
+
+    /**
+     * Send a MessageActivity to the given recipient.
+     */
+    suspend fun sendMessageActivity(
+        recipientId: Int,
+        message: String,
+        isPrivate: Boolean
+    ): Result<Unit>
 }

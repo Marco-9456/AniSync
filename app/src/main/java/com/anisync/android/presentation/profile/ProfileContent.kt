@@ -48,6 +48,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
+import com.anisync.android.presentation.profile.components.MessageComposerSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
@@ -120,6 +121,7 @@ fun ProfileContent(
                 isFollowing = uiState.isFollowingUser,
                 isFollowLoading = uiState.isFollowLoading,
                 onFollowClick = { onAction(ProfileAction.ToggleFollow) },
+                onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
                 topActionIcon = if (isOwnProfile) Icons.Default.Settings else Icons.Default.Share,
                 onTopActionClick = {
                     if (isOwnProfile) {
@@ -258,6 +260,18 @@ fun ProfileContent(
             review = review,
             onUserClick = onUserClick,
             onDismiss = { onAction(ProfileAction.SelectReview(null)) }
+        )
+    }
+
+    if (uiState.isMessageComposerVisible) {
+        MessageComposerSheet(
+            recipientName = profile.name,
+            isSending = uiState.isSendingMessage,
+            errorMessage = uiState.messageSendError,
+            onDismissRequest = { onAction(ProfileAction.HideMessageComposer) },
+            onSend = { text, isPrivate ->
+                onAction(ProfileAction.SendMessage(text, isPrivate))
+            }
         )
     }
 }

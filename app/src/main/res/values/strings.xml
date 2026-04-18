@@ -603,4 +603,12 @@
     <string name="samsung_app_links_instructions">To open AniList links directly in AniSync, please enable supported web links in your Android Settings.\n\n1. Tap \'Open Settings\'\n2. Find and tap \'AniSync\' in the list\n3. Tap \'Add link\'\n4. Select \'anilist.co\' and save.</string>
     <string name="default_app_links_instructions">To open AniList links directly in AniSync, please enable supported web links for this app in your Android Settings.\n\n1. Tap \'Open Settings\'\n2. Tap \'Add link\'\n3. Select \'anilist.co\' and save.</string>
     <string name="open_settings">Open Settings</string>
+
+    <!-- Message Composer -->
+    <string name="message_composer_title">Message %1$s</string>
+    <string name="message_composer_hint">Write a message…</string>
+    <string name="message_composer_private">Send as private</string>
+    <string name="message_composer_send">Send</string>
+    <string name="message_composer_sent">Message sent</string>
+    <string name="message_composer_char_count">%1$d / %2$d</string>
 </resources>
