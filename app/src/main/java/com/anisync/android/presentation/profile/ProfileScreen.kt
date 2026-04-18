@@ -31,6 +31,8 @@ fun ProfileScreen(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
+    onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
+    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     onLogoutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -85,7 +87,9 @@ fun ProfileScreen(
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
                         onStaffClick = onStaffClick,
-                        onUserClick = onUserClick
+                        onUserClick = onUserClick,
+                        onThreadClick = onThreadClick,
+                        onCommentClick = onCommentClick
                     )
                 }
 

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
@@ -57,6 +59,7 @@ import com.anisync.android.util.ShareUtils
 
 @OptIn(
     ExperimentalFoundationApi::class,
+    ExperimentalMaterial3Api::class,
     ExperimentalMaterial3ExpressiveApi::class,
     ExperimentalSharedTransitionApi::class
 )
@@ -73,6 +76,8 @@ fun ProfileContent(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
+    onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
+    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -151,6 +156,8 @@ fun ProfileContent(
                     uiState = uiState,
                     onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
                     onUserClick = onUserClick,
+                    onThreadClick = onThreadClick,
+                    onCommentClick = onCommentClick,
                     onLoadMore = { onAction(ProfileAction.LoadMoreSocial) }
                 )
             }
@@ -202,6 +209,7 @@ fun ProfileContent(
                 profileReviewsTab(
                     uiState = uiState,
                     onUserClick = onUserClick,
+                    onReviewClick = { onAction(ProfileAction.SelectReview(it)) },
                     onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
                 )
             }
@@ -221,6 +229,14 @@ fun ProfileContent(
             onDismissRequest = {
                 onAction(ProfileAction.SetBiographySheetVisible(false))
             }
+        )
+    }
+
+    uiState.selectedReview?.let { review ->
+        ReviewDetailsSheet(
+            review = review,
+            onUserClick = onUserClick,
+            onDismiss = { onAction(ProfileAction.SelectReview(null)) }
         )
     }
 }

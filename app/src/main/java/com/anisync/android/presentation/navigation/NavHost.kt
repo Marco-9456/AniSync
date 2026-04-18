@@ -338,6 +338,14 @@ fun AniSyncNavHost(
                         navController.navigate(StaffDetails(staffId))
                     },
                     onUserClick = navigateToUserProfile,
+                    onThreadClick = { threadId, threadTitle ->
+                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    },
+                    onCommentClick = { threadId, commentId, threadTitle ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, threadTitle, commentId)
+                        )
+                    },
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -364,6 +372,14 @@ fun AniSyncNavHost(
                         navController.navigate(StaffDetails(staffId))
                     },
                     onUserClick = navigateToUserProfile,
+                    onThreadClick = { threadId, threadTitle ->
+                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    },
+                    onCommentClick = { threadId, commentId, threadTitle ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, threadTitle, commentId)
+                        )
+                    },
                     onLogoutClick = { }, // Not used for other users
                     onNavigateToSettings = { }, // Not used for other users
                     isOwnProfile = false,

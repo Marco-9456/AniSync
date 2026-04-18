@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.profile.ProfileUiState
 
@@ -24,6 +25,7 @@ fun LazyListScope.profileReviewsTab(
     uiState: ProfileUiState,
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
+    onReviewClick: (MediaReview) -> Unit = {},
     onLoadMore: () -> Unit = {}
 ) {
     if (uiState.isReviewsLoading && uiState.reviews.isEmpty()) {
@@ -88,7 +90,7 @@ fun LazyListScope.profileReviewsTab(
         }
         ReviewCard(
             review = review,
-            onClick = { /* TODO: Open review details */ },
+            onClick = { onReviewClick(review) },
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .animateItem(),

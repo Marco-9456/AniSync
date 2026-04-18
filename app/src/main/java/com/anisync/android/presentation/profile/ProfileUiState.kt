@@ -54,6 +54,7 @@ data class ProfileUiState(
     val reviewsErrorMessage: String? = null,
     val reviewsHasNextPage: Boolean = false,
     val isReviewsPaginating: Boolean = false,
+    val selectedReview: MediaReview? = null,
     val statsData: StatisticsUiModel? = null,
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null
@@ -152,6 +153,7 @@ sealed interface ProfileAction {
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
+    data class SelectReview(val review: MediaReview?) : ProfileAction
     data object LoadMoreSocial : ProfileAction
     data object LoadMoreReviews : ProfileAction
 }

@@ -65,6 +65,7 @@ class ProfileViewModel @Inject constructor(
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
+        val selectedReview: com.anisync.android.domain.MediaReview? = null,
         val isRefreshing: Boolean = false,
         val isFollowingUser: Boolean = false,
         val isFollowLoading: Boolean = false
@@ -198,6 +199,7 @@ class ProfileViewModel @Inject constructor(
             selectedStatsType = local.selectedStatsType,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
+            selectedReview = local.selectedReview,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialThreads = social.socialThreads,
@@ -310,6 +312,12 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SetBiographySheetVisible -> {
                 localState.update {
                     it.copy(isBiographySheetVisible = action.visible)
+                }
+            }
+
+            is ProfileAction.SelectReview -> {
+                localState.update {
+                    it.copy(selectedReview = action.review)
                 }
             }
 

@@ -61,6 +61,8 @@ fun LazyListScope.profileSocialTab(
     onTabSelected: (ProfileSocialTab) -> Unit,
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
+    onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
+    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     onLoadMore: () -> Unit = {}
 ) {
     val selectedTab = uiState.selectedSocialTab
@@ -151,7 +153,7 @@ fun LazyListScope.profileSocialTab(
                     Spacer(modifier = Modifier.height(if (index == 0) 16.dp else 8.dp))
                     ForumThreadCard(
                         thread = thread,
-                        onClick = {},
+                        onClick = { onThreadClick(thread.id, thread.title) },
                         modifier = Modifier.padding(horizontal = 16.dp),
                         onUserClick = onUserClick
                     )
@@ -184,7 +186,7 @@ fun LazyListScope.profileSocialTab(
                     Spacer(modifier = Modifier.height(if (index == 0) 16.dp else 8.dp))
                     SocialThreadCommentCard(
                         comment = comment,
-                        onClick = {},
+                        onClick = { onCommentClick(comment.threadId, comment.id, comment.threadTitle) },
                         modifier = Modifier.padding(horizontal = 16.dp),
                         onUserClick = onUserClick
                     )
