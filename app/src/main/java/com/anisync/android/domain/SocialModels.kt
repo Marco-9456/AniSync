@@ -33,3 +33,18 @@ data class UserSocialData(
     val threads: List<ForumThread>,
     val comments: List<SocialThreadComment>
 )
+
+@Immutable
+data class UserSocialPage(
+    val data: UserSocialData,
+    val followingHasNextPage: Boolean,
+    val followersHasNextPage: Boolean,
+    val threadsHasNextPage: Boolean,
+    val commentsHasNextPage: Boolean
+)
+
+@Immutable
+data class UserReviewsPage(
+    val reviews: List<MediaReview>,
+    val hasNextPage: Boolean
+)

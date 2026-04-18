@@ -150,7 +150,8 @@ fun ProfileContent(
                 profileSocialTab(
                     uiState = uiState,
                     onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
-                    onUserClick = onUserClick
+                    onUserClick = onUserClick,
+                    onLoadMore = { onAction(ProfileAction.LoadMoreSocial) }
                 )
             }
 
@@ -200,7 +201,8 @@ fun ProfileContent(
             ProfileTab.REVIEWS -> {
                 profileReviewsTab(
                     uiState = uiState,
-                    onUserClick = onUserClick
+                    onUserClick = onUserClick,
+                    onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
                 )
             }
 

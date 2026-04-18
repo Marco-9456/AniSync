@@ -79,7 +79,13 @@ class ProfileViewModel @Inject constructor(
         val socialThreads: List<com.anisync.android.domain.ForumThread> = emptyList(),
         val socialComments: List<com.anisync.android.domain.SocialThreadComment> = emptyList(),
         val socialErrorMessage: String? = null,
-        val hasFetchedSocialData: Boolean = false
+        val hasFetchedSocialData: Boolean = false,
+        val socialPage: Int = 1,
+        val followingHasNextPage: Boolean = false,
+        val followersHasNextPage: Boolean = false,
+        val threadsHasNextPage: Boolean = false,
+        val commentsHasNextPage: Boolean = false,
+        val isSocialPaginating: Boolean = false
     )
 
     private val socialState = MutableStateFlow(SocialState())
@@ -88,7 +94,10 @@ class ProfileViewModel @Inject constructor(
         val isReviewsLoading: Boolean = false,
         val reviews: List<com.anisync.android.domain.MediaReview> = emptyList(),
         val reviewsErrorMessage: String? = null,
-        val hasFetchedReviews: Boolean = false
+        val hasFetchedReviews: Boolean = false,
+        val reviewsPage: Int = 1,
+        val reviewsHasNextPage: Boolean = false,
+        val isReviewsPaginating: Boolean = false
     )
 
     private val reviewsState = MutableStateFlow(ReviewsState())
@@ -195,9 +204,16 @@ class ProfileViewModel @Inject constructor(
             socialComments = social.socialComments,
             isSocialLoading = social.isSocialLoading,
             socialErrorMessage = social.socialErrorMessage,
+            followingHasNextPage = social.followingHasNextPage,
+            followersHasNextPage = social.followersHasNextPage,
+            threadsHasNextPage = social.threadsHasNextPage,
+            commentsHasNextPage = social.commentsHasNextPage,
+            isSocialPaginating = social.isSocialPaginating,
             reviews = reviews.reviews,
             isReviewsLoading = reviews.isReviewsLoading,
             reviewsErrorMessage = reviews.reviewsErrorMessage,
+            reviewsHasNextPage = reviews.reviewsHasNextPage,
+            isReviewsPaginating = reviews.isReviewsPaginating,
             statsData = stats.statsData,
             isStatsLoading = stats.isStatsLoading,
             statsErrorMessage = stats.statsErrorMessage,
@@ -296,6 +312,9 @@ class ProfileViewModel @Inject constructor(
                     it.copy(isBiographySheetVisible = action.visible)
                 }
             }
+
+            is ProfileAction.LoadMoreSocial -> loadMoreSocial()
+            is ProfileAction.LoadMoreReviews -> loadMoreReviews()
         }
     }
 
@@ -405,13 +424,15 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = profileRepository.getUserReviews(userId)) {
+            when (val result = profileRepository.getUserReviews(userId, page = 1)) {
                 is Result.Success -> {
                     reviewsState.update {
                         it.copy(
                             isReviewsLoading = false,
-                            reviews = result.data,
-                            hasFetchedReviews = true
+                            reviews = result.data.reviews,
+                            hasFetchedReviews = true,
+                            reviewsPage = 1,
+                            reviewsHasNextPage = result.data.hasNextPage
                         )
                     }
                 }
@@ -422,6 +443,36 @@ class ProfileViewModel @Inject constructor(
                             reviewsErrorMessage = result.message
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun loadMoreReviews() {
+        val current = reviewsState.value
+        if (current.isReviewsLoading || current.isReviewsPaginating || !current.reviewsHasNextPage) return
+
+        viewModelScope.launch {
+            reviewsState.update { it.copy(isReviewsPaginating = true) }
+            val userId = uiState.value.profile?.id
+            if (userId == null) {
+                reviewsState.update { it.copy(isReviewsPaginating = false) }
+                return@launch
+            }
+            val nextPage = current.reviewsPage + 1
+            when (val result = profileRepository.getUserReviews(userId, page = nextPage)) {
+                is Result.Success -> {
+                    reviewsState.update {
+                        it.copy(
+                            isReviewsPaginating = false,
+                            reviewsPage = nextPage,
+                            reviews = it.reviews + result.data.reviews,
+                            reviewsHasNextPage = result.data.hasNextPage
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    reviewsState.update { it.copy(isReviewsPaginating = false) }
                 }
             }
         }
@@ -637,16 +688,22 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = profileRepository.getSocialData(userId)) {
+            when (val result = profileRepository.getSocialData(userId, page = 1)) {
                 is Result.Success -> {
+                    val page = result.data
                     socialState.update {
                         it.copy(
                             isSocialLoading = false,
-                            socialFollowing = result.data.following,
-                            socialFollowers = result.data.followers,
-                            socialThreads = result.data.threads,
-                            socialComments = result.data.comments,
-                            hasFetchedSocialData = true
+                            socialFollowing = page.data.following,
+                            socialFollowers = page.data.followers,
+                            socialThreads = page.data.threads,
+                            socialComments = page.data.comments,
+                            hasFetchedSocialData = true,
+                            socialPage = 1,
+                            followingHasNextPage = page.followingHasNextPage,
+                            followersHasNextPage = page.followersHasNextPage,
+                            threadsHasNextPage = page.threadsHasNextPage,
+                            commentsHasNextPage = page.commentsHasNextPage
                         )
                     }
                 }
@@ -657,6 +714,52 @@ class ProfileViewModel @Inject constructor(
                             socialErrorMessage = result.message
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun loadMoreSocial() {
+        val current = socialState.value
+        if (current.isSocialLoading || current.isSocialPaginating) return
+        val activeTab = localState.value.selectedSocialTab
+        val hasNext = when (activeTab) {
+            ProfileSocialTab.FOLLOWING -> current.followingHasNextPage
+            ProfileSocialTab.FOLLOWERS -> current.followersHasNextPage
+            ProfileSocialTab.FORUM_THREADS -> current.threadsHasNextPage
+            ProfileSocialTab.FORUM_COMMENTS -> current.commentsHasNextPage
+        }
+        if (!hasNext) return
+
+        viewModelScope.launch {
+            socialState.update { it.copy(isSocialPaginating = true) }
+            val userId = uiState.value.profile?.id
+            if (userId == null) {
+                socialState.update { it.copy(isSocialPaginating = false) }
+                return@launch
+            }
+
+            val nextPage = current.socialPage + 1
+            when (val result = profileRepository.getSocialData(userId, page = nextPage)) {
+                is Result.Success -> {
+                    val p = result.data
+                    socialState.update {
+                        it.copy(
+                            isSocialPaginating = false,
+                            socialPage = nextPage,
+                            socialFollowing = it.socialFollowing + p.data.following,
+                            socialFollowers = it.socialFollowers + p.data.followers,
+                            socialThreads = it.socialThreads + p.data.threads,
+                            socialComments = it.socialComments + p.data.comments,
+                            followingHasNextPage = p.followingHasNextPage,
+                            followersHasNextPage = p.followersHasNextPage,
+                            threadsHasNextPage = p.threadsHasNextPage,
+                            commentsHasNextPage = p.commentsHasNextPage
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    socialState.update { it.copy(isSocialPaginating = false) }
                 }
             }
         }

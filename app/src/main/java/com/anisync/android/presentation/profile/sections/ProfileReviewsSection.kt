@@ -2,12 +2,15 @@ package com.anisync.android.presentation.profile.sections
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,7 +23,8 @@ import com.anisync.android.presentation.profile.ProfileUiState
 fun LazyListScope.profileReviewsTab(
     uiState: ProfileUiState,
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onLoadMore: () -> Unit = {}
 ) {
     if (uiState.isReviewsLoading && uiState.reviews.isEmpty()) {
         item(key = "reviews_loading") {
@@ -72,10 +76,16 @@ fun LazyListScope.profileReviewsTab(
         return
     }
 
-    items(
+    itemsIndexed(
         items = uiState.reviews,
-        key = { "user_review_${it.id}" }
-    ) { review ->
+        key = { _, it -> "user_review_${it.id}" }
+    ) { index, review ->
+        if (index >= uiState.reviews.size - 4 &&
+            uiState.reviewsHasNextPage &&
+            !uiState.isReviewsPaginating
+        ) {
+            LaunchedEffect(index) { onLoadMore() }
+        }
         ReviewCard(
             review = review,
             onClick = { /* TODO: Open review details */ },
@@ -84,5 +94,23 @@ fun LazyListScope.profileReviewsTab(
                 .animateItem(),
             onUserClick = onUserClick
         )
+    }
+
+    if (uiState.isReviewsPaginating) {
+        item(key = "reviews_paginating") {
+            ReviewsPaginatingSpinner()
+        }
+    }
+}
+
+@Composable
+private fun ReviewsPaginatingSpinner() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(modifier = Modifier.height(24.dp))
     }
 }

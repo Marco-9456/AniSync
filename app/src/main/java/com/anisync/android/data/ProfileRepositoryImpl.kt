@@ -309,7 +309,7 @@ class ProfileRepositoryImpl @Inject constructor(
         return allFavorites
     }
 
-    override suspend fun getSocialData(userId: Int, page: Int): Result<com.anisync.android.domain.UserSocialData> {
+    override suspend fun getSocialData(userId: Int, page: Int): Result<com.anisync.android.domain.UserSocialPage> {
         return safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetUserSocialDataQuery(
@@ -389,11 +389,17 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            com.anisync.android.domain.UserSocialData(
-                following = following,
-                followers = followers,
-                threads = threads,
-                comments = comments
+            com.anisync.android.domain.UserSocialPage(
+                data = com.anisync.android.domain.UserSocialData(
+                    following = following,
+                    followers = followers,
+                    threads = threads,
+                    comments = comments
+                ),
+                followingHasNextPage = data.following?.pageInfo?.hasNextPage == true,
+                followersHasNextPage = data.followers?.pageInfo?.hasNextPage == true,
+                threadsHasNextPage = data.threads?.pageInfo?.hasNextPage == true,
+                commentsHasNextPage = data.comments?.pageInfo?.hasNextPage == true
             )
         }
     }
@@ -422,7 +428,7 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserReviews(userId: Int, page: Int): Result<List<com.anisync.android.domain.MediaReview>> {
+    override suspend fun getUserReviews(userId: Int, page: Int): Result<com.anisync.android.domain.UserReviewsPage> {
         return safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetUserReviewsQuery(
@@ -439,7 +445,7 @@ class ProfileRepositoryImpl @Inject constructor(
 
             val data = response.data ?: throw Exception("Empty response data")
 
-            data.Page?.reviews?.filterNotNull()?.map { review ->
+            val reviews = data.Page?.reviews?.filterNotNull()?.map { review ->
                 com.anisync.android.domain.MediaReview(
                     id = review.id,
                     summary = review.summary ?: "",
@@ -456,6 +462,11 @@ class ProfileRepositoryImpl @Inject constructor(
                     mediaBannerUrl = review.media?.bannerImage
                 )
             } ?: emptyList()
+
+            com.anisync.android.domain.UserReviewsPage(
+                reviews = reviews,
+                hasNextPage = data.Page?.pageInfo?.hasNextPage == true
+            )
         }
     }
 

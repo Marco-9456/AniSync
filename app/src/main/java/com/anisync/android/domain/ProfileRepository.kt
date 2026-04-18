@@ -26,7 +26,7 @@ interface ProfileRepository {
     /**
      * Fetch social data.
      */
-    suspend fun getSocialData(userId: Int, page: Int = 1): Result<UserSocialData>
+    suspend fun getSocialData(userId: Int, page: Int = 1): Result<UserSocialPage>
 
     /**
      * Check whether the authenticated user follows [userId].
@@ -41,7 +41,7 @@ interface ProfileRepository {
     /**
      * Fetch user's reviews.
      */
-    suspend fun getUserReviews(userId: Int, page: Int = 1): Result<List<MediaReview>>
+    suspend fun getUserReviews(userId: Int, page: Int = 1): Result<UserReviewsPage>
 
     /**
      * Fetch user's anime list.

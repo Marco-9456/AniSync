@@ -44,9 +44,16 @@ data class ProfileUiState(
     val socialComments: List<SocialThreadComment> = emptyList(),
     val isSocialLoading: Boolean = false,
     val socialErrorMessage: String? = null,
+    val followingHasNextPage: Boolean = false,
+    val followersHasNextPage: Boolean = false,
+    val threadsHasNextPage: Boolean = false,
+    val commentsHasNextPage: Boolean = false,
+    val isSocialPaginating: Boolean = false,
     val reviews: List<MediaReview> = emptyList(),
     val isReviewsLoading: Boolean = false,
     val reviewsErrorMessage: String? = null,
+    val reviewsHasNextPage: Boolean = false,
+    val isReviewsPaginating: Boolean = false,
     val statsData: StatisticsUiModel? = null,
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null
@@ -145,4 +152,6 @@ sealed interface ProfileAction {
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
+    data object LoadMoreSocial : ProfileAction
+    data object LoadMoreReviews : ProfileAction
 }

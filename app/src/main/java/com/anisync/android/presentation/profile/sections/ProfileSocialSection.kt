@@ -27,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +60,8 @@ fun LazyListScope.profileSocialTab(
     uiState: ProfileUiState,
     onTabSelected: (ProfileSocialTab) -> Unit,
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onLoadMore: () -> Unit = {}
 ) {
     val selectedTab = uiState.selectedSocialTab
     val tabs = ProfileSocialTab.entries
@@ -118,9 +120,17 @@ fun LazyListScope.profileSocialTab(
         return
     }
 
+    val isPaginating = uiState.isSocialPaginating
+    val hasNextPage = when (selectedTab) {
+        ProfileSocialTab.FOLLOWING -> uiState.followingHasNextPage
+        ProfileSocialTab.FOLLOWERS -> uiState.followersHasNextPage
+        ProfileSocialTab.FORUM_THREADS -> uiState.threadsHasNextPage
+        ProfileSocialTab.FORUM_COMMENTS -> uiState.commentsHasNextPage
+    }
+
     when (selectedTab) {
-        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick)
-        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick)
+        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore)
+        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore)
         ProfileSocialTab.FORUM_THREADS -> {
             if (uiState.socialThreads.isEmpty()) {
                 item(key = "social_threads_empty") {
@@ -135,6 +145,9 @@ fun LazyListScope.profileSocialTab(
                     items = uiState.socialThreads,
                     key = { _, thread -> "social_thread_${thread.id}" }
                 ) { index, thread ->
+                    if (index >= uiState.socialThreads.size - 4 && hasNextPage && !isPaginating) {
+                        LaunchedEffect(index) { onLoadMore() }
+                    }
                     Spacer(modifier = Modifier.height(if (index == 0) 16.dp else 8.dp))
                     ForumThreadCard(
                         thread = thread,
@@ -145,6 +158,9 @@ fun LazyListScope.profileSocialTab(
                     if (index == uiState.socialThreads.lastIndex) {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
+                }
+                if (isPaginating) {
+                    item(key = "threads_paginating") { PaginatingSpinner() }
                 }
             }
         }
@@ -162,6 +178,9 @@ fun LazyListScope.profileSocialTab(
                     items = uiState.socialComments,
                     key = { _, comment -> "social_comment_${comment.id}" }
                 ) { index, comment ->
+                    if (index >= uiState.socialComments.size - 4 && hasNextPage && !isPaginating) {
+                        LaunchedEffect(index) { onLoadMore() }
+                    }
                     Spacer(modifier = Modifier.height(if (index == 0) 16.dp else 8.dp))
                     SocialThreadCommentCard(
                         comment = comment,
@@ -173,8 +192,23 @@ fun LazyListScope.profileSocialTab(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
+                if (isPaginating) {
+                    item(key = "comments_paginating") { PaginatingSpinner() }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun PaginatingSpinner() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -182,7 +216,10 @@ private fun LazyListScope.renderSocialUsers(
     users: List<SocialUser>,
     selectedTab: ProfileSocialTab,
     modifier: Modifier,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    hasNextPage: Boolean,
+    isPaginating: Boolean,
+    onLoadMore: () -> Unit
 ) {
     if (users.isEmpty()) {
         item(key = "social_users_empty") {
@@ -200,7 +237,10 @@ private fun LazyListScope.renderSocialUsers(
             items = rowItems,
             key = { index, _ -> "social_row_$index" },
             contentType = { _, _ -> "social_row" }
-        ) { _, row ->
+        ) { rowIndex, row ->
+            if (rowIndex >= rowItems.size - 2 && hasNextPage && !isPaginating) {
+                LaunchedEffect(rowIndex) { onLoadMore() }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -221,6 +261,9 @@ private fun LazyListScope.renderSocialUsers(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+        }
+        if (isPaginating) {
+            item(key = "social_users_paginating") { PaginatingSpinner() }
         }
     }
 }
