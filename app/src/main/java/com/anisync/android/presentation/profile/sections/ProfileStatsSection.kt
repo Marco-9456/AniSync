@@ -249,7 +249,7 @@ fun LazyListScope.profileStatsTab(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "More manga statistics coming soon",
+                    text = stringResource(R.string.profile_manga_stats_coming_soon),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -33,7 +33,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -43,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
@@ -81,9 +85,25 @@ fun ProfileContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    LazyColumn(
+    PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = { onAction(ProfileAction.Refresh) },
+        state = pullToRefreshState,
         modifier = modifier.fillMaxSize(),
+        indicator = {
+            CustomPullToRefreshIndicator(
+                isRefreshing = uiState.isRefreshing,
+                state = pullToRefreshState,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+            )
+        }
+    ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 48.dp)
     ) {
         item(key = "profile_header", contentType = "header") {
@@ -221,6 +241,7 @@ fun ProfileContent(
                 )
             }
         }
+    }
     }
 
     if (uiState.isBiographySheetVisible) {

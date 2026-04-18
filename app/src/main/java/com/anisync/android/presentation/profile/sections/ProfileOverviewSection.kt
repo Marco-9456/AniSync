@@ -192,7 +192,7 @@ fun ProfileOverviewSection(
         // Favorites: Characters
         if (profile.favoriteCharactersOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
-                title = "Characters",
+                title = stringResource(R.string.profile_cast_characters),
                 onActionClick = { onNavigateToTab(ProfileTab.FAVORITES) }
             ) {
                 LazyRow(
@@ -214,7 +214,7 @@ fun ProfileOverviewSection(
         // Favorites: Staff
         if (profile.favoriteStaffOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
-                title = "Staff",
+                title = stringResource(R.string.profile_cast_staff),
                 onActionClick = { onNavigateToTab(ProfileTab.FAVORITES) }
             ) {
                 LazyRow(

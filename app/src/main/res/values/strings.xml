@@ -404,6 +404,11 @@
     <string name="profile_placeholder_favorites">Favorites content will appear here.</string>
     <string name="profile_placeholder_reviews">Reviews content will appear here.</string>
     <string name="profile_placeholder_stats">Detailed stats content will appear here.</string>
+    <string name="profile_manga_stats_coming_soon">More manga statistics coming soon</string>
+
+    <!-- Edit Profile Dialog -->
+    <string name="edit_profile_title">Edit Profile</string>
+    <string name="edit_profile_about_label">About</string>
 
     <string name="profile_cast_characters">Characters</string>
     <string name="profile_cast_staff">Staff</string>

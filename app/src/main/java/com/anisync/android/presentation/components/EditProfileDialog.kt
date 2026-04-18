@@ -36,7 +36,7 @@ fun EditProfileDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Edit Profile",
+                text = stringResource(R.string.edit_profile_title),
                 style = MaterialTheme.typography.headlineSmall
             )
         },
@@ -50,7 +50,7 @@ fun EditProfileDialog(
                 OutlinedTextField(
                     value = about,
                     onValueChange = { about = it },
-                    label = { Text("About") },
+                    label = { Text(stringResource(R.string.edit_profile_about_label)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
@@ -60,7 +60,7 @@ fun EditProfileDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSave(about) }) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
