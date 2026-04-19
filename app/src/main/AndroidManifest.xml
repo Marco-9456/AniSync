@@ -55,6 +55,17 @@
                     android:scheme="anisync"
                     android:host="forum" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="anisync"
+                    android:host="user" />
+                <data
+                    android:scheme="anisync"
+                    android:host="review" />
+            </intent-filter>
             <!-- AniList URL deep links for sharing -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -80,6 +91,14 @@
                     android:scheme="https"
                     android:host="anilist.co"
                     android:pathPrefix="/staff/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/user/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/review/" />
             </intent-filter>
         </activity>
 

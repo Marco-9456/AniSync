@@ -150,6 +150,16 @@ data class ForumThreadDetail(
 @Serializable
 object CreateThread
 
+// =============================================================================
+// REVIEW ROUTES
+// =============================================================================
+
+/**
+ * Standalone review screen — used by deep-links.
+ */
+@Serializable
+data class ReviewDetail(val reviewId: Int)
+
 
 
 /**

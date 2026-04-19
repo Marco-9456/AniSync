@@ -39,6 +39,7 @@ import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.profile.ProfileScreen
+import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
@@ -192,6 +193,12 @@ fun AniSyncNavHost(
                 },
                 onStaffClick = { staffId ->
                     navController.navigate(StaffDetails(staffId))
+                },
+                onUserClick = { username ->
+                    navController.navigate(UserProfile(username))
+                },
+                onReviewClick = { reviewId ->
+                    navController.navigate(ReviewDetail(reviewId))
                 }
             )
         }
@@ -357,7 +364,11 @@ fun AniSyncNavHost(
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
+                popExitTransition = { sharedAxisZPopExit() },
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://user/{username}" },
+                    navDeepLink { uriPattern = "https://anilist.co/user/{username}" }
+                )
             ) {
                 val onProfileMediaClick = remember(onMediaClick) { 
                     { mediaId: Int -> onMediaClick(mediaId, "user_profile") } 
@@ -473,6 +484,31 @@ fun AniSyncNavHost(
                     onUserClick = navigateToUserProfile,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // REVIEW DETAIL SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            composable<ReviewDetail>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://review/{reviewId}" },
+                    navDeepLink { uriPattern = "https://anilist.co/review/{reviewId}" },
+                    navDeepLink { uriPattern = "https://anilist.co/review/{reviewId}/{slug}" }
+                ),
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ReviewDetail = backStackEntry.toRoute()
+                ReviewDetailScreen(
+                    reviewId = route.reviewId,
+                    onBackClick = { navController.popBackStack() },
+                    onUserClick = navigateToUserProfile,
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "review"))
+                    }
                 )
             }
 
@@ -696,6 +732,8 @@ fun AniSyncNavHost(
                     navDeepLink { uriPattern = "https://anilist.co/forum/thread/{threadId}" },
                     // AniList forum thread URLs with slug
                     navDeepLink { uriPattern = "https://anilist.co/forum/thread/{threadId}/{slug}" },
+                    // Comment-anchored URLs
+                    navDeepLink { uriPattern = "https://anilist.co/forum/thread/{threadId}/comment/{commentId}" },
                 ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },

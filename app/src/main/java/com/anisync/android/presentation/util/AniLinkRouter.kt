@@ -19,7 +19,11 @@ data class AniLinkCallbacks(
     /** Navigate to a character details screen. */
     val onCharacterClick: ((characterId: Int) -> Unit)? = null,
     /** Navigate to a staff details screen. */
-    val onStaffClick: ((staffId: Int) -> Unit)? = null
+    val onStaffClick: ((staffId: Int) -> Unit)? = null,
+    /** Navigate to a user profile screen. */
+    val onUserClick: ((username: String) -> Unit)? = null,
+    /** Navigate to a review detail screen. */
+    val onReviewClick: ((reviewId: Int) -> Unit)? = null
 )
 
 /**
@@ -93,6 +97,18 @@ class AniLinkRouter(
             """https?://anilist\.co/staff/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
+
+        /** `anilist.co/user/Josh` or `anilist.co/user/Josh/stats` */
+        private val USER_REGEX = Regex(
+            """https?://anilist\.co/user/([^/?#]+)(?:/[^/?#]*)?/?(?:\?.*)?$""",
+            RegexOption.IGNORE_CASE
+        )
+
+        /** `anilist.co/review/12345` or `anilist.co/review/12345/slug` */
+        private val REVIEW_REGEX = Regex(
+            """https?://anilist\.co/review/(\d+)(?:/[^/]*)?$""",
+            RegexOption.IGNORE_CASE
+        )
     }
 
     /**
@@ -151,6 +167,24 @@ class AniLinkRouter(
             val staffId = match.groupValues[1].toIntOrNull()
             if (staffId != null && callbacks.onStaffClick != null) {
                 callbacks.onStaffClick.invoke(staffId)
+                return
+            }
+        }
+
+        // Review
+        REVIEW_REGEX.find(url)?.let { match ->
+            val reviewId = match.groupValues[1].toIntOrNull()
+            if (reviewId != null && callbacks.onReviewClick != null) {
+                callbacks.onReviewClick.invoke(reviewId)
+                return
+            }
+        }
+
+        // User — last because username regex is greediest
+        USER_REGEX.find(url)?.let { match ->
+            val username = match.groupValues[1].takeIf { it.isNotBlank() }
+            if (username != null && callbacks.onUserClick != null) {
+                callbacks.onUserClick.invoke(username)
                 return
             }
         }
