@@ -83,6 +83,7 @@ fun ProfileContent(
     onUserClick: (String) -> Unit = {},
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
+    onActivityClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -159,7 +160,9 @@ fun ProfileContent(
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
                         onStaffClick = onStaffClick,
-                        onUserClick = onUserClick
+                        onUserClick = onUserClick,
+                        onActivityClick = onActivityClick,
+                        onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
                     )
                 }
             }
@@ -169,7 +172,9 @@ fun ProfileContent(
                     profile = profile,
                     selectedFilter = uiState.selectedActivityFilter,
                     onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
-                    onUserClick = onUserClick
+                    onUserClick = onUserClick,
+                    onActivityClick = onActivityClick,
+                    onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
                 )
             }
 

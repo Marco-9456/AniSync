@@ -28,7 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.anisync.android.domain.ForumComment
+import com.anisync.android.domain.CommentNode
 
 /**
  * Breadcrumb strip showing the drill-down navigation chain.
@@ -37,7 +37,7 @@ import com.anisync.android.domain.ForumComment
  */
 @Composable
 fun FoldedAncestorStrip(
-    breadcrumbs: List<ForumComment>,
+    breadcrumbs: List<CommentNode>,
     onNavigateBack: () -> Unit,
     onNavigateToLevel: (Int) -> Unit,
     modifier: Modifier = Modifier

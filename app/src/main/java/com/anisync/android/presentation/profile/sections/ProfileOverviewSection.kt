@@ -60,6 +60,8 @@ fun ProfileOverviewSection(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {},
+    onSubscribeClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isProfileEmpty = profile.activities.isEmpty() &&
@@ -84,7 +86,9 @@ fun ProfileOverviewSection(
             RecentUpdatesSection(
                 activities = profile.activities.take(5),
                 modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                onUserClick = onUserClick
+                onUserClick = onUserClick,
+                onActivityClick = onActivityClick,
+                onSubscribeClick = onSubscribeClick
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

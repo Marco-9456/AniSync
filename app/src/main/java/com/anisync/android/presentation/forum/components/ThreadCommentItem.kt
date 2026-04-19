@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.compose.ui.util.lerp
 import com.anisync.android.R
-import com.anisync.android.domain.ForumComment
+import com.anisync.android.domain.CommentNode
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
@@ -63,7 +63,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun ThreadCommentItem(
-    comment: ForumComment,
+    comment: CommentNode,
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     descendantCount: Int,
@@ -75,7 +75,8 @@ fun ThreadCommentItem(
     depthOffset: Int = 0,
     maxVisualDepth: Int = 5,
     onDrillDown: (() -> Unit)? = null,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    actionSlot: @Composable () -> Unit = {}
 ) {
     val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
@@ -427,6 +428,8 @@ fun ThreadCommentItem(
                                 )
                             }
                         }
+
+                        actionSlot()
 
                         // Inline "Continue thread" for drill-down eligible comments
                         if (onDrillDown != null) {

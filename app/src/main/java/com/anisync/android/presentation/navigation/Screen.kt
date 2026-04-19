@@ -160,6 +160,16 @@ object CreateThread
 @Serializable
 data class ReviewDetail(val reviewId: Int)
 
+// =============================================================================
+// ACTIVITY ROUTES
+// =============================================================================
+
+@Serializable
+data class ActivityDetail(
+    val activityId: Int,
+    val targetReplyId: Int = 0
+)
+
 
 
 /**

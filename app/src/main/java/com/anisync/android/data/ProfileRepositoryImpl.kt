@@ -94,24 +94,39 @@ class ProfileRepositoryImpl @Inject constructor(
                         )
                     }
                     activityFields.onTextActivity != null -> {
+                        val t = activityFields.onTextActivity
                         com.anisync.android.domain.UserActivity(
-                            id = activityFields.onTextActivity.id ?: 0,
+                            id = t.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.TEXT,
-                            text = activityFields.onTextActivity.text,
-                            timestamp = (activityFields.onTextActivity.createdAt?.toLong() ?: 0L) * 1000L,
-                            userName = activityFields.onTextActivity.user?.name,
-                            userAvatarUrl = activityFields.onTextActivity.user?.avatar?.medium
+                            text = t.text,
+                            timestamp = (t.createdAt?.toLong() ?: 0L) * 1000L,
+                            userName = t.user?.name,
+                            userAvatarUrl = t.user?.avatar?.medium,
+                            likeCount = t.likeCount ?: 0,
+                            replyCount = t.replyCount ?: 0,
+                            isLiked = t.isLiked == true,
+                            isLocked = t.isLocked == true,
+                            isSubscribed = t.isSubscribed == true,
+                            isPinned = t.isPinned == true
                         )
                     }
                     activityFields.onMessageActivity != null -> {
+                        val m = activityFields.onMessageActivity
                         com.anisync.android.domain.UserActivity(
-                            id = activityFields.onMessageActivity.id ?: 0,
+                            id = m.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.MESSAGE,
-                            text = activityFields.onMessageActivity.message,
-                            timestamp = (activityFields.onMessageActivity.createdAt?.toLong() ?: 0L) * 1000L,
-                            userName = activityFields.onMessageActivity.messenger?.name,
-                            userAvatarUrl = activityFields.onMessageActivity.messenger?.avatar?.medium,
-                            recipientName = activityFields.onMessageActivity.recipient?.name
+                            text = m.message,
+                            timestamp = (m.createdAt?.toLong() ?: 0L) * 1000L,
+                            userName = m.messenger?.name,
+                            userAvatarUrl = m.messenger?.avatar?.medium,
+                            recipientName = m.recipient?.name,
+                            recipientAvatarUrl = m.recipient?.avatar?.medium,
+                            likeCount = m.likeCount ?: 0,
+                            replyCount = m.replyCount ?: 0,
+                            isLiked = m.isLiked == true,
+                            isLocked = m.isLocked == true,
+                            isSubscribed = m.isSubscribed == true,
+                            isPrivate = m.isPrivate == true
                         )
                     }
                     else -> null

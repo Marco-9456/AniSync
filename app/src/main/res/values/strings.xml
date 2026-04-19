@@ -628,4 +628,16 @@
     <string name="notification_activity_mentions">Activity mentions</string>
     <string name="notification_activity_likes">Activity likes</string>
     <string name="notification_activity_messages">Direct messages</string>
+
+    <!-- Activity Detail -->
+    <string name="activity_detail_title">Activity</string>
+    <string name="activity_detail_reply">Reply</string>
+    <string name="activity_detail_replies">Replies (%d)</string>
+    <string name="activity_detail_no_replies">No replies yet</string>
+    <string name="activity_detail_private">Private</string>
+    <string name="activity_detail_wrote_to">%1$s wrote to %2$s</string>
+    <string name="activity_delete_confirm_title">Delete activity?</string>
+    <string name="activity_delete_confirm_body">This action cannot be undone.</string>
+    <string name="delete">Delete</string>
+    <string name="more_options">More options</string>
 </resources>

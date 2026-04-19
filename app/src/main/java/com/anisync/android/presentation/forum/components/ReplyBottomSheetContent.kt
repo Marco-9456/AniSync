@@ -60,9 +60,13 @@ fun ReplyBottomSheetContent(
     replyingToAuthor: String?,
     isSubmitting: Boolean,
     onSubmit: (body: String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    prefillBody: String? = null
 ) {
-    var textFieldValue by remember { mutableStateOf(TextFieldValue("")) }
+    var textFieldValue by remember(prefillBody) {
+        val seed = prefillBody ?: ""
+        mutableStateOf(TextFieldValue(seed, selection = TextRange(seed.length)))
+    }
     var isPreviewMode by remember { mutableStateOf(false) }
     val isBlank = textFieldValue.text.isBlank()
     val focusRequester = remember { FocusRequester() }

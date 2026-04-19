@@ -76,7 +76,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
-import com.anisync.android.domain.ForumComment
+import com.anisync.android.domain.CommentNode
+import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
@@ -101,7 +102,7 @@ private const val MIN_CONTENT_WIDTH_DP = 200
 
 /** Internal data model representing a flattened comment tree node for optimal LazyColumn rendering. */
 internal data class FlatComment(
-    val comment: ForumComment,
+    val comment: CommentNode,
     val depth: Int,
     val ancestorIds: List<Int>,
     val descendantCount: Int
@@ -171,7 +172,7 @@ fun ThreadDetailScreen(
 
     LaunchedEffect(uiState.comments) {
         withContext(Dispatchers.Default) {
-            flatComments = flattenComments(uiState.comments)
+            flatComments = flattenComments(uiState.comments.map { it.toCommentNode() })
         }
     }
 
@@ -670,8 +671,8 @@ private fun ThreadDetailSkeleton() {
     }
 }
 
-private fun flattenComments(
-    comments: List<ForumComment>,
+internal fun flattenComments(
+    comments: List<CommentNode>,
     depth: Int = 0,
     ancestors: List<Int> = emptyList()
 ): List<FlatComment> {
@@ -692,7 +693,7 @@ private fun flattenComments(
     return flatList
 }
 
-private fun countDescendants(comment: ForumComment): Int {
+private fun countDescendants(comment: CommentNode): Int {
     var count = comment.childComments.size
     for (child in comment.childComments) {
         count += countDescendants(child)

@@ -164,4 +164,5 @@ sealed interface ProfileAction {
     data object ConsumeMessageSentEvent : ProfileAction
     data object LoadMoreSocial : ProfileAction
     data object LoadMoreReviews : ProfileAction
+    data class ToggleActivitySubscription(val activityId: Int) : ProfileAction
 }

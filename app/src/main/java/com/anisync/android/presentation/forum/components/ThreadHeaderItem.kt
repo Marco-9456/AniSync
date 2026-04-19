@@ -173,6 +173,28 @@ fun ThreadHeaderStats(
     onLikeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    ContentStatsBar(
+        replyCount = thread.replyCount,
+        viewCount = thread.viewCount,
+        likeCount = thread.likeCount,
+        isLiked = thread.isLiked,
+        onLikeClick = onLikeClick,
+        modifier = modifier
+    )
+}
+
+/**
+ * Reusable stat pill (replies, optional views, like). Used by both thread and activity detail.
+ */
+@Composable
+fun ContentStatsBar(
+    replyCount: Int,
+    viewCount: Int?,
+    likeCount: Int,
+    isLiked: Boolean,
+    onLikeClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -199,14 +221,16 @@ fun ThreadHeaderStats(
                     Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         StatBadge(
                             icon = Icons.Default.ChatBubbleOutline,
-                            value = thread.replyCount,
-                            contentDescription = "${thread.replyCount} replies"
+                            value = replyCount,
+                            contentDescription = "$replyCount replies"
                         )
-                        StatBadge(
-                            icon = Icons.Default.RemoveRedEye,
-                            value = thread.viewCount,
-                            contentDescription = "${thread.viewCount} views"
-                        )
+                        if (viewCount != null) {
+                            StatBadge(
+                                icon = Icons.Default.RemoveRedEye,
+                                value = viewCount,
+                                contentDescription = "$viewCount views"
+                            )
+                        }
                     }
 
                     Row(
@@ -215,21 +239,21 @@ fun ThreadHeaderStats(
                         modifier = Modifier
                             .clip(RoundedCornerShape(100))
                             .background(
-                                if (thread.isLiked) MaterialTheme.colorScheme.errorContainer
+                                if (isLiked) MaterialTheme.colorScheme.errorContainer
                                 else MaterialTheme.colorScheme.surfaceContainerHighest
                             )
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         AnimatedFavoriteButton(
-                            isFavorite = thread.isLiked,
+                            isFavorite = isLiked,
                             onClick = onLikeClick,
                             iconSize = 22.dp
                         )
                         Text(
-                            text = thread.likeCount.toString(),
+                            text = likeCount.toString(),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Black,
-                            color = if (thread.isLiked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isLiked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

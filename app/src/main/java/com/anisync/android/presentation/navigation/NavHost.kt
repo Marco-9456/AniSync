@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaCharactersGridScreen
@@ -92,6 +93,10 @@ fun AniSyncNavHost(
         username.trim().takeIf { it.isNotEmpty() }?.let { nonEmptyUsername ->
             navController.navigate(UserProfile(nonEmptyUsername))
         }
+    }
+
+    val navigateToActivity: (Int) -> Unit = { activityId ->
+        navController.navigate(ActivityDetail(activityId))
     }
 
     // =============================================================================
@@ -199,6 +204,9 @@ fun AniSyncNavHost(
                 },
                 onReviewClick = { reviewId ->
                     navController.navigate(ReviewDetail(reviewId))
+                },
+                onActivityClick = { activityId ->
+                    navController.navigate(ActivityDetail(activityId))
                 }
             )
         }
@@ -353,6 +361,7 @@ fun AniSyncNavHost(
                             ForumThreadDetail(threadId, threadTitle, commentId)
                         )
                     },
+                    onActivityClick = navigateToActivity,
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -391,6 +400,7 @@ fun AniSyncNavHost(
                             ForumThreadDetail(threadId, threadTitle, commentId)
                         )
                     },
+                    onActivityClick = navigateToActivity,
                     onLogoutClick = { }, // Not used for other users
                     onNavigateToSettings = { }, // Not used for other users
                     isOwnProfile = false,
@@ -745,6 +755,29 @@ fun AniSyncNavHost(
                     threadId = route.threadId,
                     threadTitle = route.threadTitle,
                     targetCommentId = if (route.commentId != 0) route.commentId else null,
+                    onBackClick = { navController.popBackStack() },
+                    onUserClick = navigateToUserProfile
+                )
+            }
+
+            // =================================================================
+            // ACTIVITY DETAIL - Shared Axis Z (Depth)
+            // =================================================================
+            composable<ActivityDetail>(
+                deepLinks = listOf(
+                    navDeepLink<ActivityDetail>(basePath = "anisync://activity"),
+                    navDeepLink { uriPattern = "https://anilist.co/activity/{activityId}" },
+                    navDeepLink { uriPattern = "https://anilist.co/activity/{activityId}/{slug}" }
+                ),
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ActivityDetail = backStackEntry.toRoute()
+                ActivityDetailScreen(
+                    activityId = route.activityId,
+                    targetReplyId = if (route.targetReplyId != 0) route.targetReplyId else null,
                     onBackClick = { navController.popBackStack() },
                     onUserClick = navigateToUserProfile
                 )

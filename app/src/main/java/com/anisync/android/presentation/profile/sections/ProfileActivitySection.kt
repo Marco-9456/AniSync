@@ -28,6 +28,7 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileActivityFilter
 import com.anisync.android.presentation.profile.RecentUpdateCard
+import com.anisync.android.presentation.profile.components.ActivityPreviewCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -36,6 +37,8 @@ fun LazyListScope.profileActivityTab(
     selectedFilter: ProfileActivityFilter,
     onFilterSelected: (ProfileActivityFilter) -> Unit,
     onUserClick: (String) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {},
+    onSubscribeClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     item(key = "activity_filters", contentType = "filters") {
@@ -90,11 +93,22 @@ fun LazyListScope.profileActivityTab(
             key = { "activity_${it.id}" },
             contentType = { "activity_item" }
         ) { activity ->
-            RecentUpdateCard(
-                activity = activity,
-                modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                onUserClick = onUserClick
-            )
+            if (activity.type == ActivityType.MEDIA_LIST) {
+                RecentUpdateCard(
+                    activity = activity,
+                    modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    onUserClick = onUserClick,
+                    onActivityClick = onActivityClick
+                )
+            } else {
+                ActivityPreviewCard(
+                    activity = activity,
+                    onClick = { onActivityClick(activity.id) },
+                    onSubscribeClick = { onSubscribeClick(activity.id) },
+                    onUserClick = onUserClick,
+                    modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
         }
         
         item(key = "activity_bottom_spacer") {

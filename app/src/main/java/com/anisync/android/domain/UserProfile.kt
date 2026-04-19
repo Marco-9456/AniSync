@@ -71,5 +71,13 @@ data class UserActivity(
     val text: String? = null,
     val userName: String? = null,
     val userAvatarUrl: String? = null,
-    val recipientName: String? = null
+    val recipientName: String? = null,
+    val recipientAvatarUrl: String? = null,
+    val likeCount: Int = 0,
+    val replyCount: Int = 0,
+    val isLiked: Boolean = false,
+    val isLocked: Boolean = false,
+    val isSubscribed: Boolean = false,
+    val isPrivate: Boolean = false,
+    val isPinned: Boolean = false
 )

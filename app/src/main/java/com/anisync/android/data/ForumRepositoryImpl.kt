@@ -429,6 +429,7 @@ class ForumRepositoryImpl @Inject constructor(
     private fun GetForumThreadsQuery.Thread.toForumThread() = buildForumThread(
         id = id,
         title = title,
+        body = body,
         replyCount = replyCount,
         viewCount = viewCount,
         likeCount = likeCount,

@@ -23,7 +23,9 @@ data class AniLinkCallbacks(
     /** Navigate to a user profile screen. */
     val onUserClick: ((username: String) -> Unit)? = null,
     /** Navigate to a review detail screen. */
-    val onReviewClick: ((reviewId: Int) -> Unit)? = null
+    val onReviewClick: ((reviewId: Int) -> Unit)? = null,
+    /** Navigate to an activity detail screen. */
+    val onActivityClick: ((activityId: Int) -> Unit)? = null
 )
 
 /**
@@ -109,6 +111,12 @@ class AniLinkRouter(
             """https?://anilist\.co/review/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
+
+        /** `anilist.co/activity/98765` or `anilist.co/activity/98765/slug` */
+        private val ACTIVITY_REGEX = Regex(
+            """https?://anilist\.co/activity/(\d+)(?:/[^/]*)?$""",
+            RegexOption.IGNORE_CASE
+        )
     }
 
     /**
@@ -176,6 +184,15 @@ class AniLinkRouter(
             val reviewId = match.groupValues[1].toIntOrNull()
             if (reviewId != null && callbacks.onReviewClick != null) {
                 callbacks.onReviewClick.invoke(reviewId)
+                return
+            }
+        }
+
+        // Activity
+        ACTIVITY_REGEX.find(url)?.let { match ->
+            val activityId = match.groupValues[1].toIntOrNull()
+            if (activityId != null && callbacks.onActivityClick != null) {
+                callbacks.onActivityClick.invoke(activityId)
                 return
             }
         }

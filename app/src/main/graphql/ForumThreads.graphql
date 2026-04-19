@@ -9,6 +9,7 @@ query GetForumThreads(
     threads(categoryId: $categoryId, search: $search, sort: $sort) {
       id
       title
+      body(asHtml: true)
       replyCount
       viewCount
       likeCount

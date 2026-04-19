@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
+import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.LibraryEntry
@@ -42,6 +43,7 @@ class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val profileRepository: ProfileRepository,
     private val statisticsRepository: StatisticsRepository,
+    private val activityRepository: ActivityRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
     @ApplicationContext private val context: Context,
@@ -131,6 +133,9 @@ class ProfileViewModel @Inject constructor(
 
     private val mediaListState = MutableStateFlow(MediaListState())
 
+    // Overlay for optimistic activity subscription toggles: activityId -> isSubscribed
+    private val activitySubscriptionOverrides = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+
     private val targetUsername: String? = savedStateHandle.get<String>("username")
         ?.let(Uri::decode)
         ?.trim()
@@ -181,7 +186,8 @@ class ProfileViewModel @Inject constructor(
         socialState,
         reviewsState,
         statsState,
-        mediaListState
+        mediaListState,
+        activitySubscriptionOverrides
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -189,8 +195,19 @@ class ProfileViewModel @Inject constructor(
         val reviews = params[3] as ReviewsState
         val stats = params[4] as StatsState
         val mediaLists = params[5] as MediaListState
+        @Suppress("UNCHECKED_CAST")
+        val subOverrides = params[6] as Map<Int, Boolean>
 
-        remote.copy(
+        val remoteWithOverrides = if (subOverrides.isEmpty() || remote.profile == null) {
+            remote
+        } else {
+            val patched = remote.profile.activities.map { a ->
+                subOverrides[a.id]?.let { v -> a.copy(isSubscribed = v) } ?: a
+            }
+            remote.copy(profile = remote.profile.copy(activities = patched))
+        }
+
+        remoteWithOverrides.copy(
             isRefreshing = local.isRefreshing,
             isFollowingUser = local.isFollowingUser,
             isFollowLoading = local.isFollowLoading,
@@ -355,6 +372,21 @@ class ProfileViewModel @Inject constructor(
 
             is ProfileAction.LoadMoreSocial -> loadMoreSocial()
             is ProfileAction.LoadMoreReviews -> loadMoreReviews()
+            is ProfileAction.ToggleActivitySubscription -> toggleActivitySubscription(action.activityId)
+        }
+    }
+
+    private fun toggleActivitySubscription(activityId: Int) {
+        val current = uiState.value.profile?.activities?.firstOrNull { it.id == activityId } ?: return
+        val next = !current.isSubscribed
+        activitySubscriptionOverrides.update { it + (activityId to next) }
+        viewModelScope.launch {
+            when (activityRepository.toggleSubscription(activityId, next)) {
+                is Result.Success -> Unit
+                is Result.Error -> {
+                    activitySubscriptionOverrides.update { it + (activityId to current.isSubscribed) }
+                }
+            }
         }
     }
 

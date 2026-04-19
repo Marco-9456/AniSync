@@ -37,9 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.profile.components.ActivityPreviewCard
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 
 /**
@@ -50,7 +52,9 @@ import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 fun RecentUpdatesSection(
     activities: List<UserActivity>,
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {},
+    onSubscribeClick: (Int) -> Unit = {}
 ) {
     Column(modifier = modifier) {
         SectionHeader(
@@ -64,7 +68,20 @@ fun RecentUpdatesSection(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             displayedActivities.forEach { activity ->
                 key(activity.id) {
-                    RecentUpdateCard(activity = activity, onUserClick = onUserClick)
+                    if (activity.type == ActivityType.MEDIA_LIST) {
+                        RecentUpdateCard(
+                            activity = activity,
+                            onUserClick = onUserClick,
+                            onActivityClick = onActivityClick
+                        )
+                    } else {
+                        ActivityPreviewCard(
+                            activity = activity,
+                            onClick = { onActivityClick(activity.id) },
+                            onSubscribeClick = { onSubscribeClick(activity.id) },
+                            onUserClick = onUserClick
+                        )
+                    }
                 }
             }
         }
@@ -78,14 +95,24 @@ fun RecentUpdatesSection(
 fun RecentUpdateCard(
     activity: UserActivity,
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {}
 ) {
     val cardShape = remember {
         RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
     }
 
+    val isMediaList = activity.type == com.anisync.android.domain.ActivityType.MEDIA_LIST
+    val clickableModifier = if (!isMediaList) {
+        Modifier.clickable { onActivityClick(activity.id) }
+    } else {
+        Modifier
+    }
+
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(clickableModifier),
         shape = cardShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 0.dp
@@ -240,8 +267,16 @@ fun RecentUpdateCard(
                     
                     if (activity.text != null) {
                         Spacer(modifier = Modifier.height(4.dp))
+                        val preview = remember(activity.text) {
+                            activity.text
+                                .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+                                .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n")
+                                .replace(Regex("<.*?>"), "")
+                                .replace(Regex("\\n+"), " ")
+                                .trim()
+                        }
                         Text(
-                            text = activity.text.replace(Regex("<.*?>"), ""),
+                            text = preview,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 3,

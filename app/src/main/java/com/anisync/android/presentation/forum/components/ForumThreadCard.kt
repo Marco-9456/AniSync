@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,11 +25,9 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -53,6 +52,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
+import com.anisync.android.presentation.components.CardLabelStrip
+import com.anisync.android.presentation.components.ChainedAuthorRow
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 
 private const val DEBUG_PERFORMANCE = false
 
@@ -118,22 +120,40 @@ private fun ForumThreadCardContent(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Top Row: Author Row + Action Icons
-            // This row spans the full width, untouched by the thumbnail
+            // Top label strip (PINNED / LOCKED)
+            if (thread.isSticky || thread.isLocked) {
+                CardLabelStrip(
+                    isPinned = thread.isSticky,
+                    isLocked = thread.isLocked
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Author row + action icons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                AuthorRow(
-                    name = thread.authorName,
-                    avatarUrl = thread.authorAvatarUrl,
-                    timestampSeconds = thread.createdAt,
-                    modifier = Modifier.weight(1f), // Constrains author row so it doesn't push icons off-screen
-                    onUserClick = onUserClick
+                val hasReply = thread.replyUserName != null && thread.repliedAt != null
+                val subtitle = remember(hasReply, thread.repliedAt, thread.createdAt) {
+                    if (hasReply) {
+                        "Thread OP \u2022 Reply ${formatRelativeTimeSeconds(thread.repliedAt!!)}"
+                    } else {
+                        formatRelativeTimeSeconds(thread.createdAt)
+                    }
+                }
+                ChainedAuthorRow(
+                    leadingAvatarUrl = thread.authorAvatarUrl,
+                    leadingName = thread.authorName,
+                    trailingAvatarUrl = thread.replyUserAvatarUrl,
+                    trailingName = thread.replyUserName,
+                    subtitle = subtitle,
+                    modifier = Modifier.weight(1f),
+                    onLeadingClick = onUserClick,
+                    onTrailingClick = onUserClick
                 )
 
-                // Action Icons Row
                 Row(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
@@ -161,86 +181,41 @@ private fun ForumThreadCardContent(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Middle Row: Title, Last Reply Info, and Image Thumbnail
+            // Title + body preview + thumbnail
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                // Title and Last Reply Column
-                Column(modifier = Modifier.weight(1f)) {
-                    // Title row with sticky/locked indicators
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        if (thread.isSticky) {
-                            Icon(
-                                imageVector = Icons.Filled.PushPin,
-                                contentDescription = "Pinned",
-                                modifier = Modifier
-                                    .padding(top = 2.dp, end = 6.dp)
-                                    .size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        if (thread.isLocked) {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = "Locked",
-                                modifier = Modifier
-                                    .padding(top = 2.dp, end = 6.dp)
-                                    .size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = thread.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                Text(
+                    text = thread.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
 
-                    // Last reply info (Only renders if data is present)
-                    if (thread.replyUserName != null && thread.repliedAt != null) {
-                        Spacer(Modifier.height(8.dp))
-                        AuthorRow(
-                            name = "Last reply by ${thread.replyUserName}",
-                            avatarUrl = thread.replyUserAvatarUrl,
-                            timestampSeconds = thread.repliedAt,
-                            avatarSize = 16.dp,
-                            modifier = Modifier.padding(start = if (thread.isSticky || thread.isLocked) 24.dp else 0.dp),
-                            onUserClick = { onUserClick(thread.replyUserName!!) }
-                        )
-                    }
-                }
-
-                // Media thumbnail
                 if (thread.mediaCoverUrl != null) {
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.width(12.dp))
                     AsyncImage(
                         model = thread.mediaCoverUrl,
                         contentDescription = thread.mediaTitle ?: "Linked media",
                         modifier = Modifier
-                            .size(width = 56.dp, height = 80.dp)
+                            .width(64.dp)
+                            .aspectRatio(230f / 326f)
                             .clip(RoundedCornerShape(8.dp))
-                            // Added a background color so it acts as a visible placeholder skeleton
-                            // before the image loads and inside Compose Previews.
                             .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Fit
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
 
-            // Bottom Row: Stats row & Categories
-            // This row also spans the full width now
+            // Bottom Row: Stats + Categories
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,

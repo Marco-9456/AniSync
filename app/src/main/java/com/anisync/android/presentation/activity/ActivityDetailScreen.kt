@@ -1,0 +1,687 @@
+package com.anisync.android.presentation.activity
+
+import android.content.Intent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.anisync.android.R
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.forum.FlatComment
+import com.anisync.android.presentation.forum.components.ContentStatsBar
+import com.anisync.android.presentation.forum.components.FoldedAncestorStrip
+import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
+import com.anisync.android.presentation.forum.components.ThreadBodyItem
+import com.anisync.android.presentation.forum.components.ThreadCommentItem
+import com.anisync.android.presentation.forum.components.shared.AuthorRow
+import com.anisync.android.presentation.forum.flattenComments
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+private const val INDENT_PER_LEVEL_DP = 32
+private const val MIN_CONTENT_WIDTH_DP = 200
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ActivityDetailScreen(
+    activityId: Int,
+    onBackClick: () -> Unit,
+    onUserClick: (String) -> Unit,
+    targetReplyId: Int? = null,
+    viewModel: ActivityDetailViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val replySheetState = rememberModalBottomSheetState()
+    val pullToRefreshState = rememberPullToRefreshState()
+    val context = LocalContext.current
+
+    var collapsedIds by rememberSaveable(
+        saver = listSaver<MutableState<Set<Int>>, Int>(
+            save = { it.value.toList() },
+            restore = { mutableStateOf(it.toHashSet()) }
+        )
+    ) { mutableStateOf(emptySet<Int>()) }
+
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val depthWindowSize = remember(screenWidthDp) {
+        ((screenWidthDp - MIN_CONTENT_WIDTH_DP) / INDENT_PER_LEVEL_DP).coerceIn(3, 12)
+    }
+
+    var drillDownStack by rememberSaveable(
+        saver = listSaver<MutableState<List<Int>>, Int>(
+            save = { it.value },
+            restore = { mutableStateOf(it.toList()) }
+        )
+    ) { mutableStateOf(emptyList<Int>()) }
+    var prevDrillDownSize by rememberSaveable { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
+
+    var showDeleteActivityDialog by remember { mutableStateOf(false) }
+    var showOverflow by remember { mutableStateOf(false) }
+
+    LaunchedEffect(activityId) {
+        viewModel.onAction(ActivityDetailAction.Load(activityId))
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.finishedEvents.collect { onBackClick() }
+    }
+
+    LaunchedEffect(uiState.scrollToBottom) {
+        if (uiState.scrollToBottom) {
+            val total = listState.layoutInfo.totalItemsCount
+            if (total > 0) listState.animateScrollToItem(total - 1)
+            viewModel.onAction(ActivityDetailAction.ConsumeScrollToBottom)
+        }
+    }
+
+    var flatComments by remember { mutableStateOf(emptyList<FlatComment>()) }
+    LaunchedEffect(uiState.replyNodes) {
+        withContext(Dispatchers.Default) {
+            flatComments = flattenComments(uiState.replyNodes)
+        }
+    }
+
+    val focusRootId = drillDownStack.lastOrNull()
+    val focusFlat = remember(flatComments, focusRootId) {
+        if (focusRootId == null) null
+        else flatComments.firstOrNull { it.comment.id == focusRootId }
+    }
+    val depthOffset = focusFlat?.depth ?: 0
+
+    val drillDownBreadcrumbs = remember(flatComments, drillDownStack) {
+        drillDownStack.mapNotNull { id ->
+            flatComments.firstOrNull { it.comment.id == id }?.comment
+        }
+    }
+
+    val visibleComments by remember {
+        derivedStateOf {
+            val collapsed = collapsedIds
+            val focusId = drillDownStack.lastOrNull()
+            flatComments.filter { flat ->
+                flat.ancestorIds.none { it in collapsed } &&
+                    (focusId == null || flat.comment.id == focusId || focusId in flat.ancestorIds)
+            }
+        }
+    }
+
+    LaunchedEffect(drillDownStack) {
+        val newSize = drillDownStack.size
+        val oldSize = prevDrillDownSize
+        prevDrillDownSize = newSize
+        if (newSize == oldSize) return@LaunchedEffect
+        kotlinx.coroutines.yield()
+        val headerCount = buildList {
+            add("activity_header_top")
+            if (uiState.parsedBody != null) add("activity_body")
+            add("activity_stats")
+            add("replies_header")
+            if (newSize > 0) add("drill_down_breadcrumb")
+        }.size
+        val targetScrollIndex = headerCount
+        val totalItems = listState.layoutInfo.totalItemsCount
+        if (targetScrollIndex < totalItems) listState.scrollToItem(targetScrollIndex)
+    }
+
+    val highlightAlpha = remember { Animatable(0f) }
+    var hasScrolledToTarget by remember { mutableStateOf(false) }
+
+    LaunchedEffect(visibleComments, targetReplyId) {
+        if (targetReplyId == null || hasScrolledToTarget || visibleComments.isEmpty()) return@LaunchedEffect
+        val targetFlat = flatComments.firstOrNull { it.comment.id == targetReplyId }
+        if (targetFlat != null && targetFlat.depth >= depthWindowSize) {
+            val chain = mutableListOf<Int>()
+            for (ancestorId in targetFlat.ancestorIds) {
+                val ancestor = flatComments.firstOrNull { it.comment.id == ancestorId } ?: continue
+                if (ancestor.depth > 0 && ancestor.depth % depthWindowSize == 0) {
+                    chain.add(ancestorId)
+                }
+            }
+            if (chain.isNotEmpty()) drillDownStack = chain
+        }
+        val targetIndex = visibleComments.indexOfFirst { it.comment.id == targetReplyId }
+        if (targetIndex >= 0) {
+            hasScrolledToTarget = true
+            val headerItems = if (drillDownStack.isEmpty()) 4 else 5
+            listState.scrollToItem(targetIndex + headerItems)
+            highlightAlpha.snapTo(1f)
+            highlightAlpha.animateTo(0f, animationSpec = tween(1500))
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.activity_detail_title),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    val siteUrl = uiState.activity?.siteUrl
+                    if (siteUrl != null) {
+                        IconButton(onClick = {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, siteUrl)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share"))
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    val activity = uiState.activity
+                    val viewerId = uiState.viewerId
+                    if (activity != null && viewerId != null && activity.authorId == viewerId) {
+                        Box {
+                            IconButton(onClick = { showOverflow = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOverflow,
+                                onDismissRequest = { showOverflow = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.delete)) },
+                                    onClick = {
+                                        showOverflow = false
+                                        showDeleteActivityDialog = true
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Delete, contentDescription = null)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            )
+        },
+        floatingActionButton = {
+            if (uiState.activity != null) {
+                Box(modifier = Modifier.navigationBarsPadding()) {
+                    FloatingActionButton(
+                        onClick = { viewModel.onAction(ActivityDetailAction.OpenReply(null, null)) },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.activity_detail_reply)
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            state = pullToRefreshState,
+            onRefresh = { viewModel.onAction(ActivityDetailAction.Refresh) },
+            indicator = {
+                CustomPullToRefreshIndicator(
+                    isRefreshing = uiState.isRefreshing,
+                    state = pullToRefreshState,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp)
+                )
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when {
+                uiState.isLoading && uiState.activity == null -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
+                }
+                uiState.errorMessage != null && uiState.activity == null -> {
+                    ErrorState(
+                        message = uiState.errorMessage!!,
+                        onRetry = { viewModel.onAction(ActivityDetailAction.Load(activityId)) }
+                    )
+                }
+                uiState.activity != null -> {
+                    val activity = uiState.activity!!
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        item(key = "activity_header_top") {
+                            ActivityHeaderBlock(
+                                authorName = activity.authorName,
+                                authorAvatarUrl = activity.authorAvatarUrl,
+                                createdAt = activity.createdAt,
+                                isMessage = activity.isMessage,
+                                isPrivate = activity.isPrivate,
+                                recipientName = activity.recipientName,
+                                recipientAvatarUrl = activity.recipientAvatarUrl,
+                                onUserClick = onUserClick,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        uiState.parsedBody?.let { body ->
+                            item(key = "activity_body") {
+                                ThreadBodyItem(
+                                    body = body,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        item(key = "activity_stats") {
+                            ContentStatsBar(
+                                replyCount = activity.replyCount,
+                                viewCount = null,
+                                likeCount = activity.likeCount,
+                                isLiked = activity.isLiked,
+                                onLikeClick = {
+                                    viewModel.onAction(ActivityDetailAction.ToggleActivityLike)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        item(key = "replies_header") {
+                            SectionHeader(
+                                title = stringResource(
+                                    R.string.activity_detail_replies,
+                                    activity.replyCount
+                                ),
+                                level = HeaderLevel.Section,
+                                padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+
+                        if (drillDownStack.isNotEmpty()) {
+                            item(key = "drill_down_breadcrumb") {
+                                FoldedAncestorStrip(
+                                    breadcrumbs = drillDownBreadcrumbs,
+                                    onNavigateBack = {
+                                        drillDownStack = drillDownStack.dropLast(1)
+                                    },
+                                    onNavigateToLevel = { index ->
+                                        drillDownStack = drillDownStack.take(index)
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        if (visibleComments.isEmpty()) {
+                            item(key = "empty_replies") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.activity_detail_no_replies),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = visibleComments,
+                                key = { _, c -> "reply_${c.comment.id}" },
+                                contentType = { _, _ -> "Reply" }
+                            ) { _, flat ->
+                                val isTarget = targetReplyId != null && flat.comment.id == targetReplyId
+                                val highlightColor = if (isTarget) {
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = highlightAlpha.value * 0.5f)
+                                } else Color.Transparent
+
+                                val rebasedDepth = flat.depth - depthOffset
+                                val isAtMaxDepth = rebasedDepth >= depthWindowSize - 1
+                                val canDrillDown = isAtMaxDepth && flat.descendantCount > 0
+                                val isOwnReply = uiState.viewerId != null &&
+                                    flat.comment.authorId == uiState.viewerId
+
+                                ThreadCommentItem(
+                                    comment = flat.comment,
+                                    isCollapsed = collapsedIds.contains(flat.comment.id),
+                                    onToggleCollapse = {
+                                        collapsedIds = if (collapsedIds.contains(flat.comment.id)) {
+                                            collapsedIds - flat.comment.id
+                                        } else {
+                                            collapsedIds + flat.comment.id
+                                        }
+                                    },
+                                    descendantCount = flat.descendantCount,
+                                    onLikeClick = { commentId, _ ->
+                                        viewModel.onAction(ActivityDetailAction.ToggleReplyLike(commentId))
+                                    },
+                                    onReplyClick = { commentId, authorName ->
+                                        viewModel.onAction(
+                                            ActivityDetailAction.OpenReply(commentId, authorName)
+                                        )
+                                    },
+                                    threadAuthorId = activity.authorId,
+                                    depth = flat.depth,
+                                    depthOffset = depthOffset,
+                                    maxVisualDepth = depthWindowSize,
+                                    onDrillDown = if (canDrillDown) {
+                                        { drillDownStack = drillDownStack + flat.comment.id }
+                                    } else null,
+                                    onUserClick = onUserClick,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(highlightColor),
+                                    actionSlot = {
+                                        if (isOwnReply) {
+                                            ReplyOverflowMenu(
+                                                onDelete = {
+                                                    viewModel.onAction(
+                                                        ActivityDetailAction.DeleteReply(flat.comment.id)
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        item(key = "bottom_spacer") {
+                            Spacer(modifier = Modifier.height(96.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (uiState.isReplySheetVisible) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.onAction(ActivityDetailAction.CloseReply) },
+            sheetState = replySheetState
+        ) {
+            ReplyBottomSheetContent(
+                replyingToAuthor = uiState.replyingToAuthor,
+                isSubmitting = uiState.isSubmittingReply,
+                onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
+                onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
+                prefillBody = uiState.replyPrefillBody
+            )
+        }
+    }
+
+    if (showDeleteActivityDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteActivityDialog = false },
+            title = { Text(stringResource(R.string.activity_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.activity_delete_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteActivityDialog = false
+                    viewModel.onAction(ActivityDetailAction.DeleteActivity)
+                }) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteActivityDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ActivityHeaderBlock(
+    authorName: String,
+    authorAvatarUrl: String?,
+    createdAt: Long,
+    isMessage: Boolean,
+    isPrivate: Boolean,
+    recipientName: String?,
+    recipientAvatarUrl: String?,
+    onUserClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(top = 24.dp, start = 20.dp, end = 20.dp, bottom = 8.dp)
+        ) {
+            if (isMessage && recipientName != null) {
+                MessageActivityHeader(
+                    authorName = authorName,
+                    authorAvatarUrl = authorAvatarUrl,
+                    recipientName = recipientName,
+                    recipientAvatarUrl = recipientAvatarUrl,
+                    createdAt = createdAt,
+                    isPrivate = isPrivate,
+                    onUserClick = onUserClick
+                )
+            } else {
+                AuthorRow(
+                    name = authorName,
+                    avatarUrl = authorAvatarUrl,
+                    timestampSeconds = createdAt,
+                    avatarSize = 44.dp,
+                    onUserClick = onUserClick
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun MessageActivityHeader(
+    authorName: String,
+    authorAvatarUrl: String?,
+    recipientName: String,
+    recipientAvatarUrl: String?,
+    createdAt: Long,
+    isPrivate: Boolean,
+    onUserClick: (String) -> Unit
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            HeaderAvatar(url = authorAvatarUrl, name = authorName, onClick = { onUserClick(authorName) })
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HeaderAvatar(url = recipientAvatarUrl, name = recipientName, onClick = { onUserClick(recipientName) })
+            if (isPrivate) {
+                Spacer(Modifier.size(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = stringResource(R.string.activity_detail_private),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.activity_detail_wrote_to, authorName, recipientName),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = com.anisync.android.presentation.profile.util.formatProfileRelativeTime(createdAt * 1000L),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.outline
+        )
+    }
+}
+
+@Composable
+private fun HeaderAvatar(url: String?, name: String, onClick: () -> Unit) {
+    if (url != null) {
+        AsyncImage(
+            model = url,
+            contentDescription = name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .clickable { onClick() }
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = name.firstOrNull()?.uppercase() ?: "?",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReplyOverflowMenu(onDelete: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.more_options),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = {
+                    expanded = false
+                    onDelete()
+                },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
+            )
+        }
+    }
+}

@@ -181,8 +181,14 @@ fragment ActivityFields on ActivityUnion {
   ... on TextActivity {
     id
     type
-    text
+    text(asHtml: true)
     createdAt
+    likeCount
+    replyCount
+    isLiked
+    isLocked
+    isSubscribed
+    isPinned
     user {
       id
       name
@@ -194,8 +200,14 @@ fragment ActivityFields on ActivityUnion {
   ... on MessageActivity {
     id
     type
-    message
+    message(asHtml: true)
     createdAt
+    likeCount
+    replyCount
+    isLiked
+    isPrivate
+    isLocked
+    isSubscribed
     messenger {
       id
       name
@@ -206,6 +218,9 @@ fragment ActivityFields on ActivityUnion {
     recipient {
       id
       name
+      avatar {
+        medium
+      }
     }
   }
 }

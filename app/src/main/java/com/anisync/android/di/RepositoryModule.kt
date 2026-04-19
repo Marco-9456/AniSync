@@ -1,5 +1,6 @@
 package com.anisync.android.di
 
+import com.anisync.android.data.ActivityRepositoryImpl
 import com.anisync.android.data.DetailsRepositoryImpl
 import com.anisync.android.data.DiscoverRepositoryImpl
 import com.anisync.android.data.ForumRepositoryImpl
@@ -10,6 +11,7 @@ import com.anisync.android.data.ProfileRepositoryImpl
 import com.anisync.android.data.SearchRepositoryImpl
 import com.anisync.android.data.StatisticsRepositoryImpl
 import com.anisync.android.data.repository.PreferencesRepositoryImpl
+import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.ForumRepository
@@ -78,4 +80,9 @@ abstract class RepositoryModule {
     abstract fun bindLinkPreviewProvider(
         impl: LinkPreviewProviderImpl
     ): LinkPreviewProvider
+
+    @Binds
+    abstract fun bindActivityRepository(
+        impl: ActivityRepositoryImpl
+    ): ActivityRepository
 }

@@ -1,0 +1,155 @@
+query GetActivity($id: Int!) {
+  Activity(id: $id) {
+    __typename
+    ... on TextActivity {
+      id
+      userId
+      text(asHtml: true)
+      createdAt
+      likeCount
+      isLiked
+      replyCount
+      siteUrl
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      replies {
+        id
+        userId
+        activityId
+        text(asHtml: true)
+        likeCount
+        isLiked
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+    }
+    ... on MessageActivity {
+      id
+      recipientId
+      messengerId
+      message(asHtml: true)
+      createdAt
+      likeCount
+      isLiked
+      replyCount
+      isPrivate
+      siteUrl
+      messenger {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      recipient {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      replies {
+        id
+        userId
+        activityId
+        text(asHtml: true)
+        likeCount
+        isLiked
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation SaveActivityReply($activityId: Int!, $text: String!) {
+  SaveActivityReply(activityId: $activityId, text: $text) {
+    id
+    activityId
+    text(asHtml: true)
+    createdAt
+    likeCount
+    isLiked
+    user {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+  }
+}
+
+mutation ToggleActivityLike($id: Int!) {
+  ToggleLikeV2(id: $id, type: ACTIVITY) {
+    __typename
+    ... on TextActivity {
+      id
+      likeCount
+      isLiked
+    }
+    ... on MessageActivity {
+      id
+      likeCount
+      isLiked
+    }
+  }
+}
+
+mutation ToggleActivityReplyLike($id: Int!) {
+  ToggleLikeV2(id: $id, type: ACTIVITY_REPLY) {
+    __typename
+    ... on ActivityReply {
+      id
+      likeCount
+      isLiked
+    }
+  }
+}
+
+mutation DeleteActivity($id: Int!) {
+  DeleteActivity(id: $id) {
+    deleted
+  }
+}
+
+mutation DeleteActivityReply($id: Int!) {
+  DeleteActivityReply(id: $id) {
+    deleted
+  }
+}
+
+mutation ToggleActivitySubscription($activityId: Int!, $subscribe: Boolean!) {
+  ToggleActivitySubscription(activityId: $activityId, subscribe: $subscribe) {
+    __typename
+    ... on TextActivity {
+      id
+      isSubscribed
+    }
+    ... on MessageActivity {
+      id
+      isSubscribed
+    }
+    ... on ListActivity {
+      id
+      isSubscribed
+    }
+  }
+}
