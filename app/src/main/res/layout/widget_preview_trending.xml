@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_preview_bg"
+    android:backgroundTint="#262A36"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -13,11 +14,20 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/local_fire_department_24px"
-            android:tint="#D0BCFF" />
+        <!-- Icon with rounded square background -->
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_preview_poster_bg"
+            android:backgroundTint="#B8CFFF">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/local_fire_department_24px"
+                android:tint="#002D6D" />
+        </FrameLayout>
 
         <TextView
             android:layout_width="0dp"
@@ -25,9 +35,24 @@
             android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="Trending Now"
-            android:textColor="#E6E1E5"
-            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
             android:textStyle="bold" />
+
+        <!-- Search Button Background -->
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_preview_poster_bg"
+            android:backgroundTint="#3E4354">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_search_24px"
+                android:tint="#FFFFFF" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- Card 1 -->
@@ -36,37 +61,69 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:background="@drawable/widget_preview_card_bg"
+        android:backgroundTint="#1C1F28"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <ImageView
-            android:layout_width="56dp"
-            android:layout_height="80dp"
-            android:background="@drawable/widget_preview_poster_bg"
-            android:contentDescription="@null" />
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="72dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/widget_preview_poster_bg"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_preview_pill_bg"
+                android:backgroundTint="#B8CFFF"
+                android:layout_margin="0dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="#1"
+                android:textColor="#002D6D"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Shrouding the Heavens"
-                android:textColor="#E6E1E5"
-                android:textSize="16sp"
+                android:text="One Piece"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="98% Score"
-                android:textColor="#CAC4D0"
-                android:textSize="14sp" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="★ "
+                    android:textColor="#B8CFFF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="87% Score"
+                    android:textColor="#CAC4D0"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
@@ -76,37 +133,69 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:background="@drawable/widget_preview_card_bg"
+        android:backgroundTint="#1C1F28"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <ImageView
-            android:layout_width="56dp"
-            android:layout_height="80dp"
-            android:background="@drawable/widget_preview_poster_bg"
-            android:contentDescription="@null" />
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="72dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/widget_preview_poster_bg"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_preview_pill_bg"
+                android:backgroundTint="#B8CFFF"
+                android:layout_margin="0dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="#2"
+                android:textColor="#002D6D"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Solo Leveling"
-                android:textColor="#E6E1E5"
-                android:textSize="16sp"
+                android:text="Frieren: Beyond\nJourney's End Season 2"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="95% Score"
-                android:textColor="#CAC4D0"
-                android:textSize="14sp" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="★ "
+                    android:textColor="#B8CFFF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="88% Score"
+                    android:textColor="#CAC4D0"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

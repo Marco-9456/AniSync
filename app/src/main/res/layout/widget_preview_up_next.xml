@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_preview_bg"
+    android:backgroundTint="#262A36"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -13,11 +14,20 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/calendar_view_week_24px"
-            android:tint="#D0BCFF" />
+        <!-- Icon with rounded square background -->
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_preview_poster_bg"
+            android:backgroundTint="#B8CFFF">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/calendar_view_week_24px"
+                android:tint="#002D6D" />
+        </FrameLayout>
 
         <TextView
             android:layout_width="0dp"
@@ -25,8 +35,8 @@
             android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="Up Next"
-            android:textColor="#E6E1E5"
-            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -36,37 +46,65 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:background="@drawable/widget_preview_card_bg"
+        android:backgroundTint="#1C1F28"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="12dp">
 
         <ImageView
-            android:layout_width="56dp"
-            android:layout_height="80dp"
+            android:layout_width="48dp"
+            android:layout_height="72dp"
             android:background="@drawable/widget_preview_poster_bg"
             android:contentDescription="@null" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Jujutsu Kaisen"
-                android:textColor="#E6E1E5"
-                android:textSize="16sp"
+                android:text="Dr. STONE SCIENCE\nFUTURE Cour 3"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Ep 12 • In 2h 30m"
-                android:textColor="#CAC4D0"
-                android:textSize="14sp" />
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <!-- Episode Pill -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/widget_preview_pill_bg"
+                    android:backgroundTint="#5B407C"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:text="EPISODE 3"
+                    android:textColor="#EEDCFF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="true" />
+
+                <!-- Time Remaining Pill -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/widget_preview_pill_bg"
+                    android:backgroundTint="#004A77"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:text="In 14h 27m"
+                    android:textColor="#C2D7FF"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
