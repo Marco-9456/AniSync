@@ -91,9 +91,17 @@ class SettingsViewModel @Inject constructor(
                 notificationPreferences.threadCommentLikeEnabled
             ) { commentReply, subscribed, commentMention, threadLike, commentLike ->
                 listOf(commentReply, subscribed, commentMention, threadLike, commentLike)
+            },
+            combine(
+                notificationPreferences.activityReplyEnabled,
+                notificationPreferences.activityMentionEnabled,
+                notificationPreferences.activityLikeEnabled,
+                notificationPreferences.activityMessageEnabled
+            ) { reply, mention, like, message ->
+                listOf(reply, mention, like, message)
             }
-        ) { airing, forum ->
-            airing + forum
+        ) { airing, forum, activity ->
+            airing + forum + activity
         },
         combine(
             appSettings.autoUpdateEnabled,
@@ -128,6 +136,10 @@ class SettingsViewModel @Inject constructor(
             threadCommentMentionEnabled = notifications[6] as Boolean,
             threadLikeEnabled = notifications[7] as Boolean,
             threadCommentLikeEnabled = notifications[8] as Boolean,
+            activityReplyEnabled = notifications[9] as Boolean,
+            activityMentionEnabled = notifications[10] as Boolean,
+            activityLikeEnabled = notifications[11] as Boolean,
+            activityMessageEnabled = notifications[12] as Boolean,
             isAutoUpdateEnabled = autoUpdate,
             isPrereleaseAllowed = prerelease,
             cacheSize = cacheSize as String,
@@ -187,6 +199,22 @@ class SettingsViewModel @Inject constructor(
             )
 
             is SettingsAction.SetThreadCommentLikeEnabled -> notificationPreferences.setThreadCommentLikeEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetActivityReplyEnabled -> notificationPreferences.setActivityReplyEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetActivityMentionEnabled -> notificationPreferences.setActivityMentionEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetActivityLikeEnabled -> notificationPreferences.setActivityLikeEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetActivityMessageEnabled -> notificationPreferences.setActivityMessageEnabled(
                 action.enabled
             )
 

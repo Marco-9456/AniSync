@@ -34,6 +34,7 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
       ... on ActivityLikeNotification {
         id
         type
+        activityId
         context
         createdAt
         user {
@@ -47,6 +48,63 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
       ... on ActivityReplyNotification {
         id
         type
+        activityId
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+      ... on ActivityReplySubscribedNotification {
+        id
+        type
+        activityId
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+      ... on ActivityReplyLikeNotification {
+        id
+        type
+        activityId
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+      ... on ActivityMentionNotification {
+        id
+        type
+        activityId
+        context
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+      ... on ActivityMessageNotification {
+        id
+        type
+        activityId
         context
         createdAt
         user {

@@ -19,6 +19,12 @@ import coil.request.SuccessResult
 import com.anisync.android.R
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.domain.ActivityLikeNotification
+import com.anisync.android.domain.ActivityMentionNotification
+import com.anisync.android.domain.ActivityMessageNotification
+import com.anisync.android.domain.ActivityReplyLikeNotification
+import com.anisync.android.domain.ActivityReplyNotification
+import com.anisync.android.domain.ActivityReplySubscribedNotification
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.AiringSchedule
 import com.anisync.android.domain.LibraryStatus
@@ -104,17 +110,21 @@ class NotificationWorker @AssistedInject constructor(
                     Log.d(TAG, "Skipping planning notifications - disabled by user")
                 }
 
-                // Social/Forum notifications — check if ANY forum type is enabled
-                val anyForumEnabled = notificationPreferences.threadCommentReplyEnabled.value ||
+                // Social/Forum notifications — check if ANY forum or activity type is enabled
+                val anySocialEnabled = notificationPreferences.threadCommentReplyEnabled.value ||
                     notificationPreferences.threadSubscribedEnabled.value ||
                     notificationPreferences.threadCommentMentionEnabled.value ||
                     notificationPreferences.threadLikeEnabled.value ||
-                    notificationPreferences.threadCommentLikeEnabled.value
+                    notificationPreferences.threadCommentLikeEnabled.value ||
+                    notificationPreferences.activityReplyEnabled.value ||
+                    notificationPreferences.activityMentionEnabled.value ||
+                    notificationPreferences.activityLikeEnabled.value ||
+                    notificationPreferences.activityMessageEnabled.value
 
-                if (anyForumEnabled) {
+                if (anySocialEnabled) {
                     checkSocialNotifications()
                 } else {
-                    Log.d(TAG, "Skipping social notifications - all forum types disabled")
+                    Log.d(TAG, "Skipping social notifications - all forum/activity types disabled")
                 }
             }
 
@@ -166,7 +176,7 @@ class NotificationWorker @AssistedInject constructor(
                 Log.d(TAG, "Baseline: Set lastNotifiedId to $latestAiringId")
             }
             val latestSocialId = allNotifications
-                .filter { it is ThreadCommentReplyNotification || it is ThreadCommentSubscribedNotification || it is ThreadCommentMentionNotification || it is ThreadLikeNotification || it is ThreadCommentLikeNotification }
+                .filter { isSocialNotification(it) }
                 .maxOfOrNull { it.id } ?: 0
             if (latestSocialId > 0) {
                 preferencesRepository.setLastSocialNotifiedId(latestSocialId)
@@ -329,6 +339,12 @@ class NotificationWorker @AssistedInject constructor(
                     is ThreadCommentMentionNotification -> notificationPreferences.threadCommentMentionEnabled.value
                     is ThreadLikeNotification -> notificationPreferences.threadLikeEnabled.value
                     is ThreadCommentLikeNotification -> notificationPreferences.threadCommentLikeEnabled.value
+                    is ActivityReplyNotification,
+                    is ActivityReplySubscribedNotification -> notificationPreferences.activityReplyEnabled.value
+                    is ActivityMentionNotification -> notificationPreferences.activityMentionEnabled.value
+                    is ActivityLikeNotification,
+                    is ActivityReplyLikeNotification -> notificationPreferences.activityLikeEnabled.value
+                    is ActivityMessageNotification -> notificationPreferences.activityMessageEnabled.value
                     else -> false
                 }
                 if (shouldNotify) {
@@ -347,7 +363,13 @@ class NotificationWorker @AssistedInject constructor(
             notification is ThreadCommentSubscribedNotification ||
             notification is ThreadCommentMentionNotification ||
             notification is ThreadLikeNotification ||
-            notification is ThreadCommentLikeNotification
+            notification is ThreadCommentLikeNotification ||
+            notification is ActivityReplyNotification ||
+            notification is ActivityReplySubscribedNotification ||
+            notification is ActivityMentionNotification ||
+            notification is ActivityLikeNotification ||
+            notification is ActivityReplyLikeNotification ||
+            notification is ActivityMessageNotification
     }
 
     /**
@@ -405,14 +427,69 @@ class NotificationWorker @AssistedInject constructor(
                     commentId = notification.commentId
                 )
             }
+            is ActivityReplyNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "💬 Activity reply",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
+                    activityId = notification.activityId
+                )
+            }
+            is ActivityReplySubscribedNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "🔔 Activity update",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
+                    activityId = notification.activityId
+                )
+            }
+            is ActivityMentionNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "📢 Mentioned in activity",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.ACTIVITY_MENTION_CHANNEL_ID,
+                    activityId = notification.activityId
+                )
+            }
+            is ActivityLikeNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "❤️ Activity liked",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
+                    activityId = notification.activityId
+                )
+            }
+            is ActivityReplyLikeNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "❤️ Reply liked",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
+                    activityId = notification.activityId
+                )
+            }
+            is ActivityMessageNotification -> {
+                val userName = notification.user?.name ?: "Someone"
+                SocialNotificationData(
+                    title = "✉️ New message",
+                    content = "$userName ${notification.context}",
+                    channelId = NotificationChannels.ACTIVITY_MESSAGE_CHANNEL_ID,
+                    activityId = notification.activityId
+                )
+            }
             else -> return
         }
 
         val notificationId = SOCIAL_NOTIFICATION_BASE_ID + notification.id
-        val deepLinkUri = if (data.commentId != null) {
-            "anisync://forum/thread/${data.threadId}?commentId=${data.commentId}"
-        } else {
-            "anisync://forum/thread/${data.threadId}"
+        val deepLinkUri = when {
+            data.activityId != null -> "anisync://activity/${data.activityId}"
+            data.commentId != null -> "anisync://forum/thread/${data.threadId}?commentId=${data.commentId}"
+            data.threadId != null -> "anisync://forum/thread/${data.threadId}"
+            else -> "anisync://details/0"
         }
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUri))
         val pendingIntent = PendingIntent.getActivity(
@@ -428,6 +505,12 @@ class NotificationWorker @AssistedInject constructor(
             is ThreadCommentMentionNotification -> notification.user?.avatarUrl
             is ThreadLikeNotification -> notification.user?.avatarUrl
             is ThreadCommentLikeNotification -> notification.user?.avatarUrl
+            is ActivityReplyNotification -> notification.user?.avatarUrl
+            is ActivityReplySubscribedNotification -> notification.user?.avatarUrl
+            is ActivityMentionNotification -> notification.user?.avatarUrl
+            is ActivityLikeNotification -> notification.user?.avatarUrl
+            is ActivityReplyLikeNotification -> notification.user?.avatarUrl
+            is ActivityMessageNotification -> notification.user?.avatarUrl
             else -> null
         }?.let { loadImage(it) }
 
@@ -452,8 +535,9 @@ class NotificationWorker @AssistedInject constructor(
         val title: String,
         val content: String,
         val channelId: String,
-        val threadId: Int,
-        val commentId: Int?
+        val threadId: Int? = null,
+        val commentId: Int? = null,
+        val activityId: Int? = null
     )
 
     /**

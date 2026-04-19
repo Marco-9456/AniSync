@@ -220,6 +220,7 @@
     <string name="notification_thread_comment_like_desc">When someone likes your comment</string>
     <string name="notification_group_airing">Airing</string>
     <string name="notification_group_forum">Forum</string>
+    <string name="notification_group_activity">Activity</string>
     <string name="notification_channel_watching">Watching List</string>
     <string name="notification_channel_watching_desc">New episodes for shows you\'re watching</string>
     <string name="notification_channel_planning">Planning List</string>
@@ -611,4 +612,20 @@
     <string name="message_composer_send">Send</string>
     <string name="message_composer_sent">Message sent</string>
     <string name="message_composer_char_count">%1$d / %2$d</string>
+
+    <!-- Notification Channels -->
+    <string name="notification_channel_activity_name">Social activity</string>
+    <string name="notification_channel_activity_description">Messages, replies, mentions and likes</string>
+    <string name="notification_channel_activity_reply">Activity Replies</string>
+    <string name="notification_channel_activity_reply_desc">When someone replies to your activity</string>
+    <string name="notification_channel_activity_mention">Activity Mentions</string>
+    <string name="notification_channel_activity_mention_desc">When someone mentions you in an activity</string>
+    <string name="notification_channel_activity_like">Activity Likes</string>
+    <string name="notification_channel_activity_like_desc">When someone likes your activity or reply</string>
+    <string name="notification_channel_activity_message">Direct Messages</string>
+    <string name="notification_channel_activity_message_desc">When someone sends you a direct message</string>
+    <string name="notification_activity_replies">Activity replies</string>
+    <string name="notification_activity_mentions">Activity mentions</string>
+    <string name="notification_activity_likes">Activity likes</string>
+    <string name="notification_activity_messages">Direct messages</string>
 </resources>

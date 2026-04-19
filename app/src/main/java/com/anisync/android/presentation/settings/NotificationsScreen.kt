@@ -72,6 +72,10 @@ fun NotificationsScreen(
     val threadCommentMentionEnabled = uiState.threadCommentMentionEnabled
     val threadLikeEnabled = uiState.threadLikeEnabled
     val threadCommentLikeEnabled = uiState.threadCommentLikeEnabled
+    val activityReplyEnabled = uiState.activityReplyEnabled
+    val activityMentionEnabled = uiState.activityMentionEnabled
+    val activityLikeEnabled = uiState.activityLikeEnabled
+    val activityMessageEnabled = uiState.activityMessageEnabled
 
     // Track actual system permission status
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
@@ -279,6 +283,42 @@ fun NotificationsScreen(
                         description = stringResource(R.string.notification_thread_comment_like_desc),
                         isEnabled = threadCommentLikeEnabled,
                         onToggle = { viewModel.onAction(SettingsAction.SetThreadCommentLikeEnabled(it)) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                NotificationGroupHeader(
+                    title = stringResource(R.string.notification_group_activity)
+                )
+
+                SettingsGroup {
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_channel_activity_reply),
+                        description = stringResource(R.string.notification_channel_activity_reply_desc),
+                        isEnabled = activityReplyEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetActivityReplyEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_channel_activity_mention),
+                        description = stringResource(R.string.notification_channel_activity_mention_desc),
+                        isEnabled = activityMentionEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetActivityMentionEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_channel_activity_like),
+                        description = stringResource(R.string.notification_channel_activity_like_desc),
+                        isEnabled = activityLikeEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetActivityLikeEnabled(it)) }
+                    )
+                    SettingsDivider(startPadding = 20.dp)
+                    NotificationTypeItem(
+                        title = stringResource(R.string.notification_channel_activity_message),
+                        description = stringResource(R.string.notification_channel_activity_message_desc),
+                        isEnabled = activityMessageEnabled,
+                        onToggle = { viewModel.onAction(SettingsAction.SetActivityMessageEnabled(it)) }
                     )
                 }
             }

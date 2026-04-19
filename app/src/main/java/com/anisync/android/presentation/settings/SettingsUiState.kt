@@ -28,6 +28,10 @@ sealed interface SettingsAction {
     data class SetThreadCommentMentionEnabled(val enabled: Boolean) : SettingsAction
     data class SetThreadLikeEnabled(val enabled: Boolean) : SettingsAction
     data class SetThreadCommentLikeEnabled(val enabled: Boolean) : SettingsAction
+    data class SetActivityReplyEnabled(val enabled: Boolean) : SettingsAction
+    data class SetActivityMentionEnabled(val enabled: Boolean) : SettingsAction
+    data class SetActivityLikeEnabled(val enabled: Boolean) : SettingsAction
+    data class SetActivityMessageEnabled(val enabled: Boolean) : SettingsAction
     
     data class SetAutoUpdateEnabled(val enabled: Boolean) : SettingsAction
     data class SetPrereleaseAllowed(val allowed: Boolean) : SettingsAction
@@ -79,6 +83,10 @@ data class SettingsUiState(
     val threadCommentMentionEnabled: Boolean = true,
     val threadLikeEnabled: Boolean = true,
     val threadCommentLikeEnabled: Boolean = true,
+    val activityReplyEnabled: Boolean = true,
+    val activityMentionEnabled: Boolean = true,
+    val activityLikeEnabled: Boolean = true,
+    val activityMessageEnabled: Boolean = true,
     
     // Storage
     val cacheSize: String = "0 B",

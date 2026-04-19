@@ -5,7 +5,11 @@ import com.anisync.android.GetPlanningFirstEpisodesQuery
 import com.anisync.android.GetPlanningUpcomingEpisodesQuery
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityLikeNotification
+import com.anisync.android.domain.ActivityMentionNotification
+import com.anisync.android.domain.ActivityMessageNotification
+import com.anisync.android.domain.ActivityReplyLikeNotification
 import com.anisync.android.domain.ActivityReplyNotification
+import com.anisync.android.domain.ActivityReplySubscribedNotification
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.AiringSchedule
 import com.anisync.android.domain.FollowingNotification
@@ -90,7 +94,8 @@ class NotificationRepositoryImpl @Inject constructor(
                             type = data.type ?: NotificationType.ACTIVITY_LIKE,
                             createdAt = data.createdAt ?: 0,
                             context = data.context ?: "",
-                             user = data.user?.let { user ->
+                            activityId = data.activityId,
+                            user = data.user?.let { user ->
                                 User(
                                     id = user.id ?: 0,
                                     name = user.name ?: "Unknown",
@@ -99,14 +104,83 @@ class NotificationRepositoryImpl @Inject constructor(
                             }
                         )
                     }
-                     notification.onActivityReplyNotification != null -> {
+                    notification.onActivityReplyNotification != null -> {
                         val data = notification.onActivityReplyNotification!!
                         ActivityReplyNotification(
                             id = data.id ?: 0,
                             type = data.type ?: NotificationType.ACTIVITY_REPLY,
                             createdAt = data.createdAt ?: 0,
                             context = data.context ?: "",
-                             user = data.user?.let { user ->
+                            activityId = data.activityId,
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            }
+                        )
+                    }
+                    notification.onActivityReplySubscribedNotification != null -> {
+                        val data = notification.onActivityReplySubscribedNotification!!
+                        ActivityReplySubscribedNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.ACTIVITY_REPLY_SUBSCRIBED,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            activityId = data.activityId,
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            }
+                        )
+                    }
+                    notification.onActivityReplyLikeNotification != null -> {
+                        val data = notification.onActivityReplyLikeNotification!!
+                        ActivityReplyLikeNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.ACTIVITY_REPLY_LIKE,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            activityId = data.activityId,
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            }
+                        )
+                    }
+                    notification.onActivityMentionNotification != null -> {
+                        val data = notification.onActivityMentionNotification!!
+                        ActivityMentionNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.ACTIVITY_MENTION,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            activityId = data.activityId,
+                            user = data.user?.let { user ->
+                                User(
+                                    id = user.id ?: 0,
+                                    name = user.name ?: "Unknown",
+                                    avatarUrl = user.avatar?.large
+                                )
+                            }
+                        )
+                    }
+                    notification.onActivityMessageNotification != null -> {
+                        val data = notification.onActivityMessageNotification!!
+                        ActivityMessageNotification(
+                            id = data.id ?: 0,
+                            type = data.type ?: NotificationType.ACTIVITY_MESSAGE,
+                            createdAt = data.createdAt ?: 0,
+                            context = data.context ?: "",
+                            activityId = data.activityId,
+                            user = data.user?.let { user ->
                                 User(
                                     id = user.id ?: 0,
                                     name = user.name ?: "Unknown",

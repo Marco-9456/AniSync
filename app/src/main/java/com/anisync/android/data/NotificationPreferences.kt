@@ -52,6 +52,22 @@ class NotificationPreferences @Inject constructor(
     private val _threadCommentLikeEnabled = MutableStateFlow(prefs.getBoolean(KEY_THREAD_COMMENT_LIKE_ENABLED, true))
     val threadCommentLikeEnabled: StateFlow<Boolean> = _threadCommentLikeEnabled.asStateFlow()
 
+    // Activity - replies to your status / subscribed replies
+    private val _activityReplyEnabled = MutableStateFlow(prefs.getBoolean(KEY_ACTIVITY_REPLY_ENABLED, true))
+    val activityReplyEnabled: StateFlow<Boolean> = _activityReplyEnabled.asStateFlow()
+
+    // Activity - @mentions inside an activity
+    private val _activityMentionEnabled = MutableStateFlow(prefs.getBoolean(KEY_ACTIVITY_MENTION_ENABLED, true))
+    val activityMentionEnabled: StateFlow<Boolean> = _activityMentionEnabled.asStateFlow()
+
+    // Activity - likes on your activity / reply
+    private val _activityLikeEnabled = MutableStateFlow(prefs.getBoolean(KEY_ACTIVITY_LIKE_ENABLED, true))
+    val activityLikeEnabled: StateFlow<Boolean> = _activityLikeEnabled.asStateFlow()
+
+    // Activity - direct messages
+    private val _activityMessageEnabled = MutableStateFlow(prefs.getBoolean(KEY_ACTIVITY_MESSAGE_ENABLED, true))
+    val activityMessageEnabled: StateFlow<Boolean> = _activityMessageEnabled.asStateFlow()
+
     fun setWatchingEnabled(enabled: Boolean) {
         _watchingEnabled.value = enabled
         prefs.edit().putBoolean(KEY_WATCHING_ENABLED, enabled).apply()
@@ -92,6 +108,26 @@ class NotificationPreferences @Inject constructor(
         prefs.edit().putBoolean(KEY_THREAD_COMMENT_LIKE_ENABLED, enabled).apply()
     }
 
+    fun setActivityReplyEnabled(enabled: Boolean) {
+        _activityReplyEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_ACTIVITY_REPLY_ENABLED, enabled).apply()
+    }
+
+    fun setActivityMentionEnabled(enabled: Boolean) {
+        _activityMentionEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_ACTIVITY_MENTION_ENABLED, enabled).apply()
+    }
+
+    fun setActivityLikeEnabled(enabled: Boolean) {
+        _activityLikeEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_ACTIVITY_LIKE_ENABLED, enabled).apply()
+    }
+
+    fun setActivityMessageEnabled(enabled: Boolean) {
+        _activityMessageEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_ACTIVITY_MESSAGE_ENABLED, enabled).apply()
+    }
+
     /**
      * Reset all notification preferences to default (all enabled).
      */
@@ -104,6 +140,10 @@ class NotificationPreferences @Inject constructor(
         setThreadCommentMentionEnabled(true)
         setThreadLikeEnabled(true)
         setThreadCommentLikeEnabled(true)
+        setActivityReplyEnabled(true)
+        setActivityMentionEnabled(true)
+        setActivityLikeEnabled(true)
+        setActivityMessageEnabled(true)
     }
 
     companion object {
@@ -116,5 +156,9 @@ class NotificationPreferences @Inject constructor(
         private const val KEY_THREAD_COMMENT_MENTION_ENABLED = "thread_comment_mention_enabled"
         private const val KEY_THREAD_LIKE_ENABLED = "thread_like_enabled"
         private const val KEY_THREAD_COMMENT_LIKE_ENABLED = "thread_comment_like_enabled"
+        private const val KEY_ACTIVITY_REPLY_ENABLED = "activity_reply_enabled"
+        private const val KEY_ACTIVITY_MENTION_ENABLED = "activity_mention_enabled"
+        private const val KEY_ACTIVITY_LIKE_ENABLED = "activity_like_enabled"
+        private const val KEY_ACTIVITY_MESSAGE_ENABLED = "activity_message_enabled"
     }
 }

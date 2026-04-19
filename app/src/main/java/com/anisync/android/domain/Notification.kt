@@ -31,7 +31,7 @@ data class ActivityLikeNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    // val activity: Activity? // Simplified for now
+    val activityId: Int?
 ) : Notification
 
 data class ActivityReplyNotification(
@@ -40,7 +40,43 @@ data class ActivityReplyNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    // val activity: Activity? // Simplified for now
+    val activityId: Int?
+) : Notification
+
+data class ActivityReplySubscribedNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val activityId: Int?
+) : Notification
+
+data class ActivityReplyLikeNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val activityId: Int?
+) : Notification
+
+data class ActivityMentionNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val activityId: Int?
+) : Notification
+
+data class ActivityMessageNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val user: User?,
+    val activityId: Int?
 ) : Notification
 
 data class ThreadCommentReplyNotification(

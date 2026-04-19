@@ -16,6 +16,10 @@ object NotificationChannels {
     const val THREAD_LIKE_CHANNEL_ID = "thread_like_notifications"
     const val THREAD_COMMENT_LIKE_CHANNEL_ID = "thread_comment_like_notifications"
     const val UPDATE_CHANNEL_ID = "update_notifications"
+    const val ACTIVITY_REPLY_CHANNEL_ID = "activity_reply_notifications"
+    const val ACTIVITY_MENTION_CHANNEL_ID = "activity_mention_notifications"
+    const val ACTIVITY_LIKE_CHANNEL_ID = "activity_like_notifications"
+    const val ACTIVITY_MESSAGE_CHANNEL_ID = "activity_message_notifications"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -93,6 +97,38 @@ object NotificationChannels {
                 description = context.getString(R.string.update_notification_channel_desc)
             }
 
+            val activityReplyChannel = NotificationChannel(
+                ACTIVITY_REPLY_CHANNEL_ID,
+                context.getString(R.string.notification_channel_activity_reply),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.notification_channel_activity_reply_desc)
+            }
+
+            val activityMentionChannel = NotificationChannel(
+                ACTIVITY_MENTION_CHANNEL_ID,
+                context.getString(R.string.notification_channel_activity_mention),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.notification_channel_activity_mention_desc)
+            }
+
+            val activityLikeChannel = NotificationChannel(
+                ACTIVITY_LIKE_CHANNEL_ID,
+                context.getString(R.string.notification_channel_activity_like),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.notification_channel_activity_like_desc)
+            }
+
+            val activityMessageChannel = NotificationChannel(
+                ACTIVITY_MESSAGE_CHANNEL_ID,
+                context.getString(R.string.notification_channel_activity_message),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.notification_channel_activity_message_desc)
+            }
+
             notificationManager.createNotificationChannels(
                 listOf(
                     airingChannel,
@@ -103,7 +139,11 @@ object NotificationChannels {
                     threadCommentMentionChannel,
                     threadLikeChannel,
                     threadCommentLikeChannel,
-                    updateChannel
+                    updateChannel,
+                    activityReplyChannel,
+                    activityMentionChannel,
+                    activityLikeChannel,
+                    activityMessageChannel
                 )
             )
         }
