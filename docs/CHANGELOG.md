@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-20
+
+### Added
+
+#### Activity & Profile
+- **Activity Detail Screen** - Added a dedicated activity detail route with richer activity content rendering.
+- **Profile Messaging** - Added a message composer sheet for public profiles backed by AniList `SaveMessageActivity`.
+- **Profile Tab Pagination** - Added pagination support for Social and Reviews tabs.
+- **Profile Content Navigation** - Profile social items and reviews now open thread/comment and review detail surfaces directly.
+- **Profile Pull-to-Refresh** - Added pull-to-refresh support and expanded localized profile strings.
+
+#### Navigation & Notifications
+- **Expanded Deep Link Coverage** - Added deep-link routing for user profiles, reviews, and forum comments from AniList URLs.
+- **Social Activity Notifications** - Added social activity notification channel, settings toggles, and worker dispatch integration.
+
+#### Widgets
+- **Material 3 Widget Redesign** - Reworked all Glance widgets with modern card-based layouts.
+- **Weekly Calendar Day Selection** - Added day-picker behavior and improved worker fetching for weekly widget data.
+- **Up Next Streaming Links** - Added streaming link support in the airing schedule pipeline and Up Next widget surfaces.
+- **Widget Preview Refresh** - Updated launcher/widget preview layouts to match the redesigned UI.
+
+### Changed
+- **Shared Element Coverage** - Extended shared elements across detail and grid flows and stabilized return transitions in Library/Discover.
+- **Card Design Refresh** - Redesigned activity, forum, and related content cards for denser, clearer presentation.
+- **Build Tooling Upgrade** - Migrated to AGP 9.1.0 with SDK 37 targets, updated KSP/Hilt toolchain, and restored AGP 9 compatible APK naming.
+- **Database Schema** - Bumped Room database to version 12 with auto-migration (11 -> 12) for updated schedule data.
+
+### Fixed
+- **Rich Text Parsing** - Improved inline grouping and mixed markdown/HTML link handling in the parser.
+- **Transition Stability** - Reduced shared-transition return glitches between Library/Discover and detail screens.
+
 ## [1.4.0] - 2026-04-11
 
 ### Added
