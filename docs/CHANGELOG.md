@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-04-23
+
+### Changed
+- Remove `org.gradle.toolchains.foojay-resolver-convention` plugin from `settings.gradle.kts` to satisfy the F-Droid build scanner (no `jvmToolchain` calls used the resolver).
+
 ## [1.5.1] - 2026-04-22
 
 ### Added

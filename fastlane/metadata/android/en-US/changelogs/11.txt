@@ -1,0 +1,2 @@
+Changed:
+- Remove org.gradle.toolchains.foojay-resolver-convention from settings.gradle.kts to satisfy F-Droid scanner (no jvmToolchain calls used the resolver).
