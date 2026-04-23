@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.3] - 2026-04-23
+
+### Changed
+- Downgrade `compileSdk` and `targetSdk` from 37 to 36 so the F-Droid buildserver can build the app. SDK Platform 37 is still in preview and is not yet in F-Droid's signed transparency log; AGP installs it to `android-37.0` but R8 looks up `android-37`, which fails. Will re-bump once SDK 37 is final.
+
 ## [1.5.2] - 2026-04-23
 
 ### Changed

@@ -61,14 +61,14 @@ abstract class RenameApksTask : DefaultTask() {
 
 android {
     namespace = "com.anisync.android"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.anisync.android"
         minSdk = 26
-        targetSdk = 37
-        versionCode = 11
-        versionName = "1.5.2"
+        targetSdk = 36
+        versionCode = 12
+        versionName = "1.5.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
