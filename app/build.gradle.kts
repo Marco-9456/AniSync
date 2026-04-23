@@ -67,8 +67,8 @@ android {
         applicationId = "com.anisync.android"
         minSdk = 26
         targetSdk = 37
-        versionCode = 9
-        versionName = "1.5.0"
+        versionCode = 10
+        versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -163,6 +163,7 @@ android {
             )
             buildConfigField("Boolean", "IS_DEBUG_BUILD", "false")
             signingConfig = signingConfigs.getByName("release")
+            vcsInfo { include = false }
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -241,7 +242,6 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
-    implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.apollo.runtime)
     implementation(libs.apollo.normalized.cache)
     implementation(libs.apollo.normalized.cache.sqlite)

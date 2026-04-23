@@ -1,0 +1,11 @@
+New:
+- Fastlane metadata for F-Droid listing (description, screenshots, icon).
+
+Changed:
+- Disable VCS-info embedding in release APKs for reproducible builds.
+- Remove unused androidx.ui-text-google-fonts dependency.
+
+Security:
+- Add keystore.properties.example to document signing schema safely.
+
+(Prior 1.5.0 changes: Activity Detail screen, profile message composer, social/reviews pagination, widget Material 3 redesign, build upgrade to AGP 9.1.0 and SDK 37.)

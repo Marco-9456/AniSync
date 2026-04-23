@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-04-22
+
+### Added
+- Fastlane metadata for F-Droid submission (title, descriptions, icon, screenshots, changelogs).
+
+### Changed
+- Release builds disable VCS info embedding for reproducibility on F-Droid.
+- Remove unused `androidx.ui-text-google-fonts` dependency.
+
+### Security
+- Add `keystore.properties.example` to document the signing config without exposing credentials.
+
 ## [1.5.0] - 2026-04-20
 
 ### Added

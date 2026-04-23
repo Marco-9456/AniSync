@@ -1,0 +1,42 @@
+AniSync is a native Android client for AniList, the anime and manga tracking platform. It offers an offline-first experience for managing your watchlist, discovering new series, and staying connected with the community, built with modern Material 3 design.
+
+AniSync is not affiliated with AniList; it is a third-party client.
+
+<b>Highlights</b>
+
+* <b>Offline-first library</b> &mdash; full read/write access to your tracking data without an internet connection; changes sync when you are back online.
+* <b>Privacy-focused</b> &mdash; credentials are encrypted locally with AES-256-GCM. No trackers, no ads, no analytics.
+* <b>Material 3 UI</b> &mdash; modern design with dynamic theming and smooth animations.
+* <b>Home-screen widgets</b> &mdash; Up Next, Airing Today, Weekly Calendar, and Trending widgets powered by Jetpack Glance.
+
+<b>Library &amp; tracking</b>
+
+Track anime and manga with full flexibility. Statuses include Watching, Planning, Completed, Dropped, Paused, and Repeating. Score entries, add notes, organize into custom AniList lists. Sort by title, progress, score, airing date, or last updated.
+
+<b>Discovery &amp; search</b>
+
+Browse trending titles, popular seasonal releases, upcoming premieres, and TBA entries. Advanced search filters by genre, year, season, format (TV, Movie, OVA, ONA, Special, Music), and airing status.
+
+<b>Rich media details</b>
+
+Every media page shows cover art, descriptions, episode and chapter counts, community scores, characters with voice actors, staff, related media, trailers, reviews, recommendations, and streaming-service links.
+
+<b>Character &amp; staff browser</b>
+
+Dedicated character and staff pages with parsed biographies, key attributes, media appearances, and voice-actor language filtering.
+
+<b>Forum</b>
+
+Full AniList forum integration: browse categories, read nested replies, post with Markdown, like, bookmark, and subscribe to threads for notifications.
+
+<b>Statistics</b>
+
+Time watched, episodes completed, chapters read, mean scores, plus breakdowns by genre, format, score distribution, and release year.
+
+<b>Notifications</b>
+
+Two-tier airing notifications (12h and 2h before release), planning-list premiere alerts, and optional forum activity notifications (replies, mentions, subscriptions).
+
+<b>Source &amp; licensing</b>
+
+AniSync is free software released under the GNU General Public License v3.0. The "AniSync" name and brand are reserved &mdash; derivative works and unofficial forks must use a different name for any AniList client they distribute.
