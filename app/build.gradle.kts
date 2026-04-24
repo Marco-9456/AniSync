@@ -67,8 +67,8 @@ android {
         applicationId = "com.anisync.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 12
-        versionName = "1.5.3"
+        versionCode = 13
+        versionName = "1.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -76,6 +76,13 @@ android {
         }
 
         resValue("string", "app_name", "AniSync")
+    }
+
+    // Strip AGP-injected dependency-metadata signing block so F-Droid's
+    // Binaries reproducibility check accepts the upstream-signed APK.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     // Split configuration to create a separate APK for each ABI

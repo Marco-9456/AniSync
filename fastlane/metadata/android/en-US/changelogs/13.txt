@@ -1,0 +1,2 @@
+Changed:
+- Disable AGP dependency-metadata signing block (dependenciesInfo.includeInApk = false, includeInBundle = false). The block is added by AGP for Play Store dependency reporting; it is rejected by F-Droid's APK scanner during reproducible-build verification (Binaries field).

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.4] - 2026-04-24
+
+### Changed
+- Disable AGP-injected `dependenciesInfo` block (`includeInApk = false`, `includeInBundle = false`) so the upstream-signed APK on GitHub Releases passes F-Droid's reproducible-build scanner. The block embeds Play Store dependency-reporting metadata that F-Droid's scanner flags as an extra signing block.
+
 ## [1.5.3] - 2026-04-23
 
 ### Changed
