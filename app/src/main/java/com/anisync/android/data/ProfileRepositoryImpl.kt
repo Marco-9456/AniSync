@@ -82,19 +82,32 @@ class ProfileRepositoryImpl @Inject constructor(
             val activities = rawActivities.mapNotNull { activityFields ->
                 when {
                     activityFields.onListActivity != null -> {
+                        val l = activityFields.onListActivity
+                        val lastReply = l.replies?.lastOrNull()
                         com.anisync.android.domain.UserActivity(
-                            id = activityFields.onListActivity.id ?: 0,
+                            id = l.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.MEDIA_LIST,
-                            status = activityFields.onListActivity.status,
-                            progress = activityFields.onListActivity.progress,
-                            mediaTitle = activityFields.onListActivity.media?.title?.userPreferred ?: "Unknown",
-                            mediaCoverUrl = activityFields.onListActivity.media?.coverImage?.medium,
-                            timestamp = (activityFields.onListActivity.createdAt?.toLong() ?: 0L) * 1000L,
-                            mediaScore = null
+                            status = l.status,
+                            progress = l.progress,
+                            mediaTitle = l.media?.title?.userPreferred ?: "Unknown",
+                            mediaCoverUrl = l.media?.coverImage?.medium,
+                            timestamp = (l.createdAt?.toLong() ?: 0L) * 1000L,
+                            mediaScore = null,
+                            userName = l.user?.name,
+                            userAvatarUrl = l.user?.avatar?.medium,
+                            replyUserName = lastReply?.user?.name,
+                            replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
+                            repliedAt = lastReply?.createdAt?.toLong(),
+                            likeCount = l.likeCount ?: 0,
+                            replyCount = l.replyCount ?: 0,
+                            isLiked = l.isLiked == true,
+                            isLocked = l.isLocked == true,
+                            isSubscribed = l.isSubscribed == true
                         )
                     }
                     activityFields.onTextActivity != null -> {
                         val t = activityFields.onTextActivity
+                        val lastReply = t.replies?.lastOrNull()
                         com.anisync.android.domain.UserActivity(
                             id = t.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.TEXT,
@@ -107,11 +120,15 @@ class ProfileRepositoryImpl @Inject constructor(
                             isLiked = t.isLiked == true,
                             isLocked = t.isLocked == true,
                             isSubscribed = t.isSubscribed == true,
-                            isPinned = t.isPinned == true
+                            isPinned = t.isPinned == true,
+                            replyUserName = lastReply?.user?.name,
+                            replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
+                            repliedAt = lastReply?.createdAt?.toLong()
                         )
                     }
                     activityFields.onMessageActivity != null -> {
                         val m = activityFields.onMessageActivity
+                        val lastReply = m.replies?.lastOrNull()
                         com.anisync.android.domain.UserActivity(
                             id = m.id ?: 0,
                             type = com.anisync.android.domain.ActivityType.MESSAGE,
@@ -126,7 +143,10 @@ class ProfileRepositoryImpl @Inject constructor(
                             isLiked = m.isLiked == true,
                             isLocked = m.isLocked == true,
                             isSubscribed = m.isSubscribed == true,
-                            isPrivate = m.isPrivate == true
+                            isPrivate = m.isPrivate == true,
+                            replyUserName = lastReply?.user?.name,
+                            replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
+                            repliedAt = lastReply?.createdAt?.toLong()
                         )
                     }
                     else -> null

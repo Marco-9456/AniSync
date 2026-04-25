@@ -158,13 +158,34 @@ query GetUserFavorites($userId: Int, $page: Int) {
 }
 
 fragment ActivityFields on ActivityUnion {
-  ... on ListActivity {
-    id
-    type
-    status
-    progress
-    createdAt
-    media {
+    ... on ListActivity {
+      id
+      type
+      status
+      progress
+      createdAt
+      replyCount
+      isLocked
+      isSubscribed
+      isLiked
+      likeCount
+      user {
+        id
+        name
+        avatar {
+          medium
+        }
+      }
+      replies {
+        createdAt
+        user {
+          name
+          avatar {
+            medium
+          }
+        }
+      }
+      media {
       id
       title {
         userPreferred
@@ -186,10 +207,19 @@ fragment ActivityFields on ActivityUnion {
     likeCount
     replyCount
     isLiked
-    isLocked
-    isSubscribed
-    isPinned
-    user {
+      isLocked
+      isSubscribed
+      isPinned
+      replies {
+        createdAt
+        user {
+          name
+          avatar {
+            medium
+          }
+        }
+      }
+      user {
       id
       name
       avatar {
@@ -205,10 +235,19 @@ fragment ActivityFields on ActivityUnion {
     likeCount
     replyCount
     isLiked
-    isPrivate
-    isLocked
-    isSubscribed
-    messenger {
+      isPrivate
+      isLocked
+      isSubscribed
+      replies {
+        createdAt
+        user {
+          name
+          avatar {
+            medium
+          }
+        }
+      }
+      messenger {
       id
       name
       avatar {

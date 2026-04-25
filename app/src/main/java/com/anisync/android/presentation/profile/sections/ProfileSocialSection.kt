@@ -46,9 +46,9 @@ import com.anisync.android.R
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.SocialUser
 import com.anisync.android.presentation.components.AnimatedTab
-import com.anisync.android.presentation.forum.components.AuthorRow
+import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.ForumThreadCard
-import com.anisync.android.presentation.forum.components.StatBadge
+import com.anisync.android.presentation.forum.components.shared.StatBadge
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent

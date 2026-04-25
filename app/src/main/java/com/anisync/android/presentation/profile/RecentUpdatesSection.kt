@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,9 +18,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -26,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -33,8 +46,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityType
@@ -44,10 +57,6 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.profile.components.ActivityPreviewCard
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 
-/**
- * Redesigned Expressive Updates Section.
- * Ditches the traditional dot-timeline for bold, chunky, asymmetrical cards.
- */
 @Composable
 fun RecentUpdatesSection(
     activities: List<UserActivity>,
@@ -88,9 +97,6 @@ fun RecentUpdatesSection(
     }
 }
 
-/**
- * An expressive, standalone activity card.
- */
 @Composable
 fun RecentUpdateCard(
     activity: UserActivity,
@@ -98,193 +104,334 @@ fun RecentUpdateCard(
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {}
 ) {
-    val cardShape = remember {
-        RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
-    }
-
-    val isMediaList = activity.type == com.anisync.android.domain.ActivityType.MEDIA_LIST
-    val clickableModifier = if (!isMediaList) {
-        Modifier.clickable { onActivityClick(activity.id) }
-    } else {
-        Modifier
-    }
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(clickableModifier),
-        shape = cardShape,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = 0.dp
+    Card(
+        onClick = { onActivityClick(activity.id) },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp
+        )
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            val isMedia = activity.type == com.anisync.android.domain.ActivityType.MEDIA_LIST
-            val imageUrl = if (isMedia) activity.mediaCoverUrl else activity.userAvatarUrl
-            val fallbackText = if (isMedia) {
-                if (activity.mediaTitle.isNotEmpty()) activity.mediaTitle.take(2).uppercase() else "??"
+            // LEFT: Media Cover
+            if (activity.mediaCoverUrl != null) {
+                AsyncImage(
+                    model = activity.mediaCoverUrl,
+                    contentDescription = activity.mediaTitle,
+                    modifier = Modifier
+                        .width(88.dp)
+                        .aspectRatio(3f / 4f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentScale = ContentScale.Crop
+                )
             } else {
-                activity.userName?.take(2)?.uppercase() ?: "??"
-            }
-
-            val onUserClicked = {
-                if (!isMedia) {
-                    val username = activity.userName?.trim().orEmpty()
-                    if (username.isNotEmpty()) {
-                        onUserClick(username)
-                    }
-                }
-            }
-
-            Box(
-                modifier = if (isMedia) {
-                    Modifier
-                        .width(48.dp)
-                        .height(72.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                } else {
-                    Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .clickable { onUserClicked() }
-                },
-                contentAlignment = Alignment.Center
-            ) {
-                if (imageUrl != null) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
+                Box(
+                    modifier = Modifier
+                        .width(88.dp)
+                        .aspectRatio(3f / 4f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = fallbackText,
+                        text = activity.mediaTitle.take(2).ifBlank { "??" }.uppercase(),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
+            // RIGHT: Author header + status text + footer
             Column(modifier = Modifier.weight(1f)) {
-                val timeAgo = remember(activity.timestamp) {
-                    formatProfileRelativeTime(activity.timestamp)
-                }
-
-                Text(
-                    text = timeAgo.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                UpdateHeader(
+                    activity = activity,
+                    onUserClick = onUserClick
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                val primaryColor = MaterialTheme.colorScheme.primary
-                
-                if (isMedia) {
-                    val styledActivityText = remember(
-                        activity.status,
-                        activity.progress,
-                        activity.mediaTitle,
-                        primaryColor
+                UpdateStatusText(activity = activity)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                UpdateFooter(
+                    activity = activity,
+                    onUserClick = onUserClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpdateHeader(
+    activity: UserActivity,
+    onUserClick: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        UserAvatar(
+            url = activity.userAvatarUrl,
+            contentDescription = activity.userName,
+            size = 28.dp,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable { activity.userName?.let { onUserClick(it) } }
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = activity.userName.orEmpty(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clickable { activity.userName?.let { onUserClick(it) } }
+                )
+
+                if (activity.mediaScore != null && activity.mediaScore > 0) {
+                    StatusBadge(
+                        icon = Icons.Default.Star,
+                        text = activity.mediaScore.toString(),
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+
+            Text(
+                text = formatProfileRelativeTime(activity.timestamp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun UpdateStatusText(activity: UserActivity) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val styledText = remember(
+        activity.status,
+        activity.progress,
+        activity.mediaTitle,
+        primaryColor
+    ) {
+        val statusText = (activity.status ?: "Updated")
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        val progressText = activity.progress.orEmpty()
+
+        buildAnnotatedString {
+            append("$statusText ")
+            if (progressText.isNotEmpty()) {
+                withStyle(SpanStyle(color = primaryColor, fontWeight = FontWeight.Bold)) {
+                    append(progressText)
+                }
+                append(" of ")
+            }
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(activity.mediaTitle)
+            }
+        }
+    }
+
+    Text(
+        text = styledText,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun UpdateFooter(
+    activity: UserActivity,
+    onUserClick: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Last reply pill
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            if (activity.replyUserName != null && activity.repliedAt != null) {
+                Surface(
+                    onClick = { onUserClick(activity.replyUserName!!) },
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        val statusText = activity.status ?: "Updated"
-                        val progressText = activity.progress ?: ""
-                        val capStatus =
-                            statusText.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-
-                        buildAnnotatedString {
-                            append("$capStatus ")
-                            if (progressText.isNotEmpty()) {
-                                withStyle(
-                                    SpanStyle(
-                                        color = primaryColor,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                ) {
-                                    append(progressText)
-                                }
-                                append(" of ")
-                            }
-                            withStyle(
-                                SpanStyle(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.Unspecified
-                                )
-                            ) {
-                                append(activity.mediaTitle)
-                            }
-                        }
-                    }
-
-                    Text(
-                        text = styledActivityText,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        lineHeight = 22.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    if (activity.mediaScore != null && activity.mediaScore > 0) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = CircleShape
-                        ) {
-                            Text(
-                                text = "Score: ${activity.mediaScore}",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                } else {
-                    val titleText = if (activity.type == com.anisync.android.domain.ActivityType.MESSAGE) {
-                        "${activity.userName} \u2192 ${activity.recipientName}"
-                    } else {
-                        activity.userName ?: "Unknown"
-                    }
-                    
-                    Text(
-                        text = titleText,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.clickable { onUserClicked() }
-                    )
-                    
-                    if (activity.text != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val preview = remember(activity.text) {
-                            activity.text
-                                .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
-                                .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n")
-                                .replace(Regex("<.*?>"), "")
-                                .replace(Regex("\\n+"), " ")
-                                .trim()
-                        }
+                        UserAvatar(
+                            url = activity.replyUserAvatarUrl,
+                            contentDescription = activity.replyUserName,
+                            size = 16.dp,
+                            modifier = Modifier.clip(CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = preview,
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Last by ${activity.replyUserName} • ${
+                                formatProfileRelativeTime(activity.repliedAt!! * 1000L)
+                            }",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Engagement metrics
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatItem(
+                icon = Icons.Outlined.ChatBubbleOutline,
+                value = activity.replyCount
+            )
+            StatItem(
+                icon = if (activity.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                value = activity.likeCount,
+                tint = if (activity.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ============================================================================
+// --- Reusable Micro-Components (Synced with ForumThreadCard / ActivityPreviewCard) ---
+// ============================================================================
+
+@Composable
+private fun StatusBadge(
+    icon: ImageVector,
+    text: String,
+    containerColor: Color,
+    contentColor: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(containerColor)
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(10.dp)
+        )
+        Spacer(modifier = Modifier.width(2.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = MaterialTheme.typography.labelSmall.fontSize * 0.9f
+            ),
+            fontWeight = FontWeight.Bold,
+            color = contentColor,
+            modifier = Modifier.padding(bottom = 1.dp)
+        )
+    }
+}
+
+@Composable
+private fun StatItem(
+    icon: ImageVector,
+    value: Int,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = formatStatValue(value),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun UserAvatar(
+    url: String?,
+    contentDescription: String?,
+    size: Dp,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (url != null) {
+            AsyncImage(
+                model = url,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(size * 0.7f)
+            )
+        }
+    }
+}
+
+private fun formatStatValue(value: Int): String {
+    return when {
+        value >= 1_000_000 -> String.format("%.1fM", value / 1_000_000.0)
+        value >= 1_000 -> String.format("%.1fk", value / 1_000.0)
+        else -> value.toString()
     }
 }
