@@ -1,7 +1,7 @@
 # AniSync
 
 <p align="center">
-  <img src="docs/assets/logoWide.svg" alt="AniSync Logo" width="300" height="100">
+  <img src=".github/logoWide.svg" alt="AniSync Logo" width="300" height="100">
 </p>
 
 <p align="center">
@@ -18,18 +18,24 @@
 </p>
 
 <p align="center">
-  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform"></a>
-  <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue" alt="Min SDK"></a>
-  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin"></a>
-  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white" alt="Compose"></a>
-  <a href="https://developer.android.com/studio/releases/platforms"><img src="https://img.shields.io/badge/Target%20SDK-36-blue" alt="Target SDK"></a>
-  <a href="https://developer.android.com/studio/releases/build-tools"><img src="https://img.shields.io/badge/Compile%20SDK-36-blue" alt="Compile SDK"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue" alt="License"></a>
+  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Platform"></a>
+  <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue?style=for-the-badge" alt="Min SDK"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Compose"></a>
+  <a href="https://developer.android.com/studio/releases/platforms"><img src="https://img.shields.io/badge/Target%20SDK-36-blue?style=for-the-badge" alt="Target SDK"></a>
+  <a href="https://developer.android.com/studio/releases/build-tools"><img src="https://img.shields.io/badge/Compile%20SDK-36-blue?style=for-the-badge" alt="Compile SDK"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge" alt="License"></a>
 </p>
 
 <p align="center">
-  <a href="https://ko-fi.com/marco_9456"><img src="https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg" alt="Ko-Fi"></a>
-  <a href="https://github.com/sponsors/Marco-9456"><img src="https://srv-cdn.himpfen.io/badges/github/github-flat.svg" alt="GitHub"></a>
+  <a href="https://github.com/Marco-9456/AniSync/releases"><img src="https://img.shields.io/github/downloads/Marco-9456/AniSync/total?style=for-the-badge&logo=github&color=brightgreen&label=Downloads" alt="Total Downloads"></a>
+  <a href="https://github.com/Marco-9456/AniSync/releases/latest"><img src="https://img.shields.io/github/v/release/Marco-9456/AniSync?style=for-the-badge&logo=github&label=Latest" alt="Latest Release"></a>
+  <a href="https://github.com/Marco-9456/AniSync/stargazers"><img src="https://img.shields.io/github/stars/Marco-9456/AniSync?style=for-the-badge&logo=github&color=yellow" alt="Stars"></a>
+</p>
+
+<p align="center">
+  <a href="https://ko-fi.com/marco_9456"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-Fi"></a>
+  <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
 
 ---
@@ -96,17 +102,18 @@ Never miss an episode. AniSync sends two-tier notifications — an advance alert
 ## :camera: Screenshots
 
 <p align="center">
-  <img src="docs/assets/01_Library_View.jpg" width="200" alt="Library View">
-  <img src="docs/assets/02_Library_Sort_Options.jpg" width="200" alt="Library Sort Options">
-  <img src="docs/assets/03_Discover_Tab.jpg" width="200" alt="Discover Tab">
-  <img src="docs/assets/04_Search_Results.jpg" width="200" alt="Search Results">
-  <img src="docs/assets/05_Anime_Details_Synopsis.jpg" width="200" alt="Anime Details - Synopsis">
-  <img src="docs/assets/06_Anime_Details_Recs_and_Reviews.jpg" width="200" alt="Anime Details - Recommendations and Reviews">
-  <img src="docs/assets/07_Full_Review_View.jpg" width="200" alt="Full Review View">
-  <img src="docs/assets/08_Forum_Discussions.jpg" width="200" alt="Forum Discussions">
-  <img src="docs/assets/09_User_Profile.jpg" width="200" alt="User Profile">
-  <img src="docs/assets/10_User_Statistics.jpg" width="200" alt="User Statistics">
-  <img src="docs/assets/11_Settings_Page.jpg" width="200" alt="Settings Page">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="200" alt="Screenshot 1">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="200" alt="Screenshot 2">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="200" alt="Screenshot 3">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="200" alt="Screenshot 4">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="200" alt="Screenshot 5">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="200" alt="Screenshot 6">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="200" alt="Screenshot 7">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.png" width="200" alt="Screenshot 8">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/9.png" width="200" alt="Screenshot 9">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/10.png" width="200" alt="Screenshot 10">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/11.png" width="200" alt="Screenshot 11">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/12.png" width="200" alt="Screenshot 12">
 </p>
 
 ---
