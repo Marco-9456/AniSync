@@ -1,0 +1,254 @@
+package com.anisync.android.presentation.feed
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.anisync.android.domain.ActivityRepository
+import com.anisync.android.domain.FeedRepository
+import com.anisync.android.domain.FeedScope
+import com.anisync.android.domain.Result
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+private const val PAGE_SIZE = 25
+
+@HiltViewModel
+class FeedViewModel @Inject constructor(
+    private val feedRepository: FeedRepository,
+    private val activityRepository: ActivityRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(FeedUiState())
+    val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+
+    private val _actions = Channel<FeedAction>(Channel.BUFFERED)
+    val actions: Flow<FeedAction> = _actions.receiveAsFlow()
+
+    private var hasLoadedInitially = false
+    private var loadJob: Job? = null
+
+    fun onScreenVisible() {
+        if (!hasLoadedInitially) {
+            hasLoadedInitially = true
+            load(page = 1)
+        }
+    }
+
+    fun onAction(action: FeedAction) {
+        when (action) {
+            is FeedAction.Refresh -> {
+                _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+                load(page = 1, replaceExisting = true)
+            }
+
+            is FeedAction.LoadMore -> {
+                val s = _uiState.value
+                if (!s.hasNextPage || s.isLoading || s.isPaginating) return
+                _uiState.update { it.copy(isPaginating = true) }
+                load(page = s.currentPage + 1)
+            }
+
+            is FeedAction.OnFilterChange -> {
+                if (_uiState.value.filter == action.filter) return
+                _uiState.update {
+                    it.copy(
+                        filter = action.filter,
+                        items = persistentListOf(),
+                        hasNextPage = false,
+                        currentPage = 1,
+                        isLoading = true,
+                        isRefreshing = false,
+                        isPaginating = false,
+                        errorMessage = null
+                    )
+                }
+                load(page = 1, replaceExisting = true)
+            }
+
+            is FeedAction.OnScopeChange -> {
+                if (_uiState.value.scope == action.scope) return
+                _uiState.update {
+                    it.copy(
+                        scope = action.scope,
+                        items = persistentListOf(),
+                        hasNextPage = false,
+                        currentPage = 1,
+                        isLoading = true,
+                        isRefreshing = false,
+                        isPaginating = false,
+                        errorMessage = null
+                    )
+                }
+                load(page = 1, replaceExisting = true)
+            }
+
+            is FeedAction.OnMediaTypeChange -> {
+                if (_uiState.value.mediaType == action.mediaType) return
+                _uiState.update {
+                    it.copy(
+                        mediaType = action.mediaType,
+                        items = persistentListOf(),
+                        hasNextPage = false,
+                        currentPage = 1,
+                        isLoading = true,
+                        isRefreshing = false,
+                        isPaginating = false,
+                        errorMessage = null
+                    )
+                }
+                load(page = 1, replaceExisting = true)
+            }
+
+            is FeedAction.ToggleSubscribe -> toggleSubscribe(action.activityId)
+
+            is FeedAction.OpenCompose -> {
+                _uiState.update { it.copy(isComposeSheetVisible = true, composeError = null) }
+            }
+
+            is FeedAction.DismissCompose -> {
+                if (_uiState.value.isPostingStatus) return
+                _uiState.update {
+                    it.copy(isComposeSheetVisible = false, composeError = null)
+                }
+            }
+
+            is FeedAction.PostStatus -> postStatus(action.text)
+
+            is FeedAction.ShowSnackbar -> viewModelScope.launch { _actions.send(action) }
+        }
+    }
+
+    private fun postStatus(text: String) {
+        if (_uiState.value.isPostingStatus) return
+        _uiState.update { it.copy(isPostingStatus = true, composeError = null) }
+        viewModelScope.launch {
+            when (val result = activityRepository.saveTextActivity(text)) {
+                is Result.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            isPostingStatus = false,
+                            isComposeSheetVisible = false,
+                            composeError = null
+                        )
+                    }
+                    _actions.send(FeedAction.ShowSnackbar("Status posted"))
+                    load(page = 1, replaceExisting = true)
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(isPostingStatus = false, composeError = result.message)
+                    }
+                    _actions.send(FeedAction.ShowSnackbar(result.message))
+                }
+            }
+        }
+    }
+
+    private fun toggleSubscribe(activityId: Int) {
+        val current = _uiState.value.items.firstOrNull { it.id == activityId } ?: return
+        val wasSubscribed = current.isSubscribed
+
+        _uiState.update { state ->
+            state.copy(
+                items = state.items.map {
+                    if (it.id == activityId) it.copy(isSubscribed = !wasSubscribed) else it
+                }.toPersistentList()
+            )
+        }
+
+        viewModelScope.launch {
+            val result = activityRepository.toggleSubscription(activityId, !wasSubscribed)
+            if (result is Result.Error) {
+                _uiState.update { state ->
+                    state.copy(
+                        items = state.items.map {
+                            if (it.id == activityId) it.copy(isSubscribed = wasSubscribed) else it
+                        }.toPersistentList()
+                    )
+                }
+                _actions.send(FeedAction.ShowSnackbar(result.message))
+            }
+        }
+    }
+
+    private fun load(page: Int, replaceExisting: Boolean = false) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            if (page == 1 && !_uiState.value.isRefreshing && !_uiState.value.isLoading) {
+                _uiState.update { it.copy(isLoading = true) }
+            }
+
+            val state = _uiState.value
+
+            if (state.scope == FeedScope.FOLLOWING) {
+                val viewerId = activityRepository.getViewerId()
+                if (viewerId == null) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isPaginating = false,
+                            isAuthenticated = false,
+                            items = persistentListOf(),
+                            hasNextPage = false,
+                            currentPage = 1,
+                            errorMessage = null
+                        )
+                    }
+                    return@launch
+                }
+            }
+
+            when (val result = feedRepository.getFeed(
+                page = page,
+                perPage = PAGE_SIZE,
+                filter = state.filter,
+                scope = state.scope,
+                mediaType = state.mediaType
+            )) {
+                is Result.Success -> {
+                    val data = result.data
+                    _uiState.update { current ->
+                        val merged = if (replaceExisting || page == 1) {
+                            data.items
+                        } else {
+                            (current.items + data.items).distinctBy { it.id }
+                        }
+                        current.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isPaginating = false,
+                            isAuthenticated = true,
+                            items = merged.toPersistentList(),
+                            hasNextPage = data.hasNextPage,
+                            currentPage = data.currentPage,
+                            errorMessage = null
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isPaginating = false,
+                            errorMessage = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+}

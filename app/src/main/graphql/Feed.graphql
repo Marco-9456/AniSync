@@ -1,0 +1,24 @@
+query GetActivityFeed(
+  $page: Int!,
+  $perPage: Int!,
+  $type_in: [ActivityType],
+  $isFollowing: Boolean,
+  $hasRepliesOrTypeText: Boolean
+) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo {
+      hasNextPage
+      currentPage
+      lastPage
+      total
+    }
+    activities(
+      sort: [PINNED, ID_DESC],
+      type_in: $type_in,
+      isFollowing: $isFollowing,
+      hasRepliesOrTypeText: $hasRepliesOrTypeText
+    ) {
+      ...ActivityFields
+    }
+  }
+}

@@ -9,4 +9,5 @@ interface ActivityRepository {
     suspend fun deleteReply(id: Int): Result<Unit>
     suspend fun getViewerId(): Int?
     suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit>
+    suspend fun saveTextActivity(text: String): Result<Unit>
 }

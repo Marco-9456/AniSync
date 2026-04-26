@@ -204,9 +204,11 @@ class ForumViewModel @Inject constructor(
                         val data = result.data
                         _uiState.update { current ->
                             val updatedThreads = if (replaceExisting || page == 1) {
-                                data.items.toPersistentList()
+                                data.items.distinctBy { it.id }.toPersistentList()
                             } else {
-                                (current.threads + data.items).toPersistentList()
+                                (current.threads + data.items)
+                                    .distinctBy { it.id }
+                                    .toPersistentList()
                             }
                             current.copy(
                                 isLoading = false,
@@ -241,9 +243,11 @@ class ForumViewModel @Inject constructor(
                         val data = result.data
                         _uiState.update { current ->
                             val updatedThreads = if (replaceExisting || page == 1) {
-                                data.items.toPersistentList()
+                                data.items.distinctBy { it.id }.toPersistentList()
                             } else {
-                                (current.threads + data.items).toPersistentList()
+                                (current.threads + data.items)
+                                    .distinctBy { it.id }
+                                    .toPersistentList()
                             }
                             current.copy(
                                 isLoading = false,

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -86,7 +87,6 @@ import com.anisync.android.presentation.components.LocalExoPlayerCache
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.rememberExoPlayerCache
 import com.anisync.android.presentation.forum.components.FoldedAncestorStrip
-import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.SkeletonLine
 import com.anisync.android.presentation.forum.components.ThreadBodyItem
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
@@ -590,19 +590,20 @@ fun ThreadDetailScreen(
     }
 
     if (uiState.isReplySheetVisible) {
-        ModalBottomSheet(
-            onDismissRequest = { viewModel.onAction(ThreadDetailAction.CloseReply) },
+        com.anisync.android.presentation.components.MarkdownComposeSheet(
+            title = stringResource(R.string.forum_write_reply),
+            placeholder = stringResource(R.string.forum_reply_hint),
+            submitLabel = stringResource(R.string.forum_post_reply),
+            replyingToLabel = uiState.replyTargetAuthorName?.let {
+                stringResource(R.string.forum_replying_to, it)
+            },
+            isSubmitting = uiState.isSubmittingReply,
+            onSubmit = { body ->
+                viewModel.onAction(ThreadDetailAction.SubmitReply(threadId, body))
+            },
+            onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) },
             sheetState = replySheetState
-        ) {
-            ReplyBottomSheetContent(
-                replyingToAuthor = uiState.replyTargetAuthorName,
-                isSubmitting = uiState.isSubmittingReply,
-                onSubmit = { body ->
-                    viewModel.onAction(ThreadDetailAction.SubmitReply(threadId, body))
-                },
-                onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) }
-            )
-        }
+        )
     }
 }
 

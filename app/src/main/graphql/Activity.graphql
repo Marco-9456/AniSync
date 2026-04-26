@@ -76,6 +76,53 @@ query GetActivity($id: Int!) {
         }
       }
     }
+    ... on ListActivity {
+      id
+      userId
+      status
+      progress
+      createdAt
+      likeCount
+      isLiked
+      replyCount
+      isLocked
+      isSubscribed
+      siteUrl
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+      media {
+        id
+        type
+        title {
+          userPreferred
+        }
+        coverImage {
+          large
+        }
+        siteUrl
+      }
+      replies {
+        id
+        userId
+        activityId
+        text(asHtml: true)
+        likeCount
+        isLiked
+        createdAt
+        user {
+          id
+          name
+          avatar {
+            large
+          }
+        }
+      }
+    }
   }
 }
 
@@ -133,6 +180,24 @@ mutation DeleteActivity($id: Int!) {
 mutation DeleteActivityReply($id: Int!) {
   DeleteActivityReply(id: $id) {
     deleted
+  }
+}
+
+mutation SaveTextActivity($text: String!) {
+  SaveTextActivity(text: $text) {
+    id
+    text(asHtml: true)
+    createdAt
+    likeCount
+    isLiked
+    replyCount
+    user {
+      id
+      name
+      avatar {
+        large
+      }
+    }
   }
 }
 

@@ -38,6 +38,7 @@ fun LazyListScope.profileActivityTab(
     onFilterSelected: (ProfileActivityFilter) -> Unit,
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
+    onMediaClick: (Int) -> Unit = {},
     onSubscribeClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -98,7 +99,8 @@ fun LazyListScope.profileActivityTab(
                     activity = activity,
                     modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     onUserClick = onUserClick,
-                    onActivityClick = onActivityClick
+                    onActivityClick = onActivityClick,
+                    onMediaClick = onMediaClick
                 )
             } else {
                 ActivityPreviewCard(

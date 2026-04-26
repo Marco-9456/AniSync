@@ -5,6 +5,7 @@ import com.anisync.android.DeleteActivityReplyMutation
 import com.anisync.android.GetActivityQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.SaveActivityReplyMutation
+import com.anisync.android.SaveTextActivityMutation
 import com.anisync.android.ToggleActivityLikeMutation
 import com.anisync.android.ToggleActivityReplyLikeMutation
 import com.anisync.android.ToggleActivitySubscriptionMutation
@@ -127,6 +128,19 @@ class ActivityRepositoryImpl @Inject constructor(
         Unit
     }
 
+    override suspend fun saveTextActivity(text: String): Result<Unit> = safeApiCall {
+        val response = apolloClient
+            .mutation(SaveTextActivityMutation(text = text))
+            .execute()
+        if (response.hasErrors()) {
+            throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to post status")
+        }
+        if (response.data?.SaveTextActivity?.id == null) {
+            throw Exception("Status was not posted")
+        }
+        Unit
+    }
+
     override suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit> = safeApiCall {
         val response = apolloClient
             .mutation(ToggleActivitySubscriptionMutation(activityId = activityId, subscribe = subscribe))
@@ -153,6 +167,47 @@ class ActivityRepositoryImpl @Inject constructor(
     }
 
     private fun GetActivityQuery.Activity.toDomain(): ActivityDetail? {
+        onListActivity?.let { l ->
+            val mediaTitle = l.media?.title?.userPreferred ?: "media"
+            val mediaUrl = l.media?.siteUrl
+            val statusText = (l.status ?: "Updated").trim()
+            val progressText = l.progress?.trim().orEmpty()
+            val mediaLink = if (mediaUrl != null) "[$mediaTitle]($mediaUrl)" else mediaTitle
+            val body = buildString {
+                append(statusText.replaceFirstChar { it.titlecase() })
+                if (progressText.isNotEmpty()) append(" ").append(progressText).append(" of")
+                append(" ").append(mediaLink)
+            }
+            return ActivityDetail(
+                id = l.id,
+                body = body,
+                createdAt = l.createdAt.toLong(),
+                likeCount = l.likeCount,
+                isLiked = l.isLiked == true,
+                replyCount = l.replyCount,
+                siteUrl = l.siteUrl,
+                isMessage = false,
+                isPrivate = false,
+                authorId = l.user?.id ?: 0,
+                authorName = l.user?.name.orEmpty(),
+                authorAvatarUrl = l.user?.avatar?.large,
+                recipientId = null,
+                recipientName = null,
+                recipientAvatarUrl = null,
+                replies = l.replies?.filterNotNull()?.map { r ->
+                    ActivityReply(
+                        id = r.id,
+                        body = r.text.orEmpty(),
+                        likeCount = r.likeCount,
+                        isLiked = r.isLiked == true,
+                        authorId = r.user?.id ?: 0,
+                        authorName = r.user?.name.orEmpty(),
+                        authorAvatarUrl = r.user?.avatar?.large,
+                        createdAt = r.createdAt.toLong()
+                    )
+                } ?: emptyList()
+            )
+        }
         onTextActivity?.let { t ->
             return ActivityDetail(
                 id = t.id,

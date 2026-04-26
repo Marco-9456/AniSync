@@ -5,8 +5,21 @@
     <!-- Navigation -->
     <string name="nav_library">Library</string>
     <string name="nav_discover">Discover</string>
+    <string name="nav_feed">Feed</string>
     <string name="nav_forum">Forum</string>
     <string name="nav_profile">Profile</string>
+
+    <!-- Feed Screen -->
+    <string name="feed_filter_all">All</string>
+    <string name="feed_filter_status">Status</string>
+    <string name="feed_filter_list">List</string>
+    <string name="feed_scope_global">Global</string>
+    <string name="feed_scope_following">Following</string>
+    <string name="feed_empty_global">No activity yet — pull to refresh.</string>
+    <string name="feed_empty_following">Follow people to see their activity here.</string>
+    <string name="feed_compose_title">Write a Status</string>
+    <string name="feed_compose_placeholder">Share what\'s on your mind…</string>
+    <string name="feed_compose_submit">Post</string>
 
     <!-- Forum Screen -->
     <string name="forum_browse_categories">Browse Categories</string>

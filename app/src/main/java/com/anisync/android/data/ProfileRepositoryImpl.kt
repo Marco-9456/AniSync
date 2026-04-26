@@ -9,6 +9,7 @@ import com.anisync.android.ToggleUserFollowMutation
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -79,81 +80,13 @@ class ProfileRepositoryImpl @Inject constructor(
                 rawActivities.add(it.activityFields) 
             }
 
-            val activities = rawActivities.mapNotNull { activityFields ->
-                when {
-                    activityFields.onListActivity != null -> {
-                        val l = activityFields.onListActivity
-                        val lastReply = l.replies?.lastOrNull()
-                        com.anisync.android.domain.UserActivity(
-                            id = l.id ?: 0,
-                            type = com.anisync.android.domain.ActivityType.MEDIA_LIST,
-                            status = l.status,
-                            progress = l.progress,
-                            mediaTitle = l.media?.title?.userPreferred ?: "Unknown",
-                            mediaCoverUrl = l.media?.coverImage?.medium,
-                            timestamp = (l.createdAt?.toLong() ?: 0L) * 1000L,
-                            mediaScore = null,
-                            userName = l.user?.name,
-                            userAvatarUrl = l.user?.avatar?.medium,
-                            replyUserName = lastReply?.user?.name,
-                            replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
-                            repliedAt = lastReply?.createdAt?.toLong(),
-                            likeCount = l.likeCount ?: 0,
-                            replyCount = l.replyCount ?: 0,
-                            isLiked = l.isLiked == true,
-                            isLocked = l.isLocked == true,
-                            isSubscribed = l.isSubscribed == true
-                        )
-                    }
-                    activityFields.onTextActivity != null -> {
-                        val t = activityFields.onTextActivity
-                        val lastReply = t.replies?.lastOrNull()
-                        com.anisync.android.domain.UserActivity(
-                            id = t.id ?: 0,
-                            type = com.anisync.android.domain.ActivityType.TEXT,
-                            text = t.text,
-                            timestamp = (t.createdAt?.toLong() ?: 0L) * 1000L,
-                            userName = t.user?.name,
-                            userAvatarUrl = t.user?.avatar?.medium,
-                            likeCount = t.likeCount ?: 0,
-                            replyCount = t.replyCount ?: 0,
-                            isLiked = t.isLiked == true,
-                            isLocked = t.isLocked == true,
-                            isSubscribed = t.isSubscribed == true,
-                            isPinned = t.isPinned == true,
-                            replyUserName = lastReply?.user?.name,
-                            replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
-                            repliedAt = lastReply?.createdAt?.toLong()
-                        )
-                    }
-                    activityFields.onMessageActivity != null -> {
-                        val m = activityFields.onMessageActivity
-                        val lastReply = m.replies?.lastOrNull()
-                        com.anisync.android.domain.UserActivity(
-                            id = m.id ?: 0,
-                            type = com.anisync.android.domain.ActivityType.MESSAGE,
-                            text = m.message,
-                            timestamp = (m.createdAt?.toLong() ?: 0L) * 1000L,
-                            userName = m.messenger?.name,
-                            userAvatarUrl = m.messenger?.avatar?.medium,
-                            recipientName = m.recipient?.name,
-                            recipientAvatarUrl = m.recipient?.avatar?.medium,
-                            likeCount = m.likeCount ?: 0,
-                            replyCount = m.replyCount ?: 0,
-                            isLiked = m.isLiked == true,
-                            isLocked = m.isLocked == true,
-                            isSubscribed = m.isSubscribed == true,
-                            isPrivate = m.isPrivate == true,
-                            replyUserName = lastReply?.user?.name,
-                            replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
-                            repliedAt = lastReply?.createdAt?.toLong()
-                        )
-                    }
-                    else -> null
-                }
-            }
-            .distinctBy { it.id }
-            .sortedByDescending { it.timestamp }
+            val activities = rawActivities
+                .mapNotNull { it.activityFieldsToDomain() }
+                .distinctBy { it.id }
+                .sortedWith(
+                    compareByDescending<com.anisync.android.domain.UserActivity> { it.isPinned }
+                        .thenByDescending { it.timestamp }
+                )
 
             val stats = user.statistics?.anime
             val mangaStats = user.statistics?.manga

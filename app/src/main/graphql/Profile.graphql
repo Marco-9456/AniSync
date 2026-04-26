@@ -266,12 +266,12 @@ fragment ActivityFields on ActivityUnion {
 
 query GetUserActivities($userId: Int) {
   allActivities: Page(perPage: 50) {
-    activities(userId: $userId, sort: [ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
+    activities(userId: $userId, sort: [PINNED, ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
       ...ActivityFields
     }
   }
   textActivities: Page(perPage: 20) {
-    activities(userId: $userId, sort: [ID_DESC], type_in: [TEXT]) {
+    activities(userId: $userId, sort: [PINNED, ID_DESC], type_in: [TEXT]) {
       ...ActivityFields
     }
   }

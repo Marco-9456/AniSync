@@ -33,6 +33,7 @@ import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.feed.FeedScreen
 import com.anisync.android.presentation.forum.CreateThreadScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
 import com.anisync.android.presentation.forum.ForumScreen
@@ -64,8 +65,9 @@ import com.anisync.android.presentation.util.LocalAniLinkCallbacks
 private val tabOrder = mapOf(
     Library::class.qualifiedName to 0,
     Discover::class.qualifiedName to 1,
-    Forum::class.qualifiedName to 2,
-    Profile::class.qualifiedName to 3
+    Feed::class.qualifiedName to 2,
+    Forum::class.qualifiedName to 3,
+    Profile::class.qualifiedName to 4
 )
 
 /**
@@ -305,6 +307,48 @@ fun AniSyncNavHost(
                     onSectionSeeAllClick = onSectionClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // FEED TAB - Shared Axis X (Horizontal)
+            // =================================================================
+
+            composable<Feed>(
+                enterTransition = {
+                    val forward = isForwardNavigation(
+                        fromRoute = initialState.destination.route,
+                        toRoute = Feed::class.qualifiedName
+                    )
+                    sharedAxisXEnter(forward = forward)
+                },
+                exitTransition = {
+                    val forward = isForwardNavigation(
+                        fromRoute = Feed::class.qualifiedName,
+                        toRoute = targetState.destination.route
+                    )
+                    sharedAxisXExit(forward = forward)
+                },
+                popEnterTransition = { sharedAxisXEnter(forward = false) },
+                popExitTransition = { sharedAxisXExit(forward = false) }
+            ) {
+                val onLogin = remember(navController) {
+                    {
+                        navController.navigate(Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+
+                val onFeedMediaClick = remember(onMediaClick) {
+                    { mediaId: Int -> onMediaClick(mediaId, "feed") }
+                }
+
+                FeedScreen(
+                    onActivityClick = navigateToActivity,
+                    onUserClick = navigateToUserProfile,
+                    onMediaClick = onFeedMediaClick,
+                    onLoginClick = onLogin
                 )
             }
 

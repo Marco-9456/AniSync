@@ -64,6 +64,7 @@ data class UserActivity(
     val type: ActivityType = ActivityType.MEDIA_LIST,
     val status: String? = null, // e.g. "watched episode", "read chapter"
     val progress: String? = null, // "1", "12 - 13"
+    val mediaId: Int? = null,
     val mediaTitle: String = "",
     val mediaCoverUrl: String? = null,
     val timestamp: Long,

@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
 @Composable
 fun ActivityPreviewCard(
@@ -65,7 +66,7 @@ fun ActivityPreviewCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp,
@@ -80,18 +81,16 @@ fun ActivityPreviewCard(
                 onUserClick = onUserClick
             )
 
-            // 2. BODY: HTML Stripped Text Preview
-            val previewText = remember(activity.text) { stripHtml(activity.text.orEmpty()) }
-            if (previewText.isNotBlank()) {
+            // 2. BODY: Rich text rendered inline (parsed via AsyncRichTextRenderer)
+            val rawHtml = activity.text.orEmpty()
+            if (rawHtml.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    text = previewText,
+                AsyncRichTextRenderer(
+                    html = rawHtml,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2f
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

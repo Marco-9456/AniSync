@@ -3,6 +3,7 @@ package com.anisync.android.di
 import com.anisync.android.data.ActivityRepositoryImpl
 import com.anisync.android.data.DetailsRepositoryImpl
 import com.anisync.android.data.DiscoverRepositoryImpl
+import com.anisync.android.data.FeedRepositoryImpl
 import com.anisync.android.data.ForumRepositoryImpl
 import com.anisync.android.data.LibraryRepositoryImpl
 import com.anisync.android.data.LinkPreviewProviderImpl
@@ -14,6 +15,7 @@ import com.anisync.android.data.repository.PreferencesRepositoryImpl
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.DiscoverRepository
+import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LinkPreviewProvider
@@ -85,4 +87,9 @@ abstract class RepositoryModule {
     abstract fun bindActivityRepository(
         impl: ActivityRepositoryImpl
     ): ActivityRepository
+
+    @Binds
+    abstract fun bindFeedRepository(
+        impl: FeedRepositoryImpl
+    ): FeedRepository
 }

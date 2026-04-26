@@ -8,10 +8,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Person
@@ -42,6 +44,7 @@ import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
 import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Discover
+import com.anisync.android.presentation.navigation.Feed
 import com.anisync.android.presentation.navigation.Forum
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
@@ -100,6 +103,13 @@ private fun MainBottomBar(navController: NavHostController) {
                 Icons.Outlined.Explore
             ),
             BottomNavItem(
+                R.string.nav_feed,
+                Feed,
+                Feed::class,
+                Icons.Filled.DynamicFeed,
+                Icons.Outlined.DynamicFeed
+            ),
+            BottomNavItem(
                 R.string.nav_forum,
                 Forum,
                 Forum::class,
@@ -123,6 +133,7 @@ private fun MainBottomBar(navController: NavHostController) {
             val dest = navBackStackEntryState.value?.destination
             dest?.hasRoute<Library>() == true ||
                     dest?.hasRoute<Discover>() == true ||
+                    dest?.hasRoute<Feed>() == true ||
                     dest?.hasRoute<Forum>() == true ||
                     dest?.hasRoute<Profile>() == true
         }

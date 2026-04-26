@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -85,7 +86,6 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.forum.FlatComment
 import com.anisync.android.presentation.forum.components.ContentStatsBar
 import com.anisync.android.presentation.forum.components.FoldedAncestorStrip
-import com.anisync.android.presentation.forum.components.ReplyBottomSheetContent
 import com.anisync.android.presentation.forum.components.ThreadBodyItem
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
@@ -500,18 +500,19 @@ fun ActivityDetailScreen(
     }
 
     if (uiState.isReplySheetVisible) {
-        ModalBottomSheet(
-            onDismissRequest = { viewModel.onAction(ActivityDetailAction.CloseReply) },
+        com.anisync.android.presentation.components.MarkdownComposeSheet(
+            title = stringResource(R.string.forum_write_reply),
+            placeholder = stringResource(R.string.forum_reply_hint),
+            submitLabel = stringResource(R.string.forum_post_reply),
+            replyingToLabel = uiState.replyingToAuthor?.let {
+                stringResource(R.string.forum_replying_to, it)
+            },
+            isSubmitting = uiState.isSubmittingReply,
+            onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
+            onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
+            prefillBody = uiState.replyPrefillBody,
             sheetState = replySheetState
-        ) {
-            ReplyBottomSheetContent(
-                replyingToAuthor = uiState.replyingToAuthor,
-                isSubmitting = uiState.isSubmittingReply,
-                onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
-                onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
-                prefillBody = uiState.replyPrefillBody
-            )
-        }
+        )
     }
 
     if (showDeleteActivityDialog) {

@@ -174,6 +174,7 @@ fun ProfileContent(
                     onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
                     onUserClick = onUserClick,
                     onActivityClick = onActivityClick,
+                    onMediaClick = onMediaClick,
                     onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
                 )
             }

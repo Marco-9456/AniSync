@@ -63,6 +63,7 @@ fun RecentUpdatesSection(
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
+    onMediaClick: (Int) -> Unit = {},
     onSubscribeClick: (Int) -> Unit = {}
 ) {
     Column(modifier = modifier) {
@@ -81,7 +82,8 @@ fun RecentUpdatesSection(
                         RecentUpdateCard(
                             activity = activity,
                             onUserClick = onUserClick,
-                            onActivityClick = onActivityClick
+                            onActivityClick = onActivityClick,
+                            onMediaClick = onMediaClick
                         )
                     } else {
                         ActivityPreviewCard(
@@ -102,14 +104,15 @@ fun RecentUpdateCard(
     activity: UserActivity,
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
-    onActivityClick: (Int) -> Unit = {}
+    onActivityClick: (Int) -> Unit = {},
+    onMediaClick: (Int) -> Unit = {}
 ) {
     Card(
         onClick = { onActivityClick(activity.id) },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp,
@@ -120,16 +123,21 @@ fun RecentUpdateCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // LEFT: Media Cover
+            // LEFT: Media Cover (tap → MediaDetails when mediaId available)
+            val coverModifier = Modifier
+                .width(88.dp)
+                .aspectRatio(3f / 4f)
+                .clip(RoundedCornerShape(12.dp))
+                .let { base ->
+                    val mediaId = activity.mediaId
+                    if (mediaId != null) base.clickable { onMediaClick(mediaId) } else base
+                }
+                .background(MaterialTheme.colorScheme.surfaceVariant)
             if (activity.mediaCoverUrl != null) {
                 AsyncImage(
                     model = activity.mediaCoverUrl,
                     contentDescription = activity.mediaTitle,
-                    modifier = Modifier
-                        .width(88.dp)
-                        .aspectRatio(3f / 4f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier = coverModifier
                         .border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
@@ -139,11 +147,7 @@ fun RecentUpdateCard(
                 )
             } else {
                 Box(
-                    modifier = Modifier
-                        .width(88.dp)
-                        .aspectRatio(3f / 4f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = coverModifier,
                     contentAlignment = Alignment.Center
                 ) {
                     Text(

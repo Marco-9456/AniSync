@@ -18,6 +18,9 @@ object Library
 object Discover
 
 @Serializable
+object Feed
+
+@Serializable
 object Profile
 
 @Serializable
