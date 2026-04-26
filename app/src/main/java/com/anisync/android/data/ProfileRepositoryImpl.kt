@@ -9,7 +9,6 @@ import com.anisync.android.ToggleUserFollowMutation
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
-import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -23,6 +22,7 @@ import com.apollographql.apollo.cache.normalized.fetchPolicy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 
 class ProfileRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,

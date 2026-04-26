@@ -52,8 +52,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.ForumCategory
+import com.anisync.android.domain.ForumThread
 
 @Composable
 fun ForumThreadCard(
