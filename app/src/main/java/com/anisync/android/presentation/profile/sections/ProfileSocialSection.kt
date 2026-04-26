@@ -155,7 +155,10 @@ fun LazyListScope.profileSocialTab(
                         thread = thread,
                         onClick = { onThreadClick(thread.id, thread.title) },
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        onUserClick = onUserClick
+                        onUserClick = onUserClick,
+                        onLastReplyClick = { threadId, commentId ->
+                            onCommentClick(threadId, commentId, thread.title)
+                        }
                     )
                     if (index == uiState.socialThreads.lastIndex) {
                         Spacer(modifier = Modifier.height(16.dp))

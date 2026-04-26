@@ -341,6 +341,7 @@ query GetUserSocialData($userId: Int!, $page: Int = 1) {
       createdAt
       updatedAt
       siteUrl
+      replyCommentId
       categories {
         id
         name

@@ -18,6 +18,7 @@ query GetForumThreads(
       isLocked
       isSticky
       repliedAt
+      replyCommentId
       createdAt
       user {
         id

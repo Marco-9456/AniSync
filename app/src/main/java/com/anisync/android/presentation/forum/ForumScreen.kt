@@ -129,6 +129,7 @@ private val categoryTabs = listOf(
 @Composable
 fun ForumScreen(
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
+    onThreadCommentClick: (threadId: Int, commentId: Int) -> Unit,
     onCreateThreadClick: () -> Unit,
     onUserClick: (String) -> Unit,
     viewModel: ForumViewModel = hiltViewModel()
@@ -389,6 +390,7 @@ fun ForumScreen(
                                             )
                                         )
                                     },
+                                    onLastReplyClick = onThreadCommentClick,
                                     modifier = sharedItemModifier
                                 )
                             }
@@ -480,6 +482,7 @@ fun ForumScreen(
                                     )
                                 )
                             },
+                            onLastReplyClick = onThreadCommentClick,
                             modifier = sharedItemModifier
                         )
                     }

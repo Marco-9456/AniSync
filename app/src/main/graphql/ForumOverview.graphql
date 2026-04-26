@@ -11,6 +11,7 @@ query GetForumOverview($page: Int = 1, $perPage: Int = 15, $sort: [ThreadSort] =
       isLocked
       isSticky
       repliedAt
+      replyCommentId
       createdAt
       user {
         id

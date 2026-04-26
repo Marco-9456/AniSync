@@ -491,8 +491,17 @@ fun AniSyncNavHost(
                     { navController.navigate(CreateThread) }
                 }
 
+                val onThreadCommentClick = remember(navController) {
+                    { threadId: Int, commentId: Int ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, "", commentId)
+                        )
+                    }
+                }
+
                 ForumScreen(
                     onThreadClick = onThreadClick,
+                    onThreadCommentClick = onThreadCommentClick,
                     onCreateThreadClick = onCreateThreadClick,
                     onUserClick = navigateToUserProfile
                 )
@@ -778,6 +787,11 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onThreadClick = { threadId, threadTitle ->
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    },
+                    onThreadCommentClick = { threadId, commentId ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, "", commentId)
+                        )
                     },
                     onUserClick = navigateToUserProfile
                 )

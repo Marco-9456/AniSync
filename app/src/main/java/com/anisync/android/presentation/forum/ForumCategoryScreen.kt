@@ -59,6 +59,7 @@ fun ForumCategoryScreen(
     categoryName: String,
     onBackClick: () -> Unit,
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
+    onThreadCommentClick: (threadId: Int, commentId: Int) -> Unit,
     onUserClick: (String) -> Unit,
     viewModel: ForumCategoryViewModel = hiltViewModel()
 ) {
@@ -210,6 +211,7 @@ fun ForumCategoryScreen(
                                     thread = thread,
                                     onClick = { onThreadClick(thread.id, thread.title) },
                                     onUserClick = onUserClick,
+                                    onLastReplyClick = onThreadCommentClick,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 6.dp)

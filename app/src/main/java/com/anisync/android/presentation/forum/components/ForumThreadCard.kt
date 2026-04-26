@@ -64,7 +64,8 @@ fun ForumThreadCard(
     onSaveClick: (() -> Unit)? = null,
     isSubscribed: Boolean = false,
     onSubscribeClick: (() -> Unit)? = null,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onLastReplyClick: (threadId: Int, commentId: Int) -> Unit = { _, _ -> }
 ) {
     Card(
         onClick = onClick,
@@ -101,7 +102,8 @@ fun ForumThreadCard(
             // 3. FOOTER: Last Reply info & Engagement Stats
             ThreadFooter(
                 thread = thread,
-                onUserClick = onUserClick
+                onUserClick = onUserClick,
+                onLastReplyClick = onLastReplyClick
             )
         }
     }
@@ -257,7 +259,8 @@ private fun ThreadBody(thread: ForumThread) {
 @Composable
 private fun ThreadFooter(
     thread: ForumThread,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onLastReplyClick: (threadId: Int, commentId: Int) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -271,7 +274,10 @@ private fun ThreadFooter(
         ) {
             if (thread.replyUserName != null && thread.repliedAt != null) {
                 Surface(
-                    onClick = { onUserClick(thread.replyUserName!!) },
+                    onClick = {
+                        val commentId = thread.replyCommentId
+                        if (commentId != null) onLastReplyClick(thread.id, commentId)
+                    },
                     shape = RoundedCornerShape(50),
                     color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 ) {

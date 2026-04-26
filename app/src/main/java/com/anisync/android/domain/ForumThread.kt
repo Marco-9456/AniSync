@@ -22,6 +22,7 @@ data class ForumThread(
     val repliedAt: Long? = null,
     val replyUserName: String? = null,
     val replyUserAvatarUrl: String? = null,
+    val replyCommentId: Int? = null,
     val categories: List<ForumCategory>,
     val createdAt: Long,
     val updatedAt: Long,

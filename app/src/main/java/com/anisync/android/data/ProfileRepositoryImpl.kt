@@ -328,6 +328,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     repliedAt = thread.repliedAt?.toLong(),
                     replyUserName = thread.replyUser?.name,
                     replyUserAvatarUrl = thread.replyUser?.avatar?.large,
+                    replyCommentId = thread.replyCommentId,
                     categories = thread.categories?.filterNotNull()?.map {
                         com.anisync.android.domain.ForumCategory(
                             id = it.id,
