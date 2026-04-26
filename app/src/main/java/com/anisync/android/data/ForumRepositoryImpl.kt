@@ -24,12 +24,22 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import kotlinx.coroutines.flow.first
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 class ForumRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val savedForumThreadDao: SavedForumThreadDao
 ) : ForumRepository {
+
+    // In-memory cache for "which API page contains comment X" so reopening the
+    // same deep-link does not re-run the binary search. API page is ascending,
+    // independent of the user-selected display sort.
+    private val pageLookupCache = ConcurrentHashMap<Pair<Int, Int>, Int>()
+
+    // Cache of the thread's last API page (count of pages under ascending sort),
+    // so display-sort=DESC translation does not need an extra round-trip per call.
+    private val lastApiPageCache = ConcurrentHashMap<Int, Int>()
 
     // =========================================================================
     // READ: Recent threads (Forum hub / overview)
@@ -122,29 +132,163 @@ class ForumRepositoryImpl @Inject constructor(
     // READ: Thread comments (Recursive tree build)
     // =========================================================================
 
+    /**
+     * Loads a "display page" of top-level comments for [threadId].
+     *
+     * AniList's `Page.threadComments(sort:)` argument does not actually re-order
+     * results, so all sort handling is done client-side: we always fetch from
+     * the API in ascending-id order and translate display-page numbers and
+     * within-page ordering ourselves.
+     *
+     * - sort == "ID" (oldest first): displayPage maps directly to apiPage,
+     *   items returned as the API delivers them.
+     * - sort == "ID_DESC" (newest first): displayPage 1 == the most recent
+     *   comments, which live on the highest apiPage. We map
+     *   apiPage = lastApiPage - displayPage + 1 and reverse the items so the
+     *   newest comment of the thread appears at the top of displayPage 1.
+     */
     override suspend fun getComments(
         threadId: Int,
         page: Int,
         sort: String?
     ): Result<PaginatedResult<ForumComment>> {
         return runCatchingApi("load comments") {
+            val isDesc = sort?.equals("ID_DESC", ignoreCase = true) == true
+
+            val apiPage = if (isDesc) {
+                val lastApi = fetchLastApiPage(threadId)
+                (lastApi - page + 1).coerceAtLeast(1)
+            } else page
+
             val response = apolloClient
-                .query(GetForumCommentsQuery(threadId = threadId, page = Optional.present(page)))
+                .query(
+                    GetForumCommentsQuery(
+                        threadId = threadId,
+                        page = Optional.present(apiPage)
+                    )
+                )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
 
             val pageData = response.data?.Page
             val rootNodes = pageData?.threadComments?.filterNotNull() ?: emptyList()
+            val info = pageData?.pageInfo
+            val apiLastPage = info?.lastPage ?: apiPage
+            // Keep the cache fresh in case new comments grew the thread.
+            lastApiPageCache[threadId] = apiLastPage
 
-            val rootComments = rootNodes.mapNotNull { mapToForumComment(it) }
+            val ordered = rootNodes
+                .mapNotNull { mapToForumComment(it) }
+                .let { if (isDesc) it.asReversed() else it }
 
             PaginatedResult(
-                items = rootComments,
-                hasNextPage = pageData?.pageInfo?.hasNextPage ?: false,
-                currentPage = pageData?.pageInfo?.currentPage ?: page,
-                totalPages = 0
+                items = ordered,
+                hasNextPage = page < apiLastPage,
+                currentPage = page,
+                totalPages = apiLastPage,
+                lastPage = apiLastPage,
+                total = info?.total ?: 0,
             )
         }
+    }
+
+    /**
+     * Returns the display-space page that contains [commentId]. Internally we
+     * binary-search the API (always ascending), then translate the resulting
+     * apiPage into the user-selected display-page space.
+     */
+    override suspend fun findCommentPage(
+        threadId: Int,
+        commentId: Int,
+        sort: String?,
+        perPage: Int,
+    ): Result<Int> {
+        val isDesc = sort?.equals("ID_DESC", ignoreCase = true) == true
+        val apiPageResult = findApiPageForComment(threadId, commentId)
+        return when (apiPageResult) {
+            is Result.Success -> {
+                val apiPage = apiPageResult.data
+                val displayPage = if (isDesc) {
+                    val lastApi = lastApiPageCache[threadId]
+                        ?: (runCatchingApi("probe last page") { fetchLastApiPage(threadId) }
+                            as? Result.Success)?.data
+                        ?: apiPage
+                    (lastApi - apiPage + 1).coerceAtLeast(1)
+                } else apiPage
+                Result.Success(displayPage)
+            }
+
+            is Result.Error -> apiPageResult
+        }
+    }
+
+    private suspend fun findApiPageForComment(
+        threadId: Int,
+        commentId: Int,
+    ): Result<Int> {
+        pageLookupCache[threadId to commentId]?.let { return Result.Success(it) }
+
+        return runCatchingApi("locate comment page") {
+            val firstResp = apolloClient
+                .query(GetForumCommentsQuery(threadId = threadId, page = Optional.present(1)))
+                .fetchPolicy(FetchPolicy.CacheFirst)
+                .execute()
+            val firstNodes = firstResp.data?.Page?.threadComments?.filterNotNull() ?: emptyList()
+            val lastPage = firstResp.data?.Page?.pageInfo?.lastPage ?: 1
+            lastApiPageCache[threadId] = lastPage
+
+            if (firstNodes.any { it.id == commentId }) {
+                pageLookupCache[threadId to commentId] = 1
+                return@runCatchingApi 1
+            }
+            if (lastPage <= 1) {
+                throw IllegalStateException("Comment $commentId not found in thread $threadId")
+            }
+
+            var lo = 2
+            var hi = lastPage
+            while (lo <= hi) {
+                val mid = (lo + hi) / 2
+                val resp = apolloClient
+                    .query(GetForumCommentsQuery(threadId = threadId, page = Optional.present(mid)))
+                    .fetchPolicy(FetchPolicy.CacheFirst)
+                    .execute()
+                val nodes = resp.data?.Page?.threadComments?.filterNotNull() ?: emptyList()
+                if (nodes.isEmpty()) {
+                    hi = mid - 1
+                    continue
+                }
+                val firstId = nodes.first().id ?: 0
+                val lastId = nodes.last().id ?: 0
+                val lower = minOf(firstId, lastId)
+                val upper = maxOf(firstId, lastId)
+
+                when {
+                    commentId in lower..upper -> {
+                        if (nodes.any { it.id == commentId }) {
+                            pageLookupCache[threadId to commentId] = mid
+                            return@runCatchingApi mid
+                        }
+                        throw IllegalStateException("Comment $commentId not on a top-level page")
+                    }
+
+                    commentId < lower -> hi = mid - 1
+                    else -> lo = mid + 1
+                }
+            }
+            throw IllegalStateException("Comment $commentId not found in thread $threadId")
+        }
+    }
+
+    private suspend fun fetchLastApiPage(threadId: Int): Int {
+        lastApiPageCache[threadId]?.let { return it }
+        val resp = apolloClient
+            .query(GetForumCommentsQuery(threadId = threadId, page = Optional.present(1)))
+            .fetchPolicy(FetchPolicy.CacheFirst)
+            .execute()
+        val lp = resp.data?.Page?.pageInfo?.lastPage ?: 1
+        lastApiPageCache[threadId] = lp
+        return lp
     }
 
     /**

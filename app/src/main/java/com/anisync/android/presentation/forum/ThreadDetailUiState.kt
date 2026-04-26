@@ -12,8 +12,15 @@ data class ThreadDetailUiState(
     val parsedBody: ParsedRichText? = null,
     val comments: List<ForumComment> = emptyList(),
     val isLoadingMoreComments: Boolean = false,
+    val isLoadingEarlierComments: Boolean = false,
     val hasMoreComments: Boolean = false,
-    val currentCommentPage: Int = 1,
+    val hasEarlierComments: Boolean = false,
+    val loadedPageRange: IntRange? = null,
+    val lastPage: Int = 1,
+    val totalComments: Int = 0,
+    val perPage: Int = 25,
+    val anchorCommentId: Int? = null,
+    val isPageJumperVisible: Boolean = false,
     val commentSort: String = "ID",
     val commentSortLabel: String = "Oldest",
     val isReplySheetVisible: Boolean = false,
@@ -22,12 +29,22 @@ data class ThreadDetailUiState(
     val isSubmittingReply: Boolean = false,
     val isSaved: Boolean = false,
     val errorMessage: String? = null,
-    val scrollToBottom: Boolean = false
+    val scrollToBottom: Boolean = false,
+    val pendingScrollToTop: Boolean = false,
+    val pendingPrependCount: Int = 0,
 )
 
 sealed interface ThreadDetailAction {
-    data class Load(val threadId: Int) : ThreadDetailAction
+    data class Load(val threadId: Int, val targetCommentId: Int? = null) : ThreadDetailAction
     data object LoadMoreComments : ThreadDetailAction
+    data object LoadEarlierComments : ThreadDetailAction
+    data class JumpToPage(val page: Int) : ThreadDetailAction
+    data object JumpToFirstPage : ThreadDetailAction
+    data object JumpToLatestPage : ThreadDetailAction
+    data object ShowPageJumper : ThreadDetailAction
+    data object HidePageJumper : ThreadDetailAction
+    data object PrependScrollConsumed : ThreadDetailAction
+    data object ScrollToTopConsumed : ThreadDetailAction
     data class ToggleLike(val isThread: Boolean, val id: Int, val currentLiked: Boolean) :
         ThreadDetailAction
 

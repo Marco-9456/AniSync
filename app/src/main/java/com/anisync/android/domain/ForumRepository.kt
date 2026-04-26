@@ -36,6 +36,18 @@ interface ForumRepository {
      */
     suspend fun getComments(threadId: Int, page: Int, sort: String? = null): Result<PaginatedResult<ForumComment>>
 
+    /**
+     * Locates which page contains [commentId] in the comments list of [threadId]
+     * given the current [sort]. Uses a client-side binary search over the page
+     * range because the AniList API does not expose this lookup directly.
+     */
+    suspend fun findCommentPage(
+        threadId: Int,
+        commentId: Int,
+        sort: String? = null,
+        perPage: Int = 25,
+    ): Result<Int>
+
     // =========================================================================
     // WRITE OPERATIONS
     // =========================================================================

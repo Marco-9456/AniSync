@@ -66,8 +66,11 @@ query GetForumComments(
             }
         }
         pageInfo {
-            hasNextPage
+            total
+            perPage
             currentPage
+            lastPage
+            hasNextPage
         }
     }
 }

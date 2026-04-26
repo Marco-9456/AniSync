@@ -32,6 +32,17 @@
     <string name="forum_post_reply">Post Reply</string>
     <string name="forum_comments">Comments</string>
     <string name="forum_load_more_comments">Load More Comments</string>
+    <string name="forum_comments_count">%1$d comments</string>
+    <string name="forum_page_of">Page %1$d of %2$d</string>
+    <string name="forum_load_earlier_count">Load earlier · %1$d above</string>
+    <string name="forum_load_more_count">Load %1$d more · %2$d remaining</string>
+    <string name="forum_jump_to_page">Jump to page</string>
+    <string name="forum_first_page">First</string>
+    <string name="forum_latest_page">Latest</string>
+    <string name="forum_current_page_label">Current</string>
+    <string name="forum_jump">Jump</string>
+    <string name="forum_comment_unavailable">Comment unavailable, showing thread from start</string>
+    <string name="forum_a11y_open_page_jumper">Open page jumper</string>
     <string name="forum_search_threads">Search threads…</string>
     <string name="forum_search_placeholder">Search forum threads</string>
     <string name="forum_select_categories">Select categories</string>

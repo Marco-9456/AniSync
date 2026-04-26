@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
+import com.anisync.android.domain.PaginatedResult
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.parser.RichTextParser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+private const val DEFAULT_PER_PAGE = 25
+
 @HiltViewModel
 class ThreadDetailViewModel @Inject constructor(
     private val forumRepository: ForumRepository
@@ -33,8 +36,24 @@ class ThreadDetailViewModel @Inject constructor(
 
     fun onAction(action: ThreadDetailAction) {
         when (action) {
-            is ThreadDetailAction.Load -> load(action.threadId)
+            is ThreadDetailAction.Load -> load(action.threadId, action.targetCommentId)
             is ThreadDetailAction.LoadMoreComments -> loadMoreComments()
+            is ThreadDetailAction.LoadEarlierComments -> loadEarlierComments()
+            is ThreadDetailAction.JumpToPage -> jumpToPage(action.page)
+            is ThreadDetailAction.JumpToFirstPage -> jumpToPage(1)
+            is ThreadDetailAction.JumpToLatestPage -> jumpToPage(_uiState.value.lastPage)
+            is ThreadDetailAction.ShowPageJumper ->
+                _uiState.update { it.copy(isPageJumperVisible = true) }
+
+            is ThreadDetailAction.HidePageJumper ->
+                _uiState.update { it.copy(isPageJumperVisible = false) }
+
+            is ThreadDetailAction.PrependScrollConsumed ->
+                _uiState.update { it.copy(pendingPrependCount = 0) }
+
+            is ThreadDetailAction.ScrollToTopConsumed ->
+                _uiState.update { it.copy(pendingScrollToTop = false) }
+
             is ThreadDetailAction.ToggleLike -> toggleLike(action)
             is ThreadDetailAction.OpenReply -> {
                 _uiState.update {
@@ -63,28 +82,59 @@ class ThreadDetailViewModel @Inject constructor(
         }
     }
 
-    private fun load(threadId: Int) {
+    private fun load(threadId: Int, targetCommentId: Int?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    anchorCommentId = null,
+                    pendingPrependCount = 0,
+                    pendingScrollToTop = false,
+                )
+            }
 
             val sort = _uiState.value.commentSort
 
             val threadDeferred = async { forumRepository.getThread(threadId) }
-            val commentsDeferred =
-                async { forumRepository.getComments(threadId, page = 1, sort = sort) }
             val savedDeferred = async { forumRepository.isThreadSaved(threadId) }
 
+            // If we have a deep-link target, find its page first; otherwise start at 1.
+            val targetPageDeferred = async {
+                if (targetCommentId != null) {
+                    forumRepository.findCommentPage(
+                        threadId,
+                        targetCommentId,
+                        sort,
+                        DEFAULT_PER_PAGE
+                    )
+                } else null
+            }
+
             val threadResult = threadDeferred.await()
-            val commentsResult = commentsDeferred.await()
             val isSaved = savedDeferred.await()
 
             if (threadResult is Result.Error) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = threadResult.message) }
+                _uiState.update {
+                    it.copy(isLoading = false, errorMessage = threadResult.message)
+                }
                 return@launch
             }
-
             val thread = (threadResult as Result.Success).data
-            val commentsData = (commentsResult as? Result.Success)?.data
+
+            val targetPageResult = targetPageDeferred.await()
+            val resolvedPage = when (targetPageResult) {
+                is Result.Success -> targetPageResult.data
+                else -> 1
+            }
+            val anchorId = if (targetCommentId != null && targetPageResult is Result.Success) {
+                targetCommentId
+            } else null
+            val targetMissed =
+                targetCommentId != null && targetPageResult !is Result.Success
+
+            val commentsResult =
+                forumRepository.getComments(threadId, page = resolvedPage, sort = sort)
 
             val parsedBody = thread.body?.let { rawHtml ->
                 withContext(Dispatchers.Default) {
@@ -92,38 +142,145 @@ class ThreadDetailViewModel @Inject constructor(
                 }
             }
 
+            val commentsData = (commentsResult as? Result.Success)?.data
+            val resolvedLastPage = commentsData?.lastPage?.takeIf { it > 0 }
+                ?: resolvedPage
+            val total = commentsData?.total?.takeIf { it > 0 }
+                ?: thread.replyCount
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     thread = thread,
                     parsedBody = parsedBody,
                     comments = commentsData?.items ?: emptyList(),
-                    hasMoreComments = commentsData?.hasNextPage ?: false,
-                    currentCommentPage = 1,
+                    loadedPageRange = resolvedPage..resolvedPage,
+                    lastPage = resolvedLastPage,
+                    totalComments = total,
+                    hasMoreComments = resolvedPage < resolvedLastPage,
+                    hasEarlierComments = resolvedPage > 1,
+                    anchorCommentId = anchorId,
                     isSaved = isSaved,
-                    errorMessage = null
+                    errorMessage = null,
+                )
+            }
+
+            if (targetMissed) {
+                _actions.emit(
+                    ThreadDetailAction.ShowSnackbar(
+                        "Comment unavailable, showing thread from start"
+                    )
                 )
             }
         }
     }
 
     private fun loadMoreComments() {
-        val threadId = _uiState.value.thread?.id ?: return
-        if (!_uiState.value.hasMoreComments || _uiState.value.isLoadingMoreComments) return
+        val state = _uiState.value
+        val threadId = state.thread?.id ?: return
+        val range = state.loadedPageRange ?: return
+        if (state.isLoadingMoreComments || !state.hasMoreComments) return
+        val nextPage = range.last + 1
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMoreComments = true) }
-            val nextPage = _uiState.value.currentCommentPage + 1
-            val sort = _uiState.value.commentSort
-
-            when (val result = forumRepository.getComments(threadId, nextPage, sort = sort)) {
+            when (val result =
+                forumRepository.getComments(threadId, nextPage, sort = state.commentSort)) {
                 is Result.Success -> {
+                    val data = result.data
+                    _uiState.update { current ->
+                        val newRange = (current.loadedPageRange?.first ?: nextPage)..nextPage
+                        current.copy(
+                            isLoadingMoreComments = false,
+                            comments = current.comments + data.items,
+                            loadedPageRange = newRange,
+                            lastPage = data.lastPage.takeIf { it > 0 } ?: current.lastPage,
+                            totalComments = data.total.takeIf { it > 0 } ?: current.totalComments,
+                            hasMoreComments = nextPage < (data.lastPage.takeIf { it > 0 }
+                                ?: current.lastPage),
+                            hasEarlierComments = newRange.first > 1,
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoadingMoreComments = false) }
+                }
+            }
+        }
+    }
+
+    private fun loadEarlierComments() {
+        val state = _uiState.value
+        val threadId = state.thread?.id ?: return
+        val range = state.loadedPageRange ?: return
+        if (state.isLoadingEarlierComments || !state.hasEarlierComments) return
+        val prevPage = range.first - 1
+        if (prevPage < 1) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingEarlierComments = true) }
+            when (val result =
+                forumRepository.getComments(threadId, prevPage, sort = state.commentSort)) {
+                is Result.Success -> {
+                    val data = result.data
+                    _uiState.update { current ->
+                        val newRange = prevPage..(current.loadedPageRange?.last ?: prevPage)
+                        current.copy(
+                            isLoadingEarlierComments = false,
+                            comments = data.items + current.comments,
+                            loadedPageRange = newRange,
+                            lastPage = data.lastPage.takeIf { it > 0 } ?: current.lastPage,
+                            totalComments = data.total.takeIf { it > 0 } ?: current.totalComments,
+                            hasEarlierComments = newRange.first > 1,
+                            hasMoreComments = newRange.last < (data.lastPage.takeIf { it > 0 }
+                                ?: current.lastPage),
+                            pendingPrependCount = data.items.size,
+                        )
+                    }
+                }
+
+                is Result.Error -> {
+                    _uiState.update { it.copy(isLoadingEarlierComments = false) }
+                }
+            }
+        }
+    }
+
+    private fun jumpToPage(page: Int) {
+        val state = _uiState.value
+        val threadId = state.thread?.id ?: return
+        val target = page.coerceIn(1, state.lastPage.coerceAtLeast(1))
+        // No-op if already showing that page exclusively
+        if (state.loadedPageRange == target..target && !state.isLoadingMoreComments) {
+            _uiState.update { it.copy(isPageJumperVisible = false) }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingMoreComments = true,
+                    isPageJumperVisible = false,
+                    anchorCommentId = null,
+                )
+            }
+            when (val result =
+                forumRepository.getComments(threadId, target, sort = state.commentSort)) {
+                is Result.Success -> {
+                    val data = result.data
                     _uiState.update { current ->
                         current.copy(
                             isLoadingMoreComments = false,
-                            comments = current.comments + result.data.items,
-                            hasMoreComments = result.data.hasNextPage,
-                            currentCommentPage = nextPage
+                            comments = data.items,
+                            loadedPageRange = target..target,
+                            lastPage = data.lastPage.takeIf { it > 0 } ?: current.lastPage,
+                            totalComments = data.total.takeIf { it > 0 } ?: current.totalComments,
+                            hasMoreComments = target < (data.lastPage.takeIf { it > 0 }
+                                ?: current.lastPage),
+                            hasEarlierComments = target > 1,
+                            pendingScrollToTop = true,
+                            pendingPrependCount = 0,
                         )
                     }
                 }
@@ -137,19 +294,31 @@ class ThreadDetailViewModel @Inject constructor(
 
     private fun changeCommentSort(action: ThreadDetailAction.ChangeCommentSort) {
         val threadId = _uiState.value.thread?.id ?: return
-        _uiState.update { it.copy(commentSort = action.sort, commentSortLabel = action.label) }
+        _uiState.update {
+            it.copy(
+                commentSort = action.sort,
+                commentSortLabel = action.label,
+                isLoadingMoreComments = true,
+                comments = emptyList(),
+                anchorCommentId = null,
+                loadedPageRange = null,
+            )
+        }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingMoreComments = true, comments = emptyList()) }
             when (val result =
                 forumRepository.getComments(threadId, page = 1, sort = action.sort)) {
                 is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
+                    val data: PaginatedResult<ForumComment> = result.data
+                    _uiState.update { current ->
+                        current.copy(
                             isLoadingMoreComments = false,
-                            comments = result.data.items,
-                            hasMoreComments = result.data.hasNextPage,
-                            currentCommentPage = 1
+                            comments = data.items,
+                            loadedPageRange = 1..1,
+                            lastPage = data.lastPage.takeIf { it > 0 } ?: 1,
+                            totalComments = data.total.takeIf { it > 0 } ?: current.totalComments,
+                            hasMoreComments = data.hasNextPage,
+                            hasEarlierComments = false,
                         )
                     }
                 }
