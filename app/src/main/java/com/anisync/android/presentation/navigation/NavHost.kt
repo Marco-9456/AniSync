@@ -101,6 +101,10 @@ fun AniSyncNavHost(
         navController.navigate(ActivityDetail(activityId))
     }
 
+    val navigateToActivityReply: (Int, Int) -> Unit = { activityId, replyId ->
+        navController.navigate(ActivityDetail(activityId = activityId, targetReplyId = replyId))
+    }
+
     // =============================================================================
     // MATERIAL 3 MOTION SPECS (Memoized)
     // =============================================================================
@@ -348,6 +352,7 @@ fun AniSyncNavHost(
                     onActivityClick = navigateToActivity,
                     onUserClick = navigateToUserProfile,
                     onMediaClick = onFeedMediaClick,
+                    onLastReplyClick = navigateToActivityReply,
                     onLoginClick = onLogin
                 )
             }
@@ -406,6 +411,7 @@ fun AniSyncNavHost(
                         )
                     },
                     onActivityClick = navigateToActivity,
+                    onLastReplyClick = navigateToActivityReply,
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -445,6 +451,7 @@ fun AniSyncNavHost(
                         )
                     },
                     onActivityClick = navigateToActivity,
+                    onLastReplyClick = navigateToActivityReply,
                     onLogoutClick = { }, // Not used for other users
                     onNavigateToSettings = { }, // Not used for other users
                     isOwnProfile = false,

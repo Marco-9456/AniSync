@@ -39,6 +39,7 @@ fun LazyListScope.profileActivityTab(
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     onSubscribeClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -100,7 +101,8 @@ fun LazyListScope.profileActivityTab(
                     modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     onUserClick = onUserClick,
                     onActivityClick = onActivityClick,
-                    onMediaClick = onMediaClick
+                    onMediaClick = onMediaClick,
+                    onLastReplyClick = onLastReplyClick
                 )
             } else {
                 ActivityPreviewCard(
@@ -108,6 +110,7 @@ fun LazyListScope.profileActivityTab(
                     onClick = { onActivityClick(activity.id) },
                     onSubscribeClick = { onSubscribeClick(activity.id) },
                     onUserClick = onUserClick,
+                    onLastReplyClick = onLastReplyClick,
                     modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }

@@ -56,7 +56,8 @@ fun ActivityPreviewCard(
     onClick: () -> Unit,
     onSubscribeClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (String) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> }
 ) {
     Card(
         onClick = onClick,
@@ -97,7 +98,8 @@ fun ActivityPreviewCard(
             // 3. FOOTER: Engagement Stats
             ActivityFooter(
                 activity = activity,
-                onUserClick = onUserClick
+                onUserClick = onUserClick,
+                onLastReplyClick = onLastReplyClick
             )
         }
     }
@@ -233,7 +235,8 @@ private fun ActivityHeader(
 @Composable
 private fun ActivityFooter(
     activity: UserActivity,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -247,7 +250,10 @@ private fun ActivityFooter(
         ) {
             if (activity.replyUserName != null && activity.repliedAt != null) {
                 Surface(
-                    onClick = { onUserClick(activity.replyUserName!!) },
+                    onClick = {
+                        val replyId = activity.lastReplyId
+                        if (replyId != null) onLastReplyClick(activity.id, replyId)
+                    },
                     shape = RoundedCornerShape(50),
                     color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 ) {

@@ -61,6 +61,7 @@ fun ProfileOverviewSection(
     onStaffClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     onSubscribeClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -89,6 +90,7 @@ fun ProfileOverviewSection(
                 onUserClick = onUserClick,
                 onActivityClick = onActivityClick,
                 onMediaClick = onMediaClick,
+                onLastReplyClick = onLastReplyClick,
                 onSubscribeClick = onSubscribeClick
             )
             Spacer(modifier = Modifier.height(24.dp))

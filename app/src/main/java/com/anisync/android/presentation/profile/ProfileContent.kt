@@ -84,6 +84,7 @@ fun ProfileContent(
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     onActivityClick: (Int) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -162,6 +163,7 @@ fun ProfileContent(
                         onStaffClick = onStaffClick,
                         onUserClick = onUserClick,
                         onActivityClick = onActivityClick,
+                        onLastReplyClick = onLastReplyClick,
                         onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
                     )
                 }
@@ -175,6 +177,7 @@ fun ProfileContent(
                     onUserClick = onUserClick,
                     onActivityClick = onActivityClick,
                     onMediaClick = onMediaClick,
+                    onLastReplyClick = onLastReplyClick,
                     onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
                 )
             }

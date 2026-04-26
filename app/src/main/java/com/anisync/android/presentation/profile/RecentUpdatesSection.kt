@@ -64,6 +64,7 @@ fun RecentUpdatesSection(
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     onSubscribeClick: (Int) -> Unit = {}
 ) {
     Column(modifier = modifier) {
@@ -83,14 +84,16 @@ fun RecentUpdatesSection(
                             activity = activity,
                             onUserClick = onUserClick,
                             onActivityClick = onActivityClick,
-                            onMediaClick = onMediaClick
+                            onMediaClick = onMediaClick,
+                            onLastReplyClick = onLastReplyClick
                         )
                     } else {
                         ActivityPreviewCard(
                             activity = activity,
                             onClick = { onActivityClick(activity.id) },
                             onSubscribeClick = { onSubscribeClick(activity.id) },
-                            onUserClick = onUserClick
+                            onUserClick = onUserClick,
+                            onLastReplyClick = onLastReplyClick
                         )
                     }
                 }
@@ -105,7 +108,8 @@ fun RecentUpdateCard(
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
-    onMediaClick: (Int) -> Unit = {}
+    onMediaClick: (Int) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> }
 ) {
     Card(
         onClick = { onActivityClick(activity.id) },
@@ -175,7 +179,8 @@ fun RecentUpdateCard(
 
                 UpdateFooter(
                     activity = activity,
-                    onUserClick = onUserClick
+                    onUserClick = onUserClick,
+                    onLastReplyClick = onLastReplyClick
                 )
             }
         }
@@ -277,7 +282,8 @@ private fun UpdateStatusText(activity: UserActivity) {
 @Composable
 private fun UpdateFooter(
     activity: UserActivity,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -291,7 +297,10 @@ private fun UpdateFooter(
         ) {
             if (activity.replyUserName != null && activity.repliedAt != null) {
                 Surface(
-                    onClick = { onUserClick(activity.replyUserName!!) },
+                    onClick = {
+                        val replyId = activity.lastReplyId
+                        if (replyId != null) onLastReplyClick(activity.id, replyId)
+                    },
                     shape = RoundedCornerShape(50),
                     color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 ) {

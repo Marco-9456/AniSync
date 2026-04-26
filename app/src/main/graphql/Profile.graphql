@@ -177,6 +177,7 @@ fragment ActivityFields on ActivityUnion {
         }
       }
       replies {
+        id
         createdAt
         user {
           name
@@ -211,6 +212,7 @@ fragment ActivityFields on ActivityUnion {
       isSubscribed
       isPinned
       replies {
+        id
         createdAt
         user {
           name
@@ -239,6 +241,7 @@ fragment ActivityFields on ActivityUnion {
       isLocked
       isSubscribed
       replies {
+        id
         createdAt
         user {
           name

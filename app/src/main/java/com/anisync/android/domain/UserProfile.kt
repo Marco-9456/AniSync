@@ -77,6 +77,7 @@ data class UserActivity(
     val replyUserName: String? = null,
     val replyUserAvatarUrl: String? = null,
     val repliedAt: Long? = null,
+    val lastReplyId: Int? = null,
     val likeCount: Int = 0,
     val replyCount: Int = 0,
     val isLiked: Boolean = false,

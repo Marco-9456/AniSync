@@ -22,6 +22,7 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             replyUserName = lastReply?.user?.name,
             replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
             repliedAt = lastReply?.createdAt?.toLong(),
+            lastReplyId = lastReply?.id,
             likeCount = l.likeCount ?: 0,
             replyCount = l.replyCount ?: 0,
             isLiked = l.isLiked == true,
@@ -46,7 +47,8 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             isPinned = t.isPinned == true,
             replyUserName = lastReply?.user?.name,
             replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
-            repliedAt = lastReply?.createdAt?.toLong()
+            repliedAt = lastReply?.createdAt?.toLong(),
+            lastReplyId = lastReply?.id
         )
     }
     onMessageActivity?.let { m ->
@@ -68,7 +70,8 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             isPrivate = m.isPrivate == true,
             replyUserName = lastReply?.user?.name,
             replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
-            repliedAt = lastReply?.createdAt?.toLong()
+            repliedAt = lastReply?.createdAt?.toLong(),
+            lastReplyId = lastReply?.id
         )
     }
     return null

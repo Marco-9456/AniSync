@@ -61,6 +61,7 @@ fun FeedScreen(
     onActivityClick: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     onMediaClick: (Int) -> Unit,
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     onLoginClick: () -> Unit,
     viewModel: FeedViewModel = hiltViewModel()
 ) {
@@ -201,7 +202,8 @@ fun FeedScreen(
                                         activity = activity,
                                         onUserClick = onUserClick,
                                         onActivityClick = onActivityClick,
-                                        onMediaClick = onMediaClick
+                                        onMediaClick = onMediaClick,
+                                        onLastReplyClick = onLastReplyClick
                                     )
                                 } else {
                                     ActivityPreviewCard(
@@ -210,7 +212,8 @@ fun FeedScreen(
                                         onSubscribeClick = {
                                             viewModel.onAction(FeedAction.ToggleSubscribe(activity.id))
                                         },
-                                        onUserClick = onUserClick
+                                        onUserClick = onUserClick,
+                                        onLastReplyClick = onLastReplyClick
                                     )
                                 }
                             }
