@@ -18,25 +18,25 @@
 </p>
 
 <p align="center">
-  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Platform"></a>
-  <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue?style=for-the-badge" alt="Min SDK"></a>
-  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"></a>
-  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Compose"></a>
-  <a href="https://developer.android.com/studio/releases/platforms"><img src="https://img.shields.io/badge/Target%20SDK-36-blue?style=for-the-badge" alt="Target SDK"></a>
-  <a href="https://developer.android.com/studio/releases/build-tools"><img src="https://img.shields.io/badge/Compile%20SDK-36-blue?style=for-the-badge" alt="Compile SDK"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge" alt="License"></a>
+  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white" alt="Platform"></a>
+  <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue?style=flat" alt="Min SDK"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat&logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat&logo=jetpackcompose&logoColor=white" alt="Compose"></a>
+  <a href="https://developer.android.com/studio/releases/platforms"><img src="https://img.shields.io/badge/Target%20SDK-36-blue?style=flat" alt="Target SDK"></a>
+  <a href="https://developer.android.com/studio/releases/build-tools"><img src="https://img.shields.io/badge/Compile%20SDK-36-blue?style=flat" alt="Compile SDK"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat" alt="License"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Marco-9456/AniSync/releases"><img src="https://img.shields.io/github/downloads/Marco-9456/AniSync/total?style=for-the-badge&logo=github&color=brightgreen&label=Downloads" alt="Total Downloads"></a>
-  <a href="https://github.com/Marco-9456/AniSync/releases/latest"><img src="https://img.shields.io/github/v/release/Marco-9456/AniSync?style=for-the-badge&logo=github&label=Latest" alt="Latest Release"></a>
-  <a href="https://f-droid.org/packages/com.anisync.android/"><img alt="F-Droid Version" src="https://img.shields.io/f-droid/v/com.anisync.android?style=for-the-badge&logo=f-droid&logoColor=%239BB9CC&color=%23CC8F91"></a>
-  <a href="https://github.com/Marco-9456/AniSync/stargazers"><img src="https://img.shields.io/github/stars/Marco-9456/AniSync?style=for-the-badge&logo=github&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/Marco-9456/AniSync/releases"><img src="https://img.shields.io/github/downloads/Marco-9456/AniSync/total?style=flat&logo=github&color=brightgreen&label=Downloads" alt="Total Downloads"></a>
+  <a href="https://github.com/Marco-9456/AniSync/releases/latest"><img src="https://img.shields.io/github/v/release/Marco-9456/AniSync?style=flat&logo=github&label=Latest" alt="Latest Release"></a>
+  <a href="https://f-droid.org/packages/com.anisync.android/"><img alt="F-Droid Version" src="https://img.shields.io/f-droid/v/com.anisync.android?style=flat&logo=f-droid&logoColor=%239BB9CC&color=%23CC8F91"></a>
+  <a href="https://github.com/Marco-9456/AniSync/stargazers"><img src="https://img.shields.io/github/stars/Marco-9456/AniSync?style=flat&logo=github&color=yellow" alt="Stars"></a>
 </p>
 
 <p align="center">
-  <a href="https://ko-fi.com/marco_9456"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-Fi"></a>
-  <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
+  <a href="https://ko-fi.com/marco_9456"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=flat&logo=ko-fi&logoColor=white" alt="Ko-Fi"></a>
+  <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
 
 ---
