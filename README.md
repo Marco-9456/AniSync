@@ -30,6 +30,7 @@
 <p align="center">
   <a href="https://github.com/Marco-9456/AniSync/releases"><img src="https://img.shields.io/github/downloads/Marco-9456/AniSync/total?style=for-the-badge&logo=github&color=brightgreen&label=Downloads" alt="Total Downloads"></a>
   <a href="https://github.com/Marco-9456/AniSync/releases/latest"><img src="https://img.shields.io/github/v/release/Marco-9456/AniSync?style=for-the-badge&logo=github&label=Latest" alt="Latest Release"></a>
+  <a href="https://f-droid.org/packages/com.anisync.android/"><img alt="F-Droid Version" src="https://img.shields.io/f-droid/v/com.anisync.android?style=for-the-badge&logo=f-droid&logoColor=%239BB9CC&color=%23CC8F91"></a>
   <a href="https://github.com/Marco-9456/AniSync/stargazers"><img src="https://img.shields.io/github/stars/Marco-9456/AniSync?style=for-the-badge&logo=github&color=yellow" alt="Stars"></a>
 </p>
 
