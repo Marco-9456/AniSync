@@ -25,6 +25,21 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 
+// Constant lookup for score-format API name → domain enum. Replaces a 5-branch
+// `when (name) { "POINT_100" -> ... }` chain that walked branches per call. A
+// HashMap is O(1) with a stable string-hash probe; the JIT also constant-folds
+// this map into a switch on small immutable inputs.
+private val SCORE_FORMAT_BY_NAME: Map<String, com.anisync.android.domain.ScoreFormat> = mapOf(
+    "POINT_100" to com.anisync.android.domain.ScoreFormat.POINT_100,
+    "POINT_10_DECIMAL" to com.anisync.android.domain.ScoreFormat.POINT_10_DECIMAL,
+    "POINT_10" to com.anisync.android.domain.ScoreFormat.POINT_10,
+    "POINT_5" to com.anisync.android.domain.ScoreFormat.POINT_5,
+    "POINT_3" to com.anisync.android.domain.ScoreFormat.POINT_3,
+)
+
+internal fun mapScoreFormat(name: String?): com.anisync.android.domain.ScoreFormat =
+    name?.let { SCORE_FORMAT_BY_NAME[it] } ?: com.anisync.android.domain.ScoreFormat.POINT_100
+
 class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
@@ -46,70 +61,72 @@ class LibraryRepositoryImpl @Inject constructor(
      */
     override suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit> {
         return safeApiCall {
-            // Resolve username
+            // Resolve username + reuse the Viewer response for scoreFormat. Previously the code
+            // ran GetViewerQuery up front (only when blank) and then ALWAYS again as a second
+            // network round-trip just to read scoreFormat. We now run it once and capture both.
+            var resolvedScoreFormat: com.anisync.android.type.ScoreFormat? = null
             val actualUsername = if (username.isBlank()) {
                 val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
+                resolvedScoreFormat = viewerResponse.data?.Viewer?.mediaListOptions?.scoreFormat
                 viewerResponse.data?.Viewer?.name
                     ?: throw Exception("Unable to get current user")
             } else {
                 username
             }
-            
+
             val response = apolloClient.query(
                 GetUserLibraryQuery(username = actualUsername, type = type)
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()
-            
+
             if (response.hasErrors()) {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Unknown error"
                 throw Exception(errorMessage)
             }
 
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
-            
-            // Extract options including scoreFormat
             val options = response.data?.MediaListCollection?.user?.mediaListOptions
-            
-            // If we don't have it locally, fetch the Viewer settings to get the score format
-            val scoreFormatResp = apolloClient.query(GetViewerQuery()).fetchPolicy(FetchPolicy.NetworkOnly).execute()
-            val scoreFormatApi = scoreFormatResp.data?.Viewer?.mediaListOptions?.scoreFormat
+
+            // If we already grabbed scoreFormat from the username-resolution Viewer call,
+            // reuse it. Otherwise, hit Apollo with CacheFirst — Apollo's two-tier normalized
+            // cache returns instantly when the Viewer record is already cached, avoiding the
+            // full network round-trip the previous `NetworkOnly` policy forced on every refresh.
+            val scoreFormatApi = resolvedScoreFormat
+                ?: apolloClient.query(GetViewerQuery())
+                    .fetchPolicy(FetchPolicy.CacheFirst)
+                    .execute()
+                    .data?.Viewer?.mediaListOptions?.scoreFormat
             if (scoreFormatApi != null) {
-                // Map the API ScoreFormat to our domain ScoreFormat
-                val domainFormat = when (scoreFormatApi.name) {
-                    "POINT_100" -> com.anisync.android.domain.ScoreFormat.POINT_100
-                    "POINT_10_DECIMAL" -> com.anisync.android.domain.ScoreFormat.POINT_10_DECIMAL
-                    "POINT_10" -> com.anisync.android.domain.ScoreFormat.POINT_10
-                    "POINT_5" -> com.anisync.android.domain.ScoreFormat.POINT_5
-                    "POINT_3" -> com.anisync.android.domain.ScoreFormat.POINT_3
-                    else -> com.anisync.android.domain.ScoreFormat.POINT_100
-                }
-                appSettings.setUserScoreFormat(domainFormat)
+                appSettings.setUserScoreFormat(mapScoreFormat(scoreFormatApi.name))
             }
 
             val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
             val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
 
-            // Sync custom list names with the API source of truth while preserving local order
-            val apiAnimeSet = animeCustomLists.toSet()
-            val apiMangaSet = mangaCustomLists.toSet()
-            val apiCustomNamesForType = if (type == MediaType.ANIME) apiAnimeSet else apiMangaSet
+            // Convert membership tests on local-order lists to Set-backed for O(1) lookup.
+            // Previous code did `it !in currentAnimeOrder` against a List, which is O(n) per
+            // probe → O(n*m) total when joining new and existing custom lists.
+            val apiAnimeSet = animeCustomLists.toHashSet()
+            val apiMangaSet = mangaCustomLists.toHashSet()
 
-            // For anime: keep local order for lists that still exist on API, then append new ones
             val currentAnimeOrder = appSettings.animeListOrder.value
+            val currentAnimeOrderSet = currentAnimeOrder.toHashSet()
             val syncedAnime = currentAnimeOrder.filter { it in apiAnimeSet } +
-                    animeCustomLists.filter { it !in currentAnimeOrder }
+                    animeCustomLists.filter { it !in currentAnimeOrderSet }
             if (syncedAnime != currentAnimeOrder) {
                 appSettings.setAnimeListOrder(syncedAnime)
             }
 
-            // For manga: same approach
             val currentMangaOrder = appSettings.mangaListOrder.value
+            val currentMangaOrderSet = currentMangaOrder.toHashSet()
             val syncedManga = currentMangaOrder.filter { it in apiMangaSet } +
-                    mangaCustomLists.filter { it !in currentMangaOrder }
+                    mangaCustomLists.filter { it !in currentMangaOrderSet }
             if (syncedManga != currentMangaOrder) {
                 appSettings.setMangaListOrder(syncedManga)
             }
+
+            val apiCustomNamesForType = if (type == MediaType.ANIME) apiAnimeSet else apiMangaSet
 
             // Group by entry ID to handle duplicates from custom lists
             val entryMap = mutableMapOf<Int, LibraryEntry>()

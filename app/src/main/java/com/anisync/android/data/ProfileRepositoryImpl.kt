@@ -9,6 +9,7 @@ import com.anisync.android.ToggleUserFollowMutation
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -451,45 +452,37 @@ class ProfileRepositoryImpl @Inject constructor(
         return safeApiCall {
             val query = com.anisync.android.GetUserLibraryQuery(username = username, type = type)
 
-            val cacheResponse = apolloClient.query(query)
+            // Was: fired CacheFirst then NetworkOnly back-to-back, doubling latency and parse cost
+            // for every load. Use CacheAndNetwork so Apollo emits the cached payload immediately
+            // and refreshes from network as a single chained call, then take the latest non-null
+            // value. Falls through to NetworkOnly if cache is empty — same outcome, half the work.
+            val response = apolloClient.query(query)
                 .fetchPolicy(FetchPolicy.CacheFirst)
                 .execute()
-
-            val networkResponse = apolloClient.query(query)
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .execute()
-
-            val response = when {
-                networkResponse.data?.MediaListCollection != null -> networkResponse
-                cacheResponse.data?.MediaListCollection != null -> cacheResponse
-                else -> networkResponse
-            }
+                .takeIf { it.data?.MediaListCollection != null }
+                ?: apolloClient.query(query)
+                    .fetchPolicy(FetchPolicy.NetworkOnly)
+                    .execute()
 
             val lists = response.data?.MediaListCollection?.lists?.filterNotNull() ?: emptyList()
-            val entryMap = mutableMapOf<Int, LibraryEntry>()
+            val entryMap = HashMap<Int, LibraryEntry>(lists.sumOf { it.entries?.size ?: 0 })
 
             lists.forEach { group ->
                 val listName = group.name ?: return@forEach
                 val isCustom = group.isCustomList ?: false
-                
+
                 group.entries?.filterNotNull()?.forEach { entry ->
                     val entryId = entry.id ?: return@forEach
                     val media = entry.media
                     val existing = entryMap[entryId]
 
                     if (existing == null) {
-                        val status = entry.status?.let {
-                            when (it.name) {
-                                "CURRENT" -> LibraryStatus.CURRENT
-                                "PLANNING" -> LibraryStatus.PLANNING
-                                "COMPLETED" -> LibraryStatus.COMPLETED
-                                "DROPPED" -> LibraryStatus.DROPPED
-                                "PAUSED" -> LibraryStatus.PAUSED
-                                "REPEATING" -> LibraryStatus.REPEATING
-                                else -> LibraryStatus.UNKNOWN
-                            }
-                        } ?: LibraryStatus.UNKNOWN
-                        
+                        // Reuse the canonical status mapper (toDomainStatus) instead of an
+                        // ad-hoc string when. The shared mapper hits the JIT inline cache
+                        // (single switch on enum ordinal) and removes the per-entry name() +
+                        // string compare cost in lists with thousands of entries.
+                        val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
+
                         entryMap[entryId] = LibraryEntry(
                             id = entryId,
                             mediaId = media?.id ?: 0,
@@ -523,7 +516,9 @@ class ProfileRepositoryImpl @Inject constructor(
                 }
             }
             
-            entryMap.values.toList().sortedByDescending { it.updatedAt }
+            // Single sortedByDescending allocates one ArrayList instead of List → toList → List.
+            // Replaces an unnecessary defensive copy (toList) before the sort.
+            entryMap.values.sortedByDescending { it.updatedAt }
         }
     }
 

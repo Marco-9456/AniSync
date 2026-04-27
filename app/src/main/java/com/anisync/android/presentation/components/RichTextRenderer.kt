@@ -183,27 +183,34 @@ fun RichTextRenderer(
 }
 
 private fun collectAnilistLinks(blocks: List<RichTextBlock>): List<RichTextBlock.AnilistLink> {
-    val result = mutableListOf<RichTextBlock.AnilistLink>()
+    // Single accumulator shared across the recursion. The previous version allocated a fresh
+    // mutableListOf at every level and then called result.addAll(...) — for deeply nested
+    // structures (blockquotes inside lists inside tables) that's O(depth × n) extra allocations
+    // and copies. Threading one ArrayList through the recursion keeps the cost at O(n).
+    val result = ArrayList<RichTextBlock.AnilistLink>()
+    collectAnilistLinksInto(blocks, result)
+    return result
+}
+
+private fun collectAnilistLinksInto(
+    blocks: List<RichTextBlock>,
+    out: MutableList<RichTextBlock.AnilistLink>
+) {
     for (block in blocks) {
         when (block) {
-            is RichTextBlock.AnilistLink -> result.add(block)
-            is RichTextBlock.Spoiler -> result.addAll(collectAnilistLinks(block.children))
-            is RichTextBlock.Blockquote -> result.addAll(collectAnilistLinks(block.children))
-            is RichTextBlock.ListBlock -> block.items.forEach { result.addAll(collectAnilistLinks(it.children)) }
+            is RichTextBlock.AnilistLink -> out.add(block)
+            is RichTextBlock.Spoiler -> collectAnilistLinksInto(block.children, out)
+            is RichTextBlock.Blockquote -> collectAnilistLinksInto(block.children, out)
+            is RichTextBlock.ListBlock -> block.items.forEach { collectAnilistLinksInto(it.children, out) }
             is RichTextBlock.Table -> block.rows.forEach { row ->
-                row.cells.forEach { cell ->
-                    result.addAll(collectAnilistLinks(cell.children))
-                }
+                row.cells.forEach { cell -> collectAnilistLinksInto(cell.children, out) }
             }
-
             is RichTextBlock.InlineGroup -> block.children.forEach {
-                if (it is RichTextBlock.AnilistLink) result.add(it)
+                if (it is RichTextBlock.AnilistLink) out.add(it)
             }
-
             else -> Unit
         }
     }
-    return result
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)

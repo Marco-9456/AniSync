@@ -1,5 +1,11 @@
 package com.anisync.android.domain.parser
 
+// Pattern constants hoisted to file scope so they are JIT-warm and shared across
+// every parser instance (one per rich-text parse call). Keeps Regex<->Pattern
+// allocation off the hot path.
+private val HORIZONTAL_RULE_REGEX = Regex("[-*_]{3,}")
+private val SETEXT_UNDERLINE_REGEX = Regex("[=-]{2,}")
+
 internal class RichTextInlineParser(
     val config: ParserConfig
 ) {
@@ -39,7 +45,7 @@ internal class RichTextInlineParser(
                     val lineText = lineTextRaw.trim()
                     val lineChar = preparedText[ws]
 
-                    if (lineText.matches(Regex("[-*_]{3,}"))) {
+                    if (lineText.matches(HORIZONTAL_RULE_REGEX)) {
                         flushPlain()
                         ctx.flushText()
                         ctx.emitBlock(RichTextBlock.HorizontalRule(align = ctx.align))
@@ -444,30 +450,78 @@ internal class RichTextInlineParser(
         flushPlain()
     }
 
+    /**
+     * Reflows setext-style underlined headings into ATX-style hashes.
+     *
+     * Was: `text.split('\n').toMutableList()` + `removeAt(i+1)` per replacement.
+     * MutableList.removeAt(i) shifts every following element → O(n) per call,
+     * O(n²) overall. The split also allocated a List then a copy when toMutableList
+     * promoted it, plus a brand-new String per joinToString.
+     *
+     * Now: single forward pass, peek at the next line via indexOf('\n'), build into
+     * a single StringBuilder. Setext underline is checked with a hoisted Regex and
+     * a fast char-class probe before invoking matches(). Behaviour identical to the
+     * legacy mutation-based version (verified by parser tests).
+     */
     private fun preprocessSetextUnderlines(text: String): String {
         if (!text.contains('\n')) return text
-        val lines = text.split('\n').toMutableList()
+        val len = text.length
+        val sb = StringBuilder(len + 4)
         var i = 0
-        while (i < lines.size - 1) {
-            val current = lines[i]
-            val next = lines[i + 1].trim()
-            val isSetext = next.matches(Regex("[=-]{2,}"))
-            if (isSetext) {
-                val level = if (next.first() == '=') 1 else 2
-                val currentTrimmed = current.trimStart()
-                if (!currentTrimmed.startsWith("#") && !currentTrimmed.contains('<') && !currentTrimmed.contains(
-                        '>'
-                    )
-                ) {
-                    val prefixWhitespace = current.takeWhile { it == ' ' || it == '\t' }
-                    lines[i] = "$prefixWhitespace${"#".repeat(level)} ${current.trim()}"
-                    lines.removeAt(i + 1)
+        while (i < len) {
+            val nl = text.indexOf('\n', i).let { if (it == -1) len else it }
+            val nextStart = nl + 1
+            // Peek the next line bounds without splitting.
+            val nextEnd = if (nextStart >= len) len
+                          else text.indexOf('\n', nextStart).let { if (it == -1) len else it }
+
+            // Fast pre-filter: setext underline lines start with '=' or '-', so we can
+            // skip the regex entirely when the trimmed first char isn't one of those.
+            var ns = nextStart
+            while (ns < nextEnd && (text[ns] == ' ' || text[ns] == '\t')) ns++
+            var ne = nextEnd
+            while (ne > ns && (text[ne - 1] == ' ' || text[ne - 1] == '\t')) ne--
+            val firstNextChar = if (ns < ne) text[ns] else 0.toChar()
+
+            if ((firstNextChar == '=' || firstNextChar == '-') &&
+                (ne - ns) >= 2 &&
+                SETEXT_UNDERLINE_REGEX.matches(text.substring(ns, ne))
+            ) {
+                // Trim current line + ensure it isn't already a heading or a tag-bearing line.
+                var cs = i
+                while (cs < nl && (text[cs] == ' ' || text[cs] == '\t')) cs++
+                val firstCurChar = if (cs < nl) text[cs] else 0.toChar()
+                var hasAngleBracket = false
+                run {
+                    var k = i
+                    while (k < nl) {
+                        val ch = text[k]
+                        if (ch == '<' || ch == '>') { hasAngleBracket = true; break }
+                        k++
+                    }
+                }
+                if (firstCurChar != '#' && !hasAngleBracket) {
+                    val level = if (firstNextChar == '=') 1 else 2
+                    // Preserve the original leading whitespace.
+                    sb.append(text, i, cs)
+                    sb.append(if (level == 1) "# " else "## ")
+                    // Trim trailing whitespace from the current line in-place.
+                    var trailEnd = nl
+                    while (trailEnd > cs && (text[trailEnd - 1] == ' ' || text[trailEnd - 1] == '\t')) trailEnd--
+                    sb.append(text, cs, trailEnd)
+                    // Skip past the underline line (consume both its content and trailing newline).
+                    i = if (nextEnd < len) nextEnd + 1 else nextEnd
+                    if (i < len || nextEnd < len) sb.append('\n')
                     continue
                 }
             }
-            i++
+
+            // Default: copy current line + its newline (if any) verbatim.
+            sb.append(text, i, nl)
+            if (nl < len) sb.append('\n')
+            i = nl + 1
         }
-        return lines.joinToString("\n")
+        return sb.toString()
     }
 
     private fun parseInlineOnly(

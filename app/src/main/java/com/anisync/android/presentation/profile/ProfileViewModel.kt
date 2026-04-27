@@ -34,8 +34,18 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Locale
 import javax.inject.Inject
+
+// Pre-built status order for groupEntriesByStatus. Was a per-call `listOf(...)` allocating
+// a 6-element ArrayList every time the user opened ANIME/MANGA tab on a profile.
+private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
+    LibraryStatus.CURRENT,
+    LibraryStatus.REPEATING,
+    LibraryStatus.PAUSED,
+    LibraryStatus.COMPLETED,
+    LibraryStatus.PLANNING,
+    LibraryStatus.DROPPED
+)
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -655,7 +665,10 @@ class ProfileViewModel @Inject constructor(
             val count = countsByBucket[bucket - 1]
             val label = when (effectiveScoreFormat) {
                 ScoreFormat.POINT_100 -> (bucket * 10).toString()
-                ScoreFormat.POINT_10_DECIMAL -> String.format(Locale.US, "%.1f", bucket.toDouble())
+                // bucket is Int so the legacy "%.1f" output was always "<n>.0".
+                // Bypassing java.util.Formatter (Locale lookup, FormatString parser, intermediate
+                // StringBuilder) for what is literally string concatenation.
+                ScoreFormat.POINT_10_DECIMAL -> "$bucket.0"
                 ScoreFormat.POINT_10, ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> bucket.toString()
             }
             val normalizedScore = when (effectiveScoreFormat) {
@@ -887,25 +900,14 @@ class ProfileViewModel @Inject constructor(
 
     private fun groupEntriesByStatus(entries: List<LibraryEntry>): Map<LibraryStatus, List<LibraryEntry>> {
         val grouped = entries.groupBy { it.status }
-        val orderedStatuses = listOf(
-            LibraryStatus.CURRENT,
-            LibraryStatus.REPEATING,
-            LibraryStatus.PAUSED,
-            LibraryStatus.COMPLETED,
-            LibraryStatus.PLANNING,
-            LibraryStatus.DROPPED
-        )
-
-        val ordered = linkedMapOf<LibraryStatus, List<LibraryEntry>>()
-        orderedStatuses.forEach { status ->
+        val ordered = LinkedHashMap<LibraryStatus, List<LibraryEntry>>(LIBRARY_STATUS_DISPLAY_ORDER.size + 1)
+        for (status in LIBRARY_STATUS_DISPLAY_ORDER) {
             ordered[status] = grouped[status].orEmpty()
         }
-
         val unknownItems = grouped[LibraryStatus.UNKNOWN].orEmpty()
         if (unknownItems.isNotEmpty()) {
             ordered[LibraryStatus.UNKNOWN] = unknownItems
         }
-
         return ordered
     }
 

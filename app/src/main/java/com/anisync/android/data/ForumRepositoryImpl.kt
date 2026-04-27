@@ -27,6 +27,12 @@ import kotlinx.coroutines.flow.first
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
+// Precomputed name → ThreadSort lookup. Replaces an O(n) `entries.find { it.name == s }`
+// scan that ran per token of the comma-separated sort string on every page fetch.
+// The map is built once at class load time; each lookup is now O(1).
+private val THREAD_SORT_BY_NAME: Map<String, ThreadSort> =
+    ThreadSort.entries.associateBy { it.name }
+
 class ForumRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val savedForumThreadDao: SavedForumThreadDao
@@ -51,7 +57,7 @@ class ForumRepositoryImpl @Inject constructor(
     ): Result<PaginatedResult<ForumThread>> {
         return runCatchingApi("load forum threads") {
             val sortList = sort?.split(",")
-                ?.mapNotNull { s -> ThreadSort.entries.find { it.name == s.trim() } }
+                ?.mapNotNull { s -> THREAD_SORT_BY_NAME[s.trim()] }
                 ?: listOf(ThreadSort.IS_STICKY, ThreadSort.REPLIED_AT_DESC)
 
             val response = apolloClient

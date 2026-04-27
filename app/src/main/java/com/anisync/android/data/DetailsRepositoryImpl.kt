@@ -41,6 +41,37 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+// Top-level constant: month abbreviations used by date formatting helpers.
+// Was: re-allocated as a `listOf(...)` inside refreshMediaDetails AND getStaffDetails on every
+// invocation. Pulling it out eliminates per-query allocation + bounds-checked List access. Array
+// access compiles to a direct aaload bytecode, avoiding the kotlin.collections.List wrapper.
+private val MONTH_ABBR = arrayOf(
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+
+// Format helper used by both detail and staff queries. Inline two-padding avoids
+// allocating an intermediate String.format spec or a Locale lookup.
+private fun formatFuzzyDateLong(month: Int?, day: Int?, year: Int?): String? {
+    val m = month?.takeIf { it in 1..12 }?.let { MONTH_ABBR[it - 1] }
+    val d = day?.let { if (it < 10) "0$it" else it.toString() }
+    return when {
+        m != null && d != null && year != null -> "$m $d, $year"
+        year != null -> year.toString()
+        else -> null
+    }
+}
+
+private fun formatFuzzyDateShort(month: Int?, day: Int?, year: Int?): String? {
+    val m = month?.takeIf { it in 1..12 }?.let { MONTH_ABBR[it - 1] }
+    return when {
+        m != null && day != null && year != null -> "$m $day, $year"
+        m != null && day != null -> "$m $day"
+        year != null -> year.toString()
+        else -> null
+    }
+}
+
 class DetailsRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val mediaDetailsDao: MediaDetailsDao,
@@ -116,42 +147,13 @@ class DetailsRepositoryImpl @Inject constructor(
             val titleNative = media.title?.native
             val titleUserPreferred = media.title?.userPreferred ?: "Unknown"
 
-            val months = listOf(
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec"
+            // Use top-level helper instead of allocating a months List per call.
+            val formattedDate = formatFuzzyDateLong(
+                media.startDate?.month, media.startDate?.day, media.startDate?.year
             )
-            val monthName =
-                media.startDate?.month?.let { if (it in 1..12) months[it - 1] else null }
-            val day = media.startDate?.day?.let { if (it < 10) "0$it" else "$it" }
-            val yearVal = media.startDate?.year
-
-            val formattedDate = if (monthName != null && day != null && yearVal != null) {
-                "$monthName $day, $yearVal"
-            } else {
-                yearVal?.toString()
-            }
-
-            val endMonthName =
-                media.endDate?.month?.let { if (it in 1..12) months[it - 1] else null }
-            val endDay = media.endDate?.day?.let { if (it < 10) "0$it" else "$it" }
-            val endYearVal = media.endDate?.year
-
-            val formattedEndDate =
-                if (endMonthName != null && endDay != null && endYearVal != null) {
-                    "$endMonthName $endDay, $endYearVal"
-                } else {
-                    endYearVal?.toString()
-                }
+            val formattedEndDate = formatFuzzyDateLong(
+                media.endDate?.month, media.endDate?.day, media.endDate?.year
+            )
 
             val tags = media.tags?.filterNotNull()?.map { tag ->
                 Tag(
@@ -594,31 +596,7 @@ class DetailsRepositoryImpl @Inject constructor(
             val pageInfo = staffData.characterMedia?.pageInfo
             val hasNextPage = pageInfo?.hasNextPage ?: false
 
-            val months = listOf(
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec"
-            )
-
-            fun formatFuzzyDate(month: Int?, day: Int?, year: Int?): String? {
-                val monthName = month?.let { if (it in 1..12) months[it - 1] else null }
-                return when {
-                    monthName != null && day != null && year != null -> "$monthName $day, $year"
-                    monthName != null && day != null -> "$monthName $day"
-                    year != null -> "$year"
-                    else -> null
-                }
-            }
-
+            // formatFuzzyDateShort lives at file scope; no per-call list/closure allocation.
             val characterMap =
                 linkedMapOf<Int, MutableList<Pair<GetStaffDetailsQuery.Edge, GetStaffDetailsQuery.Character>>>()
             staffData.characterMedia?.edges?.filterNotNull()?.forEach { edge ->
@@ -669,10 +647,10 @@ class DetailsRepositoryImpl @Inject constructor(
                 age = staffData.age,
                 bloodType = staffData.bloodType,
                 dateOfBirth = staffData.dateOfBirth?.let {
-                    formatFuzzyDate(it.month, it.day, it.year)
+                    formatFuzzyDateShort(it.month, it.day, it.year)
                 },
                 dateOfDeath = staffData.dateOfDeath?.let {
-                    formatFuzzyDate(it.month, it.day, it.year)
+                    formatFuzzyDateShort(it.month, it.day, it.year)
                 },
                 favourites = staffData.favourites,
                 isFavourite = staffData.isFavourite ?: false,

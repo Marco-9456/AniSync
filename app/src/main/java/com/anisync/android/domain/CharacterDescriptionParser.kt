@@ -7,10 +7,15 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 
-/**
- * Parses markdown-like character descriptions into structured attributes and biography.
- * Handles styles including bold, spoiler tags, and basic markdown stripping.
- */
+// Hoisted regex constants. Each was previously declared as a local val inside parse(),
+// so every screen open recompiled six patterns. Pattern compilation is the dominant
+// cost on this hot path (character details screen), and these are pure constants.
+private val BR_TAG_REGEX = Regex("<br\\s*/?>")
+private val ATTRIBUTE_REGEX = Regex("^(~!)?\\s*(__|\\*\\*)?([a-zA-Z0-9\\s\\-_()]+?)(:|\\2)\\s*(.*)(!~)?$")
+private val MD_LINK_REGEX = Regex("\\[([^\\]]+)\\]\\([^)]+\\)")
+private val MD_ITALIC_REGEX = Regex("(?<![_])_([^_]+)_(?![_])")
+private val INLINE_TOKEN_REGEX = Regex("(\\*\\*|__|~!)(.+?)(\\1|!~)", RegexOption.DOT_MATCHES_ALL)
+
 object CharacterDescriptionParser {
 
     /**
@@ -33,18 +38,11 @@ object CharacterDescriptionParser {
         val attributes = mutableListOf<Pair<String, String>>()
         val bioLines = mutableListOf<String>()
 
-        // Normalize breaks
-        val normalized = description.replace(Regex("<br\\s*/?>"), "\n")
-
-        // Extended Regex to catch lines starting with bold keys or simple "Key: Value" patterns
-        // Catch: "__Key__ Value", "**Key** Value", "Key: Value" (if line is short-ish)
-        // Updated to allow () in keys for cases like "Devil Fruit (Type):"
-        // Also handles spoiler-wrapped attributes like "~!Key: Value!~"
-        val attributeRegex = Regex("^(~!)?\\s*(__|\\*\\*)?([a-zA-Z0-9\\s\\-_()]+?)(:|\\2)\\s*(.*)(!~)?$")
+        val normalized = description.replace(BR_TAG_REGEX, "\n")
 
         normalized.lines().forEach { line ->
             val trimLine = line.trim()
-            val match = attributeRegex.find(trimLine)
+            val match = ATTRIBUTE_REGEX.find(trimLine)
             var isAttribute = false
 
             if (trimLine.isNotBlank()) {
@@ -70,11 +68,8 @@ object CharacterDescriptionParser {
                             .replace("__", "")
                             .replace("**", "")
                         
-                        // Strip markdown links [text](url) -> text
-                        cleanValue = cleanValue.replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")
-                        
-                        // Strip single-underscore italics _text_ -> text
-                        cleanValue = cleanValue.replace(Regex("(?<![_])_([^_]+)_(?![_])"), "$1")
+                        cleanValue = cleanValue.replace(MD_LINK_REGEX, "$1")
+                        cleanValue = cleanValue.replace(MD_ITALIC_REGEX, "$1")
 
                         attributes.add(key to cleanValue)
                         isAttribute = true
@@ -96,11 +91,8 @@ object CharacterDescriptionParser {
         val cleanBioLines = bioLines.dropWhile { it.isBlank() }
         var fullBioText = cleanBioLines.joinToString("\n")
         
-        // Pre-process: Strip markdown links [text](url) -> text
-        fullBioText = fullBioText.replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")
-        
-        // Pre-process: Strip single-underscore italics _text_ -> text (but not double __ which is bold)
-        fullBioText = fullBioText.replace(Regex("(?<![_])_([^_]+)_(?![_])"), "$1")
+        fullBioText = fullBioText.replace(MD_LINK_REGEX, "$1")
+        fullBioText = fullBioText.replace(MD_ITALIC_REGEX, "$1")
         
         // Build AnnotatedString for Bio - process entire text for multi-line spoilers
         // Spoilers are annotated with "SPOILER" tag for click-to-reveal functionality
@@ -113,11 +105,7 @@ object CharacterDescriptionParser {
 
             var currentIndex = 0
             var spoilerIndex = 0
-            // Regex to find markers: **bold**, __bold__, ~!spoiler!~
-            // Use DOTALL flag (?s) to make . match newlines for multi-line spoilers
-            val tokenRegex = Regex("(\\*\\*|__|~!)(.+?)(\\1|!~)", RegexOption.DOT_MATCHES_ALL)
-            
-            val matches = tokenRegex.findAll(fullBioText)
+            val matches = INLINE_TOKEN_REGEX.findAll(fullBioText)
             for (match in matches) {
                 // Append text before match
                 if (match.range.first > currentIndex) {

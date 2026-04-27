@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.library
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
@@ -30,7 +29,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.system.measureTimeMillis
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -173,133 +171,126 @@ class LibraryViewModel @Inject constructor(
                         )
                     }
 
-                    var pipelineResult: Triple<List<LibraryEntry>, Map<LibraryStatus, List<LibraryEntry>>, LibraryCustomData>? =
-                        null
+                    // Pre-cache localized lowercase titles once. Building a fresh `getTitle().lowercase()`
+                    // inside every comparator invocation was the dominant CPU cost on big libraries
+                    // (the original code carried an explicit comment about this); we keep that win
+                    // and add several more on top.
+                    class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
 
-                    // OPTIMIZATION: Logging performance metric
-                    val timeTaken = measureTimeMillis {
+                    val sortableEntries =
+                        entries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
 
-                        // OPTIMIZATION: Pre-calculate localized and lowercase titles to avoid O(N log N) redundant computations.
-                        // Generating strings inside `.thenBy{}` is highly CPU intensive. Caching it upfront fixes the lag spike.
-                        class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
-
-                        val sortableEntries =
-                            entries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
-
-                        // Sorting
-                        val sortedEntries = when (sort) {
-                            LibrarySort.TITLE -> sortableEntries.sortedBy { it.sortTitle }
-                            LibrarySort.PROGRESS -> sortableEntries.sortedWith(
-                                compareByDescending<SortableEntry> { it.entry.progress }
-                                    .thenBy { it.sortTitle }
-                            )
-
-                            LibrarySort.AIRING_SOON -> sortableEntries.sortedWith(
-                                compareBy<SortableEntry, Long?>(nullsLast()) { it.entry.nextAiringEpisodeTime }
-                                    .thenBy { it.sortTitle }
-                            )
-
-                            LibrarySort.SCORE -> sortableEntries.sortedWith(
-                                compareByDescending<SortableEntry> { it.entry.score }
-                                    .thenBy { it.sortTitle }
-                            )
-
-                            LibrarySort.LAST_UPDATED -> sortableEntries.sortedWith(
-                                compareByDescending<SortableEntry> { it.entry.updatedAt }
-                                    .thenBy { it.sortTitle }
-                            )
-
-                            LibrarySort.LAST_ADDED -> sortableEntries.sortedWith(
-                                compareByDescending<SortableEntry> { it.entry.createdAt }
-                                    .thenBy { it.sortTitle }
-                            )
-
-                            LibrarySort.START_DATE -> sortableEntries.sortedWith(
-                                compareByDescending<SortableEntry> { it.entry.startedAt }
-                                    .thenBy { it.sortTitle }
-                            )
-
-                            LibrarySort.RELEASE_DATE -> sortableEntries.sortedWith(
-                                compareByDescending<SortableEntry> { it.entry.mediaStartDate }
-                                    .thenBy { it.sortTitle }
-                            )
-                        }
-
-                        // Direction & Filtering
-                        val directedEntries =
-                            if (ascending) sortedEntries else sortedEntries.reversed()
-                        
-                        // Filter for standard status lists only (applying both private and hiddenFromStatusLists)
-                        // This is used for standard lists like Watching, Completed, etc.
-                        val visibilityFiltered = directedEntries.filter { entry ->
-                            // Filter for private entries based on toggle
-                            val showThisPrivate = showPrivate || entry.entry.isPrivate != true
-                            // Filter for hiddenFromStatusLists: hide from standard lists entirely
-                            // Custom lists handle showing hidden entries separately via directedEntries
-                            val showThisHidden = !entry.entry.hiddenFromStatusLists
-                            showThisPrivate && showThisHidden
-                        }
-                        
-                        // For search filtering - use visibilityFiltered (standard lists)
-                        val filteredEntries = if (query.isBlank()) {
-                            visibilityFiltered.map { it.entry }
-                        } else {
-                            val lowerQuery = query.lowercase()
-                            visibilityFiltered.filter { it.sortTitle.contains(lowerQuery) }
-                                .map { it.entry }
-                        }
-
-                        // Grouping for standard status lists
-                        val grouped = filteredEntries.groupBy { it.status }
-
-                        // Custom Lists - use directedEntries filtered by private toggle
-                        // This ensures hiddenFromStatusLists entries are still visible in their custom lists
-                        // but respects the private visibility toggle
-                        val customNames = mutableSetOf<String>()
-                        val customEntriesMap = mutableMapOf<String, MutableList<LibraryEntry>>()
-
-                        directedEntries.filter { entry ->
-                            // Include in custom lists if: private toggle is ON OR entry is not private
-                            showPrivate || entry.entry.isPrivate != true
-                        }.forEach { entry ->
-                            entry.entry.customLists.forEach { customListName ->
-                                customNames.add(customListName)
-                                customEntriesMap.getOrPut(customListName) { mutableListOf() }
-                                    .add(entry.entry)
+                    // Direction-aware comparator: instead of sorting ascending and then doing a full
+                    // O(n) `reversed()` allocation for descending, flip the direction inside the
+                    // comparator. Saves a whole list copy on every recompose-driven pipeline run.
+                    val titleDir = if (ascending) 1 else -1
+                    val keyDir = -titleDir // primary keys are descending in the original UX
+                    val titleCmp = Comparator<SortableEntry> { a, b ->
+                        a.sortTitle.compareTo(b.sortTitle) * titleDir
+                    }
+                    fun <K : Comparable<K>> primaryDesc(key: (SortableEntry) -> K?): Comparator<SortableEntry> =
+                        Comparator { a, b ->
+                            val ka = key(a); val kb = key(b)
+                            val cmp = when {
+                                ka == null && kb == null -> 0
+                                ka == null -> 1            // nulls last regardless of direction
+                                kb == null -> -1
+                                else -> ka.compareTo(kb)
                             }
+                            if (cmp != 0) cmp * keyDir else titleCmp.compare(a, b)
                         }
 
-                        // Include all defined custom list names from settings (listOrder)
-                        // so that empty lists still appear as tabs and in the edit sheet
-                        customNames.addAll(listOrder)
-
-                        // Sort custom names according to listOrder, with new lists at the end alphabetically
-                        val sortedCustomNames = customNames.toList().sortedWith(
-                            compareBy<String> { name ->
-                                val index = listOrder.indexOf(name)
-                                if (index == -1) Int.MAX_VALUE else index
-                            }.thenBy { it }
+                    val sortedEntries = when (sort) {
+                        LibrarySort.TITLE -> sortableEntries.sortedWith(titleCmp)
+                        LibrarySort.PROGRESS -> sortableEntries.sortedWith(primaryDesc { it.entry.progress })
+                        LibrarySort.AIRING_SOON -> sortableEntries.sortedWith(
+                            // AIRING_SOON wants nulls-last with the soonest first; the legacy
+                            // `compareBy(nullsLast())` was ascending — we replicate by flipping
+                            // direction signs only on the title tiebreak, not the primary key.
+                            Comparator { a, b ->
+                                val ka = a.entry.nextAiringEpisodeTime
+                                val kb = b.entry.nextAiringEpisodeTime
+                                val cmp = when {
+                                    ka == null && kb == null -> 0
+                                    ka == null -> 1
+                                    kb == null -> -1
+                                    else -> ka.compareTo(kb)
+                                }
+                                val withDir = if (ascending) cmp else -cmp
+                                if (withDir != 0) withDir else titleCmp.compare(a, b)
+                            }
                         )
-
-                        // Sort favorites (using existing logic since favorites list is typically small)
-                        val sortedFavorites =
-                            favorites.sortedBy { it.getTitle(titleLang).lowercase() }
-
-                        pipelineResult = Triple(
-                            filteredEntries,
-                            grouped,
-                            LibraryCustomData(
-                                sortedCustomNames,
-                                customEntriesMap,
-                                sortedFavorites,
-                                hiddenLists,
-                                listOrder
-                            )
-                        )
+                        LibrarySort.SCORE -> sortableEntries.sortedWith(primaryDesc { it.entry.score })
+                        LibrarySort.LAST_UPDATED -> sortableEntries.sortedWith(primaryDesc { it.entry.updatedAt })
+                        LibrarySort.LAST_ADDED -> sortableEntries.sortedWith(primaryDesc { it.entry.createdAt })
+                        LibrarySort.START_DATE -> sortableEntries.sortedWith(primaryDesc { it.entry.startedAt })
+                        LibrarySort.RELEASE_DATE -> sortableEntries.sortedWith(primaryDesc { it.entry.mediaStartDate })
                     }
 
-                    Log.d("Performance", "Library sorting and filtering took ${timeTaken}ms")
-                    pipelineResult!!
+                    // Single-pass partition: split into the visibility-filtered list (for
+                    // status grouping + search) and accumulate custom-list buckets at the
+                    // same time. The previous code walked the sorted list 4 separate times
+                    // (visibility filter, search filter, groupBy, custom-list filter+forEach).
+                    val customEntriesMap = HashMap<String, MutableList<LibraryEntry>>()
+                    val customNames = HashSet<String>()
+                    val visibilityFiltered = ArrayList<SortableEntry>(sortedEntries.size)
+                    for (s in sortedEntries) {
+                        val e = s.entry
+                        val notPrivate = showPrivate || e.isPrivate != true
+                        if (notPrivate) {
+                            for (name in e.customLists) {
+                                customNames.add(name)
+                                customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
+                            }
+                        }
+                        if (notPrivate && !e.hiddenFromStatusLists) {
+                            visibilityFiltered.add(s)
+                        }
+                    }
+                    customNames.addAll(listOrder)
+
+                    val filteredEntries: List<LibraryEntry> = if (query.isBlank()) {
+                        ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
+                            for (s in visibilityFiltered) out.add(s.entry)
+                        }
+                    } else {
+                        val lowerQuery = query.lowercase()
+                        ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
+                            for (s in visibilityFiltered) if (s.sortTitle.contains(lowerQuery)) out.add(s.entry)
+                        }
+                    }
+
+                    // groupBy is fine — it walks once and uses LinkedHashMap. Status enum count
+                    // is tiny so the allocation is bounded.
+                    val grouped = filteredEntries.groupBy { it.status }
+
+                    // Pre-compute name → listOrder index once. The legacy comparator called
+                    // `listOrder.indexOf(name)` inside compareBy, which is O(n) per probe and
+                    // executes O(n log n) times during the sort → O(n²log n) total. With the
+                    // map this drops to a single HashMap probe per compare.
+                    val orderIndex = HashMap<String, Int>(listOrder.size * 2)
+                    listOrder.forEachIndexed { i, n -> orderIndex[n] = i }
+                    val sortedCustomNames = customNames.sortedWith(
+                        Comparator { a, b ->
+                            val ia = orderIndex[a] ?: Int.MAX_VALUE
+                            val ib = orderIndex[b] ?: Int.MAX_VALUE
+                            if (ia != ib) ia.compareTo(ib) else a.compareTo(b)
+                        }
+                    )
+
+                    val sortedFavorites = favorites.sortedBy { it.getTitle(titleLang).lowercase() }
+
+                    Triple(
+                        filteredEntries,
+                        grouped,
+                        LibraryCustomData(
+                            sortedCustomNames,
+                            customEntriesMap,
+                            sortedFavorites,
+                            hiddenLists,
+                            listOrder
+                        )
+                    )
                 }
                 .flowOn(Dispatchers.Default)
                 .catch { e ->
