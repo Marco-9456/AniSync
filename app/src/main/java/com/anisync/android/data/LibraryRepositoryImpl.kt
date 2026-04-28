@@ -25,10 +25,6 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 
-// Constant lookup for score-format API name → domain enum. Replaces a 5-branch
-// `when (name) { "POINT_100" -> ... }` chain that walked branches per call. A
-// HashMap is O(1) with a stable string-hash probe; the JIT also constant-folds
-// this map into a switch on small immutable inputs.
 private val SCORE_FORMAT_BY_NAME: Map<String, com.anisync.android.domain.ScoreFormat> = mapOf(
     "POINT_100" to com.anisync.android.domain.ScoreFormat.POINT_100,
     "POINT_10_DECIMAL" to com.anisync.android.domain.ScoreFormat.POINT_10_DECIMAL,
@@ -61,9 +57,6 @@ class LibraryRepositoryImpl @Inject constructor(
      */
     override suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit> {
         return safeApiCall {
-            // Resolve username + reuse the Viewer response for scoreFormat. Previously the code
-            // ran GetViewerQuery up front (only when blank) and then ALWAYS again as a second
-            // network round-trip just to read scoreFormat. We now run it once and capture both.
             var resolvedScoreFormat: com.anisync.android.type.ScoreFormat? = null
             val actualUsername = if (username.isBlank()) {
                 val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
@@ -88,10 +81,6 @@ class LibraryRepositoryImpl @Inject constructor(
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
             val options = response.data?.MediaListCollection?.user?.mediaListOptions
 
-            // If we already grabbed scoreFormat from the username-resolution Viewer call,
-            // reuse it. Otherwise, hit Apollo with CacheFirst — Apollo's two-tier normalized
-            // cache returns instantly when the Viewer record is already cached, avoiding the
-            // full network round-trip the previous `NetworkOnly` policy forced on every refresh.
             val scoreFormatApi = resolvedScoreFormat
                 ?: apolloClient.query(GetViewerQuery())
                     .fetchPolicy(FetchPolicy.CacheFirst)
@@ -104,9 +93,6 @@ class LibraryRepositoryImpl @Inject constructor(
             val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
             val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
 
-            // Convert membership tests on local-order lists to Set-backed for O(1) lookup.
-            // Previous code did `it !in currentAnimeOrder` against a List, which is O(n) per
-            // probe → O(n*m) total when joining new and existing custom lists.
             val apiAnimeSet = animeCustomLists.toHashSet()
             val apiMangaSet = mangaCustomLists.toHashSet()
 

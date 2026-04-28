@@ -452,10 +452,6 @@ class ProfileRepositoryImpl @Inject constructor(
         return safeApiCall {
             val query = com.anisync.android.GetUserLibraryQuery(username = username, type = type)
 
-            // Was: fired CacheFirst then NetworkOnly back-to-back, doubling latency and parse cost
-            // for every load. Use CacheAndNetwork so Apollo emits the cached payload immediately
-            // and refreshes from network as a single chained call, then take the latest non-null
-            // value. Falls through to NetworkOnly if cache is empty — same outcome, half the work.
             val response = apolloClient.query(query)
                 .fetchPolicy(FetchPolicy.CacheFirst)
                 .execute()
@@ -477,10 +473,6 @@ class ProfileRepositoryImpl @Inject constructor(
                     val existing = entryMap[entryId]
 
                     if (existing == null) {
-                        // Reuse the canonical status mapper (toDomainStatus) instead of an
-                        // ad-hoc string when. The shared mapper hits the JIT inline cache
-                        // (single switch on enum ordinal) and removes the per-entry name() +
-                        // string compare cost in lists with thousands of entries.
                         val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
 
                         entryMap[entryId] = LibraryEntry(
@@ -515,9 +507,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            
-            // Single sortedByDescending allocates one ArrayList instead of List → toList → List.
-            // Replaces an unnecessary defensive copy (toList) before the sort.
+
             entryMap.values.sortedByDescending { it.updatedAt }
         }
     }

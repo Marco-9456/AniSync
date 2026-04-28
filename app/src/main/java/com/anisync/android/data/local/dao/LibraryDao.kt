@@ -83,17 +83,6 @@ interface LibraryDao {
 
     /**
      * Smart merge: preserves locally-added entries while syncing with API.
-     *
-     * Optimizations vs. previous version:
-     * 1. mediaId set built via mapTo(HashSet) — skips the intermediate List allocation
-     *    and lets HashSet pre-size from the input list.
-     * 2. Single pass over localEntries partitioning into preserve/delete instead of
-     *    two filter() calls — halves the entity scans for big libraries (1000+ items).
-     * 3. Batched deleteByMediaIds(IN list) replaces N individual DELETE statements,
-     *    cutting SQLite round-trips from O(n) to O(1) per merge.
-     * 4. Removed always-on Log.d calls that built large mapped strings even when
-     *    logcat would discard them — those `entries.map { "$id:$title" }` allocations
-     *    were dominant on big libraries.
      */
     @Transaction
     suspend fun smartMergeByType(type: MediaType, apiEntries: List<LibraryEntryEntity>) {
@@ -123,10 +112,6 @@ interface LibraryDao {
         }
     }
 
-    /**
-     * Batched delete: one SQL statement instead of N. Room translates `IN (:ids)`
-     * to a single prepared statement, so SQLite parses + binds + executes once.
-     */
     @Query("DELETE FROM library_entries WHERE mediaId IN (:mediaIds)")
     suspend fun deleteByMediaIds(mediaIds: List<Int>)
 

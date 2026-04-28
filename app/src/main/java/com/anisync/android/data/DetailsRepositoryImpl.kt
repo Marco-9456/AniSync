@@ -41,17 +41,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-// Top-level constant: month abbreviations used by date formatting helpers.
-// Was: re-allocated as a `listOf(...)` inside refreshMediaDetails AND getStaffDetails on every
-// invocation. Pulling it out eliminates per-query allocation + bounds-checked List access. Array
-// access compiles to a direct aaload bytecode, avoiding the kotlin.collections.List wrapper.
 private val MONTH_ABBR = arrayOf(
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 )
 
-// Format helper used by both detail and staff queries. Inline two-padding avoids
-// allocating an intermediate String.format spec or a Locale lookup.
 private fun formatFuzzyDateLong(month: Int?, day: Int?, year: Int?): String? {
     val m = month?.takeIf { it in 1..12 }?.let { MONTH_ABBR[it - 1] }
     val d = day?.let { if (it < 10) "0$it" else it.toString() }
@@ -147,7 +141,6 @@ class DetailsRepositoryImpl @Inject constructor(
             val titleNative = media.title?.native
             val titleUserPreferred = media.title?.userPreferred ?: "Unknown"
 
-            // Use top-level helper instead of allocating a months List per call.
             val formattedDate = formatFuzzyDateLong(
                 media.startDate?.month, media.startDate?.day, media.startDate?.year
             )
@@ -596,7 +589,6 @@ class DetailsRepositoryImpl @Inject constructor(
             val pageInfo = staffData.characterMedia?.pageInfo
             val hasNextPage = pageInfo?.hasNextPage ?: false
 
-            // formatFuzzyDateShort lives at file scope; no per-call list/closure allocation.
             val characterMap =
                 linkedMapOf<Int, MutableList<Pair<GetStaffDetailsQuery.Edge, GetStaffDetailsQuery.Character>>>()
             staffData.characterMedia?.edges?.filterNotNull()?.forEach { edge ->

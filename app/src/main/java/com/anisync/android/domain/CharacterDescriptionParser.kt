@@ -7,9 +7,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 
-// Hoisted regex constants. Each was previously declared as a local val inside parse(),
-// so every screen open recompiled six patterns. Pattern compilation is the dominant
-// cost on this hot path (character details screen), and these are pure constants.
 private val BR_TAG_REGEX = Regex("<br\\s*/?>")
 private val ATTRIBUTE_REGEX = Regex("^(~!)?\\s*(__|\\*\\*)?([a-zA-Z0-9\\s\\-_()]+?)(:|\\2)\\s*(.*)(!~)?$")
 private val MD_LINK_REGEX = Regex("\\[([^\\]]+)\\]\\([^)]+\\)")

@@ -27,9 +27,6 @@ import kotlinx.coroutines.flow.first
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
-// Precomputed name → ThreadSort lookup. Replaces an O(n) `entries.find { it.name == s }`
-// scan that ran per token of the comma-separated sort string on every page fetch.
-// The map is built once at class load time; each lookup is now O(1).
 private val THREAD_SORT_BY_NAME: Map<String, ThreadSort> =
     ThreadSort.entries.associateBy { it.name }
 

@@ -171,20 +171,13 @@ class LibraryViewModel @Inject constructor(
                         )
                     }
 
-                    // Pre-cache localized lowercase titles once. Building a fresh `getTitle().lowercase()`
-                    // inside every comparator invocation was the dominant CPU cost on big libraries
-                    // (the original code carried an explicit comment about this); we keep that win
-                    // and add several more on top.
                     class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
 
                     val sortableEntries =
                         entries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
 
-                    // Direction-aware comparator: instead of sorting ascending and then doing a full
-                    // O(n) `reversed()` allocation for descending, flip the direction inside the
-                    // comparator. Saves a whole list copy on every recompose-driven pipeline run.
                     val titleDir = if (ascending) 1 else -1
-                    val keyDir = -titleDir // primary keys are descending in the original UX
+                    val keyDir = -titleDir
                     val titleCmp = Comparator<SortableEntry> { a, b ->
                         a.sortTitle.compareTo(b.sortTitle) * titleDir
                     }
@@ -193,7 +186,7 @@ class LibraryViewModel @Inject constructor(
                             val ka = key(a); val kb = key(b)
                             val cmp = when {
                                 ka == null && kb == null -> 0
-                                ka == null -> 1            // nulls last regardless of direction
+                                ka == null -> 1
                                 kb == null -> -1
                                 else -> ka.compareTo(kb)
                             }
@@ -204,9 +197,6 @@ class LibraryViewModel @Inject constructor(
                         LibrarySort.TITLE -> sortableEntries.sortedWith(titleCmp)
                         LibrarySort.PROGRESS -> sortableEntries.sortedWith(primaryDesc { it.entry.progress })
                         LibrarySort.AIRING_SOON -> sortableEntries.sortedWith(
-                            // AIRING_SOON wants nulls-last with the soonest first; the legacy
-                            // `compareBy(nullsLast())` was ascending — we replicate by flipping
-                            // direction signs only on the title tiebreak, not the primary key.
                             Comparator { a, b ->
                                 val ka = a.entry.nextAiringEpisodeTime
                                 val kb = b.entry.nextAiringEpisodeTime
@@ -227,10 +217,6 @@ class LibraryViewModel @Inject constructor(
                         LibrarySort.RELEASE_DATE -> sortableEntries.sortedWith(primaryDesc { it.entry.mediaStartDate })
                     }
 
-                    // Single-pass partition: split into the visibility-filtered list (for
-                    // status grouping + search) and accumulate custom-list buckets at the
-                    // same time. The previous code walked the sorted list 4 separate times
-                    // (visibility filter, search filter, groupBy, custom-list filter+forEach).
                     val customEntriesMap = HashMap<String, MutableList<LibraryEntry>>()
                     val customNames = HashSet<String>()
                     val visibilityFiltered = ArrayList<SortableEntry>(sortedEntries.size)
@@ -260,14 +246,8 @@ class LibraryViewModel @Inject constructor(
                         }
                     }
 
-                    // groupBy is fine — it walks once and uses LinkedHashMap. Status enum count
-                    // is tiny so the allocation is bounded.
                     val grouped = filteredEntries.groupBy { it.status }
 
-                    // Pre-compute name → listOrder index once. The legacy comparator called
-                    // `listOrder.indexOf(name)` inside compareBy, which is O(n) per probe and
-                    // executes O(n log n) times during the sort → O(n²log n) total. With the
-                    // map this drops to a single HashMap probe per compare.
                     val orderIndex = HashMap<String, Int>(listOrder.size * 2)
                     listOrder.forEachIndexed { i, n -> orderIndex[n] = i }
                     val sortedCustomNames = customNames.sortedWith(

@@ -183,10 +183,6 @@ fun RichTextRenderer(
 }
 
 private fun collectAnilistLinks(blocks: List<RichTextBlock>): List<RichTextBlock.AnilistLink> {
-    // Single accumulator shared across the recursion. The previous version allocated a fresh
-    // mutableListOf at every level and then called result.addAll(...) — for deeply nested
-    // structures (blockquotes inside lists inside tables) that's O(depth × n) extra allocations
-    // and copies. Threading one ArrayList through the recursion keeps the cost at O(n).
     val result = ArrayList<RichTextBlock.AnilistLink>()
     collectAnilistLinksInto(blocks, result)
     return result

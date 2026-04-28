@@ -36,8 +36,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Pre-built status order for groupEntriesByStatus. Was a per-call `listOf(...)` allocating
-// a 6-element ArrayList every time the user opened ANIME/MANGA tab on a profile.
 private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
     LibraryStatus.CURRENT,
     LibraryStatus.REPEATING,
@@ -665,9 +663,6 @@ class ProfileViewModel @Inject constructor(
             val count = countsByBucket[bucket - 1]
             val label = when (effectiveScoreFormat) {
                 ScoreFormat.POINT_100 -> (bucket * 10).toString()
-                // bucket is Int so the legacy "%.1f" output was always "<n>.0".
-                // Bypassing java.util.Formatter (Locale lookup, FormatString parser, intermediate
-                // StringBuilder) for what is literally string concatenation.
                 ScoreFormat.POINT_10_DECIMAL -> "$bucket.0"
                 ScoreFormat.POINT_10, ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> bucket.toString()
             }

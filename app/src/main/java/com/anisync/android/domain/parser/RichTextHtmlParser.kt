@@ -10,10 +10,6 @@ internal data class HtmlParseResult(
     val warnings: List<ParseWarning>
 )
 
-// File-scope regex/set constants. Each was previously rebuilt for every parser instance
-// (one per parse() call): nonDigitRegex was a per-instance field, the table-cell tag
-// list was an inline `listOf("td","th")` allocation per cell, and looksLikeEscapedHtml()
-// recompiled its tag pattern on every <pre> inspection. Hoisting kills the per-call work.
 private val NON_DIGIT_REGEX = Regex("[^0-9]")
 private val ESCAPED_HTML_TAG_REGEX = Regex("""<[a-zA-Z/][^>]*>""")
 private val TABLE_CELL_TAGS: Set<String> = setOf("td", "th")
@@ -27,8 +23,6 @@ private val BLOCK_TAGS: Set<String> = setOf(
 internal class RichTextHtmlParser(
     private val inlineParser: RichTextInlineParser
 ) {
-    // Kept as instance fields delegating to the file-level singletons for binary-compat
-    // with any existing references; the JVM inlines these accesses to a direct getstatic.
     private val nonDigitRegex get() = NON_DIGIT_REGEX
     private val blockTags get() = BLOCK_TAGS
 
@@ -686,8 +680,6 @@ internal class RichTextHtmlParser(
 
     private fun looksLikeEscapedHtml(text: String): Boolean {
         val sample = if (text.length > 500) text.substring(0, 500) else text
-        // Use the file-scope compiled regex; previously this allocated a fresh Regex
-        // (and therefore a fresh java.util.regex.Pattern) every time a <pre> was parsed.
         val tagCount = ESCAPED_HTML_TAG_REGEX.findAll(sample).count()
         return tagCount >= 3
     }
