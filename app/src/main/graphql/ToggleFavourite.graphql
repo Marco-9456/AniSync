@@ -6,6 +6,12 @@ mutation ToggleFavourite($animeId: Int, $mangaId: Int, $characterId: Int, $staff
         isFavourite
       }
     }
+    manga {
+      nodes {
+        id
+        isFavourite
+      }
+    }
     characters {
       nodes {
         id

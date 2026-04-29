@@ -326,8 +326,12 @@ class DetailsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean> {
-        // Optimistic UI: flip the cached flag immediately so the heart fills/empties
-        // before the network round-trip. Roll back on failure.
+        // Flip the cached flag immediately so the heart fills/empties before the
+        // network round-trip. The authoritative post-toggle state comes back in the
+        // mutation response itself — we deliberately do NOT re-run GetMediaDetails
+        // after the toggle, because AniList's read-after-write is eventually
+        // consistent and the follow-up GET frequently returns the pre-toggle value,
+        // which would overwrite the optimistic flip and snap the heart back.
         val previous = mediaDetailsDao.getById(mediaId)?.isFavourite ?: false
         val optimistic = !previous
         mediaDetailsDao.updateFavouriteStatus(mediaId, optimistic)
@@ -357,14 +361,23 @@ class DetailsRepositoryImpl @Inject constructor(
                 throw Exception(errorMessage)
             }
 
-            optimistic
+            // Mutation response returns the viewer's full favourites list for the
+            // toggled media type. Membership of mediaId in that list is the
+            // authoritative new state.
+            val favourites = response.data?.ToggleFavourite
+            val isFavourite = if (mediaType == MediaType.MANGA) {
+                favourites?.manga?.nodes?.any { it?.id == mediaId } ?: optimistic
+            } else {
+                favourites?.anime?.nodes?.any { it?.id == mediaId } ?: optimistic
+            }
+            isFavourite
         }
 
         when (result) {
             is Result.Success -> {
-                // Reconcile favourites count via background refresh; isFavourite
-                // is already correct in cache from the optimistic flip.
-                refreshMediaDetails(mediaId)
+                if (result.data != optimistic) {
+                    mediaDetailsDao.updateFavouriteStatus(mediaId, result.data)
+                }
             }
             is Result.Error -> {
                 mediaDetailsDao.updateFavouriteStatus(mediaId, previous)
