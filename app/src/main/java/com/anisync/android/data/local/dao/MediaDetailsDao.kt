@@ -38,6 +38,9 @@ interface MediaDetailsDao {
     @Query("DELETE FROM media_details WHERE id = :id")
     suspend fun deleteById(id: Int)
 
+    @Query("UPDATE media_details SET isFavourite = :isFavourite WHERE id = :id")
+    suspend fun updateFavouriteStatus(id: Int, isFavourite: Boolean)
+
     /**
      * Clear all cached media details.
      */

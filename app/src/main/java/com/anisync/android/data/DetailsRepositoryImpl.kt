@@ -326,7 +326,13 @@ class DetailsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean> {
-        return safeApiCall {
+        // Optimistic UI: flip the cached flag immediately so the heart fills/empties
+        // before the network round-trip. Roll back on failure.
+        val previous = mediaDetailsDao.getById(mediaId)?.isFavourite ?: false
+        val optimistic = !previous
+        mediaDetailsDao.updateFavouriteStatus(mediaId, optimistic)
+
+        val result = safeApiCall {
             val mutation = if (mediaType == MediaType.MANGA) {
                 ToggleFavouriteMutation(
                     animeId = Optional.absent(),
@@ -351,10 +357,20 @@ class DetailsRepositoryImpl @Inject constructor(
                 throw Exception(errorMessage)
             }
 
-            refreshMediaDetails(mediaId)
-            val currentEntity = mediaDetailsDao.getById(mediaId)
-            currentEntity?.isFavourite ?: false
+            optimistic
         }
+
+        when (result) {
+            is Result.Success -> {
+                // Reconcile favourites count via background refresh; isFavourite
+                // is already correct in cache from the optimistic flip.
+                refreshMediaDetails(mediaId)
+            }
+            is Result.Error -> {
+                mediaDetailsDao.updateFavouriteStatus(mediaId, previous)
+            }
+        }
+        return result
     }
 
     override suspend fun toggleCharacterFavourite(characterId: Int): Result<Boolean> {
