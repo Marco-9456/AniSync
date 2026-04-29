@@ -10,4 +10,10 @@ interface ActivityRepository {
     suspend fun getViewerId(): Int?
     suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit>
     suspend fun saveTextActivity(text: String): Result<Unit>
+
+    /** List of users who liked the given root activity. */
+    suspend fun getActivityLikes(activityId: Int): Result<List<UserSummary>>
+
+    /** List of users who liked the given activity reply. */
+    suspend fun getActivityReplyLikes(replyId: Int): Result<List<UserSummary>>
 }

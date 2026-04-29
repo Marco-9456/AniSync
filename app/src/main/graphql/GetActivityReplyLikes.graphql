@@ -1,0 +1,13 @@
+query GetActivityReplyLikes($replyId: Int!) {
+  ActivityReply(id: $replyId) {
+    id
+    likes {
+      id
+      name
+      avatar {
+        large
+        medium
+      }
+    }
+  }
+}

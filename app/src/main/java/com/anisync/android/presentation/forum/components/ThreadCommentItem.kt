@@ -70,6 +70,7 @@ fun ThreadCommentItem(
     onLikeClick: (commentId: Int, currentLiked: Boolean) -> Unit,
     onReplyClick: ((commentId: Int, authorName: String) -> Unit)?,
     modifier: Modifier = Modifier,
+    onLikeCountClick: ((commentId: Int) -> Unit)? = null,
     threadAuthorId: Int = 0,
     depth: Int = 0,
     depthOffset: Int = 0,
@@ -390,12 +391,21 @@ fun ThreadCommentItem(
                                 iconSize = 20.dp
                             )
                             if (comment.likeCount > 0) {
+                                val countModifier = if (onLikeCountClick != null) {
+                                    Modifier
+                                        .clip(RoundedCornerShape(100))
+                                        .clickable { onLikeCountClick(comment.id) }
+                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                } else {
+                                    Modifier
+                                }
                                 Text(
                                     text = comment.likeCount.toString(),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = if (comment.isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = if (comment.isLiked) FontWeight.Black else FontWeight.Bold,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    modifier = countModifier
                                 )
                             }
                         }

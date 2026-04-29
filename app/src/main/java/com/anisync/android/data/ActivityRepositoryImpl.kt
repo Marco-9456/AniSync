@@ -2,7 +2,9 @@ package com.anisync.android.data
 
 import com.anisync.android.DeleteActivityMutation
 import com.anisync.android.DeleteActivityReplyMutation
+import com.anisync.android.GetActivityLikesQuery
 import com.anisync.android.GetActivityQuery
+import com.anisync.android.GetActivityReplyLikesQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.SaveActivityReplyMutation
 import com.anisync.android.SaveTextActivityMutation
@@ -15,6 +17,7 @@ import com.anisync.android.domain.ActivityReply
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.LikeState
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.UserSummary
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
@@ -151,6 +154,52 @@ class ActivityRepositoryImpl @Inject constructor(
             throw Exception(response.errors?.first()?.message ?: "Failed to toggle subscription")
         }
         Unit
+    }
+
+    override suspend fun getActivityLikes(activityId: Int): Result<List<UserSummary>> = safeApiCall {
+        val response = apolloClient
+            .query(GetActivityLikesQuery(activityId))
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+        if (response.hasErrors()) {
+            throw Exception(response.errors?.first()?.message ?: "Failed to load likes")
+        }
+
+        val activity = response.data?.Activity
+            ?: throw Exception("Activity not found")
+
+        // Each fragment generates its own Like type, so map per-variant rather
+        // than relying on a single `?:` chain returning a uniform type.
+        activity.onTextActivity?.likes?.filterNotNull()?.map {
+            UserSummary(it.id, it.name, it.avatar?.large ?: it.avatar?.medium)
+        } ?: activity.onListActivity?.likes?.filterNotNull()?.map {
+            UserSummary(it.id, it.name, it.avatar?.large ?: it.avatar?.medium)
+        } ?: activity.onMessageActivity?.likes?.filterNotNull()?.map {
+            UserSummary(it.id, it.name, it.avatar?.large ?: it.avatar?.medium)
+        } ?: emptyList()
+    }
+
+    override suspend fun getActivityReplyLikes(replyId: Int): Result<List<UserSummary>> = safeApiCall {
+        val response = apolloClient
+            .query(GetActivityReplyLikesQuery(replyId))
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+        if (response.hasErrors()) {
+            throw Exception(response.errors?.first()?.message ?: "Failed to load likes")
+        }
+
+        val reply = response.data?.ActivityReply
+            ?: throw Exception("Reply not found")
+
+        reply.likes?.filterNotNull()?.map { user ->
+            UserSummary(
+                id = user.id,
+                name = user.name,
+                avatarUrl = user.avatar?.large ?: user.avatar?.medium
+            )
+        } ?: emptyList()
     }
 
     override suspend fun getViewerId(): Int? {

@@ -132,6 +132,7 @@ fun ActivityDetailScreen(
 
     var showDeleteActivityDialog by remember { mutableStateOf(false) }
     var showOverflow by remember { mutableStateOf(false) }
+    var likesTarget by remember { mutableStateOf<ActivityLikesTarget?>(null) }
 
     LaunchedEffect(activityId) {
         viewModel.onAction(ActivityDetailAction.Load(activityId))
@@ -380,6 +381,9 @@ fun ActivityDetailScreen(
                                 onLikeClick = {
                                     viewModel.onAction(ActivityDetailAction.ToggleActivityLike)
                                 },
+                                onLikeCountClick = if (activity.likeCount > 0) {
+                                    { likesTarget = ActivityLikesTarget.Activity(activity.id) }
+                                } else null,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -456,6 +460,9 @@ fun ActivityDetailScreen(
                                     onLikeClick = { commentId, _ ->
                                         viewModel.onAction(ActivityDetailAction.ToggleReplyLike(commentId))
                                     },
+                                    onLikeCountClick = { commentId ->
+                                        likesTarget = ActivityLikesTarget.Reply(commentId)
+                                    },
                                     onReplyClick = { commentId, authorName ->
                                         viewModel.onAction(
                                             ActivityDetailAction.OpenReply(commentId, authorName)
@@ -509,6 +516,17 @@ fun ActivityDetailScreen(
             onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
             prefillBody = uiState.replyPrefillBody,
             sheetState = replySheetState
+        )
+    }
+
+    likesTarget?.let { target ->
+        com.anisync.android.presentation.activity.components.ActivityLikesSheet(
+            target = target,
+            onDismiss = { likesTarget = null },
+            onUserClick = { username ->
+                likesTarget = null
+                onUserClick(username)
+            }
         )
     }
 

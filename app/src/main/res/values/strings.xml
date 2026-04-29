@@ -143,6 +143,8 @@
     <string name="all_reviews">All Reviews</string>
     <string name="section_following">Following</string>
     <string name="all_following">All Following</string>
+    <string name="activity_likes_title">Liked by</string>
+    <string name="activity_likes_empty">No likes yet</string>
     <string name="found_helpful">found helpful</string>
     <string name="section_synopsis">SYNOPSIS</string>
     <string name="stat_episodes">Episodes</string>

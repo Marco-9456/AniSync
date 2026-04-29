@@ -1,0 +1,38 @@
+query GetActivityLikes($activityId: Int!) {
+  Activity(id: $activityId) {
+    __typename
+    ... on TextActivity {
+      id
+      likes {
+        id
+        name
+        avatar {
+          large
+          medium
+        }
+      }
+    }
+    ... on ListActivity {
+      id
+      likes {
+        id
+        name
+        avatar {
+          large
+          medium
+        }
+      }
+    }
+    ... on MessageActivity {
+      id
+      likes {
+        id
+        name
+        avatar {
+          large
+          medium
+        }
+      }
+    }
+  }
+}

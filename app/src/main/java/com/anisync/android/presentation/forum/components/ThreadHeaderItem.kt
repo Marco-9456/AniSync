@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.forum.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -193,7 +194,8 @@ fun ContentStatsBar(
     likeCount: Int,
     isLiked: Boolean,
     onLikeClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLikeCountClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -249,11 +251,20 @@ fun ContentStatsBar(
                             onClick = onLikeClick,
                             iconSize = 22.dp
                         )
+                        val countModifier = if (onLikeCountClick != null && likeCount > 0) {
+                            Modifier
+                                .clip(RoundedCornerShape(100))
+                                .clickable(onClick = onLikeCountClick)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        } else {
+                            Modifier
+                        }
                         Text(
                             text = likeCount.toString(),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Black,
-                            color = if (isLiked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isLiked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = countModifier
                         )
                     }
                 }
