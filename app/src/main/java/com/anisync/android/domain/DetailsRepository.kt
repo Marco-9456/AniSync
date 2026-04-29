@@ -58,6 +58,16 @@ interface DetailsRepository {
     suspend fun getMediaReviews(mediaId: Int, page: Int): Result<Pair<List<MediaReview>, Boolean>>
 
     /**
+     * Get paginated list of media list entries belonging to users the viewer follows.
+     * Returns a pair of: list of entries, and a boolean indicating if there is a next page.
+     */
+    suspend fun getMediaFollowing(
+        mediaId: Int,
+        page: Int,
+        perPage: Int
+    ): Result<Pair<List<MediaFollowingEntry>, Boolean>>
+
+    /**
      * Rate a recommendation (like/dislike/clear).
      * @param mediaId The source media ID
      * @param recommendationId The recommended media ID

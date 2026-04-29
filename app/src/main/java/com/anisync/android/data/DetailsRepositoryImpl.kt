@@ -22,6 +22,7 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
@@ -526,6 +527,49 @@ class DetailsRepositoryImpl @Inject constructor(
             }
 
             Pair(mappedReviews, hasNextPage)
+        }
+    }
+
+    override suspend fun getMediaFollowing(
+        mediaId: Int,
+        page: Int,
+        perPage: Int
+    ): Result<Pair<List<MediaFollowingEntry>, Boolean>> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                com.anisync.android.GetMediaFollowingQuery(
+                    mediaId = mediaId,
+                    page = page,
+                    perPage = perPage
+                )
+            ).execute()
+
+            if (response.hasErrors() || response.data == null) {
+                throw Exception(
+                    response.errors?.firstOrNull()?.message ?: "Failed to fetch following"
+                )
+            }
+
+            val pageData = response.data?.Page
+            val hasNextPage = pageData?.pageInfo?.hasNextPage ?: false
+            val nodes = pageData?.mediaList?.filterNotNull() ?: emptyList()
+
+            val mapped = nodes.mapNotNull { node ->
+                val user = node.user ?: return@mapNotNull null
+                MediaFollowingEntry(
+                    userId = user.id,
+                    userName = user.name,
+                    // Prefer `large` — AniList serves the animated GIF original here;
+                    // `medium` is often a static resized frame.
+                    userAvatarUrl = user.avatar?.large ?: user.avatar?.medium,
+                    status = node.status?.toDomainStatus()
+                        ?: com.anisync.android.domain.LibraryStatus.UNKNOWN,
+                    score = node.score?.takeIf { it > 0.0 },
+                    progress = node.progress
+                )
+            }
+
+            Pair(mapped, hasNextPage)
         }
     }
 

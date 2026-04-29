@@ -103,6 +103,7 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
@@ -114,6 +115,8 @@ import com.anisync.android.presentation.details.components.ContentMetadataSectio
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
+import com.anisync.android.presentation.details.components.FollowingItem
+import com.anisync.android.presentation.details.components.FollowingListSheet
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
@@ -154,6 +157,8 @@ fun MediaDetailsScreen(
     val userScoreFormat by viewModel.userScoreFormat.collectAsStateWithLifecycle()
     val animeCustomLists by viewModel.animeCustomLists.collectAsStateWithLifecycle()
     val mangaCustomLists by viewModel.mangaCustomLists.collectAsStateWithLifecycle()
+    val following by viewModel.following.collectAsStateWithLifecycle()
+    val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
 
     LaunchedEffect(mediaId) {
         viewModel.loadMedia(mediaId)
@@ -455,6 +460,8 @@ fun MediaDetailsScreen(
                                 details = state.details,
                                 sourceScreen = sourceScreen,
                                 listState = listState,
+                                following = following,
+                                hasMoreFollowing = hasMoreFollowing,
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
                                 onCastSeeAllClick = {
@@ -557,6 +564,8 @@ fun DetailsPageContent(
     details: MediaDetails,
     sourceScreen: String,
     listState: LazyListState,
+    following: List<MediaFollowingEntry>,
+    hasMoreFollowing: Boolean,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
@@ -604,6 +613,7 @@ fun DetailsPageContent(
 
     var selectedReview by remember { mutableStateOf<MediaReview?>(null) }
     var showAllReviewsSheet by remember { mutableStateOf(false) }
+    var showAllFollowingSheet by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -780,7 +790,35 @@ fun DetailsPageContent(
                 }
             }
 
-            // 10. Reviews
+            // 10. Following — list of followed users' status for this media
+            if (following.isNotEmpty()) {
+                item(key = "following") {
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                        SectionHeader(
+                            title = stringResource(R.string.section_following),
+                            level = HeaderLevel.Section,
+                            onActionClick = if (hasMoreFollowing) { { showAllFollowingSheet = true } } else null
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+                        ) {
+                            items(items = following, key = { "follow_${it.userId}" }) { entry ->
+                                FollowingItem(
+                                    entry = entry,
+                                    mediaType = details.type,
+                                    onClick = { onUserClick(entry.userName) },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 11. Reviews
             if (displayReviews.isNotEmpty()) {
                 item(key = "reviews_header") {
                     Column {
@@ -866,6 +904,18 @@ fun DetailsPageContent(
             onDismiss = { showAllReviewsSheet = false },
             onReviewClick = { selectedReview = it },
             onUserClick = onUserClick
+        )
+    }
+
+    if (showAllFollowingSheet) {
+        FollowingListSheet(
+            mediaId = details.id,
+            mediaType = details.type,
+            onDismiss = { showAllFollowingSheet = false },
+            onUserClick = { username ->
+                showAllFollowingSheet = false
+                onUserClick(username)
+            }
         )
     }
 

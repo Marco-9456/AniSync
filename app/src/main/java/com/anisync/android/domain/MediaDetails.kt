@@ -139,6 +139,19 @@ data class RecommendedMedia(
 )
 
 /**
+ * Represents a followed user's list entry for a given media.
+ */
+@Serializable
+data class MediaFollowingEntry(
+    val userId: Int,
+    val userName: String,
+    val userAvatarUrl: String?,
+    val status: LibraryStatus,
+    val score: Double?,
+    val progress: Int?
+)
+
+/**
  * Represents a user review for a media.
  */
 @Serializable

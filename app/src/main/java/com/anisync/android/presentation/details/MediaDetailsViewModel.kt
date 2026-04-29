@@ -13,6 +13,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.util.ShareUtils
@@ -49,6 +50,12 @@ class MediaDetailsViewModel @Inject constructor(
     private val _draftEntry = MutableStateFlow<LibraryEntry?>(null)
     val draftEntry: StateFlow<LibraryEntry?> = _draftEntry.asStateFlow()
 
+    private val _following = MutableStateFlow<List<MediaFollowingEntry>>(emptyList())
+    val following: StateFlow<List<MediaFollowingEntry>> = _following.asStateFlow()
+
+    private val _hasMoreFollowing = MutableStateFlow(false)
+    val hasMoreFollowing: StateFlow<Boolean> = _hasMoreFollowing.asStateFlow()
+
     val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
     
     val animeCustomLists: StateFlow<List<String>> = appSettings.animeListOrder
@@ -82,6 +89,26 @@ class MediaDetailsViewModel @Inject constructor(
     init {
         // Trigger network refresh to get fresh data
         refresh()
+        loadFollowingPreview()
+    }
+
+    private fun loadFollowingPreview() {
+        viewModelScope.launch {
+            when (val result = detailsRepository.getMediaFollowing(
+                mediaId = mediaId,
+                page = 1,
+                perPage = FOLLOWING_PREVIEW_LIMIT
+            )) {
+                is Result.Success -> {
+                    val (entries, hasNext) = result.data
+                    _following.value = entries
+                    _hasMoreFollowing.value = hasNext
+                }
+                is Result.Error -> {
+                    // Silent failure — section just stays empty
+                }
+            }
+        }
     }
 
     /**
@@ -245,6 +272,10 @@ class MediaDetailsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    companion object {
+        private const val FOLLOWING_PREVIEW_LIMIT = 10
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
