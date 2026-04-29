@@ -57,6 +57,14 @@ fun ProfileScreen(
         }
     }
 
+    LaunchedEffect(uiState.activitySnackbarMessage?.token) {
+        val msg = uiState.activitySnackbarMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg.text)
+            viewModel.onAction(ProfileAction.ConsumeActivitySnackbar)
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),

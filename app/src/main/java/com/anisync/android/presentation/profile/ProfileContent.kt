@@ -164,7 +164,14 @@ fun ProfileContent(
                         onUserClick = onUserClick,
                         onActivityClick = onActivityClick,
                         onLastReplyClick = onLastReplyClick,
-                        onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
+                        onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
+                        onLikeActivity = if (isOwnProfile) {
+                            { onAction(ProfileAction.ToggleActivityLike(it)) }
+                        } else null,
+                        onDeleteActivity = if (isOwnProfile) {
+                            { onAction(ProfileAction.DeleteActivity(it)) }
+                        } else null,
+                        viewerId = uiState.viewerId
                     )
                 }
             }
@@ -178,7 +185,14 @@ fun ProfileContent(
                     onActivityClick = onActivityClick,
                     onMediaClick = onMediaClick,
                     onLastReplyClick = onLastReplyClick,
-                    onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) }
+                    onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
+                    onLikeActivity = if (isOwnProfile) {
+                        { onAction(ProfileAction.ToggleActivityLike(it)) }
+                    } else null,
+                    onDeleteActivity = if (isOwnProfile) {
+                        { onAction(ProfileAction.DeleteActivity(it)) }
+                    } else null,
+                    viewerId = uiState.viewerId
                 )
             }
 

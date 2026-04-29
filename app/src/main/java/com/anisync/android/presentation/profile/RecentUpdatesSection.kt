@@ -54,7 +54,9 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.profile.components.ActivityOverflowMenu
 import com.anisync.android.presentation.profile.components.ActivityPreviewCard
+import com.anisync.android.presentation.profile.components.ActivityStatPill
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 
 @Composable
@@ -65,7 +67,10 @@ fun RecentUpdatesSection(
     onActivityClick: (Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
-    onSubscribeClick: (Int) -> Unit = {}
+    onSubscribeClick: (Int) -> Unit = {},
+    onLikeClick: ((activityId: Int) -> Unit)? = null,
+    onDeleteClick: ((activityId: Int) -> Unit)? = null,
+    viewerId: Int? = null
 ) {
     Column(modifier = modifier) {
         SectionHeader(
@@ -79,13 +84,21 @@ fun RecentUpdatesSection(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             displayedActivities.forEach { activity ->
                 key(activity.id) {
+                    val isOwner = viewerId != null && activity.userId == viewerId
+                    val cardLike = onLikeClick?.let { cb -> { cb(activity.id) } }
+                    val cardDelete = if (isOwner) {
+                        onDeleteClick?.let { cb -> { cb(activity.id) } }
+                    } else null
+
                     if (activity.type == ActivityType.MEDIA_LIST) {
                         RecentUpdateCard(
                             activity = activity,
                             onUserClick = onUserClick,
                             onActivityClick = onActivityClick,
                             onMediaClick = onMediaClick,
-                            onLastReplyClick = onLastReplyClick
+                            onLastReplyClick = onLastReplyClick,
+                            onLikeClick = cardLike,
+                            onDeleteClick = cardDelete
                         )
                     } else {
                         ActivityPreviewCard(
@@ -93,7 +106,9 @@ fun RecentUpdatesSection(
                             onClick = { onActivityClick(activity.id) },
                             onSubscribeClick = { onSubscribeClick(activity.id) },
                             onUserClick = onUserClick,
-                            onLastReplyClick = onLastReplyClick
+                            onLastReplyClick = onLastReplyClick,
+                            onLikeClick = cardLike,
+                            onDeleteClick = cardDelete
                         )
                     }
                 }
@@ -109,7 +124,9 @@ fun RecentUpdateCard(
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
-    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> }
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
+    onLikeClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     Card(
         onClick = { onActivityClick(activity.id) },
@@ -168,7 +185,8 @@ fun RecentUpdateCard(
             Column(modifier = Modifier.weight(1f)) {
                 UpdateHeader(
                     activity = activity,
-                    onUserClick = onUserClick
+                    onUserClick = onUserClick,
+                    onDeleteClick = onDeleteClick
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -180,7 +198,9 @@ fun RecentUpdateCard(
                 UpdateFooter(
                     activity = activity,
                     onUserClick = onUserClick,
-                    onLastReplyClick = onLastReplyClick
+                    onLastReplyClick = onLastReplyClick,
+                    onLikeClick = onLikeClick,
+                    onCommentClick = { onActivityClick(activity.id) }
                 )
             }
         }
@@ -190,7 +210,8 @@ fun RecentUpdateCard(
 @Composable
 private fun UpdateHeader(
     activity: UserActivity,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -240,6 +261,10 @@ private fun UpdateHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+
+        if (onDeleteClick != null) {
+            ActivityOverflowMenu(onDeleteClick = onDeleteClick)
+        }
     }
 }
 
@@ -283,7 +308,9 @@ private fun UpdateStatusText(activity: UserActivity) {
 private fun UpdateFooter(
     activity: UserActivity,
     onUserClick: (String) -> Unit,
-    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
+    onLikeClick: (() -> Unit)? = null,
+    onCommentClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -329,21 +356,25 @@ private fun UpdateFooter(
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        // Engagement metrics
+        // Engagement metrics — pill-shaped, 22dp icons, 48dp+ touch target.
         Row(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatItem(
+            ActivityStatPill(
                 icon = Icons.Outlined.ChatBubbleOutline,
-                value = activity.replyCount
+                value = activity.replyCount,
+                onClick = onCommentClick,
+                contentDescription = "Comments"
             )
-            StatItem(
+            ActivityStatPill(
                 icon = if (activity.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 value = activity.likeCount,
-                tint = if (activity.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (activity.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = onLikeClick,
+                contentDescription = if (activity.isLiked) "Unlike" else "Like"
             )
         }
     }
@@ -387,30 +418,6 @@ private fun StatusBadge(
 }
 
 @Composable
-private fun StatItem(
-    icon: ImageVector,
-    value: Int,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = formatStatValue(value),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
 private fun UserAvatar(
     url: String?,
     contentDescription: String?,
@@ -441,10 +448,3 @@ private fun UserAvatar(
     }
 }
 
-private fun formatStatValue(value: Int): String {
-    return when {
-        value >= 1_000_000 -> String.format("%.1fM", value / 1_000_000.0)
-        value >= 1_000 -> String.format("%.1fk", value / 1_000.0)
-        else -> value.toString()
-    }
-}

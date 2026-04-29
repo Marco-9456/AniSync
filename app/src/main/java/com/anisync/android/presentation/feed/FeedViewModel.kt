@@ -9,6 +9,7 @@ import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -41,6 +42,12 @@ class FeedViewModel @Inject constructor(
         if (!hasLoadedInitially) {
             hasLoadedInitially = true
             load(page = 1)
+            viewModelScope.launch {
+                val viewerId = activityRepository.getViewerId()
+                if (viewerId != null) {
+                    _uiState.update { it.copy(viewerId = viewerId) }
+                }
+            }
         }
     }
 
@@ -111,6 +118,10 @@ class FeedViewModel @Inject constructor(
 
             is FeedAction.ToggleSubscribe -> toggleSubscribe(action.activityId)
 
+            is FeedAction.ToggleLike -> toggleLike(action.activityId)
+
+            is FeedAction.DeleteActivity -> deleteActivity(action.activityId)
+
             is FeedAction.OpenCompose -> {
                 _uiState.update { it.copy(isComposeSheetVisible = true, composeError = null) }
             }
@@ -147,6 +158,95 @@ class FeedViewModel @Inject constructor(
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(isPostingStatus = false, composeError = result.message)
+                    }
+                    _actions.send(FeedAction.ShowSnackbar(result.message))
+                }
+            }
+        }
+    }
+
+    private fun toggleLike(activityId: Int) {
+        val current = _uiState.value.items.firstOrNull { it.id == activityId } ?: return
+        if (_uiState.value.pendingLikeIds.contains(activityId)) return
+        val wasLiked = current.isLiked
+
+        _uiState.update { state ->
+            state.copy(
+                items = state.items.map {
+                    if (it.id == activityId) {
+                        it.copy(
+                            isLiked = !wasLiked,
+                            likeCount = (it.likeCount + if (wasLiked) -1 else 1).coerceAtLeast(0)
+                        )
+                    } else it
+                }.toPersistentList(),
+                pendingLikeIds = (state.pendingLikeIds + activityId).toPersistentSet()
+            )
+        }
+
+        viewModelScope.launch {
+            val result = activityRepository.toggleActivityLike(activityId)
+            _uiState.update { state ->
+                val pending = (state.pendingLikeIds - activityId).toPersistentSet()
+                when (result) {
+                    is Result.Success -> {
+                        val server = result.data
+                        state.copy(
+                            items = state.items.map {
+                                if (it.id == activityId) {
+                                    it.copy(isLiked = server.isLiked, likeCount = server.likeCount)
+                                } else it
+                            }.toPersistentList(),
+                            pendingLikeIds = pending
+                        )
+                    }
+                    is Result.Error -> state.copy(
+                        items = state.items.map {
+                            if (it.id == activityId) {
+                                it.copy(
+                                    isLiked = wasLiked,
+                                    likeCount = current.likeCount
+                                )
+                            } else it
+                        }.toPersistentList(),
+                        pendingLikeIds = pending
+                    )
+                }
+            }
+            if (result is Result.Error) {
+                _actions.send(FeedAction.ShowSnackbar(result.message))
+            }
+        }
+    }
+
+    private fun deleteActivity(activityId: Int) {
+        if (_uiState.value.pendingDeleteIds.contains(activityId)) return
+        val snapshot = _uiState.value.items
+        val target = snapshot.firstOrNull { it.id == activityId } ?: return
+
+        _uiState.update { state ->
+            state.copy(
+                items = state.items.filterNot { it.id == activityId }.toPersistentList(),
+                pendingDeleteIds = (state.pendingDeleteIds + activityId).toPersistentSet()
+            )
+        }
+
+        viewModelScope.launch {
+            val result = activityRepository.deleteActivity(activityId)
+            _uiState.update { state ->
+                state.copy(pendingDeleteIds = (state.pendingDeleteIds - activityId).toPersistentSet())
+            }
+            when (result) {
+                is Result.Success -> _actions.send(FeedAction.ShowSnackbar("Activity deleted"))
+                is Result.Error -> {
+                    // Restore the activity at its previous index
+                    _uiState.update { state ->
+                        val restored = state.items.toMutableList()
+                        val originalIndex = snapshot.indexOfFirst { it.id == activityId }
+                        if (originalIndex >= 0 && restored.none { it.id == activityId }) {
+                            restored.add(originalIndex.coerceAtMost(restored.size), target)
+                        }
+                        state.copy(items = restored.toPersistentList())
                     }
                     _actions.send(FeedAction.ShowSnackbar(result.message))
                 }

@@ -57,7 +57,9 @@ fun ActivityPreviewCard(
     onSubscribeClick: () -> Unit,
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
-    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> }
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
+    onLikeClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     Card(
         onClick = onClick,
@@ -72,11 +74,12 @@ fun ActivityPreviewCard(
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // 1. HEADER: Authors, Time, Badges, and Subscribe Action
+            // 1. HEADER: Authors, Time, Badges, Subscribe + (own-activity) overflow menu
             ActivityHeader(
                 activity = activity,
                 onSubscribeClick = onSubscribeClick,
-                onUserClick = onUserClick
+                onUserClick = onUserClick,
+                onDeleteClick = onDeleteClick
             )
 
             // 2. BODY: Rich text rendered inline (parsed via AsyncRichTextRenderer)
@@ -99,7 +102,9 @@ fun ActivityPreviewCard(
             ActivityFooter(
                 activity = activity,
                 onUserClick = onUserClick,
-                onLastReplyClick = onLastReplyClick
+                onLastReplyClick = onLastReplyClick,
+                onCommentClick = onClick,
+                onLikeClick = onLikeClick
             )
         }
     }
@@ -109,7 +114,8 @@ fun ActivityPreviewCard(
 private fun ActivityHeader(
     activity: UserActivity,
     onSubscribeClick: () -> Unit,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -217,17 +223,19 @@ private fun ActivityHeader(
             )
         }
 
-        // Action Menu / Subscribe
-        IconButton(
-            onClick = onSubscribeClick,
-            modifier = Modifier.size(36.dp)
-        ) {
+        // Subscribe — keep default IconButton size (48dp) for accessible touch.
+        IconButton(onClick = onSubscribeClick) {
             Icon(
                 imageVector = if (activity.isSubscribed) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
                 contentDescription = if (activity.isSubscribed) "Unsubscribe" else "Subscribe",
                 tint = if (activity.isSubscribed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(22.dp)
             )
+        }
+
+        // Overflow menu (only when this is the viewer's own activity)
+        if (onDeleteClick != null) {
+            ActivityOverflowMenu(onDeleteClick = onDeleteClick)
         }
     }
 }
@@ -236,7 +244,9 @@ private fun ActivityHeader(
 private fun ActivityFooter(
     activity: UserActivity,
     onUserClick: (String) -> Unit,
-    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
+    onCommentClick: () -> Unit = {},
+    onLikeClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -284,21 +294,26 @@ private fun ActivityFooter(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        // Engagement Metrics
+        // Engagement Metrics — both with proper touch targets so they tap directly
+        // from the card without forcing the user into the activity detail.
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatItem(
+            ActivityStatPill(
                 icon = Icons.Outlined.ChatBubbleOutline,
-                value = activity.replyCount
+                value = activity.replyCount,
+                onClick = onCommentClick,
+                contentDescription = "Comments"
             )
-            StatItem(
+            ActivityStatPill(
                 icon = if (activity.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 value = activity.likeCount,
-                tint = if (activity.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (activity.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = onLikeClick,
+                contentDescription = if (activity.isLiked) "Unlike" else "Like"
             )
         }
     }
@@ -340,30 +355,6 @@ private fun StatusBadge(
 }
 
 @Composable
-private fun StatItem(
-    icon: ImageVector,
-    value: Int,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = formatStatValue(value),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
 private fun UserAvatar(
     url: String?,
     contentDescription: String?,
@@ -394,18 +385,6 @@ private fun UserAvatar(
     }
 }
 
-private fun stripHtml(html: String): String =
-    html
-        .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
-        .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n")
-        .replace(Regex("<.*?>"), "")
-        .replace(Regex("\\n+"), " ")
-        .trim()
-
-// ============================================================================
-// --- Domain Mocks & Helpers ---
-// ============================================================================
-
 private fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
     val now = System.currentTimeMillis() / 1000
     val diff = now - timestampSeconds
@@ -417,14 +396,6 @@ private fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
         diff < 2592000 -> "${diff / 604800}w ago"
         diff < 31536000 -> "${diff / 2592000}mo ago"
         else -> "${diff / 31536000}y ago"
-    }
-}
-
-private fun formatStatValue(value: Int): String {
-    return when {
-        value >= 1_000_000 -> String.format("%.1fM", value / 1_000_000.0)
-        value >= 1_000 -> String.format("%.1fk", value / 1_000.0)
-        else -> value.toString()
     }
 }
 

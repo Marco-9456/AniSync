@@ -197,13 +197,24 @@ fun FeedScreen(
                             }
 
                             key(activity.id) {
+                                val isOwner = uiState.viewerId != null &&
+                                    activity.userId == uiState.viewerId
+                                val cardLike: () -> Unit = {
+                                    viewModel.onAction(FeedAction.ToggleLike(activity.id))
+                                }
+                                val cardDelete: (() -> Unit)? = if (isOwner) {
+                                    { viewModel.onAction(FeedAction.DeleteActivity(activity.id)) }
+                                } else null
+
                                 if (activity.type == ActivityType.MEDIA_LIST) {
                                     RecentUpdateCard(
                                         activity = activity,
                                         onUserClick = onUserClick,
                                         onActivityClick = onActivityClick,
                                         onMediaClick = onMediaClick,
-                                        onLastReplyClick = onLastReplyClick
+                                        onLastReplyClick = onLastReplyClick,
+                                        onLikeClick = cardLike,
+                                        onDeleteClick = cardDelete
                                     )
                                 } else {
                                     ActivityPreviewCard(
@@ -213,7 +224,9 @@ fun FeedScreen(
                                             viewModel.onAction(FeedAction.ToggleSubscribe(activity.id))
                                         },
                                         onUserClick = onUserClick,
-                                        onLastReplyClick = onLastReplyClick
+                                        onLastReplyClick = onLastReplyClick,
+                                        onLikeClick = cardLike,
+                                        onDeleteClick = cardDelete
                                     )
                                 }
                             }

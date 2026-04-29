@@ -80,9 +80,11 @@ class ActivityRepositoryImpl @Inject constructor(
 
         val text = result.onTextActivity
         val message = result.onMessageActivity
+        val list = result.onListActivity
         when {
             text != null -> LikeState(text.id, text.likeCount, text.isLiked == true)
             message != null -> LikeState(message.id, message.likeCount, message.isLiked == true)
+            list != null -> LikeState(list.id, list.likeCount, list.isLiked == true)
             else -> throw Exception("Unsupported like target")
         }
     }

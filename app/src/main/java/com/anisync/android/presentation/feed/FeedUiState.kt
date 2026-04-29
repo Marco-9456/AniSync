@@ -22,8 +22,10 @@ data class FeedUiState(
     val scope: FeedScope = FeedScope.GLOBAL,
     val mediaType: FeedMediaType = FeedMediaType.ANIME,
     val isAuthenticated: Boolean = true,
+    val viewerId: Int? = null,
     val errorMessage: String? = null,
     val pendingLikeIds: ImmutableSet<Int> = persistentSetOf(),
+    val pendingDeleteIds: ImmutableSet<Int> = persistentSetOf(),
     val isComposeSheetVisible: Boolean = false,
     val isPostingStatus: Boolean = false,
     val composeError: String? = null
@@ -36,6 +38,8 @@ sealed interface FeedAction {
     data class OnScopeChange(val scope: FeedScope) : FeedAction
     data class OnMediaTypeChange(val mediaType: FeedMediaType) : FeedAction
     data class ToggleSubscribe(val activityId: Int) : FeedAction
+    data class ToggleLike(val activityId: Int) : FeedAction
+    data class DeleteActivity(val activityId: Int) : FeedAction
     data object OpenCompose : FeedAction
     data object DismissCompose : FeedAction
     data class PostStatus(val text: String) : FeedAction

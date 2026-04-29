@@ -157,6 +157,11 @@ mutation ToggleActivityLike($id: Int!) {
       likeCount
       isLiked
     }
+    ... on ListActivity {
+      id
+      likeCount
+      isLiked
+    }
   }
 }
 

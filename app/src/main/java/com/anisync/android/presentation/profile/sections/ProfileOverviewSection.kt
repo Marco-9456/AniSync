@@ -63,6 +63,9 @@ fun ProfileOverviewSection(
     onActivityClick: (Int) -> Unit = {},
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     onSubscribeClick: (Int) -> Unit = {},
+    onLikeActivity: ((Int) -> Unit)? = null,
+    onDeleteActivity: ((Int) -> Unit)? = null,
+    viewerId: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val isProfileEmpty = profile.activities.isEmpty() &&
@@ -91,7 +94,10 @@ fun ProfileOverviewSection(
                 onActivityClick = onActivityClick,
                 onMediaClick = onMediaClick,
                 onLastReplyClick = onLastReplyClick,
-                onSubscribeClick = onSubscribeClick
+                onSubscribeClick = onSubscribeClick,
+                onLikeClick = onLikeActivity,
+                onDeleteClick = onDeleteActivity,
+                viewerId = viewerId
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

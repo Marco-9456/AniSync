@@ -144,6 +144,17 @@ class ProfileViewModel @Inject constructor(
     // Overlay for optimistic activity subscription toggles: activityId -> isSubscribed
     private val activitySubscriptionOverrides = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
 
+    // Overlay for optimistic activity like toggles: activityId -> (isLiked, likeCount).
+    private val activityLikeOverrides =
+        MutableStateFlow<Map<Int, Pair<Boolean, Int>>>(emptyMap())
+
+    // Optimistically-deleted activity ids hidden from the UI until confirmed.
+    private val deletedActivityIds = MutableStateFlow<Set<Int>>(emptySet())
+
+    private val viewerIdFlow = MutableStateFlow<Int?>(null)
+
+    private val activitySnackbar = MutableStateFlow<SnackbarMessage?>(null)
+
     private val targetUsername: String? = savedStateHandle.get<String>("username")
         ?.let(Uri::decode)
         ?.trim()
@@ -195,7 +206,11 @@ class ProfileViewModel @Inject constructor(
         reviewsState,
         statsState,
         mediaListState,
-        activitySubscriptionOverrides
+        activitySubscriptionOverrides,
+        activityLikeOverrides,
+        deletedActivityIds,
+        viewerIdFlow,
+        activitySnackbar
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -205,14 +220,32 @@ class ProfileViewModel @Inject constructor(
         val mediaLists = params[5] as MediaListState
         @Suppress("UNCHECKED_CAST")
         val subOverrides = params[6] as Map<Int, Boolean>
+        @Suppress("UNCHECKED_CAST")
+        val likeOverrides = params[7] as Map<Int, Pair<Boolean, Int>>
+        @Suppress("UNCHECKED_CAST")
+        val deletedIds = params[8] as Set<Int>
+        val viewerId = params[9] as Int?
+        val snackbar = params[10] as SnackbarMessage?
 
-        val remoteWithOverrides = if (subOverrides.isEmpty() || remote.profile == null) {
+        val needsOverlay = remote.profile != null &&
+            (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty())
+        val remoteWithOverrides = if (!needsOverlay) {
             remote
         } else {
-            val patched = remote.profile.activities.map { a ->
-                subOverrides[a.id]?.let { v -> a.copy(isSubscribed = v) } ?: a
-            }
-            remote.copy(profile = remote.profile.copy(activities = patched))
+            val profile = remote.profile!!
+            val patched = profile.activities
+                .asSequence()
+                .filterNot { deletedIds.contains(it.id) }
+                .map { a ->
+                    var next = a
+                    subOverrides[a.id]?.let { sub -> next = next.copy(isSubscribed = sub) }
+                    likeOverrides[a.id]?.let { (liked, count) ->
+                        next = next.copy(isLiked = liked, likeCount = count)
+                    }
+                    next
+                }
+                .toList()
+            remote.copy(profile = profile.copy(activities = patched))
         }
 
         remoteWithOverrides.copy(
@@ -257,7 +290,9 @@ class ProfileViewModel @Inject constructor(
             isUserAnimeListLoading = mediaLists.isUserAnimeListLoading,
             userMangaList = mediaLists.userMangaList,
             userMangaListByStatus = mediaLists.userMangaListByStatus,
-            isUserMangaListLoading = mediaLists.isUserMangaListLoading
+            isUserMangaListLoading = mediaLists.isUserMangaListLoading,
+            viewerId = viewerId,
+            activitySnackbarMessage = snackbar
         )
     }.stateIn(
         scope = viewModelScope,
@@ -270,6 +305,10 @@ class ProfileViewModel @Inject constructor(
         onAction(ProfileAction.Refresh)
 
         observeTargetProfileForFollowState()
+
+        viewModelScope.launch {
+            viewerIdFlow.value = activityRepository.getViewerId()
+        }
     }
 
     fun onAction(action: ProfileAction) {
@@ -381,6 +420,58 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.LoadMoreSocial -> loadMoreSocial()
             is ProfileAction.LoadMoreReviews -> loadMoreReviews()
             is ProfileAction.ToggleActivitySubscription -> toggleActivitySubscription(action.activityId)
+            is ProfileAction.ToggleActivityLike -> toggleActivityLike(action.activityId)
+            is ProfileAction.DeleteActivity -> deleteActivity(action.activityId)
+            is ProfileAction.ConsumeActivitySnackbar -> activitySnackbar.value = null
+        }
+    }
+
+    private fun toggleActivityLike(activityId: Int) {
+        val current = uiState.value.profile?.activities?.firstOrNull { it.id == activityId } ?: return
+        val wasLiked = current.isLiked
+        val nextLiked = !wasLiked
+        val nextCount = (current.likeCount + if (wasLiked) -1 else 1).coerceAtLeast(0)
+        activityLikeOverrides.update { it + (activityId to (nextLiked to nextCount)) }
+
+        viewModelScope.launch {
+            when (val result = activityRepository.toggleActivityLike(activityId)) {
+                is Result.Success -> {
+                    val server = result.data
+                    activityLikeOverrides.update {
+                        it + (activityId to (server.isLiked to server.likeCount))
+                    }
+                }
+                is Result.Error -> {
+                    activityLikeOverrides.update { it - activityId }
+                    activitySnackbar.value = SnackbarMessage(
+                        text = result.message,
+                        token = System.currentTimeMillis()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun deleteActivity(activityId: Int) {
+        if (deletedActivityIds.value.contains(activityId)) return
+        deletedActivityIds.update { it + activityId }
+
+        viewModelScope.launch {
+            when (val result = activityRepository.deleteActivity(activityId)) {
+                is Result.Success -> {
+                    activitySnackbar.value = SnackbarMessage(
+                        text = "Activity deleted",
+                        token = System.currentTimeMillis()
+                    )
+                }
+                is Result.Error -> {
+                    deletedActivityIds.update { it - activityId }
+                    activitySnackbar.value = SnackbarMessage(
+                        text = result.message,
+                        token = System.currentTimeMillis()
+                    )
+                }
+            }
         }
     }
 

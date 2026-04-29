@@ -61,8 +61,13 @@ data class ProfileUiState(
     val messageSentEvent: Long? = null,
     val statsData: StatisticsUiModel? = null,
     val isStatsLoading: Boolean = false,
-    val statsErrorMessage: String? = null
+    val statsErrorMessage: String? = null,
+    val viewerId: Int? = null,
+    val activitySnackbarMessage: SnackbarMessage? = null
 )
+
+@Immutable
+data class SnackbarMessage(val text: String, val token: Long)
 
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
@@ -165,4 +170,7 @@ sealed interface ProfileAction {
     data object LoadMoreSocial : ProfileAction
     data object LoadMoreReviews : ProfileAction
     data class ToggleActivitySubscription(val activityId: Int) : ProfileAction
+    data class ToggleActivityLike(val activityId: Int) : ProfileAction
+    data class DeleteActivity(val activityId: Int) : ProfileAction
+    data object ConsumeActivitySnackbar : ProfileAction
 }

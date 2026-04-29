@@ -41,6 +41,9 @@ fun LazyListScope.profileActivityTab(
     onMediaClick: (Int) -> Unit = {},
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     onSubscribeClick: (Int) -> Unit = {},
+    onLikeActivity: ((Int) -> Unit)? = null,
+    onDeleteActivity: ((Int) -> Unit)? = null,
+    viewerId: Int? = null,
     modifier: Modifier = Modifier
 ) {
     item(key = "activity_filters", contentType = "filters") {
@@ -95,6 +98,12 @@ fun LazyListScope.profileActivityTab(
             key = { "activity_${it.id}" },
             contentType = { "activity_item" }
         ) { activity ->
+            val isOwner = viewerId != null && activity.userId == viewerId
+            val cardLike = onLikeActivity?.let { cb -> { cb(activity.id) } }
+            val cardDelete = if (isOwner) {
+                onDeleteActivity?.let { cb -> { cb(activity.id) } }
+            } else null
+
             if (activity.type == ActivityType.MEDIA_LIST) {
                 RecentUpdateCard(
                     activity = activity,
@@ -102,7 +111,9 @@ fun LazyListScope.profileActivityTab(
                     onUserClick = onUserClick,
                     onActivityClick = onActivityClick,
                     onMediaClick = onMediaClick,
-                    onLastReplyClick = onLastReplyClick
+                    onLastReplyClick = onLastReplyClick,
+                    onLikeClick = cardLike,
+                    onDeleteClick = cardDelete
                 )
             } else {
                 ActivityPreviewCard(
@@ -111,6 +122,8 @@ fun LazyListScope.profileActivityTab(
                     onSubscribeClick = { onSubscribeClick(activity.id) },
                     onUserClick = onUserClick,
                     onLastReplyClick = onLastReplyClick,
+                    onLikeClick = cardLike,
+                    onDeleteClick = cardDelete,
                     modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }

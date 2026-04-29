@@ -70,6 +70,7 @@ data class UserActivity(
     val timestamp: Long,
     val mediaScore: Int? = null,
     val text: String? = null,
+    val userId: Int? = null,
     val userName: String? = null,
     val userAvatarUrl: String? = null,
     val recipientName: String? = null,
