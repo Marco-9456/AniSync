@@ -20,6 +20,8 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -37,12 +39,18 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override suspend fun fetchUserProfile(username: String): Result<UserProfile> {
         return safeApiCall {
+            // For the viewer's own profile we previously always issued GetViewerQuery
+            // just to learn the username. Reuse the cached profile name when present
+            // so refresh skips a sequential network round-trip.
             val actualUsername = username.ifBlank {
-                val viewerResponse = apolloClient.query(GetViewerQuery())
-                    .fetchPolicy(FetchPolicy.NetworkOnly)
-                    .execute()
-                viewerResponse.data?.Viewer?.name
-                    ?: throw Exception("Unable to get current user")
+                userProfileDao.get()?.name?.takeIf { it.isNotBlank() }
+                    ?: run {
+                        val viewerResponse = apolloClient.query(GetViewerQuery())
+                            .fetchPolicy(FetchPolicy.NetworkOnly)
+                            .execute()
+                        viewerResponse.data?.Viewer?.name
+                            ?: throw Exception("Unable to get current user")
+                    }
             }
 
             val response = apolloClient.query(
@@ -59,26 +67,33 @@ class ProfileRepositoryImpl @Inject constructor(
             val user = response.data?.User
                 ?: throw Exception("User not found: @$actualUsername")
 
-            // Fetch Activities
-            val activitiesResponse = apolloClient.query(
-                GetUserActivitiesQuery(userId = Optional.present(user.id))
-            )
-            .fetchPolicy(FetchPolicy.NetworkOnly)
-            .execute()
+            // Activities and favorites pagination both depend on user.id but not on
+            // each other; run them in parallel to halve the post-profile latency.
+            val (activitiesResponse, favorites) = coroutineScope {
+                val activitiesDeferred = async {
+                    apolloClient.query(
+                        GetUserActivitiesQuery(userId = Optional.present(user.id))
+                    )
+                        .fetchPolicy(FetchPolicy.NetworkOnly)
+                        .execute()
+                }
+                val favoritesDeferred = async { fetchFavorites(user.id ?: 0) }
+                activitiesDeferred.await() to favoritesDeferred.await()
+            }
 
             val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
-            
-            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { 
-                rawActivities.add(it.activityFields) 
+
+            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach {
+                rawActivities.add(it.activityFields)
             }
-            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { 
-                rawActivities.add(it.activityFields) 
+            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach {
+                rawActivities.add(it.activityFields)
             }
-            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { 
-                rawActivities.add(it.activityFields) 
+            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach {
+                rawActivities.add(it.activityFields)
             }
-            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { 
-                rawActivities.add(it.activityFields) 
+            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach {
+                rawActivities.add(it.activityFields)
             }
 
             val activities = rawActivities
@@ -115,9 +130,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            // Fetch all favorites recursively
-            val favorites = fetchFavorites(user.id ?: 0)
-            
+            // Favorites already fetched in parallel with activities above.
+
                     val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
                         com.anisync.android.domain.LibraryEntry(
                             id = 0,
