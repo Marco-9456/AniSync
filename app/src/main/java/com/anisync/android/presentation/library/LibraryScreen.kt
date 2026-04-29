@@ -259,9 +259,14 @@ fun LibraryScreen(
         }
     }
 
-    val onSearchResultClick: (Int) -> Unit = remember(navigateToMediaDetails) {
+    val onSearchResultClick: (Int) -> Unit = remember(navigateToMediaDetails, searchBarState, coroutineScope) {
         { id ->
             keyboardController?.hide()
+            // Collapse the full-screen search overlay before navigating; the overlay
+            // is a Popup window that otherwise persists over MediaDetails and lets
+            // tap events keep firing onto a stale list, repeatedly re-pushing the
+            // detail destination until the app is force-closed.
+            coroutineScope.launch { searchBarState.animateToCollapsed() }
             navigateToMediaDetails(id)
         }
     }

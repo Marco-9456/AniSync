@@ -76,7 +76,9 @@ fun MainScreen() {
         AniSyncNavHost(
             navController = navController,
             onMediaClick = { mediaId, sourceScreen ->
-                navController.navigate(MediaDetails(mediaId, sourceScreen))
+                navController.navigate(MediaDetails(mediaId, sourceScreen)) {
+                    launchSingleTop = true
+                }
             },
             modifier = Modifier.fillMaxSize()
         )
