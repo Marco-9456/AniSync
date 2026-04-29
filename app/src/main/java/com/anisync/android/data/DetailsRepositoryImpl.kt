@@ -1,6 +1,5 @@
 package com.anisync.android.data
 
-import android.util.Log
 import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
@@ -72,10 +71,6 @@ class DetailsRepositoryImpl @Inject constructor(
     private val mediaDetailsDao: MediaDetailsDao,
     private val libraryDao: LibraryDao
 ) : DetailsRepository {
-
-    private companion object {
-        const val TAG = "DetailsRepository"
-    }
 
     override fun observeMediaDetails(id: Int): Flow<MediaDetails?> {
         return mediaDetailsDao.observeById(id)
@@ -333,18 +328,15 @@ class DetailsRepositoryImpl @Inject constructor(
     override suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean> {
         // Flip the cached flag immediately so the heart fills/empties before the
         // network round-trip. We deliberately do NOT re-run GetMediaDetails after
-        // the toggle (AniList read-after-write is eventually consistent and the
-        // GET would overwrite the flip with the pre-toggle value), and we also
-        // do NOT derive the new state from membership in the mutation response's
-        // anime/manga nodes: those are MediaConnection pages (default ~25 items)
-        // and the just-toggled mediaId may simply not be on the first page,
-        // which would falsely report "not favourited" and snap the heart back.
-        // Mutation success on its own is sufficient evidence that the toggle
-        // landed, so we trust the optimistic flip.
+        // the toggle (read-after-write on AniList is eventually consistent and
+        // would overwrite the flip with a stale value) and do NOT derive the new
+        // state from the mutation response's anime/manga nodes (paged, ~25 per
+        // page — the toggled item is often absent from the first page, which
+        // would falsely report "not favourited" and snap the heart back).
+        // Mutation success is sufficient evidence the toggle landed.
         val previous = mediaDetailsDao.getById(mediaId)?.isFavourite ?: false
         val optimistic = !previous
         mediaDetailsDao.updateFavouriteStatus(mediaId, optimistic)
-        Log.d(TAG, "toggleFavourite($mediaId, $mediaType): previous=$previous optimistic=$optimistic")
 
         val result = safeApiCall {
             val mutation = if (mediaType == MediaType.MANGA) {
@@ -371,23 +363,10 @@ class DetailsRepositoryImpl @Inject constructor(
                 throw Exception(errorMessage)
             }
 
-            val favourites = response.data?.ToggleFavourite
-            val firstPageContains = if (mediaType == MediaType.MANGA) {
-                favourites?.manga?.nodes?.any { it?.id == mediaId } == true
-            } else {
-                favourites?.anime?.nodes?.any { it?.id == mediaId } == true
-            }
-            Log.d(
-                TAG,
-                "toggleFavourite($mediaId): mutation OK, firstPageContains=$firstPageContains " +
-                        "(informational only — paged, not used to derive UI state)"
-            )
-
             optimistic
         }
 
         if (result is Result.Error) {
-            Log.w(TAG, "toggleFavourite($mediaId) failed, rolling back to $previous: ${result.message}")
             mediaDetailsDao.updateFavouriteStatus(mediaId, previous)
         }
         return result
