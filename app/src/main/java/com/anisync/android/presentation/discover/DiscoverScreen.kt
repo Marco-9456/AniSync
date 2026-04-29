@@ -242,9 +242,14 @@ fun DiscoverScreen(
         }
     }
 
-    val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, keyboardController) {
+    val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, searchBarState, coroutineScope, keyboardController) {
         { id ->
             keyboardController?.hide()
+            // Collapse the full-screen search overlay before navigating; the overlay
+            // is a Popup window that otherwise persists over MediaDetails and lets
+            // tap/back events keep firing onto a stale list, repeatedly re-pushing
+            // the detail destination (observed on Android 16 with predictive back).
+            coroutineScope.launch { searchBarState.animateToCollapsed() }
             navigateToMediaDetails(id)
         }
     }
@@ -341,15 +346,17 @@ fun DiscoverScreen(
     val isSearching = successState2?.isSearching ?: false
     val searchError = successState2?.searchError
 
-    val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, keyboardController) {
+    val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, searchBarState, coroutineScope, keyboardController) {
         { id ->
             keyboardController?.hide()
+            coroutineScope.launch { searchBarState.animateToCollapsed() }
             onCharacterClick(id)
         }
     }
-    val onStaffItemClick: (Int) -> Unit = remember(onStaffClick, keyboardController) {
+    val onStaffItemClick: (Int) -> Unit = remember(onStaffClick, searchBarState, coroutineScope, keyboardController) {
         { id ->
             keyboardController?.hide()
+            coroutineScope.launch { searchBarState.animateToCollapsed() }
             onStaffClick(id)
         }
     }
