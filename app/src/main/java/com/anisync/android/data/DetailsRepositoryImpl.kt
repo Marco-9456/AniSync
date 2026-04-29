@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import android.util.Log
 import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
@@ -71,6 +72,10 @@ class DetailsRepositoryImpl @Inject constructor(
     private val mediaDetailsDao: MediaDetailsDao,
     private val libraryDao: LibraryDao
 ) : DetailsRepository {
+
+    private companion object {
+        const val TAG = "DetailsRepository"
+    }
 
     override fun observeMediaDetails(id: Int): Flow<MediaDetails?> {
         return mediaDetailsDao.observeById(id)
@@ -327,14 +332,19 @@ class DetailsRepositoryImpl @Inject constructor(
 
     override suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean> {
         // Flip the cached flag immediately so the heart fills/empties before the
-        // network round-trip. The authoritative post-toggle state comes back in the
-        // mutation response itself — we deliberately do NOT re-run GetMediaDetails
-        // after the toggle, because AniList's read-after-write is eventually
-        // consistent and the follow-up GET frequently returns the pre-toggle value,
-        // which would overwrite the optimistic flip and snap the heart back.
+        // network round-trip. We deliberately do NOT re-run GetMediaDetails after
+        // the toggle (AniList read-after-write is eventually consistent and the
+        // GET would overwrite the flip with the pre-toggle value), and we also
+        // do NOT derive the new state from membership in the mutation response's
+        // anime/manga nodes: those are MediaConnection pages (default ~25 items)
+        // and the just-toggled mediaId may simply not be on the first page,
+        // which would falsely report "not favourited" and snap the heart back.
+        // Mutation success on its own is sufficient evidence that the toggle
+        // landed, so we trust the optimistic flip.
         val previous = mediaDetailsDao.getById(mediaId)?.isFavourite ?: false
         val optimistic = !previous
         mediaDetailsDao.updateFavouriteStatus(mediaId, optimistic)
+        Log.d(TAG, "toggleFavourite($mediaId, $mediaType): previous=$previous optimistic=$optimistic")
 
         val result = safeApiCall {
             val mutation = if (mediaType == MediaType.MANGA) {
@@ -361,27 +371,24 @@ class DetailsRepositoryImpl @Inject constructor(
                 throw Exception(errorMessage)
             }
 
-            // Mutation response returns the viewer's full favourites list for the
-            // toggled media type. Membership of mediaId in that list is the
-            // authoritative new state.
             val favourites = response.data?.ToggleFavourite
-            val isFavourite = if (mediaType == MediaType.MANGA) {
-                favourites?.manga?.nodes?.any { it?.id == mediaId } ?: optimistic
+            val firstPageContains = if (mediaType == MediaType.MANGA) {
+                favourites?.manga?.nodes?.any { it?.id == mediaId } == true
             } else {
-                favourites?.anime?.nodes?.any { it?.id == mediaId } ?: optimistic
+                favourites?.anime?.nodes?.any { it?.id == mediaId } == true
             }
-            isFavourite
+            Log.d(
+                TAG,
+                "toggleFavourite($mediaId): mutation OK, firstPageContains=$firstPageContains " +
+                        "(informational only — paged, not used to derive UI state)"
+            )
+
+            optimistic
         }
 
-        when (result) {
-            is Result.Success -> {
-                if (result.data != optimistic) {
-                    mediaDetailsDao.updateFavouriteStatus(mediaId, result.data)
-                }
-            }
-            is Result.Error -> {
-                mediaDetailsDao.updateFavouriteStatus(mediaId, previous)
-            }
+        if (result is Result.Error) {
+            Log.w(TAG, "toggleFavourite($mediaId) failed, rolling back to $previous: ${result.message}")
+            mediaDetailsDao.updateFavouriteStatus(mediaId, previous)
         }
         return result
     }
