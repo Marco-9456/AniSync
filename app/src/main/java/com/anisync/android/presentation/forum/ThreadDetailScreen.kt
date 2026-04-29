@@ -277,6 +277,8 @@ fun ThreadDetailScreen(
         viewModel.onAction(ThreadDetailAction.ScrollToTopConsumed)
     }
 
+    var likesTarget by remember { mutableStateOf<com.anisync.android.presentation.components.likes.LikesTarget?>(null) }
+
     // Determine FAB expanded state based on scroll direction (MD3E reactive layout)
     val isFabExpanded by remember {
         derivedStateOf {
@@ -427,6 +429,12 @@ fun ThreadDetailScreen(
                                             )
                                         )
                                     },
+                                    onLikeCountClick = if (thread.likeCount > 0) {
+                                        {
+                                            likesTarget =
+                                                com.anisync.android.presentation.components.likes.LikesTarget.Thread(thread.id)
+                                        }
+                                    } else null,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -603,6 +611,10 @@ fun ThreadDetailScreen(
                                                     ThreadDetailAction.ToggleLike(false, id, liked)
                                                 )
                                             },
+                                            onLikeCountClick = { commentId ->
+                                                likesTarget =
+                                                    com.anisync.android.presentation.components.likes.LikesTarget.ThreadComment(commentId)
+                                            },
                                             onReplyClick = if (!thread.isLocked) {
                                                 { id, author ->
                                                     viewModel.onAction(
@@ -714,6 +726,17 @@ fun ThreadDetailScreen(
             onJumpTo = { page -> viewModel.onAction(ThreadDetailAction.JumpToPage(page)) },
             onJumpFirst = { viewModel.onAction(ThreadDetailAction.JumpToFirstPage) },
             onJumpLatest = { viewModel.onAction(ThreadDetailAction.JumpToLatestPage) },
+        )
+    }
+
+    likesTarget?.let { target ->
+        com.anisync.android.presentation.components.likes.LikesSheet(
+            target = target,
+            onDismiss = { likesTarget = null },
+            onUserClick = { username ->
+                likesTarget = null
+                onUserClick(username)
+            }
         )
     }
 }

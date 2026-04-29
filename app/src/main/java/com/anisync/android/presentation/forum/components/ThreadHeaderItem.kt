@@ -172,7 +172,8 @@ fun ThreadBodyItem(
 fun ThreadHeaderStats(
     thread: ForumThread,
     onLikeClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLikeCountClick: (() -> Unit)? = null
 ) {
     ContentStatsBar(
         replyCount = thread.replyCount,
@@ -180,6 +181,7 @@ fun ThreadHeaderStats(
         likeCount = thread.likeCount,
         isLiked = thread.isLiked,
         onLikeClick = onLikeClick,
+        onLikeCountClick = onLikeCountClick,
         modifier = modifier
     )
 }

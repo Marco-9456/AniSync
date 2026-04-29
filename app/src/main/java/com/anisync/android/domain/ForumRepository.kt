@@ -85,6 +85,12 @@ interface ForumRepository {
      */
     suspend fun toggleLikeComment(commentId: Int): Result<Unit>
 
+    /** List of users who liked the given thread. */
+    suspend fun getThreadLikes(threadId: Int): Result<List<UserSummary>>
+
+    /** List of users who liked the given thread comment. */
+    suspend fun getThreadCommentLikes(commentId: Int): Result<List<UserSummary>>
+
     // =========================================================================
     // SUBSCRIBED / SAVED / SUBSCRIPTION
     // =========================================================================

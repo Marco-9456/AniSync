@@ -7,17 +7,21 @@ import com.anisync.android.GetForumCommentsQuery
 import com.anisync.android.GetForumOverviewQuery
 import com.anisync.android.GetForumThreadQuery
 import com.anisync.android.GetForumThreadsQuery
+import com.anisync.android.GetThreadCommentLikesQuery
+import com.anisync.android.GetThreadLikesQuery
 import com.anisync.android.ToggleLikeThreadCommentMutation
 import com.anisync.android.ToggleLikeThreadMutation
 import com.anisync.android.ToggleThreadSubscriptionMutation
 import com.anisync.android.data.local.dao.SavedForumThreadDao
 import com.anisync.android.data.local.entity.SavedForumThreadEntity
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.PaginatedResult
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.UserSummary
 import com.anisync.android.type.ThreadSort
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -412,6 +416,48 @@ class ForumRepositoryImpl @Inject constructor(
                 )
             ).execute()
         }
+    }
+
+    override suspend fun getThreadLikes(threadId: Int): Result<List<UserSummary>> = safeApiCall {
+        val response = apolloClient
+            .query(GetThreadLikesQuery(threadId))
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+        if (response.hasErrors()) {
+            throw Exception(response.errors?.first()?.message ?: "Failed to load likes")
+        }
+
+        response.data?.Thread?.likes?.filterNotNull()?.map { user ->
+            UserSummary(
+                id = user.id,
+                name = user.name,
+                avatarUrl = user.avatar?.large ?: user.avatar?.medium
+            )
+        } ?: emptyList()
+    }
+
+    override suspend fun getThreadCommentLikes(commentId: Int): Result<List<UserSummary>> = safeApiCall {
+        val response = apolloClient
+            .query(GetThreadCommentLikesQuery(commentId))
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+        if (response.hasErrors()) {
+            throw Exception(response.errors?.first()?.message ?: "Failed to load likes")
+        }
+
+        // ThreadComment(id) returns [ThreadComment]; pick first.
+        val comment = response.data?.ThreadComment?.filterNotNull()?.firstOrNull()
+            ?: throw Exception("Comment not found")
+
+        comment.likes?.filterNotNull()?.map { user ->
+            UserSummary(
+                id = user.id,
+                name = user.name,
+                avatarUrl = user.avatar?.large ?: user.avatar?.medium
+            )
+        } ?: emptyList()
     }
 
     override suspend fun getSubscribedThreads(page: Int): Result<PaginatedResult<ForumThread>> {

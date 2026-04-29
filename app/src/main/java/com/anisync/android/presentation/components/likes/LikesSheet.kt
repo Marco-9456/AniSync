@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.activity.components
+package com.anisync.android.presentation.components.likes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,17 +43,15 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.UserSummary
-import com.anisync.android.presentation.activity.ActivityLikesTarget
-import com.anisync.android.presentation.activity.ActivityLikesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivityLikesSheet(
-    target: ActivityLikesTarget,
+fun LikesSheet(
+    target: LikesTarget,
     onDismiss: () -> Unit,
     onUserClick: (String) -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
-    viewModel: ActivityLikesViewModel = hiltViewModel()
+    viewModel: LikesViewModel = hiltViewModel()
 ) {
     val users by viewModel.users.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

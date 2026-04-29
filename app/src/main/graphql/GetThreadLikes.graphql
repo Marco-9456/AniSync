@@ -1,0 +1,13 @@
+query GetThreadLikes($threadId: Int!) {
+  Thread(id: $threadId) {
+    id
+    likes {
+      id
+      name
+      avatar {
+        large
+        medium
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+query GetThreadCommentLikes($commentId: Int!) {
+  ThreadComment(id: $commentId) {
+    id
+    likes {
+      id
+      name
+      avatar {
+        large
+        medium
+      }
+    }
+  }
+}
