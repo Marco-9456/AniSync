@@ -43,6 +43,7 @@ fun ProfileScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     isOwnProfile: Boolean = true,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -108,6 +109,7 @@ fun ProfileScreen(
                         animatedVisibilityScope = animatedVisibilityScope,
                         onAction = viewModel::onAction,
                         onSettingsClick = onNavigateToSettings,
+                        onNotificationsClick = onNavigateToNotifications,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
                         onStaffClick = onStaffClick,

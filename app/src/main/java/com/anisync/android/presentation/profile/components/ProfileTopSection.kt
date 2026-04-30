@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -75,6 +76,7 @@ fun ProfileTopSection(
     isFollowLoading: Boolean = false,
     onFollowClick: () -> Unit = {},
     onMessageClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
     topActionIcon: ImageVector = Icons.Default.Settings,
     onTopActionClick: () -> Unit = onSettingsClick,
     modifier: Modifier = Modifier
@@ -398,6 +400,17 @@ fun ProfileTopSection(
                         Text(
                             text = stringResource(R.string.profile_edit),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                    FilledTonalIconButton(
+                        onClick = onNotificationsClick,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = stringResource(R.string.notifications_open),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 } else {

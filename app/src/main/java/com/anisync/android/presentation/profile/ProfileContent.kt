@@ -77,6 +77,7 @@ fun ProfileContent(
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onAction: (ProfileAction) -> Unit,
     onSettingsClick: () -> Unit,
+    onNotificationsClick: () -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
@@ -124,6 +125,7 @@ fun ProfileContent(
                 isFollowLoading = uiState.isFollowLoading,
                 onFollowClick = { onAction(ProfileAction.ToggleFollow) },
                 onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
+                onNotificationsClick = onNotificationsClick,
                 topActionIcon = if (isOwnProfile) Icons.Default.Settings else Icons.Default.Share,
                 onTopActionClick = {
                     if (isOwnProfile) {

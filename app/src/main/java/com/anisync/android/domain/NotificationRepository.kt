@@ -6,11 +6,24 @@ package com.anisync.android.domain
  */
 interface NotificationRepository {
     /**
-     * Fetch paginated notifications for the current user.
+     * Fetch paginated notifications for the current user (background poller).
      * @param page Page number (1-indexed)
      * @return List of notifications or error
      */
     suspend fun getNotifications(page: Int): Result<List<Notification>>
+
+    /**
+     * Fetch paginated notifications with optional type filtering and pagination metadata.
+     * Used by the dedicated Notifications screen.
+     * @param page Page number (1-indexed)
+     * @param typeFilter Optional list of types (null = all)
+     * @param resetUnreadCount Server-side mark-as-read on this fetch
+     */
+    suspend fun getNotificationsPage(
+        page: Int,
+        typeFilter: List<com.anisync.android.type.NotificationType>? = null,
+        resetUnreadCount: Boolean = false
+    ): Result<NotificationPage>
 
     /**
      * Get first episode airings for media in the user's planning list.

@@ -25,13 +25,30 @@ data class FollowingNotification(
     val user: User?
 ) : Notification
 
+/**
+ * Discriminator for the AniList ActivityUnion. Lets the UI pick a precise
+ * verb ("status update" vs "anime list update" vs "message") instead of the
+ * generic "activity" string AniList serves.
+ */
+enum class ActivityKind { TEXT, ANIME_LIST, MANGA_LIST, MESSAGE, UNKNOWN }
+
+data class ActivitySnapshot(
+    val kind: ActivityKind,
+    val text: String? = null,        // TextActivity body
+    val message: String? = null,     // MessageActivity body
+    val listStatus: String? = null,  // ListActivity verb (e.g. "Watched", "Plans to watch")
+    val listProgress: String? = null,// ListActivity progress (e.g. "5", "5/12")
+    val listMedia: Media? = null     // ListActivity target media
+)
+
 data class ActivityLikeNotification(
     override val id: Int,
     override val type: NotificationType,
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    val activityId: Int?
+    val activityId: Int?,
+    val activity: ActivitySnapshot?
 ) : Notification
 
 data class ActivityReplyNotification(
@@ -40,7 +57,8 @@ data class ActivityReplyNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    val activityId: Int?
+    val activityId: Int?,
+    val activity: ActivitySnapshot?
 ) : Notification
 
 data class ActivityReplySubscribedNotification(
@@ -49,7 +67,8 @@ data class ActivityReplySubscribedNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    val activityId: Int?
+    val activityId: Int?,
+    val activity: ActivitySnapshot?
 ) : Notification
 
 data class ActivityReplyLikeNotification(
@@ -58,7 +77,8 @@ data class ActivityReplyLikeNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    val activityId: Int?
+    val activityId: Int?,
+    val activity: ActivitySnapshot?
 ) : Notification
 
 data class ActivityMentionNotification(
@@ -67,7 +87,8 @@ data class ActivityMentionNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    val activityId: Int?
+    val activityId: Int?,
+    val activity: ActivitySnapshot?
 ) : Notification
 
 data class ActivityMessageNotification(
@@ -76,7 +97,8 @@ data class ActivityMessageNotification(
     override val createdAt: Int,
     val context: String,
     val user: User?,
-    val activityId: Int?
+    val activityId: Int?,
+    val messagePreview: String?
 ) : Notification
 
 data class ThreadCommentReplyNotification(
@@ -87,7 +109,8 @@ data class ThreadCommentReplyNotification(
     val user: User?,
     val threadId: Int,
     val threadTitle: String,
-    val commentId: Int?
+    val commentId: Int?,
+    val commentPreview: String?
 ) : Notification
 
 data class ThreadCommentSubscribedNotification(
@@ -98,7 +121,8 @@ data class ThreadCommentSubscribedNotification(
     val user: User?,
     val threadId: Int,
     val threadTitle: String,
-    val commentId: Int?
+    val commentId: Int?,
+    val commentPreview: String?
 ) : Notification
 
 data class ThreadCommentMentionNotification(
@@ -109,7 +133,8 @@ data class ThreadCommentMentionNotification(
     val user: User?,
     val threadId: Int,
     val threadTitle: String,
-    val commentId: Int?
+    val commentId: Int?,
+    val commentPreview: String?
 ) : Notification
 
 data class ThreadLikeNotification(
@@ -130,7 +155,47 @@ data class ThreadCommentLikeNotification(
     val user: User?,
     val threadId: Int,
     val threadTitle: String,
-    val commentId: Int?
+    val commentId: Int?,
+    val commentPreview: String?
+) : Notification
+
+data class RelatedMediaAdditionNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val mediaId: Int,
+    val media: Media?
+) : Notification
+
+data class MediaDataChangeNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val reason: String,
+    val mediaId: Int,
+    val media: Media?
+) : Notification
+
+data class MediaMergeNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val reason: String,
+    val mediaId: Int,
+    val deletedMediaTitles: List<String>,
+    val media: Media?
+) : Notification
+
+data class MediaDeletionNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val context: String,
+    val reason: String,
+    val deletedMediaTitle: String
 ) : Notification
 
 data class UnknownNotification(

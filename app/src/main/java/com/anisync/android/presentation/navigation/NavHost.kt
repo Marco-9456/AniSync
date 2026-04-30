@@ -40,6 +40,7 @@ import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
+import com.anisync.android.presentation.notifications.NotificationsScreen
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.settings.AboutScreen
@@ -392,6 +393,9 @@ fun AniSyncNavHost(
                 val onNavigateToSettings = remember(navController) {
                     { navController.navigate(Settings) }
                 }
+                val onNavigateToNotifications = remember(navController) {
+                    { navController.navigate(Notifications) }
+                }
 
                 ProfileScreen(
                     onMediaClick = onProfileMediaClick,
@@ -414,6 +418,7 @@ fun AniSyncNavHost(
                     onLastReplyClick = navigateToActivityReply,
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToNotifications = onNavigateToNotifications,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -845,6 +850,31 @@ fun AniSyncNavHost(
                     targetReplyId = if (route.targetReplyId != 0) route.targetReplyId else null,
                     onBackClick = { navController.popBackStack() },
                     onUserClick = navigateToUserProfile
+                )
+            }
+
+            // =================================================================
+            // NOTIFICATIONS INBOX - Shared Axis Z (Depth)
+            // =================================================================
+            composable<Notifications>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                NotificationsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "notifications"))
+                    },
+                    onUserClick = navigateToUserProfile,
+                    onActivityClick = navigateToActivity,
+                    onThreadClick = { threadId, commentId ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, "", commentId ?: 0)
+                        )
+                    },
+                    onSettingsClick = { navController.navigate(SettingsNotifications) }
                 )
             }
 

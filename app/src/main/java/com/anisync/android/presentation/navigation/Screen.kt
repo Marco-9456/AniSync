@@ -173,6 +173,12 @@ data class ActivityDetail(
     val targetReplyId: Int = 0
 )
 
+/**
+ * Notifications inbox screen for the current viewer.
+ */
+@Serializable
+object Notifications
+
 
 
 /**

@@ -1,6 +1,16 @@
-query GetNotifications($page: Int = 1, $perPage: Int = 20) {
+query GetNotifications(
+  $page: Int = 1,
+  $perPage: Int = 20,
+  $typeIn: [NotificationType] = null,
+  $resetCount: Boolean = true
+) {
   Page(page: $page, perPage: $perPage) {
-    notifications(resetNotificationCount: true) {
+    pageInfo {
+      hasNextPage
+      currentPage
+      total
+    }
+    notifications(type_in: $typeIn, resetNotificationCount: $resetCount) {
       ... on AiringNotification {
         id
         type
@@ -44,6 +54,28 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
             large
           }
         }
+        activity {
+          __typename
+          ... on TextActivity {
+            id
+            text(asHtml: true)
+          }
+          ... on ListActivity {
+            id
+            status
+            progress
+            media {
+              id
+              title { userPreferred }
+              coverImage { large }
+              type
+            }
+          }
+          ... on MessageActivity {
+            id
+            message(asHtml: true)
+          }
+        }
       }
       ... on ActivityReplyNotification {
         id
@@ -56,6 +88,28 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
           name
           avatar {
             large
+          }
+        }
+        activity {
+          __typename
+          ... on TextActivity {
+            id
+            text(asHtml: true)
+          }
+          ... on ListActivity {
+            id
+            status
+            progress
+            media {
+              id
+              title { userPreferred }
+              coverImage { large }
+              type
+            }
+          }
+          ... on MessageActivity {
+            id
+            message(asHtml: true)
           }
         }
       }
@@ -72,6 +126,28 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
             large
           }
         }
+        activity {
+          __typename
+          ... on TextActivity {
+            id
+            text(asHtml: true)
+          }
+          ... on ListActivity {
+            id
+            status
+            progress
+            media {
+              id
+              title { userPreferred }
+              coverImage { large }
+              type
+            }
+          }
+          ... on MessageActivity {
+            id
+            message(asHtml: true)
+          }
+        }
       }
       ... on ActivityReplyLikeNotification {
         id
@@ -84,6 +160,28 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
           name
           avatar {
             large
+          }
+        }
+        activity {
+          __typename
+          ... on TextActivity {
+            id
+            text(asHtml: true)
+          }
+          ... on ListActivity {
+            id
+            status
+            progress
+            media {
+              id
+              title { userPreferred }
+              coverImage { large }
+              type
+            }
+          }
+          ... on MessageActivity {
+            id
+            message(asHtml: true)
           }
         }
       }
@@ -100,6 +198,28 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
             large
           }
         }
+        activity {
+          __typename
+          ... on TextActivity {
+            id
+            text(asHtml: true)
+          }
+          ... on ListActivity {
+            id
+            status
+            progress
+            media {
+              id
+              title { userPreferred }
+              coverImage { large }
+              type
+            }
+          }
+          ... on MessageActivity {
+            id
+            message(asHtml: true)
+          }
+        }
       }
       ... on ActivityMessageNotification {
         id
@@ -113,6 +233,10 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
           avatar {
             large
           }
+        }
+        message {
+          id
+          message(asHtml: true)
         }
       }
       ... on ThreadCommentReplyNotification {
@@ -133,6 +257,7 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
         }
         comment {
           id
+          comment(asHtml: true)
         }
       }
       ... on ThreadCommentSubscribedNotification {
@@ -153,6 +278,7 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
         }
         comment {
           id
+          comment(asHtml: true)
         }
       }
       ... on ThreadCommentMentionNotification {
@@ -173,6 +299,7 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
         }
         comment {
           id
+          comment(asHtml: true)
         }
       }
       ... on ThreadLikeNotification {
@@ -210,7 +337,70 @@ query GetNotifications($page: Int = 1, $perPage: Int = 20) {
         }
         comment {
           id
+          comment(asHtml: true)
         }
+      }
+      ... on RelatedMediaAdditionNotification {
+        id
+        type
+        mediaId
+        context
+        createdAt
+        media {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            large
+          }
+          type
+        }
+      }
+      ... on MediaDataChangeNotification {
+        id
+        type
+        mediaId
+        context
+        reason
+        createdAt
+        media {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            large
+          }
+          type
+        }
+      }
+      ... on MediaMergeNotification {
+        id
+        type
+        mediaId
+        deletedMediaTitles
+        context
+        reason
+        createdAt
+        media {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            large
+          }
+          type
+        }
+      }
+      ... on MediaDeletionNotification {
+        id
+        type
+        deletedMediaTitle
+        context
+        reason
+        createdAt
       }
     }
   }

@@ -405,6 +405,15 @@
     <string name="content_description_avatar">Avatar</string>
     <string name="profile_level">Level %1$d</string>
     <string name="profile_active">Active %1$s</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_filter_all">All</string>
+    <string name="notifications_filter_airing">Airing</string>
+    <string name="notifications_filter_status">Status</string>
+    <string name="notifications_filter_messages">Messages</string>
+    <string name="notifications_filter_forum">Forum</string>
+    <string name="notifications_filter_follows">Follows</string>
+    <string name="notifications_filter_media">Media</string>
+    <string name="notifications_open">Open notifications</string>
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable, or temporarily rate-limited.</string>
