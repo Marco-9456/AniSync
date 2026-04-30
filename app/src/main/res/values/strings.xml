@@ -236,6 +236,10 @@
     <string name="notification_planning_desc">Alerts when Episode 1 airs for shows you plan to watch</string>
     <string name="notification_upcoming">Upcoming Premieres</string>
     <string name="notification_upcoming_desc">Advance notice before episodes air</string>
+    <string name="notification_streaming_delay">Streaming availability delay</string>
+    <string name="notification_streaming_delay_desc">Wait this many minutes after an episode airs before notifying you. Useful if your streaming site posts episodes after the official airing time. Notifications fire on a ~15-minute check, so the actual delay may be a few minutes longer than the value you pick.</string>
+    <string name="notification_streaming_delay_value">%1$d min</string>
+    <string name="notification_streaming_delay_off">Off</string>
     <string name="notification_thread_comment_reply">Comment Replies</string>
     <string name="notification_thread_comment_reply_desc">When someone replies to your comment</string>
     <string name="notification_thread_subscribed">Subscribed Threads</string>

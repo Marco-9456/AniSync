@@ -32,7 +32,8 @@ sealed interface SettingsAction {
     data class SetActivityMentionEnabled(val enabled: Boolean) : SettingsAction
     data class SetActivityLikeEnabled(val enabled: Boolean) : SettingsAction
     data class SetActivityMessageEnabled(val enabled: Boolean) : SettingsAction
-    
+    data class SetStreamingDelayMinutes(val minutes: Int) : SettingsAction
+
     data class SetAutoUpdateEnabled(val enabled: Boolean) : SettingsAction
     data class SetPrereleaseAllowed(val allowed: Boolean) : SettingsAction
 
@@ -87,7 +88,8 @@ data class SettingsUiState(
     val activityMentionEnabled: Boolean = true,
     val activityLikeEnabled: Boolean = true,
     val activityMessageEnabled: Boolean = true,
-    
+    val streamingDelayMinutes: Int = 0,
+
     // Storage
     val cacheSize: String = "0 B",
     val isCacheCleared: Boolean = false,

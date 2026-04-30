@@ -68,6 +68,14 @@ class NotificationPreferences @Inject constructor(
     private val _activityMessageEnabled = MutableStateFlow(prefs.getBoolean(KEY_ACTIVITY_MESSAGE_ENABLED, true))
     val activityMessageEnabled: StateFlow<Boolean> = _activityMessageEnabled.asStateFlow()
 
+    // Streaming availability delay (minutes) for "episode aired" notifications.
+    // Lets users on streaming sites that post episodes after the official airing time
+    // postpone the notification so it lines up with when the episode is actually watchable.
+    private val _streamingDelayMinutes = MutableStateFlow(
+        prefs.getInt(KEY_STREAMING_DELAY_MINUTES, 0).coerceIn(MIN_STREAMING_DELAY_MINUTES, MAX_STREAMING_DELAY_MINUTES)
+    )
+    val streamingDelayMinutes: StateFlow<Int> = _streamingDelayMinutes.asStateFlow()
+
     fun setWatchingEnabled(enabled: Boolean) {
         _watchingEnabled.value = enabled
         prefs.edit().putBoolean(KEY_WATCHING_ENABLED, enabled).apply()
@@ -128,6 +136,12 @@ class NotificationPreferences @Inject constructor(
         prefs.edit().putBoolean(KEY_ACTIVITY_MESSAGE_ENABLED, enabled).apply()
     }
 
+    fun setStreamingDelayMinutes(minutes: Int) {
+        val clamped = minutes.coerceIn(MIN_STREAMING_DELAY_MINUTES, MAX_STREAMING_DELAY_MINUTES)
+        _streamingDelayMinutes.value = clamped
+        prefs.edit().putInt(KEY_STREAMING_DELAY_MINUTES, clamped).apply()
+    }
+
     /**
      * Reset all notification preferences to default (all enabled).
      */
@@ -144,6 +158,7 @@ class NotificationPreferences @Inject constructor(
         setActivityMentionEnabled(true)
         setActivityLikeEnabled(true)
         setActivityMessageEnabled(true)
+        setStreamingDelayMinutes(0)
     }
 
     companion object {
@@ -160,5 +175,8 @@ class NotificationPreferences @Inject constructor(
         private const val KEY_ACTIVITY_MENTION_ENABLED = "activity_mention_enabled"
         private const val KEY_ACTIVITY_LIKE_ENABLED = "activity_like_enabled"
         private const val KEY_ACTIVITY_MESSAGE_ENABLED = "activity_message_enabled"
+        private const val KEY_STREAMING_DELAY_MINUTES = "streaming_delay_minutes"
+        const val MIN_STREAMING_DELAY_MINUTES = 0
+        const val MAX_STREAMING_DELAY_MINUTES = 180
     }
 }

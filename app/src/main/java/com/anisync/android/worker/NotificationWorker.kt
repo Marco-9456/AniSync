@@ -269,19 +269,42 @@ class NotificationWorker @AssistedInject constructor(
         
         if (allNewAiring.isNotEmpty()) {
             val sortedAiring = allNewAiring.sortedBy { it.id }
-            
-            for (notification in sortedAiring) {
+
+            // Apply user-configured streaming delay. AniList stamps AiringNotification.createdAt
+            // at the official airing moment, so an episode is "due" once
+            // now >= createdAt + delay. Defer anything not yet due to the next worker run.
+            //
+            // To keep dedup correct, never advance lastNotifiedId past a deferred id —
+            // a deferred id with a smaller value than an already-due id forces us to leave
+            // the high-water mark at deferredId-1 so the deferred one is reprocessed next poll.
+            val delaySeconds = notificationPreferences.streamingDelayMinutes.value * 60L
+            val nowSeconds = System.currentTimeMillis() / 1000
+            val cutoff = if (delaySeconds > 0L) {
+                sortedAiring.firstOrNull { (nowSeconds - it.createdAt) < delaySeconds }?.id
+                    ?: Int.MAX_VALUE
+            } else {
+                Int.MAX_VALUE
+            }
+            val toEmit = sortedAiring.filter { it.id < cutoff }
+            val deferredCount = sortedAiring.size - toEmit.size
+
+            for (notification in toEmit) {
                 showNotification(notification)
             }
-            
-            if (sortedAiring.size >= 3) {
-                showSummaryNotification(sortedAiring)
+
+            if (toEmit.size >= 3) {
+                showSummaryNotification(toEmit)
             }
-            
-            val maxId = sortedAiring.maxOf { it.id }
-            preferencesRepository.setLastNotifiedId(maxId)
-            
-            Log.d(TAG, "Processed ${sortedAiring.size} new airing notifications")
+
+            if (toEmit.isNotEmpty()) {
+                val maxId = toEmit.maxOf { it.id }
+                preferencesRepository.setLastNotifiedId(maxId)
+            }
+
+            Log.d(
+                TAG,
+                "Processed ${toEmit.size} new airing notifications (deferred $deferredCount due to streaming delay of ${delaySeconds / 60} min)"
+            )
         }
     }
 

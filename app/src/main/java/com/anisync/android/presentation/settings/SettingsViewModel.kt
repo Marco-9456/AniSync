@@ -79,9 +79,10 @@ class SettingsViewModel @Inject constructor(
                 appSettings.notificationsEnabled,
                 notificationPreferences.watchingEnabled,
                 notificationPreferences.planningEnabled,
-                notificationPreferences.upcomingEnabled
-            ) { enabled, watching, planning, upcoming ->
-                listOf(enabled, watching, planning, upcoming)
+                notificationPreferences.upcomingEnabled,
+                notificationPreferences.streamingDelayMinutes
+            ) { enabled, watching, planning, upcoming, delay ->
+                listOf<Any>(enabled, watching, planning, upcoming, delay)
             },
             combine(
                 notificationPreferences.threadCommentReplyEnabled,
@@ -90,7 +91,7 @@ class SettingsViewModel @Inject constructor(
                 notificationPreferences.threadLikeEnabled,
                 notificationPreferences.threadCommentLikeEnabled
             ) { commentReply, subscribed, commentMention, threadLike, commentLike ->
-                listOf(commentReply, subscribed, commentMention, threadLike, commentLike)
+                listOf<Any>(commentReply, subscribed, commentMention, threadLike, commentLike)
             },
             combine(
                 notificationPreferences.activityReplyEnabled,
@@ -98,7 +99,7 @@ class SettingsViewModel @Inject constructor(
                 notificationPreferences.activityLikeEnabled,
                 notificationPreferences.activityMessageEnabled
             ) { reply, mention, like, message ->
-                listOf(reply, mention, like, message)
+                listOf<Any>(reply, mention, like, message)
             }
         ) { airing, forum, activity ->
             airing + forum + activity
@@ -131,15 +132,16 @@ class SettingsViewModel @Inject constructor(
             watchingNotificationsEnabled = notifications[1] as Boolean,
             planningNotificationsEnabled = notifications[2] as Boolean,
             upcomingNotificationsEnabled = notifications[3] as Boolean,
-            threadCommentReplyEnabled = notifications[4] as Boolean,
-            threadSubscribedEnabled = notifications[5] as Boolean,
-            threadCommentMentionEnabled = notifications[6] as Boolean,
-            threadLikeEnabled = notifications[7] as Boolean,
-            threadCommentLikeEnabled = notifications[8] as Boolean,
-            activityReplyEnabled = notifications[9] as Boolean,
-            activityMentionEnabled = notifications[10] as Boolean,
-            activityLikeEnabled = notifications[11] as Boolean,
-            activityMessageEnabled = notifications[12] as Boolean,
+            streamingDelayMinutes = notifications[4] as Int,
+            threadCommentReplyEnabled = notifications[5] as Boolean,
+            threadSubscribedEnabled = notifications[6] as Boolean,
+            threadCommentMentionEnabled = notifications[7] as Boolean,
+            threadLikeEnabled = notifications[8] as Boolean,
+            threadCommentLikeEnabled = notifications[9] as Boolean,
+            activityReplyEnabled = notifications[10] as Boolean,
+            activityMentionEnabled = notifications[11] as Boolean,
+            activityLikeEnabled = notifications[12] as Boolean,
+            activityMessageEnabled = notifications[13] as Boolean,
             isAutoUpdateEnabled = autoUpdate,
             isPrereleaseAllowed = prerelease,
             cacheSize = cacheSize as String,
@@ -216,6 +218,10 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsAction.SetActivityMessageEnabled -> notificationPreferences.setActivityMessageEnabled(
                 action.enabled
+            )
+
+            is SettingsAction.SetStreamingDelayMinutes -> notificationPreferences.setStreamingDelayMinutes(
+                action.minutes
             )
 
             is SettingsAction.SetAutoUpdateEnabled -> appSettings.setAutoUpdateEnabled(action.enabled)

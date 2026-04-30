@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,6 +77,7 @@ fun NotificationsScreen(
     val activityMentionEnabled = uiState.activityMentionEnabled
     val activityLikeEnabled = uiState.activityLikeEnabled
     val activityMessageEnabled = uiState.activityMessageEnabled
+    val streamingDelayMinutes = uiState.streamingDelayMinutes
 
     // Track actual system permission status
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
@@ -240,6 +242,11 @@ fun NotificationsScreen(
                         isEnabled = upcomingEnabled,
                         onToggle = { viewModel.onAction(SettingsAction.SetUpcomingNotificationsEnabled(it)) }
                     )
+                    SettingsDivider(startPadding = 20.dp)
+                    StreamingDelayItem(
+                        minutes = streamingDelayMinutes,
+                        onValueChange = { viewModel.onAction(SettingsAction.SetStreamingDelayMinutes(it)) }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -340,6 +347,52 @@ private fun NotificationGroupHeader(
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier.padding(horizontal = 20.dp, vertical = 4.dp)
     )
+}
+
+/**
+ * Streaming-availability delay slider. Applies to "episode aired" watching-list notifications.
+ */
+@Composable
+private fun StreamingDelayItem(
+    minutes: Int,
+    onValueChange: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                stringResource(R.string.notification_streaming_delay),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = if (minutes == 0) {
+                    stringResource(R.string.notification_streaming_delay_off)
+                } else {
+                    stringResource(R.string.notification_streaming_delay_value, minutes)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Text(
+            stringResource(R.string.notification_streaming_delay_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Slider(
+            value = minutes.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = 0f..180f
+        )
+    }
 }
 
 /**
