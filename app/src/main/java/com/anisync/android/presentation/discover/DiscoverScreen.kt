@@ -360,6 +360,13 @@ fun DiscoverScreen(
             onStaffClick(id)
         }
     }
+    val onUserItemClick: (String) -> Unit = remember(onUserClick, searchBarState, coroutineScope, keyboardController) {
+        { name ->
+            keyboardController?.hide()
+            coroutineScope.launch { searchBarState.animateToCollapsed() }
+            onUserClick(name)
+        }
+    }
 
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
@@ -379,7 +386,7 @@ fun DiscoverScreen(
         onSearchItemClick = onSearchItemClick,
         onCharacterClick = onCharacterItemClick,
         onStaffClick = onStaffItemClick,
-        onUserClick = onUserClick,
+        onUserClick = onUserItemClick,
         onShowFilterDialog = { showFilterDialog = true }
     )
 }
