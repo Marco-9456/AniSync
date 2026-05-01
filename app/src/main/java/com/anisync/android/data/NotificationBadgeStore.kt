@@ -22,6 +22,18 @@ import javax.inject.Singleton
 class NotificationBadgeStore @Inject constructor(
     private val apolloClient: ApolloClient
 ) {
+    /** AniList-truth count fetched from `Viewer.unreadNotificationCount`. */
+    private val _serverCount = MutableStateFlow(0)
+
+    /**
+     * Local-only count for debug testing. Decoupled from the server
+     * count so refreshes don't clobber a fake bump — that would mask
+     * the persistence behaviour we want the test to exercise (real
+     * unreads only clear when the inbox is opened, never on a plain
+     * profile resume).
+     */
+    private val _debugCount = MutableStateFlow(0)
+
     private val _unreadCount = MutableStateFlow(0)
     val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
 
@@ -33,19 +45,31 @@ class NotificationBadgeStore @Inject constructor(
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
             val count = response.data?.Viewer?.unreadNotificationCount ?: return
-            _unreadCount.value = count.coerceAtLeast(0)
+            _serverCount.value = count.coerceAtLeast(0)
+            recompute()
         } catch (_: Exception) {
             // Keep last-known value
         }
     }
 
-    /** Optimistic clear when the user opens the inbox; reconciles on next refresh. */
+    /**
+     * Optimistic clear when the user opens the inbox; reconciles with
+     * the server on the next refresh. Also drops any debug bump so a
+     * test cycle (bump → open inbox) returns to the zero state cleanly.
+     */
     fun clearOptimistically() {
-        _unreadCount.value = 0
+        _serverCount.value = 0
+        _debugCount.value = 0
+        recompute()
     }
 
     /** Debug-only: simulate a new unread notification so the badge can be verified. */
     fun bumpForDebug(by: Int = 1) {
-        _unreadCount.value = (_unreadCount.value + by).coerceAtLeast(0)
+        _debugCount.value = (_debugCount.value + by).coerceAtLeast(0)
+        recompute()
+    }
+
+    private fun recompute() {
+        _unreadCount.value = (_serverCount.value + _debugCount.value).coerceAtLeast(0)
     }
 }
