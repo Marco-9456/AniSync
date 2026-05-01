@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-01
+
+### Added
+
+#### Feed
+- **Feed Tab** - New top-level Feed tab between Discover and Forum with a Global/Following scope toggle, All/Status/List filters, Anime/Manga sub-filter, and a FAB status composer backed by `SaveTextActivity`.
+- **Pinned Activities** - Activity queries now sort by `[PINNED, ID_DESC]` so pinned text activities float to the top of feeds.
+
+#### Notifications
+- **Notifications Inbox** - Dedicated inbox screen reachable from the Profile bell, with All / Airing / Status / Messages / Forum / Follows / Media filters, like-grouping per target, and inline rich-text previews.
+- **Unread Badge** - Profile bell and bottom-nav Profile destination share a single `NotificationBadgeStore` driven by `Viewer.unreadNotificationCount`; nav badge collapses to a small dot when Profile is the selected destination, counts above 999 render "999+" with a pluralized TalkBack label.
+- **Streaming Availability Delay** - New 0-180 minute slider that holds back airing-episode alerts until `now >= createdAt + delay`, lining notifications up with when episodes are actually watchable on slower streaming sites.
+
+#### Social Interactions
+- **"Liked by" Sheet** - Tap any like-count on an activity, activity reply, forum thread, or forum comment to open a bottom sheet listing the users who liked it. New `GetActivityLikes`, `GetActivityReplyLikes`, `GetThreadLikes`, and `GetThreadCommentLikes` queries back the four target types.
+- **Tap-to-Like and Delete on Activity Cards** - Like and comment counts on feed/profile activity cards become 48dp pill buttons; tapping the heart toggles the like with optimistic flip, and an owner-only 3-dot overflow exposes Delete behind an `AlertDialog`. `ToggleActivityLike` now covers `ListActivity` (previously only `TextActivity` / `MessageActivity` were handled).
+- **Following Section on Media Details** - New horizontal section listing the viewer's followed users' status, score, and progress for the current media (via `Page.mediaList(isFollowing: true)`), with color-coded status pills and a "See All" pagination sheet. Hidden when nobody followed has the media on their list.
+
+#### Forum
+- **Bidirectional Comment Paging** - `ForumRepository.findCommentPage` runs a client-side binary search over the page space (with an in-memory cache) so deep-linked comments anchor to the page that actually contains them. UI tracks `loadedPageRange` / `lastPage` / `totalComments` and exposes Load earlier (prepend), Load more (append), and Jump-to-page actions via a new `PageProgressPill` and `PageJumperBottomSheet`.
+- **Client-Side Comment Sort** - AniList ignores `Page.threadComments(sort:)`, so Newest/Oldest is now applied in the repository (always fetch ascending, reverse page order and within-page rows for Newest).
+- **Last-Reply Pill Targets** - "Last by USERNAME" pills on forum threads and activity cards now open the thread/activity scrolled to the latest reply via `replyCommentId` / `lastReplyId` rather than navigating to the replier's profile.
+
+#### Tooling
+- **Manual Release Workflow** - Added a manually triggered signed-release APK GitHub Actions workflow that uploads each APK as a separate versioned artifact.
+
+### Changed
+- **Activity Card Redesign** - `RecentUpdateCard` rebuilt with cover-left layout, author header, annotated status text, and a footer with last-reply pill plus reply/like stats. `ActivityPreviewCard` and `ForumThreadCard` share a new `AuthorRow` and `StatBadge` for reuse in `ProfileSocialSection`. `ListActivity` GraphQL fragment now selects `user`, so MEDIA_LIST entries carry author info.
+- **Profile Refresh Parallelism** - Viewer-name lookup is skipped when the cache already has a username, and the activities query runs in parallel with favourites pagination, cutting pull-to-refresh latency.
+- **Data-Layer Performance Overhaul** - `java.util.Calendar` replaced with `java.time` (5-10x faster date mapping); `LibraryDao` "smart merge" via single-pass partition + batched SQLite deletes; cached `ZoneId.systemDefault()` and `ThreadSort` lookups; reduced network round-trips in `LibraryRepository` via reused `Viewer` data and `CacheAndNetwork` policies.
+- **Parser Performance** - Hoisted/compiled regex constants in `RichTextNormalizer`, `RichTextHtmlParser`, and `CharacterDescriptionParser`; chained `String.replace` calls replaced with single-pass `StringBuilder` rewriter for HTML entities and setext underlines (O(n) vs O(n²)); manual integer-based `formatScore` fast path bypasses `String.format` locale lookups.
+- **Presentation Performance** - `LibraryViewModel` pre-caches sort titles and uses a direction-aware comparator to avoid full-list reversals; custom-list membership tests and sort lookups switched to `HashSet`/`HashMap` for O(1) lookups; hand-rolled `stripHtml` scan replaces regex-based stripping.
+- **Markdown Composer** - New shared `MarkdownComposeSheet` replaces `ReplyBottomSheetContent` across Feed, Forum threads, and Activity detail; uses `imePadding` + `verticalScroll` so the keyboard no longer hides the input.
+- **Forum Card Surface** - `ForumThreadCard` container bumped to `surfaceContainerLow` for clearer separation; `distinctBy` on thread id when concatenating paginated results fixes the "Key already used" `LazyColumn` crash.
+- **Dependency Bumps** - Compose BOM (2026.03.01 -> 2026.04.01), Navigation Compose (2.9.7 -> 2.9.8), Material 3 (1.5.0-alpha17 -> alpha18), kotlinx.serialization (1.10.0 -> 1.11.0), JSoup (1.22.1 -> 1.22.2); Compose animation/runtime graduated 1.11.0-rc01 -> 1.11.0.
+- **README & Screenshots** - Refreshed README with new screenshots, F-Droid version badge, and `flat`-style shields; replaced `fastlane phoneScreenshots` with the new set.
+
+### Fixed
+- **Favourite Toggle Snap-Back** - `MediaDetails` favourite heart now flips optimistically on tap and trusts the `ToggleFavourite` mutation result; the previous attempt derived state from paged `MediaConnection` membership, which mis-reported "not favourited" when the viewer had more than 25 favourites of that media type. Mutation success is now the authority; UI rolls back only on error.
+- **Activity Like on Other Profiles** - Tap-to-like was gated behind an own-profile check; ungated since like is a viewer-level action against any activity (delete remains owner-only).
+- **Search Overlay Navigation Loop** - Discover, Library, and user-result search Popups stayed on top of detail destinations on Android 16 (predictive back, API 36), causing tap/back events to re-push the route in a loop. Search bar state now collapses before navigation across all three entry points; `launchSingleTop` added to detail navigation.
+- **Debug-Bumped Unread Count** - Server-side and debug-only unread counts now tracked in separate slots; profile resume only refreshes the server slot, so a debug bump survives until the inbox sends `resetNotificationCount=true`.
+- **Inbox Subtitle Rendering** - Notification subtitles strip HTML to a plaintext two-line excerpt; embedded videos and AniList media-link cards no longer overflow the card, and empty/whitespace bodies collapse cleanly.
+- **List Activity Verb** - `ListActivity` now reads `ANIME_LIST` / `MANGA_LIST` from the activity's own type field, so the verb no longer says "anime list update" when the content is a manga read.
+- **Animated Avatars** - User avatars in the Following section, "Liked by" sheet, and elsewhere use `avatar.large` with `allowHardware(false)` to keep animated GIF/WebP avatars from freezing on the first frame.
+- **Activity Detail for List Updates** - `GetActivity` now handles `ListActivity`, so card taps no longer hit "Unsupported activity type".
+
 ## [1.5.4] - 2026-04-24
 
 ### Changed

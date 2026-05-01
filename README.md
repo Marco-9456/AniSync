@@ -115,6 +115,8 @@ Never miss an episode. AniSync sends two-tier notifications — an advance alert
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/10.png" width="200" alt="Screenshot 10">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/11.png" width="200" alt="Screenshot 11">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/12.png" width="200" alt="Screenshot 12">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/13.png" width="200" alt="Screenshot 13">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/14.png" width="200" alt="Screenshot 14">
 </p>
 
 ---

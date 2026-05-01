@@ -1,0 +1,20 @@
+Added:
+- Feed tab with global/following activity stream and a status composer.
+- Notifications inbox screen with type filters, grouped likes, and a shared unread badge on the Profile bell and bottom-nav.
+- Streaming availability delay slider for aired-episode notifications.
+- Following section on Media Details showing followed users' status, score, and progress.
+- "Liked by" sheet for activities, replies, forum threads, and forum comments.
+- Tap-to-like and owner-only delete (with confirmation) on activity cards.
+- Bidirectional comment paging in forum threads with deep-link anchoring and client-side sort.
+- Last-reply pills on activity and forum cards now jump to the actual reply/comment.
+
+Changed:
+- Profile refresh parallelizes activities/favorites and reuses cached username for faster pull-to-refresh.
+- Hot-path performance overhaul across data, domain, and presentation layers (date mapping, regex hoisting, O(1) custom-list lookups, faster score formatting).
+- Compose BOM, Navigation, Material 3, kotlinx.serialization, and JSoup dependency bumps.
+
+Fixed:
+- Favourite toggle on Media Details now flips optimistically and trusts the mutation result instead of paging-derived state.
+- Search overlay no longer survives on top of detail destinations on Android 16, fixing the navigation loop on Discover, Library, and user-result taps.
+- Likes work on activities shown on other users' profiles.
+- Debug-bumped unread count survives profile resumes.
