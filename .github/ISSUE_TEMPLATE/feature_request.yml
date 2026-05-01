@@ -1,0 +1,99 @@
+name: Feature Request
+description: Suggest a new feature, improvement, or change to existing behavior.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an idea for AniSync.
+
+        - Search [existing issues](https://github.com/Marco-9456/AniSync/issues?q=is%3Aissue) and [Discussions](https://github.com/Marco-9456/AniSync/discussions) first.
+        - For half-formed ideas or "would it be cool if…" prompts, open a [Discussion](https://github.com/Marco-9456/AniSync/discussions) instead — issues are for concrete requests.
+        - Features bound to AniList API capabilities will only land if AniList exposes the data.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues and discussions for the same request.
+          required: true
+        - label: This is a concrete request, not an open-ended brainstorm.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem or limitation are you running into? Describe the pain, not the fix.
+      placeholder: e.g. I cannot tell at a glance which entries in my list have new episodes since I last opened the app.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should AniSync do? Be specific about UI placement, behavior, and edge cases.
+      placeholder: |
+        Add a small "NEW" badge on library cards when AniList reports a new airing episode since the last sync. Cleared when the user opens the entry.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about and why they fall short.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the app does this touch? Pick the closest match.
+      multiple: true
+      options:
+        - Library / list management
+        - Search
+        - Media details
+        - Profile
+        - Notifications inbox
+        - Feed / social
+        - Home / discovery
+        - Widgets (Glance)
+        - Theming / appearance
+        - Sync / offline behavior
+        - Settings
+        - Login / account
+        - Player (Media3)
+        - Accessibility
+        - Localization
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: anilist-dependency
+    attributes:
+      label: Does this require new AniList API data?
+      description: If yes, link the AniList GraphQL field or note that it is not yet exposed.
+      options:
+        - "No — uses data AniSync already has"
+        - "Yes — AniList exposes it, just not used yet"
+        - "Yes — would require AniList to expose new data"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups, references, or links
+      description: Screenshots, sketches, or links to similar features in other apps. Drag and drop images here.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Use cases, who benefits, any constraints worth knowing.

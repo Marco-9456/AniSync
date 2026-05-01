@@ -1,6 +1,7 @@
 package com.anisync.android
 
 import android.app.Application
+import android.os.Process
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -18,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
 @HiltAndroidApp
@@ -41,6 +43,10 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     override fun onCreate() {
         super.onCreate()
 
+        if (currentProcessName().endsWith(":crash")) return
+
+        installCrashHandler()
+
         val mainThreadTime = measureTimeMillis {
             com.anisync.android.worker.NotificationChannels.createChannels(this)
         }
@@ -51,6 +57,29 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
                 scheduleWorkersBackground()
             }
             Log.d("PerfMetrics", "Background Worker scheduling took $backgroundInitTime ms")
+        }
+    }
+
+    private fun currentProcessName(): String = try {
+        java.io.File("/proc/self/cmdline").readText().trim('\u0000').trim()
+    } catch (_: Throwable) {
+        ""
+    }
+
+    private fun installCrashHandler() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                Log.e("AniSyncCrash", "Uncaught exception on ${thread.name}", throwable)
+                val intent = CrashReportActivity.newIntent(this, throwable)
+                startActivity(intent)
+            } catch (t: Throwable) {
+                Log.e("AniSyncCrash", "Failed to launch CrashReportActivity", t)
+                previous?.uncaughtException(thread, throwable)
+            } finally {
+                Process.killProcess(Process.myPid())
+                exitProcess(10)
+            }
         }
     }
 

@@ -109,6 +109,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".CrashReportActivity"
+            android:exported="false"
+            android:process=":crash"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AniSync" />
+
         <!-- Widget Configuration Activity -->
         <activity
             android:name=".widget.config.UpNextWidgetConfigActivity"

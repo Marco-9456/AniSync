@@ -1,7 +1,10 @@
 package com.anisync.android.presentation.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.getSystemService
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -47,12 +50,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,6 +89,8 @@ import coil.request.ImageRequest
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.util.AppInfo
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -363,10 +370,14 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
     var showSponsorSheet by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val appInfoCopiedMessage = stringResource(R.string.settings_app_info_copied)
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
         onBackClick = onBackClick,
+        snackbarHostState = snackbarHostState,
         modifier = modifier
     ) {
         AboutHero(modifier = Modifier.padding(top = 40.dp, bottom = 16.dp))
@@ -445,6 +456,19 @@ fun AboutScreen(
                 title = stringResource(R.string.about_improve_translations),
                 subtitle = stringResource(R.string.about_improve_translations_desc),
                 onClick = { /* Placeholder */ }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        SettingsGroup {
+            SettingsItem(
+                title = stringResource(R.string.settings_copy_app_info),
+                subtitle = stringResource(R.string.settings_copy_app_info_desc),
+                onClick = {
+                    context.copyAppInfo()
+                    scope.launch { snackbarHostState.showSnackbar(appInfoCopiedMessage) }
+                }
             )
         }
     }
@@ -613,4 +637,9 @@ private fun Context.launchUrl(url: String) {
     } catch (e: Exception) {
         e.printStackTrace()
     }
+}
+
+private fun Context.copyAppInfo() {
+    val clipboard = getSystemService<ClipboardManager>() ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText("AniSync app info", AppInfo.formatted()))
 }
