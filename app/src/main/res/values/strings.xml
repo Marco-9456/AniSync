@@ -393,6 +393,7 @@
     <string name="debug_test_planning">Test Planning</string>
     <string name="debug_test_advance">Test Advance (12h)</string>
     <string name="debug_test_imminent">Test Imminent (2h)</string>
+    <string name="debug_bump_inbox_badge">Bump Inbox Badge</string>
     <string name="debug_clear_all">Clear All</string>
     <string name="settings_developer_tools">Developer Tools</string>
     <string name="settings_developer_tools_desc">Debug utilities and test tools</string>
@@ -414,6 +415,12 @@
     <string name="notifications_filter_follows">Follows</string>
     <string name="notifications_filter_media">Media</string>
     <string name="notifications_open">Open notifications</string>
+    <string name="notifications_unread_overflow_a11y">More than 999 unread notifications</string>
+    <string name="notifications_unread_indicator_a11y">New notifications</string>
+    <plurals name="notifications_unread_count_a11y">
+        <item quantity="one">%1$d unread notification</item>
+        <item quantity="other">%1$d unread notifications</item>
+    </plurals>
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable, or temporarily rate-limited.</string>

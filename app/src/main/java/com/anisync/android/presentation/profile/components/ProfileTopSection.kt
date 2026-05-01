@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
@@ -77,6 +79,7 @@ fun ProfileTopSection(
     onFollowClick: () -> Unit = {},
     onMessageClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
+    unreadNotificationCount: Int = 0,
     topActionIcon: ImageVector = Icons.Default.Settings,
     onTopActionClick: () -> Unit = onSettingsClick,
     modifier: Modifier = Modifier
@@ -407,11 +410,29 @@ fun ProfileTopSection(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = stringResource(R.string.notifications_open),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (unreadNotificationCount > 0) {
+                            val openLabel = stringResource(R.string.notifications_open)
+                            val countLabel = unreadCountAccessibilityLabel(unreadNotificationCount)
+                            BadgedBox(
+                                badge = {
+                                    Badge {
+                                        Text(formatBadgeCount(unreadNotificationCount))
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = "$openLabel, $countLabel",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = stringResource(R.string.notifications_open),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 } else {
                     Button(
@@ -454,3 +475,28 @@ fun ProfileTopSection(
         }
     }
 }
+
+/**
+ * Per Material 3, large numeric badges overflow to "999+" when the count
+ * exceeds three digits — keeps the badge legible without truncating.
+ */
+private fun formatBadgeCount(count: Int): String =
+    if (count > 999) "999+" else count.toString()
+
+/**
+ * TalkBack label for the inbox badge. M3 accessibility guidance: numeric
+ * badges should announce the count via a pluralised string; counts beyond
+ * the displayed cap are read as "more than {cap}" so the spoken value
+ * matches what the user sees.
+ */
+@Composable
+private fun unreadCountAccessibilityLabel(count: Int): String =
+    if (count > 999) {
+        stringResource(R.string.notifications_unread_overflow_a11y)
+    } else {
+        androidx.compose.ui.res.pluralStringResource(
+            R.plurals.notifications_unread_count_a11y,
+            count,
+            count
+        )
+    }

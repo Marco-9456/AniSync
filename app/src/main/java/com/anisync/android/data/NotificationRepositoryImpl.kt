@@ -99,19 +99,25 @@ class NotificationRepositoryImpl @Inject constructor(
     private fun snapshotFromUnion(
         typename: String?,
         textBody: String?,
+        listActivityType: com.anisync.android.type.ActivityType?,
         listStatus: String?,
         listProgress: String?,
         listMedia: Media?,
         messageBody: String?
     ): ActivitySnapshot {
-        // ListActivity carries an ANIME or MANGA media — kind reflects the media's
-        // type so the UI can say "anime list update" vs "manga list update".
+        // Prefer the activity's own type field — AniList serves it directly on
+        // ListActivity (ANIME_LIST / MANGA_LIST). Fall back to media.type only
+        // when the activity type field is absent (e.g. older cache entries).
         val kind = when (typename) {
             "TextActivity" -> ActivityKind.TEXT
             "MessageActivity" -> ActivityKind.MESSAGE
-            "ListActivity" -> when (listMedia?.type) {
-                com.anisync.android.type.MediaType.MANGA -> ActivityKind.MANGA_LIST
-                else -> ActivityKind.ANIME_LIST
+            "ListActivity" -> when (listActivityType) {
+                com.anisync.android.type.ActivityType.ANIME_LIST -> ActivityKind.ANIME_LIST
+                com.anisync.android.type.ActivityType.MANGA_LIST -> ActivityKind.MANGA_LIST
+                else -> when (listMedia?.type) {
+                    com.anisync.android.type.MediaType.MANGA -> ActivityKind.MANGA_LIST
+                    else -> ActivityKind.ANIME_LIST
+                }
             }
             else -> ActivityKind.UNKNOWN
         }
@@ -181,6 +187,7 @@ class NotificationRepositoryImpl @Inject constructor(
                         snapshotFromUnion(
                             typename = a.__typename,
                             textBody = a.onTextActivity?.text,
+                            listActivityType = a.onListActivity?.type,
                             listStatus = a.onListActivity?.status,
                             listProgress = a.onListActivity?.progress,
                             listMedia = a.onListActivity?.media?.let { m ->
@@ -215,6 +222,7 @@ class NotificationRepositoryImpl @Inject constructor(
                         snapshotFromUnion(
                             typename = a.__typename,
                             textBody = a.onTextActivity?.text,
+                            listActivityType = a.onListActivity?.type,
                             listStatus = a.onListActivity?.status,
                             listProgress = a.onListActivity?.progress,
                             listMedia = a.onListActivity?.media?.let { m ->
@@ -249,6 +257,7 @@ class NotificationRepositoryImpl @Inject constructor(
                         snapshotFromUnion(
                             typename = a.__typename,
                             textBody = a.onTextActivity?.text,
+                            listActivityType = a.onListActivity?.type,
                             listStatus = a.onListActivity?.status,
                             listProgress = a.onListActivity?.progress,
                             listMedia = a.onListActivity?.media?.let { m ->
@@ -283,6 +292,7 @@ class NotificationRepositoryImpl @Inject constructor(
                         snapshotFromUnion(
                             typename = a.__typename,
                             textBody = a.onTextActivity?.text,
+                            listActivityType = a.onListActivity?.type,
                             listStatus = a.onListActivity?.status,
                             listProgress = a.onListActivity?.progress,
                             listMedia = a.onListActivity?.media?.let { m ->
@@ -317,6 +327,7 @@ class NotificationRepositoryImpl @Inject constructor(
                         snapshotFromUnion(
                             typename = a.__typename,
                             textBody = a.onTextActivity?.text,
+                            listActivityType = a.onListActivity?.type,
                             listStatus = a.onListActivity?.status,
                             listProgress = a.onListActivity?.progress,
                             listMedia = a.onListActivity?.media?.let { m ->

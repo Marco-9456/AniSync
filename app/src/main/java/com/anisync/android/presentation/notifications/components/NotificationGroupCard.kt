@@ -11,11 +11,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,8 +61,8 @@ import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.UnknownNotification
 import com.anisync.android.domain.User
-import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.notifications.NotificationEntry
+import org.jsoup.Jsoup
 
 @Composable
 fun NotificationGroupCard(
@@ -180,16 +179,20 @@ private fun SocialCardBody(
 }
 
 /**
- * Plain context line + rich-text body preview. Both slots are optional;
+ * Plain context line + plaintext body preview. Both slots are optional;
  * the plain line typically anchors the user (thread title, list status),
- * and the HTML slot renders the comment / status / message body inline so
- * spoilers, links and images come through correctly.
+ * and the body slot strips AniList HTML (spoilers, embedded media,
+ * AniList link cards, videos) down to a short text excerpt so the card
+ * stays compact and predictable.
  */
 @Composable
 private fun SubtitleSlots(payload: GroupPayload) {
     val plain = payload.subtitlePlain
-    val html = payload.subtitleHtml?.takeIf { it.isNotBlank() }
-    if (plain == null && html == null) return
+    val bodyExcerpt = payload.subtitleHtml
+        ?.takeIf { it.isNotBlank() }
+        ?.let { remember(it) { htmlToPlainExcerpt(it) } }
+        ?.takeIf { it.isNotBlank() }
+    if (plain == null && bodyExcerpt == null) return
 
     if (plain != null) {
         Spacer(modifier = Modifier.height(6.dp))
@@ -202,18 +205,26 @@ private fun SubtitleSlots(payload: GroupPayload) {
         )
     }
 
-    if (html != null) {
+    if (bodyExcerpt != null) {
         Spacer(modifier = Modifier.height(6.dp))
-        // Cap preview height so a long comment can't dominate the card.
-        Box(modifier = Modifier.heightIn(max = 96.dp).clipToBounds()) {
-            AsyncRichTextRenderer(
-                html = html,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(
+            text = bodyExcerpt,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
+
+/**
+ * Strips AniList rich-text HTML to a plain text excerpt. Drops embedded
+ * images, videos and AniList link cards — those would overflow the card
+ * and add visual noise. Whitespace is collapsed so a short multi-paragraph
+ * comment reads as a single tidy line.
+ */
+private fun htmlToPlainExcerpt(html: String): String =
+    Jsoup.parse(html).text().trim()
 
 @Composable
 private fun NotificationLeading(

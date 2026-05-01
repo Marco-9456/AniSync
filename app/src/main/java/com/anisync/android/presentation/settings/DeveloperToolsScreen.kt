@@ -104,6 +104,15 @@ fun DeveloperToolsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 FilledTonalButton(
+                    onClick = { viewModel.onAction(SettingsAction.BumpInboxBadge) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.debug_bump_inbox_badge))
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                FilledTonalButton(
                     onClick = { viewModel.onAction(SettingsAction.ClearAllNotifications) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.filledTonalButtonColors(

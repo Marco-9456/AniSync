@@ -78,6 +78,7 @@ fun ProfileContent(
     onAction: (ProfileAction) -> Unit,
     onSettingsClick: () -> Unit,
     onNotificationsClick: () -> Unit = {},
+    unreadNotificationCount: Int = 0,
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
@@ -126,6 +127,7 @@ fun ProfileContent(
                 onFollowClick = { onAction(ProfileAction.ToggleFollow) },
                 onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
                 onNotificationsClick = onNotificationsClick,
+                unreadNotificationCount = unreadNotificationCount,
                 topActionIcon = if (isOwnProfile) Icons.Default.Settings else Icons.Default.Share,
                 onTopActionClick = {
                     if (isOwnProfile) {

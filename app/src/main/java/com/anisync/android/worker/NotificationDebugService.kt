@@ -14,6 +14,7 @@ import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.anisync.android.R
+import com.anisync.android.data.NotificationBadgeStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,8 @@ import javax.inject.Singleton
 @Singleton
 class NotificationDebugService @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val imageLoader: ImageLoader
+    private val imageLoader: ImageLoader,
+    private val notificationBadgeStore: NotificationBadgeStore
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -240,6 +242,16 @@ class NotificationDebugService @Inject constructor(
             notificationManager.notify(notificationId, builder.build())
             Log.d(TAG, "Sent test imminent notification: $title - $content")
         }
+    }
+
+    /**
+     * Simulate an unread inbox notification so the profile bell badge can
+     * be tested without waiting for AniList to deliver a real one. The
+     * server count is unaffected; the next viewer refresh will reconcile.
+     */
+    fun bumpInboxBadge() {
+        notificationBadgeStore.bumpForDebug()
+        Log.d(TAG, "Bumped inbox badge for debug")
     }
 
     /**

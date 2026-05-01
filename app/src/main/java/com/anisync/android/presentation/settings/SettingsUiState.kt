@@ -52,6 +52,7 @@ sealed interface SettingsAction {
     data object SendTestPlanningNotification : SettingsAction
     data object SendTestAdvanceNotification : SettingsAction
     data object SendTestImminentNotification : SettingsAction
+    data object BumpInboxBadge : SettingsAction
     data object ClearAllNotifications : SettingsAction
     
     data object FetchLatestRelease : SettingsAction

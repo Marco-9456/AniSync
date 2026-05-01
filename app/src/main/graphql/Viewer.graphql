@@ -2,6 +2,7 @@ query GetViewer {
   Viewer {
     id
     name
+    unreadNotificationCount
     mediaListOptions {
       scoreFormat
     }

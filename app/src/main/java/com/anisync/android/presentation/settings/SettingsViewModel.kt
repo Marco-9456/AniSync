@@ -247,6 +247,7 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.SendTestPlanningNotification -> notificationDebugService.sendTestPlanningNotification()
             SettingsAction.SendTestAdvanceNotification -> notificationDebugService.sendTestAdvanceNotification()
             SettingsAction.SendTestImminentNotification -> notificationDebugService.sendTestImminentNotification()
+            SettingsAction.BumpInboxBadge -> notificationDebugService.bumpInboxBadge()
             SettingsAction.ClearAllNotifications -> notificationDebugService.clearAllNotifications()
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
         }

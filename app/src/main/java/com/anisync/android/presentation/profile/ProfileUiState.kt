@@ -63,6 +63,7 @@ data class ProfileUiState(
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null,
     val viewerId: Int? = null,
+    val unreadNotificationCount: Int = 0,
     val activitySnackbarMessage: SnackbarMessage? = null
 )
 

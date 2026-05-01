@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.GetProfileUseCase
@@ -54,6 +55,7 @@ class ProfileViewModel @Inject constructor(
     private val activityRepository: ActivityRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
+    private val notificationBadgeStore: NotificationBadgeStore,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -210,7 +212,8 @@ class ProfileViewModel @Inject constructor(
         activityLikeOverrides,
         deletedActivityIds,
         viewerIdFlow,
-        activitySnackbar
+        activitySnackbar,
+        notificationBadgeStore.unreadCount
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -226,6 +229,7 @@ class ProfileViewModel @Inject constructor(
         val deletedIds = params[8] as Set<Int>
         val viewerId = params[9] as Int?
         val snackbar = params[10] as SnackbarMessage?
+        val unreadCount = params[11] as Int
 
         val needsOverlay = remote.profile != null &&
             (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty())
@@ -292,6 +296,7 @@ class ProfileViewModel @Inject constructor(
             userMangaListByStatus = mediaLists.userMangaListByStatus,
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
             viewerId = viewerId,
+            unreadNotificationCount = unreadCount,
             activitySnackbarMessage = snackbar
         )
     }.stateIn(
@@ -309,6 +314,26 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             viewerIdFlow.value = activityRepository.getViewerId()
         }
+
+        if (targetUsername.isNullOrBlank()) {
+            refreshNotificationBadge()
+        }
+    }
+
+    /** Pulls the current `Viewer.unreadNotificationCount`; called on screen resume. */
+    fun refreshNotificationBadge() {
+        if (!targetUsername.isNullOrBlank()) return
+        viewModelScope.launch { notificationBadgeStore.refresh() }
+    }
+
+    /**
+     * Optimistically zero the badge when the user taps the bell. The
+     * server-side reset rides on NotificationsScreen's first ALL fetch
+     * (`resetNotificationCount=true`); the next on-resume refresh
+     * reconciles either way.
+     */
+    fun onNotificationsOpened() {
+        notificationBadgeStore.clearOptimistically()
     }
 
     fun onAction(action: ProfileAction) {
