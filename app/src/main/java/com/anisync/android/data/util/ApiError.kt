@@ -34,6 +34,13 @@ sealed class ApiError(
     class Unauthorized : ApiError("Your session has expired. Please log in again.")
 
     /**
+     * HTTP 401 returned for an action the token is valid for but not allowed to do
+     * (e.g. deleting a moderator's message). AniList conflates auth and permission
+     * errors at the HTTP layer; we suppress session-expired flow for known cases.
+     */
+    class Forbidden(message: String = "You don't have permission to do that.") : ApiError(message)
+
+    /**
      * HTTP 500, 502, 503 — Server-side failure.
      * The AniList API is likely experiencing issues.
      */

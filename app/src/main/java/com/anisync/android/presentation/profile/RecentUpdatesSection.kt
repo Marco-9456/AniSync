@@ -84,9 +84,12 @@ fun RecentUpdatesSection(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             displayedActivities.forEach { activity ->
                 key(activity.id) {
-                    val isOwner = viewerId != null && activity.userId == viewerId
+                    val canDelete = viewerId != null && (
+                        activity.userId == viewerId ||
+                            (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId)
+                    )
                     val cardLike = onLikeClick?.let { cb -> { cb(activity.id) } }
-                    val cardDelete = if (isOwner) {
+                    val cardDelete = if (canDelete) {
                         onDeleteClick?.let { cb -> { cb(activity.id) } }
                     } else null
 

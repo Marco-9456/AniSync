@@ -63,6 +63,7 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             userId = m.messenger?.id,
             userName = m.messenger?.name,
             userAvatarUrl = m.messenger?.avatar?.medium,
+            recipientId = m.recipient?.id,
             recipientName = m.recipient?.name,
             recipientAvatarUrl = m.recipient?.avatar?.medium,
             likeCount = m.likeCount ?: 0,

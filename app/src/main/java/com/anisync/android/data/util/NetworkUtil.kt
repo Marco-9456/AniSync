@@ -35,6 +35,8 @@ suspend fun <T> safeApiCall(
         Result.Error("Too many requests. Please wait ${e.retryAfterSeconds} seconds.", e)
     } catch (e: ApiError.Unauthorized) {
         Result.Error("Your session has expired. Please log in again.", e)
+    } catch (e: ApiError.Forbidden) {
+        Result.Error(e.message ?: "You don't have permission to do that.", e)
     } catch (e: ApiError.ServerError) {
         Result.Error("Server error (${e.statusCode}). Please try again later.", e)
     } catch (e: ApiError.NetworkError) {

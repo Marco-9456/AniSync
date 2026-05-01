@@ -34,6 +34,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -1182,22 +1183,24 @@ private fun ContentRow(
                 .padding(bottom = 6.dp)
         ) {
             with(sharedTransitionScope) {
-                Text(
-                    text = displayTitle.orEmpty(),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = titleKey),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                SelectionContainer {
+                    Text(
+                        text = displayTitle.orEmpty(),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = titleKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spatialSpec },
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                        )
                     )
-                )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

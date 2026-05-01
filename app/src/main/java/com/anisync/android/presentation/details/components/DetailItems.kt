@@ -1,5 +1,9 @@
 package com.anisync.android.presentation.details.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -42,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -60,6 +65,7 @@ import com.anisync.android.domain.VoicedCharacter
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
@@ -74,19 +80,28 @@ fun CharacterItem(
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val context = LocalContext.current
+    val copiedLabel = stringResource(R.string.copied_to_clipboard)
 
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
             .width(dimensionResource(R.dimen.character_item_width))
             .clip(imageShape)
-            .bouncyClickable(
+            .bouncyCombinedClickable(
                 onClick = onClick,
                 role = Role.Button,
                 onClickLabel = stringResource(
                     R.string.a11y_action_open_details,
                     character.nameUserPreferred
-                )
+                ),
+                onLongClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(
+                        ClipData.newPlainText("character_name", character.nameUserPreferred)
+                    )
+                    Toast.makeText(context, copiedLabel, Toast.LENGTH_SHORT).show()
+                }
             )
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
     ) {

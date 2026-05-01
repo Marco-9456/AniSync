@@ -406,6 +406,7 @@
     <string name="settings_copy_app_info">Copy app info</string>
     <string name="settings_copy_app_info_desc">For bug reports — copies version, Android version, and ABIs to your clipboard</string>
     <string name="settings_app_info_copied">App info copied to clipboard</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
 
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>

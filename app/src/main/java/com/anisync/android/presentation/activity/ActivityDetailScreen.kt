@@ -264,7 +264,11 @@ fun ActivityDetailScreen(
                     }
                     val activity = uiState.activity
                     val viewerId = uiState.viewerId
-                    if (activity != null && viewerId != null && activity.authorId == viewerId) {
+                    val canDelete = activity != null && viewerId != null && (
+                        activity.authorId == viewerId ||
+                            (activity.isMessage && activity.recipientId == viewerId)
+                    )
+                    if (canDelete) {
                         Box {
                             IconButton(onClick = { showOverflow = true }) {
                                 Icon(

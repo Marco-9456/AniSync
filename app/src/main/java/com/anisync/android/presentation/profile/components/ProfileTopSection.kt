@@ -423,14 +423,14 @@ fun ProfileTopSection(
                                 Icon(
                                     imageVector = Icons.Default.Notifications,
                                     contentDescription = "$openLabel, $countLabel",
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = stringResource(R.string.notifications_open),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }

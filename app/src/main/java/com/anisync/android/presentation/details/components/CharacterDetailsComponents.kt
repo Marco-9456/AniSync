@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.CardDefaults
@@ -563,13 +564,15 @@ fun ExpandableSynopsis(text: String) {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
             Box {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    maxLines = if (expanded) Int.MAX_VALUE else 4,
-                    overflow = TextOverflow.Ellipsis
-                )
+                SelectionContainer {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        maxLines = if (expanded) Int.MAX_VALUE else 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))

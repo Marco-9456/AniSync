@@ -95,11 +95,23 @@ class AuthorizationInterceptor @Inject constructor(
         // ── Step 5: Handle error status codes ───────────────────────────
         return when (response.statusCode) {
             429 -> handleRateLimited(response, authorizedRequest, chain)
-            401 -> handleUnauthorized(response)
+            401 -> handleUnauthorized(response, authorizedRequest)
             in 500..599 -> handleServerError(response)
             else -> response
         }
     }
+
+    /**
+     * Operations that AniList returns 401 for when the token is *valid* but the
+     * user lacks permission (e.g. deleting a moderator's message). Treating these
+     * as session-expired would log the user out for benign permission errors.
+     */
+    private val permissionGated401Operations = setOf(
+        "DeleteActivity",
+        "DeleteActivityReply",
+        "DeleteThread",
+        "DeleteThreadComment"
+    )
 
     /**
      * Extract rate limit headers from every API response.
@@ -195,7 +207,14 @@ class AuthorizationInterceptor @Inject constructor(
      *
      * The UI layer collects `authRepository.sessionExpired` to show the dialog.
      */
-    private fun handleUnauthorized(response: HttpResponse): HttpResponse {
+    private fun handleUnauthorized(response: HttpResponse, request: HttpRequest): HttpResponse {
+        val operationName = request.headers
+            .firstOrNull { it.name.equals("X-APOLLO-OPERATION-NAME", ignoreCase = true) }
+            ?.value
+        if (operationName != null && operationName in permissionGated401Operations) {
+            Log.w(TAG, "401 on $operationName — treating as permission denial, not session expiry.")
+            throw ApiError.Forbidden()
+        }
         Log.w(TAG, "Unauthorized (401). Token expired or revoked.")
         authRepository.onSessionExpired()
         throw ApiError.Unauthorized()
