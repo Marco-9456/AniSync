@@ -17,6 +17,8 @@ import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.StatisticsRepository
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +58,7 @@ class ProfileViewModel @Inject constructor(
     private val authRepository: com.anisync.android.data.AuthRepository,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
+    private val toastManager: ToastManager,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -155,8 +158,6 @@ class ProfileViewModel @Inject constructor(
 
     private val viewerIdFlow = MutableStateFlow<Int?>(null)
 
-    private val activitySnackbar = MutableStateFlow<SnackbarMessage?>(null)
-
     private val targetUsername: String? = savedStateHandle.get<String>("username")
         ?.let(Uri::decode)
         ?.trim()
@@ -212,7 +213,6 @@ class ProfileViewModel @Inject constructor(
         activityLikeOverrides,
         deletedActivityIds,
         viewerIdFlow,
-        activitySnackbar,
         notificationBadgeStore.unreadCount
     ) { params ->
         val remote = params[0] as ProfileUiState
@@ -228,8 +228,7 @@ class ProfileViewModel @Inject constructor(
         @Suppress("UNCHECKED_CAST")
         val deletedIds = params[8] as Set<Int>
         val viewerId = params[9] as Int?
-        val snackbar = params[10] as SnackbarMessage?
-        val unreadCount = params[11] as Int
+        val unreadCount = params[10] as Int
 
         val needsOverlay = remote.profile != null &&
             (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty())
@@ -296,8 +295,7 @@ class ProfileViewModel @Inject constructor(
             userMangaListByStatus = mediaLists.userMangaListByStatus,
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
             viewerId = viewerId,
-            unreadNotificationCount = unreadCount,
-            activitySnackbarMessage = snackbar
+            unreadNotificationCount = unreadCount
         )
     }.stateIn(
         scope = viewModelScope,
@@ -447,7 +445,7 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.ToggleActivitySubscription -> toggleActivitySubscription(action.activityId)
             is ProfileAction.ToggleActivityLike -> toggleActivityLike(action.activityId)
             is ProfileAction.DeleteActivity -> deleteActivity(action.activityId)
-            is ProfileAction.ConsumeActivitySnackbar -> activitySnackbar.value = null
+            is ProfileAction.ConsumeActivitySnackbar -> Unit
         }
     }
 
@@ -466,13 +464,14 @@ class ProfileViewModel @Inject constructor(
                         it + (activityId to (server.isLiked to server.likeCount))
                     }
                 }
-                is Result.Error -> {
-                    activityLikeOverrides.update { it - activityId }
-                    activitySnackbar.value = SnackbarMessage(
-                        text = result.message,
-                        token = System.currentTimeMillis()
-                    )
+            is Result.Error -> {
+                activityLikeOverrides.update { it - activityId }
+                if (result.code != null) {
+                    toastManager.showToast(result.code, result.message)
+                } else {
+                    toastManager.showToast(ToastType.INFO, message = result.message)
                 }
+            }
             }
         }
     }
@@ -484,17 +483,15 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = activityRepository.deleteActivity(activityId)) {
                 is Result.Success -> {
-                    activitySnackbar.value = SnackbarMessage(
-                        text = "Activity deleted",
-                        token = System.currentTimeMillis()
-                    )
+                    toastManager.showToast(ToastType.SUCCESS, message = "Activity deleted")
                 }
                 is Result.Error -> {
                     deletedActivityIds.update { it - activityId }
-                    activitySnackbar.value = SnackbarMessage(
-                        text = result.message,
-                        token = System.currentTimeMillis()
-                    )
+                    if (result.code != null) {
+                        toastManager.showToast(result.code, result.message)
+                    } else {
+                        toastManager.showToast(ToastType.INFO, message = result.message)
+                    }
                 }
             }
         }
@@ -534,6 +531,7 @@ class ProfileViewModel @Inject constructor(
                             messageSentEvent = System.currentTimeMillis()
                         )
                     }
+                    toastManager.showToast(ToastType.SUCCESS, message = "Message sent")
                 }
                 is Result.Error -> {
                     localState.update {

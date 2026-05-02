@@ -63,12 +63,8 @@ data class ProfileUiState(
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null,
     val viewerId: Int? = null,
-    val unreadNotificationCount: Int = 0,
-    val activitySnackbarMessage: SnackbarMessage? = null
+    val unreadNotificationCount: Int = 0
 )
-
-@Immutable
-data class SnackbarMessage(val text: String, val token: Long)
 
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
