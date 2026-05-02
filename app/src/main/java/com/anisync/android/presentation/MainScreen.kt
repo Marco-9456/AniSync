@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DynamicFeed
@@ -51,6 +52,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
+import com.anisync.android.presentation.components.alert.TopToastHost
 import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Discover
 import com.anisync.android.presentation.navigation.Feed
@@ -88,17 +90,21 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
             )
         }
     ) { _ ->
-        // Scaffold padding is intentionally ignored to prevent the NavHost from
-        // remeasuring during bottom bar animations. AniSyncNavHost handles its own insets.
-        AniSyncNavHost(
-            navController = navController,
-            onMediaClick = { mediaId, sourceScreen ->
-                navController.navigate(MediaDetails(mediaId, sourceScreen)) {
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Scaffold padding is intentionally ignored to prevent the NavHost from
+            // remeasuring during bottom bar animations. AniSyncNavHost handles its own insets.
+            AniSyncNavHost(
+                navController = navController,
+                onMediaClick = { mediaId, sourceScreen ->
+                    navController.navigate(MediaDetails(mediaId, sourceScreen)) {
+                        launchSingleTop = true
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            TopToastHost(toastManager = viewModel.toastManager)
+        }
     }
 }
 
