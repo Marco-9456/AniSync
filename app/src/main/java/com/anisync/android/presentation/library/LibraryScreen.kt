@@ -61,8 +61,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
@@ -154,7 +152,6 @@ fun LibraryScreen(
     val titleLanguage = uiState.titleLanguage
 
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
     val haptic = rememberHapticFeedback()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -219,15 +216,6 @@ fun LibraryScreen(
 
     LaunchedEffect(Unit) {
         viewModel.onAction(LibraryAction.OnScreenVisible)
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.actions.collectLatest { action ->
-            when (action) {
-                is LibraryAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
-                else -> {}
-            }
-        }
     }
 
     LaunchedEffect(textFieldState) {
@@ -358,7 +346,6 @@ fun LibraryScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             with(sharedTransitionScope) {
                 Surface(

@@ -49,7 +49,6 @@ sealed interface LibraryAction {
     data class DecrementProgress(val mediaId: Int) : LibraryAction
     data class UpdateEntry(val entry: LibraryEntry) : LibraryAction
     data class DeleteEntry(val entryId: Int, val mediaId: Int) : LibraryAction
-    data class ShowSnackbar(val message: String) : LibraryAction
     data class ToggleListVisibility(val listName: String, val hidden: Boolean) : LibraryAction
     data class MoveListUp(val listName: String) : LibraryAction
     data class MoveListDown(val listName: String) : LibraryAction

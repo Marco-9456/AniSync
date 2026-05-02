@@ -8,6 +8,8 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +37,8 @@ import javax.inject.Inject
 class LibraryViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val profileRepository: ProfileRepository,
-    private val appSettings: AppSettings
+    private val appSettings: AppSettings,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -102,10 +105,6 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
             is LibraryAction.UpdateEntry -> updateEntry(action.entry)
             is LibraryAction.DeleteEntry -> deleteEntry(action.entryId, action.mediaId)
-            is LibraryAction.ShowSnackbar -> {
-                viewModelScope.launch { _actions.emit(LibraryAction.ShowSnackbar(action.message)) }
-            }
-
             is LibraryAction.ToggleListVisibility -> toggleListVisibility(
                 action.listName,
                 action.hidden
@@ -311,7 +310,7 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(isRefreshing = true) }
             when (val result = libraryRepository.refreshLibrary("", _uiState.value.mediaType)) {
                 is Result.Success -> {} // Automatically updated via Flow
-                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+                is Result.Error -> showResultError(result)
             }
             _uiState.update { it.copy(isRefreshing = false) }
         }
@@ -324,7 +323,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = libraryRepository.updateProgress(mediaId, newProgress)) {
                 is Result.Success -> {}
-                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+                is Result.Error -> showResultError(result)
             }
         }
     }
@@ -332,8 +331,8 @@ class LibraryViewModel @Inject constructor(
     private fun updateEntry(entry: LibraryEntry) {
         viewModelScope.launch {
             when (val result = libraryRepository.updateEntry(entry)) {
-                is Result.Success -> _actions.emit(LibraryAction.ShowSnackbar("Entry updated"))
-                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+                is Result.Success -> toastManager.showToast(ToastType.SUCCESS, message = "Entry updated")
+                is Result.Error -> showResultError(result)
             }
         }
     }
@@ -341,8 +340,8 @@ class LibraryViewModel @Inject constructor(
     private fun deleteEntry(entryId: Int, mediaId: Int) {
         viewModelScope.launch {
             when (val result = libraryRepository.deleteEntry(entryId, mediaId)) {
-                is Result.Success -> _actions.emit(LibraryAction.ShowSnackbar("Entry removed"))
-                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+                is Result.Success -> toastManager.showToast(ToastType.SUCCESS, message = "Entry removed")
+                is Result.Error -> showResultError(result)
             }
         }
     }
@@ -388,10 +387,10 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = libraryRepository.createCustomList(listName, type)) {
                 is Result.Success -> {
-                    _actions.emit(LibraryAction.ShowSnackbar("List '$listName' created."))
+                    toastManager.showToast(ToastType.SUCCESS, message = "List '$listName' created.")
                     refresh()
                 }
-                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+                is Result.Error -> showResultError(result)
             }
         }
     }
@@ -416,12 +415,20 @@ class LibraryViewModel @Inject constructor(
                         appSettings.setHiddenMangaLists(hiddenLists)
                     }
 
-                    _actions.emit(LibraryAction.ShowSnackbar("List '$listName' deleted"))
+                    toastManager.showToast(ToastType.SUCCESS, message = "List '$listName' deleted")
                     refresh()
                 }
 
-                is Result.Error -> _actions.emit(LibraryAction.ShowSnackbar(result.message))
+                is Result.Error -> showResultError(result)
             }
+        }
+    }
+
+    private fun showResultError(result: Result.Error) {
+        if (result.code != null) {
+            toastManager.showToast(result.code, result.message)
+        } else {
+            toastManager.showToast(ToastType.INFO, message = result.message)
         }
     }
 }
