@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
@@ -29,7 +31,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class ForumCategoryViewModel @Inject constructor(
-    private val forumRepository: ForumRepository
+    private val forumRepository: ForumRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ForumCategoryUiState())
@@ -84,10 +87,6 @@ class ForumCategoryViewModel @Inject constructor(
                 currentSort = action.sort
                 _uiState.update { it.copy(sortLabel = action.label, isLoading = true) }
                 load(page = 1, replaceExisting = true)
-            }
-
-            is ForumCategoryAction.ShowSnackbar -> {
-                viewModelScope.launch { _actions.send(action) }
             }
 
             else -> viewModelScope.launch { _actions.send(action) }
@@ -147,11 +146,11 @@ class ForumCategoryViewModel @Inject constructor(
             if (isSaved) {
                 forumRepository.unsaveThread(thread.id)
                 _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds - thread.id).toPersistentSet()) }
-                _actions.send(ForumCategoryAction.ShowSnackbar("Thread unsaved"))
+                toastManager.showToast(ToastType.SUCCESS, message = "Thread unsaved")
             } else {
                 forumRepository.saveThread(thread)
                 _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds + thread.id).toPersistentSet()) }
-                _actions.send(ForumCategoryAction.ShowSnackbar("Thread saved"))
+                toastManager.showToast(ToastType.SUCCESS, message = "Thread saved")
             }
         }
     }
@@ -167,12 +166,11 @@ class ForumCategoryViewModel @Inject constructor(
                     }.toPersistentList()
                 )
             }
-            when (forumRepository.toggleThreadSubscription(thread.id, newState)) {
+            when (val result = forumRepository.toggleThreadSubscription(thread.id, newState)) {
                 is Result.Success -> {
-                    _actions.send(
-                        ForumCategoryAction.ShowSnackbar(
-                            if (newState) "Subscribed to thread" else "Unsubscribed from thread"
-                        )
+                    toastManager.showToast(
+                        ToastType.SUCCESS,
+                        message = if (newState) "Subscribed to thread" else "Unsubscribed from thread"
                     )
                 }
 
@@ -185,9 +183,17 @@ class ForumCategoryViewModel @Inject constructor(
                             }.toPersistentList()
                         )
                     }
-                    _actions.send(ForumCategoryAction.ShowSnackbar("Failed to update subscription"))
+                    showResultError(result)
                 }
             }
+        }
+    }
+
+    private fun showResultError(result: Result.Error) {
+        if (result.code != null) {
+            toastManager.showToast(result.code, result.message)
+        } else {
+            toastManager.showToast(ToastType.INFO, message = result.message)
         }
     }
 }

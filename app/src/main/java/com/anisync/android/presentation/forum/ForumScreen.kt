@@ -52,8 +52,6 @@ import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -135,7 +133,6 @@ fun ForumScreen(
     viewModel: ForumViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
@@ -154,7 +151,6 @@ fun ForumScreen(
     LaunchedEffect(viewModel.actions) {
         viewModel.actions.collectLatest { action ->
             when (action) {
-                is ForumAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
                 is ForumAction.OnThreadClick -> onThreadClick(action.threadId, action.threadTitle)
                 is ForumAction.OnCreateThreadClick -> onCreateThreadClick()
                 else -> {}
@@ -234,7 +230,6 @@ fun ForumScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             Box(modifier = Modifier.padding(bottom = 85.dp)) {
                 FloatingActionButton(

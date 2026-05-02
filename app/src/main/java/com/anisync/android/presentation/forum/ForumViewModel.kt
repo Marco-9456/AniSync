@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
@@ -20,7 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ForumViewModel @Inject constructor(
-    private val forumRepository: ForumRepository
+    private val forumRepository: ForumRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ForumUiState())
@@ -99,10 +102,6 @@ class ForumViewModel @Inject constructor(
             is ForumAction.ToggleSubscribeThread -> {
                 toggleSubscribe(action.thread)
             }
-
-            is ForumAction.ShowSnackbar -> {
-                viewModelScope.launch { _actions.send(action) }
-            }
             // Navigation actions are forwarded to the UI layer
             else -> viewModelScope.launch { _actions.send(action) }
         }
@@ -130,8 +129,10 @@ class ForumViewModel @Inject constructor(
         viewModelScope.launch {
             if (isCurrentlySaved) {
                 forumRepository.unsaveThread(thread.id)
+                toastManager.showToast(ToastType.SUCCESS, message = "Thread unsaved")
             } else {
                 forumRepository.saveThread(thread)
+                toastManager.showToast(ToastType.SUCCESS, message = "Thread saved")
             }
             // If we're on the Saved feed, reload
             if (_uiState.value.selectedFeed == ForumFeed.SAVED) {
@@ -163,7 +164,7 @@ class ForumViewModel @Inject constructor(
                         }.toPersistentList()
                     )
                 }
-                _actions.send(ForumAction.ShowSnackbar(result.message))
+                showResultError(result)
             } else if (_uiState.value.selectedFeed == ForumFeed.SUBSCRIBED) {
                 // Reload if viewing Subscribed feed
                 load(page = 1, replaceExisting = true)
@@ -315,6 +316,14 @@ class ForumViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    private fun showResultError(result: Result.Error) {
+        if (result.code != null) {
+            toastManager.showToast(result.code, result.message)
+        } else {
+            toastManager.showToast(ToastType.INFO, message = result.message)
         }
     }
 }

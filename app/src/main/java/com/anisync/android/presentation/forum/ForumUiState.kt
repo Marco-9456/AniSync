@@ -45,5 +45,4 @@ sealed interface ForumAction {
     data class OnThreadClick(val threadId: Int, val threadTitle: String) : ForumAction
     data object OnCreateThreadClick : ForumAction
     data class OnCategoryClick(val category: ForumCategory) : ForumAction
-    data class ShowSnackbar(val message: String) : ForumAction
 }

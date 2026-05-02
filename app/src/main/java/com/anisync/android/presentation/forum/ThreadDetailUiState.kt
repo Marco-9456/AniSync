@@ -56,5 +56,4 @@ sealed interface ThreadDetailAction {
     data object ToggleSave : ThreadDetailAction
     data object ToggleSubscribe : ThreadDetailAction
     data class ChangeCommentSort(val sort: String, val label: String) : ThreadDetailAction
-    data class ShowSnackbar(val message: String) : ThreadDetailAction
 }

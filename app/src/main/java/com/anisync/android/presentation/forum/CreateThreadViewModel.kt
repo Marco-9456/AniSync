@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CreateThreadViewModel @Inject constructor(
-    private val forumRepository: ForumRepository
+    private val forumRepository: ForumRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateThreadUiState())
@@ -49,9 +52,6 @@ class CreateThreadViewModel @Inject constructor(
             }
             is CreateThreadAction.Submit -> submit()
             is CreateThreadAction.NavigateUp -> {
-                viewModelScope.launch { _actions.emit(action) }
-            }
-            is CreateThreadAction.ShowSnackbar -> {
                 viewModelScope.launch { _actions.emit(action) }
             }
         }
@@ -93,9 +93,17 @@ class CreateThreadViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isSubmitting = false) }
-                    _actions.emit(CreateThreadAction.ShowSnackbar(result.message))
+                    showResultError(result)
                 }
             }
+        }
+    }
+
+    private fun showResultError(result: Result.Error) {
+        if (result.code != null) {
+            toastManager.showToast(result.code, result.message)
+        } else {
+            toastManager.showToast(ToastType.INFO, message = result.message)
         }
     }
 }

@@ -7,6 +7,8 @@ import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.PaginatedResult
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.parser.RichTextParser
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -25,7 +27,8 @@ private const val DEFAULT_PER_PAGE = 25
 
 @HiltViewModel
 class ThreadDetailViewModel @Inject constructor(
-    private val forumRepository: ForumRepository
+    private val forumRepository: ForumRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ThreadDetailUiState())
@@ -166,10 +169,9 @@ class ThreadDetailViewModel @Inject constructor(
             }
 
             if (targetMissed) {
-                _actions.emit(
-                    ThreadDetailAction.ShowSnackbar(
-                        "Comment unavailable, showing thread from start"
-                    )
+                toastManager.showToast(
+                    ToastType.INFO,
+                    message = "Comment unavailable, showing thread from start"
                 )
             }
         }
@@ -439,8 +441,17 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isSubmittingReply = false) }
+                    showResultError(result)
                 }
             }
+        }
+    }
+
+    private fun showResultError(result: Result.Error) {
+        if (result.code != null) {
+            toastManager.showToast(result.code, result.message)
+        } else {
+            toastManager.showToast(ToastType.INFO, message = result.message)
         }
     }
 }

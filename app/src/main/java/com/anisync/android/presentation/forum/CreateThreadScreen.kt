@@ -32,8 +32,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -71,7 +69,6 @@ fun CreateThreadScreen(
     viewModel: CreateThreadViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val focusManager = LocalFocusManager.current
     var showDiscardDialog by remember { mutableStateOf(false) }
@@ -85,7 +82,6 @@ fun CreateThreadScreen(
         viewModel.actions.collectLatest { action ->
             when (action) {
                 is CreateThreadAction.NavigateUp -> onThreadCreated()
-                is CreateThreadAction.ShowSnackbar -> snackbarHostState.showSnackbar(action.message)
                 else -> {}
             }
         }
@@ -117,7 +113,6 @@ fun CreateThreadScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {

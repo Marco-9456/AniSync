@@ -31,5 +31,4 @@ sealed interface ForumCategoryAction {
     data class ToggleSaveThread(val thread: ForumThread) : ForumCategoryAction
     data class ToggleSubscribeThread(val thread: ForumThread) : ForumCategoryAction
     data class ChangeSort(val sort: String, val label: String) : ForumCategoryAction
-    data class ShowSnackbar(val message: String) : ForumCategoryAction
 }

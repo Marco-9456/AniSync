@@ -26,7 +26,6 @@ sealed interface CreateThreadAction {
     data object TogglePreview : CreateThreadAction
     data object Submit : CreateThreadAction
     data object NavigateUp : CreateThreadAction
-    data class ShowSnackbar(val message: String) : CreateThreadAction
 }
 
 /**
