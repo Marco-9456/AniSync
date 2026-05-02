@@ -32,19 +32,19 @@ suspend fun <T> safeApiCall(
     return try {
         Result.Success(apiCall())
     } catch (e: ApiError.RateLimited) {
-        Result.Error("Too many requests. Please wait ${e.retryAfterSeconds} seconds.", e)
+        Result.Error("Too many requests. Please wait ${e.retryAfterSeconds} seconds.", 429, e.retryAfterSeconds, e)
     } catch (e: ApiError.Unauthorized) {
-        Result.Error("Your session has expired. Please log in again.", e)
+        Result.Error("Your session has expired. Please log in again.", 401, null, e)
     } catch (e: ApiError.Forbidden) {
-        Result.Error(e.message ?: "You don't have permission to do that.", e)
+        Result.Error(e.message ?: "You don't have permission to do that.", 401, null, e)
     } catch (e: ApiError.ServerError) {
-        Result.Error("Server error (${e.statusCode}). Please try again later.", e)
+        Result.Error("Server error (${e.statusCode}). Please try again later.", e.statusCode, null, e)
     } catch (e: ApiError.NetworkError) {
-        Result.Error("No internet connection. Check your network and try again.", e)
+        Result.Error("No internet connection. Check your network and try again.", null, null, e)
     } catch (e: ApiError.GraphQLError) {
-        Result.Error(e.errors.firstOrNull() ?: "An API error occurred.", e)
+        Result.Error(e.errors.firstOrNull() ?: "An API error occurred.", e.statusCode, null, e)
     } catch (e: ApiError) {
-        Result.Error(e.message ?: "An unexpected error occurred.", e)
+        Result.Error(e.message ?: "An unexpected error occurred.", null, null, e)
     } catch (e: ApolloHttpException) {
         // HTTP errors not caught by the interceptor (shouldn't normally reach here,
         // but acts as a safety net)
@@ -55,13 +55,13 @@ suspend fun <T> safeApiCall(
             in 500..599 -> "Server error. Please try again later."
             else -> "HTTP error ${e.statusCode}: ${e.message}"
         }
-        Result.Error(message, e)
+        Result.Error(message, e.statusCode, null, e)
     } catch (e: ApolloNetworkException) {
-        Result.Error("No internet connection. Check your network and try again.", e)
+        Result.Error("No internet connection. Check your network and try again.", null, null, e)
     } catch (e: ApolloException) {
-        Result.Error("Network error: ${e.message}", e)
+        Result.Error("Network error: ${e.message}", null, null, e)
     } catch (e: Exception) {
-        Result.Error(e.message ?: "An unexpected error occurred.", e)
+        Result.Error(e.message ?: "An unexpected error occurred.", null, null, e)
     }
 }
 

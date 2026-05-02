@@ -6,7 +6,7 @@ package com.anisync.android.domain
  */
 sealed interface Result<out T> {
     data class Success<T>(val data: T) : Result<T>
-    data class Error(val message: String, val exception: Throwable? = null) : Result<Nothing>
+    data class Error(val message: String, val code: Int? = null, val countdownSeconds: Long? = null, val exception: Throwable? = null) : Result<Nothing>
 }
 
 /**
