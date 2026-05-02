@@ -26,8 +26,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -66,7 +64,6 @@ fun FeedScreen(
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val composeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -76,18 +73,9 @@ fun FeedScreen(
         viewModel.onScreenVisible()
     }
 
-    LaunchedEffect(viewModel.actions) {
-        viewModel.actions.collectLatest { action ->
-            if (action is FeedAction.ShowSnackbar) {
-                snackbarHostState.showSnackbar(action.message)
-            }
-        }
-    }
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             Box(modifier = Modifier.padding(bottom = 85.dp)) {
                 FloatingActionButton(

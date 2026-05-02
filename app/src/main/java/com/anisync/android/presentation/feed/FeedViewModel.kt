@@ -6,6 +6,8 @@ import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
@@ -26,7 +28,8 @@ private const val PAGE_SIZE = 25
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
-    private val activityRepository: ActivityRepository
+    private val activityRepository: ActivityRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedUiState())
@@ -134,8 +137,6 @@ class FeedViewModel @Inject constructor(
             }
 
             is FeedAction.PostStatus -> postStatus(action.text)
-
-            is FeedAction.ShowSnackbar -> viewModelScope.launch { _actions.send(action) }
         }
     }
 
@@ -152,14 +153,14 @@ class FeedViewModel @Inject constructor(
                             composeError = null
                         )
                     }
-                    _actions.send(FeedAction.ShowSnackbar("Status posted"))
+                    toastManager.showToast(ToastType.SUCCESS, message = "Status posted")
                     load(page = 1, replaceExisting = true)
                 }
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(isPostingStatus = false, composeError = result.message)
                     }
-                    _actions.send(FeedAction.ShowSnackbar(result.message))
+                    showResultError(result)
                 }
             }
         }
@@ -214,7 +215,7 @@ class FeedViewModel @Inject constructor(
                 }
             }
             if (result is Result.Error) {
-                _actions.send(FeedAction.ShowSnackbar(result.message))
+                showResultError(result)
             }
         }
     }
@@ -237,7 +238,7 @@ class FeedViewModel @Inject constructor(
                 state.copy(pendingDeleteIds = (state.pendingDeleteIds - activityId).toPersistentSet())
             }
             when (result) {
-                is Result.Success -> _actions.send(FeedAction.ShowSnackbar("Activity deleted"))
+                is Result.Success -> toastManager.showToast(ToastType.SUCCESS, message = "Activity deleted")
                 is Result.Error -> {
                     // Restore the activity at its previous index
                     _uiState.update { state ->
@@ -248,7 +249,7 @@ class FeedViewModel @Inject constructor(
                         }
                         state.copy(items = restored.toPersistentList())
                     }
-                    _actions.send(FeedAction.ShowSnackbar(result.message))
+                    showResultError(result)
                 }
             }
         }
@@ -276,7 +277,7 @@ class FeedViewModel @Inject constructor(
                         }.toPersistentList()
                     )
                 }
-                _actions.send(FeedAction.ShowSnackbar(result.message))
+                showResultError(result)
             }
         }
     }
@@ -351,4 +352,11 @@ class FeedViewModel @Inject constructor(
         }
     }
 
+    private fun showResultError(result: Result.Error) {
+        if (result.code != null) {
+            toastManager.showToast(result.code, result.message)
+        } else {
+            toastManager.showToast(ToastType.INFO, message = result.message)
+        }
+    }
 }

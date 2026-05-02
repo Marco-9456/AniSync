@@ -43,5 +43,4 @@ sealed interface FeedAction {
     data object OpenCompose : FeedAction
     data object DismissCompose : FeedAction
     data class PostStatus(val text: String) : FeedAction
-    data class ShowSnackbar(val message: String) : FeedAction
 }
