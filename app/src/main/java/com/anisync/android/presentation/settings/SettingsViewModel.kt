@@ -14,6 +14,8 @@ import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
@@ -36,6 +38,7 @@ class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val updateManager: UpdateManager,
     getProfileUseCase: GetProfileUseCase,
+    private val toastManager: ToastManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -249,6 +252,10 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.SendTestImminentNotification -> notificationDebugService.sendTestImminentNotification()
             SettingsAction.BumpInboxBadge -> notificationDebugService.bumpInboxBadge()
             SettingsAction.ClearAllNotifications -> notificationDebugService.clearAllNotifications()
+            is SettingsAction.ShowTestToast -> {
+                val countdown = if (action.code == 429) 60L else null
+                toastManager.showToast(action.code, "This is a test message for error code ${action.code}.", countdown)
+            }
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
         }
     }
@@ -326,6 +333,7 @@ class SettingsViewModel @Inject constructor(
                 context.externalCacheDir?.deleteRecursively()
                 _cacheSize.value = "0 B"
                 _isCacheCleared.value = true
+                toastManager.showToast(ToastType.SUCCESS, message = "Cache cleared")
             } catch (e: Exception) {
                 // Silently fail - cache might be in use
             } finally {

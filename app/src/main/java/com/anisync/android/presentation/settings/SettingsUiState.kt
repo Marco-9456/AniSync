@@ -54,7 +54,9 @@ sealed interface SettingsAction {
     data object SendTestImminentNotification : SettingsAction
     data object BumpInboxBadge : SettingsAction
     data object ClearAllNotifications : SettingsAction
-    
+
+    data class ShowTestToast(val code: Int) : SettingsAction
+
     data object FetchLatestRelease : SettingsAction
 }
 

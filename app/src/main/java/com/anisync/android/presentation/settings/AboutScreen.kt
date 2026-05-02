@@ -50,7 +50,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -370,14 +369,12 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
     var showSponsorSheet by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val appInfoCopiedMessage = stringResource(R.string.settings_app_info_copied)
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
         onBackClick = onBackClick,
-        snackbarHostState = snackbarHostState,
         modifier = modifier
     ) {
         AboutHero(modifier = Modifier.padding(top = 40.dp, bottom = 16.dp))
@@ -467,7 +464,6 @@ fun AboutScreen(
                 subtitle = stringResource(R.string.settings_copy_app_info_desc),
                 onClick = {
                     context.copyAppInfo()
-                    scope.launch { snackbarHostState.showSnackbar(appInfoCopiedMessage) }
                 }
             )
         }

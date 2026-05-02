@@ -182,6 +182,43 @@ fun DeveloperToolsScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Toast Debug
+        SettingsGroup {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "Toast Debug",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val toastCodes = listOf(400, 401, 404, 429, 500)
+                
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    toastCodes.chunked(2).forEach { rowCodes ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowCodes.forEach { code ->
+                                FilledTonalButton(
+                                    onClick = { viewModel.onAction(SettingsAction.ShowTestToast(code)) },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Test $code")
+                                }
+                            }
+                            if (rowCodes.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,21 +41,9 @@ fun StorageScreen(
     val isCacheLoading = uiState.isCacheLoading
     val isCacheClearing = uiState.isCacheClearing
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val cacheClearedMessage = stringResource(R.string.settings_cache_cleared)
-
-    // Show snackbar when cache is cleared
-    LaunchedEffect(isCacheCleared) {
-        if (isCacheCleared) {
-            snackbarHostState.showSnackbar(cacheClearedMessage)
-            viewModel.onAction(SettingsAction.ResetCacheCleared)
-        }
-    }
-
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_storage),
         onBackClick = onBackClick,
-        snackbarHostState = snackbarHostState,
         modifier = modifier
     ) {
         // Cache size display
