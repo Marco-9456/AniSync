@@ -89,9 +89,9 @@ fun ActivityPreviewCard(
                 AsyncRichTextRenderer(
                     html = rawHtml,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2f
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.25f
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

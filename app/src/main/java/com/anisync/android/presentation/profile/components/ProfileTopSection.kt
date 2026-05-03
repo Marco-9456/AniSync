@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,22 +26,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,7 +57,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
@@ -65,6 +64,22 @@ import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+// Hoisted static layout constants to prevent reallocation
+private val BannerHeight = 320.dp
+private val CardOverlap = 64.dp
+private val AvatarSize = 132.dp
+private val AvatarHalfSize = AvatarSize / 2
+private val ContentCardShape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
+
+private val RainbowColors = listOf(
+    Color(0xFFE91E63),
+    Color(0xFFFF9800),
+    Color(0xFFFFEB3B),
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFF9C27B0)
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -86,22 +101,23 @@ fun ProfileTopSection(
 ) {
     val surfaceColor = MaterialTheme.colorScheme.background
 
-    val bannerHeight = 320.dp
-    val cardOverlap = 64.dp
-    val avatarSize = 132.dp
-
-    val contentCardShape = remember {
-        RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
-    }
     val expressiveAvatarShape = remember {
         ExpressiveBadgeShape(waves = 16, amplitude = 0.04f)
+    }
+
+    // Cached to avoid format initialization over multiple re-renders
+    val joinedDate = remember(profile.createdAt) {
+        profile.createdAt?.let {
+            val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+            "Joined ${sdf.format(Date(it))}"
+        }
     }
 
     Box(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(bannerHeight)
+                .height(BannerHeight)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (profile.bannerUrl != null) {
@@ -115,18 +131,21 @@ fun ProfileTopSection(
                     modifier = Modifier.fillMaxSize()
                 )
 
+                // Cache the gradient brush
+                val scrimBrush = remember {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.5f),
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.2f)
+                        )
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.5f),
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.2f)
-                                )
-                            )
-                        )
+                        .background(scrimBrush)
                 )
             }
 
@@ -155,8 +174,8 @@ fun ProfileTopSection(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = bannerHeight - cardOverlap),
-            shape = contentCardShape,
+                .padding(top = BannerHeight - CardOverlap),
+            shape = ContentCardShape,
             color = surfaceColor,
             tonalElevation = 0.dp
         ) {
@@ -164,7 +183,7 @@ fun ProfileTopSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(top = (avatarSize / 2) + 24.dp, bottom = 16.dp),
+                    .padding(top = AvatarHalfSize + 24.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.Start
             ) {
                 Row(
@@ -176,13 +195,12 @@ fun ProfileTopSection(
                         Text(
                             text = profile.name,
                             style = MaterialTheme.typography.displaySmall.copy(
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = (-1).sp
+                                fontWeight = FontWeight.ExtraBold
                             ),
                             color = MaterialTheme.colorScheme.onBackground
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -208,63 +226,12 @@ fun ProfileTopSection(
                                 val isRainbow = profile.donatorTier >= 5
 
                                 if (isRainbow) {
-                                    val rainbowColors = remember {
-                                        listOf(
-                                            Color(0xFFE91E63),
-                                            Color(0xFFFF9800),
-                                            Color(0xFFFFEB3B),
-                                            Color(0xFF4CAF50),
-                                            Color(0xFF2196F3),
-                                            Color(0xFF9C27B0)
-                                        )
-                                    }
-                                    val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
-                                    val progress by infiniteTransition.animateFloat(
-                                        initialValue = 0f,
-                                        targetValue = rainbowColors.size.toFloat(),
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(
-                                                durationMillis = rainbowColors.size * 1000,
-                                                easing = LinearEasing
-                                            ),
-                                            repeatMode = RepeatMode.Restart
-                                        ),
-                                        label = "rainbowProgress"
-                                    )
-                                    val colorIndex = progress.toInt() % rainbowColors.size
-                                    val nextIndex = (colorIndex + 1) % rainbowColors.size
-                                    val fraction = progress - progress.toInt()
-                                    val animatedColor = lerp(rainbowColors[colorIndex], rainbowColors[nextIndex], fraction)
-
-                                    Surface(
-                                        color = animatedColor,
-                                        shape = CircleShape
-                                    ) {
-                                        Text(
-                                            text = badgeText,
-                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
+                                    RainbowDonatorBadge(badgeText = badgeText)
                                 } else {
-                                    val donatorColor = when (profile.donatorTier) {
-                                        1 -> Color(0xFF78909C) // Blue-grey for $1
-                                        2 -> Color(0xFF5C6BC0) // Indigo for $3
-                                        3 -> Color(0xFFFFB300) // Amber for $5
-                                        else -> Color(0xFFFF6F00) // Deep amber for $10
-                                    }
-                                    Surface(
-                                        color = donatorColor,
-                                        shape = CircleShape
-                                    ) {
-                                        Text(
-                                            text = badgeText,
-                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
+                                    RegularDonatorBadge(
+                                        badgeText = badgeText,
+                                        tier = profile.donatorTier
+                                    )
                                 }
                             }
                         }
@@ -276,11 +243,7 @@ fun ProfileTopSection(
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 profile.moderatorRoles.forEach { role ->
-                                    val formattedRole = remember(role) {
-                                        role.replace("_", " ").lowercase()
-                                            .replaceFirstChar { it.uppercase() }
-                                            .replace(" [a-z]".toRegex()) { it.value.uppercase() }
-                                    }
+                                    val formattedRole = remember(role) { formatModeratorRole(role) }
                                     Surface(
                                         color = MaterialTheme.colorScheme.secondaryContainer,
                                         shape = RoundedCornerShape(8.dp)
@@ -310,11 +273,7 @@ fun ProfileTopSection(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (profile.createdAt != null) {
-                                    val joinedDate = remember(profile.createdAt) {
-                                        val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
-                                        "Joined ${sdf.format(Date(profile.createdAt))}"
-                                    }
+                                if (joinedDate != null) {
                                     Text(
                                         text = joinedDate,
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
@@ -322,12 +281,8 @@ fun ProfileTopSection(
                                     )
                                 }
                             }
-                        } else if (profile.createdAt != null) {
+                        } else if (joinedDate != null) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            val joinedDate = remember(profile.createdAt) {
-                                val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
-                                "Joined ${sdf.format(Date(profile.createdAt))}"
-                            }
                             Text(
                                 text = joinedDate,
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
@@ -364,13 +319,12 @@ fun ProfileTopSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .offset(y = bannerHeight - cardOverlap - (avatarSize / 2)),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .offset(y = BannerHeight - CardOverlap - AvatarHalfSize),
             verticalAlignment = Alignment.Bottom
         ) {
             Box(
                 modifier = Modifier
-                    .size(avatarSize)
+                    .size(AvatarSize)
                     .background(surfaceColor, expressiveAvatarShape)
                     .padding(6.dp)
                     .clip(expressiveAvatarShape)
@@ -384,25 +338,23 @@ fun ProfileTopSection(
                 )
             }
 
+            Spacer(modifier = Modifier.weight(1f))
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
             ) {
                 if (isOwnProfile) {
-                    Button(
+                    FilledTonalIconButton(
                         onClick = onEditProfileClick,
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.height(48.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.profile_edit),
                             modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.profile_edit),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                     FilledTonalIconButton(
@@ -435,29 +387,35 @@ fun ProfileTopSection(
                         }
                     }
                 } else {
-                    Button(
-                        onClick = onFollowClick,
-                        enabled = !isFollowLoading,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.height(48.dp)
-                    ) {
-                        if (isFollowLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
+                    if (isFollowing) {
+                        FilledTonalIconButton(
+                            onClick = onFollowClick,
+                            enabled = !isFollowLoading,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.size(48.dp)
+                        ) {
                             Icon(
-                                imageVector = if (isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
+                                imageVector = if (isFollowing) Icons.Default.PersonRemove else Icons.Default.PersonAdd,
+                                contentDescription = if (isFollowing) stringResource(R.string.profile_following) else stringResource(
+                                    R.string.profile_follow
+                                ),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    } else {
+                        OutlinedIconButton(
+                            onClick = onFollowClick,
+                            enabled = !isFollowLoading,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.size(48.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Icon(
+                                imageVector = if (isFollowing) Icons.Default.PersonRemove else Icons.Default.PersonAdd,
                                 contentDescription = if (isFollowing) stringResource(R.string.profile_following) else stringResource(R.string.profile_follow),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isFollowing) stringResource(R.string.profile_following) else stringResource(R.string.profile_follow),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                        )
                     }
                     FilledTonalIconButton(
                         onClick = onMessageClick,
@@ -474,6 +432,79 @@ fun ProfileTopSection(
             }
         }
     }
+}
+
+/**
+ * Isolated composable for the rainbow animation.
+ * Moving this out of [ProfileTopSection] prevents the entire profile header
+ * from recomposing on every frame of the animation.
+ */
+@Composable
+private fun RainbowDonatorBadge(badgeText: String, modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
+    val progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = RainbowColors.size.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = RainbowColors.size * 1000,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rainbowProgress"
+    )
+
+    val colorIndex = progress.toInt() % RainbowColors.size
+    val nextIndex = (colorIndex + 1) % RainbowColors.size
+    val fraction = progress - progress.toInt()
+    val animatedColor = lerp(RainbowColors[colorIndex], RainbowColors[nextIndex], fraction)
+
+    Surface(
+        color = animatedColor,
+        shape = CircleShape,
+        modifier = modifier
+    ) {
+        Text(
+            text = badgeText,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+    }
+}
+
+@Composable
+private fun RegularDonatorBadge(badgeText: String, tier: Int, modifier: Modifier = Modifier) {
+    val donatorColor = remember(tier) {
+        when (tier) {
+            1 -> Color(0xFF78909C) // Blue-grey for $1
+            2 -> Color(0xFF5C6BC0) // Indigo for $3
+            3 -> Color(0xFFFFB300) // Amber for $5
+            else -> Color(0xFFFF6F00) // Deep amber for $10
+        }
+    }
+    Surface(
+        color = donatorColor,
+        shape = CircleShape,
+        modifier = modifier
+    ) {
+        Text(
+            text = badgeText,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+    }
+}
+
+/**
+ * Extracted pure formatting function outside of Compose scope.
+ */
+private fun formatModeratorRole(role: String): String {
+    return role.replace("_", " ").lowercase()
+        .replaceFirstChar { it.uppercase() }
+        .replace(" [a-z]".toRegex()) { it.value.uppercase() }
 }
 
 /**
