@@ -11,6 +11,7 @@ import com.anisync.android.SaveTextActivityMutation
 import com.anisync.android.ToggleActivityLikeMutation
 import com.anisync.android.ToggleActivityReplyLikeMutation
 import com.anisync.android.ToggleActivitySubscriptionMutation
+import com.anisync.android.data.util.ApiError
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityDetail
 import com.anisync.android.domain.ActivityReply
@@ -40,7 +41,7 @@ class ActivityRepositoryImpl @Inject constructor(
         }
 
         val activity = response.data?.Activity
-            ?: throw Exception("Activity not found")
+            ?: throw ApiError.GraphQLError(listOf("Activity not found"), 404)
 
         activity.toDomain() ?: throw Exception("Unsupported activity type")
     }
@@ -167,7 +168,7 @@ class ActivityRepositoryImpl @Inject constructor(
         }
 
         val activity = response.data?.Activity
-            ?: throw Exception("Activity not found")
+            ?: throw ApiError.GraphQLError(listOf("Activity not found"), 404)
 
         // Each fragment generates its own Like type, so map per-variant rather
         // than relying on a single `?:` chain returning a uniform type.

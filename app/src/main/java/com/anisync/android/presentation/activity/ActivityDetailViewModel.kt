@@ -104,8 +104,18 @@ class ActivityDetailViewModel @Inject constructor(
                         )
                     }
                 }
-                is Result.Error -> _uiState.update {
-                    it.copy(isLoading = false, isRefreshing = false, errorMessage = activityResult.message)
+                is Result.Error -> {
+                    if (activityResult.code == 404) {
+                        // Activity was deleted or not found — show a toast and pop back
+                        // instead of a dead-end error screen (e.g. when opening from a notification)
+                        toastManager.showToast(activityResult.code, activityResult.message)
+                        _uiState.update { it.copy(isLoading = false, isRefreshing = false) }
+                        _finishedEvents.tryEmit(Unit)
+                    } else {
+                        _uiState.update {
+                            it.copy(isLoading = false, isRefreshing = false, errorMessage = activityResult.message)
+                        }
+                    }
                 }
             }
         }
