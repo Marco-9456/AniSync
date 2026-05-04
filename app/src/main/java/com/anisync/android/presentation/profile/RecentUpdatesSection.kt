@@ -86,7 +86,7 @@ fun RecentUpdatesSection(
                 key(activity.id) {
                     val canDelete = viewerId != null && (
                         activity.userId == viewerId ||
-                            (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId)
+                            (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
                     )
                     val cardLike = onLikeClick?.let { cb -> { cb(activity.id) } }
                     val cardDelete = if (canDelete) {

@@ -48,6 +48,7 @@ query GetActivity($id: Int!) {
       messenger {
         id
         name
+        moderatorRoles
         avatar {
           large
         }

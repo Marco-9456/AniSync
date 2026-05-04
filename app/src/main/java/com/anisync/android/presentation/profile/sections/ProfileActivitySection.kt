@@ -100,7 +100,7 @@ fun LazyListScope.profileActivityTab(
         ) { activity ->
             val canDelete = viewerId != null && (
                 activity.userId == viewerId ||
-                    (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId)
+                    (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
             )
             val cardLike = onLikeActivity?.let { cb -> { cb(activity.id) } }
             val cardDelete = if (canDelete) {

@@ -9,6 +9,7 @@ import com.apollographql.apollo.api.http.HttpResponse
 import com.apollographql.apollo.network.http.HttpInterceptor
 import com.apollographql.apollo.network.http.HttpInterceptorChain
 import kotlinx.coroutines.delay
+import okio.Buffer
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -48,6 +49,12 @@ class AuthorizationInterceptor @Inject constructor(
 
         /** Maximum wait time we're willing to delay for (cap at 2 minutes) */
         private const val MAX_RETRY_AFTER_SECONDS = 120L
+
+        /** Regex to extract `operationName` from a GraphQL JSON POST body */
+        private val OPERATION_NAME_REGEX = Regex(""""operationName"\s*:\s*"([^"]+)"""")
+
+        /** Regex to extract the first `"message"` value from a GraphQL errors array */
+        private val ERROR_MESSAGE_REGEX = Regex(""""message"\s*:\s*"([^"]+)"""")
     }
 
     /**
@@ -97,7 +104,7 @@ class AuthorizationInterceptor @Inject constructor(
             429 -> handleRateLimited(response, authorizedRequest, chain)
             401 -> handleUnauthorized(response, authorizedRequest)
             in 500..599 -> handleServerError(response)
-            else -> response
+            else -> checkBodyForPermissionErrors(response, authorizedRequest)
         }
     }
 
@@ -208,9 +215,7 @@ class AuthorizationInterceptor @Inject constructor(
      * The UI layer collects `authRepository.sessionExpired` to show the dialog.
      */
     private fun handleUnauthorized(response: HttpResponse, request: HttpRequest): HttpResponse {
-        val operationName = request.headers
-            .firstOrNull { it.name.equals("X-APOLLO-OPERATION-NAME", ignoreCase = true) }
-            ?.value
+        val operationName = extractOperationName(request)
         if (operationName != null && operationName in permissionGated401Operations) {
             Log.w(TAG, "401 on $operationName — treating as permission denial, not session expiry.")
             throw ApiError.Forbidden()
@@ -221,11 +226,71 @@ class AuthorizationInterceptor @Inject constructor(
     }
 
     /**
+     * Extracts the GraphQL operation name from the request.
+     *
+     * Apollo Kotlin 4.x no longer sends `X-APOLLO-OPERATION-NAME` by default.
+     * We first try the header (in case it was added manually), then fall back
+     * to parsing the `"operationName"` field from the JSON POST body.
+     */
+    private fun extractOperationName(request: HttpRequest): String? {
+        // 1. Try the header (fast path, works if header was re-enabled)
+        request.headers
+            .firstOrNull { it.name.equals("X-APOLLO-OPERATION-NAME", ignoreCase = true) }
+            ?.value
+            ?.let { return it }
+
+        // 2. Parse from the JSON body: {"operationName":"DeleteActivity",...}
+        return try {
+            val body = request.body ?: return null
+            val buffer = Buffer()
+            body.writeTo(buffer)
+            val json = buffer.readUtf8()
+            // Simple regex extraction — avoids pulling in a full JSON parser
+            OPERATION_NAME_REGEX.find(json)?.groupValues?.get(1)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to extract operation name from request body", e)
+            null
+        }
+    }
+
+    /**
      * Handle HTTP 5xx — Server errors.
      * Log and throw typed error so the UI can show "Server error, try again later."
      */
     private fun handleServerError(response: HttpResponse): HttpResponse {
         Log.e(TAG, "Server error: ${response.statusCode}")
         throw ApiError.ServerError(response.statusCode)
+    }
+
+    /**
+     * Check HTTP 200 responses for permission errors embedded in the GraphQL body.
+     *
+     * AniList returns HTTP 200 with `{"errors":[{"status":401,...}]}` for permission
+     * denials (e.g. deleting a moderator's activity). Apollo's normalized cache strips
+     * `response.errors` before the repository layer sees them, so we detect these
+     * errors here using the raw [HttpResponse.body] (an already-buffered [ByteString]).
+     *
+     * Only throws for [permissionGated401Operations] to avoid breaking partial-data
+     * responses from other queries.
+     */
+    private fun checkBodyForPermissionErrors(
+        response: HttpResponse,
+        request: HttpRequest
+    ): HttpResponse {
+        val bodySource = response.body ?: return response
+        val body = bodySource.peek().readUtf8()
+
+        // Fast path: skip if no 401 status in body
+        if ("\"status\":401" !in body && "\"status\": 401" !in body) return response
+
+        // Only throw for permission-gated operations
+        val operationName = extractOperationName(request) ?: return response
+        if (operationName !in permissionGated401Operations) return response
+
+        val message = ERROR_MESSAGE_REGEX.find(body)?.groupValues?.get(1)
+            ?: "You don't have permission to do that."
+
+        Log.w(TAG, "HTTP 200 with 401 permission error in $operationName: $message")
+        throw ApiError.Forbidden(message)
     }
 }

@@ -266,7 +266,7 @@ fun ActivityDetailScreen(
                     val viewerId = uiState.viewerId
                     val canDelete = activity != null && viewerId != null && (
                         activity.authorId == viewerId ||
-                            (activity.isMessage && activity.recipientId == viewerId)
+                            (activity.isMessage && activity.recipientId == viewerId && !activity.isAuthorMod)
                     )
                     if (canDelete) {
                         Box {

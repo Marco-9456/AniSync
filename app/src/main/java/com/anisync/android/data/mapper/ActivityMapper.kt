@@ -72,6 +72,7 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             isLocked = m.isLocked == true,
             isSubscribed = m.isSubscribed == true,
             isPrivate = m.isPrivate == true,
+            isAuthorMod = !m.messenger?.moderatorRoles.isNullOrEmpty(),
             replyUserName = lastReply?.user?.name,
             replyUserAvatarUrl = lastReply?.user?.avatar?.medium,
             repliedAt = lastReply?.createdAt?.toLong(),

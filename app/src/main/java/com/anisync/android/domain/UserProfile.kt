@@ -86,5 +86,6 @@ data class UserActivity(
     val isLocked: Boolean = false,
     val isSubscribed: Boolean = false,
     val isPrivate: Boolean = false,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val isAuthorMod: Boolean = false
 )

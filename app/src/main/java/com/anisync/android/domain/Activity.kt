@@ -27,6 +27,7 @@ data class ActivityDetail(
     val recipientId: Int?,
     val recipientName: String?,
     val recipientAvatarUrl: String?,
+    val isAuthorMod: Boolean = false,
     val replies: List<ActivityReply>
 )
 

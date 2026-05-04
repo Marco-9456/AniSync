@@ -307,6 +307,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 recipientId = m.recipient?.id,
                 recipientName = m.recipient?.name,
                 recipientAvatarUrl = m.recipient?.avatar?.large,
+                isAuthorMod = !m.messenger?.moderatorRoles.isNullOrEmpty(),
                 replies = m.replies?.filterNotNull()?.map { r ->
                     ActivityReply(
                         id = r.id,

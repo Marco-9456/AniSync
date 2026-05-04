@@ -7,6 +7,8 @@ import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.parser.RichTextParser
+import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -24,7 +26,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ActivityDetailViewModel @Inject constructor(
-    private val repository: ActivityRepository
+    private val repository: ActivityRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ActivityDetailUiState())
@@ -212,9 +215,15 @@ class ActivityDetailViewModel @Inject constructor(
     private fun deleteActivity() {
         val id = _uiState.value.activity?.id ?: return
         viewModelScope.launch {
-            when (repository.deleteActivity(id)) {
+            when (val result = repository.deleteActivity(id)) {
                 is Result.Success -> _finishedEvents.tryEmit(Unit)
-                is Result.Error -> Unit
+                is Result.Error -> {
+                    if (result.code != null) {
+                        toastManager.showToast(result.code, result.message)
+                    } else {
+                        toastManager.showToast(ToastType.INFO, message = result.message)
+                    }
+                }
             }
         }
     }
