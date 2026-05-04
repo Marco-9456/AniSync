@@ -41,6 +41,19 @@ class LibraryViewModel @Inject constructor(
     private val toastManager: ToastManager
 ) : ViewModel() {
 
+    companion object {
+        /** Canonical tab identifiers for the built-in (non-custom) tabs. */
+        val DEFAULT_TAB_IDS = listOf(
+            "status:CURRENT",
+            "status:REPEATING",
+            "status:PAUSED",
+            "status:COMPLETED",
+            "status:PLANNING",
+            "status:DROPPED",
+            "status:FAVORITES"
+        )
+    }
+
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
@@ -54,7 +67,7 @@ class LibraryViewModel @Inject constructor(
         val customEntriesMap: Map<String, List<LibraryEntry>>,
         val sortedFavorites: List<LibraryEntry>,
         val hiddenListNames: Set<String>,
-        val listOrder: List<String>
+        val tabOrder: List<String>
     )
 
     init {
@@ -110,8 +123,7 @@ class LibraryViewModel @Inject constructor(
                 action.hidden
             )
 
-            is LibraryAction.MoveListUp -> moveList(action.listName, -1)
-            is LibraryAction.MoveListDown -> moveList(action.listName, 1)
+            is LibraryAction.ReorderTabs -> reorderTabs(action.tabOrder)
             is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
             is LibraryAction.TogglePrivateVisibility -> appSettings.setShowPrivateEntries(action.show)
@@ -165,7 +177,7 @@ class LibraryViewModel @Inject constructor(
                                 emptyMap(),
                                 favorites,
                                 hiddenLists,
-                                listOrder
+                                buildTabOrder(listOrder, emptySet())
                             )
                         )
                     }
@@ -247,15 +259,11 @@ class LibraryViewModel @Inject constructor(
 
                     val grouped = filteredEntries.groupBy { it.status }
 
-                    val orderIndex = HashMap<String, Int>(listOrder.size * 2)
-                    listOrder.forEachIndexed { i, n -> orderIndex[n] = i }
-                    val sortedCustomNames = customNames.sortedWith(
-                        Comparator { a, b ->
-                            val ia = orderIndex[a] ?: Int.MAX_VALUE
-                            val ib = orderIndex[b] ?: Int.MAX_VALUE
-                            if (ia != ib) ia.compareTo(ib) else a.compareTo(b)
-                        }
-                    )
+                    val customNamesSet = customNames.toSet()
+                    val tabOrder = buildTabOrder(listOrder, customNamesSet)
+
+                    // Extract sorted custom names from the tab order for the UI
+                    val sortedCustomNames = tabOrder.filter { !it.startsWith("status:") && it in customNamesSet }
 
                     val sortedFavorites = favorites.sortedBy { it.getTitle(titleLang).lowercase() }
 
@@ -267,7 +275,7 @@ class LibraryViewModel @Inject constructor(
                             customEntriesMap,
                             sortedFavorites,
                             hiddenLists,
-                            listOrder
+                            tabOrder
                         )
                     )
                 }
@@ -289,7 +297,7 @@ class LibraryViewModel @Inject constructor(
                             customListEntries = customData.customEntriesMap,
                             favoriteEntries = customData.sortedFavorites,
                             hiddenListNames = customData.hiddenListNames,
-                            listOrder = customData.listOrder,
+                            tabOrder = customData.tabOrder,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -357,30 +365,50 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    private fun moveList(listName: String, direction: Int) {
-        val currentOrder = _uiState.value.listOrder.toMutableList()
-        val allNames = _uiState.value.customListNames.toMutableList()
-
-        // If order is empty, initialize with current custom list names
-        val workingOrder =
-            if (currentOrder.isEmpty()) allNames.toMutableList() else currentOrder.toMutableList()
-
-        // Add any missing names
-        allNames.forEach { if (it !in workingOrder) workingOrder.add(it) }
-
-        val index = workingOrder.indexOf(listName)
-        if (index == -1) return
-        val newIndex = (index + direction).coerceIn(0, workingOrder.lastIndex)
-        if (newIndex == index) return
-
-        workingOrder.removeAt(index)
-        workingOrder.add(newIndex, listName)
-        
+    /**
+     * Saves the new full tab order after a drag-to-reorder operation.
+     */
+    private fun reorderTabs(newOrder: List<String>) {
         if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
-            appSettings.setAnimeListOrder(workingOrder)
+            appSettings.setAnimeListOrder(newOrder)
         } else {
-            appSettings.setMangaListOrder(workingOrder)
+            appSettings.setMangaListOrder(newOrder)
         }
+    }
+
+    /**
+     * Builds a unified tab order from the stored order and discovered custom list names.
+     * Handles backward compatibility: if the stored order contains no "status:" entries,
+     * it's treated as a legacy custom-only order and the default tabs are prepended.
+     */
+    private fun buildTabOrder(storedOrder: List<String>, customNames: Set<String>): List<String> {
+        val hasStatusEntries = storedOrder.any { it.startsWith("status:") }
+
+        if (!hasStatusEntries) {
+            // Legacy or empty format: stored order contains only custom list names (or nothing)
+            val storedSet = storedOrder.toSet()
+            return DEFAULT_TAB_IDS +
+                    storedOrder.filter { it in customNames } +
+                    customNames.filter { it !in storedSet }
+        }
+
+        // Unified format: stored order contains everything
+        val storedSet = storedOrder.toSet()
+        val result = storedOrder.filter { id ->
+            id.startsWith("status:") || id in customNames
+        }.toMutableList()
+
+        // Append any missing default tabs (safety net)
+        for (tab in DEFAULT_TAB_IDS) {
+            if (tab !in storedSet) result.add(tab)
+        }
+
+        // Append any new custom lists not in stored order
+        for (name in customNames) {
+            if (name !in storedSet) result.add(name)
+        }
+
+        return result
     }
 
     private fun createCustomList(listName: String, type: com.anisync.android.type.MediaType) {
@@ -401,7 +429,7 @@ class LibraryViewModel @Inject constructor(
                 libraryRepository.deleteCustomList(listName, _uiState.value.mediaType)) {
                 is Result.Success -> {
                     // Remove from settings
-                    val currentOrder = _uiState.value.listOrder.toMutableList()
+                    val currentOrder = _uiState.value.tabOrder.toMutableList()
                     currentOrder.remove(listName)
                     
                     val hiddenLists = _uiState.value.hiddenListNames.toMutableSet()

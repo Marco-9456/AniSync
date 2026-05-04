@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.library.components
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,14 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -31,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -40,13 +44,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.toIcon
+import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.type.MediaType
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,19 +68,19 @@ import kotlinx.coroutines.delay
 fun ListManagementSheet(
     visible: Boolean,
     onDismiss: () -> Unit,
+    tabOrder: List<String>,
     customLists: List<String>,
     hiddenLists: Set<String>,
-    listOrder: List<String>,
+    mediaType: MediaType,
     onVisibilityChanged: (String, Boolean) -> Unit,
-    onOrderMoveUp: (String) -> Unit,
-    onOrderMoveDown: (String) -> Unit,
+    onReorder: (List<String>) -> Unit,
     onDeleteList: (String) -> Unit,
-    onCreateList: (String, com.anisync.android.type.MediaType) -> Unit,
+    onCreateList: (String, MediaType) -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 ) {
     var isCreatingList by remember { mutableStateOf(false) }
     var newListTitle by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(com.anisync.android.type.MediaType.ANIME) }
+    var selectedType by remember { mutableStateOf(MediaType.ANIME) }
     val focusRequester = remember { FocusRequester() }
 
     if (visible) {
@@ -80,9 +94,24 @@ fun ListManagementSheet(
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
-            val combinedList = remember(listOrder, customLists) {
-                val orderSet = listOrder.toSet()
-                listOrder.filter { it in customLists } + customLists.filter { it !in orderSet }
+            val hapticFeedback = LocalHapticFeedback.current
+
+            // Maintain a local mutable list for drag-to-reorder.
+            // Syncs from the tabOrder whenever it changes externally.
+            val localOrder = remember { tabOrder.toMutableStateList() }
+            LaunchedEffect(tabOrder) {
+                if (localOrder.toList() != tabOrder) {
+                    localOrder.clear()
+                    localOrder.addAll(tabOrder)
+                }
+            }
+
+            val lazyListState = rememberLazyListState()
+            val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                localOrder.apply {
+                    add(to.index - NON_REORDERABLE_ITEM_COUNT, removeAt(from.index - NON_REORDERABLE_ITEM_COUNT))
+                }
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
             }
 
             // CRITICAL FIX: Everything is placed inside the LazyColumn.
@@ -92,6 +121,7 @@ fun ListManagementSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .imePadding(),
+                state = lazyListState,
                 contentPadding = PaddingValues(
                     start = 24.dp,
                     end = 24.dp,
@@ -101,9 +131,9 @@ fun ListManagementSheet(
             ) {
 
                 // Header
-                item {
+                item(key = "header") {
                     Text(
-                        text = "Manage Custom Lists",
+                        text = "Manage Tabs",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -111,7 +141,7 @@ fun ListManagementSheet(
                 }
 
                 // Form / Button
-                item {
+                item(key = "create_form") {
                     if (isCreatingList) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
@@ -146,18 +176,18 @@ fun ListManagementSheet(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 androidx.compose.material3.FilterChip(
-                                    selected = selectedType == com.anisync.android.type.MediaType.ANIME,
-                                    onClick = { selectedType = com.anisync.android.type.MediaType.ANIME },
+                                    selected = selectedType == MediaType.ANIME,
+                                    onClick = { selectedType = MediaType.ANIME },
                                     label = { Text("Anime") },
-                                    leadingIcon = if (selectedType == com.anisync.android.type.MediaType.ANIME) {
+                                    leadingIcon = if (selectedType == MediaType.ANIME) {
                                         { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
                                     } else null
                                 )
                                 androidx.compose.material3.FilterChip(
-                                    selected = selectedType == com.anisync.android.type.MediaType.MANGA,
-                                    onClick = { selectedType = com.anisync.android.type.MediaType.MANGA },
+                                    selected = selectedType == MediaType.MANGA,
+                                    onClick = { selectedType = MediaType.MANGA },
                                     label = { Text("Manga") },
-                                    leadingIcon = if (selectedType == com.anisync.android.type.MediaType.MANGA) {
+                                    leadingIcon = if (selectedType == MediaType.MANGA) {
                                         { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
                                     } else null
                                 )
@@ -209,62 +239,159 @@ fun ListManagementSheet(
                 }
 
                 // Divider
-                item {
+                item(key = "divider") {
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // List Items
-                itemsIndexed(combinedList, key = { _, item -> item }) { index, listName ->
-                    val isHidden = hiddenLists.contains(listName)
-                    val isFirst = index == 0
-                    val isLast = index == combinedList.lastIndex
+                // Reorderable Tab Items
+                items(localOrder, key = { it }) { tabId ->
+                    ReorderableItem(reorderableLazyListState, key = tabId) { isDragging ->
+                        val isCustom = !tabId.startsWith("status:")
+                        val isHidden = hiddenLists.contains(tabId)
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                        val elevation by animateDpAsState(
+                            if (isDragging) 4.dp else 0.dp,
+                            label = "drag_elevation"
+                        )
+
+                        Surface(
+                            shadowElevation = elevation,
+                            tonalElevation = if (isDragging) 2.dp else 0.dp,
+                            shape = MaterialTheme.shapes.medium,
+                            color = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh
+                                    else MaterialTheme.colorScheme.surfaceContainerLow
                         ) {
-                            IconButton(onClick = { onVisibilityChanged(listName, !isHidden) }) {
-                                Icon(
-                                    imageVector = if (isHidden) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = if (isHidden) "Show List" else "Hide List",
-                                    tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = listName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Drag handle
+                                IconButton(
+                                    modifier = Modifier.draggableHandle(
+                                        onDragStarted = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                        },
+                                        onDragStopped = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                            // Persist the new order
+                                            onReorder(localOrder.toList())
+                                        },
+                                    ),
+                                    onClick = {},
+                                ) {
+                                    Icon(
+                                        Icons.Default.DragHandle,
+                                        contentDescription = "Reorder",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { onOrderMoveUp(listName) }, enabled = !isFirst) {
-                                Icon(Icons.Default.ArrowUpward, contentDescription = "Move Up")
-                            }
-                            IconButton(onClick = { onOrderMoveDown(listName) }, enabled = !isLast) {
-                                Icon(Icons.Default.ArrowDownward, contentDescription = "Move Down")
-                            }
-                            IconButton(onClick = { onDeleteList(listName) }) {
+                                // Tab icon
                                 Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete List",
-                                    tint = MaterialTheme.colorScheme.error
+                                    imageVector = getTabIcon(tabId, mediaType),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
+                                           else MaterialTheme.colorScheme.primary
                                 )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                // Tab label
+                                TabLabel(
+                                    tabId = tabId,
+                                    mediaType = mediaType,
+                                    isHidden = isHidden,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                // Controls — visibility toggle for all, delete for custom lists only
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { onVisibilityChanged(tabId, !isHidden) }) {
+                                        Icon(
+                                            imageVector = if (isHidden) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = if (isHidden) "Show Tab" else "Hide Tab",
+                                            tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
+                                                   else MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (isCustom) {
+                                        IconButton(onClick = { onDeleteList(tabId) }) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete List",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Number of non-reorderable items before the reorderable items in the LazyColumn.
+ * (header, create_form, divider)
+ */
+private const val NON_REORDERABLE_ITEM_COUNT = 3
+
+/**
+ * Displays the localized label for a tab identifier.
+ */
+@Composable
+private fun TabLabel(
+    tabId: String,
+    mediaType: MediaType,
+    isHidden: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val label = when {
+        tabId == "status:FAVORITES" -> "Favorites"
+        tabId.startsWith("status:") -> {
+            val statusName = tabId.removePrefix("status:")
+            val status = LibraryStatus.entries.find { it.name == statusName }
+            status?.toLabel(mediaType) ?: statusName
+        }
+        else -> tabId // Custom list name
+    }
+
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        color = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.onSurface,
+        modifier = modifier
+    )
+}
+
+/**
+ * Returns the appropriate icon for a tab identifier.
+ */
+private fun getTabIcon(tabId: String, mediaType: MediaType): ImageVector {
+    return when {
+        tabId == "status:FAVORITES" -> Icons.Default.Add // Will be overridden below
+        tabId.startsWith("status:") -> {
+            val statusName = tabId.removePrefix("status:")
+            val status = LibraryStatus.entries.find { it.name == statusName }
+            status?.toIcon(mediaType) ?: Icons.Default.Add
+        }
+        else -> Icons.Default.Add // Custom list — will use list icon
+    }.let { icon ->
+        // Use proper icons for favorites and custom lists
+        when {
+            tabId == "status:FAVORITES" -> androidx.compose.material.icons.Icons.Default.Favorite
+            !tabId.startsWith("status:") -> androidx.compose.material.icons.Icons.AutoMirrored.Filled.List
+            else -> icon
         }
     }
 }

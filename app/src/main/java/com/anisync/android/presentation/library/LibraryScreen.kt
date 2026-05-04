@@ -159,24 +159,24 @@ fun LibraryScreen(
     var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
 
-    val tabs = remember(uiState.customListNames, uiState.hiddenListNames) {
-        val list = mutableListOf<LibraryTab>()
-        listOf(
-            LibraryStatus.CURRENT,
-            LibraryStatus.REPEATING,
-            LibraryStatus.PAUSED,
-            LibraryStatus.COMPLETED,
-            LibraryStatus.PLANNING,
-            LibraryStatus.DROPPED
-        ).forEach { list.add(LibraryTab.Standard(it)) }
+    val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
+        uiState.tabOrder.mapNotNull { id ->
+            if (id in uiState.hiddenListNames) return@mapNotNull null
 
-        list.add(LibraryTab.Favorites)
-        uiState.customListNames.forEach {
-            if (!uiState.hiddenListNames.contains(it)) {
-                list.add(LibraryTab.Custom(it))
+            when {
+                id == "status:FAVORITES" -> LibraryTab.Favorites
+                id.startsWith("status:") -> {
+                    val statusName = id.removePrefix("status:")
+                    LibraryStatus.entries.find { it.name == statusName }?.let { LibraryTab.Standard(it) }
+                }
+                else -> {
+                    // Custom list — only show if it exists
+                    if (id in uiState.customListNames) {
+                        LibraryTab.Custom(id)
+                    } else null
+                }
             }
         }
-        list
     }
 
     val pagerState = rememberPagerState(pageCount = { tabs.size })
@@ -678,14 +678,14 @@ fun LibraryScreen(
     ListManagementSheet(
         visible = showListManagement,
         onDismiss = { showListManagement = false },
+        tabOrder = uiState.tabOrder,
         customLists = uiState.customListNames,
         hiddenLists = uiState.hiddenListNames,
-        listOrder = uiState.listOrder,
+        mediaType = mediaType,
         onVisibilityChanged = { name, hidden ->
             viewModel.onAction(LibraryAction.ToggleListVisibility(name, hidden))
         },
-        onOrderMoveUp = { viewModel.onAction(LibraryAction.MoveListUp(it)) },
-        onOrderMoveDown = { viewModel.onAction(LibraryAction.MoveListDown(it)) },
+        onReorder = { viewModel.onAction(LibraryAction.ReorderTabs(it)) },
         onDeleteList = { viewModel.onAction(LibraryAction.DeleteCustomList(it)) },
         onCreateList = { listName, type ->
             viewModel.onAction(

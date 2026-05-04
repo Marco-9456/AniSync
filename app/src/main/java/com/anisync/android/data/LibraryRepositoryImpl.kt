@@ -98,7 +98,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
             val currentAnimeOrder = appSettings.animeListOrder.value
             val currentAnimeOrderSet = currentAnimeOrder.toHashSet()
-            val syncedAnime = currentAnimeOrder.filter { it in apiAnimeSet } +
+            val syncedAnime = currentAnimeOrder.filter { it.startsWith("status:") || it in apiAnimeSet } +
                     animeCustomLists.filter { it !in currentAnimeOrderSet }
             if (syncedAnime != currentAnimeOrder) {
                 appSettings.setAnimeListOrder(syncedAnime)
@@ -106,7 +106,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
             val currentMangaOrder = appSettings.mangaListOrder.value
             val currentMangaOrderSet = currentMangaOrder.toHashSet()
-            val syncedManga = currentMangaOrder.filter { it in apiMangaSet } +
+            val syncedManga = currentMangaOrder.filter { it.startsWith("status:") || it in apiMangaSet } +
                     mangaCustomLists.filter { it !in currentMangaOrderSet }
             if (syncedManga != currentMangaOrder) {
                 appSettings.setMangaListOrder(syncedManga)
@@ -333,11 +333,19 @@ class LibraryRepositoryImpl @Inject constructor(
         return safeApiCall {
             val isAnime = type == com.anisync.android.type.MediaType.ANIME
             
-            // First we need to get the user's current lists so we don't overwrite them
+            // Get the full stored order (may contain status: entries)
             val currentOrder = if (isAnime) appSettings.animeListOrder.value else appSettings.mangaListOrder.value
             
-            // Make sure the new list is included
-            val newList = if (customList !in currentOrder) {
+            // Extract only custom list names for the API (filter out status: entries)
+            val customOnlyList = currentOrder.filter { !it.startsWith("status:") }
+            val apiList = if (customList !in customOnlyList) {
+                customOnlyList + customList
+            } else {
+                customOnlyList
+            }
+            
+            // Full order for local storage — append new list at end
+            val fullOrder = if (customList !in currentOrder) {
                 currentOrder + customList
             } else {
                 currentOrder
@@ -345,8 +353,8 @@ class LibraryRepositoryImpl @Inject constructor(
             
             val response = apolloClient.mutation(
                 com.anisync.android.UpdateCustomListsMutation(
-                    animeCustomLists = if (isAnime) Optional.present(newList) else Optional.absent(),
-                    mangaCustomLists = if (!isAnime) Optional.present(newList) else Optional.absent()
+                    animeCustomLists = if (isAnime) Optional.present(apiList) else Optional.absent(),
+                    mangaCustomLists = if (!isAnime) Optional.present(apiList) else Optional.absent()
                 )
             ).execute()
 
@@ -356,9 +364,9 @@ class LibraryRepositoryImpl @Inject constructor(
             } else {
                 // Update local so it doesn't blink out before a refresh
                 if (isAnime) {
-                    appSettings.setAnimeListOrder(newList)
+                    appSettings.setAnimeListOrder(fullOrder)
                 } else {
-                    appSettings.setMangaListOrder(newList)
+                    appSettings.setMangaListOrder(fullOrder)
                 }
             }
         }
