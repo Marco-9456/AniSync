@@ -121,6 +121,13 @@ sealed class LibraryTab {
     object Favorites : LibraryTab()
     data class Custom(val name: String) : LibraryTab()
 
+    /** Canonical identifier matching the format used in tabOrder / AppSettings. */
+    fun toId(): String = when (this) {
+        is Standard -> "status:${status.name}"
+        is Favorites -> "status:FAVORITES"
+        is Custom -> name
+    }
+
     @Composable
     fun getLabel(mediaType: MediaType): String {
         return when (this) {
@@ -182,6 +189,27 @@ fun LibraryScreen(
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
     var showListManagement by remember { mutableStateOf(false) }
+
+    // Restore last selected tab on first data load
+    LaunchedEffect(uiState.initialTabId, tabs) {
+        val targetId = uiState.initialTabId ?: return@LaunchedEffect
+        if (tabs.isEmpty()) return@LaunchedEffect
+        val targetIndex = tabs.indexOfFirst { it.toId() == targetId }
+        if (targetIndex >= 0 && targetIndex != pagerState.currentPage) {
+            pagerState.scrollToPage(targetIndex)
+        }
+        viewModel.onAction(LibraryAction.ConsumeInitialTab)
+    }
+
+    // Persist selected tab whenever the user settles on a new page
+    LaunchedEffect(pagerState, tabs) {
+        snapshotFlow { pagerState.currentPage }
+            .collect { page ->
+                if (page < tabs.size) {
+                    viewModel.onAction(LibraryAction.OnTabSelected(tabs[page].toId()))
+                }
+            }
+    }
 
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()

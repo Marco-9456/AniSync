@@ -61,6 +61,7 @@ class LibraryViewModel @Inject constructor(
     val actions: SharedFlow<LibraryAction> = _actions.asSharedFlow()
 
     private var hasLoadedInitially = false
+    private var hasRestoredTab = false
 
     private data class LibraryCustomData(
         val customNames: List<String>,
@@ -91,11 +92,13 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.OnScreenVisible -> onScreenVisible()
             is LibraryAction.Refresh -> refresh()
             is LibraryAction.OnMediaTypeChange -> {
+                hasRestoredTab = false
                 _uiState.update {
                     it.copy(
                         mediaType = action.type,
                         isLoading = true,
-                        errorMessage = null
+                        errorMessage = null,
+                        initialTabId = null
                     )
                 }
                 refresh()
@@ -127,6 +130,8 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
             is LibraryAction.TogglePrivateVisibility -> appSettings.setShowPrivateEntries(action.show)
+            is LibraryAction.OnTabSelected -> saveSelectedTab(action.tabId)
+            is LibraryAction.ConsumeInitialTab -> _uiState.update { it.copy(initialTabId = null) }
         }
     }
 
@@ -289,6 +294,20 @@ class LibraryViewModel @Inject constructor(
                     }
                 }
                 .collect { (filtered, grouped, customData) ->
+                    // On first emission, resolve saved tab with fallback
+                    val resolvedInitialTab = if (!hasRestoredTab) {
+                        hasRestoredTab = true
+                        val savedTabId = if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
+                            appSettings.lastSelectedAnimeTab.value
+                        } else {
+                            appSettings.lastSelectedMangaTab.value
+                        }
+                        val visibleTabs = customData.tabOrder.filter { it !in customData.hiddenListNames }
+                        if (savedTabId != null && savedTabId in visibleTabs) savedTabId else null
+                    } else {
+                        null
+                    }
+
                     _uiState.update {
                         it.copy(
                             entries = filtered,
@@ -298,6 +317,7 @@ class LibraryViewModel @Inject constructor(
                             favoriteEntries = customData.sortedFavorites,
                             hiddenListNames = customData.hiddenListNames,
                             tabOrder = customData.tabOrder,
+                            initialTabId = resolvedInitialTab ?: it.initialTabId,
                             isLoading = false,
                             errorMessage = null
                         )
@@ -373,6 +393,17 @@ class LibraryViewModel @Inject constructor(
             appSettings.setAnimeListOrder(newOrder)
         } else {
             appSettings.setMangaListOrder(newOrder)
+        }
+    }
+
+    /**
+     * Persist the selected tab for the current media type.
+     */
+    private fun saveSelectedTab(tabId: String) {
+        if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
+            appSettings.setLastSelectedAnimeTab(tabId)
+        } else {
+            appSettings.setLastSelectedMangaTab(tabId)
         }
     }
 

@@ -183,6 +183,17 @@ class AppSettings @Inject constructor(
     )
     val showPrivateEntries: StateFlow<Boolean> = _showPrivateEntries.asStateFlow()
 
+    // Last selected library tab (per media type)
+    private val _lastSelectedAnimeTab = MutableStateFlow(
+        prefs.getString(KEY_LAST_SELECTED_ANIME_TAB, null)
+    )
+    val lastSelectedAnimeTab: StateFlow<String?> = _lastSelectedAnimeTab.asStateFlow()
+
+    private val _lastSelectedMangaTab = MutableStateFlow(
+        prefs.getString(KEY_LAST_SELECTED_MANGA_TAB, null)
+    )
+    val lastSelectedMangaTab: StateFlow<String?> = _lastSelectedMangaTab.asStateFlow()
+
     /**
      * Set the app theme mode.
      */
@@ -320,6 +331,28 @@ class AppSettings @Inject constructor(
         _showPrivateEntries.value = show
         prefs.edit().putBoolean(KEY_SHOW_PRIVATE_ENTRIES, show).apply()
     }
+
+    /**
+     * Persist the last selected library tab for anime.
+     */
+    fun setLastSelectedAnimeTab(tabId: String?) {
+        _lastSelectedAnimeTab.value = tabId
+        prefs.edit().apply {
+            if (tabId != null) putString(KEY_LAST_SELECTED_ANIME_TAB, tabId)
+            else remove(KEY_LAST_SELECTED_ANIME_TAB)
+        }.apply()
+    }
+
+    /**
+     * Persist the last selected library tab for manga.
+     */
+    fun setLastSelectedMangaTab(tabId: String?) {
+        _lastSelectedMangaTab.value = tabId
+        prefs.edit().apply {
+            if (tabId != null) putString(KEY_LAST_SELECTED_MANGA_TAB, tabId)
+            else remove(KEY_LAST_SELECTED_MANGA_TAB)
+        }.apply()
+    }
     
     /**
      * Get the preferred streaming service directly from SharedPreferences.
@@ -376,6 +409,8 @@ companion object {
         private const val KEY_HIDDEN_MANGA_LISTS = "hidden_manga_lists"
         private const val KEY_USER_SCORE_FORMAT = "user_score_format"
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
+        private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
+        private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
     }
 }
 
