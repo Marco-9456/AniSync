@@ -3,6 +3,7 @@ package com.anisync.android.presentation.feed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ActivityRepository
+import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.Result
@@ -137,6 +138,58 @@ class FeedViewModel @Inject constructor(
             }
 
             is FeedAction.PostStatus -> postStatus(action.text)
+
+            is FeedAction.EditActivity -> {
+                val target = _uiState.value.items.firstOrNull { it.id == action.activityId } ?: return
+                _uiState.update { it.copy(editingActivity = target) }
+            }
+
+            is FeedAction.DismissEdit -> {
+                if (_uiState.value.isSavingEdit) return
+                _uiState.update { it.copy(editingActivity = null) }
+            }
+
+            is FeedAction.SubmitEdit -> submitEdit(action.text)
+        }
+    }
+
+    private fun submitEdit(text: String) {
+        val target = _uiState.value.editingActivity ?: return
+        if (_uiState.value.isSavingEdit) return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+
+        _uiState.update { it.copy(isSavingEdit = true) }
+        viewModelScope.launch {
+            val result = when (target.type) {
+                ActivityType.TEXT ->
+                    activityRepository.saveTextActivity(trimmed, id = target.id)
+                ActivityType.MESSAGE -> {
+                    val recipientId = target.recipientId
+                    if (recipientId == null) {
+                        Result.Error("Missing recipient")
+                    } else {
+                        activityRepository.saveMessageActivity(
+                            id = target.id,
+                            recipientId = recipientId,
+                            message = trimmed,
+                            isPrivate = target.isPrivate
+                        )
+                    }
+                }
+                else -> Result.Error("Cannot edit this activity type")
+            }
+            when (result) {
+                is Result.Success -> {
+                    toastManager.showToast(ToastType.SUCCESS, message = "Activity updated")
+                    _uiState.update { it.copy(isSavingEdit = false, editingActivity = null) }
+                    load(page = 1, replaceExisting = true)
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSavingEdit = false) }
+                    showResultError(result)
+                }
+            }
         }
     }
 

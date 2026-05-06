@@ -7,6 +7,7 @@ query GetUserProfile($name: String) {
     }
     bannerImage
     about(asHtml: true)
+    aboutRaw: about(asHtml: false)
     updatedAt
     donatorTier
     donatorBadge
@@ -209,6 +210,7 @@ fragment ActivityFields on ActivityUnion {
     id
     type
     text(asHtml: true)
+    textRaw: text(asHtml: false)
     createdAt
     likeCount
     replyCount
@@ -238,6 +240,7 @@ fragment ActivityFields on ActivityUnion {
     id
     type
     message(asHtml: true)
+    rawMessage: message(asHtml: false)
     createdAt
     likeCount
     replyCount
@@ -450,11 +453,13 @@ mutation ToggleUserFollow($userId: Int!) {
 }
 
 mutation SaveMessageActivity(
+  $id: Int,
   $recipientId: Int!,
   $message: String!,
   $private: Boolean = false
 ) {
   SaveMessageActivity(
+    id: $id,
     recipientId: $recipientId,
     message: $message,
     private: $private

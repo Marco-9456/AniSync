@@ -43,6 +43,7 @@ fun LazyListScope.profileActivityTab(
     onSubscribeClick: (Int) -> Unit = {},
     onLikeActivity: ((Int) -> Unit)? = null,
     onDeleteActivity: ((Int) -> Unit)? = null,
+    onEditActivity: ((Int) -> Unit)? = null,
     viewerId: Int? = null,
     modifier: Modifier = Modifier
 ) {
@@ -102,9 +103,16 @@ fun LazyListScope.profileActivityTab(
                 activity.userId == viewerId ||
                     (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
             )
+            // Edit only on own TEXT or MESSAGE — never on server-derived MEDIA_LIST.
+            val canEdit = viewerId != null &&
+                activity.userId == viewerId &&
+                (activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE)
             val cardLike = onLikeActivity?.let { cb -> { cb(activity.id) } }
             val cardDelete = if (canDelete) {
                 onDeleteActivity?.let { cb -> { cb(activity.id) } }
+            } else null
+            val cardEdit = if (canEdit) {
+                onEditActivity?.let { cb -> { cb(activity.id) } }
             } else null
 
             if (activity.type == ActivityType.MEDIA_LIST) {
@@ -127,6 +135,7 @@ fun LazyListScope.profileActivityTab(
                     onLastReplyClick = onLastReplyClick,
                     onLikeClick = cardLike,
                     onDeleteClick = cardDelete,
+                    onEditClick = cardEdit,
                     modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }

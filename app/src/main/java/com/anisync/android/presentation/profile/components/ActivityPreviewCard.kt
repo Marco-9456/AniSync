@@ -59,7 +59,8 @@ fun ActivityPreviewCard(
     onUserClick: (String) -> Unit = {},
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     onLikeClick: (() -> Unit)? = null,
-    onDeleteClick: (() -> Unit)? = null
+    onDeleteClick: (() -> Unit)? = null,
+    onEditClick: (() -> Unit)? = null
 ) {
     Card(
         onClick = onClick,
@@ -79,7 +80,8 @@ fun ActivityPreviewCard(
                 activity = activity,
                 onSubscribeClick = onSubscribeClick,
                 onUserClick = onUserClick,
-                onDeleteClick = onDeleteClick
+                onDeleteClick = onDeleteClick,
+                onEditClick = onEditClick
             )
 
             // 2. BODY: Rich text rendered inline (parsed via AsyncRichTextRenderer)
@@ -115,7 +117,8 @@ private fun ActivityHeader(
     activity: UserActivity,
     onSubscribeClick: () -> Unit,
     onUserClick: (String) -> Unit,
-    onDeleteClick: (() -> Unit)? = null
+    onDeleteClick: (() -> Unit)? = null,
+    onEditClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -235,7 +238,10 @@ private fun ActivityHeader(
 
         // Overflow menu (only when this is the viewer's own activity)
         if (onDeleteClick != null) {
-            ActivityOverflowMenu(onDeleteClick = onDeleteClick)
+            ActivityOverflowMenu(
+                onDeleteClick = onDeleteClick,
+                onEditClick = onEditClick
+            )
         }
     }
 }

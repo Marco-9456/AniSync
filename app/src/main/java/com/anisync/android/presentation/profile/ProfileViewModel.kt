@@ -87,7 +87,9 @@ class ProfileViewModel @Inject constructor(
         val messageSentEvent: Long? = null,
         val isRefreshing: Boolean = false,
         val isFollowingUser: Boolean = false,
-        val isFollowLoading: Boolean = false
+        val isFollowLoading: Boolean = false,
+        val editingActivity: com.anisync.android.domain.UserActivity? = null,
+        val isSavingActivityEdit: Boolean = false
     )
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
@@ -269,6 +271,8 @@ class ProfileViewModel @Inject constructor(
             isSendingMessage = local.isSendingMessage,
             messageSendError = local.messageSendError,
             messageSentEvent = local.messageSentEvent,
+            editingActivity = local.editingActivity,
+            isSavingActivityEdit = local.isSavingActivityEdit,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialThreads = social.socialThreads,
@@ -445,7 +449,65 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.ToggleActivitySubscription -> toggleActivitySubscription(action.activityId)
             is ProfileAction.ToggleActivityLike -> toggleActivityLike(action.activityId)
             is ProfileAction.DeleteActivity -> deleteActivity(action.activityId)
+            is ProfileAction.EditActivity -> openActivityEdit(action.activityId)
+            is ProfileAction.DismissActivityEdit -> {
+                if (!localState.value.isSavingActivityEdit) {
+                    localState.update { it.copy(editingActivity = null) }
+                }
+            }
+            is ProfileAction.SubmitActivityEdit -> submitActivityEdit(action.text)
             is ProfileAction.ConsumeActivitySnackbar -> Unit
+        }
+    }
+
+    private fun openActivityEdit(activityId: Int) {
+        val target = uiState.value.profile?.activities?.firstOrNull { it.id == activityId } ?: return
+        localState.update { it.copy(editingActivity = target) }
+    }
+
+    private fun submitActivityEdit(text: String) {
+        val target = localState.value.editingActivity ?: return
+        if (localState.value.isSavingActivityEdit) return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+
+        localState.update { it.copy(isSavingActivityEdit = true) }
+        viewModelScope.launch {
+            val result = when (target.type) {
+                com.anisync.android.domain.ActivityType.TEXT ->
+                    activityRepository.saveTextActivity(trimmed, id = target.id)
+                com.anisync.android.domain.ActivityType.MESSAGE -> {
+                    val recipientId = target.recipientId
+                    if (recipientId == null) {
+                        Result.Error("Missing recipient")
+                    } else {
+                        activityRepository.saveMessageActivity(
+                            id = target.id,
+                            recipientId = recipientId,
+                            message = trimmed,
+                            isPrivate = target.isPrivate
+                        )
+                    }
+                }
+                else -> Result.Error("Cannot edit this activity type")
+            }
+            when (result) {
+                is Result.Success -> {
+                    toastManager.showToast(ToastType.SUCCESS, message = "Activity updated")
+                    localState.update {
+                        it.copy(isSavingActivityEdit = false, editingActivity = null)
+                    }
+                    refresh()
+                }
+                is Result.Error -> {
+                    localState.update { it.copy(isSavingActivityEdit = false) }
+                    if (result.code != null) {
+                        toastManager.showToast(result.code, result.message)
+                    } else {
+                        toastManager.showToast(ToastType.INFO, message = result.message)
+                    }
+                }
+            }
         }
     }
 

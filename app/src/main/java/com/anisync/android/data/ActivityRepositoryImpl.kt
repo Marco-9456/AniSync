@@ -159,6 +159,31 @@ class ActivityRepositoryImpl @Inject constructor(
         Unit
     }
 
+    override suspend fun saveMessageActivity(
+        id: Int,
+        recipientId: Int,
+        message: String,
+        isPrivate: Boolean
+    ): Result<Unit> = safeApiCall {
+        val response = apolloClient
+            .mutation(
+                com.anisync.android.SaveMessageActivityMutation(
+                    id = Optional.present(id),
+                    recipientId = recipientId,
+                    message = message,
+                    `private` = Optional.present(isPrivate)
+                )
+            )
+            .execute()
+        if (response.hasErrors()) {
+            throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to update message")
+        }
+        if (response.data?.SaveMessageActivity?.id == null) {
+            throw Exception("Message was not updated")
+        }
+        Unit
+    }
+
     override suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit> = safeApiCall {
         val response = apolloClient
             .mutation(ToggleActivitySubscriptionMutation(activityId = activityId, subscribe = subscribe))

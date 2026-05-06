@@ -63,7 +63,10 @@ data class ProfileUiState(
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null,
     val viewerId: Int? = null,
-    val unreadNotificationCount: Int = 0
+    val unreadNotificationCount: Int = 0,
+    /** Activity currently being edited via the inline compose sheet, or null if none. */
+    val editingActivity: com.anisync.android.domain.UserActivity? = null,
+    val isSavingActivityEdit: Boolean = false
 )
 
 data class StatisticsUiModel(
@@ -169,5 +172,8 @@ sealed interface ProfileAction {
     data class ToggleActivitySubscription(val activityId: Int) : ProfileAction
     data class ToggleActivityLike(val activityId: Int) : ProfileAction
     data class DeleteActivity(val activityId: Int) : ProfileAction
+    data class EditActivity(val activityId: Int) : ProfileAction
+    data object DismissActivityEdit : ProfileAction
+    data class SubmitActivityEdit(val text: String) : ProfileAction
     data object ConsumeActivitySnackbar : ProfileAction
 }

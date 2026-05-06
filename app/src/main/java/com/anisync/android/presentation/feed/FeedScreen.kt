@@ -43,6 +43,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateCompact
@@ -193,6 +194,13 @@ fun FeedScreen(
                                 val cardDelete: (() -> Unit)? = if (isOwner) {
                                     { viewModel.onAction(FeedAction.DeleteActivity(activity.id)) }
                                 } else null
+                                // Edit only on own TEXT or MESSAGE activities — never on
+                                // server-derived MEDIA_LIST entries.
+                                val cardEdit: (() -> Unit)? =
+                                    if (isOwner && (activity.type == ActivityType.TEXT ||
+                                            activity.type == ActivityType.MESSAGE)) {
+                                        { viewModel.onAction(FeedAction.EditActivity(activity.id)) }
+                                    } else null
 
                                 if (activity.type == ActivityType.MEDIA_LIST) {
                                     RecentUpdateCard(
@@ -214,7 +222,8 @@ fun FeedScreen(
                                         onUserClick = onUserClick,
                                         onLastReplyClick = onLastReplyClick,
                                         onLikeClick = cardLike,
-                                        onDeleteClick = cardDelete
+                                        onDeleteClick = cardDelete,
+                                        onEditClick = cardEdit
                                     )
                                 }
                             }
@@ -239,14 +248,34 @@ fun FeedScreen(
     }
 
     if (uiState.isComposeSheetVisible) {
+        val textBounds = ContentLimits.TextActivity
         RichTextInputSheet(
             title = stringResource(R.string.feed_compose_title),
             placeholder = stringResource(R.string.feed_compose_placeholder),
             submitLabel = stringResource(R.string.feed_compose_submit),
             isSubmitting = uiState.isPostingStatus,
+            minLength = textBounds.min,
+            maxLength = textBounds.max,
             onSubmit = { body -> viewModel.onAction(FeedAction.PostStatus(body)) },
             onDismiss = { viewModel.onAction(FeedAction.DismissCompose) },
             sheetState = composeSheetState
+        )
+    }
+
+    val editing = uiState.editingActivity
+    if (editing != null) {
+        val isMessage = editing.type == ActivityType.MESSAGE
+        val bounds = if (isMessage) ContentLimits.MessageActivity else ContentLimits.TextActivity
+        RichTextInputSheet(
+            title = stringResource(R.string.activity_edit_status_title),
+            placeholder = stringResource(R.string.feed_compose_placeholder),
+            submitLabel = stringResource(R.string.activity_edit_save),
+            isSubmitting = uiState.isSavingEdit,
+            prefillBody = editing.bodyMarkdown ?: editing.text,
+            minLength = bounds.min,
+            maxLength = bounds.max,
+            onSubmit = { body -> viewModel.onAction(FeedAction.SubmitEdit(body)) },
+            onDismiss = { viewModel.onAction(FeedAction.DismissEdit) }
         )
     }
 }

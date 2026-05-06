@@ -72,6 +72,7 @@ fun RecentUpdatesSection(
     onSubscribeClick: (Int) -> Unit = {},
     onLikeClick: ((activityId: Int) -> Unit)? = null,
     onDeleteClick: ((activityId: Int) -> Unit)? = null,
+    onEditClick: ((activityId: Int) -> Unit)? = null,
     viewerId: Int? = null
 ) {
     Column(modifier = modifier) {
@@ -90,9 +91,17 @@ fun RecentUpdatesSection(
                         activity.userId == viewerId ||
                             (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
                     )
+                    // Edit allowed only for the author of TEXT or MESSAGE activity.
+                    // MEDIA_LIST is server-derived and not editable.
+                    val canEdit = viewerId != null &&
+                        activity.userId == viewerId &&
+                        (activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE)
                     val cardLike = onLikeClick?.let { cb -> { cb(activity.id) } }
                     val cardDelete = if (canDelete) {
                         onDeleteClick?.let { cb -> { cb(activity.id) } }
+                    } else null
+                    val cardEdit = if (canEdit) {
+                        onEditClick?.let { cb -> { cb(activity.id) } }
                     } else null
 
                     if (activity.type == ActivityType.MEDIA_LIST) {
@@ -113,7 +122,8 @@ fun RecentUpdatesSection(
                             onUserClick = onUserClick,
                             onLastReplyClick = onLastReplyClick,
                             onLikeClick = cardLike,
-                            onDeleteClick = cardDelete
+                            onDeleteClick = cardDelete,
+                            onEditClick = cardEdit
                         )
                     }
                 }

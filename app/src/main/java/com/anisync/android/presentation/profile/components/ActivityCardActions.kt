@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -88,21 +89,20 @@ internal fun ActivityStatPill(
 }
 
 /**
- * Compact 3-dot overflow control with a single Delete entry guarded by an
- * AlertDialog confirmation. Caller is responsible for only rendering this
- * when the activity is the viewer's own.
+ * Compact 3-dot overflow control. Renders Edit (when [onEditClick] non-null) and
+ * Delete entries; Delete is guarded by an AlertDialog. Caller is responsible for
+ * only rendering this when the activity is the viewer's own.
  */
 @Composable
 internal fun ActivityOverflowMenu(
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onEditClick: (() -> Unit)? = null
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
-        // Default IconButton size is 48dp which satisfies M3 minimum touch
-        // target. Letting it be intrinsic avoids accidentally shrinking it.
         IconButton(onClick = { menuExpanded = true }) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
@@ -115,6 +115,17 @@ internal fun ActivityOverflowMenu(
             expanded = menuExpanded,
             onDismissRequest = { menuExpanded = false }
         ) {
+            if (onEditClick != null) {
+                item(
+                    text = "Edit",
+                    leadingIcon = Icons.Default.Edit,
+                    onClick = {
+                        menuExpanded = false
+                        onEditClick()
+                    }
+                )
+                gap()
+            }
             item(
                 text = "Delete",
                 leadingIcon = Icons.Default.Delete,

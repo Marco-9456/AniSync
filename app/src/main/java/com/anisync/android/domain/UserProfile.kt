@@ -10,6 +10,9 @@ data class UserProfile(
     val avatarUrl: String?,
     val bannerUrl: String?,
     val about: String?,
+    /** Raw markdown source for the bio. Used to prefill the edit-profile screen so the
+     *  server-rendered HTML isn't sent back as the new about (which would corrupt formatting). */
+    val aboutMarkdown: String? = null,
     val activeAt: Long?,
     val animeCount: Int,
     val daysWatched: Float, // Converted from minutes
@@ -71,6 +74,8 @@ data class UserActivity(
     val timestamp: Long,
     val mediaScore: Int? = null,
     val text: String? = null,
+    /** Raw markdown source (asHtml: false). Set for own TEXT/MESSAGE so cards can offer inline edit. */
+    val bodyMarkdown: String? = null,
     val userId: Int? = null,
     val userName: String? = null,
     val userAvatarUrl: String? = null,

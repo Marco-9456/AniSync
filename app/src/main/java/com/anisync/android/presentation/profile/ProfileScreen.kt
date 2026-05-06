@@ -23,8 +23,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
-import com.anisync.android.presentation.components.EditProfileDialog
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -127,13 +127,19 @@ fun ProfileScreen(
 
     val profile = uiState.profile
     if (profile != null && uiState.isEditProfileDialogVisible && isOwnProfile) {
-        EditProfileDialog(
-            initialAbout = profile.about.orEmpty(),
-            onDismiss = {
+        RichTextInputScreen(
+            title = stringResource(R.string.edit_profile_title),
+            placeholder = stringResource(R.string.edit_profile_about_label),
+            initialBody = profile.aboutMarkdown ?: profile.about.orEmpty(),
+            isSubmitting = false,
+            submitLabel = stringResource(R.string.save),
+            minLength = 1,
+            maxLength = 65_000,
+            onSubmit = { about ->
+                viewModel.onAction(ProfileAction.UpdateAbout(about))
                 viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
             },
-            onSave = { about ->
-                viewModel.onAction(ProfileAction.UpdateAbout(about))
+            onDismiss = {
                 viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
             }
         )

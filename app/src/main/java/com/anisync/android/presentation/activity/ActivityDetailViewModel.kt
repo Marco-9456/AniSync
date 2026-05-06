@@ -280,9 +280,27 @@ class ActivityDetailViewModel @Inject constructor(
     }
 
     private fun submitActivityEdit(activityId: Int, trimmed: String) {
+        val activity = _uiState.value.activity ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmittingReply = true) }
-            when (val result = repository.saveTextActivity(trimmed, id = activityId)) {
+            val result = if (activity.isMessage) {
+                val recipientId = activity.recipientId
+                if (recipientId == null) {
+                    _uiState.update {
+                        it.copy(isSubmittingReply = false, errorMessage = "Missing recipient")
+                    }
+                    return@launch
+                }
+                repository.saveMessageActivity(
+                    id = activityId,
+                    recipientId = recipientId,
+                    message = trimmed,
+                    isPrivate = activity.isPrivate
+                )
+            } else {
+                repository.saveTextActivity(trimmed, id = activityId)
+            }
+            when (result) {
                 is Result.Success -> {
                     refreshSilent(activityId)
                     _uiState.update {

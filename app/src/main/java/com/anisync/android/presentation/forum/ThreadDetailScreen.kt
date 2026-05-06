@@ -777,6 +777,8 @@ fun ThreadDetailScreen(
             },
             prefillBody = uiState.replyPrefillBody,
             isSubmitting = uiState.isSubmittingReply,
+            minLength = com.anisync.android.domain.ContentLimits.ThreadComment.min,
+            maxLength = com.anisync.android.domain.ContentLimits.ThreadComment.max,
             onSubmit = { body ->
                 viewModel.onAction(
                     ThreadDetailAction.SubmitReply(
@@ -797,6 +799,8 @@ fun ThreadDetailScreen(
             placeholder = stringResource(R.string.forum_thread_body_hint),
             initialBody = thread.bodyMarkdown ?: thread.body.orEmpty(),
             isSubmitting = uiState.isSubmittingReply,
+            minLength = com.anisync.android.domain.ContentLimits.ThreadBody.min,
+            maxLength = com.anisync.android.domain.ContentLimits.ThreadBody.max,
             onSubmit = { body ->
                 viewModel.onAction(ThreadDetailAction.SubmitThreadEdit(body))
             },

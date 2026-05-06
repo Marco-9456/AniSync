@@ -68,6 +68,7 @@ fun RichTextScaffold(
     isExternallyValid: Boolean = true,
     hasExternalUnsavedChanges: Boolean = false,
     autoFocusBody: Boolean = true,
+    minLength: Int = 1,
     maxLength: Int = 10_000,
     insertController: RichTextInsertController? = null,
     headerSlot: (@Composable ColumnScope.() -> Unit)? = null,
@@ -91,11 +92,14 @@ fun RichTextScaffold(
     }
 
     val isBlank by remember { derivedStateOf { bodyValue.text.isBlank() } }
+    val meetsMinLength by remember(minLength) {
+        derivedStateOf { bodyValue.text.trim().length >= minLength }
+    }
     val hasBodyChanges by remember {
         derivedStateOf { bodyValue.text != initialBodySnapshot }
     }
     val hasUnsavedChanges = hasBodyChanges || hasExternalUnsavedChanges
-    val canSubmit = !isBlank && isExternallyValid
+    val canSubmit = meetsMinLength && isExternallyValid
 
     val focusRequester = remember { FocusRequester() }
 

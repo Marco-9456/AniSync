@@ -265,13 +265,18 @@ fun ActivityDetailScreen(
                     }
                     val activity = uiState.activity
                     val viewerId = uiState.viewerId
-                    val isOwnTextActivity = activity != null && viewerId != null &&
-                        activity.authorId == viewerId && !activity.isMessage
+                    // Edit allowed on own TextActivity OR own outgoing MessageActivity. Never on
+                    // ListActivity (status updates / progress are derived, not authored).
+                    val isOwnAuthored = activity != null && viewerId != null &&
+                        activity.authorId == viewerId
+                    val canEdit = isOwnAuthored && (
+                        !activity!!.isMessage || activity.recipientId != viewerId
+                    )
                     val canDelete = activity != null && viewerId != null && (
                         activity.authorId == viewerId ||
                             (activity.isMessage && activity.recipientId == viewerId && !activity.isAuthorMod)
                     )
-                    if (canDelete || isOwnTextActivity) {
+                    if (canDelete || canEdit) {
                         Box {
                             IconButton(onClick = { showOverflow = true }) {
                                 Icon(
@@ -284,7 +289,7 @@ fun ActivityDetailScreen(
                                 expanded = showOverflow,
                                 onDismissRequest = { showOverflow = false }
                             ) {
-                                if (isOwnTextActivity) {
+                                if (canEdit) {
                                     item(
                                         text = stringResource(R.string.edit),
                                         leadingIcon = Icons.Default.Edit,
@@ -295,7 +300,7 @@ fun ActivityDetailScreen(
                                     )
                                 }
                                 if (canDelete) {
-                                    if (isOwnTextActivity) gap()
+                                    if (canEdit) gap()
                                     item(
                                         text = stringResource(R.string.delete),
                                         leadingIcon = Icons.Default.Delete,
@@ -541,6 +546,7 @@ fun ActivityDetailScreen(
         } else {
             stringResource(R.string.forum_post_reply)
         }
+        val replyBounds = com.anisync.android.domain.ContentLimits.Reply
         RichTextInputSheet(
             title = sheetTitle,
             placeholder = stringResource(R.string.forum_reply_hint),
@@ -549,6 +555,8 @@ fun ActivityDetailScreen(
                 stringResource(R.string.forum_replying_to, it)
             },
             isSubmitting = uiState.isSubmittingReply,
+            minLength = replyBounds.min,
+            maxLength = replyBounds.max,
             onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
             onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
             prefillBody = uiState.replyPrefillBody,
@@ -557,11 +565,20 @@ fun ActivityDetailScreen(
     }
 
     if (uiState.editingActivity && uiState.activity != null) {
+        val activity = uiState.activity!!
+        val isMessage = activity.isMessage
+        val bounds = if (isMessage) {
+            com.anisync.android.domain.ContentLimits.MessageActivity
+        } else {
+            com.anisync.android.domain.ContentLimits.TextActivity
+        }
         RichTextInputScreen(
             title = stringResource(R.string.activity_edit_status_title),
             placeholder = stringResource(R.string.feed_compose_placeholder),
             initialBody = uiState.replyPrefillBody.orEmpty(),
             isSubmitting = uiState.isSubmittingReply,
+            minLength = bounds.min,
+            maxLength = bounds.max,
             onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
             onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) }
         )

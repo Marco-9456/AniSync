@@ -170,9 +170,8 @@ fun ProfileContent(
                         onLastReplyClick = onLastReplyClick,
                         onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
                         onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
-                        onDeleteActivity = if (isOwnProfile) {
-                            { onAction(ProfileAction.DeleteActivity(it)) }
-                        } else null,
+                        onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
+                        onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
                         viewerId = uiState.viewerId
                     )
                 }
@@ -189,9 +188,8 @@ fun ProfileContent(
                     onLastReplyClick = onLastReplyClick,
                     onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
                     onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
-                    onDeleteActivity = if (isOwnProfile) {
-                        { onAction(ProfileAction.DeleteActivity(it)) }
-                    } else null,
+                    onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
+                    onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
                     viewerId = uiState.viewerId
                 )
             }
@@ -295,6 +293,27 @@ fun ProfileContent(
             onSend = { text, isPrivate ->
                 onAction(ProfileAction.SendMessage(text, isPrivate))
             }
+        )
+    }
+
+    val editing = uiState.editingActivity
+    if (editing != null) {
+        val isMessage = editing.type == com.anisync.android.domain.ActivityType.MESSAGE
+        val bounds = if (isMessage) {
+            com.anisync.android.domain.ContentLimits.MessageActivity
+        } else {
+            com.anisync.android.domain.ContentLimits.TextActivity
+        }
+        com.anisync.android.presentation.components.richtext.RichTextInputSheet(
+            title = stringResource(R.string.activity_edit_status_title),
+            placeholder = stringResource(R.string.feed_compose_placeholder),
+            submitLabel = stringResource(R.string.activity_edit_save),
+            isSubmitting = uiState.isSavingActivityEdit,
+            prefillBody = editing.bodyMarkdown ?: editing.text,
+            minLength = bounds.min,
+            maxLength = bounds.max,
+            onSubmit = { body -> onAction(ProfileAction.SubmitActivityEdit(body)) },
+            onDismiss = { onAction(ProfileAction.DismissActivityEdit) }
         )
     }
 }

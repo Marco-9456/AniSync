@@ -11,6 +11,17 @@ interface ActivityRepository {
     suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit>
     suspend fun saveTextActivity(text: String, id: Int? = null): Result<Unit>
 
+    /**
+     * Update an existing MessageActivity. AniList requires [recipientId] even on edit
+     * (the messenger cannot change). Pass the id of the activity to update.
+     */
+    suspend fun saveMessageActivity(
+        id: Int,
+        recipientId: Int,
+        message: String,
+        isPrivate: Boolean
+    ): Result<Unit>
+
     /** List of users who liked the given root activity. */
     suspend fun getActivityLikes(activityId: Int): Result<List<UserSummary>>
 

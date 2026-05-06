@@ -18,6 +18,7 @@ fun RichTextInputScreen(
     onSubmit: (body: String) -> Unit,
     onDismiss: () -> Unit,
     submitLabel: String = stringResource(R.string.activity_edit_save),
+    minLength: Int = 1,
     maxLength: Int = 10_000
 ) {
     RichTextScaffold(
@@ -28,6 +29,7 @@ fun RichTextInputScreen(
         isSubmitting = isSubmitting,
         onSubmit = onSubmit,
         onDismiss = onDismiss,
+        minLength = minLength,
         maxLength = maxLength
     )
 }

@@ -76,11 +76,12 @@ fun RichTextInputSheet(
     onDismiss: () -> Unit,
     replyingToLabel: String? = null,
     prefillBody: String? = null,
+    minLength: Int = 1,
     maxLength: Int = DEFAULT_MAX_LENGTH,
     minLines: Int = 4,
     maxLines: Int = 10,
     enablePreview: Boolean = true,
-    isSubmitEnabled: (body: String) -> Boolean = { it.isNotBlank() },
+    isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {

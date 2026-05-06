@@ -141,6 +141,7 @@ class ProfileRepositoryImpl @Inject constructor(
                             titleNative = media.title?.native,
                             titleUserPreferred = media.title?.userPreferred ?: "Unknown",
                             coverUrl = media.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
                             progress = 0,
                             totalEpisodes = null,
                             totalChapters = media.chapters,
@@ -197,6 +198,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 avatarUrl = user.avatar?.large,
                 bannerUrl = user.bannerImage,
                 about = user.about,
+                aboutMarkdown = user.aboutRaw,
                 activeAt = user.updatedAt?.toLong()?.times(1000),
                 animeCount = stats?.count ?: 0,
                 daysWatched = daysWatched,
@@ -270,6 +272,7 @@ class ProfileRepositoryImpl @Inject constructor(
                         titleNative = media.title?.native,
                         titleUserPreferred = media.title?.userPreferred ?: "Unknown",
                         coverUrl = media.coverImage?.large,
+                        cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
                         progress = 0,
                         totalEpisodes = media.episodes,
                         totalChapters = media.chapters,
@@ -443,6 +446,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     createdAt = review.createdAt.toLong(),
                     mediaTitle = review.media?.title?.userPreferred,
                     mediaCoverUrl = review.media?.coverImage?.large,
+                    mediaCover = com.anisync.android.domain.CoverImage.of(review.media?.coverImage?.medium, review.media?.coverImage?.large, review.media?.coverImage?.extraLarge),
                     mediaBannerUrl = review.media?.bannerImage
                 )
             } ?: emptyList()
@@ -497,6 +501,7 @@ class ProfileRepositoryImpl @Inject constructor(
                             titleNative = media?.title?.native,
                             titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
                             coverUrl = media?.coverImage?.extraLarge,
+                            cover = com.anisync.android.domain.CoverImage.of(media?.coverImage?.medium, media?.coverImage?.large, media?.coverImage?.extraLarge),
                             progress = entry.progress ?: 0,
                             totalEpisodes = media?.episodes,
                             totalChapters = media?.chapters,
@@ -529,11 +534,13 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun sendMessageActivity(
         recipientId: Int,
         message: String,
-        isPrivate: Boolean
+        isPrivate: Boolean,
+        id: Int?
     ): Result<Unit> {
         return safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMessageActivityMutation(
+                    id = if (id != null) Optional.present(id) else Optional.absent(),
                     recipientId = recipientId,
                     message = message,
                     `private` = Optional.present(isPrivate)

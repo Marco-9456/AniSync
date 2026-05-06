@@ -54,11 +54,12 @@ interface ProfileRepository {
     suspend fun getUserMangaList(username: String): Result<List<LibraryEntry>>
 
     /**
-     * Send a MessageActivity to the given recipient.
+     * Send or update a MessageActivity. Pass [id] to edit an existing message.
      */
     suspend fun sendMessageActivity(
         recipientId: Int,
         message: String,
-        isPrivate: Boolean
+        isPrivate: Boolean,
+        id: Int? = null
     ): Result<Unit>
 }

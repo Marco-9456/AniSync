@@ -20,9 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 
-private const val MESSAGE_MAX_CHARS = 10_000
+private val MessageBounds = ContentLimits.MessageActivity
 
 /**
  * Direct-message composer. Wraps [RichTextInputSheet] with a `private` toggle that
@@ -36,19 +37,24 @@ fun DirectMessageInputSheet(
     isSending: Boolean,
     errorMessage: String?,
     onDismissRequest: () -> Unit,
-    onSend: (text: String, isPrivate: Boolean) -> Unit
+    onSend: (text: String, isPrivate: Boolean) -> Unit,
+    initialBody: String? = null,
+    submitLabel: String = stringResource(R.string.message_composer_send),
+    title: String = stringResource(R.string.message_composer_title, recipientName)
 ) {
     var isPrivate by rememberSaveable { mutableStateOf(false) }
 
     RichTextInputSheet(
-        title = stringResource(R.string.message_composer_title, recipientName),
+        title = title,
         placeholder = stringResource(R.string.message_composer_hint),
-        submitLabel = stringResource(R.string.message_composer_send),
+        submitLabel = submitLabel,
         isSubmitting = isSending,
         onSubmit = { text -> onSend(text.trim(), isPrivate) },
         onDismiss = { if (!isSending) onDismissRequest() },
-        maxLength = MESSAGE_MAX_CHARS,
-        isSubmitEnabled = { it.trim().isNotEmpty() && it.length <= MESSAGE_MAX_CHARS && !isSending },
+        prefillBody = initialBody,
+        minLength = MessageBounds.min,
+        maxLength = MessageBounds.max,
+        isSubmitEnabled = { MessageBounds.isValid(it.trim().length) && !isSending },
         bottomBarLeading = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(
