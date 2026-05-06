@@ -588,13 +588,14 @@ private fun SortDropdown(
                 )
             }
         )
-        androidx.compose.material3.DropdownMenu(
+        com.anisync.android.presentation.components.menu.Menu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
             options.forEachIndexed { index, option ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(option) },
+                item(
+                    text = option,
+                    selected = index == selectedIndex,
                     onClick = {
                         onSelected(index)
                         expanded = false

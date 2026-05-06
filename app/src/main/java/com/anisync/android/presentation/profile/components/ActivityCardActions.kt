@@ -12,13 +12,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.anisync.android.presentation.components.menu.Menu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -112,19 +111,14 @@ internal fun ActivityOverflowMenu(
                 modifier = Modifier.size(22.dp)
             )
         }
-        DropdownMenu(
+        Menu(
             expanded = menuExpanded,
             onDismissRequest = { menuExpanded = false }
         ) {
-            DropdownMenuItem(
-                text = { Text("Delete") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                },
+            item(
+                text = "Delete",
+                leadingIcon = Icons.Default.Delete,
+                destructive = true,
                 onClick = {
                     menuExpanded = false
                     confirmDelete = true
