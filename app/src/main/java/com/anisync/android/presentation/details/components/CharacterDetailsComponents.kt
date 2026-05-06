@@ -7,9 +7,11 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.rememberCopyToClipboard
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -161,6 +164,9 @@ fun DetailHeroImage(
 
 /**
  * Name card with tint showing name, native name, alternative names and favorites count.
+ *
+ * Names are wrapped in a [SelectionContainer] so users can long-press to enter
+ * Android's native text-selection mode and copy any portion (or all via "Select all").
  */
 @Composable
 fun NameCard(
@@ -172,34 +178,40 @@ fun NameCard(
     onFavouriteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val cardShape = RoundedCornerShape(32.dp)
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(32.dp),
+            .padding(horizontal = 16.dp)
+            .clip(cardShape),
+        shape = cardShape,
         color = MaterialTheme.colorScheme.primaryContainer
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            nativeName?.let {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                )
-            }
-            if (alternativeNames.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Also known as: ${alternativeNames.joinToString(", ")}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+            SelectionContainer {
+                Column {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    nativeName?.let {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                    if (alternativeNames.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Also known as: ${alternativeNames.joinToString(", ")}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                }
             }
             favourites?.let { favs ->
                 Spacer(modifier = Modifier.height(16.dp))
@@ -240,47 +252,52 @@ fun AttributesCard(
 ) {
     if (attributes.isEmpty()) return
 
+    val cardShape = RoundedCornerShape(24.dp)
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        shape = RoundedCornerShape(24.dp),
-        modifier = modifier.fillMaxWidth()
+        shape = cardShape,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(cardShape)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            attributes.forEachIndexed { index, (key, value) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = key,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(0.4f)
-                    )
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(0.6f)
-                    )
-                }
-                if (index < attributes.lastIndex) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
+        SelectionContainer {
+            Column(modifier = Modifier.padding(16.dp)) {
+                attributes.forEachIndexed { index, (key, value) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = key,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(0.4f)
+                        )
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.weight(0.6f)
+                        )
+                    }
+                    if (index < attributes.lastIndex) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun VoiceActorCard(
     name: String,
@@ -289,9 +306,17 @@ fun VoiceActorCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLabel = stringResource(R.string.a11y_action_copy)
+    val copiedNameMessage = stringResource(R.string.copied_name)
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = { copyToClipboard(copyLabel, name, copiedNameMessage) },
+            onLongClickLabel = copyLabel
+        )
     ) {
         AsyncImage(
             model = imageUrl,
@@ -479,12 +504,14 @@ fun ExpandableBiography(html: String) {
         label = "ArrowRotation"
     )
 
+    val cardShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
     Surface(
         onClick = { expanded = !expanded },
-        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
+        shape = cardShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .animateContentSize(
                 animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
             )
@@ -547,12 +574,14 @@ fun ExpandableSynopsis(text: String) {
         label = "ArrowRotation"
     )
 
+    val cardShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
     Surface(
         onClick = { expanded = !expanded },
-        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
+        shape = cardShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .animateContentSize(
                 animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
             )
@@ -566,16 +595,14 @@ fun ExpandableSynopsis(text: String) {
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
-            Box {
-                SelectionContainer {
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        maxLines = if (expanded) Int.MAX_VALUE else 4,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+            SelectionContainer {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    maxLines = if (expanded) Int.MAX_VALUE else 4,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))

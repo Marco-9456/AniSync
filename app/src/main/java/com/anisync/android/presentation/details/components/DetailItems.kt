@@ -2,16 +2,14 @@ package com.anisync.android.presentation.details.components
 
 import com.anisync.android.domain.url
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -69,6 +66,7 @@ import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
 
@@ -82,8 +80,9 @@ fun CharacterItem(
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
-    val context = LocalContext.current
-    val copiedLabel = stringResource(R.string.copied_to_clipboard)
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLabel = stringResource(R.string.a11y_action_copy)
+    val copiedNameMessage = stringResource(R.string.copied_name)
 
     Column(
         horizontalAlignment = Alignment.Start,
@@ -97,12 +96,9 @@ fun CharacterItem(
                     R.string.a11y_action_open_details,
                     character.nameUserPreferred
                 ),
+                onLongClickLabel = copyLabel,
                 onLongClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(
-                        ClipData.newPlainText("character_name", character.nameUserPreferred)
-                    )
-                    Toast.makeText(context, copiedLabel, Toast.LENGTH_SHORT).show()
+                    copyToClipboard(copyLabel, character.nameUserPreferred, copiedNameMessage)
                 }
             )
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
@@ -387,6 +383,7 @@ fun RecommendationItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VoicedCharacterItem(
     voicedCharacter: VoicedCharacter,
@@ -400,6 +397,10 @@ fun VoicedCharacterItem(
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val cardShape = RoundedCornerShape(8.dp)
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLabel = stringResource(R.string.a11y_action_copy)
+    val copiedNameMessage = stringResource(R.string.copied_name)
+    val voicedName = voicedCharacter.getName(titleLanguage)
     val titleSpatialSpec = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         AppMotion.rememberSpatialSpec()
     } else {
@@ -447,18 +448,24 @@ fun VoicedCharacterItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClick = onCharacterClick)
+                    .combinedClickable(
+                        onClick = onCharacterClick,
+                        onLongClick = {
+                            copyToClipboard(copyLabel, voicedName, copiedNameMessage)
+                        },
+                        onLongClickLabel = copyLabel
+                    )
                     .padding(4.dp)
             ) {
                 AsyncImage(
                     model = voicedCharacter.characterImageUrl,
-                    contentDescription = voicedCharacter.getName(titleLanguage),
+                    contentDescription = voicedName,
                     contentScale = ContentScale.FillWidth,
                     modifier = characterImageModifier
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = voicedCharacter.getName(titleLanguage),
+                    text = voicedName,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,

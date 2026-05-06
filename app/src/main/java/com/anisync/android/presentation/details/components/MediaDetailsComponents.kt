@@ -1,9 +1,5 @@
 package com.anisync.android.presentation.details.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -71,7 +67,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -91,7 +86,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -506,9 +501,9 @@ fun ExternalLinkChip(
     link: ExternalLink,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val haptic = rememberHapticFeedback()
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLabel = stringResource(R.string.a11y_action_copy)
     val scope = rememberCoroutineScope()
 
     var confirmationTrigger by remember { mutableIntStateOf(0) }
@@ -559,24 +554,16 @@ fun ExternalLinkChip(
                 },
                 onLongClick = {
                     link.url?.let { url ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Link from ${link.site}", url)
-                        clipboard.setPrimaryClip(clip)
-
+                        copyToClipboard(
+                            copyLabel,
+                            url,
+                            "Copied ${link.site} link to clipboard"
+                        )
                         confirmationTrigger++
-
                         scope.launch {
                             delay(150)
                             confirmationTrigger = 0
                         }
-
-                        Toast.makeText(
-                            context,
-                            "Copied ${link.site} link to clipboard",
-                            Toast.LENGTH_SHORT
-                        ).show()
                     }
                 }
             ),
