@@ -9,6 +9,8 @@ data class ForumThread(
     val id: Int,
     val title: String,
     val body: String?,
+    /** Raw markdown source (asHtml: false). Available for threads the viewer can edit. */
+    val bodyMarkdown: String? = null,
     val replyCount: Int,
     val viewCount: Int,
     val likeCount: Int,

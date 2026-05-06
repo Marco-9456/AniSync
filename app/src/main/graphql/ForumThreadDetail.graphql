@@ -3,6 +3,7 @@ query GetForumThread($id: Int!) {
         id
         title
         body(asHtml: true)
+        bodyRaw: body(asHtml: false)
         replyCount
         viewCount
         likeCount
@@ -51,6 +52,7 @@ query GetForumComments(
         threadComments(threadId: $threadId, sort: [ID]) {
             id
             comment(asHtml: true)
+            commentRaw: comment(asHtml: false)
             likeCount
             isLiked
             createdAt

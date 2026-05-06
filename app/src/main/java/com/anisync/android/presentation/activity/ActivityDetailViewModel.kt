@@ -52,7 +52,9 @@ class ActivityDetailViewModel @Inject constructor(
                     isReplySheetVisible = true,
                     replyingToReplyId = action.replyId,
                     replyingToAuthor = action.authorName,
-                    replyPrefillBody = action.authorName?.takeIf { action.replyId != null }?.let { "@$it " }
+                    replyPrefillBody = action.authorName?.takeIf { action.replyId != null }?.let { "@$it " },
+                    editingReplyId = null,
+                    editingActivity = false
                 )
             }
             is ActivityDetailAction.CloseReply -> _uiState.update {
@@ -60,13 +62,45 @@ class ActivityDetailViewModel @Inject constructor(
                     isReplySheetVisible = false,
                     replyingToReplyId = null,
                     replyingToAuthor = null,
-                    replyPrefillBody = null
+                    replyPrefillBody = null,
+                    editingReplyId = null,
+                    editingActivity = false
                 )
             }
             is ActivityDetailAction.SubmitReply -> submitReply(action.text)
             is ActivityDetailAction.DeleteActivity -> deleteActivity()
             is ActivityDetailAction.DeleteReply -> deleteReply(action.replyId)
             is ActivityDetailAction.ConsumeScrollToBottom -> _uiState.update { it.copy(scrollToBottom = false) }
+            is ActivityDetailAction.EditActivity -> openActivityEdit()
+            is ActivityDetailAction.EditReply -> openReplyEdit(action.replyId)
+        }
+    }
+
+    private fun openActivityEdit() {
+        val activity = _uiState.value.activity ?: return
+        _uiState.update {
+            it.copy(
+                isReplySheetVisible = true,
+                editingActivity = true,
+                editingReplyId = null,
+                replyingToReplyId = null,
+                replyingToAuthor = null,
+                replyPrefillBody = activity.bodyMarkdown ?: activity.body
+            )
+        }
+    }
+
+    private fun openReplyEdit(replyId: Int) {
+        val reply = _uiState.value.activity?.replies?.firstOrNull { it.id == replyId } ?: return
+        _uiState.update {
+            it.copy(
+                isReplySheetVisible = true,
+                editingReplyId = replyId,
+                editingActivity = false,
+                replyingToReplyId = null,
+                replyingToAuthor = null,
+                replyPrefillBody = reply.bodyMarkdown ?: reply.body
+            )
         }
     }
 
@@ -174,9 +208,18 @@ class ActivityDetailViewModel @Inject constructor(
     }
 
     private fun submitReply(text: String) {
-        val activityId = _uiState.value.activity?.id ?: return
+        val state = _uiState.value
+        val activityId = state.activity?.id ?: return
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
+        when {
+            state.editingActivity -> submitActivityEdit(activityId, trimmed)
+            state.editingReplyId != null -> submitReplyEdit(activityId, state.editingReplyId, trimmed)
+            else -> submitNewReply(activityId, trimmed)
+        }
+    }
+
+    private fun submitNewReply(activityId: Int, trimmed: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmittingReply = true) }
             when (val result = repository.sendReply(activityId, trimmed)) {
@@ -198,8 +241,58 @@ class ActivityDetailViewModel @Inject constructor(
                             scrollToBottom = true
                         )
                     }
-                    // Reconcile with server in background (silent)
                     refreshSilent(activityId)
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(isSubmittingReply = false, errorMessage = result.message)
+                }
+            }
+        }
+    }
+
+    private fun submitReplyEdit(activityId: Int, replyId: Int, trimmed: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingReply = true) }
+            when (val result = repository.sendReply(activityId, trimmed, id = replyId)) {
+                is Result.Success -> {
+                    val updated = result.data.copy(bodyMarkdown = trimmed)
+                    _uiState.update { state ->
+                        val activity = state.activity ?: return@update state
+                        val newReplies = activity.replies.map { r ->
+                            if (r.id == replyId) updated else r
+                        }
+                        state.copy(
+                            isSubmittingReply = false,
+                            isReplySheetVisible = false,
+                            editingReplyId = null,
+                            replyPrefillBody = null,
+                            activity = activity.copy(replies = newReplies),
+                            replyNodes = buildReplyTree(newReplies)
+                        )
+                    }
+                    refreshSilent(activityId)
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(isSubmittingReply = false, errorMessage = result.message)
+                }
+            }
+        }
+    }
+
+    private fun submitActivityEdit(activityId: Int, trimmed: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingReply = true) }
+            when (val result = repository.saveTextActivity(trimmed, id = activityId)) {
+                is Result.Success -> {
+                    refreshSilent(activityId)
+                    _uiState.update {
+                        it.copy(
+                            isSubmittingReply = false,
+                            isReplySheetVisible = false,
+                            editingActivity = false,
+                            replyPrefillBody = null
+                        )
+                    }
                 }
                 is Result.Error -> _uiState.update {
                     it.copy(isSubmittingReply = false, errorMessage = result.message)

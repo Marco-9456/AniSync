@@ -3,6 +3,8 @@ package com.anisync.android.domain
 data class ActivityReply(
     val id: Int,
     val body: String,
+    /** Raw markdown source (asHtml: false). Available for replies the viewer can edit. */
+    val bodyMarkdown: String? = null,
     val likeCount: Int,
     val isLiked: Boolean,
     val authorId: Int,
@@ -14,6 +16,8 @@ data class ActivityReply(
 data class ActivityDetail(
     val id: Int,
     val body: String,
+    /** Raw markdown source (asHtml: false). Only populated for TextActivity. */
+    val bodyMarkdown: String? = null,
     val createdAt: Long,
     val likeCount: Int,
     val isLiked: Boolean,

@@ -20,6 +20,7 @@ import com.anisync.android.domain.LikeState
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserSummary
 import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import javax.inject.Inject
@@ -46,9 +47,15 @@ class ActivityRepositoryImpl @Inject constructor(
         activity.toDomain() ?: throw Exception("Unsupported activity type")
     }
 
-    override suspend fun sendReply(activityId: Int, text: String): Result<ActivityReply> = safeApiCall {
+    override suspend fun sendReply(activityId: Int, text: String, id: Int?): Result<ActivityReply> = safeApiCall {
         val response = apolloClient
-            .mutation(SaveActivityReplyMutation(activityId = activityId, text = text))
+            .mutation(
+                SaveActivityReplyMutation(
+                    id = if (id != null) Optional.present(id) else Optional.absent(),
+                    activityId = activityId,
+                    text = text
+                )
+            )
             .execute()
 
         if (response.hasErrors()) {
@@ -134,9 +141,14 @@ class ActivityRepositoryImpl @Inject constructor(
         Unit
     }
 
-    override suspend fun saveTextActivity(text: String): Result<Unit> = safeApiCall {
+    override suspend fun saveTextActivity(text: String, id: Int?): Result<Unit> = safeApiCall {
         val response = apolloClient
-            .mutation(SaveTextActivityMutation(text = text))
+            .mutation(
+                SaveTextActivityMutation(
+                    id = if (id != null) Optional.present(id) else Optional.absent(),
+                    text = text
+                )
+            )
             .execute()
         if (response.hasErrors()) {
             throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to post status")
@@ -250,6 +262,7 @@ class ActivityRepositoryImpl @Inject constructor(
                     ActivityReply(
                         id = r.id,
                         body = r.text.orEmpty(),
+                        bodyMarkdown = r.textRaw,
                         likeCount = r.likeCount,
                         isLiked = r.isLiked == true,
                         authorId = r.user?.id ?: 0,
@@ -264,6 +277,7 @@ class ActivityRepositoryImpl @Inject constructor(
             return ActivityDetail(
                 id = t.id,
                 body = t.text.orEmpty(),
+                bodyMarkdown = t.textRaw,
                 createdAt = t.createdAt.toLong(),
                 likeCount = t.likeCount,
                 isLiked = t.isLiked == true,
@@ -281,6 +295,7 @@ class ActivityRepositoryImpl @Inject constructor(
                     ActivityReply(
                         id = r.id,
                         body = r.text.orEmpty(),
+                        bodyMarkdown = r.textRaw,
                         likeCount = r.likeCount,
                         isLiked = r.isLiked == true,
                         authorId = r.user?.id ?: 0,
@@ -313,6 +328,7 @@ class ActivityRepositoryImpl @Inject constructor(
                     ActivityReply(
                         id = r.id,
                         body = r.text.orEmpty(),
+                        bodyMarkdown = r.textRaw,
                         likeCount = r.likeCount,
                         isLiked = r.isLiked == true,
                         authorId = r.user?.id ?: 0,

@@ -32,8 +32,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -77,6 +75,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.menu.Menu
+import com.anisync.android.presentation.components.richtext.RichTextInputScreen
+import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
@@ -264,33 +265,47 @@ fun ActivityDetailScreen(
                     }
                     val activity = uiState.activity
                     val viewerId = uiState.viewerId
+                    val isOwnTextActivity = activity != null && viewerId != null &&
+                        activity.authorId == viewerId && !activity.isMessage
                     val canDelete = activity != null && viewerId != null && (
                         activity.authorId == viewerId ||
                             (activity.isMessage && activity.recipientId == viewerId && !activity.isAuthorMod)
                     )
-                    if (canDelete) {
+                    if (canDelete || isOwnTextActivity) {
                         Box {
                             IconButton(onClick = { showOverflow = true }) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.more_options),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            DropdownMenu(
+                            Menu(
                                 expanded = showOverflow,
                                 onDismissRequest = { showOverflow = false }
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.delete)) },
-                                    onClick = {
-                                        showOverflow = false
-                                        showDeleteActivityDialog = true
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Delete, contentDescription = null)
-                                    }
-                                )
+                                if (isOwnTextActivity) {
+                                    item(
+                                        text = stringResource(R.string.edit),
+                                        leadingIcon = Icons.Default.Edit,
+                                        onClick = {
+                                            showOverflow = false
+                                            viewModel.onAction(ActivityDetailAction.EditActivity)
+                                        }
+                                    )
+                                }
+                                if (canDelete) {
+                                    if (isOwnTextActivity) gap()
+                                    item(
+                                        text = stringResource(R.string.delete),
+                                        leadingIcon = Icons.Default.Delete,
+                                        destructive = true,
+                                        onClick = {
+                                            showOverflow = false
+                                            showDeleteActivityDialog = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -486,6 +501,11 @@ fun ActivityDetailScreen(
                                     actionSlot = {
                                         if (isOwnReply) {
                                             ReplyOverflowMenu(
+                                                onEdit = {
+                                                    viewModel.onAction(
+                                                        ActivityDetailAction.EditReply(flat.comment.id)
+                                                    )
+                                                },
                                                 onDelete = {
                                                     viewModel.onAction(
                                                         ActivityDetailAction.DeleteReply(flat.comment.id)
@@ -507,11 +527,24 @@ fun ActivityDetailScreen(
         }
     }
 
-    if (uiState.isReplySheetVisible) {
-        com.anisync.android.presentation.components.MarkdownComposeSheet(
-            title = stringResource(R.string.forum_write_reply),
+    // Replies (new or edit) and message-style activities use the bottom sheet —
+    // matches replies' compact UX. Editing the root TextActivity opens a full-screen
+    // editor instead because it's a longer-form post.
+    if (uiState.isReplySheetVisible && !uiState.editingActivity) {
+        val sheetTitle = if (uiState.editingReplyId != null) {
+            stringResource(R.string.activity_edit_reply_title)
+        } else {
+            stringResource(R.string.forum_write_reply)
+        }
+        val sheetSubmit = if (uiState.editingReplyId != null) {
+            stringResource(R.string.activity_edit_save)
+        } else {
+            stringResource(R.string.forum_post_reply)
+        }
+        RichTextInputSheet(
+            title = sheetTitle,
             placeholder = stringResource(R.string.forum_reply_hint),
-            submitLabel = stringResource(R.string.forum_post_reply),
+            submitLabel = sheetSubmit,
             replyingToLabel = uiState.replyingToAuthor?.let {
                 stringResource(R.string.forum_replying_to, it)
             },
@@ -520,6 +553,17 @@ fun ActivityDetailScreen(
             onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
             prefillBody = uiState.replyPrefillBody,
             sheetState = replySheetState
+        )
+    }
+
+    if (uiState.editingActivity && uiState.activity != null) {
+        RichTextInputScreen(
+            title = stringResource(R.string.activity_edit_status_title),
+            placeholder = stringResource(R.string.feed_compose_placeholder),
+            initialBody = uiState.replyPrefillBody.orEmpty(),
+            isSubmitting = uiState.isSubmittingReply,
+            onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
+            onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) }
         )
     }
 
@@ -679,8 +723,9 @@ private fun HeaderAvatar(url: String?, name: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ReplyOverflowMenu(onDelete: () -> Unit) {
+private fun ReplyOverflowMenu(onEdit: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     Box {
         IconButton(
             onClick = { expanded = true },
@@ -693,15 +738,49 @@ private fun ReplyOverflowMenu(onDelete: () -> Unit) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete)) },
+        Menu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            item(
+                text = stringResource(R.string.edit),
+                leadingIcon = Icons.Default.Edit,
                 onClick = {
                     expanded = false
-                    onDelete()
-                },
-                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
+                    onEdit()
+                }
+            )
+            gap()
+            item(
+                text = stringResource(R.string.delete),
+                leadingIcon = Icons.Default.Delete,
+                destructive = true,
+                onClick = {
+                    expanded = false
+                    confirmDelete = true
+                }
             )
         }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.reply_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.reply_delete_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) {
+                    Text(
+                        text = stringResource(R.string.delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }

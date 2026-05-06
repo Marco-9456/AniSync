@@ -1,8 +1,9 @@
-mutation CreateForumThread($title: String!, $body: String!, $categories: [Int]!) {
-  SaveThread(title: $title, body: $body, categories: $categories) {
+mutation CreateForumThread($id: Int, $title: String!, $body: String!, $categories: [Int]!) {
+  SaveThread(id: $id, title: $title, body: $body, categories: $categories) {
     id
     title
     body(asHtml: true)
+    bodyRaw: body(asHtml: false)
     replyCount
     viewCount
     likeCount
@@ -24,10 +25,11 @@ mutation CreateForumThread($title: String!, $body: String!, $categories: [Int]!)
   }
 }
 
-mutation CreateForumComment($threadId: Int!, $comment: String!) {
-  SaveThreadComment(threadId: $threadId, comment: $comment) {
+mutation CreateForumComment($id: Int, $threadId: Int!, $comment: String!) {
+  SaveThreadComment(id: $id, threadId: $threadId, comment: $comment) {
     id
     comment(asHtml: true)
+    commentRaw: comment(asHtml: false)
     likeCount
     isLiked
     createdAt
@@ -42,10 +44,11 @@ mutation CreateForumComment($threadId: Int!, $comment: String!) {
   }
 }
 
-mutation CreateForumCommentReply($threadId: Int!, $comment: String!, $parentCommentId: Int!) {
-  SaveThreadComment(threadId: $threadId, comment: $comment, parentCommentId: $parentCommentId) {
+mutation CreateForumCommentReply($id: Int, $threadId: Int!, $comment: String!, $parentCommentId: Int!) {
+  SaveThreadComment(id: $id, threadId: $threadId, comment: $comment, parentCommentId: $parentCommentId) {
     id
     comment(asHtml: true)
+    commentRaw: comment(asHtml: false)
     likeCount
     isLiked
     createdAt
@@ -57,6 +60,18 @@ mutation CreateForumCommentReply($threadId: Int!, $comment: String!, $parentComm
         large
       }
     }
+  }
+}
+
+mutation DeleteForumThread($id: Int!) {
+  DeleteThread(id: $id) {
+    deleted
+  }
+}
+
+mutation DeleteForumComment($id: Int!) {
+  DeleteThreadComment(id: $id) {
+    deleted
   }
 }
 

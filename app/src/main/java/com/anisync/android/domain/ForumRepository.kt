@@ -53,27 +53,38 @@ interface ForumRepository {
     // =========================================================================
 
     /**
-     * Creates a new forum thread.
+     * Creates or updates a forum thread. Pass [id] to update an existing thread.
      */
     suspend fun createThread(
         title: String,
         body: String,
-        categoryIds: List<Int>
+        categoryIds: List<Int>,
+        id: Int? = null
     ): Result<ForumThread>
 
     /**
-     * Posts a top-level comment on a thread.
+     * Creates or updates a top-level comment on a thread. Pass [id] to update.
      */
-    suspend fun createComment(threadId: Int, comment: String): Result<ForumComment>
+    suspend fun createComment(threadId: Int, comment: String, id: Int? = null): Result<ForumComment>
 
     /**
-     * Posts a reply to an existing comment.
+     * Creates or updates a reply to an existing comment. Pass [id] to update.
      */
     suspend fun replyToComment(
         threadId: Int,
         comment: String,
-        parentCommentId: Int
+        parentCommentId: Int,
+        id: Int? = null
     ): Result<ForumComment>
+
+    /** Permanently deletes a forum thread. */
+    suspend fun deleteThread(threadId: Int): Result<Unit>
+
+    /** Permanently deletes a forum comment. */
+    suspend fun deleteComment(commentId: Int): Result<Unit>
+
+    /** Returns the authenticated viewer's user id, or null if unauthenticated. */
+    suspend fun getViewerId(): Int?
 
     /**
      * Toggles the like state for a thread.

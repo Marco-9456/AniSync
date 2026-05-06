@@ -8,6 +8,8 @@ package com.anisync.android.domain
 data class ForumComment(
     val id: Int,
     val body: String,
+    /** Raw markdown source (asHtml: false). Available for comments the viewer can edit. */
+    val bodyMarkdown: String? = null,
     val likeCount: Int,
     val isLiked: Boolean,
     val authorId: Int,

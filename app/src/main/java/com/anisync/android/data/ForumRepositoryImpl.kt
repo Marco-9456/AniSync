@@ -3,7 +3,10 @@ package com.anisync.android.data
 import com.anisync.android.CreateForumCommentMutation
 import com.anisync.android.CreateForumCommentReplyMutation
 import com.anisync.android.CreateForumThreadMutation
+import com.anisync.android.DeleteForumCommentMutation
+import com.anisync.android.DeleteForumThreadMutation
 import com.anisync.android.GetForumCommentsQuery
+import com.anisync.android.GetViewerQuery
 import com.anisync.android.GetForumOverviewQuery
 import com.anisync.android.GetForumThreadQuery
 import com.anisync.android.GetForumThreadsQuery
@@ -313,6 +316,7 @@ class ForumRepositoryImpl @Inject constructor(
                 ForumComment(
                     id = node.id ?: 0,
                     body = node.comment ?: "",
+                    bodyMarkdown = node.commentRaw,
                     likeCount = node.likeCount ?: 0,
                     isLiked = node.isLiked ?: false,
                     authorId = node.user?.id ?: 0,
@@ -356,11 +360,13 @@ class ForumRepositoryImpl @Inject constructor(
     override suspend fun createThread(
         title: String,
         body: String,
-        categoryIds: List<Int>
+        categoryIds: List<Int>,
+        id: Int?
     ): Result<ForumThread> {
         return runCatchingApi("create thread") {
             val response = apolloClient.mutation(
                 CreateForumThreadMutation(
+                    id = if (id != null) Optional.present(id) else Optional.absent(),
                     title = title,
                     body = body,
                     categories = categoryIds
@@ -371,10 +377,11 @@ class ForumRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createComment(threadId: Int, comment: String): Result<ForumComment> {
+    override suspend fun createComment(threadId: Int, comment: String, id: Int?): Result<ForumComment> {
         return runCatchingApi("post comment") {
             val response = apolloClient.mutation(
                 CreateForumCommentMutation(
+                    id = if (id != null) Optional.present(id) else Optional.absent(),
                     threadId = threadId,
                     comment = comment
                 )
@@ -387,11 +394,13 @@ class ForumRepositoryImpl @Inject constructor(
     override suspend fun replyToComment(
         threadId: Int,
         comment: String,
-        parentCommentId: Int
+        parentCommentId: Int,
+        id: Int?
     ): Result<ForumComment> {
         return runCatchingApi("post reply") {
             val response = apolloClient.mutation(
                 CreateForumCommentReplyMutation(
+                    id = if (id != null) Optional.present(id) else Optional.absent(),
                     threadId = threadId,
                     comment = comment,
                     parentCommentId = parentCommentId
@@ -399,6 +408,45 @@ class ForumRepositoryImpl @Inject constructor(
             ).execute()
             response.data?.SaveThreadComment?.toForumComment()
                 ?: throw IllegalStateException("Failed to post reply")
+        }
+    }
+
+    override suspend fun deleteThread(threadId: Int): Result<Unit> {
+        return runCatchingApi("delete thread") {
+            val response = apolloClient
+                .mutation(DeleteForumThreadMutation(id = threadId))
+                .execute()
+            if (response.data?.DeleteThread?.deleted != true) {
+                throw IllegalStateException("Thread was not deleted")
+            }
+        }
+    }
+
+    override suspend fun deleteComment(commentId: Int): Result<Unit> {
+        return runCatchingApi("delete comment") {
+            val response = apolloClient
+                .mutation(DeleteForumCommentMutation(id = commentId))
+                .execute()
+            if (response.data?.DeleteThreadComment?.deleted != true) {
+                throw IllegalStateException("Comment was not deleted")
+            }
+        }
+    }
+
+    @Volatile private var cachedViewerId: Int? = null
+
+    override suspend fun getViewerId(): Int? {
+        cachedViewerId?.let { return it }
+        return try {
+            val response = apolloClient
+                .query(GetViewerQuery())
+                .fetchPolicy(FetchPolicy.CacheFirst)
+                .execute()
+            val id = response.data?.Viewer?.id
+            if (id != null) cachedViewerId = id
+            id
+        } catch (_: Exception) {
+            null
         }
     }
 
@@ -553,6 +601,7 @@ class ForumRepositoryImpl @Inject constructor(
         id: Int?,
         title: String?,
         body: String? = null,
+        bodyMarkdown: String? = null,
         replyCount: Int?,
         viewCount: Int?,
         likeCount: Int?,
@@ -577,6 +626,7 @@ class ForumRepositoryImpl @Inject constructor(
         id = id ?: 0,
         title = title ?: "(Untitled)",
         body = body,
+        bodyMarkdown = bodyMarkdown,
         replyCount = replyCount ?: 0,
         viewCount = viewCount ?: 0,
         likeCount = likeCount ?: 0,
@@ -650,6 +700,7 @@ class ForumRepositoryImpl @Inject constructor(
         id = id,
         title = title,
         body = body,
+        bodyMarkdown = bodyRaw,
         replyCount = replyCount,
         viewCount = viewCount,
         likeCount = likeCount,

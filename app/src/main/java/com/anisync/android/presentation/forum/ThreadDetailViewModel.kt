@@ -63,7 +63,9 @@ class ThreadDetailViewModel @Inject constructor(
                     it.copy(
                         isReplySheetVisible = true,
                         replyTargetCommentId = action.parentCommentId,
-                        replyTargetAuthorName = action.parentAuthorName
+                        replyTargetAuthorName = action.parentAuthorName,
+                        replyPrefillBody = null,
+                        editingCommentId = null
                     )
                 }
             }
@@ -72,7 +74,9 @@ class ThreadDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isReplySheetVisible = false,
-                        replyTargetCommentId = null
+                        replyTargetCommentId = null,
+                        replyPrefillBody = null,
+                        editingCommentId = null
                     )
                 }
             }
@@ -81,7 +85,88 @@ class ThreadDetailViewModel @Inject constructor(
             is ThreadDetailAction.ToggleSave -> toggleSave()
             is ThreadDetailAction.ToggleSubscribe -> toggleSubscribe()
             is ThreadDetailAction.ChangeCommentSort -> changeCommentSort(action)
+            is ThreadDetailAction.EditThread -> _uiState.update { it.copy(pendingThreadEdit = true) }
+            is ThreadDetailAction.ConsumeThreadEdit -> _uiState.update { it.copy(pendingThreadEdit = false) }
+            is ThreadDetailAction.SubmitThreadEdit -> submitThreadEdit(action.body)
+            is ThreadDetailAction.DeleteThread -> deleteThread()
+            is ThreadDetailAction.EditComment -> openCommentEdit(action.commentId)
+            is ThreadDetailAction.DeleteComment -> deleteComment(action.commentId)
             else -> {}
+        }
+    }
+
+    private fun submitThreadEdit(body: String) {
+        val thread = _uiState.value.thread ?: return
+        val trimmed = body.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingReply = true) }
+            val result = forumRepository.createThread(
+                title = thread.title,
+                body = trimmed,
+                categoryIds = thread.categories.map { it.id },
+                id = thread.id
+            )
+            when (result) {
+                is Result.Success -> {
+                    val updated = thread.copy(
+                        body = result.data.body,
+                        bodyMarkdown = trimmed
+                    )
+                    val parsed = result.data.body?.let { html ->
+                        withContext(Dispatchers.Default) { RichTextParser.parse(html) }
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isSubmittingReply = false,
+                            pendingThreadEdit = false,
+                            thread = updated,
+                            parsedBody = parsed
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isSubmittingReply = false) }
+                    showResultError(result)
+                }
+            }
+        }
+    }
+
+    private fun openCommentEdit(commentId: Int) {
+        val comment = _uiState.value.findComment(commentId) ?: return
+        _uiState.update {
+            it.copy(
+                isReplySheetVisible = true,
+                editingCommentId = commentId,
+                replyTargetCommentId = null,
+                replyTargetAuthorName = null,
+                replyPrefillBody = comment.bodyMarkdown ?: comment.body
+            )
+        }
+    }
+
+    private fun deleteThread() {
+        val threadId = _uiState.value.thread?.id ?: return
+        viewModelScope.launch {
+            when (val result = forumRepository.deleteThread(threadId)) {
+                is Result.Success -> _uiState.update { it.copy(threadDeleted = true) }
+                is Result.Error -> showResultError(result)
+            }
+        }
+    }
+
+    private fun deleteComment(commentId: Int) {
+        viewModelScope.launch {
+            when (val result = forumRepository.deleteComment(commentId)) {
+                is Result.Success -> _uiState.update { state ->
+                    state.copy(
+                        comments = state.comments.removeComment(commentId),
+                        totalComments = (state.totalComments - 1).coerceAtLeast(0)
+                    )
+                }
+                is Result.Error -> showResultError(result)
+            }
         }
     }
 
@@ -101,6 +186,7 @@ class ThreadDetailViewModel @Inject constructor(
 
             val threadDeferred = async { forumRepository.getThread(threadId) }
             val savedDeferred = async { forumRepository.isThreadSaved(threadId) }
+            val viewerDeferred = async { forumRepository.getViewerId() }
 
             // If we have a deep-link target, find its page first; otherwise start at 1.
             val targetPageDeferred = async {
@@ -116,6 +202,7 @@ class ThreadDetailViewModel @Inject constructor(
 
             val threadResult = threadDeferred.await()
             val isSaved = savedDeferred.await()
+            val viewerId = viewerDeferred.await()
 
             if (threadResult is Result.Error) {
                 _uiState.update {
@@ -164,6 +251,7 @@ class ThreadDetailViewModel @Inject constructor(
                     hasEarlierComments = resolvedPage > 1,
                     anchorCommentId = anchorId,
                     isSaved = isSaved,
+                    viewerId = viewerId,
                     errorMessage = null,
                 )
             }
@@ -413,28 +501,36 @@ class ThreadDetailViewModel @Inject constructor(
     private fun submitReply(action: ThreadDetailAction.SubmitReply) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmittingReply = true) }
-            val parentId = _uiState.value.replyTargetCommentId
+            val state = _uiState.value
+            val editingId = state.editingCommentId
+            val parentId = state.replyTargetCommentId
 
-            val result = if (parentId != null) {
-                forumRepository.replyToComment(action.threadId, action.body, parentId)
-            } else {
-                forumRepository.createComment(action.threadId, action.body)
+            val result = when {
+                editingId != null -> forumRepository.createComment(
+                    threadId = action.threadId,
+                    comment = action.body,
+                    id = editingId
+                )
+                parentId != null -> forumRepository.replyToComment(action.threadId, action.body, parentId)
+                else -> forumRepository.createComment(action.threadId, action.body)
             }
 
             when (result) {
                 is Result.Success -> {
                     _uiState.update { current ->
-                        val updatedComments = if (parentId != null) {
-                            current.comments.map { it.insertReply(parentId, result.data) }
-                        } else {
-                            current.comments + result.data
+                        val updatedComments = when {
+                            editingId != null -> current.comments.replaceComment(editingId, result.data, action.body)
+                            parentId != null -> current.comments.map { it.insertReply(parentId, result.data) }
+                            else -> current.comments + result.data
                         }
                         current.copy(
                             isSubmittingReply = false,
                             isReplySheetVisible = false,
                             replyTargetCommentId = null,
+                            replyPrefillBody = null,
+                            editingCommentId = null,
                             comments = updatedComments,
-                            scrollToBottom = parentId == null
+                            scrollToBottom = editingId == null && parentId == null
                         )
                     }
                 }
@@ -479,4 +575,43 @@ private fun ForumComment.insertReply(parentId: Int, reply: ForumComment): ForumC
     } else {
         copy(childComments = childComments.map { it.insertReply(parentId, reply) })
     }
+}
+
+/** Walks the comment tree (incl. children) and removes the comment with [commentId]. */
+private fun List<ForumComment>.removeComment(commentId: Int): List<ForumComment> =
+    this.mapNotNull { c ->
+        if (c.id == commentId) null
+        else c.copy(childComments = c.childComments.removeComment(commentId))
+    }
+
+/**
+ * Replaces the comment with [commentId] in the tree with the server-returned [updated],
+ * preserving existing childComments and stamping [enteredMarkdown] as the new
+ * [ForumComment.bodyMarkdown] so subsequent re-edits prefill correctly.
+ */
+private fun List<ForumComment>.replaceComment(
+    commentId: Int,
+    updated: ForumComment,
+    enteredMarkdown: String
+): List<ForumComment> = this.map { c ->
+    if (c.id == commentId) {
+        updated.copy(
+            bodyMarkdown = enteredMarkdown,
+            childComments = c.childComments
+        )
+    } else {
+        c.copy(childComments = c.childComments.replaceComment(commentId, updated, enteredMarkdown))
+    }
+}
+
+/** Locate a comment by id anywhere in the tree (depth-first). */
+private fun ThreadDetailUiState.findComment(commentId: Int): ForumComment? {
+    fun search(list: List<ForumComment>): ForumComment? {
+        for (c in list) {
+            if (c.id == commentId) return c
+            search(c.childComments)?.let { return it }
+        }
+        return null
+    }
+    return search(comments)
 }

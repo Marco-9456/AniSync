@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -25,11 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,7 +49,11 @@ import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import com.anisync.android.presentation.components.menu.Menu
+import com.anisync.android.presentation.components.richtext.RichTextInputScreen
+import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -273,6 +281,13 @@ fun ThreadDetailScreen(
     }
 
     var likesTarget by remember { mutableStateOf<com.anisync.android.presentation.components.likes.LikesTarget?>(null) }
+    var threadOverflow by remember { mutableStateOf(false) }
+    var showDeleteThreadDialog by remember { mutableStateOf(false) }
+
+    // Pop the screen once after a successful thread deletion.
+    LaunchedEffect(uiState.threadDeleted) {
+        if (uiState.threadDeleted) onBackClick()
+    }
 
     // Determine FAB expanded state based on scroll direction (MD3E reactive layout)
     val isFabExpanded by remember {
@@ -334,6 +349,42 @@ fun ThreadDetailScreen(
                             contentDescription = "Toggle Save",
                             tint = if (uiState.isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                    val isOwnThread = uiState.thread != null && uiState.viewerId != null &&
+                        uiState.thread!!.authorId == uiState.viewerId
+                    if (isOwnThread) {
+                        Box {
+                            IconButton(onClick = { threadOverflow = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more_options),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Menu(
+                                expanded = threadOverflow,
+                                onDismissRequest = { threadOverflow = false }
+                            ) {
+                                item(
+                                    text = stringResource(R.string.edit),
+                                    leadingIcon = Icons.Default.Edit,
+                                    onClick = {
+                                        threadOverflow = false
+                                        viewModel.onAction(ThreadDetailAction.EditThread)
+                                    }
+                                )
+                                gap()
+                                item(
+                                    text = stringResource(R.string.delete),
+                                    leadingIcon = Icons.Default.Delete,
+                                    destructive = true,
+                                    onClick = {
+                                        threadOverflow = false
+                                        showDeleteThreadDialog = true
+                                    }
+                                )
+                            }
+                        }
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -587,6 +638,8 @@ fun ThreadDetailScreen(
                                     val isAtMaxDepth = rebasedDepth >= depthWindowSize - 1
                                     val canDrillDown = isAtMaxDepth && flat.descendantCount > 0
 
+                                    val isOwnComment = uiState.viewerId != null &&
+                                        flat.comment.authorId == uiState.viewerId
                                     Surface(
                                         modifier = Modifier.fillMaxWidth(),
                                         color = highlightColor
@@ -595,6 +648,22 @@ fun ThreadDetailScreen(
                                             comment = flat.comment,
                                             isCollapsed = collapsedIds.contains(flat.comment.id),
                                             onUserClick = onUserClick,
+                                            actionSlot = {
+                                                if (isOwnComment) {
+                                                    ForumCommentOverflowMenu(
+                                                        onEdit = {
+                                                            viewModel.onAction(
+                                                                ThreadDetailAction.EditComment(flat.comment.id)
+                                                            )
+                                                        },
+                                                        onDelete = {
+                                                            viewModel.onAction(
+                                                                ThreadDetailAction.DeleteComment(flat.comment.id)
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            },
                                             onToggleCollapse = {
                                                 collapsedIds =
                                                     if (collapsedIds.contains(flat.comment.id)) collapsedIds - flat.comment.id else collapsedIds + flat.comment.id
@@ -686,16 +755,27 @@ fun ThreadDetailScreen(
     }
 
     if (uiState.isReplySheetVisible) {
-        com.anisync.android.presentation.components.MarkdownComposeSheet(
-            title = stringResource(R.string.forum_write_reply),
+        val sheetTitle = if (uiState.editingCommentId != null) {
+            stringResource(R.string.activity_edit_reply_title)
+        } else {
+            stringResource(R.string.forum_write_reply)
+        }
+        val sheetSubmit = if (uiState.editingCommentId != null) {
+            stringResource(R.string.activity_edit_save)
+        } else {
+            stringResource(R.string.forum_post_reply)
+        }
+        RichTextInputSheet(
+            title = sheetTitle,
             placeholder = stringResource(R.string.forum_reply_hint),
-            submitLabel = stringResource(R.string.forum_post_reply),
+            submitLabel = sheetSubmit,
             replyingToLabel = uiState.replyTargetAuthorName?.let {
                 stringResource(
                     R.string.forum_replying_to,
                     it
                 )
             },
+            prefillBody = uiState.replyPrefillBody,
             isSubmitting = uiState.isSubmittingReply,
             onSubmit = { body ->
                 viewModel.onAction(
@@ -707,6 +787,44 @@ fun ThreadDetailScreen(
             },
             onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) },
             sheetState = replySheetState
+        )
+    }
+
+    if (uiState.pendingThreadEdit && uiState.thread != null) {
+        val thread = uiState.thread!!
+        RichTextInputScreen(
+            title = stringResource(R.string.forum_edit_thread_title),
+            placeholder = stringResource(R.string.forum_thread_body_hint),
+            initialBody = thread.bodyMarkdown ?: thread.body.orEmpty(),
+            isSubmitting = uiState.isSubmittingReply,
+            onSubmit = { body ->
+                viewModel.onAction(ThreadDetailAction.SubmitThreadEdit(body))
+            },
+            onDismiss = { viewModel.onAction(ThreadDetailAction.ConsumeThreadEdit) }
+        )
+    }
+
+    if (showDeleteThreadDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteThreadDialog = false },
+            title = { Text(stringResource(R.string.thread_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.thread_delete_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteThreadDialog = false
+                    viewModel.onAction(ThreadDetailAction.DeleteThread)
+                }) {
+                    Text(
+                        text = stringResource(R.string.delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteThreadDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
         )
     }
 
@@ -895,4 +1013,76 @@ private fun countDescendants(comment: CommentNode): Int {
     var count = comment.childComments.size
     for (child in comment.childComments) count += countDescendants(child)
     return count
+}
+
+/**
+ * Overflow menu rendered next to the viewer's own forum comments. Wraps the Menu
+ * (Expressive) item DSL with an Edit + Delete pair plus a confirmation dialog —
+ * mirrors the same pattern used by [com.anisync.android.presentation.activity.ActivityDetailScreen]'s
+ * `ReplyOverflowMenu` so the two surfaces feel identical.
+ */
+@Composable
+private fun ForumCommentOverflowMenu(onEdit: () -> Unit, onDelete: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    // Sized to match the like/reply pills in the same FlowRow (32dp anchor, 18dp icon)
+    // so the trio shares one baseline. Default IconButton (48dp) made the dots sit
+    // lower than the pills.
+    Box(modifier = Modifier.size(32.dp)) {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.more_options),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Menu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            item(
+                text = stringResource(R.string.edit),
+                leadingIcon = Icons.Default.Edit,
+                onClick = {
+                    expanded = false
+                    onEdit()
+                }
+            )
+            gap()
+            item(
+                text = stringResource(R.string.delete),
+                leadingIcon = Icons.Default.Delete,
+                destructive = true,
+                onClick = {
+                    expanded = false
+                    confirmDelete = true
+                }
+            )
+        }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.reply_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.reply_delete_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) {
+                    Text(
+                        text = stringResource(R.string.delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }

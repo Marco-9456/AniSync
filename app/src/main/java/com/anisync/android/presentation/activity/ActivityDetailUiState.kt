@@ -19,7 +19,11 @@ data class ActivityDetailUiState(
     val replyPrefillBody: String? = null,
     val isSubmittingReply: Boolean = false,
     val viewerId: Int? = null,
-    val scrollToBottom: Boolean = false
+    val scrollToBottom: Boolean = false,
+    /** Set when the user opened the compose sheet to edit an existing reply. */
+    val editingReplyId: Int? = null,
+    /** Set when the user opened the compose sheet to edit the root TextActivity. */
+    val editingActivity: Boolean = false
 )
 
 sealed interface ActivityDetailAction {
@@ -33,4 +37,6 @@ sealed interface ActivityDetailAction {
     data object DeleteActivity : ActivityDetailAction
     data class DeleteReply(val replyId: Int) : ActivityDetailAction
     data object ConsumeScrollToBottom : ActivityDetailAction
+    data object EditActivity : ActivityDetailAction
+    data class EditReply(val replyId: Int) : ActivityDetailAction
 }

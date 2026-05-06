@@ -5,6 +5,7 @@ query GetActivity($id: Int!) {
       id
       userId
       text(asHtml: true)
+      textRaw: text(asHtml: false)
       createdAt
       likeCount
       isLiked
@@ -22,6 +23,7 @@ query GetActivity($id: Int!) {
         userId
         activityId
         text(asHtml: true)
+        textRaw: text(asHtml: false)
         likeCount
         isLiked
         createdAt
@@ -65,6 +67,7 @@ query GetActivity($id: Int!) {
         userId
         activityId
         text(asHtml: true)
+        textRaw: text(asHtml: false)
         likeCount
         isLiked
         createdAt
@@ -103,7 +106,7 @@ query GetActivity($id: Int!) {
           userPreferred
         }
         coverImage {
-          large
+          extraLarge
         }
         siteUrl
       }
@@ -112,6 +115,7 @@ query GetActivity($id: Int!) {
         userId
         activityId
         text(asHtml: true)
+        textRaw: text(asHtml: false)
         likeCount
         isLiked
         createdAt
@@ -127,8 +131,8 @@ query GetActivity($id: Int!) {
   }
 }
 
-mutation SaveActivityReply($activityId: Int!, $text: String!) {
-  SaveActivityReply(activityId: $activityId, text: $text) {
+mutation SaveActivityReply($id: Int, $activityId: Int!, $text: String!) {
+  SaveActivityReply(id: $id, activityId: $activityId, text: $text) {
     id
     activityId
     text(asHtml: true)
@@ -189,8 +193,8 @@ mutation DeleteActivityReply($id: Int!) {
   }
 }
 
-mutation SaveTextActivity($text: String!) {
-  SaveTextActivity(text: $text) {
+mutation SaveTextActivity($id: Int, $text: String!) {
+  SaveTextActivity(id: $id, text: $text) {
     id
     text(asHtml: true)
     createdAt

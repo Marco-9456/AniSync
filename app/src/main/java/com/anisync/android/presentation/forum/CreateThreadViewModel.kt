@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.SearchRepository
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,9 +20,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val SEARCH_DEBOUNCE_MS = 300L
+private const val MIN_SEARCH_QUERY_LENGTH = 2
+
 @HiltViewModel
 class CreateThreadViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
+    private val searchRepository: SearchRepository,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
@@ -28,6 +35,8 @@ class CreateThreadViewModel @Inject constructor(
 
     private val _actions = MutableSharedFlow<CreateThreadAction>()
     val actions: SharedFlow<CreateThreadAction> = _actions.asSharedFlow()
+
+    private var searchJob: Job? = null
 
     fun onAction(action: CreateThreadAction) {
         when (action) {
@@ -54,13 +63,14 @@ class CreateThreadViewModel @Inject constructor(
             is CreateThreadAction.NavigateUp -> {
                 viewModelScope.launch { _actions.emit(action) }
             }
+            is CreateThreadAction.OnMediaSearchQueryChange -> onSearchQueryChange(action.query)
+            is CreateThreadAction.OnMediaSearchTypeChange -> onSearchTypeChange(action.type)
         }
     }
 
     private fun submit() {
         val state = _uiState.value
 
-        // Validate
         var hasError = false
         if (state.title.isBlank()) {
             _uiState.update { it.copy(titleError = "Title is required") }
@@ -95,6 +105,48 @@ class CreateThreadViewModel @Inject constructor(
                     _uiState.update { it.copy(isSubmitting = false) }
                     showResultError(result)
                 }
+            }
+        }
+    }
+
+    private fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(mediaSearchQuery = query, mediaSearchError = null) }
+        searchJob?.cancel()
+        if (query.length < MIN_SEARCH_QUERY_LENGTH) {
+            _uiState.update { it.copy(mediaSearchResults = emptyList(), isMediaSearching = false) }
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            runMediaSearch()
+        }
+    }
+
+    private fun onSearchTypeChange(type: com.anisync.android.type.MediaType) {
+        if (type == _uiState.value.mediaSearchType) return
+        _uiState.update { it.copy(mediaSearchType = type, mediaSearchResults = emptyList()) }
+        searchJob?.cancel()
+        if (_uiState.value.mediaSearchQuery.length >= MIN_SEARCH_QUERY_LENGTH) {
+            searchJob = viewModelScope.launch { runMediaSearch() }
+        }
+    }
+
+    private suspend fun runMediaSearch() {
+        val state = _uiState.value
+        _uiState.update { it.copy(isMediaSearching = true) }
+        when (val result = searchRepository.searchMedia(
+            query = state.mediaSearchQuery,
+            type = state.mediaSearchType
+        )) {
+            is Result.Success -> _uiState.update {
+                it.copy(mediaSearchResults = result.data, isMediaSearching = false)
+            }
+            is Result.Error -> _uiState.update {
+                it.copy(
+                    isMediaSearching = false,
+                    mediaSearchError = result.message,
+                    mediaSearchResults = emptyList()
+                )
             }
         }
     }

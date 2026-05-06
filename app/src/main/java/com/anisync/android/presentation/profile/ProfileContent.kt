@@ -48,7 +48,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
-import com.anisync.android.presentation.profile.components.MessageComposerSheet
+import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
@@ -287,7 +287,7 @@ fun ProfileContent(
     }
 
     if (uiState.isMessageComposerVisible) {
-        MessageComposerSheet(
+        DirectMessageInputSheet(
             recipientName = profile.name,
             isSending = uiState.isSendingMessage,
             errorMessage = uiState.messageSendError,

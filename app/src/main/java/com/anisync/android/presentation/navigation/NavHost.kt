@@ -34,7 +34,7 @@ import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.feed.FeedScreen
-import com.anisync.android.presentation.forum.CreateThreadScreen
+import com.anisync.android.presentation.forum.ForumThreadInputScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
 import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
@@ -887,7 +887,7 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                CreateThreadScreen(
+                ForumThreadInputScreen(
                     onBackClick = { navController.popBackStack() },
                     onThreadCreated = { navController.popBackStack() }
                 )

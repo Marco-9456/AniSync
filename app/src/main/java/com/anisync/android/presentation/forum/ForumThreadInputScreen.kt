@@ -1,0 +1,467 @@
+package com.anisync.android.presentation.forum
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.anisync.android.R
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.components.richtext.RichTextScaffold
+import com.anisync.android.presentation.components.richtext.rememberRichTextInsertController
+import com.anisync.android.presentation.forum.components.ForumCategoryChip
+import com.anisync.android.type.MediaType
+import kotlinx.coroutines.flow.collectLatest
+
+private const val MAX_BODY_LENGTH = 10_000
+
+/**
+ * Forum thread create screen. Wraps [RichTextScaffold] with a header slot
+ * carrying the title field, category chips, and inline error texts. Also owns
+ * the categories + AniList media search bottom sheet — selecting a media result
+ * inserts a markdown link at the body cursor via [rememberRichTextInsertController].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ForumThreadInputScreen(
+    onBackClick: () -> Unit,
+    onThreadCreated: () -> Unit,
+    viewModel: CreateThreadViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
+    val insertController = rememberRichTextInsertController()
+
+    var showCategorySheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.actions.collectLatest { action ->
+            if (action is CreateThreadAction.NavigateUp) onThreadCreated()
+        }
+    }
+
+    if (showCategorySheet) {
+        CategoriesAndMediaSheet(
+            uiState = uiState,
+            onToggleCategory = { viewModel.onAction(CreateThreadAction.ToggleCategory(it)) },
+            onSearchQueryChange = { viewModel.onAction(CreateThreadAction.OnMediaSearchQueryChange(it)) },
+            onSearchTypeChange = { viewModel.onAction(CreateThreadAction.OnMediaSearchTypeChange(it)) },
+            onInsertMedia = { entry ->
+                insertController.insertText(buildMediaMarkdown(entry))
+                showCategorySheet = false
+            },
+            onDismiss = { showCategorySheet = false }
+        )
+    }
+
+    val externalUnsaved = uiState.title.isNotBlank() || uiState.selectedCategoryIds.isNotEmpty()
+    val externallyValid = uiState.title.isNotBlank() && uiState.selectedCategoryIds.isNotEmpty()
+
+    RichTextScaffold(
+        title = stringResource(R.string.forum_create_thread),
+        initialBody = uiState.body,
+        placeholder = stringResource(R.string.forum_thread_body_hint),
+        submitLabel = stringResource(R.string.post),
+        isSubmitting = uiState.isSubmitting,
+        onSubmit = { viewModel.onAction(CreateThreadAction.Submit) },
+        onDismiss = onBackClick,
+        onBodyChange = { viewModel.onAction(CreateThreadAction.OnBodyChange(it)) },
+        isExternallyValid = externallyValid,
+        hasExternalUnsavedChanges = externalUnsaved,
+        autoFocusBody = false,
+        maxLength = MAX_BODY_LENGTH,
+        insertController = insertController,
+        headerSlot = {
+            ThreadMetaHeader(
+                title = uiState.title,
+                titleError = uiState.titleError,
+                categoryError = uiState.categoryError,
+                bodyError = uiState.bodyError,
+                selectedCategoryIds = uiState.selectedCategoryIds,
+                availableCategories = uiState.availableCategories,
+                onTitleChange = { viewModel.onAction(CreateThreadAction.OnTitleChange(it)) },
+                onTitleImeNext = { focusManager.moveFocus(FocusDirection.Down) },
+                onToggleCategory = { viewModel.onAction(CreateThreadAction.ToggleCategory(it)) },
+                onOpenCategorySheet = { showCategorySheet = true }
+            )
+        }
+    )
+}
+
+private fun buildMediaMarkdown(entry: LibraryEntry): String {
+    val segment = when (entry.type) {
+        MediaType.ANIME -> "anime"
+        MediaType.MANGA -> "manga"
+        else -> "anime"
+    }
+    return "[${entry.titleUserPreferred}](https://anilist.co/$segment/${entry.mediaId}) "
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThreadMetaHeader(
+    title: String,
+    titleError: String?,
+    categoryError: String?,
+    bodyError: String?,
+    selectedCategoryIds: Set<Int>,
+    availableCategories: List<com.anisync.android.domain.ForumCategory>,
+    onTitleChange: (String) -> Unit,
+    onTitleImeNext: () -> Unit,
+    onToggleCategory: (Int) -> Unit,
+    onOpenCategorySheet: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        TextField(
+            value = title,
+            onValueChange = onTitleChange,
+            placeholder = {
+                Text(
+                    text = stringResource(R.string.forum_thread_title_hint),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            singleLine = true,
+            isError = titleError != null,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { onTitleImeNext() }),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                errorContainerColor = Color.Transparent,
+                errorIndicatorColor = Color.Transparent
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (titleError != null) {
+            Text(
+                text = titleError,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val hasSelection = selectedCategoryIds.isNotEmpty()
+
+            Surface(
+                onClick = onOpenCategorySheet,
+                shape = RoundedCornerShape(percent = 50),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        horizontal = if (hasSelection) 10.dp else 16.dp,
+                        vertical = 8.dp
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.forum_add_categories),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    if (!hasSelection) {
+                        Text(
+                            text = stringResource(R.string.forum_categories_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            availableCategories
+                .filter { it.id in selectedCategoryIds }
+                .forEach { category ->
+                    ForumCategoryChip(
+                        category = category,
+                        selected = true,
+                        onClick = { onToggleCategory(category.id) }
+                    )
+                }
+        }
+
+        if (categoryError != null) {
+            Text(
+                text = categoryError,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+            )
+        }
+
+        if (bodyError != null) {
+            Text(
+                text = bodyError,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CategoriesAndMediaSheet(
+    uiState: CreateThreadUiState,
+    onToggleCategory: (Int) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchTypeChange: (MediaType) -> Unit,
+    onInsertMedia: (LibraryEntry) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = stringResource(R.string.forum_categories_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(16.dp))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                uiState.availableCategories.forEach { category ->
+                    val isSelected = category.id in uiState.selectedCategoryIds
+                    ForumCategoryChip(
+                        category = category,
+                        selected = isSelected,
+                        onClick = { onToggleCategory(category.id) }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+
+            MediaSearchSection(
+                query = uiState.mediaSearchQuery,
+                searchType = uiState.mediaSearchType,
+                results = uiState.mediaSearchResults,
+                isSearching = uiState.isMediaSearching,
+                error = uiState.mediaSearchError,
+                onQueryChange = onSearchQueryChange,
+                onTypeChange = onSearchTypeChange,
+                onResultClick = onInsertMedia
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MediaSearchSection(
+    query: String,
+    searchType: MediaType,
+    results: List<LibraryEntry>,
+    isSearching: Boolean,
+    error: String?,
+    onQueryChange: (String) -> Unit,
+    onTypeChange: (MediaType) -> Unit,
+    onResultClick: (LibraryEntry) -> Unit
+) {
+    Text(
+        text = stringResource(R.string.forum_link_media_title),
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold
+    )
+    Spacer(Modifier.height(8.dp))
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = searchType == MediaType.ANIME,
+            onClick = { onTypeChange(MediaType.ANIME) },
+            label = { Text(stringResource(R.string.media_type_anime)) }
+        )
+        FilterChip(
+            selected = searchType == MediaType.MANGA,
+            onClick = { onTypeChange(MediaType.MANGA) },
+            label = { Text(stringResource(R.string.media_type_manga)) }
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text(stringResource(R.string.forum_media_search_hint)) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = if (isSearching) {
+            {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            }
+        } else null,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        )
+    )
+
+    Spacer(Modifier.height(12.dp))
+
+    when {
+        error != null -> {
+            Text(
+                text = error,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        query.isNotBlank() && results.isEmpty() && !isSearching -> {
+            Text(
+                text = stringResource(R.string.forum_media_no_results, query),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        results.isNotEmpty() -> {
+            Text(
+                text = stringResource(R.string.forum_search_results_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())
+            ) {
+                results.forEach { entry ->
+                    MediaResultRow(entry = entry, onClick = { onResultClick(entry) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaResultRow(entry: LibraryEntry, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = entry.coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(width = 48.dp, height = 64.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = entry.titleUserPreferred,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2
+                )
+                val metaParts = listOfNotNull(
+                    entry.format?.name?.replace('_', ' '),
+                    entry.startedAt?.let { java.text.SimpleDateFormat("yyyy", java.util.Locale.US).format(java.util.Date(it * 1000)) }
+                )
+                if (metaParts.isNotEmpty()) {
+                    Text(
+                        text = metaParts.joinToString(" • "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}

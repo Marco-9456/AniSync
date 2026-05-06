@@ -47,7 +47,7 @@ import com.anisync.android.domain.FeedScope
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateCompact
 import com.anisync.android.presentation.components.EmptyStateConfigs
-import com.anisync.android.presentation.components.MarkdownComposeSheet
+import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.feed.components.FeedFilterBar
 import com.anisync.android.presentation.profile.RecentUpdateCard
 import com.anisync.android.presentation.profile.components.ActivityPreviewCard
@@ -239,7 +239,7 @@ fun FeedScreen(
     }
 
     if (uiState.isComposeSheetVisible) {
-        MarkdownComposeSheet(
+        RichTextInputSheet(
             title = stringResource(R.string.feed_compose_title),
             placeholder = stringResource(R.string.feed_compose_placeholder),
             submitLabel = stringResource(R.string.feed_compose_submit),

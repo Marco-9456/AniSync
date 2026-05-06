@@ -2,6 +2,8 @@ package com.anisync.android.presentation.forum
 
 import androidx.compose.runtime.Stable
 import com.anisync.android.domain.ForumCategory
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.type.MediaType
 
 @Stable
 data class CreateThreadUiState(
@@ -13,7 +15,12 @@ data class CreateThreadUiState(
     val isPreviewMode: Boolean = false,
     val titleError: String? = null,
     val bodyError: String? = null,
-    val categoryError: String? = null
+    val categoryError: String? = null,
+    val mediaSearchType: MediaType = MediaType.ANIME,
+    val mediaSearchQuery: String = "",
+    val mediaSearchResults: List<LibraryEntry> = emptyList(),
+    val isMediaSearching: Boolean = false,
+    val mediaSearchError: String? = null
 ) {
     val isValid: Boolean get() = title.isNotBlank() && body.isNotBlank() && selectedCategoryIds.isNotEmpty()
     val hasUnsavedChanges: Boolean get() = title.isNotBlank() || body.isNotBlank() || selectedCategoryIds.isNotEmpty()
@@ -26,11 +33,13 @@ sealed interface CreateThreadAction {
     data object TogglePreview : CreateThreadAction
     data object Submit : CreateThreadAction
     data object NavigateUp : CreateThreadAction
+    data class OnMediaSearchQueryChange(val query: String) : CreateThreadAction
+    data class OnMediaSearchTypeChange(val type: MediaType) : CreateThreadAction
 }
 
 /**
- * Correct AniList forum category IDs — verified from the live site.
- * AniList doesn't expose a category list query, so these are hardcoded.
+ * AniList forum category IDs verified from the live site. AniList doesn't expose
+ * a category list query, so they're hardcoded here.
  */
 val defaultCategories = listOf(
     ForumCategory(1, "Anime"),
