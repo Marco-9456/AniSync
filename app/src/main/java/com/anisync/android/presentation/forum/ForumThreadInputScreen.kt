@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.forum
 
+import com.anisync.android.domain.url
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -55,6 +59,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.richtext.RichTextScaffold
 import com.anisync.android.presentation.components.richtext.rememberRichTextInsertController
@@ -62,13 +67,15 @@ import com.anisync.android.presentation.forum.components.ForumCategoryChip
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.collectLatest
 
-private const val MAX_BODY_LENGTH = 10_000
+private val TitleBounds = ContentLimits.ThreadTitle
+private val BodyBounds = ContentLimits.ThreadBody
 
 /**
  * Forum thread create screen. Wraps [RichTextScaffold] with a header slot
- * carrying the title field, category chips, and inline error texts. Also owns
- * the categories + AniList media search bottom sheet — selecting a media result
- * inserts a markdown link at the body cursor via [rememberRichTextInsertController].
+ * carrying the title field, category chips, related-media chips, and inline
+ * error texts. Also owns the categories + AniList media search bottom sheet —
+ * selecting a media result attaches it to the thread's `mediaCategories`
+ * (a separate signal from forum [com.anisync.android.domain.ForumCategory]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,16 +102,22 @@ fun ForumThreadInputScreen(
             onToggleCategory = { viewModel.onAction(CreateThreadAction.ToggleCategory(it)) },
             onSearchQueryChange = { viewModel.onAction(CreateThreadAction.OnMediaSearchQueryChange(it)) },
             onSearchTypeChange = { viewModel.onAction(CreateThreadAction.OnMediaSearchTypeChange(it)) },
-            onInsertMedia = { entry ->
-                insertController.insertText(buildMediaMarkdown(entry))
+            onSelectMedia = { entry ->
+                viewModel.onAction(CreateThreadAction.AddMediaCategory(entry))
                 showCategorySheet = false
+            },
+            onRemoveMedia = { mediaId ->
+                viewModel.onAction(CreateThreadAction.RemoveMediaCategory(mediaId))
             },
             onDismiss = { showCategorySheet = false }
         )
     }
 
-    val externalUnsaved = uiState.title.isNotBlank() || uiState.selectedCategoryIds.isNotEmpty()
-    val externallyValid = uiState.title.isNotBlank() && uiState.selectedCategoryIds.isNotEmpty()
+    val externalUnsaved = uiState.title.isNotBlank() ||
+        uiState.selectedCategoryIds.isNotEmpty() ||
+        uiState.selectedMediaCategories.isNotEmpty()
+    val externallyValid = TitleBounds.isValid(uiState.title.trim().length) &&
+        uiState.selectedCategoryIds.isNotEmpty()
 
     RichTextScaffold(
         title = stringResource(R.string.forum_create_thread),
@@ -118,7 +131,8 @@ fun ForumThreadInputScreen(
         isExternallyValid = externallyValid,
         hasExternalUnsavedChanges = externalUnsaved,
         autoFocusBody = false,
-        maxLength = MAX_BODY_LENGTH,
+        minLength = BodyBounds.min,
+        maxLength = BodyBounds.max,
         insertController = insertController,
         headerSlot = {
             ThreadMetaHeader(
@@ -128,22 +142,15 @@ fun ForumThreadInputScreen(
                 bodyError = uiState.bodyError,
                 selectedCategoryIds = uiState.selectedCategoryIds,
                 availableCategories = uiState.availableCategories,
+                selectedMediaCategories = uiState.selectedMediaCategories,
                 onTitleChange = { viewModel.onAction(CreateThreadAction.OnTitleChange(it)) },
                 onTitleImeNext = { focusManager.moveFocus(FocusDirection.Down) },
                 onToggleCategory = { viewModel.onAction(CreateThreadAction.ToggleCategory(it)) },
+                onRemoveMediaCategory = { viewModel.onAction(CreateThreadAction.RemoveMediaCategory(it)) },
                 onOpenCategorySheet = { showCategorySheet = true }
             )
         }
     )
-}
-
-private fun buildMediaMarkdown(entry: LibraryEntry): String {
-    val segment = when (entry.type) {
-        MediaType.ANIME -> "anime"
-        MediaType.MANGA -> "manga"
-        else -> "anime"
-    }
-    return "[${entry.titleUserPreferred}](https://anilist.co/$segment/${entry.mediaId}) "
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,9 +162,11 @@ private fun ThreadMetaHeader(
     bodyError: String?,
     selectedCategoryIds: Set<Int>,
     availableCategories: List<com.anisync.android.domain.ForumCategory>,
+    selectedMediaCategories: List<LibraryEntry>,
     onTitleChange: (String) -> Unit,
     onTitleImeNext: () -> Unit,
     onToggleCategory: (Int) -> Unit,
+    onRemoveMediaCategory: (Int) -> Unit,
     onOpenCategorySheet: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -244,6 +253,13 @@ private fun ThreadMetaHeader(
                         onClick = { onToggleCategory(category.id) }
                     )
                 }
+
+            selectedMediaCategories.forEach { entry ->
+                MediaCategoryChip(
+                    entry = entry,
+                    onRemove = { onRemoveMediaCategory(entry.mediaId) }
+                )
+            }
         }
 
         if (categoryError != null) {
@@ -275,7 +291,8 @@ private fun CategoriesAndMediaSheet(
     onToggleCategory: (Int) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSearchTypeChange: (MediaType) -> Unit,
-    onInsertMedia: (LibraryEntry) -> Unit,
+    onSelectMedia: (LibraryEntry) -> Unit,
+    onRemoveMedia: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
@@ -321,9 +338,13 @@ private fun CategoriesAndMediaSheet(
                 results = uiState.mediaSearchResults,
                 isSearching = uiState.isMediaSearching,
                 error = uiState.mediaSearchError,
+                selectedMediaIds = uiState.selectedMediaCategories.map { it.mediaId }.toSet(),
                 onQueryChange = onSearchQueryChange,
                 onTypeChange = onSearchTypeChange,
-                onResultClick = onInsertMedia
+                onResultClick = { entry ->
+                    val isAlreadySelected = uiState.selectedMediaCategories.any { it.mediaId == entry.mediaId }
+                    if (isAlreadySelected) onRemoveMedia(entry.mediaId) else onSelectMedia(entry)
+                }
             )
         }
     }
@@ -337,6 +358,7 @@ private fun MediaSearchSection(
     results: List<LibraryEntry>,
     isSearching: Boolean,
     error: String?,
+    selectedMediaIds: Set<Int>,
     onQueryChange: (String) -> Unit,
     onTypeChange: (MediaType) -> Unit,
     onResultClick: (LibraryEntry) -> Unit
@@ -413,7 +435,11 @@ private fun MediaSearchSection(
                 modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())
             ) {
                 results.forEach { entry ->
-                    MediaResultRow(entry = entry, onClick = { onResultClick(entry) })
+                    MediaResultRow(
+                        entry = entry,
+                        isSelected = entry.mediaId in selectedMediaIds,
+                        onClick = { onResultClick(entry) }
+                    )
                 }
             }
         }
@@ -421,10 +447,11 @@ private fun MediaSearchSection(
 }
 
 @Composable
-private fun MediaResultRow(entry: LibraryEntry, onClick: () -> Unit) {
+private fun MediaResultRow(entry: LibraryEntry, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -436,11 +463,12 @@ private fun MediaResultRow(entry: LibraryEntry, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = entry.coverUrl,
+                model = entry.cover.url() ?: entry.coverUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(width = 48.dp, height = 64.dp)
+                    .clip(RoundedCornerShape(8.dp))
             )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -462,6 +490,38 @@ private fun MediaResultRow(entry: LibraryEntry, onClick: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MediaCategoryChip(
+    entry: LibraryEntry,
+    onRemove: () -> Unit
+) {
+    Surface(
+        onClick = onRemove,
+        shape = RoundedCornerShape(percent = 50),
+        color = MaterialTheme.colorScheme.tertiaryContainer
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = entry.titleUserPreferred,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                maxLines = 1
+            )
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.forum_remove_media_category),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onTertiaryContainer
+            )
         }
     }
 }

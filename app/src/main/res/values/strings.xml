@@ -726,9 +726,10 @@
     <string name="richtext_char_count">%1$d / %2$d</string>
     <string name="forum_categories_title">Categories</string>
     <string name="forum_add_categories">Add Categories</string>
-    <string name="forum_link_media_title">Link Media</string>
+    <string name="forum_link_media_title">Add Related Media</string>
     <string name="forum_media_search_hint">Search Anime or Manga…</string>
     <string name="forum_search_results_label">Search Results</string>
     <string name="forum_media_searching">Searching…</string>
     <string name="forum_media_no_results">No results for "%1$s"</string>
+    <string name="forum_remove_media_category">Remove media</string>
 </resources>

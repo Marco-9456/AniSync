@@ -2,6 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
@@ -65,22 +66,43 @@ class CreateThreadViewModel @Inject constructor(
             }
             is CreateThreadAction.OnMediaSearchQueryChange -> onSearchQueryChange(action.query)
             is CreateThreadAction.OnMediaSearchTypeChange -> onSearchTypeChange(action.type)
+            is CreateThreadAction.AddMediaCategory -> _uiState.update { current ->
+                if (current.selectedMediaCategories.any { it.mediaId == action.entry.mediaId }) current
+                else current.copy(selectedMediaCategories = current.selectedMediaCategories + action.entry)
+            }
+            is CreateThreadAction.RemoveMediaCategory -> _uiState.update { current ->
+                current.copy(
+                    selectedMediaCategories = current.selectedMediaCategories
+                        .filterNot { it.mediaId == action.mediaId }
+                )
+            }
         }
     }
 
     private fun submit() {
         val state = _uiState.value
 
+        val titleBounds = ContentLimits.ThreadTitle
+        val bodyBounds = ContentLimits.ThreadBody
+
         var hasError = false
-        if (state.title.isBlank()) {
-            _uiState.update { it.copy(titleError = "Title is required") }
+        val titleLength = state.title.trim().length
+        if (titleLength < titleBounds.min) {
+            _uiState.update {
+                it.copy(titleError = "Title must be at least ${titleBounds.min} characters")
+            }
             hasError = true
-        } else if (state.title.length > 255) {
-            _uiState.update { it.copy(titleError = "Title must be under 255 characters") }
+        } else if (titleLength > titleBounds.max) {
+            _uiState.update {
+                it.copy(titleError = "Title must be at most ${titleBounds.max} characters")
+            }
             hasError = true
         }
-        if (state.body.isBlank()) {
-            _uiState.update { it.copy(bodyError = "Body is required") }
+        val bodyLength = state.body.length
+        if (bodyLength > bodyBounds.max) {
+            _uiState.update {
+                it.copy(bodyError = "Body must be at most ${bodyBounds.max} characters")
+            }
             hasError = true
         }
         if (state.selectedCategoryIds.isEmpty()) {
@@ -95,7 +117,8 @@ class CreateThreadViewModel @Inject constructor(
             when (val result = forumRepository.createThread(
                 title = state.title.trim(),
                 body = state.body.trim(),
-                categoryIds = state.selectedCategoryIds.toList()
+                categoryIds = state.selectedCategoryIds.toList(),
+                mediaCategoryIds = state.selectedMediaCategories.map { it.mediaId }
             )) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isSubmitting = false) }

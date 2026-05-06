@@ -361,6 +361,7 @@ class ForumRepositoryImpl @Inject constructor(
         title: String,
         body: String,
         categoryIds: List<Int>,
+        mediaCategoryIds: List<Int>?,
         id: Int?
     ): Result<ForumThread> {
         return runCatchingApi("create thread") {
@@ -369,7 +370,8 @@ class ForumRepositoryImpl @Inject constructor(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
                     title = title,
                     body = body,
-                    categories = categoryIds
+                    categories = categoryIds,
+                    mediaCategories = if (mediaCategoryIds != null) Optional.present(mediaCategoryIds) else Optional.absent()
                 )
             ).execute()
             response.data?.SaveThread?.toForumThread()

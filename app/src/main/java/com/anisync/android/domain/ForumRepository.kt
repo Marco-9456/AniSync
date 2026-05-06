@@ -54,11 +54,16 @@ interface ForumRepository {
 
     /**
      * Creates or updates a forum thread. Pass [id] to update an existing thread.
+     *
+     * [mediaCategoryIds] is the list of AniList media IDs related to the thread
+     * (separate from forum [categoryIds]). Pass `null` to leave existing media
+     * categories untouched on update; pass an empty list to clear them.
      */
     suspend fun createThread(
         title: String,
         body: String,
         categoryIds: List<Int>,
+        mediaCategoryIds: List<Int>? = null,
         id: Int? = null
     ): Result<ForumThread>
 

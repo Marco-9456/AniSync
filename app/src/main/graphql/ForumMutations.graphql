@@ -1,5 +1,17 @@
-mutation CreateForumThread($id: Int, $title: String!, $body: String!, $categories: [Int]!) {
-  SaveThread(id: $id, title: $title, body: $body, categories: $categories) {
+mutation CreateForumThread(
+  $id: Int,
+  $title: String!,
+  $body: String!,
+  $categories: [Int]!,
+  $mediaCategories: [Int]
+) {
+  SaveThread(
+    id: $id,
+    title: $title,
+    body: $body,
+    categories: $categories,
+    mediaCategories: $mediaCategories
+  ) {
     id
     title
     body(asHtml: true)

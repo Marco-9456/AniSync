@@ -11,6 +11,12 @@ data class CreateThreadUiState(
     val body: String = "",
     val selectedCategoryIds: Set<Int> = emptySet(),
     val availableCategories: List<ForumCategory> = defaultCategories,
+    /**
+     * Media attached to the thread as `mediaCategories` on the SaveThread mutation.
+     * AniList treats these as a separate signal from forum [selectedCategoryIds]:
+     * "what media is this thread about" rather than "which forum bucket."
+     */
+    val selectedMediaCategories: List<LibraryEntry> = emptyList(),
     val isSubmitting: Boolean = false,
     val isPreviewMode: Boolean = false,
     val titleError: String? = null,
@@ -23,7 +29,9 @@ data class CreateThreadUiState(
     val mediaSearchError: String? = null
 ) {
     val isValid: Boolean get() = title.isNotBlank() && body.isNotBlank() && selectedCategoryIds.isNotEmpty()
-    val hasUnsavedChanges: Boolean get() = title.isNotBlank() || body.isNotBlank() || selectedCategoryIds.isNotEmpty()
+    val hasUnsavedChanges: Boolean
+        get() = title.isNotBlank() || body.isNotBlank() ||
+            selectedCategoryIds.isNotEmpty() || selectedMediaCategories.isNotEmpty()
 }
 
 sealed interface CreateThreadAction {
@@ -35,6 +43,8 @@ sealed interface CreateThreadAction {
     data object NavigateUp : CreateThreadAction
     data class OnMediaSearchQueryChange(val query: String) : CreateThreadAction
     data class OnMediaSearchTypeChange(val type: MediaType) : CreateThreadAction
+    data class AddMediaCategory(val entry: LibraryEntry) : CreateThreadAction
+    data class RemoveMediaCategory(val mediaId: Int) : CreateThreadAction
 }
 
 /**
