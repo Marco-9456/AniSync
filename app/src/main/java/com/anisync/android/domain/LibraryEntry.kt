@@ -25,6 +25,7 @@ data class LibraryEntry(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    val cover: CoverImage? = null,
     val progress: Int,
     val totalEpisodes: Int?,
     val totalChapters: Int?,

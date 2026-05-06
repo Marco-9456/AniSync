@@ -67,6 +67,7 @@ data class UserActivity(
     val mediaId: Int? = null,
     val mediaTitle: String = "",
     val mediaCoverUrl: String? = null,
+    val mediaCover: CoverImage? = null,
     val timestamp: Long,
     val mediaScore: Int? = null,
     val text: String? = null,

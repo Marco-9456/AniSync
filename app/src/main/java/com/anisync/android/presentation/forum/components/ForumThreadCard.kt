@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.forum.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -238,7 +240,7 @@ private fun ThreadBody(thread: ForumThread) {
         if (thread.mediaCoverUrl != null) {
             Spacer(Modifier.width(16.dp))
             AsyncImage(
-                model = thread.mediaCoverUrl,
+                model = thread.mediaCover.url() ?: thread.mediaCoverUrl,
                 contentDescription = thread.mediaTitle ?: "Media cover",
                 modifier = Modifier
                     .width(84.dp)

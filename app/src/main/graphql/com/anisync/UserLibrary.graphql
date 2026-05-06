@@ -21,6 +21,8 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
             native
           }
           coverImage {
+            medium
+            large
             extraLarge
           }
           episodes

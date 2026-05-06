@@ -6,6 +6,8 @@ query GetTrending($season: MediaSeason, $seasonYear: Int, $perPage: Int) {
         userPreferred
       }
       coverImage {
+        medium
+        large
         extraLarge
       }
       averageScore

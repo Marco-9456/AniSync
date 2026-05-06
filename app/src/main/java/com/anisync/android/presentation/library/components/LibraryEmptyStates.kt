@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.library.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,9 +74,10 @@ fun LibrarySearchResultCard(
         "$statusLabel • ${entry.progress}/${total ?: "?"}"
     }
 
-    val imageRequest = remember(entry.coverUrl) {
+    val coverData = entry.cover.url() ?: entry.coverUrl
+    val imageRequest = remember(coverData) {
         ImageRequest.Builder(context)
-            .data(entry.coverUrl)
+            .data(coverData)
             .crossfade(true)
             .build()
     }

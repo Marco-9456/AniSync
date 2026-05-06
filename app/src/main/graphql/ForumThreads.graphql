@@ -43,6 +43,8 @@ query GetForumThreads(
         }
         coverImage {
           medium
+          large
+          extraLarge
         }
       }
     }

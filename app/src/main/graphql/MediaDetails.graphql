@@ -8,7 +8,9 @@ query GetMediaDetails($id: Int) {
             userPreferred
         }
         coverImage {
-            extraLarge
+          medium
+          large
+          extraLarge
         }
         bannerImage
         description(asHtml: true)
@@ -92,7 +94,9 @@ query GetMediaDetails($id: Int) {
                     format
                     status
                     coverImage {
-                        large
+                      medium
+                      large
+                      extraLarge
                     }
                 }
             }
@@ -121,7 +125,9 @@ query GetMediaDetails($id: Int) {
                         native
                     }
                     coverImage {
-                        large
+                      medium
+                      large
+                      extraLarge
                     }
                     format
                     averageScore

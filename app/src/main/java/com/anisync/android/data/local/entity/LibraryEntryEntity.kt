@@ -37,6 +37,12 @@ data class LibraryEntryEntity(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    @androidx.room.ColumnInfo(defaultValue = "NULL")
+    val coverMedium: String? = null,
+    @androidx.room.ColumnInfo(defaultValue = "NULL")
+    val coverLarge: String? = null,
+    @androidx.room.ColumnInfo(defaultValue = "NULL")
+    val coverExtraLarge: String? = null,
     val progress: Int,
     val totalEpisodes: Int?,
     val totalChapters: Int?,

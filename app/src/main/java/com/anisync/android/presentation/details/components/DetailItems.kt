@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.details.components
 
+import com.anisync.android.domain.url
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -177,7 +179,7 @@ fun MediaRoleItem(
                 .clip(RoundedCornerShape(12.dp))
         ) {
             AsyncImage(
-                model = media.coverUrl,
+                model = media.cover.url() ?: media.coverUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -266,7 +268,7 @@ fun RelationItem(
         }
 
         AsyncImage(
-            model = relation.coverUrl,
+            model = relation.cover.url() ?: relation.coverUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = imageModifier
@@ -317,7 +319,7 @@ fun RecommendationItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             AsyncImage(
-                model = recommendation.coverUrl,
+                model = recommendation.cover.url() ?: recommendation.coverUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

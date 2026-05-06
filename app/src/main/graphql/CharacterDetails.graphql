@@ -36,7 +36,9 @@ query GetCharacterDetails($id: Int!, $page: Int = 1) {
                         native
                     }
                     coverImage {
-                        large
+                      medium
+                      large
+                      extraLarge
                     }
                     bannerImage
                     type

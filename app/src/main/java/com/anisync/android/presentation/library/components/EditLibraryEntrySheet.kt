@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.library.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -372,7 +374,7 @@ private fun HeaderSection(
     ) {
         SubcomposeAsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(entry.coverUrl)
+                .data(entry.cover.url() ?: entry.coverUrl)
                 .crossfade(200)
                 .build(),
             contentDescription = stringResource(R.string.content_description_cover),

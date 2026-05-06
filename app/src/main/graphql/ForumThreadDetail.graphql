@@ -37,7 +37,9 @@ query GetForumThread($id: Int!) {
                 romaji
             }
             coverImage {
-                medium
+              medium
+              large
+              extraLarge
             }
         }
     }

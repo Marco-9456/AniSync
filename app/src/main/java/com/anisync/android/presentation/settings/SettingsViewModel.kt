@@ -10,6 +10,7 @@ import com.anisync.android.R
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
+import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
@@ -28,6 +29,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private data class ThemePaletteState(
+    val paletteId: String,
+    val customColor: androidx.compose.ui.graphics.Color?,
+    val style: com.materialkolor.PaletteStyle,
+    val coverQuality: CoverQuality
+)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -73,9 +81,10 @@ class SettingsViewModel @Inject constructor(
         combine(
             appSettings.selectedPaletteId,
             appSettings.customSeedColor,
-            appSettings.paletteStyle
-        ) { paletteId, customColor, style ->
-            Triple(paletteId, customColor, style)
+            appSettings.paletteStyle,
+            appSettings.coverQuality
+        ) { paletteId, customColor, style, coverQuality ->
+            ThemePaletteState(paletteId, customColor, style, coverQuality)
         },
         combine(
             combine(
@@ -123,14 +132,14 @@ class SettingsViewModel @Inject constructor(
             listOf(size, cleared, loading, clearing, profile)
         }
     ) { lookAndFeel, themePalette, notifications, updates, storageAndProfile ->
-        val (paletteId, customColor, style) = themePalette
         val (autoUpdate, prerelease) = updates
         val (cacheSize, isCleared, isLoading, isClearing, profile) = storageAndProfile
-        
+
         lookAndFeel.copy(
-            selectedPaletteId = paletteId,
-            customSeedColor = customColor,
-            paletteStyle = style,
+            selectedPaletteId = themePalette.paletteId,
+            customSeedColor = themePalette.customColor,
+            paletteStyle = themePalette.style,
+            coverQuality = themePalette.coverQuality,
             isNotificationsEnabled = notifications[0] as Boolean,
             watchingNotificationsEnabled = notifications[1] as Boolean,
             planningNotificationsEnabled = notifications[2] as Boolean,
@@ -164,6 +173,7 @@ class SettingsViewModel @Inject constructor(
         when (action) {
             is SettingsAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
+            is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
             is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
                 action.service

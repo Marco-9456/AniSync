@@ -9,6 +9,8 @@ query GetMediaBySort($sort: [MediaSort], $type: MediaType, $perPage: Int) {
         native
       }
       coverImage {
+        medium
+        large
         extraLarge
       }
       episodes
@@ -32,6 +34,8 @@ query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
         native
       }
       coverImage {
+        medium
+        large
         extraLarge
       }
       episodes
@@ -69,6 +73,8 @@ query GetPaginatedMedia(
         native
       }
       coverImage {
+        medium
+        large
         extraLarge
       }
       episodes

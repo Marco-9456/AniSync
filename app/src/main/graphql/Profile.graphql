@@ -60,8 +60,9 @@ query GetUserProfile($name: String) {
             native
           }
           coverImage {
-             large
-             extraLarge
+            medium
+            large
+            extraLarge
           }
         }
       }
@@ -81,6 +82,7 @@ query GetUserProfile($name: String) {
             native
           }
           coverImage {
+            medium
             large
             extraLarge
           }
@@ -148,8 +150,9 @@ query GetUserFavorites($userId: Int, $page: Int) {
             native
           }
           coverImage {
-             large
-             extraLarge
+            medium
+            large
+            extraLarge
           }
         }
       }
@@ -195,7 +198,9 @@ fragment ActivityFields on ActivityUnion {
         native
       }
       coverImage {
-         medium
+        medium
+        large
+        extraLarge
       }
       type
     }
@@ -412,7 +417,9 @@ query GetUserReviews($userId: Int!, $page: Int = 1) {
           userPreferred
         }
         coverImage {
+          medium
           large
+          extraLarge
         }
         type
         bannerImage

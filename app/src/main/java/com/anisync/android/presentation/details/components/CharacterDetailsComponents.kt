@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.details.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -332,6 +334,7 @@ fun VoiceActorCard(
 fun FeaturedMediaItem(
     mediaId: Int,
     coverUrl: String?,
+    cover: com.anisync.android.domain.CoverImage? = null,
     title: String,
     role: String?,
     year: Int?,
@@ -396,7 +399,7 @@ fun FeaturedMediaItem(
         modifier = cardModifier
     ) {
         AsyncImage(
-            model = coverUrl,
+            model = cover.url() ?: coverUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier

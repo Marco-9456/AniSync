@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.review
 
+import com.anisync.android.domain.url
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -175,7 +177,7 @@ fun ReviewDetailScreen(
                                     .padding(12.dp)
                             ) {
                                 AsyncImage(
-                                    model = review.mediaCoverUrl,
+                                    model = review.mediaCover.url() ?: review.mediaCoverUrl,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier

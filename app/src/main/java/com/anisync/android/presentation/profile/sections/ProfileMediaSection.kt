@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.profile.sections
 
+import com.anisync.android.domain.url
+
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -240,6 +242,7 @@ private fun statusEmptyMessage(
 @Composable
 private fun PosterCardFallback(
     coverUrl: String?,
+    cover: com.anisync.android.domain.CoverImage? = null,
     title: String,
     onClick: () -> Unit
 ) {
@@ -250,7 +253,7 @@ private fun PosterCardFallback(
             .bouncyClickable(onClick = onClick)
     ) {
         AsyncImage(
-            model = coverUrl,
+            model = cover.url() ?: coverUrl,
             contentDescription = title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

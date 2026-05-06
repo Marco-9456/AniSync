@@ -131,6 +131,9 @@ class MainActivity : AppCompatActivity() {
                 val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle(
                     initialValue = com.materialkolor.PaletteStyle.TonalSpot
                 )
+                val coverQuality by appSettings.coverQuality.collectAsStateWithLifecycle(
+                    initialValue = com.anisync.android.data.CoverQuality.LARGE
+                )
                 val isSystemDark = isSystemInDarkTheme()
 
                 val useDarkTheme = remember(themeMode, isSystemDark) {
@@ -155,7 +158,8 @@ class MainActivity : AppCompatActivity() {
 
                 CompositionLocalProvider(
                     LocalAppSettings provides appSettings,
-                    LocalLinkPreviewProvider provides linkPreviewProvider
+                    LocalLinkPreviewProvider provides linkPreviewProvider,
+                    com.anisync.android.domain.LocalCoverQuality provides coverQuality
                 ) {
                     AppTheme(
                         darkTheme = useDarkTheme,

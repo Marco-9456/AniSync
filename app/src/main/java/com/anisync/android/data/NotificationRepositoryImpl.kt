@@ -147,6 +147,7 @@ class NotificationRepositoryImpl @Inject constructor(
                             id = media.id ?: 0,
                             title = media.title?.userPreferred ?: "Unknown",
                             coverUrl = media.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
                             type = media.type ?: com.anisync.android.type.MediaType.ANIME
                         )
                     }
@@ -195,6 +196,7 @@ class NotificationRepositoryImpl @Inject constructor(
                                     id = m.id ?: 0,
                                     title = m.title?.userPreferred ?: "Unknown",
                                     coverUrl = m.coverImage?.large,
+                                    cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                                     type = m.type ?: com.anisync.android.type.MediaType.ANIME
                                 )
                             },
@@ -230,6 +232,7 @@ class NotificationRepositoryImpl @Inject constructor(
                                     id = m.id ?: 0,
                                     title = m.title?.userPreferred ?: "Unknown",
                                     coverUrl = m.coverImage?.large,
+                                    cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                                     type = m.type ?: com.anisync.android.type.MediaType.ANIME
                                 )
                             },
@@ -265,6 +268,7 @@ class NotificationRepositoryImpl @Inject constructor(
                                     id = m.id ?: 0,
                                     title = m.title?.userPreferred ?: "Unknown",
                                     coverUrl = m.coverImage?.large,
+                                    cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                                     type = m.type ?: com.anisync.android.type.MediaType.ANIME
                                 )
                             },
@@ -300,6 +304,7 @@ class NotificationRepositoryImpl @Inject constructor(
                                     id = m.id ?: 0,
                                     title = m.title?.userPreferred ?: "Unknown",
                                     coverUrl = m.coverImage?.large,
+                                    cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                                     type = m.type ?: com.anisync.android.type.MediaType.ANIME
                                 )
                             },
@@ -335,6 +340,7 @@ class NotificationRepositoryImpl @Inject constructor(
                                     id = m.id ?: 0,
                                     title = m.title?.userPreferred ?: "Unknown",
                                     coverUrl = m.coverImage?.large,
+                                    cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                                     type = m.type ?: com.anisync.android.type.MediaType.ANIME
                                 )
                             },
@@ -472,6 +478,7 @@ class NotificationRepositoryImpl @Inject constructor(
                             id = media.id ?: 0,
                             title = media.title?.userPreferred ?: "Unknown",
                             coverUrl = media.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
                             type = media.type ?: com.anisync.android.type.MediaType.ANIME
                         )
                     }
@@ -491,6 +498,7 @@ class NotificationRepositoryImpl @Inject constructor(
                             id = media.id ?: 0,
                             title = media.title?.userPreferred ?: "Unknown",
                             coverUrl = media.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
                             type = media.type ?: com.anisync.android.type.MediaType.ANIME
                         )
                     }
@@ -511,6 +519,7 @@ class NotificationRepositoryImpl @Inject constructor(
                             id = media.id ?: 0,
                             title = media.title?.userPreferred ?: "Unknown",
                             coverUrl = media.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
                             type = media.type ?: com.anisync.android.type.MediaType.ANIME
                         )
                     }
@@ -563,6 +572,7 @@ class NotificationRepositoryImpl @Inject constructor(
                             mediaId = it.mediaId ?: 0,
                             mediaTitle = it.media?.title?.userPreferred ?: "Unknown",
                             mediaCoverUrl = it.media?.coverImage?.large,
+                            mediaCover = com.anisync.android.domain.CoverImage.of(it.media?.coverImage?.medium, it.media?.coverImage?.large, it.media?.coverImage?.extraLarge),
                             mediaType = it.media?.type ?: com.anisync.android.type.MediaType.ANIME
                         )
                     } else {
@@ -606,6 +616,7 @@ class NotificationRepositoryImpl @Inject constructor(
                             mediaId = it.mediaId ?: 0,
                             mediaTitle = it.media?.title?.userPreferred ?: "Unknown",
                             mediaCoverUrl = it.media?.coverImage?.large,
+                            mediaCover = com.anisync.android.domain.CoverImage.of(it.media?.coverImage?.medium, it.media?.coverImage?.large, it.media?.coverImage?.extraLarge),
                             mediaType = it.media?.type ?: com.anisync.android.type.MediaType.ANIME
                         )
                     } else {

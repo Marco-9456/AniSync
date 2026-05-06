@@ -621,7 +621,8 @@ class ForumRepositoryImpl @Inject constructor(
         siteUrl: String? = null,
         categories: List<Pair<Int?, String?>>? = null,
         mediaTitle: String? = null,
-        mediaCoverUrl: String? = null
+        mediaCoverUrl: String? = null,
+        mediaCover: com.anisync.android.domain.CoverImage? = null
     ) = ForumThread(
         id = id ?: 0,
         title = title ?: "(Untitled)",
@@ -647,7 +648,8 @@ class ForumRepositoryImpl @Inject constructor(
         updatedAt = (updatedAt ?: repliedAt ?: createdAt ?: 0).toLong(),
         siteUrl = siteUrl,
         mediaTitle = mediaTitle,
-        mediaCoverUrl = mediaCoverUrl)
+        mediaCoverUrl = mediaCoverUrl,
+        mediaCover = mediaCover)
 
     private fun GetForumOverviewQuery.Thread.toForumThread() = buildForumThread(
         id = id,
@@ -669,7 +671,8 @@ class ForumRepositoryImpl @Inject constructor(
         createdAt = createdAt,
         categories = categories?.filterNotNull()?.map { it.id to it.name },
         mediaTitle = mediaCategories?.firstOrNull()?.title?.romaji,
-        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium
+        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium,
+        mediaCover = com.anisync.android.domain.CoverImage.of(mediaCategories?.firstOrNull()?.coverImage?.medium, mediaCategories?.firstOrNull()?.coverImage?.large, mediaCategories?.firstOrNull()?.coverImage?.extraLarge)
     )
 
     private fun GetForumThreadsQuery.Thread.toForumThread() = buildForumThread(
@@ -693,7 +696,8 @@ class ForumRepositoryImpl @Inject constructor(
         createdAt = createdAt,
         categories = categories?.filterNotNull()?.map { it.id to it.name },
         mediaTitle = mediaCategories?.firstOrNull()?.title?.romaji,
-        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium
+        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium,
+        mediaCover = com.anisync.android.domain.CoverImage.of(mediaCategories?.firstOrNull()?.coverImage?.medium, mediaCategories?.firstOrNull()?.coverImage?.large, mediaCategories?.firstOrNull()?.coverImage?.extraLarge)
     )
 
     private fun GetForumThreadQuery.Thread.toForumThread() = buildForumThread(
@@ -719,7 +723,8 @@ class ForumRepositoryImpl @Inject constructor(
         siteUrl = siteUrl,
         categories = categories?.filterNotNull()?.map { it.id to it.name },
         mediaTitle = mediaCategories?.firstOrNull()?.title?.romaji,
-        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium
+        mediaCoverUrl = mediaCategories?.firstOrNull()?.coverImage?.medium,
+        mediaCover = com.anisync.android.domain.CoverImage.of(mediaCategories?.firstOrNull()?.coverImage?.medium, mediaCategories?.firstOrNull()?.coverImage?.large, mediaCategories?.firstOrNull()?.coverImage?.extraLarge)
     )
 
     private fun CreateForumThreadMutation.SaveThread.toForumThread() = buildForumThread(

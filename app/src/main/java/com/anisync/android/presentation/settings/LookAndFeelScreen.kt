@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
@@ -52,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.AppLocale
+import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
@@ -71,6 +73,7 @@ private val TitleLanguages = TitleLanguage.entries
 private val StreamingServices = StreamingService.entries
 private val ThemeModes = ThemeMode.entries
 private val AppLocales = AppLocale.entries
+private val CoverQualities = CoverQuality.entries
 
 @Composable
 fun LookAndFeelScreen(
@@ -84,6 +87,7 @@ fun LookAndFeelScreen(
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
     val appLocale = uiState.appLocale
+    val coverQuality = uiState.coverQuality
 
     // Theme palette settings
     val selectedPaletteId = uiState.selectedPaletteId
@@ -95,6 +99,7 @@ fun LookAndFeelScreen(
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
     var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
+    var showCoverQualityDialog by rememberSaveable { mutableStateOf(false) }
 
     // Determine dark mode for preview rendering
     val isSystemDark = isSystemInDarkTheme()
@@ -192,6 +197,17 @@ fun LookAndFeelScreen(
                 showAppLanguageDialog = false
             },
             onDismiss = { showAppLanguageDialog = false }
+        )
+    }
+
+    if (showCoverQualityDialog) {
+        CoverQualitySelectionDialog(
+            currentQuality = coverQuality,
+            onQualitySelected = {
+                viewModel.onAction(SettingsAction.SetCoverQuality(it))
+                showCoverQualityDialog = false
+            },
+            onDismiss = { showCoverQualityDialog = false }
         )
     }
 
@@ -323,6 +339,13 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.settings_title_language),
                 currentValue = getTitleLanguageLabel(titleLanguage),
                 onClick = { showTitleLanguageDialog = true }
+            )
+            SettingsDivider()
+            SelectionSettingsItem(
+                icon = Icons.Default.HighQuality,
+                title = stringResource(R.string.settings_cover_quality),
+                currentValue = coverQualityLabel(coverQuality),
+                onClick = { showCoverQualityDialog = true }
             )
         }
 
@@ -761,5 +784,108 @@ private fun getTitleLanguageExample(language: TitleLanguage): String {
         TitleLanguage.ROMAJI -> stringResource(R.string.title_language_romaji_example)
         TitleLanguage.ENGLISH -> stringResource(R.string.title_language_english_example)
         TitleLanguage.NATIVE -> stringResource(R.string.title_language_native_example)
+    }
+}
+
+@Composable
+private fun coverQualityLabel(quality: CoverQuality): String = stringResource(
+    when (quality) {
+        CoverQuality.MEDIUM -> R.string.cover_quality_medium
+        CoverQuality.LARGE -> R.string.cover_quality_large
+        CoverQuality.EXTRA_LARGE -> R.string.cover_quality_extra_large
+    }
+)
+
+@Composable
+private fun coverQualityDescription(quality: CoverQuality): String = stringResource(
+    when (quality) {
+        CoverQuality.MEDIUM -> R.string.cover_quality_medium_desc
+        CoverQuality.LARGE -> R.string.cover_quality_large_desc
+        CoverQuality.EXTRA_LARGE -> R.string.cover_quality_extra_large_desc
+    }
+)
+
+@Composable
+fun CoverQualitySelectionDialog(
+    currentQuality: CoverQuality,
+    onQualitySelected: (CoverQuality) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+        ) {
+            LazyColumn(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                item {
+                    Text(
+                        text = stringResource(R.string.settings_cover_quality),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_cover_quality_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                items(items = CoverQualities, key = { it.name }) { quality ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onQualitySelected(quality) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = currentQuality == quality,
+                            onClick = { onQualitySelected(quality) },
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = coverQualityLabel(quality),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = coverQualityDescription(quality),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                }
+            }
+        }
     }
 }

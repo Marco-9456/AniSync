@@ -10,6 +10,8 @@ query NextAiringEpisodes($mediaIds: [Int], $airingAtGreater: Int, $perPage: Int)
           userPreferred
         }
         coverImage {
+          medium
+          large
           extraLarge
         }
       }

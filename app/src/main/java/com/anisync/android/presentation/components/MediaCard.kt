@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -75,7 +77,7 @@ fun MediaCard(
     // Use TransitionKeys for consistent key generation
     val coverKey = TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId)
     val titleKey = TransitionKeys.title(TransitionKeys.DISCOVER, item.mediaId)
-    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId)
+    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
 
     with(sharedTransitionScope) {
         Card(
@@ -102,7 +104,7 @@ fun MediaCard(
                 // Image Container
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.coverUrl)
+                        .data(item.cover.url() ?: item.coverUrl)
                         .crossfade(true)
                         .placeholderMemoryCacheKey(cacheKey)
                         .memoryCacheKey(cacheKey)

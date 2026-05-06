@@ -24,6 +24,12 @@ data class MediaDetailsEntity(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    @ColumnInfo(defaultValue = "NULL")
+    val coverMedium: String? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val coverLarge: String? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val coverExtraLarge: String? = null,
     val bannerUrl: String?,
     val description: String,
     val score: Int?,

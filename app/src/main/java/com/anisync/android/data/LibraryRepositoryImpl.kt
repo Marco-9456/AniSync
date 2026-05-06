@@ -137,6 +137,7 @@ class LibraryRepositoryImpl @Inject constructor(
                             titleNative = media?.title?.native,
                             titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
                             coverUrl = media?.coverImage?.extraLarge,
+                            cover = com.anisync.android.domain.CoverImage.of(media?.coverImage?.medium, media?.coverImage?.large, media?.coverImage?.extraLarge),
                             progress = entry.progress ?: 0,
                             totalEpisodes = media?.episodes,
                             totalChapters = media?.chapters,

@@ -45,7 +45,9 @@ query GetStaffDetails($id: Int!, $page: Int = 1) {
                         native
                     }
                     coverImage {
-                        large
+                      medium
+                      large
+                      extraLarge
                     }
                     startDate {
                         year

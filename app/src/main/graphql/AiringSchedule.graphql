@@ -31,7 +31,9 @@ query AiringSchedule($page: Int, $perPage: Int, $airingAtGreater: Int, $airingAt
                     english
                 }
                 coverImage {
-                    extraLarge
+                  medium
+                  large
+                  extraLarge
                 }
                 genres
                 mediaListEntry {

@@ -20,7 +20,9 @@ query ReviewDetails($id: Int) {
                 userPreferred
             }
             coverImage {
-                large
+              medium
+              large
+              extraLarge
             }
         }
     }

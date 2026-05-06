@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.discover.components
 
+import com.anisync.android.domain.url
+
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -101,7 +103,7 @@ private fun HeroCarouselItem(
 
     val artKey = TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId)
     val titleKey = TransitionKeys.title(TransitionKeys.DISCOVER, item.mediaId)
-    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId)
+    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
 
     Surface(
         onClick = onClick,
@@ -110,9 +112,10 @@ private fun HeroCarouselItem(
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val imageRequest = remember(item.coverUrl, cacheKey) {
+            val coverData = item.cover.url() ?: item.coverUrl
+            val imageRequest = remember(coverData, cacheKey) {
                 ImageRequest.Builder(context)
-                    .data(item.coverUrl)
+                    .data(coverData)
                     .crossfade(200)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .placeholderMemoryCacheKey(cacheKey)

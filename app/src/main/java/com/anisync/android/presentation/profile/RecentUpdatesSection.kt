@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.profile
 
+import com.anisync.android.domain.url
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -159,7 +161,7 @@ fun RecentUpdateCard(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
             if (activity.mediaCoverUrl != null) {
                 AsyncImage(
-                    model = activity.mediaCoverUrl,
+                    model = activity.mediaCover.url() ?: activity.mediaCoverUrl,
                     contentDescription = activity.mediaTitle,
                     modifier = coverModifier
                         .border(

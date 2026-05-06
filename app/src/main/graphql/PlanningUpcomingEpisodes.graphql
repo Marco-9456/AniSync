@@ -21,7 +21,9 @@ query GetPlanningUpcomingEpisodes($mediaIds: [Int!], $airingBefore: Int!) {
           native
         }
         coverImage {
+          medium
           large
+          extraLarge
         }
         type
       }

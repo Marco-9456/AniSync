@@ -30,5 +30,6 @@ data class ForumThread(
     val updatedAt: Long,
     val siteUrl: String?,
     val mediaTitle: String? = null,
-    val mediaCoverUrl: String? = null
+    val mediaCoverUrl: String? = null,
+    val mediaCover: CoverImage? = null
 )

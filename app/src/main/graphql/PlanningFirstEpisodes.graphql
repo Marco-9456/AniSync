@@ -20,7 +20,9 @@ query GetPlanningFirstEpisodes($mediaIds: [Int!], $airingBefore: Int!, $airingAf
           native
         }
         coverImage {
+          medium
           large
+          extraLarge
         }
         type
       }

@@ -36,6 +36,8 @@ query GetForumOverview($page: Int = 1, $perPage: Int = 15, $sort: [ThreadSort] =
         }
         coverImage {
           medium
+          large
+          extraLarge
         }
       }
     }

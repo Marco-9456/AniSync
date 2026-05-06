@@ -29,6 +29,8 @@ query SearchMedia(
       }
 
       coverImage {
+        medium
+        large
         extraLarge
       }
       status

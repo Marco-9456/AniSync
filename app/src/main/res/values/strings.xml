@@ -316,6 +316,14 @@
     <string name="settings_title_language">Title Language</string>
     <string name="settings_app_language">App Language</string>
     <string name="settings_app_language_system_desc">Uses your device language setting</string>
+    <string name="settings_cover_quality">Cover image quality</string>
+    <string name="settings_cover_quality_desc">Applies to every cover shown in the app. Higher quality looks sharper but uses more data and storage.</string>
+    <string name="cover_quality_extra_large">Extra large</string>
+    <string name="cover_quality_extra_large_desc">Maximum sharpness everywhere. Best on Wi-Fi.</string>
+    <string name="cover_quality_large">Large</string>
+    <string name="cover_quality_large_desc">Sharp on most surfaces. Recommended.</string>
+    <string name="cover_quality_medium">Medium</string>
+    <string name="cover_quality_medium_desc">Smallest, fastest. Visible blur on detail screens.</string>
     <string name="title_language_romaji">Romaji</string>
     <string name="title_language_english">English</string>
     <string name="title_language_native">Native</string>

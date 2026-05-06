@@ -23,7 +23,9 @@ query GetNotifications(
             userPreferred
           }
           coverImage {
+            medium
             large
+            extraLarge
           }
           type
         }
@@ -68,7 +70,11 @@ query GetNotifications(
             media {
               id
               title { userPreferred }
-              coverImage { large }
+              coverImage {
+                medium
+                large
+                extraLarge
+              }
               type
             }
           }
@@ -105,7 +111,11 @@ query GetNotifications(
             media {
               id
               title { userPreferred }
-              coverImage { large }
+              coverImage {
+                medium
+                large
+                extraLarge
+              }
               type
             }
           }
@@ -142,7 +152,11 @@ query GetNotifications(
             media {
               id
               title { userPreferred }
-              coverImage { large }
+              coverImage {
+                medium
+                large
+                extraLarge
+              }
               type
             }
           }
@@ -179,7 +193,11 @@ query GetNotifications(
             media {
               id
               title { userPreferred }
-              coverImage { large }
+              coverImage {
+                medium
+                large
+                extraLarge
+              }
               type
             }
           }
@@ -216,7 +234,11 @@ query GetNotifications(
             media {
               id
               title { userPreferred }
-              coverImage { large }
+              coverImage {
+                medium
+                large
+                extraLarge
+              }
               type
             }
           }
@@ -357,7 +379,9 @@ query GetNotifications(
             userPreferred
           }
           coverImage {
+            medium
             large
+            extraLarge
           }
           type
         }
@@ -375,7 +399,9 @@ query GetNotifications(
             userPreferred
           }
           coverImage {
+            medium
             large
+            extraLarge
           }
           type
         }
@@ -394,7 +420,9 @@ query GetNotifications(
             userPreferred
           }
           coverImage {
+            medium
             large
+            extraLarge
           }
           type
         }

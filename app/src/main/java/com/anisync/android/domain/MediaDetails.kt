@@ -57,6 +57,7 @@ data class MediaDetails(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    val cover: CoverImage? = null,
     val bannerUrl: String?,
     val description: String,
     val score: Int?,
@@ -116,6 +117,7 @@ data class RelatedMedia(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    val cover: CoverImage? = null,
     val format: String?,
     val status: String?,
     val relationType: String
@@ -132,6 +134,7 @@ data class RecommendedMedia(
     val titleNative: String?,
     val titleUserPreferred: String,
     val coverUrl: String?,
+    val cover: CoverImage? = null,
     val format: String?,
     val score: Int?,
     val rating: Int, // Community recommendation rating
@@ -168,5 +171,6 @@ data class MediaReview(
     val createdAt: Long,    // Unix timestamp
     val mediaTitle: String? = null,
     val mediaCoverUrl: String? = null,
+    val mediaCover: CoverImage? = null,
     val mediaBannerUrl: String? = null
 )

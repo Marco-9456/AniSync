@@ -3,6 +3,7 @@ package com.anisync.android.data.local
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
 import com.anisync.android.data.local.entity.UserProfileEntity
+import com.anisync.android.domain.CoverImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.UserProfile
@@ -22,6 +23,7 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     titleNative = titleNative,
     titleUserPreferred = titleUserPreferred,
     coverUrl = coverUrl,
+    cover = CoverImage.of(coverMedium, coverLarge, coverExtraLarge),
     progress = progress,
     totalEpisodes = totalEpisodes,
     totalChapters = totalChapters,
@@ -53,6 +55,9 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     titleNative = titleNative,
     titleUserPreferred = titleUserPreferred,
     coverUrl = coverUrl,
+    coverMedium = cover?.medium,
+    coverLarge = cover?.large,
+    coverExtraLarge = cover?.extraLarge,
     progress = progress,
     totalEpisodes = totalEpisodes,
     totalChapters = totalChapters,
@@ -87,6 +92,7 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     titleNative = titleNative,
     titleUserPreferred = titleUserPreferred,
     coverUrl = coverUrl,
+    cover = CoverImage.of(coverMedium, coverLarge, coverExtraLarge),
     bannerUrl = bannerUrl,
     description = description,
     score = score,
@@ -128,6 +134,9 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     titleNative = titleNative,
     titleUserPreferred = titleUserPreferred,
     coverUrl = coverUrl,
+    coverMedium = cover?.medium,
+    coverLarge = cover?.large,
+    coverExtraLarge = cover?.extraLarge,
     bannerUrl = bannerUrl,
     description = description,
     score = score,

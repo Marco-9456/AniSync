@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.discover.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -209,7 +211,7 @@ fun DiscoverMediaCard(
     val coverKey = TransitionKeys.cover(transitionPrefix, item.mediaId)
     val gradientKey = TransitionKeys.gradient(transitionPrefix, item.mediaId)
     val titleKey = TransitionKeys.title(transitionPrefix, item.mediaId)
-    val cacheKey = TransitionKeys.imageCacheKey(transitionPrefix, item.mediaId)
+    val cacheKey = (TransitionKeys.imageCacheKey(transitionPrefix, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
 
     val outlineVariant = MaterialTheme.colorScheme.outlineVariant
     val title = item.getTitle(titleLanguage)
@@ -291,9 +293,10 @@ private fun ImmersiveCardContent(
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         val context = LocalContext.current
-        val imageRequest = remember(item.coverUrl, cacheKey) {
+        val coverData = item.cover.url() ?: item.coverUrl
+        val imageRequest = remember(coverData, cacheKey) {
             ImageRequest.Builder(context)
-                .data(item.coverUrl)
+                .data(coverData)
                 .crossfade(200)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .placeholderMemoryCacheKey(cacheKey)
@@ -480,9 +483,10 @@ private fun ListItemContent(
         verticalAlignment = Alignment.CenterVertically
     ) {
         val context = LocalContext.current
-        val imageRequest = remember(item.coverUrl) {
+        val coverData = item.cover.url() ?: item.coverUrl
+        val imageRequest = remember(coverData) {
             ImageRequest.Builder(context)
-                .data(item.coverUrl)
+                .data(coverData)
                 .crossfade(200)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .build()

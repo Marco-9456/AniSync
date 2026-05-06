@@ -209,6 +209,7 @@ data class Media(
     val id: Int,
     val title: String,
     val coverUrl: String?,
+    val cover: CoverImage? = null,
     val type: com.anisync.android.type.MediaType
 )
 

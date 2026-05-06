@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.profile.sections
 
+import com.anisync.android.domain.url
+
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -65,6 +67,7 @@ fun ProfileOverviewSection(
     onSubscribeClick: (Int) -> Unit = {},
     onLikeActivity: ((Int) -> Unit)? = null,
     onDeleteActivity: ((Int) -> Unit)? = null,
+    onEditActivity: ((Int) -> Unit)? = null,
     viewerId: Int? = null,
     modifier: Modifier = Modifier
 ) {
@@ -97,6 +100,7 @@ fun ProfileOverviewSection(
                 onSubscribeClick = onSubscribeClick,
                 onLikeClick = onLikeActivity,
                 onDeleteClick = onDeleteActivity,
+                onEditClick = onEditActivity,
                 viewerId = viewerId
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -266,6 +270,7 @@ private fun HorizontalFavoritesSection(
 @Composable
 private fun PosterCardFallback(
     coverUrl: String?,
+    cover: com.anisync.android.domain.CoverImage? = null,
     title: String,
     onClick: () -> Unit
 ) {
@@ -276,7 +281,7 @@ private fun PosterCardFallback(
             .bouncyClickable(onClick = onClick)
     ) {
         AsyncImage(
-            model = coverUrl,
+            model = cover.url() ?: coverUrl,
             contentDescription = title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

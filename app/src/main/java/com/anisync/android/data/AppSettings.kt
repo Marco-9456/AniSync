@@ -34,6 +34,20 @@ enum class ThemeMode {
 }
 
 /**
+ * Cover-image quality picked from AniList's [CoverImage] sizes. Applied app-wide
+ * via a Coil interceptor that rewrites AniList CDN cover URLs to the chosen size,
+ * so every cover (cards, lists, detail screens) follows this preference.
+ *
+ * Order matches the picker (largest first). Persisted by name so reordering
+ * doesn't shift saved values.
+ */
+enum class CoverQuality {
+    EXTRA_LARGE,
+    LARGE,
+    MEDIUM
+}
+
+/**
  * Preferred streaming service for widget icons.
  * Icons are loaded from AniList CDN URLs (same as external links).
  * Note: Icon URLs are from AniList's external links API and may change over time.
@@ -114,6 +128,34 @@ class AppSettings @Inject constructor(
         TitleLanguage.entries.getOrElse(prefs.getInt(KEY_TITLE_LANGUAGE, TitleLanguage.ROMAJI.ordinal)) { TitleLanguage.ROMAJI }
     )
     val titleLanguage: StateFlow<TitleLanguage> = _titleLanguage.asStateFlow()
+
+    // Cover image quality setting
+    private val _coverQuality = MutableStateFlow(readCoverQuality())
+    val coverQuality: StateFlow<CoverQuality> = _coverQuality.asStateFlow()
+
+    /**
+     * Reads the cover quality preference, migrating older builds that stored it as an
+     * ordinal Int. The dev branch shipped both encodings during development; without
+     * this fallback, an upgrade from the Int-encoded build crashes on launch with a
+     * ClassCastException inside [SharedPreferences.getString].
+     */
+    private fun readCoverQuality(): CoverQuality {
+        val nameValue = runCatching { prefs.getString(KEY_COVER_QUALITY, null) }.getOrNull()
+        if (nameValue != null) {
+            return runCatching { CoverQuality.valueOf(nameValue) }.getOrDefault(CoverQuality.LARGE)
+        }
+        // Legacy ordinal-encoded value, or never-set. The original ordering was
+        // [MEDIUM, LARGE, EXTRA_LARGE]; the new [CoverQuality] reorders these.
+        // Map by the original ordinal so saved values keep their meaning.
+        val legacyOrdinal = runCatching { prefs.getInt(KEY_COVER_QUALITY, 1) }.getOrDefault(1)
+        val migrated = when (legacyOrdinal) {
+            0 -> CoverQuality.MEDIUM
+            2 -> CoverQuality.EXTRA_LARGE
+            else -> CoverQuality.LARGE
+        }
+        prefs.edit().putString(KEY_COVER_QUALITY, migrated.name).apply()
+        return migrated
+    }
     
 // Preferred streaming service setting
     private val _preferredStreamingService = MutableStateFlow(
@@ -233,7 +275,16 @@ class AppSettings @Inject constructor(
         _titleLanguage.value = language
         prefs.edit().putInt(KEY_TITLE_LANGUAGE, language.ordinal).apply()
     }
-    
+
+    /**
+     * Set the preferred media cover image quality.
+     */
+    fun setCoverQuality(quality: CoverQuality) {
+        _coverQuality.value = quality
+        prefs.edit().putString(KEY_COVER_QUALITY, quality.name).apply()
+    }
+
+
 /**
      * Set the preferred streaming service for widget icons.
      * Automatically refreshes the Up Next widget to reflect the change.
@@ -396,6 +447,7 @@ companion object {
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
+        private const val KEY_COVER_QUALITY = "cover_quality"
         private const val KEY_PREFERRED_STREAMING_SERVICE = "preferred_streaming_service"
         private const val KEY_SELECTED_PALETTE = "selected_palette"
         private const val KEY_CUSTOM_SEED_COLOR = "custom_seed_color"

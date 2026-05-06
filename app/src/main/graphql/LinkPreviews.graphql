@@ -6,7 +6,9 @@ query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int], $staffIds: [Int]) 
                 userPreferred
             }
             coverImage {
-                large
+              medium
+              large
+              extraLarge
             }
             type
         }

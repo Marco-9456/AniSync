@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.details
 
+import com.anisync.android.domain.url
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -608,7 +610,7 @@ fun DetailsPageContent(
 
     // ImageViewerDialog state for cover/banner image
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
-    val viewerImages = remember(details.coverUrl, details.bannerUrl) {
+    val viewerImages = remember(details.cover.url() ?: details.coverUrl, details.bannerUrl) {
         listOfNotNull(details.coverUrl, details.bannerUrl)
     }
 
@@ -946,7 +948,10 @@ fun PageHeaderSection(
     // --- Transition Keys ---
     val coverKey = remember(details.id) { TransitionKeys.cover(sourceScreen, details.id) }
     val titleKey = remember(details.id) { TransitionKeys.title(sourceScreen, details.id) }
-    val cacheKey = remember(details.id) { TransitionKeys.imageCacheKey(sourceScreen, details.id) }
+    val coverQuality = com.anisync.android.domain.LocalCoverQuality.current
+    val cacheKey = remember(details.id, coverQuality) {
+        TransitionKeys.imageCacheKey(sourceScreen, details.id) + "-" + coverQuality.name
+    }
 
     // --- UI Constants ---
     val spatialSpec = AppMotion.rememberSpatialSpec()
@@ -1132,9 +1137,10 @@ private fun ContentRow(
     onCoverClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val coverImageRequest = remember(details.coverUrl, cacheKey) {
+    val coverData = details.cover.url() ?: details.coverUrl
+    val coverImageRequest = remember(coverData, cacheKey) {
         ImageRequest.Builder(context)
-            .data(details.coverUrl)
+            .data(coverData)
             .crossfade(true)
             .placeholderMemoryCacheKey(cacheKey.toString()) // Ensure key is string if needed
             .memoryCacheKey(cacheKey.toString())

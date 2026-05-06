@@ -13,5 +13,6 @@ data class AiringSchedule(
     val mediaId: Int,
     val mediaTitle: String,
     val mediaCoverUrl: String?,
+    val mediaCover: CoverImage? = null,
     val mediaType: MediaType
 )

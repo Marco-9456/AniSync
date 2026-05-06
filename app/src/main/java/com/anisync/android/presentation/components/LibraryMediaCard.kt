@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.components
 
+import com.anisync.android.domain.url
+
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -127,7 +129,7 @@ fun LibraryMediaCard(
     val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.mediaId)
     val coverKey = TransitionKeys.cover(TransitionKeys.LIBRARY, entry.mediaId)
     val titleKey = TransitionKeys.title(TransitionKeys.LIBRARY, entry.mediaId)
-    val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId)
+    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f
@@ -238,7 +240,7 @@ fun LibraryMediaCard(
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(entry.coverUrl)
+                        .data(entry.cover.url() ?: entry.coverUrl)
                         .crossfade(true)
                         .placeholderMemoryCacheKey(cacheKey)
                         .memoryCacheKey(cacheKey)

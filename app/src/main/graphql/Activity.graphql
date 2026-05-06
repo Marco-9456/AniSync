@@ -106,6 +106,8 @@ query GetActivity($id: Int!) {
           userPreferred
         }
         coverImage {
+          medium
+          large
           extraLarge
         }
         siteUrl

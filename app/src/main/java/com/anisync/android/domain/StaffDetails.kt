@@ -44,6 +44,7 @@ data class CharacterMediaAppearance(
     val mediaTitleEnglish: String?,
     val mediaTitleNative: String?,
     val coverUrl: String?,
+    val cover: CoverImage? = null,
     val startYear: Int?,
     val characterRole: String?,
     val popularity: Int?,
