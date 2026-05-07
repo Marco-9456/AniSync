@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.components.richtext
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import kotlinx.coroutines.flow.first
@@ -65,7 +68,7 @@ private const val DEFAULT_MAX_LENGTH = 10_000
  * @param bottomBarLeading slot rendered before char count + send (e.g. DM private toggle).
  * @param enablePreview when false, the preview toggle is hidden (preview-less surfaces).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RichTextInputSheet(
     title: String,
@@ -81,6 +84,7 @@ fun RichTextInputSheet(
     minLines: Int = 4,
     maxLines: Int = 10,
     enablePreview: Boolean = true,
+    enableMediaAttach: Boolean = true,
     isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
@@ -93,6 +97,19 @@ fun RichTextInputSheet(
     val canSubmit = isSubmitEnabled(bodyValue.text) && !isSubmitting
     val focusRequester = remember { FocusRequester() }
     val haptic = LocalHapticFeedback.current
+    val attachViewModel: MediaAttachViewModel = hiltViewModel()
+    var showAttachSheet by remember { mutableStateOf(false) }
+    val insertMarkdown: (String) -> Unit = { md ->
+        bodyValue = bodyValue.insertAtCursor(if (bodyValue.text.isEmpty()) md else "\n$md\n")
+    }
+
+    if (enableMediaAttach && showAttachSheet) {
+        MediaAttachSheet(
+            viewModel = attachViewModel,
+            onDismiss = { showAttachSheet = false },
+            onMarkdownReady = insertMarkdown
+        )
+    }
 
     // Defer focus until the sheet is fully expanded — otherwise the IME opens before the
     // sheet animates in and the body sits behind the keyboard on tall layouts.
@@ -143,6 +160,15 @@ fun RichTextInputSheet(
                     )
                 }
             } else {
+                val textFieldModifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .focusRequester(focusRequester)
+                    .let { base ->
+                        if (enableMediaAttach) base.contentReceiver { tc ->
+                            handleImeContent(tc, attachViewModel, insertMarkdown)
+                        } else base
+                    }
                 TextField(
                     value = bodyValue,
                     onValueChange = {
@@ -152,10 +178,7 @@ fun RichTextInputSheet(
                     minLines = minLines,
                     maxLines = maxLines,
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .focusRequester(focusRequester),
+                    modifier = textFieldModifier,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -176,7 +199,11 @@ fun RichTextInputSheet(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onSubmit(bodyValue.text)
                 },
-                bottomBarLeading = bottomBarLeading
+                bottomBarLeading = bottomBarLeading,
+                onAttachClick = if (enableMediaAttach) ({
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    showAttachSheet = true
+                }) else null
             )
         }
     }
@@ -256,7 +283,8 @@ private fun BottomBarRow(
     isSubmitting: Boolean,
     canSubmit: Boolean,
     onSubmit: () -> Unit,
-    bottomBarLeading: (@Composable RowScope.() -> Unit)?
+    bottomBarLeading: (@Composable RowScope.() -> Unit)?,
+    onAttachClick: (() -> Unit)? = null
 ) {
     if (bottomBarLeading != null) {
         // Two-row layout: format buttons on top, leading + char count + send below.
@@ -271,7 +299,8 @@ private fun BottomBarRow(
                 onValueChange = onValueChange,
                 buttonSize = 36.dp,
                 iconSize = 18.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                onAttachClick = onAttachClick
             )
         }
         Row(
@@ -308,7 +337,8 @@ private fun BottomBarRow(
                 onValueChange = onValueChange,
                 buttonSize = 36.dp,
                 iconSize = 18.dp,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onAttachClick = onAttachClick
             )
             RichTextCharCounter(
                 length = bodyValue.text.length,

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -49,7 +50,8 @@ fun RichTextFormatBar(
     onValueChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier,
     buttonSize: Dp = 40.dp,
-    iconSize: Dp = 20.dp
+    iconSize: Dp = 20.dp,
+    onAttachClick: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
     Row(
@@ -57,6 +59,12 @@ fun RichTextFormatBar(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (onAttachClick != null) {
+            FormatButton(Icons.Outlined.AttachFile, R.string.media_attach, buttonSize, iconSize) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onAttachClick()
+            }
+        }
         FormatButton(Icons.Default.FormatBold, R.string.richtext_format_bold, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onValueChange(textFieldValue.wrapSelection("__", "__"))
@@ -110,7 +118,8 @@ fun RichTextDockedFormatBar(
     textFieldValue: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     maxLength: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAttachClick: (() -> Unit)? = null
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -126,7 +135,8 @@ fun RichTextDockedFormatBar(
             RichTextFormatBar(
                 textFieldValue = textFieldValue,
                 onValueChange = onValueChange,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onAttachClick = onAttachClick
             )
             RichTextCharCounter(
                 length = textFieldValue.text.length,

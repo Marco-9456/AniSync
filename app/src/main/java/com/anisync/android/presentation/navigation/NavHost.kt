@@ -34,9 +34,9 @@ import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.feed.FeedScreen
-import com.anisync.android.presentation.forum.ForumThreadInputScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
 import com.anisync.android.presentation.forum.ForumScreen
+import com.anisync.android.presentation.forum.ForumThreadInputScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
@@ -49,6 +49,7 @@ import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
+import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsScreen
@@ -912,6 +913,7 @@ fun AniSyncNavHost(
                     onNavigateToAbout = { navController.navigate(SettingsAbout) },
                     onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
                     onNavigateToDeveloperTools = { navController.navigate(SettingsDeveloperTools) },
+                    onNavigateToMediaUpload = { navController.navigate(SettingsMediaUpload) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -1040,6 +1042,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 DeveloperToolsScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Media upload host config
+            composable<SettingsMediaUpload>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                MediaUploadSettingsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

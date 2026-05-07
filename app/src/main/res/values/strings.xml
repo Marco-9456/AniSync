@@ -741,4 +741,54 @@
     <string name="forum_media_searching">Searching…</string>
     <string name="forum_media_no_results">No results for "%1$s"</string>
     <string name="forum_remove_media_category">Remove media</string>
+
+    <!-- Media upload (settings + composer attach) -->
+    <string name="settings_media_upload">Media upload</string>
+    <string name="settings_media_upload_desc">Where attached photos, GIFs, and videos are hosted</string>
+    <string name="media_upload_intro">AniList does not host uploads. Pick a third-party host to use when attaching media inside threads, replies, status posts, messages, and bios.</string>
+    <string name="media_upload_host_catbox">Catbox.moe</string>
+    <string name="media_upload_host_catbox_desc">Permanent free hosting, up to 200 MB per file</string>
+    <string name="media_upload_host_litterbox_1h">Litterbox · 1 hour</string>
+    <string name="media_upload_host_litterbox_24h">Litterbox · 24 hours</string>
+    <string name="media_upload_host_litterbox_72h">Litterbox · 72 hours</string>
+    <string name="media_upload_host_litterbox_desc">Auto-deletes after the chosen time</string>
+    <string name="media_upload_host_imgur">Imgur (anonymous)</string>
+    <string name="media_upload_host_imgur_desc">Needs a free Client-ID</string>
+    <string name="media_upload_host_custom">Custom host</string>
+    <string name="media_upload_host_custom_desc">Any service that accepts a multipart POST</string>
+    <string name="media_upload_imgur_client_id">Imgur Client-ID</string>
+    <string name="media_upload_imgur_client_id_hint">e.g. 546c25a59c58ad7</string>
+    <string name="media_upload_imgur_help">Create one at imgur.com/account/settings/apps. Anonymous uploads work without an account.</string>
+    <string name="media_upload_custom_url">Endpoint URL</string>
+    <string name="media_upload_custom_url_hint">https://example.com/upload</string>
+    <string name="media_upload_custom_field">File field name</string>
+    <string name="media_upload_custom_auth">Auth header (optional)</string>
+    <string name="media_upload_custom_auth_hint">Authorization: Bearer …</string>
+    <string name="media_upload_custom_json_path">Response JSON path (optional)</string>
+    <string name="media_upload_custom_json_path_hint">e.g. data.url — empty if response is the URL</string>
+    <string name="media_upload_custom_help">Leave the JSON path empty if the server returns the URL directly in the response body.</string>
+
+    <!-- Media attach sheet (composer) -->
+    <string name="media_attach">Attach media</string>
+    <string name="media_attach_pick_image">Photo or GIF</string>
+    <string name="media_attach_pick_image_desc">From your gallery or downloads</string>
+    <string name="media_attach_pick_video">Video</string>
+    <string name="media_attach_pick_video_desc">webm or mp4</string>
+    <string name="media_attach_paste_url">Insert URL</string>
+    <string name="media_attach_paste_url_desc">Already-hosted image or video</string>
+    <string name="media_attach_size_title">Display size</string>
+    <string name="media_attach_size_small">Small</string>
+    <string name="media_attach_size_medium">Medium</string>
+    <string name="media_attach_size_large">Large</string>
+    <string name="media_attach_size_original">Original</string>
+    <string name="media_attach_size_custom">Custom</string>
+    <string name="media_attach_size_custom_hint">e.g. 250 or 60%</string>
+    <string name="media_attach_upload">Upload</string>
+    <string name="media_attach_uploading">Uploading…</string>
+    <string name="media_attach_cancel">Cancel</string>
+    <string name="media_attach_retry">Retry</string>
+    <string name="media_attach_url_input">Public URL</string>
+    <string name="media_attach_url_input_hint">https://…</string>
+    <string name="media_attach_insert">Insert</string>
+    <string name="media_attach_error_invalid_url">Enter a valid http(s) URL</string>
 </resources>
