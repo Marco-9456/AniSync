@@ -235,7 +235,8 @@ private fun StaffDetailsContent(
                 alternativeNames = staff.alternativeNames,
                 favourites = staff.favourites,
                 isFavourite = staff.isFavourite,
-                onFavouriteClick = onFavouriteClick
+                onFavouriteClick = onFavouriteClick,
+                nameClipLabel = stringResource(R.string.clip_label_staff_name)
             )
         }
 

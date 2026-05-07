@@ -417,6 +417,13 @@
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="a11y_action_copy">Copy to clipboard</string>
     <string name="copied_name">Name copied to clipboard</string>
+    <string name="copied_title">Title copied to clipboard</string>
+    <string name="copied_link">Copied %1$s link to clipboard</string>
+    <string name="clip_label_title">Title</string>
+    <string name="clip_label_synopsis">Synopsis</string>
+    <string name="clip_label_character_name">Character name</string>
+    <string name="clip_label_staff_name">Staff name</string>
+    <string name="clip_label_external_link">External link (%1$s)</string>
 
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>

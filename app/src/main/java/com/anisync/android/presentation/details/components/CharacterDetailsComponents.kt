@@ -165,9 +165,11 @@ fun DetailHeroImage(
 /**
  * Name card with tint showing name, native name, alternative names and favorites count.
  *
- * Names are wrapped in a [SelectionContainer] so users can long-press to enter
- * Android's native text-selection mode and copy any portion (or all via "Select all").
+ * The primary [name] gets a direct long-press-to-copy gesture (full string copy
+ * since it's a single short line). Native name and alternative names are wrapped
+ * in a [SelectionContainer] so users can copy a portion (or all via "Select all").
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NameCard(
     name: String,
@@ -176,9 +178,13 @@ fun NameCard(
     favourites: Int?,
     isFavourite: Boolean = false,
     onFavouriteClick: (() -> Unit)? = null,
+    nameClipLabel: String = stringResource(R.string.clip_label_character_name),
     modifier: Modifier = Modifier
 ) {
     val cardShape = RoundedCornerShape(32.dp)
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLabel = stringResource(R.string.a11y_action_copy)
+    val copiedNameMessage = stringResource(R.string.copied_name)
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -188,28 +194,37 @@ fun NameCard(
         color = MaterialTheme.colorScheme.primaryContainer
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            SelectionContainer {
-                Column {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    nativeName?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
-                    if (alternativeNames.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Also known as: ${alternativeNames.joinToString(", ")}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        copyToClipboard(nameClipLabel, name, copiedNameMessage)
+                    },
+                    onLongClickLabel = copyLabel
+                )
+            )
+            if (nativeName != null || alternativeNames.isNotEmpty()) {
+                SelectionContainer {
+                    Column {
+                        nativeName?.let {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                        if (alternativeNames.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Also known as: ${alternativeNames.joinToString(", ")}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
                     }
                 }
             }
@@ -308,13 +323,14 @@ fun VoiceActorCard(
 ) {
     val copyToClipboard = rememberCopyToClipboard()
     val copyLabel = stringResource(R.string.a11y_action_copy)
+    val staffClipLabel = stringResource(R.string.clip_label_staff_name)
     val copiedNameMessage = stringResource(R.string.copied_name)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.combinedClickable(
             onClick = onClick,
-            onLongClick = { copyToClipboard(copyLabel, name, copiedNameMessage) },
+            onLongClick = { copyToClipboard(staffClipLabel, name, copiedNameMessage) },
             onLongClickLabel = copyLabel
         )
     ) {
@@ -506,7 +522,6 @@ fun ExpandableBiography(html: String) {
 
     val cardShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
     Surface(
-        onClick = { expanded = !expanded },
         shape = cardShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
@@ -539,7 +554,14 @@ fun ExpandableBiography(html: String) {
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 4.dp)
+            ) {
                 Text(
                     text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
                         R.string.synopsis_read_more
@@ -576,7 +598,6 @@ fun ExpandableSynopsis(text: String) {
 
     val cardShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
     Surface(
-        onClick = { expanded = !expanded },
         shape = cardShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
@@ -607,7 +628,14 @@ fun ExpandableSynopsis(text: String) {
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 4.dp)
+            ) {
                 Text(
                     text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
                         R.string.synopsis_read_more

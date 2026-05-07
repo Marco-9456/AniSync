@@ -504,6 +504,8 @@ fun ExternalLinkChip(
     val uriHandler = LocalUriHandler.current
     val copyToClipboard = rememberCopyToClipboard()
     val copyLabel = stringResource(R.string.a11y_action_copy)
+    val linkClipLabel = stringResource(R.string.clip_label_external_link, link.site)
+    val copiedLinkMessage = stringResource(R.string.copied_link, link.site)
     val scope = rememberCoroutineScope()
 
     var confirmationTrigger by remember { mutableIntStateOf(0) }
@@ -554,18 +556,15 @@ fun ExternalLinkChip(
                 },
                 onLongClick = {
                     link.url?.let { url ->
-                        copyToClipboard(
-                            copyLabel,
-                            url,
-                            "Copied ${link.site} link to clipboard"
-                        )
+                        copyToClipboard(linkClipLabel, url, copiedLinkMessage)
                         confirmationTrigger++
                         scope.launch {
                             delay(150)
                             confirmationTrigger = 0
                         }
                     }
-                }
+                },
+                onLongClickLabel = copyLabel
             ),
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,

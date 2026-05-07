@@ -82,6 +82,7 @@ fun CharacterItem(
     val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
     val copyToClipboard = rememberCopyToClipboard()
     val copyLabel = stringResource(R.string.a11y_action_copy)
+    val nameClipLabel = stringResource(R.string.clip_label_character_name)
     val copiedNameMessage = stringResource(R.string.copied_name)
 
     Column(
@@ -98,7 +99,7 @@ fun CharacterItem(
                 ),
                 onLongClickLabel = copyLabel,
                 onLongClick = {
-                    copyToClipboard(copyLabel, character.nameUserPreferred, copiedNameMessage)
+                    copyToClipboard(nameClipLabel, character.nameUserPreferred, copiedNameMessage)
                 }
             )
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
@@ -399,6 +400,7 @@ fun VoicedCharacterItem(
     val cardShape = RoundedCornerShape(8.dp)
     val copyToClipboard = rememberCopyToClipboard()
     val copyLabel = stringResource(R.string.a11y_action_copy)
+    val nameClipLabel = stringResource(R.string.clip_label_character_name)
     val copiedNameMessage = stringResource(R.string.copied_name)
     val voicedName = voicedCharacter.getName(titleLanguage)
     val titleSpatialSpec = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
@@ -451,7 +453,7 @@ fun VoicedCharacterItem(
                     .combinedClickable(
                         onClick = onCharacterClick,
                         onLongClick = {
-                            copyToClipboard(copyLabel, voicedName, copiedNameMessage)
+                            copyToClipboard(nameClipLabel, voicedName, copiedNameMessage)
                         },
                         onLongClickLabel = copyLabel
                     )

@@ -13,9 +13,11 @@ import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +38,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -128,6 +129,7 @@ import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
@@ -1121,7 +1123,7 @@ private fun TrailerPlayButton(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ContentRow(
     details: MediaDetails,
@@ -1146,6 +1148,10 @@ private fun ContentRow(
             .memoryCacheKey(cacheKey.toString())
             .build()
     }
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLongClickLabel = stringResource(R.string.a11y_action_copy)
+    val titleClipLabel = stringResource(R.string.clip_label_title)
+    val copiedTitleMessage = stringResource(R.string.copied_title)
 
     Row(
         modifier = Modifier
@@ -1189,24 +1195,32 @@ private fun ContentRow(
                 .padding(bottom = 6.dp)
         ) {
             with(sharedTransitionScope) {
-                SelectionContainer {
-                    Text(
-                        text = displayTitle.orEmpty(),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.sharedBounds(
+                Text(
+                    text = displayTitle.orEmpty(),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = titleKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> spatialSpec },
                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                         )
-                    )
-                }
+                        .combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                displayTitle?.let {
+                                    copyToClipboard(titleClipLabel, it, copiedTitleMessage)
+                                }
+                            },
+                            onLongClickLabel = copyLongClickLabel
+                        )
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
