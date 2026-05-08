@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,17 +27,18 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -359,14 +361,11 @@ private fun SizeChip(label: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun UploadingView(state: MediaAttachState.Uploading, onCancel: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp
-            )
             Spacer(Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.media_attach_uploading),
@@ -381,9 +380,15 @@ private fun UploadingView(state: MediaAttachState.Uploading, onCancel: () -> Uni
             overflow = TextOverflow.Ellipsis
         )
         if (state.total > 0) {
-            val percent = ((state.uploaded.toFloat() / state.total) * 100).toInt().coerceIn(0, 100)
-            LinearProgressIndicator(
-                progress = { (state.uploaded.toFloat() / state.total).coerceIn(0f, 1f) },
+            val targetProgress = (state.uploaded.toFloat() / state.total).coerceIn(0f, 1f)
+            val animatedProgress by animateFloatAsState(
+                targetValue = targetProgress,
+                animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+                label = "UploadProgressAnimation"
+            )
+            val percent = (targetProgress * 100).toInt()
+            LinearWavyProgressIndicator(
+                progress = { animatedProgress },
                 modifier = Modifier.fillMaxWidth()
             )
             Text(
@@ -392,7 +397,7 @@ private fun UploadingView(state: MediaAttachState.Uploading, onCancel: () -> Uni
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
         OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.media_attach_cancel))

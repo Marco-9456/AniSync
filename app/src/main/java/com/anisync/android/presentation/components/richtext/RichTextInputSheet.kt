@@ -91,8 +91,8 @@ fun RichTextInputSheet(
     maxLines: Int = 10,
     enablePreview: Boolean = true,
     enableMediaAttach: Boolean = true,
+    fullScreen: Boolean = false,
     isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {
     var bodyValue by remember(prefillBody) {
@@ -107,6 +107,20 @@ fun RichTextInputSheet(
     var showAttachSheet by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     val hasDraft = bodyValue.text.isNotBlank() && bodyValue.text != prefillBody.orEmpty()
+    val hasDraftState = androidx.compose.runtime.rememberUpdatedState(hasDraft)
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = fullScreen,
+        confirmValueChange = { targetValue ->
+            if (targetValue == SheetValue.Hidden && hasDraftState.value) {
+                showDiscardDialog = true
+                false
+            } else {
+                true
+            }
+        }
+    )
+
     val dismissWithCheck = {
         if (hasDraft) showDiscardDialog = true else onDismiss()
     }
@@ -186,7 +200,8 @@ fun RichTextInputSheet(
 
             Spacer(Modifier.height(8.dp))
 
-            Box(modifier = Modifier.weight(1f)) {
+            val boxModifier = if (fullScreen) Modifier.weight(1f) else Modifier.weight(1f, fill = false)
+            Box(modifier = boxModifier) {
                 if (isPreviewMode) {
                     Column(
                         modifier = Modifier
@@ -202,7 +217,7 @@ fun RichTextInputSheet(
                 } else {
                     val textFieldModifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight()
+                        .then(if (fullScreen) Modifier.fillMaxHeight() else Modifier)
                         .padding(horizontal = 16.dp)
                         .focusRequester(focusRequester)
                         .let { base ->

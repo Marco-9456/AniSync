@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -106,7 +107,6 @@ fun ActivityDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    val replySheetState = rememberModalBottomSheetState()
     val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
@@ -358,7 +358,7 @@ fun ActivityDetailScreen(
         ) {
             when {
                 uiState.isLoading && uiState.activity == null -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
+                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularWavyProgressIndicator() }
                 }
                 uiState.errorMessage != null && uiState.activity == null -> {
                     ErrorState(
@@ -559,8 +559,7 @@ fun ActivityDetailScreen(
             maxLength = replyBounds.max,
             onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
             onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
-            prefillBody = uiState.replyPrefillBody,
-            sheetState = replySheetState
+            prefillBody = uiState.replyPrefillBody
         )
     }
 

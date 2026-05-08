@@ -67,7 +67,6 @@ fun FeedScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
-    val composeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
 
     LaunchedEffect(Unit) {
@@ -256,9 +255,9 @@ fun FeedScreen(
             isSubmitting = uiState.isPostingStatus,
             minLength = textBounds.min,
             maxLength = textBounds.max,
+            fullScreen = true,
             onSubmit = { body -> viewModel.onAction(FeedAction.PostStatus(body)) },
-            onDismiss = { viewModel.onAction(FeedAction.DismissCompose) },
-            sheetState = composeSheetState
+            onDismiss = { viewModel.onAction(FeedAction.DismissCompose) }
         )
     }
 
