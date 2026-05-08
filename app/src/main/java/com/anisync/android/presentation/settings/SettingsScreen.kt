@@ -168,7 +168,6 @@ fun SettingsScreen(
                     "video",
                     "attach",
                     "catbox",
-                    "imgur",
                     "host"
                 ),
                 onClick = onNavigateToMediaUpload

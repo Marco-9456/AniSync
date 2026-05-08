@@ -248,7 +248,7 @@ object SettingsLinks
 object SettingsDeveloperTools
 
 /**
- * Media upload host configuration (Catbox / Litterbox / Imgur / custom).
+ * Media upload host configuration (Catbox / Litterbox / custom).
  */
 @Serializable
 object SettingsMediaUpload

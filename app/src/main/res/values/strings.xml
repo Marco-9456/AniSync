@@ -748,17 +748,14 @@
     <string name="media_upload_intro">AniList does not host uploads. Pick a third-party host to use when attaching media inside threads, replies, status posts, messages, and bios.</string>
     <string name="media_upload_host_catbox">Catbox.moe</string>
     <string name="media_upload_host_catbox_desc">Permanent free hosting, up to 200 MB per file</string>
-    <string name="media_upload_host_litterbox_1h">Litterbox · 1 hour</string>
-    <string name="media_upload_host_litterbox_24h">Litterbox · 24 hours</string>
-    <string name="media_upload_host_litterbox_72h">Litterbox · 72 hours</string>
-    <string name="media_upload_host_litterbox_desc">Auto-deletes after the chosen time</string>
-    <string name="media_upload_host_imgur">Imgur (anonymous)</string>
-    <string name="media_upload_host_imgur_desc">Needs a free Client-ID</string>
+    <string name="media_upload_host_litterbox">Litterbox</string>
+    <string name="media_upload_host_litterbox_desc">Temporary hosting on the same network as Catbox</string>
     <string name="media_upload_host_custom">Custom host</string>
     <string name="media_upload_host_custom_desc">Any service that accepts a multipart POST</string>
-    <string name="media_upload_imgur_client_id">Imgur Client-ID</string>
-    <string name="media_upload_imgur_client_id_hint">e.g. 546c25a59c58ad7</string>
-    <string name="media_upload_imgur_help">Create one at imgur.com/account/settings/apps. Anonymous uploads work without an account.</string>
+    <string name="media_upload_litterbox_expiry">Auto-delete after</string>
+    <string name="media_upload_litterbox_1h">1 hour</string>
+    <string name="media_upload_litterbox_24h">24 hours</string>
+    <string name="media_upload_litterbox_72h">72 hours</string>
     <string name="media_upload_custom_url">Endpoint URL</string>
     <string name="media_upload_custom_url_hint">https://example.com/upload</string>
     <string name="media_upload_custom_field">File field name</string>
@@ -791,4 +788,5 @@
     <string name="media_attach_url_input_hint">https://…</string>
     <string name="media_attach_insert">Insert</string>
     <string name="media_attach_error_invalid_url">Enter a valid http(s) URL</string>
+    <string name="media_attach_size_output">Inserts: %s</string>
 </resources>

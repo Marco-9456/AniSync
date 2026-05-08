@@ -244,8 +244,10 @@ class AppSettings @Inject constructor(
     private val _mediaHost = MutableStateFlow(readMediaHost())
     val mediaHost: StateFlow<MediaHost> = _mediaHost.asStateFlow()
 
-    private val _imgurClientId = MutableStateFlow(prefs.getString(KEY_IMGUR_CLIENT_ID, "").orEmpty())
-    val imgurClientId: StateFlow<String> = _imgurClientId.asStateFlow()
+    private val _litterboxDuration = MutableStateFlow(
+        prefs.getString(KEY_LITTERBOX_DURATION, "1h").orEmpty().ifBlank { "1h" }
+    )
+    val litterboxDuration: StateFlow<String> = _litterboxDuration.asStateFlow()
 
     private val _customHostUrl = MutableStateFlow(prefs.getString(KEY_CUSTOM_HOST_URL, "").orEmpty())
     val customHostUrl: StateFlow<String> = _customHostUrl.asStateFlow()
@@ -449,9 +451,10 @@ class AppSettings @Inject constructor(
         prefs.edit().putString(KEY_MEDIA_HOST, host.name).apply()
     }
 
-    fun setImgurClientId(value: String) {
-        _imgurClientId.value = value
-        prefs.edit().putString(KEY_IMGUR_CLIENT_ID, value).apply()
+    /** [duration] must be `"1h"`, `"24h"`, or `"72h"` to match Litterbox's API. */
+    fun setLitterboxDuration(duration: String) {
+        _litterboxDuration.value = duration
+        prefs.edit().putString(KEY_LITTERBOX_DURATION, duration).apply()
     }
 
     fun setCustomHostUrl(value: String) {
@@ -533,7 +536,7 @@ companion object {
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
         private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
         private const val KEY_MEDIA_HOST = "media_host"
-        private const val KEY_IMGUR_CLIENT_ID = "imgur_client_id"
+        private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
         private const val KEY_CUSTOM_HOST_URL = "custom_host_url"
         private const val KEY_CUSTOM_HOST_FIELD = "custom_host_field"
         private const val KEY_CUSTOM_HOST_AUTH = "custom_host_auth"

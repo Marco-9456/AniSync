@@ -13,14 +13,14 @@ class MediaUploadSettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val mediaHost: StateFlow<MediaHost> = settings.mediaHost
-    val imgurClientId: StateFlow<String> = settings.imgurClientId
+    val litterboxDuration: StateFlow<String> = settings.litterboxDuration
     val customHostUrl: StateFlow<String> = settings.customHostUrl
     val customHostFileField: StateFlow<String> = settings.customHostFileField
     val customHostAuthHeader: StateFlow<String> = settings.customHostAuthHeader
     val customHostResponseJsonPath: StateFlow<String> = settings.customHostResponseJsonPath
 
     fun setMediaHost(host: MediaHost) = settings.setMediaHost(host)
-    fun setImgurClientId(value: String) = settings.setImgurClientId(value)
+    fun setLitterboxDuration(duration: String) = settings.setLitterboxDuration(duration)
     fun setCustomHostUrl(value: String) = settings.setCustomHostUrl(value)
     fun setCustomHostFileField(value: String) = settings.setCustomHostFileField(value)
     fun setCustomHostAuthHeader(value: String) = settings.setCustomHostAuthHeader(value)

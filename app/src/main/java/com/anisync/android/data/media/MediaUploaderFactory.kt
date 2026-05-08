@@ -8,25 +8,21 @@ import javax.inject.Singleton
 
 /**
  * Resolves the active [MediaUploader] from the user's current [AppSettings] choice.
- * Fresh instance per call so per-host mutable knobs (Litterbox `time`, Imgur Client-ID,
- * Custom config) cannot leak across uploads.
+ * Fresh instance per call so per-host mutable knobs (Litterbox `time`, Custom config)
+ * cannot leak across uploads.
  */
 @Singleton
 class MediaUploaderFactory @Inject constructor(
     private val settings: AppSettings,
     private val catbox: Provider<CatboxUploader>,
     private val litterbox: Provider<LitterboxUploader>,
-    private val imgur: Provider<ImgurUploader>,
     private val custom: Provider<CustomMultipartUploader>
 ) {
     fun current(): MediaUploader {
         return when (settings.mediaHost.value) {
             MediaHost.CATBOX -> catbox.get()
-            MediaHost.LITTERBOX_1H -> litterbox.get().apply { time = "1h" }
-            MediaHost.LITTERBOX_24H -> litterbox.get().apply { time = "24h" }
-            MediaHost.LITTERBOX_72H -> litterbox.get().apply { time = "72h" }
-            MediaHost.IMGUR -> imgur.get().apply {
-                clientId = settings.imgurClientId.value.orEmpty()
+            MediaHost.LITTERBOX -> litterbox.get().apply {
+                time = settings.litterboxDuration.value.ifBlank { "1h" }
             }
             MediaHost.CUSTOM -> custom.get().apply {
                 config = CustomMultipartUploader.Config(

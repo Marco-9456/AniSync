@@ -11,17 +11,8 @@ enum class MediaHost {
     /** catbox.moe — permanent free hosting, 200 MB / file, no key. */
     CATBOX,
 
-    /** litterbox.catbox.moe — temporary (1 hour). */
-    LITTERBOX_1H,
-
-    /** litterbox.catbox.moe — temporary (24 hours). */
-    LITTERBOX_24H,
-
-    /** litterbox.catbox.moe — temporary (72 hours). */
-    LITTERBOX_72H,
-
-    /** imgur.com anonymous upload — needs a Client-ID. */
-    IMGUR,
+    /** litterbox.catbox.moe — temporary hosting, expiration set in settings. */
+    LITTERBOX,
 
     /** User-supplied multipart endpoint. */
     CUSTOM
