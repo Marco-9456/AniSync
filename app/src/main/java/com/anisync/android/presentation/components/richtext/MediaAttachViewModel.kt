@@ -145,11 +145,7 @@ class MediaAttachViewModel @Inject constructor(
     }
 
     private fun resolveSize(picked: MediaAttachState.Picked): MediaSizeChoice {
-        val raw = picked.customSizeText.trim()
-        return when (val s = picked.size) {
-            is MediaSizeChoice.CustomPx, is MediaSizeChoice.CustomPercent -> s
-            else -> if (raw.isBlank()) s else parseCustomSize(raw) ?: s
-        }
+        return parseCustomSize(picked.customSizeText) ?: picked.size
     }
 
     private fun parseCustomSize(text: String): MediaSizeChoice? {

@@ -3,14 +3,17 @@ package com.anisync.android.presentation.components.richtext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -24,8 +27,10 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -138,6 +144,7 @@ fun MediaAttachSheet(
                                 )
                             }
                         )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         AttachAction(
                             icon = Icons.Filled.Movie,
                             title = stringResource(R.string.media_attach_pick_video),
@@ -148,6 +155,7 @@ fun MediaAttachSheet(
                                 )
                             }
                         )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         AttachAction(
                             icon = Icons.Outlined.Link,
                             title = stringResource(R.string.media_attach_paste_url),
@@ -200,11 +208,9 @@ private fun AttachAction(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp)
     ) {
         Row(
@@ -240,14 +246,23 @@ private fun PickedView(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (state.kind != MediaKind.Video) {
-            AsyncImage(
-                model = state.uri,
-                contentDescription = state.displayName,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp))
-            )
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val fraction = sizeToWidthFraction(state.size)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .heightIn(max = 300.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .animateContentSize(tween(300))
+                ) {
+                    AsyncImage(
+                        model = state.uri,
+                        contentDescription = state.displayName,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.FillWidth
+                    )
+                }
+            }
         } else {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -303,6 +318,12 @@ private fun PickedView(
                     onSizeSelected(MediaSizeChoice.CustomPx(300))
                 }
             }
+            Text(
+                text = stringResource(R.string.media_attach_size_output, state.size.toImageMarkdown("…")),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp)
+            )
             if (state.size is MediaSizeChoice.CustomPx || state.size is MediaSizeChoice.CustomPercent) {
                 OutlinedTextField(
                     value = state.customSizeText,
@@ -360,9 +381,15 @@ private fun UploadingView(state: MediaAttachState.Uploading, onCancel: () -> Uni
             overflow = TextOverflow.Ellipsis
         )
         if (state.total > 0) {
+            val percent = ((state.uploaded.toFloat() / state.total) * 100).toInt().coerceIn(0, 100)
             LinearProgressIndicator(
                 progress = { (state.uploaded.toFloat() / state.total).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = "$percent%",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -380,11 +407,18 @@ private fun FailedView(
     onRetry: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = state.message,
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Surface(
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = state.message,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
         Text(
             text = state.displayName,
             style = MaterialTheme.typography.bodySmall,
@@ -464,4 +498,13 @@ private fun UrlEntry(
             }
         }
     }
+}
+
+private fun sizeToWidthFraction(size: MediaSizeChoice): Float = when (size) {
+    is MediaSizeChoice.Small -> 0.25f
+    is MediaSizeChoice.Medium -> 0.45f
+    is MediaSizeChoice.Large -> 0.65f
+    is MediaSizeChoice.Original -> 1f
+    is MediaSizeChoice.CustomPx -> (size.pixels / 1200f).coerceIn(0.1f, 1f)
+    is MediaSizeChoice.CustomPercent -> (size.percent / 100f).coerceIn(0.05f, 1f)
 }
