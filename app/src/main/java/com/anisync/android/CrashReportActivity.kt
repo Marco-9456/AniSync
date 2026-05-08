@@ -91,6 +91,7 @@ class CrashReportActivity : ComponentActivity() {
         exitProcess(10)
     }
 
+    @Deprecated("Use finishAndKill directly", ReplaceWith("finishAndKill()"))
     override fun onBackPressed() {
         finishAndKill()
     }
