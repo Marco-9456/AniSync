@@ -3,12 +3,17 @@ package com.anisync.android.presentation.components.richtext
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -18,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -86,7 +92,7 @@ fun RichTextInputSheet(
     enablePreview: Boolean = true,
     enableMediaAttach: Boolean = true,
     isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {
     var bodyValue by remember(prefillBody) {
@@ -99,6 +105,11 @@ fun RichTextInputSheet(
     val haptic = LocalHapticFeedback.current
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
     var showAttachSheet by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    val hasDraft = bodyValue.text.isNotBlank() && bodyValue.text != prefillBody.orEmpty()
+    val dismissWithCheck = {
+        if (hasDraft) showDiscardDialog = true else onDismiss()
+    }
     val insertMarkdown: (String) -> Unit = { md ->
         bodyValue = bodyValue.insertAtCursor(if (bodyValue.text.isEmpty()) md else "\n$md\n")
     }
@@ -114,29 +125,58 @@ fun RichTextInputSheet(
     // Defer focus until the sheet is fully expanded — otherwise the IME opens before the
     // sheet animates in and the body sits behind the keyboard on tall layouts.
     LaunchedEffect(sheetState) {
-        snapshotFlow { sheetState.currentValue }.first { it == SheetValue.Expanded }
+        snapshotFlow { sheetState.currentValue }
+            .first { it == SheetValue.Expanded || it == SheetValue.PartiallyExpanded }
         focusRequester.requestFocus()
     }
 
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text(stringResource(R.string.editor_discard_title)) },
+            text = { Text(stringResource(R.string.editor_discard_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        onDismiss()
+                    }
+                ) {
+                    Text(stringResource(R.string.editor_discard_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text(stringResource(R.string.editor_discard_keep))
+                }
+            }
+        )
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = dismissWithCheck,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
         ) {
-            HeaderRow(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight)
+            ) {
+                HeaderRow(
                 title = title,
                 isPreviewMode = isPreviewMode,
                 isPreviewEnabled = enablePreview && bodyValue.text.isNotBlank(),
                 showPreviewToggle = enablePreview,
-                onCancel = onDismiss,
+                onCancel = dismissWithCheck,
                 onTogglePreview = { isPreviewMode = !isPreviewMode }
             )
 
@@ -146,46 +186,48 @@ fun RichTextInputSheet(
 
             Spacer(Modifier.height(8.dp))
 
-            if (isPreviewMode) {
-                Column(
-                    modifier = Modifier
+            Box(modifier = Modifier.weight(1f)) {
+                if (isPreviewMode) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        AsyncRichTextRenderer(
+                            html = bodyValue.text,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else {
+                    val textFieldModifier = Modifier
                         .fillMaxWidth()
-                        .height(240.dp)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    AsyncRichTextRenderer(
-                        html = bodyValue.text,
-                        modifier = Modifier.fillMaxWidth()
+                        .fillMaxHeight()
+                        .padding(horizontal = 16.dp)
+                        .focusRequester(focusRequester)
+                        .let { base ->
+                            if (enableMediaAttach) base.contentReceiver { tc ->
+                                handleImeContent(tc, attachViewModel, insertMarkdown)
+                            } else base
+                        }
+                    TextField(
+                        value = bodyValue,
+                        onValueChange = {
+                            if (it.text.length <= maxLength) bodyValue = it
+                        },
+                        placeholder = { Text(placeholder) },
+                        minLines = minLines,
+                        maxLines = maxLines,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = textFieldModifier,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
                     )
                 }
-            } else {
-                val textFieldModifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .focusRequester(focusRequester)
-                    .let { base ->
-                        if (enableMediaAttach) base.contentReceiver { tc ->
-                            handleImeContent(tc, attachViewModel, insertMarkdown)
-                        } else base
-                    }
-                TextField(
-                    value = bodyValue,
-                    onValueChange = {
-                        if (it.text.length <= maxLength) bodyValue = it
-                    },
-                    placeholder = { Text(placeholder) },
-                    minLines = minLines,
-                    maxLines = maxLines,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = textFieldModifier,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
             }
 
             BottomBarRow(
@@ -205,6 +247,7 @@ fun RichTextInputSheet(
                     showAttachSheet = true
                 }) else null
             )
+        }
         }
     }
 }
