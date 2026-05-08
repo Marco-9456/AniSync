@@ -91,7 +91,6 @@ class ThreadDetailViewModel @Inject constructor(
             is ThreadDetailAction.DeleteThread -> deleteThread()
             is ThreadDetailAction.EditComment -> openCommentEdit(action.commentId)
             is ThreadDetailAction.DeleteComment -> deleteComment(action.commentId)
-            else -> {}
         }
     }
 

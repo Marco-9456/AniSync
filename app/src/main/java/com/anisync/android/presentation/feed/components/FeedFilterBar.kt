@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Public
@@ -182,7 +183,7 @@ fun FeedFilterBar(
 
 private fun filterIcon(filter: FeedFilter): ImageVector = when (filter) {
     FeedFilter.ALL -> Icons.Default.DynamicFeed
-    FeedFilter.STATUS -> Icons.Outlined.Notes
+    FeedFilter.STATUS -> Icons.AutoMirrored.Outlined.Notes
     FeedFilter.LIST -> Icons.AutoMirrored.Filled.ViewList
 }
 

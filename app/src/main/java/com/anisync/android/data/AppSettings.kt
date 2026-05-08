@@ -11,6 +11,7 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.anisync.android.R
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.media.MediaHost
 import com.anisync.android.widget.UpNextWidget
 import com.materialkolor.PaletteStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -236,6 +237,42 @@ class AppSettings @Inject constructor(
     )
     val lastSelectedMangaTab: StateFlow<String?> = _lastSelectedMangaTab.asStateFlow()
 
+    // ==========================================================================
+    // MEDIA UPLOAD SETTINGS — third-party host config for in-composer attach
+    // ==========================================================================
+
+    private val _mediaHost = MutableStateFlow(readMediaHost())
+    val mediaHost: StateFlow<MediaHost> = _mediaHost.asStateFlow()
+
+    private val _litterboxDuration = MutableStateFlow(
+        prefs.getString(KEY_LITTERBOX_DURATION, "1h").orEmpty().ifBlank { "1h" }
+    )
+    val litterboxDuration: StateFlow<String> = _litterboxDuration.asStateFlow()
+
+    private val _customHostUrl = MutableStateFlow(prefs.getString(KEY_CUSTOM_HOST_URL, "").orEmpty())
+    val customHostUrl: StateFlow<String> = _customHostUrl.asStateFlow()
+
+    private val _customHostFileField = MutableStateFlow(
+        prefs.getString(KEY_CUSTOM_HOST_FIELD, "fileToUpload").orEmpty()
+    )
+    val customHostFileField: StateFlow<String> = _customHostFileField.asStateFlow()
+
+    private val _customHostAuthHeader = MutableStateFlow(
+        prefs.getString(KEY_CUSTOM_HOST_AUTH, "").orEmpty()
+    )
+    val customHostAuthHeader: StateFlow<String> = _customHostAuthHeader.asStateFlow()
+
+    private val _customHostResponseJsonPath = MutableStateFlow(
+        prefs.getString(KEY_CUSTOM_HOST_JSON_PATH, "").orEmpty()
+    )
+    val customHostResponseJsonPath: StateFlow<String> = _customHostResponseJsonPath.asStateFlow()
+
+    private fun readMediaHost(): MediaHost {
+        val name = runCatching { prefs.getString(KEY_MEDIA_HOST, null) }.getOrNull()
+        return runCatching { MediaHost.valueOf(name ?: MediaHost.CATBOX.name) }
+            .getOrDefault(MediaHost.CATBOX)
+    }
+
     /**
      * Set the app theme mode.
      */
@@ -406,6 +443,41 @@ class AppSettings @Inject constructor(
     }
     
     /**
+     * Set the media upload host. The new value applies to all subsequent attach
+     * operations across every composer surface.
+     */
+    fun setMediaHost(host: MediaHost) {
+        _mediaHost.value = host
+        prefs.edit().putString(KEY_MEDIA_HOST, host.name).apply()
+    }
+
+    /** [duration] must be `"1h"`, `"24h"`, or `"72h"` to match Litterbox's API. */
+    fun setLitterboxDuration(duration: String) {
+        _litterboxDuration.value = duration
+        prefs.edit().putString(KEY_LITTERBOX_DURATION, duration).apply()
+    }
+
+    fun setCustomHostUrl(value: String) {
+        _customHostUrl.value = value
+        prefs.edit().putString(KEY_CUSTOM_HOST_URL, value).apply()
+    }
+
+    fun setCustomHostFileField(value: String) {
+        _customHostFileField.value = value
+        prefs.edit().putString(KEY_CUSTOM_HOST_FIELD, value).apply()
+    }
+
+    fun setCustomHostAuthHeader(value: String) {
+        _customHostAuthHeader.value = value
+        prefs.edit().putString(KEY_CUSTOM_HOST_AUTH, value).apply()
+    }
+
+    fun setCustomHostResponseJsonPath(value: String) {
+        _customHostResponseJsonPath.value = value
+        prefs.edit().putString(KEY_CUSTOM_HOST_JSON_PATH, value).apply()
+    }
+
+    /**
      * Get the preferred streaming service directly from SharedPreferences.
      * Use this for widgets to ensure the latest value is always read.
      */
@@ -463,6 +535,12 @@ companion object {
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
         private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
+        private const val KEY_MEDIA_HOST = "media_host"
+        private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
+        private const val KEY_CUSTOM_HOST_URL = "custom_host_url"
+        private const val KEY_CUSTOM_HOST_FIELD = "custom_host_field"
+        private const val KEY_CUSTOM_HOST_AUTH = "custom_host_auth"
+        private const val KEY_CUSTOM_HOST_JSON_PATH = "custom_host_json_path"
     }
 }
 

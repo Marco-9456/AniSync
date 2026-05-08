@@ -1,6 +1,8 @@
 package com.anisync.android.presentation.components.richtext
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -42,6 +44,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
@@ -53,7 +56,7 @@ import com.anisync.android.presentation.components.AsyncRichTextRenderer
  * body field, [hasExternalUnsavedChanges] to fold their state into the discard guard,
  * and [isExternallyValid] to gate the submit button.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RichTextScaffold(
     title: String,
@@ -70,6 +73,7 @@ fun RichTextScaffold(
     autoFocusBody: Boolean = true,
     minLength: Int = 1,
     maxLength: Int = 10_000,
+    enableMediaAttach: Boolean = true,
     insertController: RichTextInsertController? = null,
     headerSlot: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
@@ -81,6 +85,20 @@ fun RichTextScaffold(
     val initialBodySnapshot = remember { initialBody }
     var isPreviewMode by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+    val attachViewModel: MediaAttachViewModel = hiltViewModel()
+    var showAttachSheet by remember { mutableStateOf(false) }
+    val insertMarkdown: (String) -> Unit = { md ->
+        bodyValue = bodyValue.insertAtCursor(if (bodyValue.text.isEmpty()) md else "\n$md\n")
+        onBodyChange(bodyValue.text)
+    }
+
+    if (enableMediaAttach && showAttachSheet) {
+        MediaAttachSheet(
+            viewModel = attachViewModel,
+            onDismiss = { showAttachSheet = false },
+            onMarkdownReady = insertMarkdown
+        )
+    }
 
     if (insertController != null) {
         androidx.compose.runtime.SideEffect {
@@ -190,7 +208,8 @@ fun RichTextScaffold(
                             bodyValue = it
                             onBodyChange(it.text)
                         },
-                        maxLength = maxLength
+                        maxLength = maxLength,
+                        onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null
                     )
                 }
             }
@@ -215,6 +234,14 @@ fun RichTextScaffold(
                         )
                     }
                 } else {
+                    val textFieldModifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(focusRequester)
+                        .let { base ->
+                            if (enableMediaAttach) base.contentReceiver { tc ->
+                                handleImeContent(tc, attachViewModel, insertMarkdown)
+                            } else base
+                        }
                     TextField(
                         value = bodyValue,
                         onValueChange = {
@@ -224,9 +251,7 @@ fun RichTextScaffold(
                             }
                         },
                         placeholder = { Text(placeholder) },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .focusRequester(focusRequester),
+                        modifier = textFieldModifier,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,

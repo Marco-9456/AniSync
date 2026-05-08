@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
@@ -83,6 +84,7 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToUpdates: () -> Unit,
     onNavigateToDeveloperTools: () -> Unit,
+    onNavigateToMediaUpload: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
@@ -152,6 +154,23 @@ fun SettingsScreen(
                 subtitleArg = cacheSize,
                 searchKeywords = listOf("storage", "cache", "clear", "data", "memory", "space"),
                 onClick = onNavigateToStorage
+            ),
+            SettingsItemData(
+                key = "media_upload",
+                icon = Icons.Outlined.CloudUpload,
+                titleResId = R.string.settings_media_upload,
+                subtitleResId = R.string.settings_media_upload_desc,
+                searchKeywords = listOf(
+                    "media",
+                    "upload",
+                    "image",
+                    "gif",
+                    "video",
+                    "attach",
+                    "catbox",
+                    "host"
+                ),
+                onClick = onNavigateToMediaUpload
             ),
             SettingsItemData(
                 key = "account",
@@ -384,6 +403,13 @@ fun SettingsScreen(
                                 cacheSize
                             ),
                             onClick = onNavigateToStorage
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = Icons.Outlined.CloudUpload,
+                            title = stringResource(R.string.settings_media_upload),
+                            subtitle = stringResource(R.string.settings_media_upload_desc),
+                            onClick = onNavigateToMediaUpload
                         )
                     }
                 }

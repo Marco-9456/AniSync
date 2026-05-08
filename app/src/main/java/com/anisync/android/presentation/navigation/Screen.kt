@@ -246,3 +246,9 @@ object SettingsLinks
  */
 @Serializable
 object SettingsDeveloperTools
+
+/**
+ * Media upload host configuration (Catbox / Litterbox / custom).
+ */
+@Serializable
+object SettingsMediaUpload

@@ -135,7 +135,6 @@ fun ThreadDetailScreen(
     val listState = rememberLazyListState()
     val scrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    val replySheetState = rememberModalBottomSheetState()
     val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
@@ -388,7 +387,7 @@ fun ThreadDetailScreen(
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
@@ -787,8 +786,7 @@ fun ThreadDetailScreen(
                     )
                 )
             },
-            onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) },
-            sheetState = replySheetState
+            onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) }
         )
     }
 
