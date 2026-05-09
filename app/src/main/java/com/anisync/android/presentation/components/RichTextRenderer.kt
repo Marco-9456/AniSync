@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -561,7 +563,7 @@ private fun RenderBlocks(
                                 .data("https://img.youtube.com/vi/$videoId/hqdefault.jpg")
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "YouTube Thumbnail",
+                            contentDescription = stringResource(R.string.cd_youtube_thumbnail),
                             contentScale = ContentScale.Crop,
                             loading = { ImageLoadingSkeleton(Modifier.fillMaxWidth()) },
                             modifier = Modifier
@@ -578,7 +580,7 @@ private fun RenderBlocks(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.PlayArrow,
-                                contentDescription = "Play Video",
+                                contentDescription = stringResource(R.string.cd_play_video),
                                 tint = Color.White,
                                 modifier = Modifier.size(32.dp)
                             )

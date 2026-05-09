@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 
 /**
  * A small, reusable badge component for displaying status information.
@@ -74,7 +76,7 @@ fun StatusBadge(
 private fun StatusBadgeUpToDatePreview() {
     MaterialTheme {
         StatusBadge(
-            text = "Up to Date",
+            text = stringResource(R.string.badge_up_to_date),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
@@ -86,7 +88,7 @@ private fun StatusBadgeUpToDatePreview() {
 private fun StatusBadgeBehindPreview() {
     MaterialTheme {
         StatusBadge(
-            text = "3 behind",
+            text = stringResource(R.string.episodes_behind, 3),
             containerColor = MaterialTheme.colorScheme.errorContainer,
             contentColor = MaterialTheme.colorScheme.onErrorContainer
         )

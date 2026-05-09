@@ -255,7 +255,7 @@ fun SearchFilterDialog(
                         )
                     ) {
                         Text(
-                            text = "Show Results",
+                            text = stringResource(R.string.filter_show_results),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -330,7 +330,7 @@ fun SearchFiltersRow(
         FilterChip(
             selected = selectedFormat == null,
             onClick = { onFormatSelected(null) },
-            label = { Text("All") },
+            label = { Text(stringResource(R.string.all)) },
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer

@@ -17,6 +17,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 
 @Composable
 fun SearchField(
@@ -51,7 +53,7 @@ fun SearchField(
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Clear search",
+                        contentDescription = stringResource(R.string.cd_clear_search),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

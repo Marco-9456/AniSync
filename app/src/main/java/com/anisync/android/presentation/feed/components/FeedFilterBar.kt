@@ -155,7 +155,7 @@ fun FeedFilterBar(
                     }
                     FilterRowEntry.Separator -> {
                         Text(
-                            text = "•",
+                            text = stringResource(R.string.separator_bullet),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 6.dp)

@@ -220,7 +220,7 @@ fun NameCard(
                         if (alternativeNames.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Also known as: ${alternativeNames.joinToString(", ")}",
+                                text = stringResource(R.string.also_known_as, alternativeNames.joinToString(", ")),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )

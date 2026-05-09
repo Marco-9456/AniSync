@@ -569,7 +569,7 @@ private fun CustomListsSection(
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        SectionTitle(text = "Custom Lists")
+        SectionTitle(text = stringResource(R.string.custom_lists))
 
         androidx.compose.foundation.layout.FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -836,7 +836,7 @@ private fun PrivacySection(
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SectionTitle(text = "Privacy")
+        SectionTitle(text = stringResource(R.string.privacy))
         
         Row(
             modifier = Modifier
@@ -847,12 +847,12 @@ private fun PrivacySection(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Private Entry",
+                    text = stringResource(R.string.private_entry),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Hide this entry from other users",
+                    text = stringResource(R.string.private_entry_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -872,12 +872,12 @@ private fun PrivacySection(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Hide from Status Lists",
+                    text = stringResource(R.string.hide_from_status_lists),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Do not display in global recent updates",
+                    text = stringResource(R.string.hide_from_status_lists_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1142,7 +1142,7 @@ private fun NotesSection(
             modifier = Modifier.align(Alignment.End)
         ) {
             Text(
-                text = "${notes.length} chars",
+                text = stringResource(R.string.char_count, notes.length),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )

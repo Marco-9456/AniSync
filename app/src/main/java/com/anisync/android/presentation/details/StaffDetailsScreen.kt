@@ -118,7 +118,7 @@ fun StaffDetailsScreen(
                     IconButton(onClick = { viewModel.shareStaff(context) }) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
+                            contentDescription = stringResource(R.string.cd_share),
                             tint = animateColorAsState(
                                 if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
                                 label = "actionIconTint"
@@ -253,11 +253,11 @@ private fun StaffDetailsContent(
         if (displayAttributes.isNotEmpty()) {
             item(key = "attr_header") {
                 Spacer(modifier = Modifier.height(24.dp))
-                SectionHeader(
-                    title = "Attributes",
-                    level = HeaderLevel.Section,
-                    iconColor = MaterialTheme.colorScheme.primary
-                )
+            SectionHeader(
+                title = stringResource(R.string.label_attributes),
+                level = HeaderLevel.Section,
+                iconColor = MaterialTheme.colorScheme.primary
+            )
             }
             item(key = "attr") {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -272,7 +272,7 @@ private fun StaffDetailsContent(
                 Column {
                     Spacer(modifier = Modifier.height(24.dp))
                     SectionHeader(
-                        title = "Voiced Characters",
+                        title = stringResource(R.string.voiced_characters),
                         level = HeaderLevel.Section,
                         iconColor = MaterialTheme.colorScheme.primary,
                         onActionClick = if (staff.voicedCharacters.size > 5) onMediaSeeAllClick else null
@@ -317,7 +317,7 @@ private fun StaffErrorState(
             modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                text = "Oops!",
+                text = stringResource(R.string.error_oops),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.error
             )
@@ -330,11 +330,11 @@ private fun StaffErrorState(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = onRetry) {
-                Text("Retry")
+                Text(stringResource(R.string.retry))
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onBackClick) {
-                Text("Go Back")
+                Text(stringResource(R.string.action_go_back))
             }
         }
     }

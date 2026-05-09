@@ -20,6 +20,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,11 +44,12 @@ fun FoldedAncestorStrip(
     onNavigateToLevel: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val threadDepthDescription = stringResource(R.string.cd_thread_depth, breadcrumbs.size)
     Surface(
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .semantics {
-                contentDescription = "Thread depth: ${breadcrumbs.size} levels deep. Tap to go back."
+                contentDescription = threadDepthDescription
             },
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -62,7 +65,7 @@ fun FoldedAncestorStrip(
             // Back button
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = "Go back one level",
+                contentDescription = stringResource(R.string.cd_go_back_one_level),
                 modifier = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
@@ -82,7 +85,7 @@ fun FoldedAncestorStrip(
             ) {
                 // "Root" entry — tapping goes back to full view
                 Text(
-                    text = "All",
+                    text = stringResource(R.string.all),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,

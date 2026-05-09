@@ -28,6 +28,8 @@ import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -138,7 +140,7 @@ private fun ActivityHeader(
             if (activity.type == ActivityType.MESSAGE && activity.recipientAvatarUrl != null) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "to",
+                        contentDescription = stringResource(R.string.cd_to),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
@@ -179,7 +181,7 @@ private fun ActivityHeader(
                 if (activity.type == ActivityType.MESSAGE && !activity.recipientName.isNullOrBlank()) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "to",
+                    contentDescription = stringResource(R.string.cd_to),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(12.dp)
                     )
@@ -201,7 +203,7 @@ private fun ActivityHeader(
                 if (activity.isPinned) {
                     StatusBadge(
                         icon = Icons.Default.PushPin,
-                        text = "Pinned",
+                        text = stringResource(R.string.pinned),
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -312,7 +314,7 @@ private fun ActivityFooter(
                 icon = Icons.Outlined.ChatBubbleOutline,
                 value = activity.replyCount,
                 onClick = onCommentClick,
-                contentDescription = "Comments"
+                contentDescription = stringResource(R.string.cd_comments)
             )
             ActivityStatPill(
                 icon = if (activity.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,

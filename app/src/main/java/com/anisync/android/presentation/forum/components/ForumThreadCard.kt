@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -157,7 +159,7 @@ private fun ThreadHeader(
                 if (thread.isSticky) {
                     StatusBadge(
                         icon = Icons.Default.PushPin,
-                        text = "Pinned",
+                        text = stringResource(R.string.pinned),
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -165,7 +167,7 @@ private fun ThreadHeader(
                 if (thread.isLocked) {
                     StatusBadge(
                         icon = Icons.Default.Lock,
-                        text = "Locked",
+                        text = stringResource(R.string.locked),
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )

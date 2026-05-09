@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -146,7 +147,7 @@ fun LoginScreen() {
 private fun TitleHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Welcome to",
+            text = stringResource(R.string.login_welcome_to),
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.5).sp
@@ -154,7 +155,7 @@ private fun TitleHeader() {
             color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            text = "AniSync",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displayLarge.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-2).sp,
@@ -164,7 +165,7 @@ private fun TitleHeader() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Your anime library, synced seamlessly.",
+            text = stringResource(R.string.login_tagline_short),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -301,7 +302,7 @@ private fun BottomActionBar(onClick: () -> Unit) {
         ) {
             Column(verticalArrangement = Arrangement.Center) {
                 Text(
-                    text = "Let's Get Started",
+                    text = stringResource(R.string.login_lets_get_started),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = (-0.5).sp
@@ -309,7 +310,7 @@ private fun BottomActionBar(onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Login with AniList",
+                    text = stringResource(R.string.login_with_anilist),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -325,7 +326,7 @@ private fun BottomActionBar(onClick: () -> Unit) {
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Login",
+                    contentDescription = stringResource(R.string.cd_login),
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(28.dp)
                 )

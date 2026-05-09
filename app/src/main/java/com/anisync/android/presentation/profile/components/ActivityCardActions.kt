@@ -20,6 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.anisync.android.presentation.components.menu.Menu
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -106,7 +108,7 @@ internal fun ActivityOverflowMenu(
         IconButton(onClick = { menuExpanded = true }) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options",
+                contentDescription = stringResource(R.string.more_options),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(22.dp)
             )
@@ -117,7 +119,7 @@ internal fun ActivityOverflowMenu(
         ) {
             if (onEditClick != null) {
                 item(
-                    text = "Edit",
+                    text = stringResource(R.string.edit),
                     leadingIcon = Icons.Default.Edit,
                     onClick = {
                         menuExpanded = false
@@ -127,7 +129,7 @@ internal fun ActivityOverflowMenu(
                 gap()
             }
             item(
-                text = "Delete",
+                text = stringResource(R.string.delete),
                 leadingIcon = Icons.Default.Delete,
                 destructive = true,
                 onClick = {
@@ -141,19 +143,19 @@ internal fun ActivityOverflowMenu(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete activity?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text(stringResource(R.string.dialog_delete_activity_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_activity_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     onDeleteClick()
                 }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -182,7 +184,7 @@ fun FollowingRow(
                 if (entry.score != null) ScoreChip(score = entry.score)
                 if (entry.progress != null && entry.progress > 0) {
                     Text(
-                        text = "• ${entry.progress}",
+                        text = stringResource(R.string.separator_bullet) + " ${entry.progress}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

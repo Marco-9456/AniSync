@@ -404,13 +404,13 @@ fun MediaDetailsScreen(
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.Edit,
-                                        contentDescription = "Custom",
+                                        contentDescription = stringResource(R.string.label_custom),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 },
                                 text = {
                                     Text(
-                                        text = "Custom",
+                                        text = stringResource(R.string.label_custom),
                                         fontWeight = FontWeight.Normal,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -1290,7 +1290,7 @@ private fun MetadataText(text: String) {
 @Composable
 private fun MetadataSeparator() {
     Text(
-        text = "•",
+        text = stringResource(R.string.separator_bullet),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
     )

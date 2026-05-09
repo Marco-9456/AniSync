@@ -6,6 +6,8 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -138,7 +140,7 @@ fun ImageViewerDialog(
                         IconButton(onClick = onDismiss) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
 
@@ -163,7 +165,7 @@ fun ImageViewerDialog(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Download,
-                                contentDescription = "Download"
+                                contentDescription = stringResource(R.string.cd_download)
                             )
                         }
                     }
@@ -284,7 +286,7 @@ private fun ZoomableImage(
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .build(),
-            contentDescription = "Zoomable Image",
+            contentDescription = stringResource(R.string.cd_zoomable_image),
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
@@ -318,9 +320,9 @@ private fun downloadImage(context: Context, imageUrl: String) {
         val dm = context.getSystemService(DownloadManager::class.java)
         dm?.enqueue(request)
 
-        Toast.makeText(context, "Download started", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.download_started), Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
         Log.e("ImageViewerError", "Failed to download image", e)
-        Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.download_failed), Toast.LENGTH_SHORT).show()
     }
 }

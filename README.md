@@ -32,6 +32,7 @@
   <a href="https://github.com/Marco-9456/AniSync/releases/latest"><img src="https://img.shields.io/github/v/release/Marco-9456/AniSync?style=flat&logo=github&label=Latest" alt="Latest Release"></a>
   <a href="https://f-droid.org/packages/com.anisync.android/"><img alt="F-Droid Version" src="https://img.shields.io/f-droid/v/com.anisync.android?style=flat&logo=f-droid&logoColor=%239BB9CC&color=%23CC8F91"></a>
   <a href="https://github.com/Marco-9456/AniSync/stargazers"><img src="https://img.shields.io/github/stars/Marco-9456/AniSync?style=flat&logo=github&color=yellow" alt="Stars"></a>
+  <a href="https://hosted.weblate.org/engage/anisync/"><img src="https://hosted.weblate.org/widget/anisync/app/svg-badge.svg" alt="Translation status"></a>
 </p>
 
 <p align="center">

@@ -199,7 +199,7 @@ fun CharacterMediaGridScreen(
                 modifier = topBarOverlayModifier,
                 title = {
                     Text(
-                        text = "Featured Media",
+                        text = stringResource(R.string.featured_media),
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -215,7 +215,7 @@ fun CharacterMediaGridScreen(
                     IconButton(onClick = { showSortSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.SwapVert,
-                            contentDescription = "Sort"
+                            contentDescription = stringResource(R.string.sort)
                         )
                     }
                 },
@@ -285,7 +285,7 @@ fun CharacterMediaGridScreen(
                                     FilterChip(
                                         selected = onlyOnList,
                                         onClick = { onlyOnList = !onlyOnList },
-                                        label = { Text("On My List") }
+                                        label = { Text(stringResource(R.string.filter_on_my_list)) }
                                     )
                                 }
                             }
@@ -487,7 +487,7 @@ fun StaffMediaGridScreen(
                 modifier = topBarOverlayModifier,
                 title = {
                     Text(
-                        text = "Voiced Characters",
+                        text = stringResource(R.string.voiced_characters),
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -503,7 +503,7 @@ fun StaffMediaGridScreen(
                     IconButton(onClick = { showSortSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.SwapVert,
-                            contentDescription = "Sort"
+                            contentDescription = stringResource(R.string.sort)
                         )
                     }
                 },
@@ -575,7 +575,7 @@ fun StaffMediaGridScreen(
                                     FilterChip(
                                         selected = onlyOnList,
                                         onClick = { onlyOnList = !onlyOnList },
-                                        label = { Text("On My List") }
+                                        label = { Text(stringResource(R.string.filter_on_my_list)) }
                                     )
                                 }
                             }

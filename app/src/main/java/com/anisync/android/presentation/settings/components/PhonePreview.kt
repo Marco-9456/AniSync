@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -164,7 +166,7 @@ private fun ComponentPreviewContent() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Library",
+                text = stringResource(R.string.library_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -257,7 +259,7 @@ private fun PreviewStatCard() {
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
-                text = "Total Anime",
+                text = stringResource(R.string.statistics_total_anime),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             )
@@ -291,7 +293,7 @@ private fun PreviewStatCard() {
                         )
                     }
                     Text(
-                        text = "Days",
+                        text = stringResource(R.string.stat_days),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
@@ -314,8 +316,8 @@ private fun PreviewStatCard() {
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
-                    Text(
-                        text = "Score",
+                        Text(
+                            text = stringResource(R.string.stat_score),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
@@ -341,7 +343,7 @@ private fun PreviewFormatsCard() {
             modifier = Modifier.padding(12.dp)
         ) {
             Text(
-                text = "Formats",
+                text = stringResource(R.string.statistics_formats),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)

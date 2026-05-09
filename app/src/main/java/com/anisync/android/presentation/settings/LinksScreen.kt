@@ -27,14 +27,14 @@ fun LinksScreen(
     ) {
         SettingsGroup {
             SettingsItem(
-                title = "Repository",
+                title = stringResource(R.string.link_repository),
                 subtitle = "https://github.com/Marco-9456/AniSync",
                 icon = Icons.Outlined.Code,
                 onClick = { context.launchUrl("https://github.com/Marco-9456/AniSync") }
             )
             SettingsDivider(startPadding = 20.dp)
             SettingsItem(
-                title = "Developer",
+                title = stringResource(R.string.link_developer),
                 subtitle = "https://github.com/Marco-9456",
                 icon = Icons.Outlined.Person,
                 onClick = { context.launchUrl("https://github.com/Marco-9456") }

@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,14 +56,14 @@ fun CardLabelStrip(
         if (isPinned) {
             CardLabel(
                 icon = Icons.Filled.PushPin,
-                text = "PINNED",
+                text = stringResource(R.string.label_pinned),
                 color = MaterialTheme.colorScheme.primary
             )
         }
         if (isLocked) {
             CardLabel(
                 icon = Icons.Outlined.Lock,
-                text = "LOCKED",
+                text = stringResource(R.string.label_locked),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

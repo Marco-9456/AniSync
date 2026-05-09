@@ -208,7 +208,7 @@ fun DeveloperToolsScreen(
                                     onClick = { viewModel.onAction(SettingsAction.ShowTestToast(code)) },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Test $code")
+                                    Text(stringResource(R.string.test_code, code))
                                 }
                             }
                             if (rowCodes.size == 1) {

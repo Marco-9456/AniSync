@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -109,7 +111,7 @@ fun AuthorRow(
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "•",
+            text = stringResource(R.string.separator_bullet),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.outlineVariant
         )

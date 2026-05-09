@@ -202,7 +202,7 @@ fun ReviewDetailsSheet(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.ThumbUp,
-                                contentDescription = "Like Review",
+                                contentDescription = stringResource(R.string.cd_like_review),
                                 tint = if (isUpVoted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -215,7 +215,7 @@ fun ReviewDetailsSheet(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.ThumbDown,
-                                contentDescription = "Dislike Review",
+                                contentDescription = stringResource(R.string.cd_dislike_review),
                                 tint = if (isDownVoted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

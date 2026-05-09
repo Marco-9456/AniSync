@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -69,7 +71,7 @@ fun MediaSortBottomSheet(
                     .padding(bottom = 32.dp)
             ) {
                 Text(
-                    text = "Sort by",
+                    text = stringResource(R.string.sort_by),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Normal,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)

@@ -7,13 +7,14 @@ Thank you for your interest in contributing to AniSync! This document provides g
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Development Setup](#development-setup)
-3. [Code Style Guide](#code-style-guide)
-4. [Architecture Guidelines](#architecture-guidelines)
-5. [Git Workflow](#git-workflow)
-6. [Pull Request Process](#pull-request-process)
-7. [Testing Guidelines](#testing-guidelines)
-8. [Documentation](#documentation)
+2. [Translations](#translations)
+3. [Development Setup](#development-setup)
+4. [Code Style Guide](#code-style-guide)
+5. [Architecture Guidelines](#architecture-guidelines)
+6. [Git Workflow](#git-workflow)
+7. [Pull Request Process](#pull-request-process)
+8. [Testing Guidelines](#testing-guidelines)
+9. [Documentation](#documentation)
 
 ---
 
@@ -43,6 +44,34 @@ git remote add upstream https://github.com/Marco-9456/AniSync.git
 # 4. Create a feature branch
 git checkout -b feature/your-feature-name
 ```
+
+---
+
+## Translations
+
+AniSync uses [Weblate](https://hosted.weblate.org/engage/anisync/) for community-driven translations. You don't need any programming knowledge to contribute.
+
+### Contributing via Weblate
+
+1. Go to [hosted.weblate.org/projects/anisync/app](https://hosted.weblate.org/projects/anisync/app/)
+2. Select the language you want to translate, or request a new one
+3. Click on any untranslated string and enter your translation
+4. Save — your contribution will be reviewed and merged automatically via Pull Request
+
+### Translation Guidelines
+
+- **Placeholders**: Keep placeholders like `%s`, `%d`, `%1$s`, `%2$s` exactly as they appear. They are replaced by the app dynamically.
+- **Special characters**: Keep `&amp;` and `\'` as they are unless your language uses different conventions.
+- **Accessibility strings**: Strings starting with `a11y_`, `cd_`, or `content_description` are read by screen readers. Keep them concise and descriptive.
+- **App name**: `AniSync` should remain unchanged across all languages.
+- **Consistency**: If "Library" is translated as "Bibliothek" in German, use "Bibliothek" everywhere, not "Sammlung" in some places.
+
+### Adding a New Language
+
+If your language is not listed on Weblate:
+1. Open a [GitHub Discussion](https://github.com/Marco-9456/AniSync/discussions) requesting the language
+2. A maintainer will add it to Weblate
+3. You can then start translating immediately
 
 ---
 

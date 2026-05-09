@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.BrokenImage
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -364,7 +365,7 @@ fun VideoPlayer(
                         )
                         Spacer(Modifier.size(8.dp))
                         Text(
-                            text = "Retry",
+                            text = stringResource(R.string.retry),
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -402,7 +403,7 @@ fun VideoPlayer(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play",
+                            contentDescription = stringResource(R.string.cd_play),
                             modifier = Modifier.padding(16.dp)
                         )
                     }
@@ -428,7 +429,7 @@ fun VideoPlayer(
                     Crossfade(targetState = isMuted, label = "mute_crossfade") { muted ->
                         Icon(
                             imageVector = if (muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = if (muted) "Unmute" else "Mute",
+                            contentDescription = if (muted) stringResource(R.string.unmute) else stringResource(R.string.mute),
                             modifier = Modifier.size(20.dp)
                         )
                     }

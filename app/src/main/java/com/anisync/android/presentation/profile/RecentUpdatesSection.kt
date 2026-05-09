@@ -382,7 +382,7 @@ private fun UpdateFooter(
                 icon = Icons.Outlined.ChatBubbleOutline,
                 value = activity.replyCount,
                 onClick = onCommentClick,
-                contentDescription = "Comments"
+                contentDescription = stringResource(R.string.cd_comments)
             )
             ActivityStatPill(
                 icon = if (activity.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,

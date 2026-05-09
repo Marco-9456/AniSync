@@ -866,7 +866,7 @@ private fun SearchResultsContent(
                 // Anime / Manga results
                 if (searchResults.isNotEmpty()) {
                     item(key = "header_media") {
-                        SearchSectionHeader(title = "Anime & Manga")
+                        SearchSectionHeader(title = stringResource(R.string.search_header_anime_manga))
                     }
                     items(
                         items = searchResults,
@@ -887,7 +887,7 @@ private fun SearchResultsContent(
                 // Characters
                 if (groupedResults.characters.isNotEmpty()) {
                     item(key = "header_characters") {
-                        SearchSectionHeader(title = "Characters")
+                        SearchSectionHeader(title = stringResource(R.string.search_header_characters))
                     }
                     items(
                         items = groupedResults.characters,
@@ -906,7 +906,7 @@ private fun SearchResultsContent(
                 // Staff
                 if (groupedResults.staff.isNotEmpty()) {
                     item(key = "header_staff") {
-                        SearchSectionHeader(title = "Staff")
+                        SearchSectionHeader(title = stringResource(R.string.search_header_staff))
                     }
                     items(
                         items = groupedResults.staff,
@@ -926,7 +926,7 @@ private fun SearchResultsContent(
                 // Users
                 if (groupedResults.users.isNotEmpty()) {
                     item(key = "header_users") {
-                        SearchSectionHeader(title = "Users")
+                        SearchSectionHeader(title = stringResource(R.string.search_header_users))
                     }
                     items(
                         items = groupedResults.users,
@@ -945,7 +945,7 @@ private fun SearchResultsContent(
                 // Studios
                 if (groupedResults.studios.isNotEmpty()) {
                     item(key = "header_studios") {
-                        SearchSectionHeader(title = "Studios")
+                        SearchSectionHeader(title = stringResource(R.string.search_header_studios))
                     }
                     items(
                         items = groupedResults.studios,
@@ -954,7 +954,7 @@ private fun SearchResultsContent(
                     ) { studio ->
                         GenericSearchResultItem(
                             name = studio.displayName,
-                            subtitle = studio.favourites?.let { "$it favourites" },
+                            subtitle = studio.favourites?.let { stringResource(R.string.search_favourites_count, it) },
                             imageUrl = null,
                             onClick = {}
                         )

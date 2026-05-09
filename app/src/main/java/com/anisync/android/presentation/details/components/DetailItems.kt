@@ -212,7 +212,7 @@ fun MediaRoleItem(
         )
 
         Text(
-            text = media.type?.name ?: "Unknown",
+            text = media.type?.name ?: stringResource(R.string.unknown),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
@@ -350,7 +350,7 @@ fun RecommendationItem(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ThumbUp,
-                    contentDescription = "Like",
+                    contentDescription = stringResource(R.string.cd_like),
                     modifier = Modifier.size(14.dp)
                 )
             }
@@ -376,7 +376,7 @@ fun RecommendationItem(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ThumbDown,
-                    contentDescription = "Dislike",
+                    contentDescription = stringResource(R.string.cd_dislike),
                     modifier = Modifier.size(14.dp)
                 )
             }

@@ -467,7 +467,7 @@ fun LibraryScreen(
                             ) {
                                 Icon(
                                     Icons.Default.MoreVert,
-                                    contentDescription = "Manage Lists"
+                                    contentDescription = stringResource(R.string.cd_manage_lists)
                                 )
                             }
                         }

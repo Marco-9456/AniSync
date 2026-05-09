@@ -85,7 +85,7 @@ fun FeedScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Write a status"
+                        contentDescription = stringResource(R.string.cd_write_status)
                     )
                 }
             }

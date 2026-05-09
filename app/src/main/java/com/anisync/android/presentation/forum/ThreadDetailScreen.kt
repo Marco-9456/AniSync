@@ -313,7 +313,7 @@ fun ThreadDetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Navigate back"
+                            contentDescription = stringResource(R.string.cd_navigate_back)
                         )
                     }
                 },
@@ -330,7 +330,7 @@ fun ThreadDetailScreen(
                         }) {
                             Icon(
                                 Icons.Default.Share,
-                                contentDescription = "Share",
+                                contentDescription = stringResource(R.string.cd_share),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -338,14 +338,14 @@ fun ThreadDetailScreen(
                     IconButton(onClick = { viewModel.onAction(ThreadDetailAction.ToggleSubscribe) }) {
                         Icon(
                             imageVector = if (uiState.thread?.isSubscribed == true) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
-                            contentDescription = "Toggle Subscription",
+                            contentDescription = stringResource(R.string.cd_toggle_subscription),
                             tint = if (uiState.thread?.isSubscribed == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = { viewModel.onAction(ThreadDetailAction.ToggleSave) }) {
                         Icon(
                             imageVector = if (uiState.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = "Toggle Save",
+                            contentDescription = stringResource(R.string.cd_toggle_save),
                             tint = if (uiState.isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

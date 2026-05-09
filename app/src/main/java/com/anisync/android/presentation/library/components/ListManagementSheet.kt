@@ -54,7 +54,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
@@ -133,7 +135,7 @@ fun ListManagementSheet(
                 // Header
                 item(key = "header") {
                     Text(
-                        text = "Manage Tabs",
+                        text = stringResource(R.string.manage_tabs),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -150,7 +152,7 @@ fun ListManagementSheet(
                             OutlinedTextField(
                                 value = newListTitle,
                                 onValueChange = { newListTitle = it },
-                                placeholder = { Text("New List Name") },
+                                placeholder = { Text(stringResource(R.string.new_list_name)) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
                                     capitalization = KeyboardCapitalization.Words,
@@ -178,7 +180,7 @@ fun ListManagementSheet(
                                 androidx.compose.material3.FilterChip(
                                     selected = selectedType == MediaType.ANIME,
                                     onClick = { selectedType = MediaType.ANIME },
-                                    label = { Text("Anime") },
+                                    label = { Text(stringResource(R.string.media_type_anime)) },
                                     leadingIcon = if (selectedType == MediaType.ANIME) {
                                         { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
                                     } else null
@@ -186,7 +188,7 @@ fun ListManagementSheet(
                                 androidx.compose.material3.FilterChip(
                                     selected = selectedType == MediaType.MANGA,
                                     onClick = { selectedType = MediaType.MANGA },
-                                    label = { Text("Manga") },
+                                    label = { Text(stringResource(R.string.media_type_manga)) },
                                     leadingIcon = if (selectedType == MediaType.MANGA) {
                                         { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp)) }
                                     } else null
@@ -203,7 +205,7 @@ fun ListManagementSheet(
                                         newListTitle = ""
                                     }
                                 ) {
-                                    Text("Cancel")
+                                    Text(stringResource(R.string.cancel))
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Button(
@@ -216,7 +218,7 @@ fun ListManagementSheet(
                                     },
                                     enabled = newListTitle.isNotBlank()
                                 ) {
-                                    Text("Save")
+                                    Text(stringResource(R.string.save))
                                 }
                             }
 
@@ -231,9 +233,9 @@ fun ListManagementSheet(
                             onClick = { isCreatingList = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Create New List")
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_new_list))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Create New List")
+                            Text(stringResource(R.string.create_new_list))
                         }
                     }
                 }
@@ -286,7 +288,7 @@ fun ListManagementSheet(
                                 ) {
                                     Icon(
                                         Icons.Default.DragHandle,
-                                        contentDescription = "Reorder",
+                                        contentDescription = stringResource(R.string.cd_reorder),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -324,7 +326,7 @@ fun ListManagementSheet(
                                         IconButton(onClick = { onDeleteList(tabId) }) {
                                             Icon(
                                                 Icons.Default.Delete,
-                                                contentDescription = "Delete List",
+                                                contentDescription = stringResource(R.string.cd_delete_list),
                                                 tint = MaterialTheme.colorScheme.error
                                             )
                                         }

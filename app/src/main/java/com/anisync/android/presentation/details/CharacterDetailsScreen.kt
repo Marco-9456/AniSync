@@ -144,7 +144,7 @@ fun CharacterDetailsScreen(
                     IconButton(onClick = { viewModel.shareCharacter(context) }) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
+                            contentDescription = stringResource(R.string.cd_share),
                             tint = androidx.compose.animation.animateColorAsState(
                                 if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
                                 label = "actionIconTint"
@@ -285,7 +285,7 @@ private fun CharacterDetailsContent(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Character",
+                        text = stringResource(R.string.label_character),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -304,7 +304,7 @@ private fun CharacterDetailsContent(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Voice Actors",
+                        text = stringResource(R.string.section_voice_actors),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -427,7 +427,7 @@ private fun CharacterTabContent(
         // Attributes
         if (displayAttributes.isNotEmpty()) {
             SectionHeader(
-                title = "Attributes",
+                title = stringResource(R.string.label_attributes),
                 level = HeaderLevel.Section,
                 iconColor = MaterialTheme.colorScheme.primary
             )
@@ -442,7 +442,7 @@ private fun CharacterTabContent(
         if (previewMedia.isNotEmpty()) {
             Column {
                 SectionHeader(
-                    title = "Featured Media",
+                    title = stringResource(R.string.featured_media),
                     level = HeaderLevel.Section,
                     iconColor = MaterialTheme.colorScheme.primary,
                     onActionClick = if (character.media.size > 10) onMediaSeeAllClick else null
@@ -486,8 +486,9 @@ private fun VoiceActorsTabContent(
             .distinctBy { it.id }
     }
 
-    val languages = remember(allVoiceActors) {
-        listOf("All Languages") + allVoiceActors.mapNotNull { it.language }.distinct().sorted()
+    val allLanguagesLabel = stringResource(R.string.label_all_languages)
+    val languages = remember(allVoiceActors, allLanguagesLabel) {
+        listOf(allLanguagesLabel) + allVoiceActors.mapNotNull { it.language }.distinct().sorted()
     }
 
     var selectedLanguageIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -621,7 +622,7 @@ private fun ErrorState(
             modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                text = "Oops!",
+                text = stringResource(R.string.error_oops),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.error
             )
@@ -634,11 +635,11 @@ private fun ErrorState(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = onRetry) {
-                Text("Retry")
+                Text(stringResource(R.string.retry))
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onBackClick) {
-                Text("Go Back")
+                Text(stringResource(R.string.action_go_back))
             }
         }
     }

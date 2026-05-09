@@ -314,7 +314,7 @@ private fun AboutHero(
                             .data(AVATAR_URL)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Developer Avatar",
+                        contentDescription = stringResource(R.string.cd_developer_avatar),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(115.dp)
@@ -403,7 +403,7 @@ fun AboutScreen(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Sponsor the Project",
+                text = stringResource(R.string.sponsor_project),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -452,7 +452,7 @@ fun AboutScreen(
             SettingsItem(
                 title = stringResource(R.string.about_improve_translations),
                 subtitle = stringResource(R.string.about_improve_translations_desc),
-                onClick = { /* Placeholder */ }
+                onClick = { context.launchUrl("https://hosted.weblate.org/engage/anisync/") }
             )
         }
 
@@ -506,7 +506,7 @@ private fun SponsorBottomSheet(
             )
 
             Text(
-                text = "Support AniSync",
+                text = stringResource(R.string.support_anisync),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -515,7 +515,7 @@ private fun SponsorBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "AniSync is a passion project built entirely in my free time. If you enjoy the app, consider supporting its development. Your contribution helps cover server costs and keeps the project growing!",
+                text = stringResource(R.string.support_description),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -550,7 +550,7 @@ private fun SponsorBottomSheet(
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Text(
-                            text = "Lead Developer",
+                            text = stringResource(R.string.lead_developer),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                         )
@@ -564,7 +564,7 @@ private fun SponsorBottomSheet(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text("Sponsor")
+                        Text(stringResource(R.string.sponsor))
                     }
                 }
             }

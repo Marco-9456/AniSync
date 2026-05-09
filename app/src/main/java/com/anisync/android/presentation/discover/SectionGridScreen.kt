@@ -354,7 +354,7 @@ fun SectionGridScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "No items found",
+                                text = stringResource(R.string.empty_no_items),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

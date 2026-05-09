@@ -524,6 +524,10 @@
     <string name="entry_deleted">Entry removed</string>
 
     <!-- Login Screen -->
+    <string name="login_welcome_to">Welcome to</string>
+    <string name="login_tagline_short">Your anime library, synced seamlessly.</string>
+    <string name="login_lets_get_started">Let\'s Get Started</string>
+    <string name="login_with_anilist">Login with AniList</string>
     <string name="login_sync_your">Sync Your </string>
     <string name="login_world">World</string>
     <string name="login_tagline">The ultimate companion for Anime &amp; Manga tracking, powered by AniList.</string>
@@ -531,6 +535,7 @@
     <string name="login_description">Sign in to access your library and discover new favorites.</string>
     <string name="login_continue_with_anilist">Continue with AniList</string>
     <string name="login_terms">By continuing, you agree to our Terms of Service.</string>
+    <string name="cd_login">Login</string>
 
     <!-- Search Filters -->
     <string name="filter">Filter</string>
@@ -789,4 +794,152 @@
     <string name="media_attach_insert">Insert</string>
     <string name="media_attach_error_invalid_url">Enter a valid http(s) URL</string>
     <string name="media_attach_size_output">Inserts: %s</string>
+
+    <!-- Search / Discover -->
+    <string name="search_header_anime_manga">Anime &amp; Manga</string>
+    <string name="search_header_characters">Characters</string>
+    <string name="search_header_staff">Staff</string>
+    <string name="search_header_users">Users</string>
+    <string name="search_header_studios">Studios</string>
+    <string name="search_favourites_count">%d favourites</string>
+    <string name="empty_no_items">No items found</string>
+    <string name="filter_show_results">Show Results</string>
+    <string name="all">All</string>
+
+    <!-- Details Screens -->
+    <string name="featured_media">Featured Media</string>
+    <string name="filter_on_my_list">On My List</string>
+    <string name="voiced_characters">Voiced Characters</string>
+    <string name="label_custom">Custom</string>
+    <string name="label_categories">Categories</string>
+    <string name="label_genres">Genres</string>
+    <string name="label_tags">Tags</string>
+    <string name="label_spoilers">Spoilers</string>
+    <string name="label_spoiler">Spoiler</string>
+    <string name="label_attributes">Attributes</string>
+    <string name="label_all_languages">All Languages</string>
+    <string name="label_character">Character</string>
+    <string name="also_known_as">Also known as: %s</string>
+
+    <!-- Library / Lists -->
+    <string name="custom_lists">Custom Lists</string>
+    <string name="privacy">Privacy</string>
+    <string name="private_entry">Private Entry</string>
+    <string name="private_entry_desc">Hide this entry from other users</string>
+    <string name="hide_from_status_lists">Hide from Status Lists</string>
+    <string name="hide_from_status_lists_desc">Do not display in global recent updates</string>
+    <string name="char_count">%d chars</string>
+    <string name="manage_tabs">Manage Tabs</string>
+    <string name="new_list_name">New List Name</string>
+    <string name="create_new_list">Create New List</string>
+
+    <!-- Profile / Activity / Forum -->
+    <string name="pinned">Pinned</string>
+    <string name="replied_to">Replied to: %s</string>
+    <string name="thread_locked_desc">This thread is locked and cannot receive new replies.</string>
+    <string name="dialog_delete_activity_title">Delete activity?</string>
+    <string name="dialog_delete_activity_body">This action cannot be undone.</string>
+
+    <!-- Settings / About -->
+    <string name="cd_developer_avatar">Developer Avatar</string>
+    <string name="sponsor_project">Sponsor the Project</string>
+    <string name="support_anisync">Support AniSync</string>
+    <string name="support_description">AniSync is a passion project built entirely in my free time. If you enjoy using the app, consider sponsoring to help keep development alive.</string>
+    <string name="lead_developer">Lead Developer</string>
+    <string name="sponsor">Sponsor</string>
+    <string name="link_repository">Repository</string>
+    <string name="link_developer">Developer</string>
+    <string name="test_code">Test %s</string>
+    <string name="by_author">by %s</string>
+
+    <!-- Empty States -->
+    <string name="empty_list_title">Your %s list is empty</string>
+    <string name="empty_list_anime_action">Start tracking anime by adding shows from the Discover tab</string>
+    <string name="empty_list_anime_button">Browse Anime</string>
+    <string name="empty_list_manga_action">Start tracking manga by adding titles from the Discover tab</string>
+    <string name="empty_list_manga_button">Browse Manga</string>
+    <string name="empty_search_results_title">No results for "%s"</string>
+    <string name="empty_search_results_action">Try adjusting your search or filters</string>
+    <string name="empty_search_results_button">Clear Search</string>
+    <string name="empty_search_alt_action">Try different keywords</string>
+    <string name="empty_favorites_title">No favorites yet</string>
+    <string name="empty_favorites_action">Add anime or manga to your favorites from their detail pages</string>
+    <string name="empty_favorites_button">Discover New Shows</string>
+    <string name="empty_connection_title">Connection problem</string>
+    <string name="empty_connection_action">Check your internet connection and try again</string>
+    <string name="empty_generic_title">Something went wrong</string>
+    <string name="empty_sign_in_title">Sign in to AniList</string>
+    <string name="empty_sign_in_action">Connect your AniList account to sync your library across devices</string>
+    <string name="empty_sign_in_button">Sign In</string>
+    <string name="empty_airing_today_title">No episodes airing today</string>
+    <string name="empty_airing_today_action">Check back later or add more shows to your list</string>
+    <string name="empty_upcoming_title">No upcoming episodes</string>
+    <string name="empty_upcoming_action">Add currently airing anime to your watching list to see upcoming episodes</string>
+    <string name="empty_upcoming_button">Browse Airing</string>
+    <string name="empty_notifications_title">No notifications</string>
+    <string name="empty_notifications_action">You\'re all caught up!</string>
+    <string name="empty_characters_title">No characters listed</string>
+    <string name="empty_characters_action">Character information is not available for this title</string>
+    <string name="empty_discussions_title">No discussions yet</string>
+    <string name="empty_discussions_action">Be the first to start a conversation</string>
+    <string name="empty_discussions_button">Start a Discussion</string>
+    <string name="empty_comments_title">No comments yet</string>
+    <string name="empty_comments_action">Be the first to share your thoughts</string>
+    <string name="empty_forum_search_title">No threads found for "%s"</string>
+    <string name="empty_forum_search_action">Try different keywords</string>
+
+    <!-- Snackbar / Toast messages -->
+    <string name="test_message_error_code">This is a test message for error code %s.</string>
+    <string name="missing_recipient">Missing recipient</string>
+    <string name="cannot_edit_activity_type">Cannot edit this activity type</string>
+    <string name="activity_updated">Activity updated</string>
+    <string name="activity_deleted">Activity deleted</string>
+    <string name="message_sent">Message sent</string>
+    <string name="status_posted">Status posted</string>
+    <string name="list_created">List \'%s\' created.</string>
+    <string name="list_deleted">List \'%s\' deleted.</string>
+    <string name="thread_unsaved">Thread unsaved</string>
+    <string name="thread_saved">Thread saved</string>
+    <string name="subscribed_to_thread">Subscribed to thread</string>
+    <string name="unsubscribed_from_thread">Unsubscribed from thread</string>
+    <string name="failed_to_load_review">Failed to load review</string>
+    <string name="review_not_found">Review not found</string>
+    <string name="downloading_high_res_image">Downloading high-resolution image…</string>
+    <string name="download_started">Download started</string>
+    <string name="download_failed">Download failed</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_like">Like</string>
+    <string name="cd_dislike">Dislike</string>
+    <string name="cd_download">Download</string>
+    <string name="cd_zoomable_image">Zoomable Image</string>
+    <string name="cd_play">Play</string>
+    <string name="cd_youtube_thumbnail">YouTube Thumbnail</string>
+    <string name="cd_play_video">Play Video</string>
+    <string name="cd_navigate_back">Navigate back</string>
+    <string name="cd_author_avatar">Author Avatar</string>
+    <string name="cd_to">to</string>
+    <string name="cd_comments">Comments</string>
+    <string name="label_review">Review</string>
+    <string name="label_pinned">PINNED</string>
+    <string name="label_locked">LOCKED</string>
+    <string name="episodes_behind">%d behind</string>
+    <string name="cd_toggle_subscription">Toggle Subscription</string>
+    <string name="cd_toggle_save">Toggle Save</string>
+    <string name="cd_expand">Expand</string>
+    <string name="cd_continue_thread">Continue thread</string>
+    <string name="cd_write_status">Write a status</string>
+    <string name="cd_manage_lists">Manage Lists</string>
+    <string name="cd_reorder">Reorder</string>
+    <string name="cd_delete_list">Delete List</string>
+    <string name="cd_like_review">Like Review</string>
+    <string name="cd_dislike_review">Dislike Review</string>
+    <string name="cd_share">Share</string>
+    <string name="cd_reply">Reply</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="mute">Mute</string>
+    <string name="unmute">Unmute</string>
+    <string name="locked">Locked</string>
+    <string name="cd_go_back_one_level">Go back one level</string>
+    <string name="cd_thread_depth">Thread depth: %d levels deep. Tap to go back.</string>
 </resources>

@@ -309,7 +309,7 @@ fun ThreadCommentItem(
 
                     if (threadAuthorId != 0 && comment.authorId == threadAuthorId) {
                         Text(
-                            text = "OP",
+                             text = stringResource(R.string.forum_op_badge),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -336,7 +336,7 @@ fun ThreadCommentItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ExpandMore,
-                            contentDescription = "Expand",
+                            contentDescription = stringResource(R.string.cd_expand),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
@@ -425,7 +425,7 @@ fun ThreadCommentItem(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Reply,
-                                    contentDescription = "Reply",
+                                    contentDescription = stringResource(R.string.cd_reply),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -464,7 +464,7 @@ fun ThreadCommentItem(
                                 )
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = "Continue thread",
+                                    contentDescription = stringResource(R.string.cd_continue_thread),
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(16.dp)
                                 )

@@ -294,7 +294,7 @@ fun UpdateDialog(
                                 if (release.authorAvatarUrl != null) {
                                     AsyncImage(
                                         model = release.authorAvatarUrl,
-                                        contentDescription = "Author Avatar",
+                                        contentDescription = stringResource(R.string.cd_author_avatar),
                                         modifier = Modifier
                                             .size(18.dp)
                                             .clip(CircleShape)
@@ -302,7 +302,7 @@ fun UpdateDialog(
                                     Spacer(modifier = Modifier.width(4.dp))
                                 }
                                 Text(
-                                    text = "by ${release.authorName}",
+                                    text = stringResource(R.string.by_author, release.authorName),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

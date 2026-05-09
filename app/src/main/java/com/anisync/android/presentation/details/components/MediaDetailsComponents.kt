@@ -117,7 +117,7 @@ fun ContentMetadataSection(
 
     Column(modifier = modifier) {
         SectionHeader(
-            title = "Categories",
+            title = stringResource(R.string.label_categories),
             level = HeaderLevel.Section
         )
 
@@ -126,7 +126,7 @@ fun ContentMetadataSection(
         // 1. Genres Subsection
         if (genres.isNotEmpty()) {
             MetadataGroup(
-                title = "Genres",
+                title = stringResource(R.string.label_genres),
                 items = genres,
                 keySelector = { it }
             ) { genre ->
@@ -140,7 +140,7 @@ fun ContentMetadataSection(
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
             }
             MetadataGroup(
-                title = "Tags",
+                title = stringResource(R.string.label_tags),
                 items = regularTags,
                 keySelector = { it.name }
             ) { tag ->
@@ -154,7 +154,7 @@ fun ContentMetadataSection(
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
             }
             MetadataGroup(
-                title = "Spoilers",
+                title = stringResource(R.string.label_spoilers),
                 titleColor = MaterialTheme.colorScheme.error,
                 items = spoilerTags,
                 keySelector = { it.name }
@@ -299,7 +299,7 @@ private fun TagChip(
                                 tint = tagColors.textColor
                             )
                             Text(
-                                text = "Spoiler",
+                                text = stringResource(R.string.label_spoiler),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold
                                 ),

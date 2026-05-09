@@ -355,7 +355,7 @@ fun SocialThreadCommentCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = "Replied to: ${comment.threadTitle}",
+                    text = stringResource(R.string.replied_to, comment.threadTitle),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,

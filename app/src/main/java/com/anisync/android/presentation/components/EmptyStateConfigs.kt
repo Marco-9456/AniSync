@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.anisync.android.R
 
 /**
  * Predefined empty state configurations for common scenarios in the app.
@@ -32,9 +34,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.VideoLibrary,
-            title = "Your $statusLabel list is empty",
-            description = "Start tracking anime by adding shows from the Discover tab",
-            actionLabel = "Browse Anime",
+            title = stringResource(R.string.empty_list_title, statusLabel),
+            description = stringResource(R.string.empty_list_anime_action),
+            actionLabel = stringResource(R.string.empty_list_anime_button),
             onActionClick = onBrowseClick,
             modifier = modifier
         )
@@ -51,9 +53,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.AutoMirrored.Filled.MenuBook,
-            title = "Your $statusLabel list is empty",
-            description = "Start tracking manga by adding titles from the Discover tab",
-            actionLabel = "Browse Manga",
+            title = stringResource(R.string.empty_list_title, statusLabel),
+            description = stringResource(R.string.empty_list_manga_action),
+            actionLabel = stringResource(R.string.empty_list_manga_button),
             onActionClick = onBrowseClick,
             modifier = modifier
         )
@@ -70,9 +72,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.SearchOff,
-            title = "No results for \"$query\"",
-            description = "Try adjusting your search or filters",
-            actionLabel = "Clear Search",
+            title = stringResource(R.string.empty_search_results_title, query),
+            description = stringResource(R.string.empty_search_results_action),
+            actionLabel = stringResource(R.string.empty_search_results_button),
             onActionClick = onClearClick,
             modifier = modifier
         )
@@ -88,8 +90,8 @@ object EmptyStateConfigs {
     ) {
         EmptyStateCompact(
             icon = Icons.Default.SearchOff,
-            title = "No results for \"$query\"",
-            description = "Try different keywords",
+            title = stringResource(R.string.empty_search_results_title, query),
+            description = stringResource(R.string.empty_search_alt_action),
             modifier = modifier
         )
     }
@@ -104,9 +106,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.FavoriteBorder,
-            title = "No favorites yet",
-            description = "Add anime or manga to your favorites from their detail pages",
-            actionLabel = "Discover New Shows",
+            title = stringResource(R.string.empty_favorites_title),
+            description = stringResource(R.string.empty_favorites_action),
+            actionLabel = stringResource(R.string.empty_favorites_button),
             onActionClick = onBrowseClick,
             modifier = modifier
         )
@@ -122,9 +124,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.CloudOff,
-            title = "Connection problem",
-            description = "Check your internet connection and try again",
-            actionLabel = "Retry",
+            title = stringResource(R.string.empty_connection_title),
+            description = stringResource(R.string.empty_connection_action),
+            actionLabel = stringResource(R.string.retry),
             onActionClick = onRetryClick,
             modifier = modifier
         )
@@ -141,9 +143,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.CloudOff,
-            title = "Something went wrong",
+            title = stringResource(R.string.empty_generic_title),
             description = message,
-            actionLabel = "Retry",
+            actionLabel = stringResource(R.string.retry),
             onActionClick = onRetryClick,
             modifier = modifier
         )
@@ -159,9 +161,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.Person,
-            title = "Sign in to AniList",
-            description = "Connect your AniList account to sync your library across devices",
-            actionLabel = "Sign In",
+            title = stringResource(R.string.empty_sign_in_title),
+            description = stringResource(R.string.empty_sign_in_action),
+            actionLabel = stringResource(R.string.empty_sign_in_button),
             onActionClick = onLoginClick,
             modifier = modifier
         )
@@ -176,8 +178,8 @@ object EmptyStateConfigs {
     ) {
         EmptyStateCompact(
             icon = Icons.Default.CalendarMonth,
-            title = "No episodes airing today",
-            description = "Check back later or add more shows to your list",
+            title = stringResource(R.string.empty_airing_today_title),
+            description = stringResource(R.string.empty_airing_today_action),
             modifier = modifier
         )
     }
@@ -192,9 +194,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.Schedule,
-            title = "No upcoming episodes",
-            description = "Add currently airing anime to your watching list to see upcoming episodes",
-            actionLabel = "Browse Airing",
+            title = stringResource(R.string.empty_upcoming_title),
+            description = stringResource(R.string.empty_upcoming_action),
+            actionLabel = stringResource(R.string.empty_upcoming_button),
             onActionClick = onBrowseClick,
             modifier = modifier
         )
@@ -209,8 +211,8 @@ object EmptyStateConfigs {
     ) {
         EmptyStateCompact(
             icon = Icons.Default.Notifications,
-            title = "No notifications",
-            description = "You're all caught up!",
+            title = stringResource(R.string.empty_notifications_title),
+            description = stringResource(R.string.empty_notifications_action),
             modifier = modifier
         )
     }
@@ -224,8 +226,8 @@ object EmptyStateConfigs {
     ) {
         EmptyStateCompact(
             icon = Icons.Default.Person,
-            title = "No characters listed",
-            description = "Character information is not available for this title",
+            title = stringResource(R.string.empty_characters_title),
+            description = stringResource(R.string.empty_characters_action),
             modifier = modifier
         )
     }
@@ -240,9 +242,9 @@ object EmptyStateConfigs {
     ) {
         EmptyStateWithAction(
             icon = Icons.Default.Forum,
-            title = "No discussions yet",
-            description = "Be the first to start a conversation",
-            actionLabel = if (onCreateClick != null) "Start a Discussion" else null,
+            title = stringResource(R.string.empty_discussions_title),
+            description = stringResource(R.string.empty_discussions_action),
+            actionLabel = if (onCreateClick != null) stringResource(R.string.empty_discussions_button) else null,
             onActionClick = onCreateClick,
             modifier = modifier
         )
@@ -257,8 +259,8 @@ object EmptyStateConfigs {
     ) {
         EmptyStateCompact(
             icon = Icons.Default.ChatBubbleOutline,
-            title = "No comments yet",
-            description = "Be the first to share your thoughts",
+            title = stringResource(R.string.empty_comments_title),
+            description = stringResource(R.string.empty_comments_action),
             modifier = modifier
         )
     }
@@ -273,8 +275,8 @@ object EmptyStateConfigs {
     ) {
         EmptyStateCompact(
             icon = Icons.Default.SearchOff,
-            title = "No threads found for \"$query\"",
-            description = "Try different keywords",
+            title = stringResource(R.string.empty_forum_search_title, query),
+            description = stringResource(R.string.empty_forum_search_action),
             modifier = modifier
         )
     }
