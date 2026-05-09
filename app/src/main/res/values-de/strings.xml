@@ -6,7 +6,6 @@
     <string name="nav_library">Bibliothek</string>
     <string name="nav_discover">Entdecken</string>
     <string name="nav_profile">Profil</string>
-
     <!-- Common -->
     <string name="back">Zurück</string>
     <string name="search">Suchen</string>
@@ -21,14 +20,12 @@
     <string name="error_oops">Hoppla!</string>
     <string name="feature_coming_soon">Bald</string>
     <string name="not_available">k. A.</string>
-
     <!-- Media Types -->
     <string name="media_type_anime">Anime</string>
     <string name="media_type_manga">Manga</string>
     <string name="media_type_tv">TV</string>
     <string name="media_type_media">MEDIEN</string>
     <string name="format_tv_series">TV-Serie</string>
-
     <!-- Status Labels -->
     <string name="status_watching">Schaue ich</string>
     <string name="status_reading">Lese ich</string>
@@ -39,7 +36,6 @@
     <string name="status_repeating">Wiederholung</string>
     <string name="status_rewatching">Erneut schauen</string>
     <string name="status_rereading">Erneut lesen</string>
-
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">Anime suchen…</string>
     <string name="search_manga_placeholder">Manga suchen…</string>
@@ -49,7 +45,6 @@
     <string name="section_tba">TBA</string>
     <string name="error_failed_to_load">Inhalte konnten nicht geladen werden</string>
     <string name="search_no_results">Keine Ergebnisse gefunden.</string>
-
     <!-- Library Screen -->
     <string name="library_title">Bibliothek</string>
     <string name="search_library_placeholder">Bibliothek durchsuchen…</string>
@@ -71,14 +66,12 @@
     <string name="airing_episode_in">Ep %1$d in %2$s</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">?</string>
-
     <!-- Library Empty States -->
     <string name="empty_watching">Du schaust gerade nichts.</string>
     <string name="empty_reading">Du liest gerade nichts.</string>
     <string name="empty_planning">Deine Merkliste ist leer.</string>
     <string name="empty_completed">Noch keine abgeschlossenen Einträge.</string>
     <string name="empty_default">Hier gibt es nichts anzuzeigen.</string>
-
     <!-- Details Screen -->
     <string name="section_cast">Besetzung</string>
     <string name="section_related">Verwandt</string>
@@ -132,7 +125,6 @@
     <string name="episodes_suffix">Eps</string>
     <string name="chapters_suffix">Kap</string>
     <string name="minutes_suffix">Min.</string>
-
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>
     <string name="stat_time_watched">Geschaute Zeit</string>
@@ -148,7 +140,6 @@
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
     <string name="theme_system">System</string>
-
     <!-- Theme Palette Selection -->
     <string name="color_and_style">Farbe &amp; Stil</string>
     <string name="palette_style">Palettenstil</string>
@@ -173,7 +164,6 @@
     <string name="notification_upcoming">Kommende Premieren</string>
     <string name="notification_upcoming_desc">Vorab-Benachrichtigung vor Episodenausstrahlung</string>
     <string name="notification_permission_revoked">Benachrichtigungsberechtigung wurde entzogen. Tippe, um die Einstellungen zu öffnen.</string>
-
     <!-- Settings Screens -->
     <string name="navigate_back">Zurück</string>
     <string name="settings_look_and_feel">Erscheinungsbild</string>
@@ -220,12 +210,10 @@
     <string name="settings_search_placeholder">Einstellungen durchsuchen</string>
     <string name="settings_oss_description">AniSync wurde mit den folgenden Open-Source-Bibliotheken erstellt:</string>
     <string name="settings_oss_footer">Alle Bibliotheken werden gemäß ihren jeweiligen Lizenzen verwendet.</string>
-
     <!-- Logout Dialog -->
     <string name="logout_dialog_title">Abmelden</string>
     <string name="logout_dialog_message">Möchtest du dich wirklich abmelden?</string>
     <string name="logout_dialog_confirm">Abmelden</string>
-
     <!-- Settings Accessibility -->
     <string name="a11y_settings_search">Einstellungen durchsuchen</string>
     <string name="a11y_settings_clear_search">Suche löschen</string>
@@ -238,10 +226,8 @@
     <string name="a11y_settings_selected">Ausgewählt</string>
     <string name="a11y_back_button">Zurück</string>
     <string name="a11y_app_icon">App-Symbol</string>
-
     <!-- Theme Mode Dialog -->
     <string name="theme_mode_dialog_title">Design</string>
-
     <!-- Acknowledgments Screen -->
     <string name="settings_acknowledgments_description">AniSync wäre ohne die großartige Open-Source-Community und die folgenden Mitwirkenden nicht möglich:</string>
     <string name="acknowledgments_section_data">Datenanbieter</string>
@@ -260,7 +246,6 @@
     <string name="acknowledgments_users">Unsere Nutzer</string>
     <string name="acknowledgments_users_desc">Danke, dass ihr AniSync nutzt und wertvolles Feedback gebt</string>
     <string name="acknowledgments_footer">Mit Liebe für Anime-Fans überall gemacht.</string>
-
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">Entwickler</string>
     <string name="debug_notifications">Benachrichtigungs-Debug</string>
@@ -269,7 +254,6 @@
     <string name="debug_test_advance">Test Vorab (12 Std.)</string>
     <string name="debug_test_imminent">Test Bevorstehend (2 Std.)</string>
     <string name="debug_clear_all">Alle löschen</string>
-
     <string name="control_log_out">Abmelden</string>
     <string name="content_description_avatar">Avatar</string>
     <string name="profile_level">Level %1$d</string>
@@ -287,17 +271,14 @@
     <string name="profile_favorites_studios">Studios</string>
     <string name="content_description_profile_avatar">Profilavatar</string>
     <string name="content_description_media_cover">Cover von %1$s</string>
-
     <!-- Notification Dialog -->
     <string name="dialog_enable_notifications_title">Benachrichtigungen aktivieren</string>
     <string name="dialog_enable_notifications_message">Bitte aktiviere Benachrichtigungen in den Systemeinstellungen.</string>
-
     <!-- External Links -->
     <string name="section_external_links">Externe &amp; Streaming-Links</string>
     <string name="subsection_streaming">Ansehen auf</string>
     <string name="subsection_reading">Lesen auf</string>
     <string name="subsection_external">Externe Links</string>
-
     <!-- Edit Library Entry -->
     <string name="edit_entry">Eintrag bearbeiten</string>
     <string name="no_score">Keine Bewertung</string>
@@ -313,7 +294,6 @@
     <string name="delete_entry_confirm">Diesen Eintrag aus deiner Bibliothek entfernen?</string>
     <string name="entry_saved">Eintrag gespeichert</string>
     <string name="entry_deleted">Eintrag entfernt</string>
-
     <!-- Login Screen -->
     <string name="login_sync_your">Synchronisiere deine </string>
     <string name="login_world">Welt</string>
@@ -322,7 +302,6 @@
     <string name="login_description">Melde dich an, um auf deine Bibliothek zuzugreifen und neue Favoriten zu entdecken.</string>
     <string name="login_continue_with_anilist">Weiter mit AniList</string>
     <string name="login_terms">Durch Fortfahren stimmst du unseren Nutzungsbedingungen zu.</string>
-
     <!-- Search Filters -->
     <string name="filter">Filter</string>
     <string name="filter_clear_all">Alle löschen</string>
@@ -331,20 +310,17 @@
     <string name="filter_season">Saison</string>
     <string name="filter_format">Format</string>
     <string name="filter_status">Status</string>
-
     <!-- Seasons -->
     <string name="season_winter">Winter</string>
     <string name="season_spring">Frühling</string>
     <string name="season_summer">Sommer</string>
     <string name="season_fall">Herbst</string>
-
     <!-- Media Status (for search filter) -->
     <string name="media_status_airing">Laufend</string>
     <string name="media_status_finished">Abgeschlossen</string>
     <string name="media_status_not_yet_released">Noch nicht erschienen</string>
     <string name="media_status_cancelled">Eingestellt</string>
     <string name="media_status_hiatus">Pause</string>
-
     <!-- Media Formats -->
     <string name="format_tv">TV</string>
     <string name="format_tv_short">TV-Kurzfilm</string>
@@ -356,14 +332,12 @@
     <string name="format_novel">Roman</string>
     <string name="format_one_shot">One Shot</string>
     <string name="separator_bullet">•</string>
-
     <!-- Widget Descriptions -->
     <string name="widget_weekly_calendar_description">Sieh deinen 7-Tage-Anime-Zeitplan auf einen Blick</string>
     <string name="widget_airing_today_description">Zeigt heute ausgestrahlte Anime-Episoden</string>
     <string name="widget_up_next_description">Schnellzugriff auf deine nächste Episode</string>
     <string name="widget_quick_update_description">Episodenfortschritt schnell aktualisieren</string>
     <string name="widget_trending_description">Sieh, was gerade im Anime-Bereich angesagt ist</string>
-
     <!-- Widget Configuration -->
     <string name="widget_config_title">Widget konfigurieren</string>
     <string name="widget_config_subtitle">Passe Aussehen und Verhalten deines Gleich-Ansehen-Widgets an</string>
@@ -379,7 +353,6 @@
     <string name="widget_config_include_planning_desc">Einträge aus deiner Merkliste anzeigen</string>
     <string name="widget_config_add_widget">Widget hinzufügen</string>
     <string name="widget_config_items_visible">Sichtbare Einträge im Widget</string>
-
     <!-- Statistics Screen -->
     <string name="statistics_title">Statistiken</string>
     <string name="statistics_total_anime">Anime gesamt</string>
@@ -393,7 +366,6 @@
     <string name="statistics_by_year">Nach Erscheinungsjahr</string>
     <string name="statistics_anime_label">Anime</string>
     <string name="statistics_view">Statistiken ansehen</string>
-
     <string name="statistics_anime">Anime</string>
     <string name="statistics_manga">Manga</string>
     <string name="statistics_total_manga">Manga gesamt</string>
@@ -402,7 +374,6 @@
     <string name="statistics_no_manga_stats">Keine Manga-Statistiken verfügbar</string>
     <string name="statistics_entries">%d Einträge</string>
     <string name="statistics_no_data">Keine Statistikdaten verfügbar</string>
-
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">Bewertung %1$d: %2$d Einträge</string>
@@ -410,7 +381,6 @@
     <string name="a11y_studio_stat">Studio %1$s: %2$d Anime, Durchschnittsbewertung %3$.1f</string>
     <string name="a11y_format_stat">Format %1$s: %2$d Einträge, Durchschnittsbewertung %3$.1f</string>
     <string name="a11y_year_stat">Jahr %1$d: %2$d Einträge</string>
-
     <!-- Accessibility: Actions -->
     <string name="a11y_action_increment_progress">Fortschritt um eins erhöhen</string>
     <string name="a11y_action_decrement_progress">Fortschritt um eins verringern</string>
@@ -424,7 +394,6 @@
     <string name="a11y_action_collapse_synopsis">Zusammenfassung einklappen</string>
     <string name="a11y_action_select_tab">Tab %1$s auswählen</string>
     <string name="a11y_action_open_search_result">%1$s öffnen</string>
-
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">Poster von %1$s</string>
     <string name="a11y_character_image">Bild von %1$s</string>
@@ -432,7 +401,6 @@
     <string name="a11y_banner_image">Bannerbild von %1$s</string>
     <string name="a11y_rating_score">Bewertung: %1$.1f von 10</string>
     <string name="a11y_media_card">%1$s, %2$s, bewertet mit %3$.1f</string>
-
     <!-- Accessibility: State Descriptions -->
     <string name="a11y_state_progress">Fortschritt: %1$d von %2$s</string>
     <string name="a11y_state_airing_soon">Nächste Episode wird ausgestrahlt in %1$s</string>
@@ -444,7 +412,6 @@
     <string name="a11y_state_tab_not_selected">%1$s</string>
     <string name="a11y_state_expanded">Ausgeklappt</string>
     <string name="a11y_state_collapsed">Eingeklappt, doppeltippen zum Ausklappen</string>
-
     <!-- Accessibility: Headings -->
     <string name="a11y_heading_trending">Bereich Trends</string>
     <string name="a11y_heading_popular">Bereich Beliebt</string>
@@ -452,18 +419,15 @@
     <string name="a11y_heading_relations">Bereich Verwandte Medien</string>
     <string name="a11y_heading_synopsis">Bereich Zusammenfassung</string>
     <string name="a11y_heading_information">Bereich Informationen</string>
-
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">Fortschritt aktualisiert auf %1$d</string>
     <string name="a11y_error_occurred">Fehler: %1$s</string>
     <string name="action_play_trailer">Trailer ansehen</string>
-
     <!-- App Links Prompt -->
     <string name="enable_app_links_title">App-Links aktivieren</string>
     <string name="samsung_app_links_instructions">Um AniList-Links direkt in AniSync zu öffnen, erlaube bitte unterstützte Weblinks in deinen Android-Einstellungen.\n\n1. Tippe auf \'Einstellungen öffnen\'\n2. Suche und tippe auf \'AniSync\' in der Liste\n3. Tippe auf \'Link hinzufügen\'\n4. Wähle \'anilist.co\' aus und speichere.</string>
     <string name="default_app_links_instructions">Um AniList-Links direkt in AniSync zu öffnen, erlaube bitte unterstützte Weblinks für diese App in deinen Android-Einstellungen.\n\n1. Tippe auf \'Einstellungen öffnen\'\n2. Tippe auf \'Link hinzufügen\'\n3. Wähle \'anilist.co\' aus und speichere.</string>
     <string name="open_settings">Einstellungen öffnen</string>
-
     <!-- Missing translations -->
     <string name="about_improve_translations">Übersetzungen verbessern</string>
     <string name="about_improve_translations_desc">Hilf dabei, AniSync zu übersetzen</string>
