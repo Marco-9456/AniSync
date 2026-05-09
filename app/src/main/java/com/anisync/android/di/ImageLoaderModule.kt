@@ -18,7 +18,7 @@ import javax.inject.Singleton
 /**
  * Provides an optimized ImageLoader with:
  * - 50MB disk cache for offline image storage
- * - 25% memory cache of available app heap
+ * - 12.5% memory cache of available app heap
  * - 200ms crossfade animation for smooth loading
  * - Hardware bitmaps enabled for GPU-accelerated rendering
  * - GIF decoding (hardware-accelerated on API 28+)
@@ -28,7 +28,7 @@ import javax.inject.Singleton
 object ImageLoaderModule {
 
     private const val DISK_CACHE_SIZE = 50L * 1024 * 1024  // 50 MB
-    private const val MEMORY_CACHE_PERCENT = 0.25          // 25% of app heap
+    private const val MEMORY_CACHE_PERCENT = 0.125         // 12.5% of app heap
     private const val CROSSFADE_DURATION_MS = 200
 
     @Provides

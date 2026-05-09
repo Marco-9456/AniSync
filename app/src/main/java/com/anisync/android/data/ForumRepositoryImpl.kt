@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.first
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
+private const val CACHE_MAX_ENTRIES = 200
+
 private val THREAD_SORT_BY_NAME: Map<String, ThreadSort> =
     ThreadSort.entries.associateBy { it.name }
 
@@ -50,6 +52,13 @@ class ForumRepositoryImpl @Inject constructor(
     // Cache of the thread's last API page (count of pages under ascending sort),
     // so display-sort=DESC translation does not need an extra round-trip per call.
     private val lastApiPageCache = ConcurrentHashMap<Int, Int>()
+
+    private fun <K, V> ConcurrentHashMap<K, V>.putBounded(key: K, value: V) {
+        if (size >= CACHE_MAX_ENTRIES && !containsKey(key)) {
+            clear()
+        }
+        put(key, value)
+    }
 
     // =========================================================================
     // READ: Recent threads (Forum hub / overview)
@@ -185,7 +194,7 @@ class ForumRepositoryImpl @Inject constructor(
             val info = pageData?.pageInfo
             val apiLastPage = info?.lastPage ?: apiPage
             // Keep the cache fresh in case new comments grew the thread.
-            lastApiPageCache[threadId] = apiLastPage
+            lastApiPageCache.putBounded(threadId, apiLastPage)
 
             val ordered = rootNodes
                 .mapNotNull { mapToForumComment(it) }
@@ -245,10 +254,10 @@ class ForumRepositoryImpl @Inject constructor(
                 .execute()
             val firstNodes = firstResp.data?.Page?.threadComments?.filterNotNull() ?: emptyList()
             val lastPage = firstResp.data?.Page?.pageInfo?.lastPage ?: 1
-            lastApiPageCache[threadId] = lastPage
+            lastApiPageCache.putBounded(threadId, lastPage)
 
             if (firstNodes.any { it.id == commentId }) {
-                pageLookupCache[threadId to commentId] = 1
+                pageLookupCache.putBounded(threadId to commentId, 1)
                 return@runCatchingApi 1
             }
             if (lastPage <= 1) {
@@ -276,7 +285,7 @@ class ForumRepositoryImpl @Inject constructor(
                 when {
                     commentId in lower..upper -> {
                         if (nodes.any { it.id == commentId }) {
-                            pageLookupCache[threadId to commentId] = mid
+                            pageLookupCache.putBounded(threadId to commentId, mid)
                             return@runCatchingApi mid
                         }
                         throw IllegalStateException("Comment $commentId not on a top-level page")
@@ -297,7 +306,7 @@ class ForumRepositoryImpl @Inject constructor(
             .fetchPolicy(FetchPolicy.CacheFirst)
             .execute()
         val lp = resp.data?.Page?.pageInfo?.lastPage ?: 1
-        lastApiPageCache[threadId] = lp
+        lastApiPageCache.putBounded(threadId, lp)
         return lp
     }
 

@@ -886,6 +886,7 @@ class NotificationWorker @AssistedInject constructor(
     private suspend fun loadImage(url: String): Bitmap? {
         val request = ImageRequest.Builder(applicationContext)
             .data(url)
+            .size(256, 256)
             .allowHardware(false)
             .build()
 

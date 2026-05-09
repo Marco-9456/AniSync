@@ -3,7 +3,7 @@ package com.anisync.android.widget.core
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.core.graphics.drawable.toBitmap
-import coil.ImageLoader
+import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
@@ -15,19 +15,7 @@ import kotlinx.coroutines.withContext
  */
 object WidgetImageLoader {
 
-    /**
-     * Lazily-initialized singleton ImageLoader for widgets.
-     * Reuses Coil's disk cache across all widget image loads,
-     * avoiding the overhead of creating a new ImageLoader per call.
-     */
-    private var imageLoader: ImageLoader? = null
-
-    @Synchronized
-    private fun getImageLoader(context: Context): ImageLoader {
-        return imageLoader ?: ImageLoader.Builder(context.applicationContext)
-            .build()
-            .also { imageLoader = it }
-    }
+    private fun getImageLoader(context: Context) = context.applicationContext.imageLoader
 
     /**
      * Load a bitmap from a URL for use in widgets.

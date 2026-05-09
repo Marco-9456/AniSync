@@ -265,6 +265,7 @@ class NotificationDebugService @Inject constructor(
     private suspend fun loadImage(url: String): Bitmap? {
         val request = ImageRequest.Builder(context)
             .data(url)
+            .size(256, 256)
             .allowHardware(false)
             .build()
 

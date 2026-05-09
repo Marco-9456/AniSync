@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +32,11 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     @Inject
     lateinit var imageLoader: ImageLoader
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val applicationScope = CoroutineScope(
+        SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
+            Log.e("AniSyncApp", "Unhandled coroutine exception", throwable)
+        } + Dispatchers.Default
+    )
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -69,6 +74,13 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     private fun installCrashHandler() {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            if (throwable is OutOfMemoryError) {
+                Log.e("AniSyncCrash", "Out of memory — skipping crash report UI")
+                previous?.uncaughtException(thread, throwable)
+                Process.killProcess(Process.myPid())
+                exitProcess(10)
+                return@setDefaultUncaughtExceptionHandler
+            }
             try {
                 Log.e("AniSyncCrash", "Uncaught exception on ${thread.name}", throwable)
                 val intent = CrashReportActivity.newIntent(this, throwable)

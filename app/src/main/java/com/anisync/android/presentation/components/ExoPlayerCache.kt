@@ -11,6 +11,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import java.util.LinkedHashMap
 
 /**
  * CompositionLocal providing an [ExoPlayerCache] to composables in the tree.
@@ -41,11 +42,19 @@ val LocalExoPlayerCache = compositionLocalOf<ExoPlayerCache?> { null }
  * all players are released.
  */
 class ExoPlayerCache internal constructor(private val context: Context) {
-    private val players = mutableMapOf<String, ExoPlayer>()
+    private val maxSize = 5
+    private val players = object : LinkedHashMap<String, ExoPlayer>(maxSize, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ExoPlayer>?): Boolean {
+            val evict = size > maxSize
+            if (evict) eldest?.value?.release()
+            return evict
+        }
+    }
 
     /**
      * Returns an existing [ExoPlayer] for [url] if one is cached, or creates, prepares,
-     * and caches a new one. Reused players retain their buffered data and playback position.
+     * and caches a new one. When the cache exceeds [maxSize] entries, the least-recently
+     * accessed player is released and evicted.
      */
     @OptIn(UnstableApi::class)
     fun getOrCreate(url: String): ExoPlayer {
@@ -53,7 +62,7 @@ class ExoPlayerCache internal constructor(private val context: Context) {
             ExoPlayer.Builder(context).build().apply {
                 setMediaItem(MediaItem.fromUri(url))
                 repeatMode = Player.REPEAT_MODE_ONE
-                volume = 0f          // Default muted (consistent with VideoPlayer)
+                volume = 0f
                 playWhenReady = false
                 prepare()
             }

@@ -109,10 +109,10 @@ class UpNextWidgetConfigActivity : ComponentActivity() {
         // Load existing configuration if reconfiguring an existing widget
         lifecycleScope.launch {
             val initialConfig = try {
-                val glanceId = GlanceAppWidgetManager(this@UpNextWidgetConfigActivity)
+                val glanceId = GlanceAppWidgetManager(applicationContext)
                     .getGlanceIdBy(appWidgetId)
                 val prefs = getAppWidgetState<Preferences>(
-                    this@UpNextWidgetConfigActivity,
+                    applicationContext,
                     PreferencesGlanceStateDefinition,
                     glanceId
                 )
@@ -145,17 +145,17 @@ class UpNextWidgetConfigActivity : ComponentActivity() {
     private fun saveConfiguration(config: WidgetConfigState) {
         lifecycleScope.launch {
             try {
-                val glanceId = GlanceAppWidgetManager(this@UpNextWidgetConfigActivity)
+                val glanceId = GlanceAppWidgetManager(applicationContext)
                     .getGlanceIdBy(appWidgetId)
 
-                updateAppWidgetState(this@UpNextWidgetConfigActivity, glanceId) { prefs ->
+                updateAppWidgetState(applicationContext, glanceId) { prefs ->
                     prefs[UpNextWidgetConfig.ShowCountdownKey] = config.showCountdown
                     prefs[UpNextWidgetConfig.MaxItemsKey] = config.maxItems
                     prefs[UpNextWidgetConfig.IncludePlanningKey] = config.includePlanning
                     prefs[UpNextWidgetConfig.ShowAvailableNowKey] = config.showAvailableNow
                 }
 
-                UpNextWidget().update(this@UpNextWidgetConfigActivity, glanceId)
+                UpNextWidget().update(applicationContext, glanceId)
 
                 val resultIntent = Intent().apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
