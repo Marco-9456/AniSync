@@ -303,16 +303,16 @@
     <string name="update_check_failed">Failed to check for updates</string>
     <string name="update_notification_channel_name">App Updates</string>
     <string name="update_notification_channel_desc">Notifications when a new version of AniSync is available</string>
-    <string name="update_notification_title">AniSync Update Available</string>
+    <string name="update_notification_title">%s Update Available</string>
     <string name="update_notification_body">Version %1$s is available. Tap to update.</string>
     <string name="release_notes">Release Notes</string>
     <string name="latest_version">Latest Version</string>
     <string name="new_update_available">New update available</string>
     <string name="downloading_update">Downloading update: %1$d%%</string>
     <string name="install_update">Install Update</string>
-    <string name="update_is_up_to_date">AniSync is up to date.</string>
+    <string name="update_is_up_to_date">%s is up to date.</string>
     <string name="about_improve_translations">Improve translations</string>
-    <string name="about_improve_translations_desc">Help translate AniSync</string>
+    <string name="about_improve_translations_desc">Help translate %s</string>
     <string name="settings_title_language">Title Language</string>
     <string name="settings_app_language">App Language</string>
     <string name="settings_app_language_system_desc">Uses your device language setting</string>
@@ -569,7 +569,7 @@
     <string name="format_music">Music</string>
     <string name="format_novel">Novel</string>
     <string name="format_one_shot">One Shot</string>
-    <string name="separator_bullet">•</string>
+    <string name="separator_bullet" translatable="false">•</string>
 
     <!-- Widget Descriptions -->
     <string name="widget_weekly_calendar_description">View your 7-day anime schedule at a glance</string>
@@ -843,7 +843,7 @@
     <!-- Settings / About -->
     <string name="cd_developer_avatar">Developer Avatar</string>
     <string name="sponsor_project">Sponsor the Project</string>
-    <string name="support_anisync">Support AniSync</string>
+    <string name="support_anisync">Support %s</string>
     <string name="support_description">AniSync is a passion project built entirely in my free time. If you enjoy using the app, consider sponsoring to help keep development alive.</string>
     <string name="lead_developer">Lead Developer</string>
     <string name="sponsor">Sponsor</string>

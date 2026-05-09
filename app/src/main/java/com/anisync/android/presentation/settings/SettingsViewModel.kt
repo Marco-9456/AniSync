@@ -275,7 +275,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = updateManager.checkForUpdate(allowPrerelease)) {
                 is UpdateCheckResult.UpToDate -> {
-                    Toast.makeText(context, R.string.update_is_up_to_date, Toast.LENGTH_SHORT)
+                    Toast.makeText(context, context.getString(R.string.update_is_up_to_date, context.getString(R.string.app_name)), Toast.LENGTH_SHORT)
                         .show()
                 }
                 is UpdateCheckResult.Error -> {
@@ -293,7 +293,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = updateManager.fetchLatestRelease(allowPrerelease)) {
                 is UpdateCheckResult.UpToDate -> {
-                    Toast.makeText(context, R.string.update_is_up_to_date, Toast.LENGTH_SHORT)
+                    Toast.makeText(context, context.getString(R.string.update_is_up_to_date, context.getString(R.string.app_name)), Toast.LENGTH_SHORT)
                         .show()
                 }
                 is UpdateCheckResult.Error -> {

@@ -451,7 +451,7 @@ fun AboutScreen(
             SettingsDivider(startPadding = 20.dp)
             SettingsItem(
                 title = stringResource(R.string.about_improve_translations),
-                subtitle = stringResource(R.string.about_improve_translations_desc),
+                subtitle = stringResource(R.string.about_improve_translations_desc, stringResource(R.string.app_name)),
                 onClick = { context.launchUrl("https://hosted.weblate.org/engage/anisync/") }
             )
         }
@@ -506,7 +506,7 @@ private fun SponsorBottomSheet(
             )
 
             Text(
-                text = stringResource(R.string.support_anisync),
+                text = stringResource(R.string.support_anisync, stringResource(R.string.app_name)),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface

@@ -81,7 +81,7 @@ class UpdateCheckWorker @AssistedInject constructor(
 
         val notification = NotificationCompat.Builder(appContext, NotificationChannels.UPDATE_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(appContext.getString(R.string.update_notification_title))
+            .setContentTitle(appContext.getString(R.string.update_notification_title, appContext.getString(R.string.app_name)))
             .setContentText(appContext.getString(R.string.update_notification_body, tagName))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
