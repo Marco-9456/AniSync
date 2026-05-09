@@ -291,7 +291,9 @@ class ForumViewModel @Inject constructor(
                         val updatedThreads = if (replaceExisting || page == 1) {
                             data.items.toPersistentList()
                         } else {
-                            (current.threads + data.items).toPersistentList()
+                            (current.threads + data.items)
+                                .distinctBy { it.id }
+                                .toPersistentList()
                         }
                         current.copy(
                             isLoading = false,
