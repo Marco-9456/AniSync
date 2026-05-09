@@ -1,6 +1,7 @@
 package com.anisync.android.domain
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.anisync.android.data.CoverQuality
@@ -20,6 +21,7 @@ import kotlinx.serialization.Serializable
  * `/cover/medium/...` URL as `large`). [preferred] handles that by falling back
  * to the next-smaller available URL — no client-side retry needed.
  */
+@Immutable
 @Serializable
 data class CoverImage(
     val medium: String? = null,
@@ -36,7 +38,12 @@ data class CoverImage(
         /** Convenience for mappers: `null` if every URL is `null`, else a populated [CoverImage]. */
         fun of(medium: String?, large: String?, extraLarge: String?): CoverImage? {
             if (medium == null && large == null && extraLarge == null) return null
-            return CoverImage(medium, large, extraLarge)
+            val dedupLarge = if (large == medium) medium else large
+            val dedupExtraLarge = if (extraLarge == dedupLarge) dedupLarge
+            else if (extraLarge == medium) medium
+            else extraLarge
+
+            return CoverImage(medium, dedupLarge, dedupExtraLarge)
         }
     }
 }

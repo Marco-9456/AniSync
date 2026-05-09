@@ -28,7 +28,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.BrokenImage
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -58,6 +57,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -71,6 +71,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.anisync.android.R
@@ -88,16 +89,16 @@ private enum class PlayerState { Loading, Ready, Buffering, Error }
  * - **Error state**: friendly card with retry for deleted/broken/network-failed videos
  * - **Immersive controls**: tap-to-play, mute toggle, seek slider
  * - **State persistence**: when [playerCache] is provided, the ExoPlayer instance
- *   survives scrolling off-screen in a LazyColumn, so the user won't re-fetch the
- *   video when scrolling back.
+ * survives scrolling off-screen in a LazyColumn, so the user won't re-fetch the
+ * video when scrolling back.
  *
  * @param url The URL of the video to play.
  * @param modifier Optional [Modifier] for the root container.
  * @param playerCache [ExoPlayerCache] for retaining player state across recomposition.
- *                    Defaults to [LocalExoPlayerCache]. When `null`, the player is
- *                    self-managed and released when leaving composition (legacy behavior).
- *                    To enable caching, provide [LocalExoPlayerCache] via
- *                    [CompositionLocalProvider] at the screen level.
+ * Defaults to [LocalExoPlayerCache]. When `null`, the player is
+ * self-managed and released when leaving composition (legacy behavior).
+ * To enable caching, provide [LocalExoPlayerCache] via
+ * [CompositionLocalProvider] at the screen level.
  */
 @kotlin.OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @ExperimentalMaterial3Api
@@ -127,13 +128,21 @@ fun VideoPlayer(
         remember(url) { playerCache.getOrCreate(url) }
     } else {
         remember(url) {
-            ExoPlayer.Builder(context).build().apply {
-                setMediaItem(MediaItem.fromUri(url))
-                repeatMode = Player.REPEAT_MODE_ONE
-                volume = if (isMuted) 0f else 1f
-                playWhenReady = false
-                prepare()
-            }
+            val loadControl = DefaultLoadControl.Builder()
+                .setBufferDurationsMs(1500, 5000, 500, 1500)
+                .setTargetBufferBytes(2 * 1024 * 1024) // 2 MB limit
+                .setPrioritizeTimeOverSizeThresholds(true)
+                .build()
+
+            ExoPlayer.Builder(context)
+                .setLoadControl(loadControl)
+                .build().apply {
+                    setMediaItem(MediaItem.fromUri(url))
+                    repeatMode = Player.REPEAT_MODE_ONE
+                    volume = if (isMuted) 0f else 1f
+                    playWhenReady = false
+                    prepare()
+                }
         }
     }
 
@@ -252,7 +261,12 @@ fun VideoPlayer(
                         setEnableComposeSurfaceSyncWorkaround(true)
                     }
                 },
-                update = { view -> view.player = exoPlayer },
+                update = { view ->
+                    view.player = exoPlayer
+                    if (exoPlayer.playbackState == Player.STATE_IDLE) {
+                        exoPlayer.prepare()
+                    }
+                },
                 onRelease = { it.player = null },
                 modifier = Modifier.fillMaxSize()
             )

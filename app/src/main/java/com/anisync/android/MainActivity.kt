@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,11 +30,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
@@ -49,6 +49,7 @@ import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -87,36 +88,38 @@ class MainActivity : AppCompatActivity() {
             }
 
             handleAuthRedirect(intent)
-
-            // Schedule notifications when enabled and logged in, only while activity is active
-            lifecycleScope.launch {
-                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    combine(
-                        appSettings.notificationsEnabled,
-                        authRepository.isLoggedIn
-                    ) { enabled, loggedIn ->
-                        enabled && loggedIn
-                    }
-                        .distinctUntilChanged()
-                        .collect { shouldSchedule ->
-                            if (shouldSchedule) {
-                                val scheduleTime = measureTimeMillis {
-                                    notificationScheduler.schedule()
-                                }
-                                Log.d("PerfMetrics", "Notification scheduled in ${scheduleTime}ms")
-                            }
-                        }
+            lifecycleScope.launch(Dispatchers.IO) {
+                combine(
+                    appSettings.notificationsEnabled,
+                    authRepository.isLoggedIn
+                ) { enabled, loggedIn ->
+                    enabled && loggedIn
                 }
+                    .distinctUntilChanged()
+                    .collect { shouldSchedule ->
+                        if (shouldSchedule) {
+                            val scheduleTime = measureTimeMillis {
+                                notificationScheduler.schedule()
+                            }
+                            Log.d(
+                                "PerfMetrics",
+                                "Notification scheduled in ${scheduleTime}ms via IO Thread"
+                            )
+                        }
+                    }
             }
 
-            // Silent auto-update check on launch (no UI unless update found)
+            // Silent auto-update check on launch
             if (appSettings.autoUpdateEnabled.value) {
-                lifecycleScope.launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     val allowPrerelease = appSettings.allowPrerelease.value
-                    updateManager.checkForUpdate(allowPrerelease)
-                    // Result is reflected in updateManager.updateState;
-                    // the dialog composable below will react if an update is found.
-                    // No toast/snackbar for "up to date" or "error" — completely silent.
+                    val updateCheckTime = measureTimeMillis {
+                        updateManager.checkForUpdate(allowPrerelease)
+                    }
+                    Log.d(
+                        "PerfMetrics",
+                        "Update check completed in ${updateCheckTime}ms via IO Thread"
+                    )
                 }
             }
 
@@ -175,7 +178,7 @@ class MainActivity : AppCompatActivity() {
                                 initialValue = false
                             )
 
-                            // Session expired dialog — triggered by AuthorizationInterceptor on HTTP 401
+                            // Session expired dialog
                             var showSessionExpiredDialog by remember { mutableStateOf(false) }
 
                             LaunchedEffect(Unit) {
@@ -211,50 +214,7 @@ class MainActivity : AppCompatActivity() {
                                 LoginScreen()
                             }
 
-                            // Global update dialog — overlays the entire app when an update is found.
-                            // This dialog appears silently after the auto-check on launch completes.
-                            val updateState by updateManager.updateState.collectAsStateWithLifecycle()
-
-                            val dialogRelease = when (val state = updateState) {
-                                is UpdateState.UpdateAvailable -> state.release
-                                is UpdateState.Downloading -> state.release
-                                is UpdateState.ReadyToInstall -> state.release
-                                else -> null
-                            }
-
-                            // Launcher for "Install Unknown Apps" system settings
-                            val installSettingsLauncher =
-                                rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                                    updateManager.installApk()
-                                }
-
-                            if (dialogRelease != null) {
-                                UpdateDialog(
-                                    updateState = updateState,
-                                    release = dialogRelease,
-                                    onDismiss = { updateManager.dismissUpdate() },
-                                    onDownload = {
-                                        updateManager.startDownload(dialogRelease)
-                                    },
-                                    onCancel = { updateManager.cancelDownload() },
-                                    onInstall = {
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                            if (packageManager.canRequestPackageInstalls()) {
-                                                updateManager.installApk()
-                                            } else {
-                                                installSettingsLauncher.launch(
-                                                    Intent(
-                                                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                                                        Uri.parse("package:$packageName")
-                                                    )
-                                                )
-                                            }
-                                        } else {
-                                            updateManager.installApk()
-                                        }
-                                    }
-                                )
-                            }
+                            AppUpdateHandler(updateManager = updateManager)
                         }
                     }
                 }
@@ -276,19 +236,23 @@ class MainActivity : AppCompatActivity() {
             if (fragment != null) {
                 val startNanos = System.nanoTime()
 
-                // Parse token using zero-allocation sequence
                 var accessToken: String? = null
-                val sequence = fragment.splitToSequence("&")
+                val tokenKey = "access_token="
+                var tokenIndex = fragment.indexOf(tokenKey)
 
-                for (param in sequence) {
-                    val eqIndex = param.indexOf('=')
-                    if (eqIndex > 0) {
-                        val key = param.substring(0, eqIndex)
-                        if (key == "access_token") {
-                            accessToken = param.substring(eqIndex + 1)
-                            break
+                while (tokenIndex != -1) {
+                    if (tokenIndex == 0 || fragment[tokenIndex - 1] == '&') {
+                        val valueStart = tokenIndex + tokenKey.length
+                        val valueEnd = fragment.indexOf('&', valueStart)
+
+                        accessToken = if (valueEnd == -1) {
+                            fragment.substring(valueStart)
+                        } else {
+                            fragment.substring(valueStart, valueEnd)
                         }
+                        break
                     }
+                    tokenIndex = fragment.indexOf(tokenKey, tokenIndex + 1)
                 }
 
                 if (accessToken != null) {
@@ -299,5 +263,51 @@ class MainActivity : AppCompatActivity() {
                 Log.d("PerfMetrics", "Auth token parsing took $parseTimeMs ms")
             }
         }
+    }
+}
+
+@Composable
+private fun AppUpdateHandler(updateManager: UpdateManager) {
+    val context = LocalContext.current
+    val installSettingsLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            updateManager.installApk()
+        }
+
+    val updateState by updateManager.updateState.collectAsStateWithLifecycle()
+
+    val dialogRelease = when (val state = updateState) {
+        is UpdateState.UpdateAvailable -> state.release
+        is UpdateState.Downloading -> state.release
+        is UpdateState.ReadyToInstall -> state.release
+        else -> null
+    }
+
+    if (dialogRelease != null) {
+        UpdateDialog(
+            updateState = updateState,
+            release = dialogRelease,
+            onDismiss = { updateManager.dismissUpdate() },
+            onDownload = {
+                updateManager.startDownload(dialogRelease)
+            },
+            onCancel = { updateManager.cancelDownload() },
+            onInstall = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (context.packageManager.canRequestPackageInstalls()) {
+                        updateManager.installApk()
+                    } else {
+                        installSettingsLauncher.launch(
+                            Intent(
+                                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                Uri.parse("package:${context.packageName}")
+                            )
+                        )
+                    }
+                } else {
+                    updateManager.installApk()
+                }
+            }
+        )
     }
 }
