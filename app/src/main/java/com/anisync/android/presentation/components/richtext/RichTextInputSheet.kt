@@ -1,6 +1,9 @@
 package com.anisync.android.presentation.components.richtext
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.content.ReceiveContentListener
+import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -36,8 +43,6 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,13 +55,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
@@ -65,15 +68,6 @@ import kotlinx.coroutines.flow.first
 
 private const val DEFAULT_MAX_LENGTH = 10_000
 
-/**
- * Bottom-sheet rich-text input — replies, comments, status posts, direct messages.
- *
- * Layout: header (cancel / title / preview toggle) → optional replying-to chip → body
- * (or rendered preview) → docked toolbar row (formatting + leading slot + char count + send).
- *
- * @param bottomBarLeading slot rendered before char count + send (e.g. DM private toggle).
- * @param enablePreview when false, the preview toggle is hidden (preview-less surfaces).
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RichTextInputSheet(
@@ -95,18 +89,15 @@ fun RichTextInputSheet(
     isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {
-    var bodyValue by remember(prefillBody) {
-        val seed = prefillBody.orEmpty()
-        mutableStateOf(TextFieldValue(seed, selection = TextRange(seed.length)))
-    }
+    val bodyState = remember(prefillBody) { TextFieldState(prefillBody.orEmpty()) }
     var isPreviewMode by remember { mutableStateOf(false) }
-    val canSubmit = isSubmitEnabled(bodyValue.text) && !isSubmitting
+    val canSubmit = isSubmitEnabled(bodyState.text.toString()) && !isSubmitting
     val focusRequester = remember { FocusRequester() }
     val haptic = LocalHapticFeedback.current
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
     var showAttachSheet by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
-    val hasDraft = bodyValue.text.isNotBlank() && bodyValue.text != prefillBody.orEmpty()
+    val hasDraft = bodyState.text.isNotBlank() && bodyState.text.toString() != prefillBody.orEmpty()
     val hasDraftState = androidx.compose.runtime.rememberUpdatedState(hasDraft)
 
     val sheetState = rememberModalBottomSheetState(
@@ -125,7 +116,7 @@ fun RichTextInputSheet(
         if (hasDraft) showDiscardDialog = true else onDismiss()
     }
     val insertMarkdown: (String) -> Unit = { md ->
-        bodyValue = bodyValue.insertAtCursor(if (bodyValue.text.isEmpty()) md else "\n$md\n")
+        bodyState.insertAtCursor(if (bodyState.text.isEmpty()) md else "\n$md\n")
     }
 
     if (enableMediaAttach && showAttachSheet) {
@@ -136,8 +127,6 @@ fun RichTextInputSheet(
         )
     }
 
-    // Defer focus until the sheet is fully expanded — otherwise the IME opens before the
-    // sheet animates in and the body sits behind the keyboard on tall layouts.
     LaunchedEffect(sheetState) {
         snapshotFlow { sheetState.currentValue }
             .first { it == SheetValue.Expanded || it == SheetValue.PartiallyExpanded }
@@ -186,83 +175,97 @@ fun RichTextInputSheet(
                     .heightIn(max = maxHeight)
             ) {
                 HeaderRow(
-                title = title,
-                isPreviewMode = isPreviewMode,
-                isPreviewEnabled = enablePreview && bodyValue.text.isNotBlank(),
-                showPreviewToggle = enablePreview,
-                onCancel = dismissWithCheck,
-                onTogglePreview = { isPreviewMode = !isPreviewMode }
-            )
+                    title = title,
+                    isPreviewMode = isPreviewMode,
+                    isPreviewEnabled = enablePreview && bodyState.text.isNotBlank(),
+                    showPreviewToggle = enablePreview,
+                    onCancel = dismissWithCheck,
+                    onTogglePreview = { isPreviewMode = !isPreviewMode }
+                )
 
-            if (replyingToLabel != null) {
-                ReplyingToChip(replyingToLabel)
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            val boxModifier = if (fullScreen) Modifier.weight(1f) else Modifier.weight(1f, fill = false)
-            Box(modifier = boxModifier) {
-                if (isPreviewMode) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        AsyncRichTextRenderer(
-                            html = bodyValue.text,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                } else {
-                    val textFieldModifier = Modifier
-                        .fillMaxWidth()
-                        .then(if (fullScreen) Modifier.fillMaxHeight() else Modifier)
-                        .padding(horizontal = 16.dp)
-                        .focusRequester(focusRequester)
-                        .let { base ->
-                            if (enableMediaAttach) base.contentReceiver { tc ->
-                                handleImeContent(tc, attachViewModel, insertMarkdown)
-                            } else base
-                        }
-                    TextField(
-                        value = bodyValue,
-                        onValueChange = {
-                            if (it.text.length <= maxLength) bodyValue = it
-                        },
-                        placeholder = { Text(placeholder) },
-                        minLines = minLines,
-                        maxLines = maxLines,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = textFieldModifier,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        )
-                    )
+                if (replyingToLabel != null) {
+                    ReplyingToChip(replyingToLabel)
                 }
-            }
 
-            BottomBarRow(
-                bodyValue = bodyValue,
-                onValueChange = { bodyValue = it },
-                maxLength = maxLength,
-                submitLabel = submitLabel,
-                isSubmitting = isSubmitting,
-                canSubmit = canSubmit,
-                onSubmit = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onSubmit(bodyValue.text)
-                },
-                bottomBarLeading = bottomBarLeading,
-                onAttachClick = if (enableMediaAttach) ({
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    showAttachSheet = true
-                }) else null
-            )
-        }
+                Spacer(Modifier.height(8.dp))
+
+                val boxModifier = if (fullScreen) Modifier.weight(1f) else Modifier.weight(1f, fill = false)
+                Box(modifier = boxModifier) {
+                    if (isPreviewMode) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            AsyncRichTextRenderer(
+                                html = bodyState.text.toString(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        val receiveContentListener = remember {
+                            object : ReceiveContentListener {
+                                override fun onReceive(transferableContent: TransferableContent): TransferableContent? {
+                                    return handleImeContent(transferableContent, attachViewModel, insertMarkdown)
+                                }
+                            }
+                        }
+
+                        val textFieldModifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (fullScreen) Modifier.fillMaxHeight() else Modifier)
+                            .padding(horizontal = 16.dp)
+                            .focusRequester(focusRequester)
+                            .let { base ->
+                                if (enableMediaAttach) base.contentReceiver(receiveContentListener) else base
+                            }
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = textFieldModifier
+                        ) {
+                            BasicTextField(
+                                state = bodyState,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                lineLimits = TextFieldLineLimits.MultiLine(minLines, maxLines),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                decorator = { innerTextField ->
+                                    if (bodyState.text.isEmpty()) {
+                                        Text(
+                                            text = placeholder,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            )
+                        }
+                    }
+                }
+
+                BottomBarRow(
+                    textFieldState = bodyState,
+                    maxLength = maxLength,
+                    submitLabel = submitLabel,
+                    isSubmitting = isSubmitting,
+                    canSubmit = canSubmit,
+                    onSubmit = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onSubmit(bodyState.text.toString())
+                    },
+                    bottomBarLeading = bottomBarLeading,
+                    onAttachClick = if (enableMediaAttach) ({
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showAttachSheet = true
+                    }) else null
+                )
+            }
         }
     }
 }
@@ -334,8 +337,7 @@ private fun ReplyingToChip(label: String) {
 
 @Composable
 private fun BottomBarRow(
-    bodyValue: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    textFieldState: TextFieldState,
     maxLength: Int,
     submitLabel: String,
     isSubmitting: Boolean,
@@ -345,7 +347,6 @@ private fun BottomBarRow(
     onAttachClick: (() -> Unit)? = null
 ) {
     if (bottomBarLeading != null) {
-        // Two-row layout: format buttons on top, leading + char count + send below.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -353,8 +354,7 @@ private fun BottomBarRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             RichTextFormatBar(
-                textFieldValue = bodyValue,
-                onValueChange = onValueChange,
+                textFieldState = textFieldState,
                 buttonSize = 36.dp,
                 iconSize = 18.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -370,7 +370,7 @@ private fun BottomBarRow(
             bottomBarLeading()
             Spacer(modifier = Modifier.weight(1f))
             RichTextCharCounter(
-                length = bodyValue.text.length,
+                length = textFieldState.text.length,
                 maxLength = maxLength,
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(end = 12.dp)
@@ -383,7 +383,6 @@ private fun BottomBarRow(
             )
         }
     } else {
-        // Single-row layout: scrollable format buttons + char count + send.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -391,15 +390,14 @@ private fun BottomBarRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             RichTextFormatBar(
-                textFieldValue = bodyValue,
-                onValueChange = onValueChange,
+                textFieldState = textFieldState,
                 buttonSize = 36.dp,
                 iconSize = 18.dp,
                 modifier = Modifier.weight(1f),
                 onAttachClick = onAttachClick
             )
             RichTextCharCounter(
-                length = bodyValue.text.length,
+                length = textFieldState.text.length,
                 maxLength = maxLength,
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(horizontal = 12.dp)

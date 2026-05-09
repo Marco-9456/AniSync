@@ -2,6 +2,8 @@ package com.anisync.android.presentation.components.richtext
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.content.ReceiveContentListener
+import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,8 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -35,27 +37,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
-/**
- * Full-screen scaffold for rich-text authoring (status edits, thread create/edit, etc.).
- *
- * Owns body state, preview toggle, and the discard-changes flow. Callers that have
- * additional state (title, categories, etc.) pass [headerSlot] for content above the
- * body field, [hasExternalUnsavedChanges] to fold their state into the discard guard,
- * and [isExternallyValid] to gate the submit button.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RichTextScaffold(
@@ -77,19 +70,15 @@ fun RichTextScaffold(
     insertController: RichTextInsertController? = null,
     headerSlot: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    // `initialBody` is consumed once. Callers wanting to reset state for a different
-    // entity should remount via `key(entityId) { RichTextScaffold(...) }`.
-    var bodyValue by remember {
-        mutableStateOf(TextFieldValue(initialBody, selection = TextRange(initialBody.length)))
-    }
+    val bodyState = remember { TextFieldState(initialBody) }
     val initialBodySnapshot = remember { initialBody }
     var isPreviewMode by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
     var showAttachSheet by remember { mutableStateOf(false) }
+
     val insertMarkdown: (String) -> Unit = { md ->
-        bodyValue = bodyValue.insertAtCursor(if (bodyValue.text.isEmpty()) md else "\n$md\n")
-        onBodyChange(bodyValue.text)
+        bodyState.insertAtCursor(if (bodyState.text.isEmpty()) md else "\n$md\n")
     }
 
     if (enableMediaAttach && showAttachSheet) {
@@ -103,18 +92,24 @@ fun RichTextScaffold(
     if (insertController != null) {
         androidx.compose.runtime.SideEffect {
             insertController.bind { text ->
-                bodyValue = bodyValue.insertAtCursor(text)
-                onBodyChange(bodyValue.text)
+                bodyState.insertAtCursor(text)
             }
         }
     }
 
-    val isBlank by remember { derivedStateOf { bodyValue.text.isBlank() } }
+    // Connect TextFieldState changes to the provided callback
+    LaunchedEffect(bodyState) {
+        snapshotFlow { bodyState.text }.collect { text ->
+            onBodyChange(text.toString())
+        }
+    }
+
+    val isBlank by remember { derivedStateOf { bodyState.text.isBlank() } }
     val meetsMinLength by remember(minLength) {
-        derivedStateOf { bodyValue.text.trim().length >= minLength }
+        derivedStateOf { bodyState.text.trim().length >= minLength }
     }
     val hasBodyChanges by remember {
-        derivedStateOf { bodyValue.text != initialBodySnapshot }
+        derivedStateOf { bodyState.text.toString() != initialBodySnapshot }
     }
     val hasUnsavedChanges = hasBodyChanges || hasExternalUnsavedChanges
     val canSubmit = meetsMinLength && isExternallyValid
@@ -182,7 +177,7 @@ fun RichTextScaffold(
                             }
                         } else {
                             TextButton(
-                                onClick = { onSubmit(bodyValue.text) },
+                                onClick = { onSubmit(bodyState.text.toString()) },
                                 enabled = canSubmit
                             ) {
                                 Text(
@@ -203,11 +198,7 @@ fun RichTextScaffold(
             bottomBar = {
                 if (!isPreviewMode) {
                     RichTextDockedFormatBar(
-                        textFieldValue = bodyValue,
-                        onValueChange = {
-                            bodyValue = it
-                            onBodyChange(it.text)
-                        },
+                        textFieldState = bodyState,
                         maxLength = maxLength,
                         onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null
                     )
@@ -229,37 +220,38 @@ fun RichTextScaffold(
                             .padding(16.dp)
                     ) {
                         AsyncRichTextRenderer(
-                            html = bodyValue.text,
+                            html = bodyState.text.toString(),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                 } else {
+                    val receiveContentListener = remember {
+                        ReceiveContentListener { transferableContent -> handleImeContent(transferableContent, attachViewModel, insertMarkdown) }
+                    }
+
                     val textFieldModifier = Modifier
                         .fillMaxSize()
                         .focusRequester(focusRequester)
+                        .padding(16.dp)
                         .let { base ->
-                            if (enableMediaAttach) base.contentReceiver { tc ->
-                                handleImeContent(tc, attachViewModel, insertMarkdown)
-                            } else base
+                            if (enableMediaAttach) base.contentReceiver(receiveContentListener) else base
                         }
-                    TextField(
-                        value = bodyValue,
-                        onValueChange = {
-                            if (it.text.length <= maxLength) {
-                                bodyValue = it
-                                onBodyChange(it.text)
-                            }
-                        },
-                        placeholder = { Text(placeholder) },
+
+                    BasicTextField(
+                        state = bodyState,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                         modifier = textFieldModifier,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            errorContainerColor = Color.Transparent,
-                            errorIndicatorColor = Color.Transparent
-                        )
+                        decorator = { innerTextField ->
+                            if (bodyState.text.isEmpty()) {
+                                Text(
+                                    text = placeholder,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                            innerTextField()
+                        }
                     )
                 }
             }

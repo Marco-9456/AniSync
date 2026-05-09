@@ -1,8 +1,10 @@
 package com.anisync.android.presentation.components.richtext
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.content.MediaType
 import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.consume
+import androidx.compose.foundation.content.hasMediaType
 
 /**
  * Bridges Samsung / Gboard / any IME's `commitContent` flow into the upload
@@ -17,13 +19,23 @@ internal fun handleImeContent(
     onMarkdownReady: (String) -> Unit
 ): TransferableContent? {
     val description = transferableContent.clipEntry.clipData.description
+    val hasVideo = (0 until description.mimeTypeCount).any {
+        description.getMimeType(it).startsWith("video/")
+    }
+
+    // Check if the pasted data is an image or video before consuming
+    if (!transferableContent.hasMediaType(MediaType.Image) && !hasVideo) {
+        return transferableContent
+    }
+
     val mediaMime = (0 until description.mimeTypeCount)
         .map { description.getMimeType(it) }
         .firstOrNull { it.startsWith("image/") || it.startsWith("video/") }
-        ?: return transferableContent
+        ?: "image/*"
+
     return transferableContent.consume { item ->
         val uri = item.uri ?: return@consume false
         viewModel.ingestFromIme(uri, mediaMime, onMarkdownReady)
-        true
+        true // Mark the item as consumed
     }
 }

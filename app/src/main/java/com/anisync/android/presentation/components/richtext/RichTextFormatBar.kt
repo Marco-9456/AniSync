@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.FormatBold
@@ -35,7 +36,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -46,8 +46,7 @@ import com.anisync.android.R
  */
 @Composable
 fun RichTextFormatBar(
-    textFieldValue: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    textFieldState: TextFieldState,
     modifier: Modifier = Modifier,
     buttonSize: Dp = 40.dp,
     iconSize: Dp = 20.dp,
@@ -67,27 +66,27 @@ fun RichTextFormatBar(
         }
         FormatButton(Icons.Default.FormatBold, R.string.richtext_format_bold, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onValueChange(textFieldValue.wrapSelection("__", "__"))
+            textFieldState.wrapSelection("__", "__")
         }
         FormatButton(Icons.Default.FormatItalic, R.string.richtext_format_italic, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onValueChange(textFieldValue.wrapSelection("_", "_"))
+            textFieldState.wrapSelection("_", "_")
         }
         FormatButton(Icons.Default.FormatStrikethrough, R.string.richtext_format_strikethrough, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onValueChange(textFieldValue.wrapSelection("~~", "~~"))
+            textFieldState.wrapSelection("~~", "~~")
         }
         FormatButton(Icons.Default.Code, R.string.richtext_format_code, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onValueChange(textFieldValue.wrapSelection("`", "`"))
+            textFieldState.wrapSelection("`", "`")
         }
         FormatButton(Icons.Default.Link, R.string.richtext_format_link, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onValueChange(textFieldValue.toggleLinkSyntax())
+            textFieldState.toggleLinkSyntax()
         }
         FormatButton(Icons.Default.VisibilityOff, R.string.richtext_format_spoiler, buttonSize, iconSize) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onValueChange(textFieldValue.wrapSelection("~!", "!~"))
+            textFieldState.wrapSelection("~!", "!~")
         }
     }
 }
@@ -115,8 +114,7 @@ fun RichTextCharCounter(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RichTextDockedFormatBar(
-    textFieldValue: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    textFieldState: TextFieldState,
     maxLength: Int,
     modifier: Modifier = Modifier,
     onAttachClick: (() -> Unit)? = null
@@ -133,13 +131,12 @@ fun RichTextDockedFormatBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             RichTextFormatBar(
-                textFieldValue = textFieldValue,
-                onValueChange = onValueChange,
+                textFieldState = textFieldState,
                 modifier = Modifier.weight(1f),
                 onAttachClick = onAttachClick
             )
             RichTextCharCounter(
-                length = textFieldValue.text.length,
+                length = textFieldState.text.length,
                 maxLength = maxLength,
                 modifier = Modifier.padding(start = 12.dp, end = 8.dp)
             )
