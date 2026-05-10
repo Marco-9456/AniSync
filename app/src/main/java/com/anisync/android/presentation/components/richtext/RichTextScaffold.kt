@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -75,6 +76,7 @@ fun RichTextScaffold(
     var isPreviewMode by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
+    val attachState by attachViewModel.state.collectAsStateWithLifecycle()
     var showAttachSheet by remember { mutableStateOf(false) }
 
     val insertMarkdown: (String) -> Unit = { md ->
@@ -108,11 +110,15 @@ fun RichTextScaffold(
     val meetsMinLength by remember(minLength) {
         derivedStateOf { bodyState.text.trim().length >= minLength }
     }
+    val withinMaxLength by remember(maxLength) {
+        derivedStateOf { bodyState.text.length <= maxLength }
+    }
     val hasBodyChanges by remember {
         derivedStateOf { bodyState.text.toString() != initialBodySnapshot }
     }
     val hasUnsavedChanges = hasBodyChanges || hasExternalUnsavedChanges
-    val canSubmit = meetsMinLength && isExternallyValid
+    val canSubmit = meetsMinLength && withinMaxLength && isExternallyValid
+    val maxLengthTransform = remember(maxLength) { MaxLengthInputTransformation(maxLength) }
 
     val focusRequester = remember { FocusRequester() }
 
@@ -197,10 +203,14 @@ fun RichTextScaffold(
             },
             bottomBar = {
                 if (!isPreviewMode) {
+                    val imeUpload = (attachState as? MediaAttachState.Uploading)
+                        ?.takeIf { it.source == MediaAttachState.Source.Ime }
                     RichTextDockedFormatBar(
                         textFieldState = bodyState,
                         maxLength = maxLength,
-                        onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null
+                        onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
+                        imeUpload = imeUpload,
+                        onImeUploadCancel = { attachViewModel.cancel() }
                     )
                 }
             }
@@ -241,6 +251,7 @@ fun RichTextScaffold(
                         state = bodyState,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        inputTransformation = maxLengthTransform,
                         modifier = textFieldModifier,
                         decorator = { innerTextField ->
                             if (bodyState.text.isEmpty()) {

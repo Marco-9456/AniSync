@@ -59,6 +59,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import kotlinx.coroutines.flow.first
@@ -87,11 +88,13 @@ fun RichTextInputSheet(
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {
     val bodyState = remember(prefillBody) { TextFieldState(prefillBody.orEmpty()) }
+    val maxLengthTransform = remember(maxLength) { MaxLengthInputTransformation(maxLength) }
     var isPreviewMode by remember { mutableStateOf(false) }
     val canSubmit = isSubmitEnabled(bodyState.text.toString()) && !isSubmitting
     val focusRequester = remember { FocusRequester() }
     val haptic = LocalHapticFeedback.current
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
+    val attachState by attachViewModel.state.collectAsStateWithLifecycle()
     var showAttachSheet by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     val hasDraft = bodyState.text.isNotBlank() && bodyState.text.toString() != prefillBody.orEmpty()
@@ -160,12 +163,7 @@ fun RichTextInputSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-        ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -228,6 +226,7 @@ fun RichTextInputSheet(
                                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                 lineLimits = TextFieldLineLimits.MultiLine(minLines, maxLines),
+                                inputTransformation = maxLengthTransform,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(16.dp),
@@ -246,22 +245,46 @@ fun RichTextInputSheet(
                     }
                 }
 
-                BottomBarRow(
-                    textFieldState = bodyState,
-                    maxLength = maxLength,
-                    submitLabel = submitLabel,
-                    isSubmitting = isSubmitting,
-                    canSubmit = canSubmit,
-                    onSubmit = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onSubmit(bodyState.text.toString())
-                    },
-                    bottomBarLeading = bottomBarLeading,
-                    onAttachClick = if (enableMediaAttach) ({
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        showAttachSheet = true
-                    }) else null
-                )
+                // Toolbar + IME upload strip share an inset-aware Surface so they
+                // dock against the IME / nav bar regardless of body length. This
+                // mirrors `RichTextDockedFormatBar` (full-screen variant).
+                val imeUpload = (attachState as? MediaAttachState.Uploading)
+                    ?.takeIf { it.source == MediaAttachState.Source.Ime }
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // Each modifier consumes only its own inset, so the
+                            // toolbar stays docked even when the activity is
+                            // `adjustResize` and the system has already
+                            // shrunk the window for the IME.
+                            .navigationBarsPadding()
+                            .imePadding()
+                    ) {
+                        if (imeUpload != null) {
+                            ImeUploadStrip(state = imeUpload, onCancel = { attachViewModel.cancel() })
+                        }
+                        BottomBarRow(
+                            textFieldState = bodyState,
+                            maxLength = maxLength,
+                            submitLabel = submitLabel,
+                            isSubmitting = isSubmitting,
+                            canSubmit = canSubmit,
+                            onSubmit = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onSubmit(bodyState.text.toString())
+                            },
+                            bottomBarLeading = bottomBarLeading,
+                            onAttachClick = if (enableMediaAttach) ({
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showAttachSheet = true
+                            }) else null
+                        )
+                    }
+                }
             }
         }
     }

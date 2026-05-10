@@ -13,9 +13,13 @@ import com.anisync.android.domain.media.MediaSizeChoice
  *                                                            └cancel─▶ Idle
  *
  * IME-committed content (Samsung / Gboard GIF) skips Picked and goes straight
- * to Uploading at default size.
+ * to Uploading at default size; [Source] tags those so the composer can render
+ * an inline progress strip while the attach sheet stays closed.
  */
 sealed interface MediaAttachState {
+
+    enum class Source { SheetPick, Ime }
+
     data object Idle : MediaAttachState
 
     data class Picked(
@@ -24,13 +28,15 @@ sealed interface MediaAttachState {
         val displayName: String,
         val kind: MediaKind,
         val size: MediaSizeChoice,
-        val customSizeText: String = ""
+        val customSizeText: String = "",
+        val source: Source = Source.SheetPick
     ) : MediaAttachState
 
     data class Uploading(
         val displayName: String,
         val uploaded: Long,
-        val total: Long
+        val total: Long,
+        val source: Source = Source.SheetPick
     ) : MediaAttachState
 
     data class Failed(

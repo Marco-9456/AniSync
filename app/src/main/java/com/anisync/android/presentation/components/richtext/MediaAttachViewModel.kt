@@ -2,16 +2,17 @@ package com.anisync.android.presentation.components.richtext
 
 import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.media.MediaUploaderFactory
+import com.anisync.android.data.media.queryDisplayName
 import com.anisync.android.domain.media.MediaKind
 import com.anisync.android.domain.media.MediaSizeChoice
 import com.anisync.android.domain.media.toImageMarkdown
 import com.anisync.android.domain.media.videoMarkdown
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +38,7 @@ class MediaAttachViewModel @Inject constructor(
 
     fun pick(uri: Uri) {
         val mime = context.contentResolver.getType(uri) ?: "application/octet-stream"
-        val name = queryDisplayName(uri)
+        val name = context.queryDisplayName(uri)
         val kind = mediaKindFromMime(mime)
         _state.value = MediaAttachState.Picked(
             uri = uri,
@@ -87,12 +88,19 @@ class MediaAttachViewModel @Inject constructor(
             _state.value = MediaAttachState.Uploading(
                 displayName = picked.displayName,
                 uploaded = 0L,
-                total = -1L
+                total = -1L,
+                source = picked.source
             )
+            // Progress fires from OkHttp's IO thread; hop to Main so StateFlow
+            // consumers (Compose recomposers) see ordered, frame-aligned updates.
+            // UriRequestBody already throttles to ~20 Hz, so the launch volume
+            // is bounded.
             val result = uploaderFactory.current().upload(picked.uri, picked.mime) { up, total ->
-                val current = _state.value
-                if (current is MediaAttachState.Uploading) {
-                    _state.value = current.copy(uploaded = up, total = total)
+                viewModelScope.launch(Dispatchers.Main.immediate) {
+                    val cur = _state.value
+                    if (cur is MediaAttachState.Uploading) {
+                        _state.value = cur.copy(uploaded = up, total = total)
+                    }
                 }
             }
             result
@@ -116,26 +124,22 @@ class MediaAttachViewModel @Inject constructor(
 
     /**
      * Skip-picker path used by the IME content receiver: ingests an already-known
-     * URI + MIME and uploads at the default size immediately.
+     * URI + MIME and uploads at the default size immediately. Tags the upload as
+     * [MediaAttachState.Source.Ime] so the composer renders an inline progress
+     * strip instead of waiting for the attach sheet to be opened.
      */
     fun ingestFromIme(uri: Uri, mime: String, onMarkdownReady: (String) -> Unit) {
-        val name = queryDisplayName(uri)
+        val name = context.queryDisplayName(uri)
         val kind = mediaKindFromMime(mime)
         _state.value = MediaAttachState.Picked(
             uri = uri,
             mime = mime,
             displayName = name,
             kind = kind,
-            size = MediaSizeChoice.Default
+            size = MediaSizeChoice.Default,
+            source = MediaAttachState.Source.Ime
         )
         upload(onMarkdownReady)
-    }
-
-    private fun queryDisplayName(uri: Uri): String {
-        return runCatching {
-            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null }
-        }.getOrNull() ?: "upload.bin"
     }
 
     private fun mediaKindFromMime(mime: String): MediaKind = when {
@@ -149,7 +153,7 @@ class MediaAttachViewModel @Inject constructor(
     }
 
     private fun parseCustomSize(text: String): MediaSizeChoice? {
-        val trimmed = text.trim().removeSuffix(" ")
+        val trimmed = text.trim()
         return if (trimmed.endsWith("%")) {
             trimmed.dropLast(1).trim().toIntOrNull()?.let { MediaSizeChoice.CustomPercent(it) }
         } else {

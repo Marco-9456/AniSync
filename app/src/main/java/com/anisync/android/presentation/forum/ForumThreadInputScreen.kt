@@ -172,7 +172,11 @@ private fun ThreadMetaHeader(
     Column(modifier = Modifier.fillMaxWidth()) {
         TextField(
             value = title,
-            onValueChange = onTitleChange,
+            onValueChange = { new ->
+                // Clamp at the AniList-enforced max so the field can't run past
+                // the limit; counter tops out instead of accepting and rejecting on submit.
+                onTitleChange(if (new.length <= TitleBounds.max) new else new.take(TitleBounds.max))
+            },
             placeholder = {
                 Text(
                     text = stringResource(R.string.forum_thread_title_hint),
