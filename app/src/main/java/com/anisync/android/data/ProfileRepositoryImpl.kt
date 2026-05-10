@@ -16,6 +16,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
@@ -542,7 +543,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.SaveMessageActivityMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
                     recipientId = recipientId,
-                    message = message,
+                    message = encodeForAniList(message),
                     `private` = Optional.present(isPrivate)
                 )
             ).execute()

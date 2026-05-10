@@ -19,6 +19,7 @@ import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.LikeState
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserSummary
+import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
@@ -53,7 +54,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 SaveActivityReplyMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
                     activityId = activityId,
-                    text = text
+                    text = encodeForAniList(text)
                 )
             )
             .execute()
@@ -146,7 +147,7 @@ class ActivityRepositoryImpl @Inject constructor(
             .mutation(
                 SaveTextActivityMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
-                    text = text
+                    text = encodeForAniList(text)
                 )
             )
             .execute()
@@ -170,7 +171,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 com.anisync.android.SaveMessageActivityMutation(
                     id = Optional.present(id),
                     recipientId = recipientId,
-                    message = message,
+                    message = encodeForAniList(message),
                     `private` = Optional.present(isPrivate)
                 )
             )
