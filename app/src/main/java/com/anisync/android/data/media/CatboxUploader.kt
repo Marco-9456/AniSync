@@ -41,7 +41,8 @@ class CatboxUploader @Inject constructor(
                 .post(body)
                 .build()
             client.newCall(request).execute().use { response ->
-                val text = response.body?.string()?.trim().orEmpty()
+                // URL response is < 200 bytes; cap to defend against misconfigured hosts.
+                val text = response.peekBody(MAX_RESPONSE_BYTES).string().trim()
                 if (!response.isSuccessful || !text.startsWith("http")) {
                     error("Catbox upload failed (${response.code}): ${text.take(200)}")
                 }
@@ -52,5 +53,6 @@ class CatboxUploader @Inject constructor(
 
     companion object {
         private const val ENDPOINT = "https://catbox.moe/user/api.php"
+        private const val MAX_RESPONSE_BYTES = 4L * 1024L
     }
 }

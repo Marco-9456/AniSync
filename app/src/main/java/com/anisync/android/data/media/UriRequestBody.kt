@@ -31,6 +31,7 @@ class UriRequestBody(
         val resolver = context.contentResolver
         val total = totalBytes
         var written = 0L
+        var lastFireMs = 0L
         resolver.openInputStream(uri)?.use { input ->
             input.source().use { source ->
                 val buf = okio.Buffer()
@@ -39,8 +40,13 @@ class UriRequestBody(
                     if (read == -1L) break
                     sink.write(buf, read)
                     written += read
-                    onProgress?.invoke(written, total)
+                    val now = System.currentTimeMillis()
+                    if (now - lastFireMs >= MIN_PROGRESS_INTERVAL_MS) {
+                        lastFireMs = now
+                        onProgress?.invoke(written, total)
+                    }
                 }
+                onProgress?.invoke(written, total)
             }
         } ?: error("Could not open input stream for $uri")
     }
@@ -54,7 +60,8 @@ class UriRequestBody(
     }
 
     companion object {
-        private const val CHUNK = 64L * 1024L
+        private const val CHUNK = 256L * 1024L
+        private const val MIN_PROGRESS_INTERVAL_MS = 50L
     }
 }
 

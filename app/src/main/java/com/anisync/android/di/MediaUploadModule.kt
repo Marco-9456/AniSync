@@ -25,6 +25,9 @@ object MediaUploadModule {
             .writeTimeout(5, TimeUnit.MINUTES)
             .readTimeout(2, TimeUnit.MINUTES)
             .callTimeout(10, TimeUnit.MINUTES)
+            // User-driven retry covers transient failures with feedback; auto-retry
+            // would silently re-upload a 50 MB video on a transient EOF.
+            .retryOnConnectionFailure(false)
             .build()
     }
 }

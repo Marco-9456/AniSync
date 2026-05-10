@@ -10,7 +10,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -65,7 +64,9 @@ class CustomMultipartUploader @Inject constructor(
                 builder.header(name, value)
             }
             client.newCall(builder.build()).execute().use { response ->
-                val text = response.body?.string().orEmpty()
+                // Cap the consumed body so a misconfigured host returning a large
+                // payload (HTML dump, raw image echo, etc.) cannot OOM the parser.
+                val text = response.peekBody(MAX_RESPONSE_BYTES).string()
                 if (!response.isSuccessful) {
                     error("Custom host upload failed (${response.code}): ${text.take(200)}")
                 }
@@ -88,8 +89,11 @@ class CustomMultipartUploader @Inject constructor(
                 node = (node as? JsonObject)?.get(part)
             }
             (node as? JsonPrimitive)?.contentOrNull
-                ?: (node?.takeIf { it is JsonPrimitive } as? JsonPrimitive)?.jsonPrimitive?.content
         }.getOrNull()
+    }
+
+    companion object {
+        private const val MAX_RESPONSE_BYTES = 64L * 1024L
     }
 
     private fun parseHeader(header: String): Pair<String, String> {

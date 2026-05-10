@@ -42,7 +42,7 @@ class LitterboxUploader @Inject constructor(
                 .post(body)
                 .build()
             client.newCall(request).execute().use { response ->
-                val text = response.body?.string()?.trim().orEmpty()
+                val text = response.peekBody(MAX_RESPONSE_BYTES).string().trim()
                 if (!response.isSuccessful || !text.startsWith("http")) {
                     error("Litterbox upload failed (${response.code}): ${text.take(200)}")
                 }
@@ -53,5 +53,6 @@ class LitterboxUploader @Inject constructor(
 
     companion object {
         private const val ENDPOINT = "https://litterbox.catbox.moe/resources/internals/api.php"
+        private const val MAX_RESPONSE_BYTES = 4L * 1024L
     }
 }
