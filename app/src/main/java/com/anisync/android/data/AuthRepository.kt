@@ -4,6 +4,7 @@ package com.anisync.android.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
+import java.security.KeyStore
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,17 +25,45 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val sharedPreferences: SharedPreferences = createPrefs()
 
-    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "auth_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private fun buildMasterKey(): MasterKey =
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+    private fun createPrefs(): SharedPreferences {
+        return try {
+            EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                buildMasterKey(),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            ).also { it.contains(KEY_ACCESS_TOKEN) } // force decrypt to surface AEADBadTagException now
+        } catch (t: Throwable) {
+            // Keystore key invalidated (OS upgrade, backup/restore, lockscreen change, etc.)
+            // Wipe corrupt prefs file + master key alias, then recreate. Token is lost; user re-logs in.
+            Log.w(TAG, "EncryptedSharedPreferences unreadable, resetting", t)
+            resetEncryptedStore()
+            EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                buildMasterKey(),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
+    }
+
+    private fun resetEncryptedStore() {
+        runCatching { context.deleteSharedPreferences(PREFS_NAME) }
+        runCatching {
+            val ks = KeyStore.getInstance("AndroidKeyStore")
+            ks.load(null)
+            if (ks.containsAlias(MASTER_KEY_ALIAS)) ks.deleteEntry(MASTER_KEY_ALIAS)
+        }
+    }
 
     private val _isLoggedIn = MutableStateFlow(getToken() != null)
     val isLoggedIn: Flow<Boolean> = _isLoggedIn.asStateFlow()
@@ -82,6 +112,9 @@ class AuthRepository @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "AuthRepository"
+        private const val PREFS_NAME = "auth_prefs"
+        private const val MASTER_KEY_ALIAS = MasterKey.DEFAULT_MASTER_KEY_ALIAS
         private const val KEY_ACCESS_TOKEN = "access_token"
     }
 }
