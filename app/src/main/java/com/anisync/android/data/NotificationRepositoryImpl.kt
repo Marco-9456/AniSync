@@ -53,8 +53,13 @@ class NotificationRepositoryImpl @Inject constructor(
                 GetNotificationsQuery(
                     page = Optional.present(page),
                     perPage = Optional.present(20),
-                    typeIn = Optional.absent(),
-                    resetCount = Optional.present(true)
+                    // AniList treats type_in: null as match-nothing, so omitting this
+                    // variable returns zero notifications. Pass knownEntries to get all
+                    // types — same pattern the inbox screen uses.
+                    typeIn = Optional.present(NotificationType.knownEntries),
+                    // Worker is a background poll — don't clear the user's unread badge.
+                    // Only the inbox screen should reset the count when actually viewed.
+                    resetCount = Optional.present(false)
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
