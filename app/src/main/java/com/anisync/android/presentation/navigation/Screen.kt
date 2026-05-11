@@ -17,6 +17,14 @@ object Library
 @Serializable
 object Discover
 
+/**
+ * Full-screen advanced search filter sheet. State is carried in/out via
+ * [com.anisync.android.presentation.discover.AdvancedSearchBridge] — keeps
+ * non-serializable Apollo enum fields off the nav backstack.
+ */
+@Serializable
+object AdvancedSearch
+
 @Serializable
 object Feed
 

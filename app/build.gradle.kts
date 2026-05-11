@@ -289,5 +289,7 @@ apollo {
         }
         generateKotlinModels.set(true)
         mapScalar("Json", "kotlin.Any", "com.apollographql.apollo.api.AnyAdapter")
+        mapScalar("CountryCode", "kotlin.String", "com.apollographql.apollo.api.StringAdapter")
+        mapScalar("FuzzyDateInt", "kotlin.Int", "com.apollographql.apollo.api.IntAdapter")
     }
 }

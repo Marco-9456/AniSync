@@ -1,25 +1,58 @@
 query SearchMedia(
-  $search: String, 
-  $type: MediaType, 
-  $page: Int, 
+  $search: String,
+  $type: MediaType,
+  $page: Int,
   $perPage: Int,
-  $status: MediaStatus,
-  $format: MediaFormat,
-  $genres: [String],
-  $seasonYear: Int,
-  $season: MediaSeason
+  $sort: [MediaSort],
+  $genre_in: [String],
+  $genre_not_in: [String],
+  $tag_in: [String],
+  $tag_not_in: [String],
+  $format_in: [MediaFormat],
+  $status_in: [MediaStatus],
+  $source_in: [MediaSource],
+  $startDate_greater: FuzzyDateInt,
+  $startDate_lesser: FuzzyDateInt,
+  $season: MediaSeason,
+  $averageScore_greater: Int,
+  $averageScore_lesser: Int,
+  $episodes_greater: Int,
+  $episodes_lesser: Int,
+  $chapters_greater: Int,
+  $chapters_lesser: Int,
+  $countryOfOrigin: CountryCode,
+  $isAdult: Boolean,
+  $countOnly: Boolean = false
 ) {
   Page(page: $page, perPage: $perPage) {
+    pageInfo {
+      total
+      currentPage
+      hasNextPage
+    }
     media(
-      search: $search, 
-      sort: POPULARITY_DESC, 
+      search: $search,
       type: $type,
-      status: $status,
-      format: $format,
-      genre_in: $genres,
-      seasonYear: $seasonYear,
-      season: $season
-    ) {
+      sort: $sort,
+      genre_in: $genre_in,
+      genre_not_in: $genre_not_in,
+      tag_in: $tag_in,
+      tag_not_in: $tag_not_in,
+      format_in: $format_in,
+      status_in: $status_in,
+      source_in: $source_in,
+      startDate_greater: $startDate_greater,
+      startDate_lesser: $startDate_lesser,
+      season: $season,
+      averageScore_greater: $averageScore_greater,
+      averageScore_lesser: $averageScore_lesser,
+      episodes_greater: $episodes_greater,
+      episodes_lesser: $episodes_lesser,
+      chapters_greater: $chapters_greater,
+      chapters_lesser: $chapters_lesser,
+      countryOfOrigin: $countryOfOrigin,
+      isAdult: $isAdult
+    ) @skip(if: $countOnly) {
       id
       title {
         userPreferred
@@ -27,7 +60,6 @@ query SearchMedia(
         english
         native
       }
-
       coverImage {
         medium
         large

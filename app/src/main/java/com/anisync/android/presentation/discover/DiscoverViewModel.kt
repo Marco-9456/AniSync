@@ -23,7 +23,8 @@ import javax.inject.Inject
 class DiscoverViewModel @Inject constructor(
     private val discoverRepository: DiscoverRepository,
     private val searchRepository: SearchRepository,
-    private val appSettings: com.anisync.android.data.AppSettings
+    private val appSettings: com.anisync.android.data.AppSettings,
+    private val advancedSearchBridge: AdvancedSearchBridge
 ) : ViewModel() {
 
     val titleLanguage = appSettings.titleLanguage
@@ -41,6 +42,7 @@ class DiscoverViewModel @Inject constructor(
     init {
         loadDiscoveryData()
         observeSearchQuery()
+        observeAdvancedSearchResults()
     }
 
     fun onAction(action: DiscoverAction) {
@@ -52,6 +54,26 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverAction.OnSearch -> onSearch(action.query)
             is DiscoverAction.UpdateFilters -> updateFilters(action.filters)
             is DiscoverAction.ClearFilters -> clearFilters()
+            is DiscoverAction.PrepareAdvancedSearch -> prepareAdvancedSearch()
+        }
+    }
+
+    private fun prepareAdvancedSearch() {
+        val current = _uiState.value as? DiscoverUiState.Success ?: return
+        advancedSearchBridge.submitInput(
+            AdvancedSearchBridge.PendingInput(
+                query = current.searchQuery,
+                type = current.mediaType,
+                filters = current.searchFilters
+            )
+        )
+    }
+
+    private fun observeAdvancedSearchResults() {
+        viewModelScope.launch {
+            advancedSearchBridge.results.collectLatest { filters ->
+                updateFilters(filters)
+            }
         }
     }
 
@@ -160,7 +182,7 @@ class DiscoverViewModel @Inject constructor(
                             }
                             _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
-                                    searchResults = mediaResult.data,
+                                    searchResults = mediaResult.data.entries,
                                     groupedResults = grouped,
                                     isSearching = false,
                                     searchError = null

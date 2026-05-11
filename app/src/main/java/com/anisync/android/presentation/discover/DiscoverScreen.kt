@@ -93,7 +93,6 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
-import com.anisync.android.presentation.discover.components.SearchFilterDialog
 import com.anisync.android.presentation.discover.components.SearchResultItem
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
@@ -119,6 +118,7 @@ fun DiscoverScreen(
     onStaffClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
+    onAdvancedSearchClick: () -> Unit = {},
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -155,7 +155,12 @@ fun DiscoverScreen(
     val mainListState =
         rememberSaveable(currentMediaType, saver = LazyListState.Saver) { LazyListState() }
 
-    var showFilterDialog by rememberSaveable { mutableStateOf(false) }
+    val onOpenAdvancedSearch: () -> Unit = remember(viewModel, onAdvancedSearchClick) {
+        {
+            viewModel.onAction(DiscoverAction.PrepareAdvancedSearch)
+            onAdvancedSearchClick()
+        }
+    }
 
     var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
     var hasObservedDiscoverReEnter by rememberSaveable { mutableStateOf(false) }
@@ -265,15 +270,6 @@ fun DiscoverScreen(
     val currentSearchFilters = (uiState as? DiscoverUiState.Success)?.searchFilters
         ?: com.anisync.android.domain.SearchFilters()
 
-    if (showFilterDialog) {
-        SearchFilterDialog(
-            filters = currentSearchFilters,
-            mediaType = currentMediaType,
-            onFiltersChanged = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
-            onDismiss = { showFilterDialog = false }
-        )
-    }
-
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
@@ -302,7 +298,7 @@ fun DiscoverScreen(
                         keyboardController = keyboardController,
                         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
                         onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
-                        onShowFilterDialog = { showFilterDialog = true }
+                        onShowFilterDialog = onOpenAdvancedSearch
                     )
                 }
             }
@@ -387,7 +383,7 @@ fun DiscoverScreen(
         onCharacterClick = onCharacterItemClick,
         onStaffClick = onStaffItemClick,
         onUserClick = onUserItemClick,
-        onShowFilterDialog = { showFilterDialog = true }
+        onShowFilterDialog = onOpenAdvancedSearch
     )
 }
 

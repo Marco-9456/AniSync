@@ -37,4 +37,5 @@ sealed interface DiscoverAction {
     data class OnSearch(val query: String) : DiscoverAction
     data class UpdateFilters(val filters: SearchFilters) : DiscoverAction
     data object ClearFilters : DiscoverAction
+    data object PrepareAdvancedSearch : DiscoverAction
 }

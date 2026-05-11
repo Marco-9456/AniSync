@@ -226,6 +226,13 @@ class AppSettings @Inject constructor(
     )
     val showPrivateEntries: StateFlow<Boolean> = _showPrivateEntries.asStateFlow()
 
+    // Whether NSFW tags / adult-only filter are exposed in advanced search.
+    // Off by default; user opts in via the toggle inside the advanced search sheet.
+    private val _showAdultContent = MutableStateFlow(
+        prefs.getBoolean(KEY_SHOW_ADULT_CONTENT, false)
+    )
+    val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
+
     // Last selected library tab (per media type)
     private val _lastSelectedAnimeTab = MutableStateFlow(
         prefs.getString(KEY_LAST_SELECTED_ANIME_TAB, null)
@@ -420,6 +427,11 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_SHOW_PRIVATE_ENTRIES, show).apply()
     }
 
+    fun setShowAdultContent(show: Boolean) {
+        _showAdultContent.value = show
+        prefs.edit().putBoolean(KEY_SHOW_ADULT_CONTENT, show).apply()
+    }
+
     /**
      * Persist the last selected library tab for anime.
      */
@@ -533,6 +545,7 @@ companion object {
         private const val KEY_HIDDEN_MANGA_LISTS = "hidden_manga_lists"
         private const val KEY_USER_SCORE_FORMAT = "user_score_format"
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
+        private const val KEY_SHOW_ADULT_CONTENT = "show_adult_content"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
         private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
         private const val KEY_MEDIA_HOST = "media_host"

@@ -1,0 +1,10 @@
+query GetSearchTaxonomy {
+  GenreCollection
+  MediaTagCollection {
+    id
+    name
+    description
+    category
+    isAdult
+  }
+}

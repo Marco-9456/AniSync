@@ -162,7 +162,7 @@ class CreateThreadViewModel @Inject constructor(
             type = state.mediaSearchType
         )) {
             is Result.Success -> _uiState.update {
-                it.copy(mediaSearchResults = result.data, isMediaSearching = false)
+                it.copy(mediaSearchResults = result.data.entries, isMediaSearching = false)
             }
             is Result.Error -> _uiState.update {
                 it.copy(

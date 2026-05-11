@@ -2,26 +2,27 @@ package com.anisync.android.domain
 
 import com.anisync.android.type.MediaType
 
-/**
- * Repository interface for media search operations.
- * Provides methods to search anime and manga with optional filters.
- */
 interface SearchRepository {
     /**
-     * Search for anime or manga by query string with optional filters.
-     * @param query Search term to look for
-     * @param type Media type (ANIME or MANGA)
-     * @param filters Optional search filters (genre, year, status, etc.)
-     * @return List of matching media entries or error
+     * Search media. When [countOnly] is true the response carries only the
+     * total result count and an empty `entries` list — used to drive the
+     * live "Show N results" preview in advanced search without paying for
+     * the full media payload on every keystroke.
      */
     suspend fun searchMedia(
         query: String,
         type: MediaType,
-        filters: SearchFilters = SearchFilters()
-    ): Result<List<LibraryEntry>>
+        filters: SearchFilters = SearchFilters(),
+        page: Int = 1,
+        perPage: Int = 20,
+        countOnly: Boolean = false
+    ): Result<SearchPage>
 
-    /**
-     * Search for characters, staff, users, and studios.
-     */
     suspend fun searchAll(query: String): Result<GroupedSearchResults>
+
+    /** AniList genre vocabulary. Cached aggressively — changes rarely. */
+    suspend fun getGenres(): Result<List<String>>
+
+    /** Full AniList tag taxonomy (200+ entries, includes adult tags). */
+    suspend fun getTags(): Result<List<MediaTag>>
 }
