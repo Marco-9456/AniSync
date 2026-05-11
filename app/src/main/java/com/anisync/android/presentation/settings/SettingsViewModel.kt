@@ -34,7 +34,8 @@ private data class ThemePaletteState(
     val paletteId: String,
     val customColor: androidx.compose.ui.graphics.Color?,
     val style: com.materialkolor.PaletteStyle,
-    val coverQuality: CoverQuality
+    val coverQuality: CoverQuality,
+    val showAdultContent: Boolean
 )
 
 @HiltViewModel
@@ -82,9 +83,10 @@ class SettingsViewModel @Inject constructor(
             appSettings.selectedPaletteId,
             appSettings.customSeedColor,
             appSettings.paletteStyle,
-            appSettings.coverQuality
-        ) { paletteId, customColor, style, coverQuality ->
-            ThemePaletteState(paletteId, customColor, style, coverQuality)
+            appSettings.coverQuality,
+            appSettings.showAdultContent
+        ) { paletteId, customColor, style, coverQuality, showAdult ->
+            ThemePaletteState(paletteId, customColor, style, coverQuality, showAdult)
         },
         combine(
             combine(
@@ -140,6 +142,7 @@ class SettingsViewModel @Inject constructor(
             customSeedColor = themePalette.customColor,
             paletteStyle = themePalette.style,
             coverQuality = themePalette.coverQuality,
+            showAdultContent = themePalette.showAdultContent,
             isNotificationsEnabled = notifications[0] as Boolean,
             watchingNotificationsEnabled = notifications[1] as Boolean,
             planningNotificationsEnabled = notifications[2] as Boolean,
@@ -175,6 +178,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
+            is SettingsAction.SetShowAdultContent -> appSettings.setShowAdultContent(action.enabled)
             is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
                 action.service
             )

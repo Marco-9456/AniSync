@@ -33,11 +33,8 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -118,7 +115,6 @@ fun DiscoverScreen(
     onStaffClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
-    onAdvancedSearchClick: () -> Unit = {},
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -155,12 +151,6 @@ fun DiscoverScreen(
     val mainListState =
         rememberSaveable(currentMediaType, saver = LazyListState.Saver) { LazyListState() }
 
-    val onOpenAdvancedSearch: () -> Unit = remember(viewModel, onAdvancedSearchClick) {
-        {
-            viewModel.onAction(DiscoverAction.PrepareAdvancedSearch)
-            onAdvancedSearchClick()
-        }
-    }
 
     var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
     var hasObservedDiscoverReEnter by rememberSaveable { mutableStateOf(false) }
@@ -293,12 +283,10 @@ fun DiscoverScreen(
                         searchBarState = searchBarState,
                         textFieldState = textFieldState,
                         mediaType = currentMediaType,
-                        searchFilters = currentSearchFilters,
                         coroutineScope = coroutineScope,
                         keyboardController = keyboardController,
                         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
-                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
-                        onShowFilterDialog = onOpenAdvancedSearch
+                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) }
                     )
                 }
             }
@@ -364,12 +352,17 @@ fun DiscoverScreen(
         }
     }
 
+    val taxonomy by viewModel.taxonomy.collectAsStateWithLifecycle()
+    val showAdultContent by viewModel.showAdultContent.collectAsStateWithLifecycle()
+
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         mediaType = currentMediaType,
         titleLanguage = titleLanguage,
         searchFilters = currentSearchFilters,
+        taxonomy = taxonomy,
+        showAdultContent = showAdultContent,
         coroutineScope = coroutineScope,
         keyboardController = keyboardController,
         listState = listState,
@@ -379,11 +372,12 @@ fun DiscoverScreen(
         isSearching = isSearching,
         searchError = searchError,
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
+        onFiltersChange = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
+        onLoadTaxonomy = { viewModel.onAction(DiscoverAction.LoadTaxonomy) },
         onSearchItemClick = onSearchItemClick,
         onCharacterClick = onCharacterItemClick,
         onStaffClick = onStaffItemClick,
-        onUserClick = onUserItemClick,
-        onShowFilterDialog = onOpenAdvancedSearch
+        onUserClick = onUserItemClick
     )
 }
 
@@ -394,12 +388,10 @@ private fun DiscoverTopBar(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     mediaType: MediaType,
-    searchFilters: com.anisync.android.domain.SearchFilters,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     onSearch: () -> Unit,
-    onMediaTypeChange: (MediaType) -> Unit,
-    onShowFilterDialog: () -> Unit
+    onMediaTypeChange: (MediaType) -> Unit
 ) {
     Column(
         modifier = Modifier.statusBarsPadding()
@@ -412,11 +404,9 @@ private fun DiscoverTopBar(
                     searchBarState = searchBarState,
                     textFieldState = textFieldState,
                     mediaType = mediaType,
-                    searchFilters = searchFilters,
                     coroutineScope = coroutineScope,
                     keyboardController = keyboardController,
-                    onSearch = onSearch,
-                    onShowFilterDialog = onShowFilterDialog
+                    onSearch = onSearch
                 )
             },
             colors = SearchBarDefaults.appBarWithSearchColors(
@@ -441,11 +431,9 @@ private fun SearchInputField(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     mediaType: MediaType,
-    searchFilters: com.anisync.android.domain.SearchFilters,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
-    onSearch: () -> Unit,
-    onShowFilterDialog: () -> Unit
+    onSearch: () -> Unit
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
@@ -497,9 +485,7 @@ private fun SearchInputField(
             if (isExpanded) {
                 SearchTrailingIcons(
                     hasText = hasText,
-                    searchFilters = searchFilters,
-                    onClearText = { textFieldState.edit { replace(0, length, "") } },
-                    onShowFilterDialog = onShowFilterDialog
+                    onClearText = { textFieldState.edit { replace(0, length, "") } }
                 )
             }
         }
@@ -509,39 +495,14 @@ private fun SearchInputField(
 @Composable
 private fun SearchTrailingIcons(
     hasText: Boolean,
-    searchFilters: com.anisync.android.domain.SearchFilters,
-    onClearText: () -> Unit,
-    onShowFilterDialog: () -> Unit
+    onClearText: () -> Unit
 ) {
-    Row {
-        if (hasText) {
-            IconButton(onClick = onClearText) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = stringResource(R.string.clear)
-                )
-            }
-        }
-        IconButton(onClick = onShowFilterDialog) {
-            if (searchFilters.hasActiveFilters) {
-                BadgedBox(
-                    badge = {
-                        Badge {
-                            Text(searchFilters.activeFilterCount.toString())
-                        }
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.FilterList,
-                        contentDescription = stringResource(R.string.filter)
-                    )
-                }
-            } else {
-                Icon(
-                    Icons.Default.FilterList,
-                    contentDescription = stringResource(R.string.filter)
-                )
-            }
+    if (hasText) {
+        IconButton(onClick = onClearText) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = stringResource(R.string.clear)
+            )
         }
     }
 }
@@ -751,6 +712,8 @@ private fun DiscoverSearchOverlay(
     mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     searchFilters: com.anisync.android.domain.SearchFilters,
+    taxonomy: SearchTaxonomy,
+    showAdultContent: Boolean,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     listState: LazyListState,
@@ -760,12 +723,17 @@ private fun DiscoverSearchOverlay(
     isSearching: Boolean,
     searchError: String?,
     onSearch: (String) -> Unit,
+    onFiltersChange: (com.anisync.android.domain.SearchFilters) -> Unit,
+    onLoadTaxonomy: () -> Unit,
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
-    onUserClick: (String) -> Unit,
-    onShowFilterDialog: () -> Unit
+    onUserClick: (String) -> Unit
 ) {
+    var openedFilter by remember {
+        mutableStateOf<com.anisync.android.presentation.discover.components.FilterId?>(null)
+    }
+
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         inputField = {
@@ -773,28 +741,47 @@ private fun DiscoverSearchOverlay(
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 mediaType = mediaType,
-                searchFilters = searchFilters,
                 coroutineScope = coroutineScope,
                 keyboardController = keyboardController,
-                onSearch = { onSearch(textFieldState.text.toString()) },
-                onShowFilterDialog = onShowFilterDialog
+                onSearch = { onSearch(textFieldState.text.toString()) }
             )
         }
     ) {
-        SearchResultsContent(
-            isSearching = isSearching,
-            searchResults = searchResults,
-            groupedResults = groupedResults,
-            searchQuery = searchQuery,
-            searchError = searchError,
-            titleLanguage = titleLanguage,
-            listState = listState,
-            onSearchItemClick = onSearchItemClick,
-            onCharacterClick = onCharacterClick,
-            onStaffClick = onStaffClick,
-            onUserClick = onUserClick
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            com.anisync.android.presentation.discover.components.SearchFilterChipBar(
+                filters = searchFilters,
+                onChipTap = { filterId ->
+                    onLoadTaxonomy()
+                    openedFilter = filterId
+                }
+            )
+            SearchResultsContent(
+                isSearching = isSearching,
+                searchResults = searchResults,
+                groupedResults = groupedResults,
+                searchQuery = searchQuery,
+                searchError = searchError,
+                titleLanguage = titleLanguage,
+                listState = listState,
+                onSearchItemClick = onSearchItemClick,
+                onCharacterClick = onCharacterClick,
+                onStaffClick = onStaffClick,
+                onUserClick = onUserClick
+            )
+        }
     }
+
+    com.anisync.android.presentation.discover.components.SearchFilterSheetHost(
+        openedFilter = openedFilter,
+        filters = searchFilters,
+        mediaType = mediaType,
+        genres = taxonomy.genres,
+        tags = taxonomy.tags,
+        showAdultContent = showAdultContent,
+        onFiltersChange = onFiltersChange,
+        onOpenFilter = { openedFilter = it },
+        onDismiss = { openedFilter = null }
+    )
 }
 
 @Composable

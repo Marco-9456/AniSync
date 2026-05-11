@@ -20,9 +20,28 @@ enum class OriginCountry(val code: String, val displayName: String) {
     }
 }
 
+/** Adult-content quick filter shown in the chip bar (alongside the global pref). */
+enum class AdultMode { ANY, HIDE, ONLY }
+
+/** Closed year range; both bounds inclusive. Null bound = open ended. */
 @Immutable
 data class IntRangeFilter(val min: Int? = null, val max: Int? = null) {
     val isActive: Boolean get() = min != null || max != null
+}
+
+/**
+ * Comparator-based numeric filter ("at least 12", "at most 12", "exactly 12").
+ * Picked over a range slider for fields where users think in single thresholds
+ * (score, episodes, chapters).
+ */
+enum class ComparatorMode { ANY, AT_LEAST, AT_MOST, EXACTLY }
+
+@Immutable
+data class IntComparatorFilter(
+    val mode: ComparatorMode = ComparatorMode.ANY,
+    val value: Int? = null
+) {
+    val isActive: Boolean get() = mode != ComparatorMode.ANY && value != null
 }
 
 @Immutable
@@ -37,14 +56,13 @@ data class SearchFilters(
     val formats: Set<MediaFormat> = emptySet(),
     val statuses: Set<MediaStatus> = emptySet(),
     val sources: Set<MediaSource> = emptySet(),
-    val scoreRange: IntRangeFilter = IntRangeFilter(),
-    val episodesRange: IntRangeFilter = IntRangeFilter(),
-    val chaptersRange: IntRangeFilter = IntRangeFilter(),
+    val score: IntComparatorFilter = IntComparatorFilter(),
+    val episodes: IntComparatorFilter = IntComparatorFilter(),
+    val chapters: IntComparatorFilter = IntComparatorFilter(),
     val country: OriginCountry? = null,
-    val onlyAdult: Boolean? = null
+    val adultMode: AdultMode = AdultMode.ANY
 ) {
-    val hasActiveFilters: Boolean
-        get() = activeFilterCount > 0
+    val hasActiveFilters: Boolean get() = activeFilterCount > 0
 
     val activeFilterCount: Int
         get() = listOf(
@@ -56,10 +74,10 @@ data class SearchFilters(
             formats.isNotEmpty(),
             statuses.isNotEmpty(),
             sources.isNotEmpty(),
-            scoreRange.isActive,
-            episodesRange.isActive,
-            chaptersRange.isActive,
+            score.isActive,
+            episodes.isActive,
+            chapters.isActive,
             country != null,
-            onlyAdult != null
+            adultMode != AdultMode.ANY
         ).count { it }
 }

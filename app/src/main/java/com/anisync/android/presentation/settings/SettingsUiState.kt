@@ -15,6 +15,7 @@ sealed interface SettingsAction {
     data class SetTitleLanguage(val language: TitleLanguage) : SettingsAction
     data class SetCoverQuality(val quality: CoverQuality) : SettingsAction
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
+    data class SetShowAdultContent(val enabled: Boolean) : SettingsAction
     data class SetPreferredStreamingService(val service: StreamingService) : SettingsAction
     data class SetAppLocale(val locale: AppLocale) : SettingsAction
     data class SetSelectedPalette(val paletteId: String) : SettingsAction
@@ -70,6 +71,7 @@ data class SettingsUiState(
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val coverQuality: CoverQuality = CoverQuality.LARGE,
     val hapticEnabled: Boolean = true,
+    val showAdultContent: Boolean = false,
     val preferredStreamingService: StreamingService = StreamingService.CRUNCHYROLL,
     
     // Language

@@ -30,7 +30,6 @@ import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
-import com.anisync.android.presentation.discover.AdvancedSearchScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
@@ -312,21 +311,8 @@ fun AniSyncNavHost(
                     },
                     onUserClick = navigateToUserProfile,
                     onSectionSeeAllClick = onSectionClick,
-                    onAdvancedSearchClick = { navController.navigate(AdvancedSearch) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
-                )
-            }
-
-            composable<AdvancedSearch>(
-                enterTransition = { sharedAxisXEnter(forward = true) },
-                exitTransition = { sharedAxisXExit(forward = true) },
-                popEnterTransition = { sharedAxisXEnter(forward = false) },
-                popExitTransition = { sharedAxisXExit(forward = false) }
-            ) {
-                AdvancedSearchScreen(
-                    onApplied = { navController.popBackStack() },
-                    onClose = { navController.popBackStack() }
                 )
             }
 

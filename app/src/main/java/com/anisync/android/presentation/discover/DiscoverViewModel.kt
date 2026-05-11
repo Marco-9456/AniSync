@@ -3,6 +3,7 @@ package com.anisync.android.presentation.discover
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DiscoverRepository
+import com.anisync.android.domain.MediaTag
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,14 +24,17 @@ import javax.inject.Inject
 class DiscoverViewModel @Inject constructor(
     private val discoverRepository: DiscoverRepository,
     private val searchRepository: SearchRepository,
-    private val appSettings: com.anisync.android.data.AppSettings,
-    private val advancedSearchBridge: AdvancedSearchBridge
+    private val appSettings: com.anisync.android.data.AppSettings
 ) : ViewModel() {
 
     val titleLanguage = appSettings.titleLanguage
+    val showAdultContent = appSettings.showAdultContent
 
     private val _uiState = MutableStateFlow<DiscoverUiState>(DiscoverUiState.Loading)
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
+
+    private val _taxonomy = MutableStateFlow(SearchTaxonomy())
+    val taxonomy: StateFlow<SearchTaxonomy> = _taxonomy.asStateFlow()
 
     private val searchTrigger = MutableStateFlow(SearchTriggerState())
 
@@ -42,7 +46,6 @@ class DiscoverViewModel @Inject constructor(
     init {
         loadDiscoveryData()
         observeSearchQuery()
-        observeAdvancedSearchResults()
     }
 
     fun onAction(action: DiscoverAction) {
@@ -54,26 +57,7 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverAction.OnSearch -> onSearch(action.query)
             is DiscoverAction.UpdateFilters -> updateFilters(action.filters)
             is DiscoverAction.ClearFilters -> clearFilters()
-            is DiscoverAction.PrepareAdvancedSearch -> prepareAdvancedSearch()
-        }
-    }
-
-    private fun prepareAdvancedSearch() {
-        val current = _uiState.value as? DiscoverUiState.Success ?: return
-        advancedSearchBridge.submitInput(
-            AdvancedSearchBridge.PendingInput(
-                query = current.searchQuery,
-                type = current.mediaType,
-                filters = current.searchFilters
-            )
-        )
-    }
-
-    private fun observeAdvancedSearchResults() {
-        viewModelScope.launch {
-            advancedSearchBridge.results.collectLatest { filters ->
-                updateFilters(filters)
-            }
+            is DiscoverAction.LoadTaxonomy -> loadTaxonomyIfNeeded()
         }
     }
 
@@ -90,8 +74,11 @@ class DiscoverViewModel @Inject constructor(
 
             loadDiscoveryData()
 
-            if (currentState?.searchQuery?.isNotEmpty() == true) {
-                onSearch(currentState.searchQuery)
+            if (currentState?.shouldSearch() == true) {
+                searchTrigger.value = SearchTriggerState(
+                    currentState.searchQuery,
+                    currentState.searchFilters.hashCode()
+                )
             }
         }
     }
@@ -102,14 +89,7 @@ class DiscoverViewModel @Inject constructor(
 
     private fun onSearchQueryChange(query: String) {
         val currentState = _uiState.value as? DiscoverUiState.Success ?: return
-
-        _uiState.update {
-            currentState.copy(
-                searchQuery = query,
-                searchResults = if (query.isEmpty()) emptyList() else currentState.searchResults
-            )
-        }
-
+        _uiState.update { currentState.copy(searchQuery = query) }
         searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
     }
 
@@ -136,6 +116,17 @@ class DiscoverViewModel @Inject constructor(
         searchTrigger.value = SearchTriggerState(currentState.searchQuery, 0)
     }
 
+    private fun loadTaxonomyIfNeeded() {
+        if (_taxonomy.value.loaded) return
+        viewModelScope.launch {
+            val genresDeferred = async { searchRepository.getGenres() }
+            val tagsDeferred = async { searchRepository.getTags() }
+            val genres = (genresDeferred.await() as? Result.Success)?.data.orEmpty()
+            val tags = (tagsDeferred.await() as? Result.Success)?.data.orEmpty()
+            _taxonomy.value = SearchTaxonomy(genres = genres, tags = tags, loaded = true)
+        }
+    }
+
     @OptIn(FlowPreview::class)
     private fun observeSearchQuery() {
         viewModelScope.launch {
@@ -147,7 +138,7 @@ class DiscoverViewModel @Inject constructor(
                         _uiState.value as? DiscoverUiState.Success ?: return@collectLatest
                     val query = currentState.searchQuery
 
-                    if (query.isBlank()) {
+                    if (!currentState.shouldSearch()) {
                         _uiState.update {
                             currentState.copy(
                                 searchResults = emptyList(),
@@ -162,23 +153,27 @@ class DiscoverViewModel @Inject constructor(
 
                     val mediaDeferred = async {
                         searchRepository.searchMedia(
-                            query,
-                            currentState.mediaType,
-                            currentState.searchFilters
+                            query = query,
+                            type = currentState.mediaType,
+                            filters = currentState.searchFilters
                         )
                     }
-                    val allDeferred = async {
-                        searchRepository.searchAll(query)
-                    }
+                    // SearchAll only kicks in once the user has typed something —
+                    // it's a multi-entity (character/staff/user/studio) lookup
+                    // that needs an actual search string.
+                    val allDeferred = if (query.isNotBlank()) {
+                        async { searchRepository.searchAll(query) }
+                    } else null
 
                     val mediaResult = mediaDeferred.await()
-                    val allResult = allDeferred.await()
+                    val allResult = allDeferred?.await()
 
                     when (mediaResult) {
                         is Result.Success -> {
                             val grouped = when (allResult) {
                                 is Result.Success -> allResult.data
                                 is Result.Error -> com.anisync.android.domain.GroupedSearchResults()
+                                null -> com.anisync.android.domain.GroupedSearchResults()
                             }
                             _uiState.update {
                                 (it as? DiscoverUiState.Success)?.copy(
@@ -270,4 +265,13 @@ class DiscoverViewModel @Inject constructor(
             }
         }
     }
+
+    private fun DiscoverUiState.Success.shouldSearch(): Boolean =
+        searchQuery.isNotBlank() || searchFilters.hasActiveFilters
 }
+
+data class SearchTaxonomy(
+    val genres: List<String> = emptyList(),
+    val tags: List<MediaTag> = emptyList(),
+    val loaded: Boolean = false
+)

@@ -58,21 +58,22 @@ class SearchRepositoryImpl @Inject constructor(
                     startDate_lesser = filters.yearRange.max?.let { Optional.present(it * 10000 + 1231) }
                         ?: Optional.absent(),
                     season = filters.season?.let { Optional.present(it) } ?: Optional.absent(),
-                    averageScore_greater = filters.scoreRange.min?.let { Optional.present(it) }
-                        ?: Optional.absent(),
-                    averageScore_lesser = filters.scoreRange.max?.let { Optional.present(it) }
-                        ?: Optional.absent(),
-                    episodes_greater = filters.episodesRange.min?.let { Optional.present(it) }
-                        ?: Optional.absent(),
-                    episodes_lesser = filters.episodesRange.max?.let { Optional.present(it) }
-                        ?: Optional.absent(),
-                    chapters_greater = filters.chaptersRange.min?.let { Optional.present(it) }
-                        ?: Optional.absent(),
-                    chapters_lesser = filters.chaptersRange.max?.let { Optional.present(it) }
-                        ?: Optional.absent(),
+                    averageScore = filters.score.exact(),
+                    averageScore_greater = filters.score.greater(),
+                    averageScore_lesser = filters.score.lesser(),
+                    episodes = filters.episodes.exact(),
+                    episodes_greater = filters.episodes.greater(),
+                    episodes_lesser = filters.episodes.lesser(),
+                    chapters = filters.chapters.exact(),
+                    chapters_greater = filters.chapters.greater(),
+                    chapters_lesser = filters.chapters.lesser(),
                     countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                         ?: Optional.absent(),
-                    isAdult = filters.onlyAdult?.let { Optional.present(it) } ?: Optional.absent(),
+                    isAdult = when (filters.adultMode) {
+                        com.anisync.android.domain.AdultMode.ANY -> Optional.absent()
+                        com.anisync.android.domain.AdultMode.HIDE -> Optional.present(false)
+                        com.anisync.android.domain.AdultMode.ONLY -> Optional.present(true)
+                    },
                     countOnly = Optional.present(countOnly)
                 )
             )
@@ -211,4 +212,24 @@ class SearchRepositoryImpl @Inject constructor(
 
     private fun <T> Set<T>.toOptionalList(): Optional<List<T?>?> =
         if (isEmpty()) Optional.absent() else Optional.present(this.toList())
+
+    /**
+     * AniList's `*_greater` / `*_lesser` filters are strict, so "X or more"
+     * needs `value - 1` and "X or less" needs `value + 1`. `EXACTLY` uses the
+     * exact-match field instead.
+     */
+    private fun com.anisync.android.domain.IntComparatorFilter.exact(): Optional<Int?> =
+        if (mode == com.anisync.android.domain.ComparatorMode.EXACTLY && value != null) {
+            Optional.present(value)
+        } else Optional.absent()
+
+    private fun com.anisync.android.domain.IntComparatorFilter.greater(): Optional<Int?> =
+        if (mode == com.anisync.android.domain.ComparatorMode.AT_LEAST && value != null) {
+            Optional.present(value - 1)
+        } else Optional.absent()
+
+    private fun com.anisync.android.domain.IntComparatorFilter.lesser(): Optional<Int?> =
+        if (mode == com.anisync.android.domain.ComparatorMode.AT_MOST && value != null) {
+            Optional.present(value + 1)
+        } else Optional.absent()
 }

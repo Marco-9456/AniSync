@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -86,6 +87,7 @@ fun LookAndFeelScreen(
     val titleLanguage = uiState.titleLanguage
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
+    val showAdultContent = uiState.showAdultContent
     val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
 
@@ -368,6 +370,13 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.setting_haptic_feedback),
                 checked = hapticEnabled,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
+            )
+            SettingsDivider()
+            SwitchSettingsItem(
+                icon = Icons.Default.Visibility,
+                title = "Show adult content",
+                checked = showAdultContent,
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetShowAdultContent(it)) }
             )
         }
 
