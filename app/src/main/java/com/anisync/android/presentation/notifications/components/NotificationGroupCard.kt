@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.ActivityKind
 import com.anisync.android.domain.ActivityLikeNotification
 import com.anisync.android.domain.ActivityMentionNotification
@@ -125,7 +126,7 @@ private fun MediaCardBody(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = payload.headline,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.titleSmall.emphasis(),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -168,7 +169,7 @@ private fun SocialCardBody(
 
         Text(
             text = payload.headline,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.titleSmall.emphasis(),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis

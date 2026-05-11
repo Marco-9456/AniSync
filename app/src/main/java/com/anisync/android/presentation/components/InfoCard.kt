@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import com.anisync.android.ui.theme.emphasis
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -126,7 +127,7 @@ private fun InfoCardContent(
                  )
                  Text(
                      text = value, 
-                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                     style = MaterialTheme.typography.labelLarge.emphasis(),
                      maxLines = 1,
                      overflow = TextOverflow.Ellipsis
                  )

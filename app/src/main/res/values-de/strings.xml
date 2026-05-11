@@ -594,4 +594,19 @@
     <string name="update_notification_channel_desc">Benachrichtigungen, wenn eine neue AniSync-Version verfügbar ist</string>
     <string name="update_notification_channel_name">App-Updates</string>
     <string name="update_notification_title">AniSync-Update verfügbar</string>
+    <string name="statistics_std_dev">Standardabweichung</string>
+    <string name="statistics_days_of_your_life">≈ %1$s Tage deines Lebens</string>
+    <string name="statistics_top_tags">Top-Tags</string>
+    <string name="statistics_top_voice_actors">Top-Synchronsprecher</string>
+    <string name="statistics_top_staff">Top-Mitarbeiter</string>
+    <string name="statistics_length_distribution">Episodenlänge</string>
+    <string name="statistics_chapter_length_distribution">Kapitelzahl</string>
+    <string name="statistics_start_year">Begonnen am</string>
+    <string name="statistics_status_breakdown">Status-Aufschlüsselung</string>
+    <string name="statistics_country_distribution">Länder</string>
+    <string name="statistics_peak_year">Dein Spitzenjahr</string>
+    <string name="statistics_time_breakdown">Aufgewendete Zeit</string>
+    <string name="statistics_taste_focused">Dein Geschmack ist fokussiert</string>
+    <string name="statistics_taste_balanced">Ausgewogener Geschmack</string>
+    <string name="statistics_taste_eclectic">Breit gefächerter Geschmack</string>
 </resources>

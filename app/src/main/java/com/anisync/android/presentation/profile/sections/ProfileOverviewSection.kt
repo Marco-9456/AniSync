@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.profile.sections
 
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -115,15 +116,21 @@ fun ProfileOverviewSection(
                 onActionClick = { onNavigateToTab(ProfileTab.STATS) }
             )
             HeroDashboard(
-                count = profile.animeCount.toString(),
-                countLabel = stringResource(R.string.statistics_total_anime),
-                subStat1Value = formatDecimal(profile.daysWatched),
-                subStat1Label = stringResource(R.string.statistics_days_watched),
-                subStat1Icon = Icons.Default.Tv,
-                subStat2Value = formatDecimal(profile.meanScore),
-                subStat2Label = stringResource(R.string.statistics_mean_score),
-                subStat2Icon = Icons.Default.Star,
-                episodes = profile.chaptersRead.takeIf { it > 0 }
+                primaryValue = profile.animeCount.toString(),
+                primaryUnit = "anime",
+                primaryLabel = stringResource(R.string.statistics_total_anime),
+                secondaryRow = listOf(
+                    com.anisync.android.presentation.statistics.EditorialStat(
+                        value = formatDecimal(profile.daysWatched),
+                        label = stringResource(R.string.statistics_days_watched),
+                        icon = Icons.Default.Tv
+                    ),
+                    com.anisync.android.presentation.statistics.EditorialStat(
+                        value = formatDecimal(profile.meanScore),
+                        label = stringResource(R.string.statistics_mean_score),
+                        icon = Icons.Default.Star
+                    )
+                )
             )
 
             if (profile.topGenres.isNotEmpty()) {
@@ -292,7 +299,7 @@ private fun PosterCardFallback(
         Spacer(Modifier.height(8.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -332,7 +339,7 @@ private fun StaffItem(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = staff.nameUserPreferred,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             textAlign = TextAlign.Start,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

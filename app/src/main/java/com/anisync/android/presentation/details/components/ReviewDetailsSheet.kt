@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
@@ -84,7 +85,7 @@ fun ReviewDetailsSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = review.userName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleMedium.emphasis(),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.clickable { onUserClick(review.userName) }
                     )
@@ -122,7 +123,7 @@ fun ReviewDetailsSheet(
                 ) {
                     Text(
                         text = "${review.score}/100",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.labelLarge.emphasis(),
                         color = scoreColor
                     )
                 }
@@ -140,7 +141,7 @@ fun ReviewDetailsSheet(
             ) {
                 Text(
                     text = review.summary,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.titleMedium.emphasis(),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 

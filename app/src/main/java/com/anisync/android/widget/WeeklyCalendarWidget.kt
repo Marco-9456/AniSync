@@ -280,7 +280,7 @@ private fun CalendarExpanded(
                     style = TextStyle(
                         color = if (isMyList) GlanceTheme.colors.onPrimary
                         else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Caption.large,
+                        fontSize = WidgetTypography.Label.large,
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -326,7 +326,7 @@ private fun CalendarExpanded(
                             style = TextStyle(
                                 color = if (isSelected) GlanceTheme.colors.onPrimary
                                 else GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = WidgetTypography.Caption.large,
+                                fontSize = WidgetTypography.Label.large,
                                 fontWeight = FontWeight.Medium
                             )
                         )

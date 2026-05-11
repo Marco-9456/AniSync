@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import com.anisync.android.ui.theme.emphasis
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -63,7 +64,7 @@ fun ScoreBadge(
             Spacer(Modifier.width(4.dp))
             Text(
                 text = "$score%",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.emphasis(),
                 color = contentColor
             )
         }

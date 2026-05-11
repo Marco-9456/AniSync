@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.parser.RichTextBlock
 
@@ -83,7 +84,7 @@ fun AniListLinkCard(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = style.copy(fontWeight = FontWeight.Bold),
+                style = style.emphasis(),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )

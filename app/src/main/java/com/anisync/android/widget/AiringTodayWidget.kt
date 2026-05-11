@@ -267,7 +267,7 @@ private fun AiringImmediateItem(
                         text = headerText,
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
-                            fontSize = WidgetTypography.Caption.large,
+                            fontSize = WidgetTypography.Label.large,
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 1
@@ -365,7 +365,7 @@ private fun AiringExpanded(
                     style = TextStyle(
                         color = if (isMyList) GlanceTheme.colors.onPrimary
                         else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Caption.large,
+                        fontSize = WidgetTypography.Label.large,
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -472,7 +472,7 @@ private fun TimelineItem(
                         text = timeString,
                         style = TextStyle(
                             color = GlanceTheme.colors.onPrimaryContainer,
-                            fontSize = WidgetTypography.Caption.medium,
+                            fontSize = WidgetTypography.Label.medium,
                             fontWeight = FontWeight.Bold
                         )
                     )

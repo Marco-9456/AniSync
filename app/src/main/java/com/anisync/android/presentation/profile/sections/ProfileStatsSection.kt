@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.profile.sections
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Equalizer
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.rounded.Star
@@ -32,13 +32,24 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.statistics.CountryDistributionRow
+import com.anisync.android.presentation.statistics.EditorialStat
+import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
 import com.anisync.android.presentation.statistics.FormatsSection
 import com.anisync.android.presentation.statistics.GenreCardModern
 import com.anisync.android.presentation.statistics.HeroDashboard
 import com.anisync.android.presentation.statistics.HorizontalStatsSection
+import com.anisync.android.presentation.statistics.ReadVolumeBreakdown
 import com.anisync.android.presentation.statistics.ReleaseYearsHistogramSection
 import com.anisync.android.presentation.statistics.ScoreHistogramSection
+import com.anisync.android.presentation.statistics.StaffCardModern
+import com.anisync.android.presentation.statistics.StandardDeviationCard
+import com.anisync.android.presentation.statistics.StatusDistributionDonut
 import com.anisync.android.presentation.statistics.StudioCardModern
+import com.anisync.android.presentation.statistics.TagCloudSection
+import com.anisync.android.presentation.statistics.TimeSpentBreakdown
+import com.anisync.android.presentation.statistics.VoiceActorCardModern
+import com.anisync.android.presentation.statistics.YearComparisonSection
 import com.anisync.android.presentation.util.formatDecimal
 
 fun LazyListScope.profileStatsTab(
@@ -128,73 +139,10 @@ fun LazyListScope.profileStatsTab(
     }
 
     if (selectedType == ProfileStatsType.ANIME) {
-        val stats = statsData.animeStats
-
-        item(key = "anime_hero_dashboard") {
-            HeroDashboard(
-                count = stats.totalCount.toString(),
-                countLabel = stringResource(R.string.statistics_total_anime),
-                subStat1Value = formatDecimal(stats.daysWatched),
-                subStat1Label = stringResource(R.string.statistics_days_watched),
-                subStat1Icon = Icons.Default.Schedule,
-                subStat2Value = formatDecimal(stats.meanScore),
-                subStat2Label = stringResource(R.string.statistics_mean_score),
-                subStat2Icon = Icons.Rounded.Star,
-                episodes = stats.episodesWatched
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        if (stats.scoreDistribution.isNotEmpty()) {
-            item(key = "anime_score_histogram") {
-                ScoreHistogramSection(stats.scoreDistribution)
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-
-        if (stats.genreDistribution.isNotEmpty()) {
-            item(key = "anime_top_genres") {
-                HorizontalStatsSection(
-                    title = stringResource(R.string.statistics_top_genres),
-                    items = stats.genreDistribution,
-                    key = { it.genre }
-                ) {
-                    GenreCardModern(it)
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-
-        if (stats.formatDistribution.isNotEmpty()) {
-            item(key = "anime_formats") {
-                FormatsSection(stats.formatDistribution)
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-
-        if (stats.releaseYearDistribution.isNotEmpty()) {
-            item(key = "anime_years_histogram") {
-                ReleaseYearsHistogramSection(stats.releaseYearDistribution)
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-
-        if (stats.studioDistribution.isNotEmpty()) {
-            item(key = "anime_top_studios") {
-                HorizontalStatsSection(
-                    title = stringResource(R.string.statistics_top_studios),
-                    items = stats.studioDistribution,
-                    key = { it.studioName }
-                ) {
-                    StudioCardModern(it)
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
+        animeStatsBranch(statsData.animeStats)
     } else {
-        val stats = statsData.mangaStats
-
-        if (stats == null) {
+        val mangaStats = statsData.mangaStats
+        if (mangaStats == null) {
             item(key = "manga_no_stats") {
                 Box(
                     modifier = Modifier
@@ -218,42 +166,256 @@ fun LazyListScope.profileStatsTab(
                     }
                 }
             }
-            return
+        } else {
+            mangaStatsBranch(mangaStats)
         }
+    }
+}
 
-        item(key = "manga_dashboard") {
-            HeroDashboard(
-                count = stats.totalCount.toString(),
-                countLabel = stringResource(R.string.statistics_total_manga),
-                subStat1Value = stats.chaptersRead.toString(),
-                subStat1Label = stringResource(R.string.statistics_chapters),
-                subStat1Icon = Icons.AutoMirrored.Filled.MenuBook,
-                subStat2Value = formatDecimal(stats.meanScore),
-                subStat2Label = stringResource(R.string.statistics_mean_score),
-                subStat2Icon = Icons.Rounded.Star,
-                episodes = null
+private fun LazyListScope.animeStatsBranch(stats: com.anisync.android.presentation.profile.AnimeStatisticsUi) {
+    item(key = "anime_hero") {
+        HeroDashboard(
+            primaryValue = stats.totalCount.toString(),
+            primaryUnit = "anime",
+            primaryLabel = stringResource(R.string.statistics_total_anime),
+            accentText = stringResource(R.string.statistics_days_of_your_life, formatDecimal(stats.daysWatched)),
+            secondaryRow = listOf(
+                EditorialStat(stats.episodesWatched.toString(), stringResource(R.string.statistics_episodes), Icons.Default.PlayArrow),
+                EditorialStat(formatDecimal(stats.meanScore), stringResource(R.string.statistics_mean_score), Icons.Rounded.Star),
+                EditorialStat(formatDecimal(stats.standardDeviation), stringResource(R.string.statistics_std_dev), Icons.Default.Equalizer)
             )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+        )
+        Spacer(Modifier.height(24.dp))
+    }
 
-        item(key = "manga_placeholder") {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceContainerLow,
-                        RoundedCornerShape(16.dp)
-                    )
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.profile_manga_stats_coming_soon),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+    if (stats.minutesWatched > 0) {
+        item(key = "anime_time") {
+            TimeSpentBreakdown(stats.minutesWatched)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.statusDistribution.isNotEmpty()) {
+        item(key = "anime_status") {
+            StatusDistributionDonut(stats.statusDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.scoreDistribution.isNotEmpty()) {
+        item(key = "anime_scores") {
+            ScoreHistogramSection(stats.scoreDistribution, stats.meanScore)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.genreDistribution.isNotEmpty()) {
+        item(key = "anime_genres") {
+            HorizontalStatsSection(
+                title = stringResource(R.string.statistics_top_genres),
+                items = stats.genreDistribution,
+                key = { it.genre }
+            ) { GenreCardModern(it) }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.tagDistribution.isNotEmpty()) {
+        item(key = "anime_tags") {
+            TagCloudSection(stats.tagDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.formatDistribution.isNotEmpty()) {
+        item(key = "anime_formats") {
+            FormatsSection(stats.formatDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.lengthDistribution.isNotEmpty()) {
+        item(key = "anime_lengths") {
+            EpisodeLengthDistributionSection(stats.lengthDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.releaseYearDistribution.isNotEmpty()) {
+        item(key = "anime_years") {
+            ReleaseYearsHistogramSection(stats.releaseYearDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.startYearDistribution.isNotEmpty()) {
+        item(key = "anime_year_compare") {
+            YearComparisonSection(
+                release = stats.releaseYearDistribution,
+                start = stats.startYearDistribution
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.standardDeviation > 0.0) {
+        item(key = "anime_stddev") {
+            StandardDeviationCard(stats.standardDeviation, stats.meanScore)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.voiceActorDistribution.isNotEmpty()) {
+        item(key = "anime_voice_actors") {
+            HorizontalStatsSection(
+                title = stringResource(R.string.statistics_top_voice_actors),
+                items = stats.voiceActorDistribution,
+                key = { it.id }
+            ) { VoiceActorCardModern(it) }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.staffDistribution.isNotEmpty()) {
+        item(key = "anime_staff") {
+            HorizontalStatsSection(
+                title = stringResource(R.string.statistics_top_staff),
+                items = stats.staffDistribution,
+                key = { it.id }
+            ) { StaffCardModern(it) }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.studioDistribution.isNotEmpty()) {
+        item(key = "anime_studios") {
+            HorizontalStatsSection(
+                title = stringResource(R.string.statistics_top_studios),
+                items = stats.studioDistribution,
+                key = { it.studioName }
+            ) { StudioCardModern(it) }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.countryDistribution.isNotEmpty()) {
+        item(key = "anime_countries") {
+            CountryDistributionRow(stats.countryDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+private fun LazyListScope.mangaStatsBranch(stats: com.anisync.android.presentation.profile.MangaStatisticsUi) {
+    item(key = "manga_hero") {
+        HeroDashboard(
+            primaryValue = stats.totalCount.toString(),
+            primaryUnit = "manga",
+            primaryLabel = stringResource(R.string.statistics_total_manga),
+            secondaryRow = listOf(
+                EditorialStat(stats.chaptersRead.toString(), stringResource(R.string.statistics_chapters), Icons.AutoMirrored.Filled.MenuBook),
+                EditorialStat(formatDecimal(stats.meanScore), stringResource(R.string.statistics_mean_score), Icons.Rounded.Star),
+                EditorialStat(formatDecimal(stats.standardDeviation), stringResource(R.string.statistics_std_dev), Icons.Default.Equalizer)
+            )
+        )
+        Spacer(Modifier.height(24.dp))
+    }
+
+    if (stats.chaptersRead > 0 || stats.volumesRead > 0) {
+        item(key = "manga_read") {
+            ReadVolumeBreakdown(stats.chaptersRead, stats.volumesRead)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.statusDistribution.isNotEmpty()) {
+        item(key = "manga_status") {
+            StatusDistributionDonut(stats.statusDistribution, isManga = true)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.scoreDistribution.isNotEmpty()) {
+        item(key = "manga_scores") {
+            ScoreHistogramSection(stats.scoreDistribution, stats.meanScore)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.genreDistribution.isNotEmpty()) {
+        item(key = "manga_genres") {
+            HorizontalStatsSection(
+                title = stringResource(R.string.statistics_top_genres),
+                items = stats.genreDistribution,
+                key = { it.genre }
+            ) { GenreCardModern(it) }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.tagDistribution.isNotEmpty()) {
+        item(key = "manga_tags") {
+            TagCloudSection(stats.tagDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.formatDistribution.isNotEmpty()) {
+        item(key = "manga_formats") {
+            FormatsSection(stats.formatDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.lengthDistribution.isNotEmpty()) {
+        item(key = "manga_lengths") {
+            EpisodeLengthDistributionSection(
+                stats.lengthDistribution,
+                title = stringResource(R.string.statistics_chapter_length_distribution)
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.releaseYearDistribution.isNotEmpty()) {
+        item(key = "manga_years") {
+            ReleaseYearsHistogramSection(stats.releaseYearDistribution)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.startYearDistribution.isNotEmpty()) {
+        item(key = "manga_year_compare") {
+            YearComparisonSection(
+                release = stats.releaseYearDistribution,
+                start = stats.startYearDistribution
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.standardDeviation > 0.0) {
+        item(key = "manga_stddev") {
+            StandardDeviationCard(stats.standardDeviation, stats.meanScore)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.staffDistribution.isNotEmpty()) {
+        item(key = "manga_staff") {
+            HorizontalStatsSection(
+                title = stringResource(R.string.statistics_top_staff),
+                items = stats.staffDistribution,
+                key = { it.id }
+            ) { StaffCardModern(it) }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    if (stats.countryDistribution.isNotEmpty()) {
+        item(key = "manga_countries") {
+            CountryDistributionRow(stats.countryDistribution)
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

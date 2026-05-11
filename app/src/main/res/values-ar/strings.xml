@@ -594,4 +594,19 @@
     <string name="update_notification_channel_desc">إشعارات عند توفر إصدار جديد من AniSync</string>
     <string name="update_notification_channel_name">تحديثات التطبيق</string>
     <string name="update_notification_title">تحديث AniSync متاح</string>
+    <string name="statistics_std_dev">الانحراف المعياري</string>
+    <string name="statistics_days_of_your_life">≈ %1$s يوماً من حياتك</string>
+    <string name="statistics_top_tags">أبرز الوسوم</string>
+    <string name="statistics_top_voice_actors">أبرز المؤدين الصوتيين</string>
+    <string name="statistics_top_staff">أبرز الطاقم</string>
+    <string name="statistics_length_distribution">مدة الحلقة</string>
+    <string name="statistics_chapter_length_distribution">عدد الفصول</string>
+    <string name="statistics_start_year">بدأت المشاهدة</string>
+    <string name="statistics_status_breakdown">تفصيل الحالة</string>
+    <string name="statistics_country_distribution">الدول</string>
+    <string name="statistics_peak_year">عامك الذروة</string>
+    <string name="statistics_time_breakdown">الوقت المستغرق</string>
+    <string name="statistics_taste_focused">ذوقك مركّز جداً</string>
+    <string name="statistics_taste_balanced">ذوق متوازن</string>
+    <string name="statistics_taste_eclectic">ذوق متنوع وواسع</string>
 </resources>

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.UserSummary
 
@@ -71,7 +72,7 @@ fun LikesSheet(
         ) {
             Text(
                 text = stringResource(R.string.activity_likes_title),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleLarge.emphasis(),
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
             )
 

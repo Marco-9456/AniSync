@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details.components
 
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
 import androidx.compose.animation.AnimatedVisibility
@@ -143,7 +144,7 @@ fun CharacterItem(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = character.nameUserPreferred,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             textAlign = TextAlign.Start,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -205,7 +206,7 @@ fun MediaRoleItem(
 
         Text(
             text = media.titleUserPreferred,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp)
@@ -273,7 +274,7 @@ fun RelationItem(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = relation.relationType.formatAsTitle() ?: relation.relationType,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelSmall.emphasis(),
             color = MaterialTheme.colorScheme.primary
         )
         Text(
@@ -325,7 +326,7 @@ fun RecommendationItem(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = recommendation.format?.formatAsTitle() ?: "",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelSmall.emphasis(),
             color = MaterialTheme.colorScheme.primary
         )
         Text(
@@ -468,7 +469,7 @@ fun VoicedCharacterItem(
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = voicedName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleMedium.emphasis(),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -533,7 +534,7 @@ fun VoicedCharacterItem(
                             appearance.startYear?.let { year ->
                                 Text(
                                     text = year.toString(),
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelLarge.emphasis(),
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.width(48.dp)
                                 )

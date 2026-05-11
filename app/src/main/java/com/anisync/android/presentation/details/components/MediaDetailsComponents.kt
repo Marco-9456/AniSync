@@ -215,7 +215,7 @@ private fun GenreChip(
         ) {
             Text(
                 text = genre,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }

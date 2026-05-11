@@ -241,7 +241,7 @@ private fun UpNextSingleItem(
                         text = "Up Next",
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
-                            fontSize = WidgetTypography.Caption.large,
+                            fontSize = WidgetTypography.Label.large,
                             fontWeight = FontWeight.Bold
                         )
                     )
@@ -268,7 +268,7 @@ private fun UpNextSingleItem(
                         text = formatTimeUntil(episode.airingAt, nowSeconds),
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = WidgetTypography.Caption.large,
+                            fontSize = WidgetTypography.Label.large,
                             fontWeight = FontWeight.Medium
                         ),
                         maxLines = 1
@@ -280,7 +280,7 @@ private fun UpNextSingleItem(
                 Spacer(modifier = GlanceModifier.width(12.dp))
                 WatchButton(
                     intent = watchIntent,
-                    fontSize = WidgetTypography.Caption.large
+                    fontSize = WidgetTypography.Label.large
                 )
             }
         }
@@ -392,7 +392,7 @@ private fun UpNextList(
                             Spacer(modifier = GlanceModifier.width(12.dp))
                             WatchButton(
                                 intent = watchIntent,
-                                fontSize = WidgetTypography.Caption.large
+                                fontSize = WidgetTypography.Label.large
                             )
                         }
                     }

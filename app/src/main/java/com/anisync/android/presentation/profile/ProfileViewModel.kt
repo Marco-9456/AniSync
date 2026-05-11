@@ -784,7 +784,7 @@ class ProfileViewModel @Inject constructor(
                     // Process data on default dispatcher
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
                         val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats)
-                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it) }
+                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it, result.data.scoreFormat) }
                         StatisticsUiModel(animeUi, mangaUi)
                     }
 
@@ -809,90 +809,157 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun processAnimeStats(scoreFormat: ScoreFormat?, stats: AnimeStatistics): AnimeStatisticsUi {
-        val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats)
+        val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats.scoreDistribution.map { it.score })
+        val scoreUi = bucketScores(effectiveScoreFormat, stats.scoreDistribution.map { it.score to it.count })
 
-        val bucketCount = when (effectiveScoreFormat) {
-            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10
-            ScoreFormat.POINT_5 -> 5
-            ScoreFormat.POINT_3 -> 3
+        val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
+        val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
+        val releaseYearsUi = sortedReleaseYears.map {
+            YearUiModel(it.year, it.count, it.count.toFloat() / maxReleaseYearCount.coerceAtLeast(1))
         }
 
-        val maxRawScore = when (effectiveScoreFormat) {
-            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> 100
-            ScoreFormat.POINT_10 -> 10
-            ScoreFormat.POINT_5 -> 5
-            ScoreFormat.POINT_3 -> 3
+        val sortedStartYears = stats.startYearDistribution.sortedBy { it.year }.takeLast(12)
+        val maxStartYearCount = sortedStartYears.maxOfOrNull { it.count } ?: 1
+        val startYearsUi = sortedStartYears.map {
+            YearUiModel(it.year, it.count, it.count.toFloat() / maxStartYearCount.coerceAtLeast(1))
         }
 
-        val countsByBucket = IntArray(bucketCount)
-        stats.scoreDistribution.forEach { stat ->
-            val rawScore = stat.score.coerceIn(1, maxRawScore)
-            val bucketIndex = when (effectiveScoreFormat) {
-                ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> ((rawScore - 1) / 10).coerceIn(0, bucketCount - 1)
-                ScoreFormat.POINT_10, ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> (rawScore - 1).coerceIn(0, bucketCount - 1)
-            }
-            countsByBucket[bucketIndex] += stat.count
+        val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
+        val lengthsUi = stats.lengthDistribution.map {
+            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1))
         }
 
-        val maxScoreCount = countsByBucket.maxOrNull()?.coerceAtLeast(1) ?: 1
-        val fullScoreDistribution = (1..bucketCount).map { bucket ->
-            val count = countsByBucket[bucket - 1]
-            val label = when (effectiveScoreFormat) {
-                ScoreFormat.POINT_100 -> (bucket * 10).toString()
-                ScoreFormat.POINT_10_DECIMAL -> "$bucket.0"
-                ScoreFormat.POINT_10, ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> bucket.toString()
-            }
-            val normalizedScore = when (effectiveScoreFormat) {
-                ScoreFormat.POINT_100 -> (bucket * 10) / 100f
-                ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> bucket / 10f
-                ScoreFormat.POINT_5 -> bucket / 5f
-                ScoreFormat.POINT_3 -> bucket / 3f
-            }
-
-            ScoreUiModel(
-                score = bucket,
-                label = label,
-                normalizedScore = normalizedScore,
-                count = count,
-                heightFraction = count.toFloat() / maxScoreCount
-            )
-        }
-
-        val sortedYears = stats.releaseYearDistribution
-            .sortedBy { it.year }
-            .takeLast(10)
-
-        val maxYearCount = sortedYears.maxOfOrNull { it.count } ?: 1
-        val processedYears = sortedYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxYearCount.coerceAtLeast(1))
-        }
-
-        val topGenres = stats.genreDistribution.take(20)
-        val topStudios = stats.studioDistribution.take(20)
+        val statusesUi = stats.statusDistribution.toStatusUi()
 
         return AnimeStatisticsUi(
             totalCount = stats.totalCount,
             daysWatched = stats.daysWatched.toDouble(),
             meanScore = stats.meanScore.toDouble(),
+            standardDeviation = stats.standardDeviation.toDouble(),
             episodesWatched = stats.episodesWatched,
-            scoreDistribution = fullScoreDistribution,
-            genreDistribution = topGenres,
+            minutesWatched = stats.minutesWatched,
+            statusDistribution = statusesUi,
+            scoreDistribution = scoreUi,
+            genreDistribution = stats.genreDistribution.take(20),
+            tagDistribution = stats.tagDistribution.take(25),
             formatDistribution = stats.formatDistribution,
-            releaseYearDistribution = processedYears,
-            studioDistribution = topStudios
+            releaseYearDistribution = releaseYearsUi,
+            startYearDistribution = startYearsUi,
+            lengthDistribution = lengthsUi,
+            studioDistribution = stats.studioDistribution.take(20),
+            voiceActorDistribution = stats.voiceActorDistribution.take(10),
+            staffDistribution = stats.staffDistribution.take(10),
+            countryDistribution = stats.countryDistribution
         )
     }
 
-    private fun processMangaStats(stats: MangaStatistics): MangaStatisticsUi {
+    private fun processMangaStats(stats: MangaStatistics, scoreFormat: ScoreFormat?): MangaStatisticsUi {
+        val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats.scoreDistribution.map { it.score })
+        val scoreUi = bucketScores(effectiveScoreFormat, stats.scoreDistribution.map { it.score to it.count })
+
+        val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
+        val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
+        val releaseYearsUi = sortedReleaseYears.map {
+            YearUiModel(it.year, it.count, it.count.toFloat() / maxReleaseYearCount.coerceAtLeast(1))
+        }
+
+        val sortedStartYears = stats.startYearDistribution.sortedBy { it.year }.takeLast(12)
+        val maxStartYearCount = sortedStartYears.maxOfOrNull { it.count } ?: 1
+        val startYearsUi = sortedStartYears.map {
+            YearUiModel(it.year, it.count, it.count.toFloat() / maxStartYearCount.coerceAtLeast(1))
+        }
+
+        val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
+        val lengthsUi = stats.lengthDistribution.map {
+            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1))
+        }
+
+        val statusesUi = stats.statusDistribution.toStatusUi()
+
         return MangaStatisticsUi(
             totalCount = stats.totalCount,
             chaptersRead = stats.chaptersRead,
-            meanScore = stats.meanScore.toDouble()
+            volumesRead = stats.volumesRead,
+            meanScore = stats.meanScore.toDouble(),
+            standardDeviation = stats.standardDeviation.toDouble(),
+            statusDistribution = statusesUi,
+            scoreDistribution = scoreUi,
+            genreDistribution = stats.genreDistribution.take(20),
+            tagDistribution = stats.tagDistribution.take(25),
+            formatDistribution = stats.formatDistribution,
+            releaseYearDistribution = releaseYearsUi,
+            startYearDistribution = startYearsUi,
+            lengthDistribution = lengthsUi,
+            staffDistribution = stats.staffDistribution.take(10),
+            countryDistribution = stats.countryDistribution
         )
     }
 
-    private fun inferScoreFormat(stats: AnimeStatistics): ScoreFormat {
-        val maxScore = stats.scoreDistribution.maxOfOrNull { it.score } ?: 10
+    private fun bucketScores(
+        format: ScoreFormat,
+        scores: List<Pair<Int, Int>>
+    ): List<ScoreUiModel> {
+        val bucketCount = when (format) {
+            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10
+            ScoreFormat.POINT_5 -> 5
+            ScoreFormat.POINT_3 -> 3
+        }
+        val maxRawScore = when (format) {
+            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> 100
+            ScoreFormat.POINT_10 -> 10
+            ScoreFormat.POINT_5 -> 5
+            ScoreFormat.POINT_3 -> 3
+        }
+        val counts = IntArray(bucketCount)
+        scores.forEach { (rawScore, count) ->
+            val s = rawScore.coerceIn(1, maxRawScore)
+            val bucketIndex = when (format) {
+                ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> ((s - 1) / 10).coerceIn(0, bucketCount - 1)
+                else -> (s - 1).coerceIn(0, bucketCount - 1)
+            }
+            counts[bucketIndex] += count
+        }
+        val maxCount = counts.maxOrNull()?.coerceAtLeast(1) ?: 1
+        return (1..bucketCount).map { bucket ->
+            val count = counts[bucket - 1]
+            val label = when (format) {
+                ScoreFormat.POINT_100 -> (bucket * 10).toString()
+                ScoreFormat.POINT_10_DECIMAL -> "$bucket.0"
+                else -> bucket.toString()
+            }
+            val normalized = when (format) {
+                ScoreFormat.POINT_100 -> (bucket * 10) / 100f
+                ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> bucket / 10f
+                ScoreFormat.POINT_5 -> bucket / 5f
+                ScoreFormat.POINT_3 -> bucket / 3f
+            }
+            ScoreUiModel(
+                score = bucket,
+                label = label,
+                normalizedScore = normalized,
+                count = count,
+                heightFraction = count.toFloat() / maxCount
+            )
+        }
+    }
+
+    private fun List<com.anisync.android.domain.StatusStat>.toStatusUi(): List<StatusUiModel> {
+        val total = sumOf { it.count }.coerceAtLeast(1)
+        // Stable color role per status for theme-driven palette
+        val statusOrder = listOf("CURRENT", "COMPLETED", "PLANNING", "PAUSED", "DROPPED", "REPEATING")
+        return sortedBy { statusOrder.indexOf(it.status).let { idx -> if (idx < 0) Int.MAX_VALUE else idx } }
+            .mapIndexed { index, stat ->
+                StatusUiModel(
+                    status = stat.status,
+                    count = stat.count,
+                    fraction = stat.count.toFloat() / total,
+                    colorRoleIndex = index % 5
+                )
+            }
+    }
+
+    private fun inferScoreFormat(scores: List<Int>): ScoreFormat {
+        val maxScore = scores.maxOrNull() ?: 10
         return when {
             maxScore > 10 -> ScoreFormat.POINT_100
             maxScore > 5 -> ScoreFormat.POINT_10

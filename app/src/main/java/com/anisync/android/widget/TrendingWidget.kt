@@ -256,7 +256,7 @@ private fun TrendingCompact(
                         text = "Trending",
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
-                            fontSize = WidgetTypography.Caption.large,
+                            fontSize = WidgetTypography.Label.large,
                             fontWeight = FontWeight.Bold
                         )
                     )
@@ -288,7 +288,7 @@ private fun TrendingCompact(
                             text = "${item.averageScore}%",
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = WidgetTypography.Caption.large,
+                                fontSize = WidgetTypography.Label.large,
                                 fontWeight = FontWeight.Medium
                             ),
                             maxLines = 1
@@ -344,7 +344,7 @@ private fun TrendingMedium(
                     text = item.titleUserPreferred,
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
-                        fontSize = WidgetTypography.Caption.large,
+                        fontSize = WidgetTypography.Label.large,
                         fontWeight = FontWeight.Bold
                     ),
                     maxLines = 1
@@ -478,7 +478,7 @@ private fun TrendingExpanded(
                                         text = "${item.averageScore}% Score",
                                         style = TextStyle(
                                             color = GlanceTheme.colors.onSurfaceVariant,
-                                            fontSize = WidgetTypography.Caption.large,
+                                            fontSize = WidgetTypography.Label.large,
                                             fontWeight = FontWeight.Medium
                                         )
                                     )
@@ -517,7 +517,7 @@ private fun RankBadge(rank: Int) {
             text = "#$rank",
             style = TextStyle(
                 color = GlanceTheme.colors.onPrimary,
-                fontSize = WidgetTypography.Caption.medium,
+                fontSize = WidgetTypography.Label.medium,
                 fontWeight = FontWeight.Bold
             ),
             modifier = GlanceModifier.padding(horizontal = 6.dp, vertical = 2.dp)

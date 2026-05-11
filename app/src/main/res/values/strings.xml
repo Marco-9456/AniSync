@@ -942,4 +942,19 @@
     <string name="locked">Locked</string>
     <string name="cd_go_back_one_level">Go back one level</string>
     <string name="cd_thread_depth">Thread depth: %d levels deep. Tap to go back.</string>
+    <string name="statistics_std_dev">Standard Deviation</string>
+    <string name="statistics_days_of_your_life">≈ %1$s days of your life</string>
+    <string name="statistics_top_tags">Top Tags</string>
+    <string name="statistics_top_voice_actors">Top Voice Actors</string>
+    <string name="statistics_top_staff">Top Staff</string>
+    <string name="statistics_length_distribution">Episode Length</string>
+    <string name="statistics_chapter_length_distribution">Chapter Count</string>
+    <string name="statistics_start_year">Started Watching</string>
+    <string name="statistics_status_breakdown">Status Breakdown</string>
+    <string name="statistics_country_distribution">Countries</string>
+    <string name="statistics_peak_year">Your Peak Year</string>
+    <string name="statistics_time_breakdown">Time Spent</string>
+    <string name="statistics_taste_focused">Your taste is laser-focused</string>
+    <string name="statistics_taste_balanced">Balanced taste</string>
+    <string name="statistics_taste_eclectic">Wide, eclectic taste</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details.components
 
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -247,7 +248,7 @@ fun NameCard(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = NumberFormat.getNumberInstance(Locale.getDefault()).format(favs),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.labelLarge.emphasis(),
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
@@ -295,7 +296,7 @@ fun AttributesCard(
                         )
                         Text(
                             text = value,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.bodyMedium.emphasis(),
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.End,
                             modifier = Modifier.weight(0.6f)
@@ -347,7 +348,7 @@ fun VoiceActorCard(
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = name,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -362,7 +363,7 @@ fun VoiceActorCard(
             ) {
                 Text(
                     text = it.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelSmall.emphasis(),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     maxLines = 1
                 )
@@ -460,7 +461,7 @@ fun FeaturedMediaItem(
         if (roleText.isNotEmpty()) {
             Text(
                 text = roleText,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.emphasis(),
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -468,7 +469,7 @@ fun FeaturedMediaItem(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -493,7 +494,7 @@ fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleMedium.emphasis(),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -534,7 +535,7 @@ fun ExpandableBiography(html: String) {
         Column(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
             Text(
                 "BIOGRAPHY",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.emphasis(),
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
             )
@@ -566,7 +567,7 @@ fun ExpandableBiography(html: String) {
                     text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
                         R.string.synopsis_read_more
                     ),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelMedium.emphasis(),
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
@@ -610,7 +611,7 @@ fun ExpandableSynopsis(text: String) {
         Column(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
             Text(
                 stringResource(R.string.section_synopsis),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.emphasis(),
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
             )
@@ -640,7 +641,7 @@ fun ExpandableSynopsis(text: String) {
                     text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
                         R.string.synopsis_read_more
                     ),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelMedium.emphasis(),
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(dimensionResource(R.dimen.spacing_tiny)))

@@ -10,13 +10,23 @@ query GetUserStatistics($userId: Int) {
         count
         minutesWatched
         meanScore
+        standardDeviation
         episodesWatched
         statuses {
           count
           status
         }
-        genres(limit: 10, sort: [COUNT_DESC]) {
+        genres(limit: 14, sort: [COUNT_DESC]) {
           genre
+          count
+          meanScore
+          minutesWatched
+        }
+        tags(limit: 25, sort: [COUNT_DESC]) {
+          tag {
+            id
+            name
+          }
           count
           meanScore
           minutesWatched
@@ -27,22 +37,68 @@ query GetUserStatistics($userId: Int) {
           meanScore
           minutesWatched
         }
-        formats(limit: 5, sort: [COUNT_DESC]) {
+        formats(limit: 8, sort: [COUNT_DESC]) {
           format
           count
           meanScore
           minutesWatched
         }
-        releaseYears(limit: 10, sort: [COUNT_DESC]) {
+        releaseYears(limit: 12, sort: [COUNT_DESC]) {
           releaseYear
           count
           meanScore
           minutesWatched
         }
-        studios(limit: 10, sort: [COUNT_DESC]) {
+        startYears(limit: 12, sort: [COUNT_DESC]) {
+          startYear
+          count
+          meanScore
+          minutesWatched
+        }
+        lengths(limit: 8, sort: [COUNT_DESC]) {
+          length
+          count
+          meanScore
+          minutesWatched
+        }
+        studios(limit: 12, sort: [COUNT_DESC]) {
           studio {
             name
           }
+          count
+          meanScore
+          minutesWatched
+        }
+        voiceActors(limit: 10, sort: [COUNT_DESC]) {
+          voiceActor {
+            id
+            name {
+              full
+            }
+            image {
+              medium
+            }
+          }
+          count
+          meanScore
+          minutesWatched
+        }
+        staff(limit: 10, sort: [COUNT_DESC]) {
+          staff {
+            id
+            name {
+              full
+            }
+            image {
+              medium
+            }
+          }
+          count
+          meanScore
+          minutesWatched
+        }
+        countries(limit: 6, sort: [COUNT_DESC]) {
+          country
           count
           meanScore
           minutesWatched
@@ -51,7 +107,78 @@ query GetUserStatistics($userId: Int) {
       manga {
         count
         chaptersRead
+        volumesRead
         meanScore
+        standardDeviation
+        statuses {
+          count
+          status
+        }
+        genres(limit: 14, sort: [COUNT_DESC]) {
+          genre
+          count
+          meanScore
+          chaptersRead
+        }
+        tags(limit: 25, sort: [COUNT_DESC]) {
+          tag {
+            id
+            name
+          }
+          count
+          meanScore
+          chaptersRead
+        }
+        scores(sort: [MEAN_SCORE_DESC]) {
+          score
+          count
+          meanScore
+          chaptersRead
+        }
+        formats(limit: 8, sort: [COUNT_DESC]) {
+          format
+          count
+          meanScore
+          chaptersRead
+        }
+        releaseYears(limit: 12, sort: [COUNT_DESC]) {
+          releaseYear
+          count
+          meanScore
+          chaptersRead
+        }
+        startYears(limit: 12, sort: [COUNT_DESC]) {
+          startYear
+          count
+          meanScore
+          chaptersRead
+        }
+        lengths(limit: 8, sort: [COUNT_DESC]) {
+          length
+          count
+          meanScore
+          chaptersRead
+        }
+        staff(limit: 10, sort: [COUNT_DESC]) {
+          staff {
+            id
+            name {
+              full
+            }
+            image {
+              medium
+            }
+          }
+          count
+          meanScore
+          chaptersRead
+        }
+        countries(limit: 6, sort: [COUNT_DESC]) {
+          country
+          count
+          meanScore
+          chaptersRead
+        }
       }
     }
   }

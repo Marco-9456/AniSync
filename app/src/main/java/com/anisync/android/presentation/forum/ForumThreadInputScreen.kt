@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.forum
 
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
 import androidx.compose.foundation.clickable
@@ -183,7 +184,7 @@ private fun ThreadMetaHeader(
                     style = MaterialTheme.typography.titleLarge
                 )
             },
-            textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            textStyle = MaterialTheme.typography.titleLarge.emphasis(),
             singleLine = true,
             isError = titleError != null,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),

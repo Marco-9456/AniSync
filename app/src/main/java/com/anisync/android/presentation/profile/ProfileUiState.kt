@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.R
+import com.anisync.android.domain.CountryStat
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.GenreStat
@@ -12,8 +13,11 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.SocialUser
+import com.anisync.android.domain.StaffStat
 import com.anisync.android.domain.StudioStat
+import com.anisync.android.domain.TagStat
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.domain.VoiceActorStat
 
 @Stable
 data class ProfileUiState(
@@ -76,20 +80,41 @@ data class StatisticsUiModel(
 
 data class AnimeStatisticsUi(
     val totalCount: Int,
-    val daysWatched: Double, // Kept as Double for consistency/formatting
-    val meanScore: Double,   // Changed to Double to match daysWatched and formatter
+    val daysWatched: Double,
+    val meanScore: Double,
+    val standardDeviation: Double,
     val episodesWatched: Int,
+    val minutesWatched: Int,
+    val statusDistribution: List<StatusUiModel>,
     val scoreDistribution: List<ScoreUiModel>,
     val genreDistribution: List<GenreStat>,
+    val tagDistribution: List<TagStat>,
     val formatDistribution: List<FormatStat>,
     val releaseYearDistribution: List<YearUiModel>,
-    val studioDistribution: List<StudioStat>
+    val startYearDistribution: List<YearUiModel>,
+    val lengthDistribution: List<LengthUiModel>,
+    val studioDistribution: List<StudioStat>,
+    val voiceActorDistribution: List<VoiceActorStat>,
+    val staffDistribution: List<StaffStat>,
+    val countryDistribution: List<CountryStat>
 )
 
 data class MangaStatisticsUi(
     val totalCount: Int,
     val chaptersRead: Int,
-    val meanScore: Double // Changed to Double
+    val volumesRead: Int,
+    val meanScore: Double,
+    val standardDeviation: Double,
+    val statusDistribution: List<StatusUiModel>,
+    val scoreDistribution: List<ScoreUiModel>,
+    val genreDistribution: List<GenreStat>,
+    val tagDistribution: List<TagStat>,
+    val formatDistribution: List<FormatStat>,
+    val releaseYearDistribution: List<YearUiModel>,
+    val startYearDistribution: List<YearUiModel>,
+    val lengthDistribution: List<LengthUiModel>,
+    val staffDistribution: List<StaffStat>,
+    val countryDistribution: List<CountryStat>
 )
 
 data class ScoreUiModel(
@@ -102,6 +127,20 @@ data class ScoreUiModel(
 
 data class YearUiModel(
     val year: Int,
+    val count: Int,
+    val heightFraction: Float
+)
+
+data class StatusUiModel(
+    val status: String,
+    val count: Int,
+    val fraction: Float,
+    /** 0..4 ordinal mapped to color roles (primary/secondary/tertiary/error/outline). */
+    val colorRoleIndex: Int
+)
+
+data class LengthUiModel(
+    val label: String,
     val count: Int,
     val heightFraction: Float
 )

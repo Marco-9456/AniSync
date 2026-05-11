@@ -58,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
@@ -215,7 +216,7 @@ fun ProfileTopSection(
                             ) {
                                 Text(
                                     text = stringResource(R.string.profile_level, level),
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelLarge.emphasis(),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
@@ -250,7 +251,7 @@ fun ProfileTopSection(
                                     ) {
                                         Text(
                                             text = formattedRole,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                            style = MaterialTheme.typography.labelSmall.emphasis(),
                                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
@@ -270,13 +271,13 @@ fun ProfileTopSection(
                                 }
                                 Text(
                                     text = stringResource(R.string.profile_active, activeTime),
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (joinedDate != null) {
                                     Text(
                                         text = joinedDate,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -285,7 +286,7 @@ fun ProfileTopSection(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = joinedDate,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -308,7 +309,7 @@ fun ProfileTopSection(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = stringResource(R.string.profile_view_biography),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.labelLarge.emphasis()
                         )
                     }
                 }
@@ -467,7 +468,7 @@ private fun RainbowDonatorBadge(badgeText: String, modifier: Modifier = Modifier
     ) {
         Text(
             text = badgeText,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelLarge.emphasis(),
             color = Color.White,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
@@ -491,7 +492,7 @@ private fun RegularDonatorBadge(badgeText: String, tier: Int, modifier: Modifier
     ) {
         Text(
             text = badgeText,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelLarge.emphasis(),
             color = Color.White,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )

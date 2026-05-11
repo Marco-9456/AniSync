@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.StudioInfo
@@ -280,7 +281,7 @@ private fun CastStaffItem(
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = staff.nameUserPreferred,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             textAlign = TextAlign.Start,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -312,7 +313,7 @@ private fun StudioItem(
     ) {
         Text(
             text = studio.name,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.labelLarge.emphasis(),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

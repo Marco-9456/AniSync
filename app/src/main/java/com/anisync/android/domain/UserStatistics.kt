@@ -4,7 +4,6 @@ import androidx.compose.runtime.Immutable
 
 /**
  * Comprehensive user statistics for anime/manga consumption.
- * Contains detailed breakdowns by genre, format, score distribution, etc.
  */
 @Immutable
 data class UserStatistics(
@@ -15,58 +14,71 @@ data class UserStatistics(
     val mangaStats: MangaStatistics?
 )
 
-/**
- * Anime-specific statistics.
- */
 @Immutable
 data class AnimeStatistics(
     val totalCount: Int,
     val episodesWatched: Int,
     val minutesWatched: Int,
-    val daysWatched: Float, // Converted from minutes
+    val daysWatched: Float,
     val meanScore: Float,
+    val standardDeviation: Float,
     val statusDistribution: List<StatusStat>,
     val genreDistribution: List<GenreStat>,
+    val tagDistribution: List<TagStat>,
     val scoreDistribution: List<ScoreStat>,
     val formatDistribution: List<FormatStat>,
     val releaseYearDistribution: List<ReleaseYearStat>,
-    val studioDistribution: List<StudioStat>
+    val startYearDistribution: List<StartYearStat>,
+    val lengthDistribution: List<LengthStat>,
+    val studioDistribution: List<StudioStat>,
+    val voiceActorDistribution: List<VoiceActorStat>,
+    val staffDistribution: List<StaffStat>,
+    val countryDistribution: List<CountryStat>
 )
 
-/**
- * Manga-specific statistics.
- */
 @Immutable
 data class MangaStatistics(
     val totalCount: Int,
     val chaptersRead: Int,
-    val meanScore: Float
+    val volumesRead: Int,
+    val meanScore: Float,
+    val standardDeviation: Float,
+    val statusDistribution: List<StatusStat>,
+    val genreDistribution: List<GenreStat>,
+    val tagDistribution: List<TagStat>,
+    val scoreDistribution: List<ScoreStat>,
+    val formatDistribution: List<FormatStat>,
+    val releaseYearDistribution: List<ReleaseYearStat>,
+    val startYearDistribution: List<StartYearStat>,
+    val lengthDistribution: List<LengthStat>,
+    val staffDistribution: List<StaffStat>,
+    val countryDistribution: List<CountryStat>
 )
 
-/**
- * Statistics for a specific status (watching, completed, etc.)
- */
 @Immutable
 data class StatusStat(
     val status: String,
     val count: Int
 )
 
-/**
- * Statistics for a specific genre.
- */
 @Immutable
 @kotlinx.serialization.Serializable
 data class GenreStat(
     val genre: String,
     val count: Int,
     val meanScore: Float,
-    val hoursWatched: Float = 0f // Converted from minutes
+    val hoursWatched: Float = 0f
 )
 
-/**
- * Statistics for a specific score value (1-10 or 1-100 depending on user settings).
- */
+@Immutable
+data class TagStat(
+    val id: Int,
+    val name: String,
+    val count: Int,
+    val meanScore: Float,
+    val hoursWatched: Float
+)
+
 @Immutable
 data class ScoreStat(
     val score: Int,
@@ -75,9 +87,6 @@ data class ScoreStat(
     val hoursWatched: Float
 )
 
-/**
- * Statistics for a specific format (TV, Movie, OVA, etc.)
- */
 @Immutable
 data class FormatStat(
     val format: String,
@@ -86,9 +95,6 @@ data class FormatStat(
     val hoursWatched: Float
 )
 
-/**
- * Statistics for a specific release year.
- */
 @Immutable
 data class ReleaseYearStat(
     val year: Int,
@@ -97,12 +103,53 @@ data class ReleaseYearStat(
     val hoursWatched: Float
 )
 
-/**
- * Statistics for a specific studio.
- */
+@Immutable
+data class StartYearStat(
+    val year: Int,
+    val count: Int,
+    val meanScore: Float,
+    val hoursWatched: Float
+)
+
+@Immutable
+data class LengthStat(
+    val length: String,
+    val count: Int,
+    val meanScore: Float,
+    val hoursWatched: Float
+)
+
 @Immutable
 data class StudioStat(
     val studioName: String,
+    val count: Int,
+    val meanScore: Float,
+    val hoursWatched: Float
+)
+
+@Immutable
+data class VoiceActorStat(
+    val id: Int,
+    val name: String,
+    val imageUrl: String?,
+    val count: Int,
+    val meanScore: Float,
+    val hoursWatched: Float
+)
+
+@Immutable
+data class StaffStat(
+    val id: Int,
+    val name: String,
+    val imageUrl: String?,
+    val count: Int,
+    val meanScore: Float,
+    val hoursWatched: Float
+)
+
+@Immutable
+data class CountryStat(
+    val countryCode: String,
     val count: Int,
     val meanScore: Float,
     val hoursWatched: Float

@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.profile.sections
 
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
 import androidx.annotation.StringRes
@@ -264,7 +265,7 @@ private fun PosterCardFallback(
         Spacer(Modifier.height(8.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )

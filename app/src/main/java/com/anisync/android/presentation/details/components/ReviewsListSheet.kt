@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.ReviewCard
@@ -77,7 +78,7 @@ fun ReviewsListSheet(
         ) {
             Text(
                 text = stringResource(R.string.all_reviews),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleLarge.emphasis(),
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
             )
 

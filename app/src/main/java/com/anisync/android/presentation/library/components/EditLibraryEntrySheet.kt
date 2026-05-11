@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.library.components
 
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
 import androidx.compose.animation.AnimatedVisibility
@@ -1213,7 +1214,7 @@ private fun ActionButtons(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.save),
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                style = MaterialTheme.typography.labelLarge.emphasis()
             )
         }
     }

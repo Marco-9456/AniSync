@@ -1359,7 +1359,7 @@ fun SmartActionButtonsRow(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 stringResource(R.string.action_share),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+                style = MaterialTheme.typography.titleMedium
             )
         }
     }

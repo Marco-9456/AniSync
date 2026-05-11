@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
@@ -39,7 +40,7 @@ fun ProfileBioSheet(
         ) {
             Text(
                 text = stringResource(R.string.profile_biography_title),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.headlineSmall.emphasis(),
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )

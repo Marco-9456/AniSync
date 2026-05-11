@@ -3,33 +3,32 @@ package com.anisync.android.widget.designsystem.tokens
 import androidx.compose.ui.unit.sp
 
 /**
- * Typography tokens for widget text styles.
- * Centralizes all hardcoded sp values used across widgets.
+ * Widget typography tokens.
+ *
+ * Names mirror MD3 Expressive type roles (Title / Body / Label) per
+ * m3.material.io/styles/typography/applying-type. Sizes are widget-tuned
+ * (denser than the main app scale) because Glance surfaces have tighter
+ * cells and no scrolling — falling back to the standard MD3 sp values would
+ * overflow the constrained widget layouts.
  */
 object WidgetTypography {
 
-    // === Title Sizes ===
     object Title {
-        val large = 18.sp
-        val medium = 16.sp
-        val small = 14.sp
+        val large = 18.sp   // matches MD3 titleLarge slot (scaled down for widgets)
+        val medium = 16.sp  // titleMedium
+        val small = 14.sp   // titleSmall
     }
 
-    // === Body Sizes ===
     object Body {
-        val large = 14.sp
-        val medium = 12.sp
+        val large = 14.sp   // bodyMedium tier
+        val medium = 12.sp  // bodySmall tier
     }
 
-    // === Caption/Label Sizes ===
-    object Caption {
-        val large = 12.sp
-        val medium = 10.sp
+    object Label {
+        val large = 12.sp   // labelMedium tier
+        val medium = 10.sp  // labelSmall tier
     }
 
-    // === Badge Text ===
     val badge = 12.sp
-    
-    // === Countdown Text ===
     val countdown = 14.sp
 }
