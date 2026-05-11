@@ -1,7 +1,5 @@
 package com.anisync.android.presentation.details
 
-import com.anisync.android.domain.url
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -109,6 +107,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
@@ -284,7 +283,8 @@ fun MediaDetailsScreen(
                                     renderInOverlay = { shouldRenderChromeInOverlay }
                                 )
                                 .graphicsLayer {
-                                    alpha = if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
+                                    alpha =
+                                        if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
                                 },
                             title = {
                                 AnimatedVisibility(
@@ -335,7 +335,8 @@ fun MediaDetailsScreen(
                                     renderInOverlay = { shouldRenderChromeInOverlay }
                                 )
                                 .graphicsLayer {
-                                    alpha = if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
+                                    alpha =
+                                        if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
                                 }
                         }
 
@@ -1160,18 +1161,19 @@ private fun ContentRow(
         verticalAlignment = Alignment.Bottom
     ) {
         // Cover Image with Shared Transition
+        val sharedCoverShape = MaterialTheme.shapes.extraLarge
         with(sharedTransitionScope) {
             Card(
                 modifier = Modifier
                     .width(115.dp)
                     .height(165.dp)
-                    .sharedBounds(
+                    .sharedElement(
                         sharedContentState = rememberSharedContentState(key = coverKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
-                        clipInOverlayDuringTransition = OverlayClip(coverShape)
+                        clipInOverlayDuringTransition = OverlayClip(sharedCoverShape)
                     ),
-                shape = coverShape,
+                shape = sharedCoverShape,
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {

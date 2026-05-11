@@ -1,12 +1,11 @@
 package com.anisync.android.presentation.discover.components
 
-import com.anisync.android.domain.url
-
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,25 +18,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,12 +53,26 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LocalCoverQuality
+import com.anisync.android.domain.url
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+private val HeroScrimBrush: Brush = Brush.verticalGradient(
+    0f to Color.Transparent,
+    0.45f to Color.Black.copy(alpha = 0.0f),
+    1f to Color.Black.copy(alpha = 0.85f)
+)
+
+private const val MAX_HERO_ITEMS = 10
+
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun DiscoverHeroCarousel(
     items: List<LibraryEntry>,
@@ -62,178 +82,250 @@ fun DiscoverHeroCarousel(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val carouselState = rememberCarouselState { items.size }
+    if (items.isEmpty()) return
 
-    HorizontalCenteredHeroCarousel(
-        state = carouselState,
+    val context = LocalContext.current
+    val coverQuality = LocalCoverQuality.current
+
+    val carouselState = rememberCarouselState(initialItem = 0) { items.size }
+    val itemCount = items.size
+
+    val focusedIndex by remember(carouselState, itemCount) {
+        derivedStateOf {
+            if (itemCount <= 0) 0 else carouselState.currentItem.coerceIn(0, itemCount - 1)
+        }
+    }
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(400.dp),
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        itemSpacing = 16.dp,
-        flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState)
-    ) { index ->
-        val item = items[index]
-
-        HeroCarouselItem(
-            item = item,
-            context = context,
-            onClick = { onItemClick(item.mediaId) },
-            titleLanguage = titleLanguage,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
-            modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
-        )
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun HeroCarouselItem(
-    item: LibraryEntry,
-    context: Context,
-    onClick: () -> Unit,
-    titleLanguage: TitleLanguage,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-    modifier: Modifier = Modifier
-) {
-    val spatialSpec = AppMotion.rememberSpatialSpec()
-
-    val artKey = TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId)
-    val titleKey = TransitionKeys.title(TransitionKeys.DISCOVER, item.mediaId)
-    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
-
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxSize(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+            .semantics { contentDescription = "Trending carousel" }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        HorizontalCenteredHeroCarousel(
+            state = carouselState,
+            itemSpacing = 8.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(420.dp)
+        ) { index ->
+            val item = items[index]
             val coverData = item.cover.url() ?: item.coverUrl
+            val cacheKey = remember(item.mediaId, coverQuality) {
+                TransitionKeys.imageCacheKey(
+                    TransitionKeys.DISCOVER,
+                    item.mediaId
+                ) + "-" + coverQuality.name
+            }
             val imageRequest = remember(coverData, cacheKey) {
                 ImageRequest.Builder(context)
                     .data(coverData)
-                    .crossfade(200)
                     .memoryCachePolicy(CachePolicy.ENABLED)
                     .placeholderMemoryCacheKey(cacheKey)
                     .memoryCacheKey(cacheKey)
                     .build()
             }
+            HeroCarouselItem(
+                item = item,
+                index = index,
+                total = itemCount,
+                titleLanguage = titleLanguage,
+                onClick = { onItemClick(item.mediaId) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                imageRequest = imageRequest,
+                modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
+            )
+        }
 
-            with(sharedTransitionScope) {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = item.getTitle(titleLanguage),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = artKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(MaterialTheme.shapes.extraLarge)
-                        )
-                )
-            }
+        Spacer(modifier = Modifier.height(12.dp))
 
-            val brush = remember {
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        Color.Black.copy(alpha = 0.2f),
-                        Color.Black.copy(alpha = 0.9f)
-                    ),
-                    startY = 0.35f
-                )
-            }
+        CarouselPageIndicator(
+            count = itemCount.coerceAtMost(MAX_HERO_ITEMS),
+            focusedIndex = focusedIndex.coerceAtMost(MAX_HERO_ITEMS - 1),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clearAndSetSemantics {}
+        )
+    }
+}
 
-            Box(
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun HeroCarouselItem(
+    item: LibraryEntry,
+    index: Int,
+    total: Int,
+    titleLanguage: TitleLanguage,
+    onClick: () -> Unit,
+    imageRequest: ImageRequest,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    modifier: Modifier = Modifier
+) {
+    val itemShape = MaterialTheme.shapes.extraLarge
+    val spatialSpec = AppMotion.rememberSpatialSpec()
+
+    val coverKey =
+        remember(item.mediaId) { TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId) }
+    val title = remember(item, titleLanguage) { item.getTitle(titleLanguage) }
+    val statusLabel = remember(item.mediaStatus) {
+        item.mediaStatus?.replace('_', ' ')?.lowercase()?.replaceFirstChar { it.uppercase() }
+    }
+    val formattedScore = remember(item.averageScore) {
+        item.averageScore?.let { String.format(java.util.Locale.US, "%.1f", it / 10.0) }
+    }
+    val a11yLabel = remember(index, total, title, item.format, formattedScore) {
+        buildString {
+            append("Trending item ")
+            append(index + 1)
+            append(" of ")
+            append(total)
+            append(": ")
+            append(title)
+            item.format?.let { append(", ").append(it.name) }
+            formattedScore?.let { append(", rated ").append(it) }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(
+                onClick = onClick,
+                role = Role.Button,
+                onClickLabel = "View details"
+            )
+            .semantics(mergeDescendants = true) { contentDescription = a11yLabel }
+    ) {
+        with(sharedTransitionScope) {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(brush)
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(key = coverKey),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec },
+                        clipInOverlayDuringTransition = OverlayClip(itemShape)
+                    )
             )
+        }
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(24.dp)
-                    .fillMaxWidth()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(HeroScrimBrush)
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    item.format?.let { format ->
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            shape = MaterialTheme.shapes.extraSmall
-                        ) {
-                            Text(
-                                text = format.name,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-
-                    item.averageScore?.let { score ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = StarGold,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = String.format(java.util.Locale.US, "%.1f", score / 10.0),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                with(sharedTransitionScope) {
-                    Text(
-                        text = item.getTitle(titleLanguage),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = (-0.5).sp
-                        ),
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.sharedElement(
-                            sharedContentState = rememberSharedContentState(key = titleKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec }
+                item.format?.let { format ->
+                    Box(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = format.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    )
+                    }
                 }
 
-                item.mediaStatus?.let { status ->
-                    val statusLabel = remember(status) {
-                        status.replace("_", " ").lowercase()
-                            .replaceFirstChar { it.uppercase() }
+                formattedScore?.let { scoreText ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = StarGold,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = scoreText,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    Text(
-                        text = statusLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.4).sp
+                ),
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            statusLabel?.let {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.72f),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun CarouselPageIndicator(
+    count: Int,
+    focusedIndex: Int,
+    modifier: Modifier = Modifier
+) {
+    if (count <= 1) {
+        Spacer(modifier = modifier.height(8.dp))
+        return
+    }
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val fastSpec = MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.Dp>()
+        repeat(count) { i ->
+            val focused = i == focusedIndex
+            val size by animateDpAsState(
+                targetValue = if (focused) 8.dp else 6.dp,
+                animationSpec = fastSpec,
+                label = "indicatorDotSize"
+            )
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(
+                        if (focused) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+                    )
+            )
         }
     }
 }
