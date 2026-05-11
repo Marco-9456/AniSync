@@ -3,15 +3,18 @@ package com.anisync.android.presentation.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.GetNotificationsUseCase
+import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationFilter
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,17 +28,22 @@ class NotificationsViewModel @Inject constructor(
     private var nextPage = 1
     private var loadJob: Job? = null
 
+    private data class FilterSnapshot(
+        val items: List<Notification>,
+        val entries: List<NotificationEntry>,
+        val nextPage: Int,
+        val hasNextPage: Boolean
+    )
+
+    private val snapshots = mutableMapOf<NotificationFilter, FilterSnapshot>()
+
     init {
         load(reset = true, isInitial = true)
     }
 
     fun onAction(action: NotificationsAction) {
         when (action) {
-            is NotificationsAction.SetFilter -> {
-                if (action.filter == _uiState.value.filter) return
-                _uiState.update { it.copy(filter = action.filter) }
-                load(reset = true, isInitial = true)
-            }
+            is NotificationsAction.SetFilter -> selectFilter(action.filter)
             NotificationsAction.Refresh -> load(reset = true, isInitial = false, refreshing = true)
             NotificationsAction.LoadNextPage -> {
                 val s = _uiState.value
@@ -43,6 +51,56 @@ class NotificationsViewModel @Inject constructor(
                 load(reset = false, isInitial = false)
             }
             NotificationsAction.Retry -> load(reset = true, isInitial = true)
+        }
+    }
+
+    private fun selectFilter(filter: NotificationFilter) {
+        val current = _uiState.value
+        if (filter == current.filter) return
+
+        loadJob?.cancel()
+        // Preserve current filter's loaded data so the user can return to it instantly.
+        if (current.items.isNotEmpty()) {
+            snapshots[current.filter] = FilterSnapshot(
+                items = current.items,
+                entries = current.entries,
+                nextPage = nextPage,
+                hasNextPage = current.hasNextPage
+            )
+        }
+
+        val cached = snapshots[filter]
+        if (cached != null) {
+            nextPage = cached.nextPage
+            _uiState.update {
+                it.copy(
+                    filter = filter,
+                    items = cached.items,
+                    entries = cached.entries,
+                    hasNextPage = cached.hasNextPage,
+                    isLoading = false,
+                    isRefreshing = true,
+                    isPaginating = false,
+                    errorMessage = null
+                )
+            }
+            // Silent background refresh; UI shows cached data immediately.
+            load(reset = true, isInitial = false, refreshing = true)
+        } else {
+            nextPage = 1
+            _uiState.update {
+                it.copy(
+                    filter = filter,
+                    items = emptyList(),
+                    entries = emptyList(),
+                    hasNextPage = true,
+                    isLoading = true,
+                    isRefreshing = false,
+                    isPaginating = false,
+                    errorMessage = null
+                )
+            }
+            load(reset = true, isInitial = true)
         }
     }
 
@@ -69,14 +127,19 @@ class NotificationsViewModel @Inject constructor(
                 typeFilter = filter.types,
                 resetUnreadCount = resetUnread
             )
+            // Late response from a previous filter — drop it.
+            if (_uiState.value.filter != filter) return@launch
+
             when (result) {
                 is Result.Success -> {
                     val page = result.data
-                    _uiState.update { state ->
-                        val merged = if (reset) page.items else state.items + page.items
-                        state.copy(
+                    val state = _uiState.value
+                    val merged = if (reset) page.items else state.items + page.items
+                    val grouped = withContext(Dispatchers.Default) { groupNotifications(merged) }
+                    _uiState.update {
+                        it.copy(
                             items = merged,
-                            entries = groupNotifications(merged),
+                            entries = grouped,
                             isLoading = false,
                             isRefreshing = false,
                             isPaginating = false,
@@ -84,6 +147,12 @@ class NotificationsViewModel @Inject constructor(
                             errorMessage = null
                         )
                     }
+                    snapshots[filter] = FilterSnapshot(
+                        items = merged,
+                        entries = grouped,
+                        nextPage = if (page.hasNextPage) nextPage + 1 else nextPage,
+                        hasNextPage = page.hasNextPage
+                    )
                     if (page.hasNextPage) nextPage++
                 }
                 is Result.Error -> {
