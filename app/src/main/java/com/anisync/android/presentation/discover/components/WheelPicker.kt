@@ -20,6 +20,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -86,11 +95,39 @@ fun WheelPicker(
                 )
         )
 
+        val density = LocalDensity.current
+        val fadeHeightPx = with(density) { (itemHeight * 1.5f).toPx() }
+
         LazyColumn(
             state = state,
             flingBehavior = snap,
             contentPadding = PaddingValues(vertical = itemHeight * halfCount),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black),
+                            startY = 0f,
+                            endY = fadeHeightPx
+                        ),
+                        topLeft = Offset.Zero,
+                        size = Size(size.width, fadeHeightPx),
+                        blendMode = BlendMode.DstIn
+                    )
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.Black, Color.Transparent),
+                            startY = size.height - fadeHeightPx,
+                            endY = size.height
+                        ),
+                        topLeft = Offset(0f, size.height - fadeHeightPx),
+                        size = Size(size.width, fadeHeightPx),
+                        blendMode = BlendMode.DstIn
+                    )
+                }
         ) {
             itemsIndexed(items) { idx, item ->
                 val distance = abs(idx - centerIndex)

@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.AdultMode
 import com.anisync.android.domain.ComparatorMode
 import com.anisync.android.domain.IntComparatorFilter
@@ -77,7 +78,7 @@ fun SearchFilterSheetHost(
 ) {
     when (openedFilter) {
         FilterId.SORT -> SortFilterSheet(filters, onFiltersChange, onDismiss)
-        FilterId.GENRES -> GenresFilterSheet(filters, genres, onFiltersChange, onDismiss)
+        FilterId.GENRES -> GenresFilterSheet(filters, genres, showAdultContent, onFiltersChange, onDismiss)
         FilterId.TAGS -> TagsFilterSheet(filters, tags, showAdultContent, onFiltersChange, onDismiss)
         FilterId.YEAR -> YearFilterSheet(filters, onFiltersChange, onDismiss)
         FilterId.FORMAT -> FormatFilterSheet(filters, mediaType, onFiltersChange, onDismiss)
@@ -257,10 +258,15 @@ private fun SortFilterSheet(
 private fun GenresFilterSheet(
     filters: SearchFilters,
     genres: List<String>,
+    showAdult: Boolean,
     onFiltersChange: (SearchFilters) -> Unit,
     onDismiss: () -> Unit
 ) {
     val anyActive = filters.genresIncluded.isNotEmpty() || filters.genresExcluded.isNotEmpty()
+    val visibleGenres = remember(genres, showAdult) {
+        if (showAdult) genres
+        else genres.filterNot { it in ADULT_GENRES }
+    }
     FilterSheet(
         title = "Genres",
         onReset = {
@@ -277,7 +283,7 @@ private fun GenresFilterSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (genres.isEmpty()) {
+            if (visibleGenres.isEmpty()) {
                 Text(
                     "Loading genres…",
                     style = MaterialTheme.typography.bodySmall,
@@ -288,7 +294,7 @@ private fun GenresFilterSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    genres.forEach { genre ->
+                    visibleGenres.forEach { genre ->
                         val tri = when {
                             genre in filters.genresIncluded -> TriState.INCLUDED
                             genre in filters.genresExcluded -> TriState.EXCLUDED

@@ -7,6 +7,12 @@ import com.anisync.android.type.MediaSource
 import com.anisync.android.type.MediaStatus
 
 /**
+ * Genre names AniList classifies as adult. Hidden from the genre picker
+ * unless [com.anisync.android.data.AppSettings.showAdultContent] is on.
+ */
+val ADULT_GENRES = setOf("Hentai")
+
+/**
  * Origin country for `countryOfOrigin` (ISO 3166-1 alpha-2).
  */
 enum class OriginCountry(val code: String, val displayName: String) {

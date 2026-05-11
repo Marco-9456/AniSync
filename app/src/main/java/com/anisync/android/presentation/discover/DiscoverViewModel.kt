@@ -2,6 +2,8 @@ package com.anisync.android.presentation.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.domain.ADULT_GENRES
+import com.anisync.android.domain.AdultMode
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.MediaTag
 import com.anisync.android.domain.Result
@@ -46,6 +48,35 @@ class DiscoverViewModel @Inject constructor(
     init {
         loadDiscoveryData()
         observeSearchQuery()
+        observeAdultContent()
+    }
+
+    /**
+     * Strip adult-only filter values when the user turns Show adult content off,
+     * so a stale Hentai genre or NSFW tag doesn't keep silently filtering results.
+     */
+    private fun observeAdultContent() {
+        viewModelScope.launch {
+            showAdultContent.collect { enabled ->
+                if (enabled) return@collect
+                val state = _uiState.value as? DiscoverUiState.Success ?: return@collect
+                val nsfwTagNames = _taxonomy.value.tags
+                    .asSequence()
+                    .filter { it.isAdult }
+                    .map { it.name }
+                    .toSet()
+                val current = state.searchFilters
+                val cleaned = current.copy(
+                    genresIncluded = current.genresIncluded - ADULT_GENRES,
+                    genresExcluded = current.genresExcluded - ADULT_GENRES,
+                    tagsIncluded = current.tagsIncluded - nsfwTagNames,
+                    tagsExcluded = current.tagsExcluded - nsfwTagNames,
+                    adultMode = if (current.adultMode == AdultMode.ONLY) AdultMode.ANY
+                    else current.adultMode
+                )
+                if (cleaned != current) updateFilters(cleaned)
+            }
+        }
     }
 
     fun onAction(action: DiscoverAction) {
