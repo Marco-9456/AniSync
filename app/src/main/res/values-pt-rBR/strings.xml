@@ -601,7 +601,6 @@
     <string name="media_upload_litterbox_1h">1 hora</string>
     <string name="media_upload_litterbox_24h">24 horas</string>
     <string name="media_upload_litterbox_72h">72 horas</string>
-    <string name="media_upload_custom_field"></string>
     <string name="media_attach">Anexar mídia</string>
     <string name="media_attach_pick_image">Foto ou GIF</string>
     <string name="media_attach_pick_image_desc">Da sua galeria ou downloads</string>
