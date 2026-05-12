@@ -268,7 +268,6 @@
     <string name="cover_quality_large_desc">Nitidez na maioria das superfícies. Recomendado.</string>
     <string name="cover_quality_medium">Média</string>
     <string name="cover_quality_medium_desc">Menor e mais rápida. Desfoque visível nas telas de detalhe.</string>
-    <string name="title_language_romaji"></string>
     <string name="title_language_english">Inglês</string>
     <string name="title_language_native">Nativo</string>
     <string name="title_language_romaji_example">Ex. Shingeki no Kyojin</string>
@@ -314,7 +313,6 @@
     <string name="theme_mode_dialog_title">Tema</string>
     <string name="settings_acknowledgments_description">AniSync não seria possível sem a maravilhosa comunidade de código aberto e os seguintes contribuidores:</string>
     <string name="acknowledgments_section_data">Provedores de dados</string>
-    <string name="acknowledgments_anilist"></string>
     <string name="acknowledgments_anilist_desc">O banco de dados de anime e mangá que possibilita esse aplicativo</string>
     <string name="acknowledgments_section_libraries">Bibliotecas principais</string>
     <string name="acknowledgments_android_jetpack_desc">Componentes de desenvolvimento do Android moderno pelo Google</string>
@@ -327,9 +325,6 @@
     <string name="acknowledgments_users_desc">Obrigado a você por usar AniSync e prover valioso feedback</string>
     <string name="acknowledgments_footer">Feito com amor para fãs de anime em todo lugar.</string>
     <string name="section_developer">Desenvolvedor</string>
-    <string name="debug_notifications"></string>
-    <string name="debug_test_watching"></string>
-    <string name="debug_test_planning"></string>
     <string name="settings_developer_tools">Ferramentas de desenvolvedor</string>
     <string name="settings_developer_tools_desc">Ferramentas para Debug e testes</string>
     <string name="settings_copy_app_info">Copiar informações do aplicativo</string>
