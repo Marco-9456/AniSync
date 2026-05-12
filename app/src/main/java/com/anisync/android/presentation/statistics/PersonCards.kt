@@ -6,12 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -25,16 +25,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.domain.StaffStat
 import com.anisync.android.domain.VoiceActorStat
 
-internal val StatPersonCardHeight = 196.dp
-internal val StatPersonAvatarSize = 96.dp
+internal val StatPersonCardWidth = 152.dp
+internal val StatPersonCardHeight = 268.dp
 
 @Composable
 fun VoiceActorCardModern(va: VoiceActorStat) {
@@ -56,9 +59,15 @@ fun StaffCardModern(staff: StaffStat) {
 
 @Composable
 private fun PersonCard(name: String, imageUrl: String?, countLabel: String) {
+    val imageShape = RoundedCornerShape(
+        topStart = 64.dp,
+        topEnd = 64.dp,
+        bottomStart = 16.dp,
+        bottomEnd = 16.dp
+    )
     Card(
         modifier = Modifier
-            .width(140.dp)
+            .width(StatPersonCardWidth)
             .height(StatPersonCardHeight),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -73,8 +82,9 @@ private fun PersonCard(name: String, imageUrl: String?, countLabel: String) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(StatPersonAvatarSize)
-                    .clip(CircleShape)
+                    .fillMaxWidth()
+                    .aspectRatio(0.72f)
+                    .clip(imageShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center
             ) {
@@ -84,8 +94,8 @@ private fun PersonCard(name: String, imageUrl: String?, countLabel: String) {
                         contentDescription = name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(StatPersonAvatarSize)
-                            .clip(CircleShape)
+                            .fillMaxSize()
+                            .clip(imageShape)
                     )
                 } else {
                     Icon(
@@ -97,18 +107,28 @@ private fun PersonCard(name: String, imageUrl: String?, countLabel: String) {
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                text = name,
-                style = MaterialTheme.typography.titleSmall,
+                text = name.uppercase(),
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = countLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontStyle = FontStyle.Italic
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

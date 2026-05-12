@@ -102,8 +102,10 @@ fun StatusDistributionDonut(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = total.toString(),
-                            style = expressive.statNumericLarge,
-                            color = MaterialTheme.colorScheme.onSurface
+                            style = expressive.statNumericMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            softWrap = false
                         )
                         Text(
                             text = "ENTRIES",

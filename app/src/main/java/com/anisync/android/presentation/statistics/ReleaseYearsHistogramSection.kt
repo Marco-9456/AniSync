@@ -78,7 +78,7 @@ fun ReleaseYearsHistogramSection(years: List<YearUiModel>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(140.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
                     years.forEach { stat ->
@@ -89,8 +89,10 @@ fun ReleaseYearsHistogramSection(years: List<YearUiModel>) {
                             if (stat.count > 0) {
                                 Text(
                                     text = stat.count.toString(),
-                                    style = expressive.numericMono.copy(fontSize = 11.sp),
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    style = expressive.numericMono.copy(fontSize = 10.sp),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                                 Spacer(Modifier.height(4.dp))
                             }
@@ -112,7 +114,9 @@ fun ReleaseYearsHistogramSection(years: List<YearUiModel>) {
                             Text(
                                 text = "'${stat.year.toString().takeLast(2)}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
