@@ -70,7 +70,7 @@ data class MediaDetails(
     val format: String?,
     val genres: List<String>,
     val source: String?,
-    val studio: String?,
+    val studio: StudioRef?,
     val year: Int?,
     val startDate: String?,
     val endDate: String?,
@@ -97,6 +97,12 @@ data class MediaDetails(
     val reviews: List<MediaReview> = emptyList(),
     // Whether this media is in user's favorites
     val isFavourite: Boolean = false
+)
+
+@Serializable
+data class StudioRef(
+    val id: Int,
+    val name: String
 )
 
 @Serializable

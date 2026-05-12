@@ -44,6 +44,8 @@ data class MediaDetailsEntity(
     val genres: List<String>,
     val source: String?,
     val studio: String?,
+    @ColumnInfo(defaultValue = "NULL")
+    val studioId: Int? = null,
     val year: Int?,
     val startDate: String?,
     val endDate: String?,

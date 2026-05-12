@@ -423,6 +423,14 @@
     <string name="clip_label_synopsis">Synopsis</string>
     <string name="clip_label_character_name">Character name</string>
     <string name="clip_label_staff_name">Staff name</string>
+    <string name="clip_label_studio_name">Studio name</string>
+    <string name="studio_label_animation_studio">Animation Studio</string>
+    <string name="studio_label_other_studio">Studio</string>
+    <string name="studio_label_works">Works</string>
+    <string name="studio_label_total_works">Total works</string>
+    <string name="studio_label_website">Website</string>
+    <string name="studio_label_type">Type</string>
+    <string name="studio_main_studio_chip">Main Studio</string>
     <string name="clip_label_external_link">External link (%1$s)</string>
 
     <string name="control_log_out">Log Out</string>

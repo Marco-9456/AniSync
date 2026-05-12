@@ -49,9 +49,10 @@ import com.anisync.android.type.MediaType
 @Composable
 fun HorizontalInfoCards(
     details: MediaDetails,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onStudioClick: (Int) -> Unit = {}
 ) {
-    val infoItems = buildInfoItems(details)
+    val infoItems = buildInfoItems(details, onStudioClick)
 
     if (infoItems.isEmpty()) return
 
@@ -75,7 +76,8 @@ fun HorizontalInfoCards(
                     label = item.label,
                     value = item.value,
                     iconTint = item.iconTint,
-                    isStatus = item.isStatus
+                    isStatus = item.isStatus,
+                    onClick = item.onClick
                 )
             }
         }
@@ -88,11 +90,15 @@ private data class InfoItem(
     val label: String,
     val value: String,
     val iconTint: Color,
-    val isStatus: Boolean = false
+    val isStatus: Boolean = false,
+    val onClick: (() -> Unit)? = null
 )
 
 @Composable
-private fun buildInfoItems(details: MediaDetails): List<InfoItem> {
+private fun buildInfoItems(
+    details: MediaDetails,
+    onStudioClick: (Int) -> Unit
+): List<InfoItem> {
     val items = mutableListOf<InfoItem>()
 
     // 1. Status
@@ -215,8 +221,9 @@ private fun buildInfoItems(details: MediaDetails): List<InfoItem> {
             InfoItem(
                 icon = Icons.Default.Business,
                 label = stringResource(R.string.stat_studio),
-                value = studio,
-                iconTint = Color(0xFFFF9800) // Orange
+                value = studio.name,
+                iconTint = Color(0xFFFF9800), // Orange
+                onClick = { onStudioClick(studio.id) }
             )
         )
     }
@@ -231,67 +238,91 @@ private fun InfoPill(
     label: String,
     value: String,
     iconTint: Color,
-    isStatus: Boolean = false
+    isStatus: Boolean = false,
+    onClick: (() -> Unit)? = null
 ) {
-    Card(
-        modifier = Modifier.height(56.dp), // Slightly taller for better touch target
-        shape = RoundedCornerShape(16.dp), // Modern softer roundness
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .height(40.dp), // Enforce internal height consistency
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+    val cardModifier = Modifier.height(56.dp) // Slightly taller for better touch target
+    val cardShape = RoundedCornerShape(16.dp)
+    val cardColors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer
+    )
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = cardModifier,
+            shape = cardShape,
+            colors = cardColors
         ) {
-            // Icon Container
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(
-                        color = iconTint.copy(alpha = 0.12f), // More subtle background
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (iconResId != null) {
-                    Icon(
-                        painter = painterResource(id = iconResId),
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                } else if (icon != null) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            InfoPillContent(icon, iconResId, label, value, iconTint)
+        }
+        return
+    }
+    Card(
+        modifier = cardModifier,
+        shape = cardShape,
+        colors = cardColors
+    ) {
+        InfoPillContent(icon, iconResId, label, value, iconTint)
+    }
+}
 
-            // Label and value
-            Column(
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+@Composable
+private fun InfoPillContent(
+    icon: ImageVector?,
+    iconResId: Int?,
+    label: String,
+    value: String,
+    iconTint: Color
+) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .height(40.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(
+                    color = iconTint.copy(alpha = 0.12f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (iconResId != null) {
+                Icon(
+                    painter = painterResource(id = iconResId),
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
                 )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
                 )
             }
+        }
+
+        Column(
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
         }
     }
 }

@@ -61,6 +61,7 @@ fun LazyListScope.profileFavoritesTab(
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
+    onStudioClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     item(key = "favorites_filters", contentType = "filters") {
@@ -225,7 +226,11 @@ fun LazyListScope.profileFavoritesTab(
                     ) {
                         row.forEach { studio ->
                             Box(modifier = Modifier.weight(1f)) {
-                                StudioItem(studio = studio, modifier = Modifier.fillMaxWidth())
+                                StudioItem(
+                                    studio = studio,
+                                    onClick = { onStudioClick(studio.id) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                         repeat(2 - row.size) {
@@ -303,12 +308,14 @@ private fun CastStaffItem(
 @Composable
 private fun StudioItem(
     studio: StudioInfo,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .bouncyClickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Text(

@@ -38,6 +38,13 @@ object AniListUrls {
     fun staffUrl(staffId: Int): String {
         return "$BASE_URL/staff/$staffId"
     }
+
+    /**
+     * Builds the AniList URL for a studio.
+     */
+    fun studioUrl(studioId: Int): String {
+        return "$BASE_URL/studio/$studioId"
+    }
 }
 
 /**
@@ -85,6 +92,14 @@ object ShareUtils {
      */
     fun shareStaff(context: Context, name: String, staffId: Int) {
         val url = AniListUrls.staffUrl(staffId)
+        shareText(context, "$name\n$url")
+    }
+
+    /**
+     * Shares studio content using Android's share sheet.
+     */
+    fun shareStudio(context: Context, name: String, studioId: Int) {
+        val url = AniListUrls.studioUrl(studioId)
         shareText(context, "$name\n$url")
     }
 }

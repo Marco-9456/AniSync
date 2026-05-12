@@ -4,6 +4,7 @@ import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.GetStaffDetailsQuery
+import com.anisync.android.GetStudioDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.ToggleFavouriteMutation
 import com.anisync.android.data.local.dao.LibraryDao
@@ -28,6 +29,8 @@ import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StaffDetails
+import com.anisync.android.domain.StudioDetails
+import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.VoiceActor
@@ -224,7 +227,9 @@ class DetailsRepositoryImpl @Inject constructor(
                 format = media.format?.name,
                 genres = media.genres?.filterNotNull() ?: emptyList(),
                 source = media.source?.name,
-                studio = media.studios?.nodes?.firstOrNull()?.name,
+                studio = media.studios?.nodes?.firstOrNull()?.let { node ->
+                    com.anisync.android.domain.StudioRef(id = node.id, name = node.name)
+                },
                 year = media.startDate?.year,
                 startDate = formattedDate,
                 endDate = formattedEndDate,
@@ -348,14 +353,16 @@ class DetailsRepositoryImpl @Inject constructor(
                     animeId = Optional.absent(),
                     mangaId = Optional.present(mediaId),
                     characterId = Optional.absent(),
-                    staffId = Optional.absent()
+                    staffId = Optional.absent(),
+                    studioId = Optional.absent()
                 )
             } else {
                 ToggleFavouriteMutation(
                     animeId = Optional.present(mediaId),
                     mangaId = Optional.absent(),
                     characterId = Optional.absent(),
-                    staffId = Optional.absent()
+                    staffId = Optional.absent(),
+                    studioId = Optional.absent()
                 )
             }
 
@@ -382,7 +389,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 animeId = Optional.absent(),
                 mangaId = Optional.absent(),
                 characterId = Optional.present(characterId),
-                staffId = Optional.absent()
+                staffId = Optional.absent(),
+                studioId = Optional.absent()
             )
 
             val response = apolloClient.mutation(mutation).execute()
@@ -404,7 +412,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 animeId = Optional.absent(),
                 mangaId = Optional.absent(),
                 characterId = Optional.absent(),
-                staffId = Optional.present(staffId)
+                staffId = Optional.present(staffId),
+                studioId = Optional.absent()
             )
 
             val response = apolloClient.mutation(mutation).execute()
@@ -417,6 +426,29 @@ class DetailsRepositoryImpl @Inject constructor(
 
             response.data?.ToggleFavourite?.staff?.nodes
                 ?.any { it?.id == staffId } ?: false
+        }
+    }
+
+    override suspend fun toggleStudioFavourite(studioId: Int): Result<Boolean> {
+        return safeApiCall {
+            val mutation = ToggleFavouriteMutation(
+                animeId = Optional.absent(),
+                mangaId = Optional.absent(),
+                characterId = Optional.absent(),
+                staffId = Optional.absent(),
+                studioId = Optional.present(studioId)
+            )
+
+            val response = apolloClient.mutation(mutation).execute()
+
+            if (response.hasErrors()) {
+                val errorMessage =
+                    response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
+                throw Exception(errorMessage)
+            }
+
+            response.data?.ToggleFavourite?.studios?.nodes
+                ?.any { it?.id == studioId } ?: false
         }
     }
 
@@ -715,6 +747,64 @@ class DetailsRepositoryImpl @Inject constructor(
                 yearsActive = staffData.yearsActive?.filterNotNull() ?: emptyList(),
                 homeTown = staffData.homeTown,
                 voicedCharacters = voicedCharacters,
+                hasNextPage = hasNextPage
+            )
+        }
+    }
+
+    override suspend fun getStudioDetails(id: Int, page: Int): Result<StudioDetails> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                GetStudioDetailsQuery(id = Optional.present(id), page = Optional.present(page))
+            ).execute()
+
+            val studioData = response.data?.Studio
+                ?: throw Exception("Studio not found")
+
+            val pageInfo = studioData.media?.pageInfo
+            val hasNextPage = pageInfo?.hasNextPage ?: false
+
+            // AniList can return the same media twice when a media has multiple
+            // production links to a single studio (e.g. franchise re-issues).
+            // Dedup by mediaId, preferring the edge marked as main studio.
+            val mediaList = studioData.media?.edges?.filterNotNull()?.mapNotNull { edge ->
+                val node = edge.node ?: return@mapNotNull null
+                val mediaId = node.id ?: return@mapNotNull null
+                StudioMediaEntry(
+                    mediaId = mediaId,
+                    titleUserPreferred = node.title?.userPreferred ?: "Unknown",
+                    titleRomaji = node.title?.romaji,
+                    titleEnglish = node.title?.english,
+                    titleNative = node.title?.native,
+                    coverUrl = node.coverImage?.large,
+                    cover = com.anisync.android.domain.CoverImage.of(
+                        node.coverImage?.medium,
+                        node.coverImage?.large,
+                        node.coverImage?.extraLarge
+                    ),
+                    format = node.format?.name,
+                    type = node.type,
+                    status = node.status?.name,
+                    year = node.startDate?.year,
+                    averageScore = node.averageScore,
+                    popularity = node.popularity,
+                    favourites = node.favourites,
+                    isMainStudio = edge.isMainStudio,
+                    isOnList = node.mediaListEntry?.id != null
+                )
+            }
+                ?.groupBy { it.mediaId }
+                ?.map { (_, group) -> group.firstOrNull { it.isMainStudio } ?: group.first() }
+                ?: emptyList()
+
+            StudioDetails(
+                id = studioData.id,
+                name = studioData.name,
+                isAnimationStudio = studioData.isAnimationStudio,
+                siteUrl = studioData.siteUrl,
+                favourites = studioData.favourites ?: 0,
+                isFavourite = studioData.isFavourite,
+                media = mediaList,
                 hasNextPage = hasNextPage
             )
         }

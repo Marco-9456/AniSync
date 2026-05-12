@@ -63,6 +63,7 @@ query GetUserStatistics($userId: Int) {
         }
         studios(limit: 12, sort: [COUNT_DESC]) {
           studio {
+            id
             name
           }
           count

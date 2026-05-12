@@ -39,9 +39,13 @@ interface DetailsRepository {
 
     suspend fun toggleStaffFavourite(staffId: Int): Result<Boolean>
 
+    suspend fun toggleStudioFavourite(studioId: Int): Result<Boolean>
+
     suspend fun getCharacterDetails(id: Int, page: Int = 1): Result<CharacterDetails>
 
     suspend fun getStaffDetails(id: Int, page: Int = 1): Result<StaffDetails>
+
+    suspend fun getStudioDetails(id: Int, page: Int = 1): Result<StudioDetails>
 
     /**
      * Rate a media review.

@@ -48,6 +48,11 @@ data class StaffDetails(
     val staffId: Int
 )
 
+@Serializable
+data class StudioDetails(
+    val studioId: Int
+)
+
 /**
  * Grid screen for displaying all media a staff member voiced characters in.
  * @param staffId The ID of the staff member

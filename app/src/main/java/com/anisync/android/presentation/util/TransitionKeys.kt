@@ -50,6 +50,9 @@ object TransitionKeys {
 
     /** Staff media grid screen prefix */
     const val STAFF_GRID = "staff_grid"
+
+    /** Studio details screen prefix */
+    const val STUDIO = "studio"
     
     /** Hero carousel prefix */
     const val HERO = "hero"

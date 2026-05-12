@@ -30,6 +30,7 @@ import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
+import com.anisync.android.presentation.details.StudioDetailsScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
@@ -309,6 +310,9 @@ fun AniSyncNavHost(
                     onStaffClick = { staffId ->
                         navController.navigate(StaffDetails(staffId))
                     },
+                    onStudioClick = { studioId ->
+                        navController.navigate(StudioDetails(studioId))
+                    },
                     onUserClick = navigateToUserProfile,
                     onSectionSeeAllClick = onSectionClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -406,6 +410,12 @@ fun AniSyncNavHost(
                     onStaffClick = { staffId ->
                         navController.navigate(StaffDetails(staffId))
                     },
+                    onVoiceActorClick = { staffId ->
+                        navController.navigate(StaffDetails(staffId))
+                    },
+                    onStudioClick = { studioId ->
+                        navController.navigate(StudioDetails(studioId))
+                    },
                     onUserClick = navigateToUserProfile,
                     onThreadClick = { threadId, threadTitle ->
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
@@ -446,6 +456,12 @@ fun AniSyncNavHost(
                     },
                     onStaffClick = { staffId ->
                         navController.navigate(StaffDetails(staffId))
+                    },
+                    onVoiceActorClick = { staffId ->
+                        navController.navigate(StaffDetails(staffId))
+                    },
+                    onStudioClick = { studioId ->
+                        navController.navigate(StudioDetails(studioId))
                     },
                     onUserClick = navigateToUserProfile,
                     onThreadClick = { threadId, threadTitle ->
@@ -551,6 +567,9 @@ fun AniSyncNavHost(
                     onCharacterClick = { characterId ->
                         navController.navigate(CharacterDetails(characterId))
                     },
+                    onStudioClick = { studioId ->
+                        navController.navigate(StudioDetails(studioId))
+                    },
                     onCastSeeAllClick = { mediaId, mediaTitle ->
                         navController.navigate(MediaCharactersGrid(mediaId, mediaTitle))
                     },
@@ -646,6 +665,29 @@ fun AniSyncNavHost(
                     },
                     onMediaSeeAllClick = { staffId, staffName ->
                         navController.navigate(StaffMediaGrid(staffId, staffName))
+                    }
+                )
+            }
+
+            // =================================================================
+            // STUDIO DETAILS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            composable<StudioDetails>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "https://anilist.co/studio/{studioId}" },
+                    navDeepLink { uriPattern = "https://anilist.co/studio/{studioId}/{slug}" }
+                ),
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val studio: StudioDetails = backStackEntry.toRoute()
+                StudioDetailsScreen(
+                    studioId = studio.studioId,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "studio"))
                     }
                 )
             }

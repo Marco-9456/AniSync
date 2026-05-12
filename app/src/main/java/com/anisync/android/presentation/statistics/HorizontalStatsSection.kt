@@ -132,7 +132,7 @@ fun GenreCardModern(genre: GenreStat) {
 }
 
 @Composable
-fun StudioCardModern(studio: StudioStat) {
+fun StudioCardModern(studio: StudioStat, onClick: () -> Unit = {}) {
     val expressive = LocalExpressiveTypography.current
     val tertiary = MaterialTheme.colorScheme.tertiaryContainer
     val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -141,6 +141,7 @@ fun StudioCardModern(studio: StudioStat) {
     }
 
     Card(
+        onClick = onClick,
         modifier = Modifier
             .width(176.dp)
             .height(196.dp),
@@ -244,7 +245,7 @@ private fun GenreCardEdgePreview() {
 private fun StudioCardEdgePreview() {
     StatPreviewSurface(isDark = false) {
         Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StudioCardModern(StudioStat("Z", 1, 6.0f, 2f))
+            StudioCardModern(StudioStat(id = 9999, studioName = "Z", count = 1, meanScore = 6.0f, hoursWatched = 2f))
             StudioCardModern(previewStudios.last())
         }
     }

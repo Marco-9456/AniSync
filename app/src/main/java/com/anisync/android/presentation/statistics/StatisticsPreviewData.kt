@@ -118,10 +118,10 @@ internal val previewFormats: List<FormatStat> = listOf(
 )
 
 internal val previewStudios: List<StudioStat> = listOf(
-    StudioStat(studioName = "Mappa", count = 14, meanScore = 8.2f, hoursWatched = 70f),
-    StudioStat(studioName = "Kyoto Animation", count = 11, meanScore = 8.7f, hoursWatched = 55f),
-    StudioStat(studioName = "Z", count = 1, meanScore = 6.0f, hoursWatched = 2f),
-    StudioStat(studioName = "An Extremely Long Studio Name That Will Surely Truncate", count = 3, meanScore = 7.3f, hoursWatched = 12f)
+    StudioStat(id = 569, studioName = "Mappa", count = 14, meanScore = 8.2f, hoursWatched = 70f),
+    StudioStat(id = 2, studioName = "Kyoto Animation", count = 11, meanScore = 8.7f, hoursWatched = 55f),
+    StudioStat(id = 9999, studioName = "Z", count = 1, meanScore = 6.0f, hoursWatched = 2f),
+    StudioStat(id = 9998, studioName = "An Extremely Long Studio Name That Will Surely Truncate", count = 3, meanScore = 7.3f, hoursWatched = 12f)
 )
 
 internal val previewVAs: List<VoiceActorStat> = listOf(

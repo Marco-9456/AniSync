@@ -147,6 +147,7 @@ fun MediaDetailsScreen(
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
+    onStudioClick: (Int) -> Unit = {},
     onCastSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onUserClick: (String) -> Unit = {},
@@ -470,6 +471,7 @@ fun MediaDetailsScreen(
                                 hasMoreFollowing = hasMoreFollowing,
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
+                                onStudioClick = onStudioClick,
                                 onCastSeeAllClick = {
                                     shouldKeepChromeOverlayForReturn = true
                                     hasObservedDetailsReEnter = false
@@ -574,6 +576,7 @@ fun DetailsPageContent(
     hasMoreFollowing: Boolean,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
     onUserClick: (String) -> Unit,
@@ -655,7 +658,7 @@ fun DetailsPageContent(
             item(key = "info_cards") {
                 Column {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                    HorizontalInfoCards(details = details)
+                    HorizontalInfoCards(details = details, onStudioClick = onStudioClick)
                 }
             }
 

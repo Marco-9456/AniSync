@@ -105,7 +105,9 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     format = format,
     genres = genres,
     source = source,
-    studio = studio,
+    studio = studio?.let { name ->
+        studioId?.let { id -> com.anisync.android.domain.StudioRef(id, name) }
+    },
     year = year,
     startDate = startDate,
     endDate = endDate,
@@ -149,7 +151,8 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     format = format,
     genres = genres,
     source = source,
-    studio = studio,
+    studio = studio?.name,
+    studioId = studio?.id,
     year = year,
     startDate = startDate,
     endDate = endDate,

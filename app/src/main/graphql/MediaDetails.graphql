@@ -29,6 +29,7 @@ query GetMediaDetails($id: Int) {
         genres
         studios(isMain: true) {
             nodes {
+                id
                 name
             }
         }

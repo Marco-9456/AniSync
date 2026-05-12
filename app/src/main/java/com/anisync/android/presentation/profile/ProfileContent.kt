@@ -82,6 +82,8 @@ fun ProfileContent(
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
+    onVoiceActorClick: (Int) -> Unit = {},
+    onStudioClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
@@ -244,7 +246,8 @@ fun ProfileContent(
                     animatedVisibilityScope = animatedVisibilityScope,
                     onMediaClick = onMediaClick,
                     onCharacterClick = onCharacterClick,
-                    onStaffClick = onStaffClick
+                    onStaffClick = onStaffClick,
+                    onStudioClick = onStudioClick
                 )
             }
 
@@ -260,7 +263,10 @@ fun ProfileContent(
             ProfileTab.STATS -> {
                 profileStatsTab(
                     uiState = uiState,
-                    onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) }
+                    onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                    onVoiceActorClick = onVoiceActorClick,
+                    onStaffClick = onStaffClick,
+                    onStudioClick = onStudioClick
                 )
             }
         }

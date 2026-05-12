@@ -121,6 +121,7 @@ data class LengthStat(
 
 @Immutable
 data class StudioStat(
+    val id: Int,
     val studioName: String,
     val count: Int,
     val meanScore: Float,

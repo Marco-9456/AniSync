@@ -147,14 +147,14 @@ class StatisticsRepositoryImpl @Inject constructor(
                 }
             } ?: emptyList(),
             studioDistribution = studios?.mapNotNull { s ->
-                s?.let {
-                    StudioStat(
-                        studioName = it.studio?.name ?: "Unknown",
-                        count = it.count,
-                        meanScore = (it.meanScore ?: 0.0).toFloat(),
-                        hoursWatched = (it.minutesWatched ?: 0) / 60f
-                    )
-                }
+                val studio = s?.studio ?: return@mapNotNull null
+                StudioStat(
+                    id = studio.id,
+                    studioName = studio.name ?: "Unknown",
+                    count = s.count,
+                    meanScore = (s.meanScore ?: 0.0).toFloat(),
+                    hoursWatched = (s.minutesWatched ?: 0) / 60f
+                )
             } ?: emptyList(),
             voiceActorDistribution = voiceActors?.mapNotNull { v ->
                 v?.voiceActor?.let { va ->

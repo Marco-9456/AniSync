@@ -55,6 +55,9 @@ import com.anisync.android.presentation.util.formatDecimal
 fun LazyListScope.profileStatsTab(
     uiState: ProfileUiState,
     onStatsTypeSelected: (ProfileStatsType) -> Unit,
+    onVoiceActorClick: (Int) -> Unit = {},
+    onStaffClick: (Int) -> Unit = {},
+    onStudioClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val selectedType = uiState.selectedStatsType
@@ -139,7 +142,12 @@ fun LazyListScope.profileStatsTab(
     }
 
     if (selectedType == ProfileStatsType.ANIME) {
-        animeStatsBranch(statsData.animeStats)
+        animeStatsBranch(
+            statsData.animeStats,
+            onVoiceActorClick = onVoiceActorClick,
+            onStaffClick = onStaffClick,
+            onStudioClick = onStudioClick
+        )
     } else {
         val mangaStats = statsData.mangaStats
         if (mangaStats == null) {
@@ -167,12 +175,17 @@ fun LazyListScope.profileStatsTab(
                 }
             }
         } else {
-            mangaStatsBranch(mangaStats)
+            mangaStatsBranch(mangaStats, onStaffClick = onStaffClick)
         }
     }
 }
 
-private fun LazyListScope.animeStatsBranch(stats: com.anisync.android.presentation.profile.AnimeStatisticsUi) {
+private fun LazyListScope.animeStatsBranch(
+    stats: com.anisync.android.presentation.profile.AnimeStatisticsUi,
+    onVoiceActorClick: (Int) -> Unit = {},
+    onStaffClick: (Int) -> Unit = {},
+    onStudioClick: (Int) -> Unit = {}
+) {
     item(key = "anime_hero") {
         HeroDashboard(
             primaryValue = stats.totalCount.toString(),
@@ -271,7 +284,7 @@ private fun LazyListScope.animeStatsBranch(stats: com.anisync.android.presentati
                 title = stringResource(R.string.statistics_top_voice_actors),
                 items = stats.voiceActorDistribution,
                 key = { it.id }
-            ) { VoiceActorCardModern(it) }
+            ) { VoiceActorCardModern(it, onClick = { onVoiceActorClick(it.id) }) }
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -282,7 +295,7 @@ private fun LazyListScope.animeStatsBranch(stats: com.anisync.android.presentati
                 title = stringResource(R.string.statistics_top_staff),
                 items = stats.staffDistribution,
                 key = { it.id }
-            ) { StaffCardModern(it) }
+            ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -292,8 +305,8 @@ private fun LazyListScope.animeStatsBranch(stats: com.anisync.android.presentati
             HorizontalStatsSection(
                 title = stringResource(R.string.statistics_top_studios),
                 items = stats.studioDistribution,
-                key = { it.studioName }
-            ) { StudioCardModern(it) }
+                key = { it.id }
+            ) { StudioCardModern(it, onClick = { onStudioClick(it.id) }) }
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -306,7 +319,10 @@ private fun LazyListScope.animeStatsBranch(stats: com.anisync.android.presentati
     }
 }
 
-private fun LazyListScope.mangaStatsBranch(stats: com.anisync.android.presentation.profile.MangaStatisticsUi) {
+private fun LazyListScope.mangaStatsBranch(
+    stats: com.anisync.android.presentation.profile.MangaStatisticsUi,
+    onStaffClick: (Int) -> Unit = {}
+) {
     item(key = "manga_hero") {
         HeroDashboard(
             primaryValue = stats.totalCount.toString(),
@@ -407,7 +423,7 @@ private fun LazyListScope.mangaStatsBranch(stats: com.anisync.android.presentati
                 title = stringResource(R.string.statistics_top_staff),
                 items = stats.staffDistribution,
                 key = { it.id }
-            ) { StaffCardModern(it) }
+            ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
             Spacer(Modifier.height(24.dp))
         }
     }

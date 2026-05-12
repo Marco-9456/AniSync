@@ -40,25 +40,32 @@ internal val StatPersonCardWidth = 152.dp
 internal val StatPersonCardHeight = 268.dp
 
 @Composable
-fun VoiceActorCardModern(va: VoiceActorStat) {
+fun VoiceActorCardModern(va: VoiceActorStat, onClick: () -> Unit = {}) {
     PersonCard(
         name = va.name,
         imageUrl = va.imageUrl,
-        countLabel = "${va.count} roles"
+        countLabel = "${va.count} roles",
+        onClick = onClick
     )
 }
 
 @Composable
-fun StaffCardModern(staff: StaffStat) {
+fun StaffCardModern(staff: StaffStat, onClick: () -> Unit = {}) {
     PersonCard(
         name = staff.name,
         imageUrl = staff.imageUrl,
-        countLabel = "${staff.count} works"
+        countLabel = "${staff.count} works",
+        onClick = onClick
     )
 }
 
 @Composable
-private fun PersonCard(name: String, imageUrl: String?, countLabel: String) {
+private fun PersonCard(
+    name: String,
+    imageUrl: String?,
+    countLabel: String,
+    onClick: () -> Unit = {}
+) {
     val imageShape = RoundedCornerShape(
         topStart = 64.dp,
         topEnd = 64.dp,
@@ -66,6 +73,7 @@ private fun PersonCard(name: String, imageUrl: String?, countLabel: String) {
         bottomEnd = 16.dp
     )
     Card(
+        onClick = onClick,
         modifier = Modifier
             .width(StatPersonCardWidth)
             .height(StatPersonCardHeight),

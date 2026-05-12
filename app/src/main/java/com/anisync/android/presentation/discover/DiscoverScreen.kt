@@ -113,6 +113,7 @@ fun DiscoverScreen(
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
+    onStudioClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
@@ -344,6 +345,13 @@ fun DiscoverScreen(
             onStaffClick(id)
         }
     }
+    val onStudioItemClick: (Int) -> Unit = remember(onStudioClick, searchBarState, coroutineScope, keyboardController) {
+        { id ->
+            keyboardController?.hide()
+            coroutineScope.launch { searchBarState.animateToCollapsed() }
+            onStudioClick(id)
+        }
+    }
     val onUserItemClick: (String) -> Unit = remember(onUserClick, searchBarState, coroutineScope, keyboardController) {
         { name ->
             keyboardController?.hide()
@@ -377,6 +385,7 @@ fun DiscoverScreen(
         onSearchItemClick = onSearchItemClick,
         onCharacterClick = onCharacterItemClick,
         onStaffClick = onStaffItemClick,
+        onStudioClick = onStudioItemClick,
         onUserClick = onUserItemClick
     )
 }
@@ -728,6 +737,7 @@ private fun DiscoverSearchOverlay(
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
     onUserClick: (String) -> Unit
 ) {
     var openedFilter by remember {
@@ -766,6 +776,7 @@ private fun DiscoverSearchOverlay(
                 onSearchItemClick = onSearchItemClick,
                 onCharacterClick = onCharacterClick,
                 onStaffClick = onStaffClick,
+                onStudioClick = onStudioClick,
                 onUserClick = onUserClick
             )
         }
@@ -796,6 +807,7 @@ private fun SearchResultsContent(
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
     onUserClick: (String) -> Unit
 ) {
     val hasAnyResults = searchResults.isNotEmpty() || !groupedResults.isEmpty
@@ -939,7 +951,7 @@ private fun SearchResultsContent(
                             name = studio.displayName,
                             subtitle = studio.favourites?.let { stringResource(R.string.search_favourites_count, it) },
                             imageUrl = null,
-                            onClick = {}
+                            onClick = { onStudioClick(studio.id) }
                         )
                     }
                 }
