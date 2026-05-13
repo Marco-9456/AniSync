@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Explore
@@ -25,11 +26,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,14 +52,19 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
+import com.anisync.android.data.NavBarStyle
 import com.anisync.android.presentation.components.alert.TopToastHost
+import com.anisync.android.presentation.components.navigation.CompactNavBar
+import com.anisync.android.presentation.components.navigation.CompactNavBarItem
 import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Discover
+import com.anisync.android.presentation.navigation.navigateSafely
 import com.anisync.android.presentation.navigation.Feed
 import com.anisync.android.presentation.navigation.Forum
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 import kotlin.reflect.KClass
 
 private data class BottomNavItem<T : Any>(
@@ -76,6 +81,9 @@ private data class BottomNavItem<T : Any>(
 fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
+    val navBarStyle by viewModel.navBarStyle.collectAsStateWithLifecycle()
+    val navBarShowLabels by viewModel.navBarShowLabels.collectAsStateWithLifecycle()
+    val navBarCornerRadius by viewModel.navBarCornerRadius.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshNotificationBadge()
@@ -84,24 +92,52 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            MainBottomBar(
-                navController = navController,
-                unreadNotificationCount = unreadNotificationCount
-            )
+            // Anchored bar gets a real bottomBar slot so the content shrinks to fit
+            // above it. Floating bar is rendered as a content overlay (below) instead,
+            // so scrollable content can pass through the empty regions beside the pill.
+            if (navBarStyle == NavBarStyle.ANCHORED) {
+                MainBottomBar(
+                    navController = navController,
+                    unreadNotificationCount = unreadNotificationCount,
+                    style = NavBarStyle.ANCHORED,
+                    showLabels = navBarShowLabels,
+                    cornerRadius = navBarCornerRadius
+                )
+            }
         }
     ) { _ ->
+        // Bar's occupied bottom space — used by scrollable tab content as bottom
+        // contentPadding so the last item is reachable above the bar.
+        val barInset = if (navBarShowLabels) 96.dp else 76.dp
+
         Box(modifier = Modifier.fillMaxSize()) {
             // Scaffold padding is intentionally ignored to prevent the NavHost from
             // remeasuring during bottom bar animations. AniSyncNavHost handles its own insets.
-            AniSyncNavHost(
-                navController = navController,
-                onMediaClick = { mediaId, sourceScreen ->
-                    navController.navigate(MediaDetails(mediaId, sourceScreen)) {
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+            CompositionLocalProvider(LocalMainNavBarInset provides barInset) {
+                AniSyncNavHost(
+                    navController = navController,
+                    onMediaClick = { mediaId, sourceScreen ->
+                        navController.navigateSafely(MediaDetails(mediaId, sourceScreen))
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            if (navBarStyle == NavBarStyle.FLOATING) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    MainBottomBar(
+                        navController = navController,
+                        unreadNotificationCount = unreadNotificationCount,
+                        style = NavBarStyle.FLOATING,
+                        showLabels = navBarShowLabels,
+                        cornerRadius = navBarCornerRadius
+                    )
+                }
+            }
 
             TopToastHost(toastManager = viewModel.toastManager)
         }
@@ -112,7 +148,10 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
 @Composable
 private fun MainBottomBar(
     navController: NavHostController,
-    unreadNotificationCount: Int
+    unreadNotificationCount: Int,
+    style: NavBarStyle,
+    showLabels: Boolean,
+    cornerRadius: Float
 ) {
     val navItems = remember {
         listOf(
@@ -194,43 +233,18 @@ private fun MainBottomBar(
         enter = enterAnim,
         exit = exitAnim
     ) {
-        NavigationBar(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 0.dp
-        ) {
+        CompactNavBar(style = style, cornerRadius = cornerRadius) {
             val currentDestination = navBackStackEntryState.value?.destination
 
             navItems.forEach { item ->
                 val isSelected = currentDestination?.hasRoute(item.routeClass) == true
                 val isProfile = item.routeClass == Profile::class
                 val showBadge = isProfile && unreadNotificationCount > 0
+                val iconVector =
+                    if (isSelected) item.selectedIcon else item.unselectedIcon
+                val itemTitle = stringResource(item.titleResId)
 
-                NavigationBarItem(
-                    icon = {
-                        val iconVector =
-                            if (isSelected) item.selectedIcon else item.unselectedIcon
-                        val itemTitle = stringResource(item.titleResId)
-                        if (showBadge) {
-                            ProfileNavBarIconWithBadge(
-                                iconVector = iconVector,
-                                title = itemTitle,
-                                unreadCount = unreadNotificationCount,
-                                isSelected = isSelected
-                            )
-                        } else {
-                            Icon(
-                                imageVector = iconVector,
-                                contentDescription = itemTitle
-                            )
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(item.titleResId),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                        )
-                    },
+                CompactNavBarItem(
                     selected = isSelected,
                     onClick = {
                         if (!isSelected) {
@@ -242,7 +256,31 @@ private fun MainBottomBar(
                                 restoreState = true
                             }
                         }
-                    }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = iconVector,
+                            contentDescription = itemTitle
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = itemTitle,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    showLabel = showLabels,
+                    badge = if (showBadge) {
+                        {
+                            ProfileNavBarIconWithBadge(
+                                iconVector = iconVector,
+                                title = itemTitle,
+                                unreadCount = unreadNotificationCount,
+                                isSelected = isSelected
+                            )
+                        }
+                    } else null
                 )
             }
         }

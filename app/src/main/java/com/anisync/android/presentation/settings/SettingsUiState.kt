@@ -3,6 +3,7 @@ package com.anisync.android.presentation.settings
 import androidx.compose.ui.graphics.Color
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
@@ -15,6 +16,9 @@ sealed interface SettingsAction {
     data class SetTitleLanguage(val language: TitleLanguage) : SettingsAction
     data class SetCoverQuality(val quality: CoverQuality) : SettingsAction
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
+    data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
+    data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
+    data class SetNavBarCornerRadius(val radius: Float) : SettingsAction
     data class SetShowAdultContent(val enabled: Boolean) : SettingsAction
     data class SetPreferredStreamingService(val service: StreamingService) : SettingsAction
     data class SetAppLocale(val locale: AppLocale) : SettingsAction
@@ -71,6 +75,9 @@ data class SettingsUiState(
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val coverQuality: CoverQuality = CoverQuality.LARGE,
     val hapticEnabled: Boolean = true,
+    val navBarStyle: NavBarStyle = NavBarStyle.ANCHORED,
+    val navBarShowLabels: Boolean = true,
+    val navBarCornerRadius: Float = 28f,
     val showAdultContent: Boolean = false,
     val preferredStreamingService: StreamingService = StreamingService.CRUNCHYROLL,
     

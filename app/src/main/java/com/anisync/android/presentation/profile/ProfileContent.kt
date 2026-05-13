@@ -51,6 +51,7 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileFavoritesTab
@@ -111,7 +112,7 @@ fun ProfileContent(
     ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 48.dp)
+        contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
     ) {
         item(key = "profile_header", contentType = "header") {
             ProfileTopSection(

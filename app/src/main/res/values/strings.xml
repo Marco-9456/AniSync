@@ -227,6 +227,16 @@
     <string name="dark_mode_override">Override system setting</string>
     <string name="setting_haptic_feedback">Haptic Feedback</string>
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
+    <string name="settings_navigation">Navigation</string>
+    <string name="setting_nav_bar_style">Bottom bar style</string>
+    <string name="setting_nav_bar_style_anchored">Anchored</string>
+    <string name="setting_nav_bar_style_anchored_desc">Rests on the bottom edge with rounded top corners</string>
+    <string name="setting_nav_bar_style_floating">Floating pill</string>
+    <string name="setting_nav_bar_style_floating_desc">Detached pill with margins from the edges</string>
+    <string name="setting_nav_bar_show_labels">Show labels</string>
+    <string name="setting_nav_bar_show_labels_desc">Show destination titles beside each icon</string>
+    <string name="nav_bar_style_dialog_title">Bottom bar style</string>
+    <string name="setting_nav_bar_corner_radius">Corner radius</string>
     <string name="setting_streaming_service">Streaming Service</string>
     <string name="setting_streaming_service_desc">Choose your preferred streaming platform for the Up Next widget icon</string>
     <string name="control_notifications">Notifications</string>

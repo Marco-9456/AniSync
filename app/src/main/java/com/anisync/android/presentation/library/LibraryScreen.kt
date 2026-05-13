@@ -108,6 +108,7 @@ import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
 import com.anisync.android.presentation.library.components.SortBottomSheet
 import com.anisync.android.presentation.library.components.SortIcon
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
@@ -481,7 +482,6 @@ fun LibraryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(bottom = 80.dp)
         ) {
             when {
                 uiState.isLoading -> {
@@ -552,7 +552,12 @@ fun LibraryScreen(
                                     LazyVerticalGrid(
                                         columns = GridCells.Fixed(2),
                                         state = gridState,
-                                        contentPadding = PaddingValues(24.dp),
+                                        contentPadding = PaddingValues(
+                                            start = 24.dp,
+                                            end = 24.dp,
+                                            top = 24.dp,
+                                            bottom = 24.dp + LocalMainNavBarInset.current
+                                        ),
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                                         verticalArrangement = Arrangement.spacedBy(16.dp),
                                         modifier = Modifier.fillMaxSize()
@@ -588,7 +593,12 @@ fun LibraryScreen(
                                 } else {
                                     LazyColumn(
                                         state = listState,
-                                        contentPadding = PaddingValues(24.dp),
+                                        contentPadding = PaddingValues(
+                                            start = 24.dp,
+                                            end = 24.dp,
+                                            top = 24.dp,
+                                            bottom = 24.dp + LocalMainNavBarInset.current
+                                        ),
                                         verticalArrangement = Arrangement.spacedBy(12.dp),
                                         modifier = Modifier.fillMaxSize()
                                     ) {

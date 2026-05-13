@@ -11,6 +11,7 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
@@ -36,6 +37,14 @@ private data class ThemePaletteState(
     val style: com.materialkolor.PaletteStyle,
     val coverQuality: CoverQuality,
     val showAdultContent: Boolean
+)
+
+private data class UpdatesAndNavBarState(
+    val autoUpdate: Boolean,
+    val allowPrerelease: Boolean,
+    val navBarStyle: NavBarStyle,
+    val navBarShowLabels: Boolean,
+    val navBarCornerRadius: Float
 )
 
 @HiltViewModel
@@ -120,9 +129,12 @@ class SettingsViewModel @Inject constructor(
         },
         combine(
             appSettings.autoUpdateEnabled,
-            appSettings.allowPrerelease
-        ) { autoUpdate, prerelease ->
-            autoUpdate to prerelease
+            appSettings.allowPrerelease,
+            appSettings.navBarStyle,
+            appSettings.navBarShowLabels,
+            appSettings.navBarCornerRadius
+        ) { autoUpdate, prerelease, navStyle, navLabels, navRadius ->
+            UpdatesAndNavBarState(autoUpdate, prerelease, navStyle, navLabels, navRadius)
         },
         combine(
             _cacheSize,
@@ -133,8 +145,7 @@ class SettingsViewModel @Inject constructor(
         ) { size, cleared, loading, clearing, profile ->
             listOf(size, cleared, loading, clearing, profile)
         }
-    ) { lookAndFeel, themePalette, notifications, updates, storageAndProfile ->
-        val (autoUpdate, prerelease) = updates
+    ) { lookAndFeel, themePalette, notifications, updatesAndNav, storageAndProfile ->
         val (cacheSize, isCleared, isLoading, isClearing, profile) = storageAndProfile
 
         lookAndFeel.copy(
@@ -157,8 +168,11 @@ class SettingsViewModel @Inject constructor(
             activityMentionEnabled = notifications[11] as Boolean,
             activityLikeEnabled = notifications[12] as Boolean,
             activityMessageEnabled = notifications[13] as Boolean,
-            isAutoUpdateEnabled = autoUpdate,
-            isPrereleaseAllowed = prerelease,
+            isAutoUpdateEnabled = updatesAndNav.autoUpdate,
+            isPrereleaseAllowed = updatesAndNav.allowPrerelease,
+            navBarStyle = updatesAndNav.navBarStyle,
+            navBarShowLabels = updatesAndNav.navBarShowLabels,
+            navBarCornerRadius = updatesAndNav.navBarCornerRadius,
             cacheSize = cacheSize as String,
             isCacheCleared = isCleared as Boolean,
             isCacheLoading = isLoading as Boolean,
@@ -178,6 +192,9 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
+            is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
+            is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
+            is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
             is SettingsAction.SetShowAdultContent -> appSettings.setShowAdultContent(action.enabled)
             is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
                 action.service

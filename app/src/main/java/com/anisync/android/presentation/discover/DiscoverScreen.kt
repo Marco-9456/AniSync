@@ -92,6 +92,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
 import com.anisync.android.presentation.discover.components.SearchResultItem
@@ -573,7 +574,7 @@ private fun DiscoverContent(
         LazyColumn(
             state = mainListState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            contentPadding = PaddingValues(bottom = LocalMainNavBarInset.current)
         ) {
             when {
                 isLoading -> {

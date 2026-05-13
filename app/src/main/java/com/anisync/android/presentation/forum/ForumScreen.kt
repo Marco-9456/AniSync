@@ -231,7 +231,7 @@ fun ForumScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            Box(modifier = Modifier.padding(bottom = 85.dp)) {
+            Box(modifier = Modifier.padding(bottom = 100.dp)) {
                 FloatingActionButton(
                     onClick = onCreateThreadClick,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,

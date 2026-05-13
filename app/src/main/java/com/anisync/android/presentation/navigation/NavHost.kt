@@ -112,76 +112,81 @@ fun AniSyncNavHost(
     // MATERIAL 3 MOTION SPECS (Memoized)
     // =============================================================================
     val motionScheme = MaterialTheme.motionScheme
-    
-    // Memoize specs to avoid recreation on each recomposition
+
+    // Default specs — used for the deliberate detail push/pop motion.
     val spatialSpec = remember(motionScheme) { motionScheme.defaultSpatialSpec<IntOffset>() }
     val scaleSpec = remember(motionScheme) { motionScheme.defaultSpatialSpec<Float>() }
     val effectsSpec = remember(motionScheme) { motionScheme.defaultEffectsSpec<Float>() }
 
-    // Constants for transitions
+    // Fast specs — used for tab-to-tab switching to keep the bottom bar feeling snappy.
+    val fastSpatialSpec = remember(motionScheme) { motionScheme.fastSpatialSpec<IntOffset>() }
+    val fastEffectsSpec = remember(motionScheme) { motionScheme.fastEffectsSpec<Float>() }
+
+    // Tab slide offset (small, since the X-axis is for sibling tabs not full pushes).
     val sharedAxisOffsetFraction = 0.20f
-    val sharedAxisZInitialScale = 0.96f
-    val sharedAxisZTargetScale = 1.02f
 
     // =============================================================================
     // TRANSITION HELPERS
     // =============================================================================
-    
-    // Using local functions to capture the theme specs without passing them around
-    
+
+    // ---- Tab transitions (X-axis, fast) -------------------------------------
     fun sharedAxisXEnter(forward: Boolean): EnterTransition {
         val offsetMultiplier = if (forward) 1 else -1
         return slideInHorizontally(
-            animationSpec = spatialSpec,
+            animationSpec = fastSpatialSpec,
             initialOffsetX = { (it * sharedAxisOffsetFraction * offsetMultiplier).toInt() }
-        ) + fadeIn(
-            animationSpec = effectsSpec
-        )
+        ) + fadeIn(animationSpec = fastEffectsSpec)
     }
 
     fun sharedAxisXExit(forward: Boolean): ExitTransition {
         val offsetMultiplier = if (forward) -1 else 1
         return slideOutHorizontally(
-            animationSpec = spatialSpec,
+            animationSpec = fastSpatialSpec,
             targetOffsetX = { (it * sharedAxisOffsetFraction * offsetMultiplier).toInt() }
-        ) + fadeOut(
-            animationSpec = effectsSpec
-        )
+        ) + fadeOut(animationSpec = fastEffectsSpec)
     }
 
+    // ---- Detail push/pop (parallax + scale) ---------------------------------
+    // PixelPlayer-inspired motion. Names preserved (`sharedAxisZ*`) so existing
+    // callsites stay; the bodies now produce parallax-slide + scale rather than
+    // the prior pure Z-axis (scale-only) transition.
+
     fun sharedAxisZEnter(): EnterTransition {
-        return scaleIn(
-            animationSpec = scaleSpec,
-            initialScale = sharedAxisZInitialScale
-        ) + fadeIn(
-            animationSpec = effectsSpec
-        )
+        // Push: incoming screen slides in from the right edge.
+        return slideInHorizontally(
+            animationSpec = spatialSpec,
+            initialOffsetX = { it }
+        ) + fadeIn(animationSpec = effectsSpec)
     }
 
     fun sharedAxisZExit(): ExitTransition {
-        return scaleOut(
-            animationSpec = scaleSpec,
-            targetScale = sharedAxisZTargetScale
-        ) + fadeOut(
-            animationSpec = effectsSpec
-        )
+        // Push: outgoing screen drifts left a third of its width (parallax) and fades.
+        return slideOutHorizontally(
+            animationSpec = spatialSpec,
+            targetOffsetX = { -it / 3 }
+        ) + fadeOut(animationSpec = effectsSpec)
     }
 
     fun sharedAxisZPopEnter(): EnterTransition {
-        return scaleIn(
+        // Pop: re-entering screen slides from the parallax position back to its
+        // place, with a slight zoom-in for depth.
+        return slideInHorizontally(
+            animationSpec = spatialSpec,
+            initialOffsetX = { -it / 3 }
+        ) + scaleIn(
             animationSpec = scaleSpec,
-            initialScale = sharedAxisZTargetScale
-        ) + fadeIn(
-            animationSpec = effectsSpec
+            initialScale = 0.9f
         )
     }
 
     fun sharedAxisZPopExit(): ExitTransition {
-        return scaleOut(
+        // Pop: outgoing detail slides off to the right and scales down for depth.
+        return slideOutHorizontally(
+            animationSpec = spatialSpec,
+            targetOffsetX = { it }
+        ) + scaleOut(
             animationSpec = scaleSpec,
-            targetScale = sharedAxisZInitialScale
-        ) + fadeOut(
-            animationSpec = effectsSpec
+            targetScale = 0.75f
         )
     }
 
@@ -191,10 +196,10 @@ fun AniSyncNavHost(
         val aniLinkCallbacks = remember(navController) {
             AniLinkCallbacks(
                 onMediaClick = { mediaId ->
-                    navController.navigate(MediaDetails(mediaId, "link"))
+                    navController.navigateSafely(MediaDetails(mediaId, "link"))
                 },
                 onThreadClick = { threadId, commentId ->
-                    navController.navigate(
+                    navController.navigateSafely(
                         ForumThreadDetail(
                             threadId = threadId,
                             threadTitle = "",
@@ -203,19 +208,19 @@ fun AniSyncNavHost(
                     )
                 },
                 onCharacterClick = { characterId ->
-                    navController.navigate(CharacterDetails(characterId))
+                    navController.navigateSafely(CharacterDetails(characterId))
                 },
                 onStaffClick = { staffId ->
-                    navController.navigate(StaffDetails(staffId))
+                    navController.navigateSafely(StaffDetails(staffId))
                 },
                 onUserClick = { username ->
-                    navController.navigate(UserProfile(username))
+                    navController.navigateSafely(UserProfile(username))
                 },
                 onReviewClick = { reviewId ->
-                    navController.navigate(ReviewDetail(reviewId))
+                    navController.navigateSafely(ReviewDetail(reviewId))
                 },
                 onActivityClick = { activityId ->
-                    navController.navigate(ActivityDetail(activityId))
+                    navController.navigateSafely(ActivityDetail(activityId))
                 }
             )
         }

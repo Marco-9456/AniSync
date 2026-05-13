@@ -16,10 +16,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
@@ -31,6 +34,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,7 +59,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.AppLocale
+import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
@@ -75,6 +82,7 @@ private val StreamingServices = StreamingService.entries
 private val ThemeModes = ThemeMode.entries
 private val AppLocales = AppLocale.entries
 private val CoverQualities = CoverQuality.entries
+private val NavBarStyles = NavBarStyle.entries
 
 @Composable
 fun LookAndFeelScreen(
@@ -90,6 +98,9 @@ fun LookAndFeelScreen(
     val showAdultContent = uiState.showAdultContent
     val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
+    val navBarStyle = uiState.navBarStyle
+    val navBarShowLabels = uiState.navBarShowLabels
+    val navBarCornerRadius = uiState.navBarCornerRadius
 
     // Theme palette settings
     val selectedPaletteId = uiState.selectedPaletteId
@@ -102,6 +113,7 @@ fun LookAndFeelScreen(
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
     var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
     var showCoverQualityDialog by rememberSaveable { mutableStateOf(false) }
+    var showNavBarStyleDialog by rememberSaveable { mutableStateOf(false) }
 
     // Determine dark mode for preview rendering
     val isSystemDark = isSystemInDarkTheme()
@@ -210,6 +222,17 @@ fun LookAndFeelScreen(
                 showCoverQualityDialog = false
             },
             onDismiss = { showCoverQualityDialog = false }
+        )
+    }
+
+    if (showNavBarStyleDialog) {
+        NavBarStyleSelectionDialog(
+            currentStyle = navBarStyle,
+            onStyleSelected = {
+                viewModel.onAction(SettingsAction.SetNavBarStyle(it))
+                showNavBarStyleDialog = false
+            },
+            onDismiss = { showNavBarStyleDialog = false }
         )
     }
 
@@ -348,6 +371,37 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.settings_cover_quality),
                 currentValue = coverQualityLabel(coverQuality),
                 onClick = { showCoverQualityDialog = true }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // =================================================================
+        // NAVIGATION SECTION
+        // =================================================================
+
+        SettingsGroup {
+            SelectionSettingsItem(
+                icon = Icons.Default.Navigation,
+                title = stringResource(R.string.setting_nav_bar_style),
+                currentValue = navBarStyleLabel(navBarStyle),
+                onClick = { showNavBarStyleDialog = true }
+            )
+            SettingsDivider()
+            SwitchSettingsItem(
+                icon = Icons.AutoMirrored.Filled.Label,
+                title = stringResource(R.string.setting_nav_bar_show_labels),
+                checked = navBarShowLabels,
+                onCheckedChange = {
+                    viewModel.onAction(SettingsAction.SetNavBarShowLabels(it))
+                }
+            )
+            SettingsDivider()
+            NavBarCornerRadiusSlider(
+                value = navBarCornerRadius,
+                onValueChange = {
+                    viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
+                }
             )
         }
 
@@ -813,6 +867,146 @@ private fun coverQualityDescription(quality: CoverQuality): String = stringResou
         CoverQuality.EXTRA_LARGE -> R.string.cover_quality_extra_large_desc
     }
 )
+
+@Composable
+private fun navBarStyleLabel(style: NavBarStyle): String = stringResource(
+    when (style) {
+        NavBarStyle.ANCHORED -> R.string.setting_nav_bar_style_anchored
+        NavBarStyle.FLOATING -> R.string.setting_nav_bar_style_floating
+    }
+)
+
+@Composable
+private fun navBarStyleDescription(style: NavBarStyle): String = stringResource(
+    when (style) {
+        NavBarStyle.ANCHORED -> R.string.setting_nav_bar_style_anchored_desc
+        NavBarStyle.FLOATING -> R.string.setting_nav_bar_style_floating_desc
+    }
+)
+
+@Composable
+private fun NavBarCornerRadiusSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.RoundedCorner,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(16.dp))
+            Text(
+                text = stringResource(R.string.setting_nav_bar_corner_radius),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "${value.toInt()}dp",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = AppSettings.MIN_NAV_BAR_CORNER_RADIUS..AppSettings.MAX_NAV_BAR_CORNER_RADIUS,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary
+            )
+        )
+    }
+}
+
+@Composable
+fun NavBarStyleSelectionDialog(
+    currentStyle: NavBarStyle,
+    onStyleSelected: (NavBarStyle) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+        ) {
+            LazyColumn(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                item {
+                    Text(
+                        text = stringResource(R.string.nav_bar_style_dialog_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                items(items = NavBarStyles, key = { it.name }) { style ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onStyleSelected(style) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = currentStyle == style,
+                            onClick = { onStyleSelected(style) },
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = navBarStyleLabel(style),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = navBarStyleDescription(style),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun CoverQualitySelectionDialog(

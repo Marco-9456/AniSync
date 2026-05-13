@@ -44,6 +44,17 @@ enum class DiscoverViewMode {
 }
 
 /**
+ * Visual style of the bottom navigation bar.
+ *
+ *  - [ANCHORED]: bar pinned to the bottom edge with rounded top corners.
+ *  - [FLOATING]: pill-shaped bar detached from the edges with margins.
+ */
+enum class NavBarStyle {
+    ANCHORED,
+    FLOATING
+}
+
+/**
  * Cover-image quality picked from AniList's [CoverImage] sizes. Applied app-wide
  * via a Coil interceptor that rewrites AniList CDN cover URLs to the chosen size,
  * so every cover (cards, lists, detail screens) follows this preference.
@@ -122,6 +133,26 @@ class AppSettings @Inject constructor(
     // Haptic feedback setting
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
+
+    // Navigation bar style (anchored rounded top vs floating pill)
+    private val _navBarStyle = MutableStateFlow(readNavBarStyle())
+    val navBarStyle: StateFlow<NavBarStyle> = _navBarStyle.asStateFlow()
+
+    // Whether nav bar labels are shown
+    private val _navBarShowLabels = MutableStateFlow(prefs.getBoolean(KEY_NAV_BAR_LABELS, true))
+    val navBarShowLabels: StateFlow<Boolean> = _navBarShowLabels.asStateFlow()
+
+    // Nav bar corner radius (dp). Range constrained in UI; persisted as float.
+    private val _navBarCornerRadius = MutableStateFlow(
+        prefs.getFloat(KEY_NAV_BAR_CORNER_RADIUS, DEFAULT_NAV_BAR_CORNER_RADIUS)
+    )
+    val navBarCornerRadius: StateFlow<Float> = _navBarCornerRadius.asStateFlow()
+
+    private fun readNavBarStyle(): NavBarStyle {
+        val name = runCatching { prefs.getString(KEY_NAV_BAR_STYLE, null) }.getOrNull()
+        return runCatching { NavBarStyle.valueOf(name ?: NavBarStyle.ANCHORED.name) }
+            .getOrDefault(NavBarStyle.ANCHORED)
+    }
     
     // Notifications setting
     private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, false))
@@ -310,6 +341,22 @@ class AppSettings @Inject constructor(
     fun setHapticEnabled(enabled: Boolean) {
         _hapticEnabled.value = enabled
         prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
+    }
+
+    fun setNavBarStyle(style: NavBarStyle) {
+        _navBarStyle.value = style
+        prefs.edit().putString(KEY_NAV_BAR_STYLE, style.name).apply()
+    }
+
+    fun setNavBarShowLabels(show: Boolean) {
+        _navBarShowLabels.value = show
+        prefs.edit().putBoolean(KEY_NAV_BAR_LABELS, show).apply()
+    }
+
+    fun setNavBarCornerRadius(radius: Float) {
+        val coerced = radius.coerceIn(MIN_NAV_BAR_CORNER_RADIUS, MAX_NAV_BAR_CORNER_RADIUS)
+        _navBarCornerRadius.value = coerced
+        prefs.edit().putFloat(KEY_NAV_BAR_CORNER_RADIUS, coerced).apply()
     }
     
     /**
@@ -550,6 +597,13 @@ companion object {
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
+        private const val KEY_NAV_BAR_STYLE = "nav_bar_style"
+        private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
+        private const val KEY_NAV_BAR_CORNER_RADIUS = "nav_bar_corner_radius"
+
+        const val MIN_NAV_BAR_CORNER_RADIUS = 0f
+        const val MAX_NAV_BAR_CORNER_RADIUS = 36f
+        const val DEFAULT_NAV_BAR_CORNER_RADIUS = 28f
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
         private const val KEY_COVER_QUALITY = "cover_quality"
