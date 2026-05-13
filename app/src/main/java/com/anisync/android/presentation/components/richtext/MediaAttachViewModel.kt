@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.data.media.MediaUploaderFactory
 import com.anisync.android.data.media.queryDisplayName
 import com.anisync.android.domain.media.MediaKind
@@ -115,7 +116,7 @@ class MediaAttachViewModel @Inject constructor(
                 .onFailure { err ->
                     _state.value = MediaAttachState.Failed(
                         displayName = picked.displayName,
-                        message = err.message ?: "Upload failed",
+                        message = mapErrorMessage(err.message),
                         retry = picked
                     )
                 }
@@ -140,6 +141,17 @@ class MediaAttachViewModel @Inject constructor(
             source = MediaAttachState.Source.Ime
         )
         upload(onMarkdownReady)
+    }
+
+    private fun mapErrorMessage(raw: String?): String {
+        val msg = raw ?: return "Upload failed"
+        // Catbox bot/abuse filter — surfaces as HTTP 412 with body "Invalid uploader".
+        // Even with an identifying UA, certain content (often tenor-sourced GIFs) stays
+        // blocked by hash. Tell the user what to do instead of echoing the raw message.
+        if (msg.contains("412") || msg.contains("Invalid uploader", ignoreCase = true)) {
+            return context.getString(R.string.media_attach_error_catbox_rejected)
+        }
+        return msg
     }
 
     private fun mediaKindFromMime(mime: String): MediaKind = when {

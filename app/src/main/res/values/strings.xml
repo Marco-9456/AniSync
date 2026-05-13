@@ -801,6 +801,7 @@
     <string name="media_attach_url_input_hint">https://…</string>
     <string name="media_attach_insert">Insert</string>
     <string name="media_attach_error_invalid_url">Enter a valid http(s) URL</string>
+    <string name="media_attach_error_catbox_rejected">Catbox rejected this file. Try a different file, or switch to Litterbox in Settings → Media upload.</string>
     <string name="media_attach_size_output">Inserts: %s</string>
 
     <!-- Search / Discover -->
