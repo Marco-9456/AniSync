@@ -4,16 +4,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -78,39 +75,16 @@ private fun ViewModeToggle(
     viewMode: DiscoverViewMode,
     onViewModeChange: (DiscoverViewMode) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        IconButton(
-            onClick = { onViewModeChange(DiscoverViewMode.LIST) },
-            modifier = Modifier.size(36.dp),
-            colors = if (viewMode == DiscoverViewMode.LIST) {
-                IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            } else IconButtonDefaults.iconButtonColors()
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ViewList,
-                contentDescription = "List view",
-                modifier = Modifier.size(18.dp)
-            )
+    val isGrid = viewMode == DiscoverViewMode.GRID
+    IconButton(
+        onClick = {
+            onViewModeChange(if (isGrid) DiscoverViewMode.LIST else DiscoverViewMode.GRID)
         }
-        IconButton(
-            onClick = { onViewModeChange(DiscoverViewMode.GRID) },
-            modifier = Modifier.size(36.dp),
-            colors = if (viewMode == DiscoverViewMode.GRID) {
-                IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            } else IconButtonDefaults.iconButtonColors()
-        ) {
-            Icon(
-                imageVector = Icons.Default.GridView,
-                contentDescription = "Grid view",
-                modifier = Modifier.size(18.dp)
-            )
-        }
+    ) {
+        Icon(
+            imageVector = if (isGrid) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
+            contentDescription = if (isGrid) "Switch to list view" else "Switch to grid view"
+        )
     }
 }
 
