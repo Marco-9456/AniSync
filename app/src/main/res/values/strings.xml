@@ -553,6 +553,9 @@
     <string name="filter_season">Season</string>
     <string name="filter_format">Format</string>
     <string name="filter_status">Status</string>
+    <string name="year_picker_hint_empty">Tap a year. Tap a second to make a range.</string>
+    <string name="year_picker_hint_single">Tap another year for a range</string>
+    <string name="year_picker_hint_range">Tap any year to start over</string>
 
     <!-- Seasons -->
     <string name="season_winter">Winter</string>

@@ -2,6 +2,7 @@
 
 package com.anisync.android.presentation.discover.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,8 +41,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.AdultMode
 import com.anisync.android.domain.ComparatorMode
@@ -403,14 +407,23 @@ private fun TagsFilterSheet(
 // =============================================================================
 
 /**
- * Year filter sheet — Material 3 date-picker year-selection style. Days /
- * months are deliberately omitted; the underlying filter only tracks year
- * bounds.
+ * Year filter sheet — Material 3 date-picker year-grid styling, restricted to
+ * years (no month/day). Range: [1940, currentYear + 1].
  *
- * Range selection follows the M3 date-range-picker tap pattern:
- *   - no selection → tap sets `from`.
- *   - `from` only → tap sets `to` (or swaps if earlier than `from`).
- *   - both set → tap restarts selection with new `from`.
+ * M3 has no public year-only picker (`androidx.compose.material3.YearPicker`
+ * is private). This composable mirrors the spec/behavior of M3's internal
+ * year grid: 3 columns, `bodyLarge` typography, circular cells,
+ * `primary`-filled endpoints, `secondaryContainer`-filled in-range, 1dp
+ * `outline` border for today's year when unselected.
+ *
+ * Tap state machine on the existing [IntRangeFilter] (`min == max` means
+ * single-year selection):
+ *   - empty → tap Y                → (Y, Y)              single year
+ *   - (A, A) tap A                  → empty               deselect
+ *   - (A, A) tap Y ≠ A              → (min(A,Y), max(A,Y)) grow to range
+ *   - (A, B) A<B, tap A             → (B, B)              shrink to other endpoint
+ *   - (A, B) A<B, tap B             → (A, A)              shrink to other endpoint
+ *   - (A, B) A<B, tap any other Y   → (Y, Y)              restart with single
  */
 @Composable
 private fun YearFilterSheet(
@@ -441,74 +454,64 @@ private fun YearPickerBody(
 
     val from = filters.yearRange.min
     val to = filters.yearRange.max
+    val isRange = from != null && to != null && from != to
+    val isSingle = from != null && to != null && from == to
 
     val onYearTap: (Int) -> Unit = { year ->
-        val (newFrom, newTo) = when {
-            from == null -> year to null
-            to == null && year >= from -> from to year
-            to == null && year < from -> year to from
-            else -> year to null
+        val newRange = when {
+            from == null || to == null -> IntRangeFilter(min = year, max = year)
+            from == to && year == from -> IntRangeFilter()
+            from == to -> IntRangeFilter(min = minOf(from, year), max = maxOf(from, year))
+            year == from -> IntRangeFilter(min = to, max = to)
+            year == to -> IntRangeFilter(min = from, max = from)
+            else -> IntRangeFilter(min = year, max = year)
         }
-        onFiltersChange(filters.copy(yearRange = IntRangeFilter(min = newFrom, max = newTo)))
+        onFiltersChange(filters.copy(yearRange = newRange))
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "From",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = from?.toString() ?: "—",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = if (from != null) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                text = "→",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "To",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = to?.toString() ?: "—",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = if (to != null) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+    // Scroll initial position once: target = current selection start, else today.
+    // Place target row with one row of context above when possible.
+    val initialIdx = remember(maxYear) {
+        val target = from ?: currentYear
+        val itemIdx = (maxYear - target).coerceIn(0, years.size - 1)
+        ((itemIdx / 3) - 1).coerceAtLeast(0) * 3
+    }
+    val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = initialIdx)
+
+    val supporting = stringResource(
+        when {
+            isRange -> R.string.year_picker_hint_range
+            isSingle -> R.string.year_picker_hint_single
+            else -> R.string.year_picker_hint_empty
         }
+    )
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = supporting,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Fixed(3),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 360.dp)
                 .padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
             items(items = years, key = { it }) { year ->
                 val isEndpoint = year == from || year == to
-                val inRange = from != null && to != null && year in from..to
+                val inRange = from != null && to != null && from != to && year > from && year < to
                 YearCell(
                     year = year,
                     isEndpoint = isEndpoint,
                     inRange = inRange,
+                    isToday = year == currentYear && !isEndpoint,
                     onClick = { onYearTap(year) }
                 )
             }
@@ -521,6 +524,7 @@ private fun YearCell(
     year: Int,
     isEndpoint: Boolean,
     inRange: Boolean,
+    isToday: Boolean,
     onClick: () -> Unit
 ) {
     val container = when {
@@ -531,13 +535,19 @@ private fun YearCell(
     val content = when {
         isEndpoint -> MaterialTheme.colorScheme.onPrimary
         inRange -> MaterialTheme.colorScheme.onSecondaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
+        isToday -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val border: BorderStroke? = if (isToday) {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    } else null
+
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = container,
         contentColor = content,
+        border = border,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 36.dp)
@@ -548,7 +558,7 @@ private fun YearCell(
         ) {
             Text(
                 text = year.toString(),
-                style = MaterialTheme.typography.labelLarge
+                style = MaterialTheme.typography.bodyLarge
             )
         }
     }
