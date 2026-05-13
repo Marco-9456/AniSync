@@ -825,4 +825,13 @@
     <string name="char_count">%d chars</string>
     <string name="cd_download">Download</string>
     <string name="statistics_top_tags">Top Tags</string>
+    <string name="clip_label_studio_name">Nome do estúdio</string>
+    <string name="studio_label_animation_studio">Estúdio de animação</string>
+    <string name="studio_label_other_studio">Estúdio</string>
+    <string name="studio_label_works">Trabalhos</string>
+    <string name="studio_label_total_works">Trabalhos totais</string>
+    <string name="studio_label_website">Website</string>
+    <string name="studio_label_type">Tipo</string>
+    <string name="studio_main_studio_chip">Estúdio principal</string>
+    <string name="media_attach_error_catbox_rejected">Catbox rejeitou esse arquivo. Tente um arquivo diferente, ou troque para o Litterbox em Configurações → Upload de mídia.</string>
 </resources>
