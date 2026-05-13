@@ -15,16 +15,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.anisync.android.domain.ComparatorMode
 import com.anisync.android.domain.SearchFilters
+import com.anisync.android.domain.SearchType
 import com.anisync.android.domain.SortOption
 
 /**
  * Identifies which filter the user opened from the chip bar.
- * The chip bar exposes the first six; the rest are reachable via [MORE].
+ *
+ * `TYPE` overrides the screen-level Anime/Manga selector when set to a
+ * non-null value. When [SearchFilters.isNonMediaType] is true, the media-only
+ * filters (genres/tags/year/format/more) are hidden from the bar entirely so
+ * the user can't open filters that would no-op against a character/staff/
+ * user/studio result set.
  */
 enum class FilterId {
-    SORT, GENRES, TAGS, YEAR, FORMAT, MORE,
+    TYPE, SORT, GENRES, TAGS, YEAR, FORMAT, MORE,
     STATUS, SEASON, SOURCE, COUNTRY, SCORE, EPISODES, CHAPTERS, ADULT
 }
 
@@ -42,38 +47,45 @@ fun SearchFilterChipBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         FilterBarChip(
-            label = "Sort · ${filters.sort.shortLabel()}",
-            active = filters.sort != SortOption.POPULARITY_DESC,
-            onClick = { onChipTap(FilterId.SORT) }
+            label = filters.typeChipLabel(),
+            active = filters.searchType != null,
+            onClick = { onChipTap(FilterId.TYPE) }
         )
-        val genresActive = filters.genresIncluded.size + filters.genresExcluded.size
-        FilterBarChip(
-            label = if (genresActive == 0) "Genres" else "Genres · $genresActive",
-            active = genresActive > 0,
-            onClick = { onChipTap(FilterId.GENRES) }
-        )
-        val tagsActive = filters.tagsIncluded.size + filters.tagsExcluded.size
-        FilterBarChip(
-            label = if (tagsActive == 0) "Tags" else "Tags · $tagsActive",
-            active = tagsActive > 0,
-            onClick = { onChipTap(FilterId.TAGS) }
-        )
-        FilterBarChip(
-            label = filters.yearChipLabel(),
-            active = filters.yearRange.isActive,
-            onClick = { onChipTap(FilterId.YEAR) }
-        )
-        FilterBarChip(
-            label = filters.formatChipLabel(),
-            active = filters.formats.isNotEmpty(),
-            onClick = { onChipTap(FilterId.FORMAT) }
-        )
-        val moreCount = filters.moreCount()
-        FilterBarChip(
-            label = if (moreCount == 0) "More" else "More · $moreCount",
-            active = moreCount > 0,
-            onClick = { onChipTap(FilterId.MORE) }
-        )
+        if (!filters.isNonMediaType) {
+            FilterBarChip(
+                label = "Sort · ${filters.sort.shortLabel()}",
+                active = filters.sort != SortOption.POPULARITY_DESC,
+                onClick = { onChipTap(FilterId.SORT) }
+            )
+            val genresActive = filters.genresIncluded.size + filters.genresExcluded.size
+            FilterBarChip(
+                label = if (genresActive == 0) "Genres" else "Genres · $genresActive",
+                active = genresActive > 0,
+                onClick = { onChipTap(FilterId.GENRES) }
+            )
+            val tagsActive = filters.tagsIncluded.size + filters.tagsExcluded.size
+            FilterBarChip(
+                label = if (tagsActive == 0) "Tags" else "Tags · $tagsActive",
+                active = tagsActive > 0,
+                onClick = { onChipTap(FilterId.TAGS) }
+            )
+            FilterBarChip(
+                label = filters.yearChipLabel(),
+                active = filters.yearRange.isActive,
+                onClick = { onChipTap(FilterId.YEAR) }
+            )
+            FilterBarChip(
+                label = filters.formatChipLabel(),
+                active = filters.formats.isNotEmpty(),
+                onClick = { onChipTap(FilterId.FORMAT) }
+            )
+            val moreCount = filters.moreCount()
+            FilterBarChip(
+                label = if (moreCount == 0) "More" else "More · $moreCount",
+                active = moreCount > 0,
+                onClick = { onChipTap(FilterId.MORE) }
+            )
+        }
     }
 }
 
@@ -97,6 +109,18 @@ private fun FilterBarChip(
             )
         }
     )
+}
+
+private fun SearchFilters.typeChipLabel(): String =
+    "Type · ${searchType?.label() ?: "All"}"
+
+internal fun SearchType.label(): String = when (this) {
+    SearchType.ANIME -> "Anime"
+    SearchType.MANGA -> "Manga"
+    SearchType.CHARACTERS -> "Characters"
+    SearchType.STAFF -> "Staff"
+    SearchType.USERS -> "Users"
+    SearchType.STUDIOS -> "Studios"
 }
 
 private fun SearchFilters.yearChipLabel(): String = when {

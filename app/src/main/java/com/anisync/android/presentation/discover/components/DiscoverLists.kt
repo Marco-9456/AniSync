@@ -343,30 +343,6 @@ private fun ImmersiveCardContent(
             modifier = gradientModifier.background(brush)
         )
 
-        val statusBadge = remember(item.mediaStatus) { item.mediaStatus?.formatAsTitle() }
-        if (statusBadge != null && style is CardStyle.Grid) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f))
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = statusBadge,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
         val contentPadding = remember(style) {
             if (style is CardStyle.Hero) 24.dp else 16.dp
         }
@@ -377,21 +353,55 @@ private fun ImmersiveCardContent(
                 .padding(contentPadding)
                 .fillMaxWidth()
         ) {
-            if (style is CardStyle.Hero && item.format != null) {
-                val formatLabel = item.format.toLabel()
-                Surface(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = formatLabel,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+            // Format chip + rating row — matches DiscoverHeroCarousel for visual parity
+            // between Trending Now and Standard/Grid result cards.
+            val showChipRow = style is CardStyle.Hero || style is CardStyle.Standard || style is CardStyle.Grid
+            if (showChipRow) {
+                val formattedScore = item.averageScore?.let {
+                    String.format(Locale.US, "%.1f", it / 10.0)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                if (item.format != null || formattedScore != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        item.format?.let { format ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = format.toLabel(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                        formattedScore?.let { scoreText ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = StarGold,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = scoreText,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(if (style is CardStyle.Hero) 10.dp else 6.dp))
+                }
             }
 
             val titleModifier =
@@ -416,47 +426,28 @@ private fun ImmersiveCardContent(
                     else -> MaterialTheme.typography.titleMedium
                 },
                 fontWeight = if (style is CardStyle.Hero) FontWeight.Black else FontWeight.Bold,
-                maxLines = if (style is CardStyle.Hero) 2 else 1,
+                maxLines = if (style is CardStyle.Hero) 2 else 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = titleModifier
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (style is CardStyle.Hero) {
-                    val statusText = item.mediaStatus?.formatAsTitle()
-                    val episodesText = item.totalEpisodes?.let { formatEpisodesCount(it) }
-                    val chaptersText = item.totalChapters?.let { formatChaptersCount(it) }
-
-                    val metadataText = remember(statusText, episodesText, chaptersText) {
-                        val countsText = episodesText ?: chaptersText
-                        listOfNotNull(statusText, countsText).joinToString(" • ")
-                    }
-                    if (metadataText.isNotEmpty()) {
-                        Text(
-                            text = metadataText,
-                            color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                } else {
-                    item.averageScore?.let { score ->
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = StarGold,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = String.format(Locale.US, "%.1f", score / 10.0),
-                            color = Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+            // Hero keeps its status / episode count caption below the title.
+            if (style is CardStyle.Hero) {
+                val statusText = item.mediaStatus?.formatAsTitle()
+                val episodesText = item.totalEpisodes?.let { formatEpisodesCount(it) }
+                val chaptersText = item.totalChapters?.let { formatChaptersCount(it) }
+                val metadataText = remember(statusText, episodesText, chaptersText) {
+                    val countsText = episodesText ?: chaptersText
+                    listOfNotNull(statusText, countsText).joinToString(" • ")
+                }
+                if (metadataText.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = metadataText,
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

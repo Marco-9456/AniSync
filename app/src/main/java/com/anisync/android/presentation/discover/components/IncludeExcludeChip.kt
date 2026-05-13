@@ -1,14 +1,14 @@
 package com.anisync.android.presentation.discover.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,8 +25,16 @@ import androidx.compose.ui.unit.dp
 enum class TriState { OFF, INCLUDED, EXCLUDED }
 
 /**
- * Tri-state chip used for genres and tags in advanced search.
- * Tap cycles `OFF → INCLUDED → EXCLUDED → OFF`. Long-press jumps to `EXCLUDED`.
+ * Tri-state filter chip for genres and tags.
+ *
+ * Visual matches the Material 3 filter-chip spec:
+ *   - `OFF`: outlined chip, transparent surface (unselected).
+ *   - `INCLUDED`: filled tonal with leading check (selected).
+ *   - `EXCLUDED`: filled error container with leading minus (selected, negated).
+ *
+ * Tap cycles `OFF → INCLUDED → EXCLUDED → OFF`. Long-press jumps to `EXCLUDED`
+ * (or clears it when already excluded) — power-user shortcut for the most
+ * common targeted action.
  */
 @OptIn(ExperimentalComposeUiApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -38,18 +46,22 @@ fun IncludeExcludeChip(
 ) {
     val container: Color
     val content: Color
+    val border: BorderStroke?
     when (state) {
         TriState.OFF -> {
-            container = MaterialTheme.colorScheme.surfaceContainerHigh
+            container = Color.Transparent
             content = MaterialTheme.colorScheme.onSurfaceVariant
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         }
         TriState.INCLUDED -> {
-            container = MaterialTheme.colorScheme.primary
-            content = MaterialTheme.colorScheme.onPrimary
+            container = MaterialTheme.colorScheme.secondaryContainer
+            content = MaterialTheme.colorScheme.onSecondaryContainer
+            border = null
         }
         TriState.EXCLUDED -> {
             container = MaterialTheme.colorScheme.errorContainer
             content = MaterialTheme.colorScheme.onErrorContainer
+            border = null
         }
     }
     val stateLabel = when (state) {
@@ -78,10 +90,16 @@ fun IncludeExcludeChip(
             ),
         color = container,
         contentColor = content,
-        shape = RoundedCornerShape(8.dp)
+        shape = MaterialTheme.shapes.small,
+        border = border
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(
+                start = if (state == TriState.OFF) 12.dp else 8.dp,
+                end = 12.dp,
+                top = 6.dp,
+                bottom = 6.dp
+            ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -89,12 +107,12 @@ fun IncludeExcludeChip(
                 TriState.INCLUDED -> Icon(
                     Icons.Default.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 TriState.EXCLUDED -> Icon(
-                    Icons.Default.Block,
+                    Icons.Default.Remove,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 TriState.OFF -> Unit
             }

@@ -26,6 +26,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
@@ -325,7 +329,8 @@ fun DiscoverScreen(
 
     val successState2 = uiState as? DiscoverUiState.Success
     val searchQuery = successState2?.searchQuery ?: ""
-    val searchResults = successState2?.searchResults ?: emptyList()
+    val searchAnime = successState2?.searchAnime ?: emptyList()
+    val searchManga = successState2?.searchManga ?: emptyList()
     val groupedResults = successState2?.groupedResults
         ?: com.anisync.android.domain.GroupedSearchResults()
     val isSearching = successState2?.isSearching ?: false
@@ -362,6 +367,8 @@ fun DiscoverScreen(
 
     val taxonomy by viewModel.taxonomy.collectAsStateWithLifecycle()
     val showAdultContent by viewModel.showAdultContent.collectAsStateWithLifecycle()
+    val viewMode = successState2?.viewMode ?: com.anisync.android.data.DiscoverViewMode.LIST
+    val activeCategory = successState2?.activeCategory ?: ResultCategory.ALL
 
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
@@ -375,13 +382,18 @@ fun DiscoverScreen(
         keyboardController = keyboardController,
         listState = listState,
         searchQuery = searchQuery,
-        searchResults = searchResults,
+        searchAnime = searchAnime,
+        searchManga = searchManga,
         groupedResults = groupedResults,
         isSearching = isSearching,
         searchError = searchError,
+        viewMode = viewMode,
+        activeCategory = activeCategory,
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
         onFiltersChange = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
         onLoadTaxonomy = { viewModel.onAction(DiscoverAction.LoadTaxonomy) },
+        onViewModeChange = { viewModel.onAction(DiscoverAction.OnViewModeChange(it)) },
+        onCategoryChange = { viewModel.onAction(DiscoverAction.OnCategoryChange(it)) },
         onSearchItemClick = onSearchItemClick,
         onCharacterClick = onCharacterItemClick,
         onStaffClick = onStaffItemClick,
@@ -727,13 +739,18 @@ private fun DiscoverSearchOverlay(
     keyboardController: SoftwareKeyboardController?,
     listState: LazyListState,
     searchQuery: String,
-    searchResults: List<LibraryEntry>,
+    searchAnime: List<LibraryEntry>,
+    searchManga: List<LibraryEntry>,
     groupedResults: com.anisync.android.domain.GroupedSearchResults,
     isSearching: Boolean,
     searchError: String?,
+    viewMode: com.anisync.android.data.DiscoverViewMode,
+    activeCategory: ResultCategory,
     onSearch: (String) -> Unit,
     onFiltersChange: (com.anisync.android.domain.SearchFilters) -> Unit,
     onLoadTaxonomy: () -> Unit,
+    onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
+    onCategoryChange: (ResultCategory) -> Unit,
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
@@ -767,12 +784,17 @@ private fun DiscoverSearchOverlay(
             )
             SearchResultsContent(
                 isSearching = isSearching,
-                searchResults = searchResults,
+                searchAnime = searchAnime,
+                searchManga = searchManga,
                 groupedResults = groupedResults,
                 searchQuery = searchQuery,
                 searchError = searchError,
                 titleLanguage = titleLanguage,
                 listState = listState,
+                viewMode = viewMode,
+                activeCategory = activeCategory,
+                onViewModeChange = onViewModeChange,
+                onCategoryChange = onCategoryChange,
                 onSearchItemClick = onSearchItemClick,
                 onCharacterClick = onCharacterClick,
                 onStaffClick = onStaffClick,
@@ -790,7 +812,6 @@ private fun DiscoverSearchOverlay(
         tags = taxonomy.tags,
         showAdultContent = showAdultContent,
         onFiltersChange = onFiltersChange,
-        onOpenFilter = { openedFilter = it },
         onDismiss = { openedFilter = null }
     )
 }
@@ -798,19 +819,24 @@ private fun DiscoverSearchOverlay(
 @Composable
 private fun SearchResultsContent(
     isSearching: Boolean,
-    searchResults: List<LibraryEntry>,
+    searchAnime: List<LibraryEntry>,
+    searchManga: List<LibraryEntry>,
     groupedResults: com.anisync.android.domain.GroupedSearchResults,
     searchQuery: String,
     searchError: String?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     listState: LazyListState,
+    viewMode: com.anisync.android.data.DiscoverViewMode,
+    activeCategory: ResultCategory,
+    onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
+    onCategoryChange: (ResultCategory) -> Unit,
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
     onStudioClick: (Int) -> Unit,
     onUserClick: (String) -> Unit
 ) {
-    val hasAnyResults = searchResults.isNotEmpty() || !groupedResults.isEmpty
+    val hasAnyResults = searchAnime.isNotEmpty() || searchManga.isNotEmpty() || !groupedResults.isEmpty
 
     when {
         isSearching -> {
@@ -846,115 +872,387 @@ private fun SearchResultsContent(
         }
 
         else -> {
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 16.dp,
-                    bottom = WindowInsets.navigationBars.asPaddingValues()
-                        .calculateBottomPadding() + 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize(),
-                state = listState
-            ) {
-                // Anime / Manga results
-                if (searchResults.isNotEmpty()) {
-                    item(key = "header_media") {
-                        SearchSectionHeader(title = stringResource(R.string.search_header_anime_manga))
-                    }
-                    items(
-                        items = searchResults,
-                        key = { "media_${it.mediaId}" },
-                        contentType = { "search_result" }
-                    ) { item ->
-                        val onClick = remember(item.mediaId, onSearchItemClick) {
-                            { onSearchItemClick(item.mediaId) }
-                        }
-                        SearchResultItem(
-                            item = item,
-                            onClick = onClick,
-                            titleLanguage = titleLanguage
-                        )
-                    }
+            val availableCategories = remember(searchAnime, searchManga, groupedResults) {
+                buildSet {
+                    add(ResultCategory.ALL)
+                    if (searchAnime.isNotEmpty()) add(ResultCategory.ANIME)
+                    if (searchManga.isNotEmpty()) add(ResultCategory.MANGA)
+                    if (groupedResults.characters.isNotEmpty()) add(ResultCategory.CHARACTERS)
+                    if (groupedResults.staff.isNotEmpty()) add(ResultCategory.STAFF)
+                    if (groupedResults.users.isNotEmpty()) add(ResultCategory.USERS)
+                    if (groupedResults.studios.isNotEmpty()) add(ResultCategory.STUDIOS)
                 }
+            }
+            Column(modifier = Modifier.fillMaxSize()) {
+                com.anisync.android.presentation.discover.components.SearchResultsHeader(
+                    activeCategory = activeCategory,
+                    availableCategories = availableCategories,
+                    viewMode = viewMode,
+                    onCategoryChange = onCategoryChange,
+                    onViewModeChange = onViewModeChange
+                )
+                if (viewMode == com.anisync.android.data.DiscoverViewMode.LIST) {
+                    SearchResultsList(
+                        searchAnime = searchAnime,
+                        searchManga = searchManga,
+                        groupedResults = groupedResults,
+                        activeCategory = activeCategory,
+                        titleLanguage = titleLanguage,
+                        listState = listState,
+                        onSearchItemClick = onSearchItemClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick,
+                        onStudioClick = onStudioClick,
+                        onUserClick = onUserClick
+                    )
+                } else {
+                    SearchResultsGrid(
+                        searchAnime = searchAnime,
+                        searchManga = searchManga,
+                        groupedResults = groupedResults,
+                        activeCategory = activeCategory,
+                        titleLanguage = titleLanguage,
+                        onSearchItemClick = onSearchItemClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick,
+                        onStudioClick = onStudioClick,
+                        onUserClick = onUserClick
+                    )
+                }
+            }
+        }
+    }
+}
 
-                // Characters
-                if (groupedResults.characters.isNotEmpty()) {
-                    item(key = "header_characters") {
-                        SearchSectionHeader(title = stringResource(R.string.search_header_characters))
-                    }
-                    items(
-                        items = groupedResults.characters,
-                        key = { "char_${it.id}" },
-                        contentType = { "character_result" }
-                    ) { character ->
-                        GenericSearchResultItem(
-                            name = character.displayName,
-                            subtitle = character.nativeName,
-                            imageUrl = character.imageUrl,
-                            onClick = { onCharacterClick(character.id) }
-                        )
-                    }
-                }
+@Composable
+private fun SearchResultsList(
+    searchAnime: List<LibraryEntry>,
+    searchManga: List<LibraryEntry>,
+    groupedResults: com.anisync.android.domain.GroupedSearchResults,
+    activeCategory: ResultCategory,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
+    listState: LazyListState,
+    onSearchItemClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit
+) {
+    val showAll = activeCategory == ResultCategory.ALL
+    val showAnime = showAll || activeCategory == ResultCategory.ANIME
+    val showManga = showAll || activeCategory == ResultCategory.MANGA
+    val showCharacters = showAll || activeCategory == ResultCategory.CHARACTERS
+    val showStaff = showAll || activeCategory == ResultCategory.STAFF
+    val showUsers = showAll || activeCategory == ResultCategory.USERS
+    val showStudios = showAll || activeCategory == ResultCategory.STUDIOS
 
-                // Staff
-                if (groupedResults.staff.isNotEmpty()) {
-                    item(key = "header_staff") {
-                        SearchSectionHeader(title = stringResource(R.string.search_header_staff))
-                    }
-                    items(
-                        items = groupedResults.staff,
-                        key = { "staff_${it.id}" },
-                        contentType = { "staff_result" }
-                    ) { staff ->
-                        GenericSearchResultItem(
-                            name = staff.displayName,
-                            subtitle = staff.primaryOccupations.firstOrNull()
-                                ?: staff.nativeName,
-                            imageUrl = staff.imageUrl,
-                            onClick = { onStaffClick(staff.id) }
-                        )
-                    }
+    LazyColumn(
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues()
+                .calculateBottomPadding() + 16.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxSize(),
+        state = listState
+    ) {
+        if (showAnime && searchAnime.isNotEmpty()) {
+            if (showAll) {
+                item(key = "header_anime") {
+                    SearchSectionHeader(title = "Anime")
                 }
+            }
+            items(
+                items = searchAnime,
+                key = { "anime_${it.mediaId}" },
+                contentType = { "search_result" }
+            ) { item ->
+                val onClick = remember(item.mediaId, onSearchItemClick) {
+                    { onSearchItemClick(item.mediaId) }
+                }
+                SearchResultItem(item = item, onClick = onClick, titleLanguage = titleLanguage)
+            }
+        }
+        if (showManga && searchManga.isNotEmpty()) {
+            if (showAll) {
+                item(key = "header_manga") {
+                    SearchSectionHeader(title = "Manga")
+                }
+            }
+            items(
+                items = searchManga,
+                key = { "manga_${it.mediaId}" },
+                contentType = { "search_result" }
+            ) { item ->
+                val onClick = remember(item.mediaId, onSearchItemClick) {
+                    { onSearchItemClick(item.mediaId) }
+                }
+                SearchResultItem(item = item, onClick = onClick, titleLanguage = titleLanguage)
+            }
+        }
+        if (showCharacters && groupedResults.characters.isNotEmpty()) {
+            if (showAll) {
+                item(key = "header_characters") {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_characters))
+                }
+            }
+            items(
+                items = groupedResults.characters,
+                key = { "char_${it.id}" },
+                contentType = { "character_result" }
+            ) { character ->
+                GenericSearchResultItem(
+                    name = character.displayName,
+                    subtitle = character.nativeName,
+                    imageUrl = character.imageUrl,
+                    onClick = { onCharacterClick(character.id) }
+                )
+            }
+        }
+        if (showStaff && groupedResults.staff.isNotEmpty()) {
+            if (showAll) {
+                item(key = "header_staff") {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_staff))
+                }
+            }
+            items(
+                items = groupedResults.staff,
+                key = { "staff_${it.id}" },
+                contentType = { "staff_result" }
+            ) { staff ->
+                GenericSearchResultItem(
+                    name = staff.displayName,
+                    subtitle = staff.primaryOccupations.firstOrNull() ?: staff.nativeName,
+                    imageUrl = staff.imageUrl,
+                    onClick = { onStaffClick(staff.id) }
+                )
+            }
+        }
+        if (showUsers && groupedResults.users.isNotEmpty()) {
+            if (showAll) {
+                item(key = "header_users") {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_users))
+                }
+            }
+            items(
+                items = groupedResults.users,
+                key = { "user_${it.id}" },
+                contentType = { "user_result" }
+            ) { user ->
+                GenericSearchResultItem(
+                    name = user.displayName,
+                    subtitle = null,
+                    imageUrl = user.imageUrl,
+                    onClick = { onUserClick(user.displayName) }
+                )
+            }
+        }
+        if (showStudios && groupedResults.studios.isNotEmpty()) {
+            if (showAll) {
+                item(key = "header_studios") {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_studios))
+                }
+            }
+            items(
+                items = groupedResults.studios,
+                key = { "studio_${it.id}" },
+                contentType = { "studio_result" }
+            ) { studio ->
+                GenericSearchResultItem(
+                    name = studio.displayName,
+                    subtitle = studio.favourites?.let { stringResource(R.string.search_favourites_count, it) },
+                    imageUrl = null,
+                    onClick = { onStudioClick(studio.id) }
+                )
+            }
+        }
+    }
+}
 
-                // Users
-                if (groupedResults.users.isNotEmpty()) {
-                    item(key = "header_users") {
-                        SearchSectionHeader(title = stringResource(R.string.search_header_users))
-                    }
-                    items(
-                        items = groupedResults.users,
-                        key = { "user_${it.id}" },
-                        contentType = { "user_result" }
-                    ) { user ->
-                        GenericSearchResultItem(
-                            name = user.displayName,
-                            subtitle = null,
-                            imageUrl = user.imageUrl,
-                            onClick = { onUserClick(user.displayName) }
-                        )
-                    }
-                }
+/**
+ * Grid layout for search results. Media takes adaptive grid cells with
+ * poster-style cards; non-media (characters/staff/users/studios) stays as
+ * full-width list rows even in grid mode — their data is name + (sometimes)
+ * avatar, which doesn't fill a card meaningfully.
+ */
+@Composable
+private fun SearchResultsGrid(
+    searchAnime: List<LibraryEntry>,
+    searchManga: List<LibraryEntry>,
+    groupedResults: com.anisync.android.domain.GroupedSearchResults,
+    activeCategory: ResultCategory,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
+    onSearchItemClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit
+) {
+    val showAll = activeCategory == ResultCategory.ALL
+    val showAnime = showAll || activeCategory == ResultCategory.ANIME
+    val showManga = showAll || activeCategory == ResultCategory.MANGA
+    val showCharacters = showAll || activeCategory == ResultCategory.CHARACTERS
+    val showStaff = showAll || activeCategory == ResultCategory.STAFF
+    val showUsers = showAll || activeCategory == ResultCategory.USERS
+    val showStudios = showAll || activeCategory == ResultCategory.STUDIOS
 
-                // Studios
-                if (groupedResults.studios.isNotEmpty()) {
-                    item(key = "header_studios") {
-                        SearchSectionHeader(title = stringResource(R.string.search_header_studios))
-                    }
-                    items(
-                        items = groupedResults.studios,
-                        key = { "studio_${it.id}" },
-                        contentType = { "studio_result" }
-                    ) { studio ->
-                        GenericSearchResultItem(
-                            name = studio.displayName,
-                            subtitle = studio.favourites?.let { stringResource(R.string.search_favourites_count, it) },
-                            imageUrl = null,
-                            onClick = { onStudioClick(studio.id) }
-                        )
-                    }
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 140.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues()
+                .calculateBottomPadding() + 16.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (showAnime && searchAnime.isNotEmpty()) {
+            if (showAll) {
+                item(
+                    key = "header_anime",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    SearchSectionHeader(title = "Anime")
                 }
+            }
+            gridItems(
+                items = searchAnime,
+                key = { "anime_${it.mediaId}" },
+                contentType = { "search_result_grid" }
+            ) { item ->
+                val onClick = remember(item.mediaId, onSearchItemClick) {
+                    { onSearchItemClick(item.mediaId) }
+                }
+                com.anisync.android.presentation.discover.components.DiscoverMediaCard(
+                    item = item,
+                    style = com.anisync.android.presentation.discover.components.CardStyle.Grid(),
+                    onClick = onClick,
+                    titleLanguage = titleLanguage,
+                    transitionPrefix = "search_grid"
+                )
+            }
+        }
+        if (showManga && searchManga.isNotEmpty()) {
+            if (showAll) {
+                item(
+                    key = "header_manga",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    SearchSectionHeader(title = "Manga")
+                }
+            }
+            gridItems(
+                items = searchManga,
+                key = { "manga_${it.mediaId}" },
+                contentType = { "search_result_grid" }
+            ) { item ->
+                val onClick = remember(item.mediaId, onSearchItemClick) {
+                    { onSearchItemClick(item.mediaId) }
+                }
+                com.anisync.android.presentation.discover.components.DiscoverMediaCard(
+                    item = item,
+                    style = com.anisync.android.presentation.discover.components.CardStyle.Grid(),
+                    onClick = onClick,
+                    titleLanguage = titleLanguage,
+                    transitionPrefix = "search_grid"
+                )
+            }
+        }
+        if (showCharacters && groupedResults.characters.isNotEmpty()) {
+            if (showAll) {
+                item(
+                    key = "header_characters",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_characters))
+                }
+            }
+            gridItems(
+                items = groupedResults.characters,
+                key = { "char_${it.id}" },
+                contentType = { "character_result_grid" },
+                span = { GridItemSpan(maxLineSpan) }
+            ) { character ->
+                GenericSearchResultItem(
+                    name = character.displayName,
+                    subtitle = character.nativeName,
+                    imageUrl = character.imageUrl,
+                    onClick = { onCharacterClick(character.id) }
+                )
+            }
+        }
+        if (showStaff && groupedResults.staff.isNotEmpty()) {
+            if (showAll) {
+                item(
+                    key = "header_staff",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_staff))
+                }
+            }
+            gridItems(
+                items = groupedResults.staff,
+                key = { "staff_${it.id}" },
+                contentType = { "staff_result_grid" },
+                span = { GridItemSpan(maxLineSpan) }
+            ) { staff ->
+                GenericSearchResultItem(
+                    name = staff.displayName,
+                    subtitle = staff.primaryOccupations.firstOrNull() ?: staff.nativeName,
+                    imageUrl = staff.imageUrl,
+                    onClick = { onStaffClick(staff.id) }
+                )
+            }
+        }
+        if (showUsers && groupedResults.users.isNotEmpty()) {
+            if (showAll) {
+                item(
+                    key = "header_users",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_users))
+                }
+            }
+            gridItems(
+                items = groupedResults.users,
+                key = { "user_${it.id}" },
+                contentType = { "user_result_grid" },
+                span = { GridItemSpan(maxLineSpan) }
+            ) { user ->
+                GenericSearchResultItem(
+                    name = user.displayName,
+                    subtitle = null,
+                    imageUrl = user.imageUrl,
+                    onClick = { onUserClick(user.displayName) }
+                )
+            }
+        }
+        if (showStudios && groupedResults.studios.isNotEmpty()) {
+            if (showAll) {
+                item(
+                    key = "header_studios",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    SearchSectionHeader(title = stringResource(R.string.search_header_studios))
+                }
+            }
+            gridItems(
+                items = groupedResults.studios,
+                key = { "studio_${it.id}" },
+                contentType = { "studio_result_grid" },
+                span = { GridItemSpan(maxLineSpan) }
+            ) { studio ->
+                GenericSearchResultItem(
+                    name = studio.displayName,
+                    subtitle = studio.favourites?.let { stringResource(R.string.search_favourites_count, it) },
+                    imageUrl = null,
+                    onClick = { onStudioClick(studio.id) }
+                )
             }
         }
     }

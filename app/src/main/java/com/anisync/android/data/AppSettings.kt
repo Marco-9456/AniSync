@@ -35,6 +35,15 @@ enum class ThemeMode {
 }
 
 /**
+ * Layout mode used by the discover search results overlay. Persisted so the
+ * user's preferred density (rows vs grid of posters) survives app restarts.
+ */
+enum class DiscoverViewMode {
+    LIST,
+    GRID
+}
+
+/**
  * Cover-image quality picked from AniList's [CoverImage] sizes. Applied app-wide
  * via a Coil interceptor that rewrites AniList CDN cover URLs to the chosen size,
  * so every cover (cards, lists, detail screens) follows this preference.
@@ -232,6 +241,13 @@ class AppSettings @Inject constructor(
         prefs.getBoolean(KEY_SHOW_ADULT_CONTENT, false)
     )
     val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
+
+    private val _discoverSearchViewMode = MutableStateFlow(
+        DiscoverViewMode.entries.getOrElse(
+            prefs.getInt(KEY_DISCOVER_SEARCH_VIEW_MODE, DiscoverViewMode.LIST.ordinal)
+        ) { DiscoverViewMode.LIST }
+    )
+    val discoverSearchViewMode: StateFlow<DiscoverViewMode> = _discoverSearchViewMode.asStateFlow()
 
     // Last selected library tab (per media type)
     private val _lastSelectedAnimeTab = MutableStateFlow(
@@ -432,6 +448,11 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_SHOW_ADULT_CONTENT, show).apply()
     }
 
+    fun setDiscoverSearchViewMode(mode: DiscoverViewMode) {
+        _discoverSearchViewMode.value = mode
+        prefs.edit().putInt(KEY_DISCOVER_SEARCH_VIEW_MODE, mode.ordinal).apply()
+    }
+
     /**
      * Persist the last selected library tab for anime.
      */
@@ -546,6 +567,7 @@ companion object {
         private const val KEY_USER_SCORE_FORMAT = "user_score_format"
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
         private const val KEY_SHOW_ADULT_CONTENT = "show_adult_content"
+        private const val KEY_DISCOVER_SEARCH_VIEW_MODE = "discover_search_view_mode"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
         private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
         private const val KEY_MEDIA_HOST = "media_host"

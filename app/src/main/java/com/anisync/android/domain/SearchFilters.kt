@@ -29,6 +29,17 @@ enum class OriginCountry(val code: String, val displayName: String) {
 /** Adult-content quick filter shown in the chip bar (alongside the global pref). */
 enum class AdultMode { ANY, HIDE, ONLY }
 
+/**
+ * Entity bucket the user wants the search overlay to target.
+ *
+ * Null means "follow the discover screen's Anime/Manga selector"; an explicit
+ * value overrides it. Non-media values (CHARACTERS/STAFF/USERS/STUDIOS) cause
+ * media-only filters (genres, year, format, etc.) to be hidden in the chip
+ * bar, and the viewmodel skips the heavy `Search.graphql` call in favor of
+ * the multi-entity `SearchAll.graphql` projection.
+ */
+enum class SearchType { ANIME, MANGA, CHARACTERS, STAFF, USERS, STUDIOS }
+
 /** Closed year range; both bounds inclusive. Null bound = open ended. */
 @Immutable
 data class IntRangeFilter(val min: Int? = null, val max: Int? = null) {
@@ -53,6 +64,7 @@ data class IntComparatorFilter(
 @Immutable
 data class SearchFilters(
     val sort: SortOption = SortOption.POPULARITY_DESC,
+    val searchType: SearchType? = null,
     val genresIncluded: Set<String> = emptySet(),
     val genresExcluded: Set<String> = emptySet(),
     val tagsIncluded: Set<String> = emptySet(),
@@ -68,11 +80,16 @@ data class SearchFilters(
     val country: OriginCountry? = null,
     val adultMode: AdultMode = AdultMode.ANY
 ) {
+    /** True when [searchType] forces the overlay onto a non-media entity. */
+    val isNonMediaType: Boolean
+        get() = searchType != null && searchType != SearchType.ANIME && searchType != SearchType.MANGA
+
     val hasActiveFilters: Boolean get() = activeFilterCount > 0
 
     val activeFilterCount: Int
         get() = listOf(
             sort != SortOption.POPULARITY_DESC,
+            searchType != null,
             genresIncluded.isNotEmpty() || genresExcluded.isNotEmpty(),
             tagsIncluded.isNotEmpty() || tagsExcluded.isNotEmpty(),
             yearRange.isActive,

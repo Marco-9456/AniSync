@@ -1164,7 +1164,6 @@ private fun ContentRow(
         verticalAlignment = Alignment.Bottom
     ) {
         // Cover Image with Shared Transition
-        val sharedCoverShape = MaterialTheme.shapes.extraLarge
         with(sharedTransitionScope) {
             Card(
                 modifier = Modifier
@@ -1174,9 +1173,9 @@ private fun ContentRow(
                         sharedContentState = rememberSharedContentState(key = coverKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },
-                        clipInOverlayDuringTransition = OverlayClip(sharedCoverShape)
+                        clipInOverlayDuringTransition = OverlayClip(coverShape)
                     ),
-                shape = sharedCoverShape,
+                shape = coverShape,
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
