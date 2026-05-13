@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import androidx.core.content.getSystemService
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -56,7 +55,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +79,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import coil.imageLoader
@@ -89,7 +88,6 @@ import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.util.AppInfo
-import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -369,8 +367,6 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
     var showSponsorSheet by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val appInfoCopiedMessage = stringResource(R.string.settings_app_info_copied)
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
@@ -383,13 +379,13 @@ fun AboutScreen(
             onClick = { showSponsorSheet = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .height(56.dp), // A slightly taller, more prominent button height
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .height(56.dp),
             shape = RoundedCornerShape(
                 topStart = 24.dp,
                 topEnd = 24.dp,
                 bottomStart = 24.dp,
-                bottomEnd = 8.dp // Creates a subtle 'chat bubble' or dynamic activism shape
+                bottomEnd = 8.dp
             ),
             colors = ButtonDefaults.elevatedButtonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -416,12 +412,12 @@ fun AboutScreen(
                 title = stringResource(R.string.settings_privacy_policy),
                 onClick = { context.launchUrl("https://anisync.app/privacy") }
             )
-            SettingsDivider(startPadding = 20.dp)
+            SettingsDivider()
             SettingsItem(
                 title = stringResource(R.string.settings_terms_of_service),
                 onClick = { context.launchUrl("https://anisync.app/terms") }
             )
-            SettingsDivider(startPadding = 20.dp)
+            SettingsDivider()
             SettingsItem(
                 title = stringResource(R.string.settings_open_source_licenses),
                 onClick = onNavigateToOpenSourceLicenses
@@ -436,19 +432,19 @@ fun AboutScreen(
                 subtitle = stringResource(R.string.settings_acknowledgments_desc),
                 onClick = onNavigateToAcknowledgments
             )
-            SettingsDivider(startPadding = 20.dp)
+            SettingsDivider()
             SettingsItem(
                 title = stringResource(R.string.settings_anilist_api),
                 subtitle = stringResource(R.string.settings_anilist_api_desc),
                 onClick = { context.launchUrl("https://anilist.co") }
             )
-            SettingsDivider(startPadding = 20.dp)
+            SettingsDivider()
             SettingsItem(
                 title = stringResource(R.string.settings_links),
                 subtitle = stringResource(R.string.settings_links_desc),
                 onClick = onNavigateToLinks
             )
-            SettingsDivider(startPadding = 20.dp)
+            SettingsDivider()
             SettingsItem(
                 title = stringResource(R.string.about_improve_translations),
                 subtitle = stringResource(R.string.about_improve_translations_desc, stringResource(R.string.app_name)),

@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.anisync.android.R
 
@@ -32,7 +31,7 @@ fun LinksScreen(
                 icon = Icons.Outlined.Code,
                 onClick = { context.launchUrl("https://github.com/Marco-9456/AniSync") }
             )
-            SettingsDivider(startPadding = 20.dp)
+            SettingsDivider()
             SettingsItem(
                 title = stringResource(R.string.link_developer),
                 subtitle = "https://github.com/Marco-9456",

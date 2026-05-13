@@ -81,17 +81,11 @@ fun UpdatesScreen(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    // Launcher for navigating to "Install Unknown Apps" system settings.
-    // On return, we attempt installation since the user may have granted permission.
     val installSettingsLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             viewModel.onAction(SettingsAction.InstallUpdate)
         }
 
-    /**
-     * Checks canRequestPackageInstalls() on API 26+ and either installs directly
-     * or redirects the user to the system settings page for this app.
-     */
     fun requestInstall() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (context.packageManager.canRequestPackageInstalls()) {
@@ -137,7 +131,7 @@ fun UpdatesScreen(
                     selected = !uiState.isPrereleaseAllowed,
                     onClick = { viewModel.onAction(SettingsAction.SetPrereleaseAllowed(false)) }
                 )
-                SettingsDivider(startPadding = 20.dp)
+                SettingsDivider()
                 RadioSettingsItem(
                     title = stringResource(R.string.channel_prerelease),
                     subtitle = stringResource(R.string.channel_prerelease_desc),
@@ -149,31 +143,23 @@ fun UpdatesScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             SettingsGroup {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    SettingsItem(
-                        title = stringResource(R.string.check_for_updates),
-                        subtitle = stringResource(
-                            R.string.settings_version,
-                            BuildConfig.VERSION_NAME
-                        ),
-                        icon = Icons.Outlined.Refresh,
-                        onClick = {
-                            if (updateState !is UpdateState.Checking) {
-                                viewModel.onAction(SettingsAction.CheckForUpdate)
-                            }
+                SettingsItem(
+                    title = stringResource(R.string.check_for_updates),
+                    subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                    icon = Icons.Outlined.Refresh,
+                    onClick = {
+                        if (updateState !is UpdateState.Checking) {
+                            viewModel.onAction(SettingsAction.CheckForUpdate)
                         }
-                    )
-                    if (updateState is UpdateState.Checking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .padding(end = 20.dp)
-                        )
+                    },
+                    trailingContent = {
+                        if (updateState is UpdateState.Checking) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
                     }
-                }
+                )
             }
 
-            // Update dialog — shown for UpdateAvailable, Downloading, and ReadyToInstall states
             val dialogRelease = when (val state = updateState) {
                 is UpdateState.UpdateAvailable -> state.release
                 is UpdateState.Downloading -> state.release
@@ -195,10 +181,6 @@ fun UpdatesScreen(
     }
 }
 
-/**
- * Highly polished Material Design 3 Modal Bottom Sheet for app updates.
- * Displays release notes, smooth download progress, and animated install actions.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateDialog(
@@ -211,12 +193,10 @@ fun UpdateDialog(
     modifier: Modifier = Modifier
 ) {
     val isDownloading = updateState is UpdateState.Downloading
-    // Ensure the sheet state dynamically responds to the latest downloading status
     val isDownloadingState by rememberUpdatedState(isDownloading)
 
-    // Prevent accidental swipe dismissal while a download is actively in progress
     val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = false, // Changed to false to allow dragging to full screen
+        skipPartiallyExpanded = false,
         confirmValueChange = { sheetValue ->
             if (isDownloadingState && sheetValue == SheetValue.Hidden) false else true
         }
@@ -235,11 +215,9 @@ fun UpdateDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .navigationBarsPadding() // Adapts gracefully to edge-to-edge displays
+                .navigationBarsPadding()
                 .padding(bottom = 24.dp)
-            // REMOVED .animateContentSize() from the root layout to fix the bottom sheet reset bug
         ) {
-            // --- Header Section ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -273,7 +251,6 @@ fun UpdateDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
-                        // Version Pill Badge
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             shape = CircleShape
@@ -287,7 +264,6 @@ fun UpdateDialog(
                             )
                         }
 
-                        // Author Info
                         if (release.authorName != null) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -314,15 +290,13 @@ fun UpdateDialog(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- Markdown Release Notes Body ---
-            // Weight handles graceful expansion when the user drags the sheet up
             Surface(
                 modifier = Modifier
                     .weight(
                         1f,
                         fill = false
-                    ) // Allows height to wrap content, up to max screen space
-                    .fillMaxWidth(), // Removed heightIn restriction to allow full screen expansion
+                    )
+                    .fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shape = RoundedCornerShape(16.dp)
             ) {
@@ -334,9 +308,7 @@ fun UpdateDialog(
                 )
             }
 
-            // Wrap ONLY the animated sections in their own animateContentSize so the sheet doesn't collapse
             Column(modifier = Modifier.animateContentSize()) {
-                // --- Download Progress Indicator ---
                 AnimatedVisibility(
                     visible = isDownloading,
                     enter = expandVertically() + fadeIn(),
@@ -394,9 +366,6 @@ fun UpdateDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // --- Animated Actions Footer ---
-                // Map the update state to a stable integer to prevent the buttons from recomposing
-                // rapidly on every single progress tick.
                 val actionButtonsState = when (updateState) {
                     is UpdateState.ReadyToInstall -> 2
                     is UpdateState.Downloading -> 1
@@ -407,11 +376,7 @@ fun UpdateDialog(
                     targetState = actionButtonsState,
                     label = "UpdateActionsTransition",
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(
-                            animationSpec = tween(
-                                300
-                            )
-                        )
+                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                     }
                 ) { state ->
                     Row(
@@ -419,7 +384,7 @@ fun UpdateDialog(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         when (state) {
-                            2 -> { // ReadyToInstall
+                            2 -> {
                                 OutlinedButton(
                                     onClick = onDismiss,
                                     modifier = Modifier.weight(1f)
@@ -434,7 +399,7 @@ fun UpdateDialog(
                                 }
                             }
 
-                            1 -> { // Downloading
+                            1 -> {
                                 Button(
                                     onClick = onCancel,
                                     modifier = Modifier.fillMaxWidth(),
@@ -447,7 +412,7 @@ fun UpdateDialog(
                                 }
                             }
 
-                            else -> { // UpdateAvailable
+                            else -> {
                                 TextButton(
                                     onClick = onDismiss,
                                     modifier = Modifier.weight(1f)

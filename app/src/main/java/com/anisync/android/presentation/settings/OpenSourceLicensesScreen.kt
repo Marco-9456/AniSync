@@ -24,9 +24,6 @@ private data class OpenSourceLibrary(
     val url: String? = null
 )
 
-/**
- * List of open source libraries used in AniSync.
- */
 private val libraries = listOf(
     OpenSourceLibrary(
         name = "Kotlin",
@@ -127,7 +124,7 @@ fun OpenSourceLicensesScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         SettingsGroup {
-            libraries.forEachIndexed { index, library ->
+            libraries.forEach { library ->
                 SettingsItem(
                     title = library.name,
                     subtitle = "${library.version} - ${library.license}",
@@ -138,9 +135,6 @@ fun OpenSourceLicensesScreen(
                         }
                     }
                 )
-                if (index < libraries.lastIndex) {
-                    SettingsDivider(startPadding = 20.dp)
-                }
             }
         }
 

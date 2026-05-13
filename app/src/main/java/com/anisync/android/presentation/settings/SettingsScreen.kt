@@ -1,80 +1,71 @@
 package com.anisync.android.presentation.settings
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 
-/**
- * Data class representing a searchable settings item.
- */
-private data class SettingsItemData(
+private data class CategoryData(
     val key: String,
+    val title: String,
+    val subtitle: String,
     val icon: ImageVector,
-    val titleResId: Int,
-    val subtitleResId: Int? = null,
-    val subtitleArg: String? = null,
-    val searchKeywords: List<String>,
     val onClick: () -> Unit
 )
 
 /**
- * Main Settings hub screen.
- * Displays navigation items to different settings sections with search functionality.
+ * Main Settings hub screen featuring modern expressive card layouts with search.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateToLookAndFeel: () -> Unit,
@@ -89,381 +80,269 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val cacheSize = uiState.cacheSize
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val context = androidx.compose.ui.platform.LocalContext.current
-
-    var searchQuery by rememberSaveable { mutableStateOf("") }
     var showAppLinksDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     if (showAppLinksDialog) {
         AppLinksPromptDialog(onDismissRequest = { showAppLinksDialog = false })
     }
 
-    // Refresh cache size when this screen is displayed
     LaunchedEffect(Unit) {
         viewModel.onAction(SettingsAction.RefreshCacheSize)
     }
 
-    // Define all settings items with search keywords
-    val settingsItems = remember(cacheSize) {
-        listOf(
-            SettingsItemData(
-                key = "look_and_feel",
+    SettingsScreenScaffold(
+        title = stringResource(R.string.settings),
+        onBackClick = onBackClick,
+        modifier = modifier
+    ) {
+        val isDark = isSystemInDarkTheme() || uiState.themeMode == ThemeMode.DARK
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Search settings") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color.Transparent,
+            ),
+            singleLine = true
+        )
+
+        val allCategories = listOfNotNull(
+            CategoryData(
+                key = "lookandfeel",
+                title = stringResource(R.string.settings_look_and_feel),
+                subtitle = stringResource(R.string.settings_look_and_feel_desc),
                 icon = Icons.Outlined.Palette,
-                titleResId = R.string.settings_look_and_feel,
-                subtitleResId = R.string.settings_look_and_feel_desc,
-                searchKeywords = listOf(
-                    "look",
-                    "feel",
-                    "theme",
-                    "dark",
-                    "light",
-                    "appearance",
-                    "color",
-                    "language",
-                    "title",
-                    "streaming",
-                    "haptic",
-                    "vibration"
-                ),
                 onClick = onNavigateToLookAndFeel
             ),
-            SettingsItemData(
+            CategoryData(
                 key = "notifications",
+                title = stringResource(R.string.settings_notifications),
+                subtitle = stringResource(R.string.settings_notifications_desc),
                 icon = Icons.Outlined.Notifications,
-                titleResId = R.string.settings_notifications,
-                subtitleResId = R.string.settings_notifications_desc,
-                searchKeywords = listOf(
-                    "notification",
-                    "alert",
-                    "episode",
-                    "reminder",
-                    "watching",
-                    "planning"
-                ),
                 onClick = onNavigateToNotifications
             ),
-            SettingsItemData(
+            CategoryData(
                 key = "storage",
+                title = stringResource(R.string.settings_storage),
+                subtitle = stringResource(R.string.settings_storage_subtitle, uiState.cacheSize),
                 icon = Icons.Outlined.Storage,
-                titleResId = R.string.settings_storage,
-                subtitleResId = R.string.settings_storage_subtitle,
-                subtitleArg = cacheSize,
-                searchKeywords = listOf("storage", "cache", "clear", "data", "memory", "space"),
                 onClick = onNavigateToStorage
             ),
-            SettingsItemData(
+            CategoryData(
                 key = "media_upload",
+                title = stringResource(R.string.settings_media_upload),
+                subtitle = stringResource(R.string.settings_media_upload_desc),
                 icon = Icons.Outlined.CloudUpload,
-                titleResId = R.string.settings_media_upload,
-                subtitleResId = R.string.settings_media_upload_desc,
-                searchKeywords = listOf(
-                    "media",
-                    "upload",
-                    "image",
-                    "gif",
-                    "video",
-                    "attach",
-                    "catbox",
-                    "host"
-                ),
                 onClick = onNavigateToMediaUpload
             ),
-            SettingsItemData(
+            CategoryData(
                 key = "account",
+                title = stringResource(R.string.settings_account),
+                subtitle = stringResource(R.string.settings_account_desc),
                 icon = Icons.Outlined.AccountCircle,
-                titleResId = R.string.settings_account,
-                subtitleResId = R.string.settings_account_desc,
-                searchKeywords = listOf(
-                    "account",
-                    "profile",
-                    "logout",
-                    "sign out",
-                    "user",
-                    "anilist"
-                ),
                 onClick = onNavigateToAccount
             ),
-            SettingsItemData(
-                key = "app_links",
+            CategoryData(
+                key = "links",
+                title = stringResource(R.string.settings_app_links),
+                subtitle = stringResource(R.string.settings_app_links_desc),
                 icon = Icons.Rounded.Link,
-                titleResId = R.string.settings_app_links,
-                subtitleResId = R.string.settings_app_links_desc,
-                searchKeywords = listOf("links", "app links", "browser", "open", "anilist"),
                 onClick = { showAppLinksDialog = true }
             ),
-            SettingsItemData(
+            CategoryData(
                 key = "updates",
+                title = stringResource(R.string.settings_updates),
+                subtitle = stringResource(R.string.settings_updates_desc),
                 icon = Icons.Outlined.Update,
-                titleResId = R.string.settings_updates,
-                subtitleResId = R.string.settings_updates_desc,
-                searchKeywords = listOf("update", "version", "download", "upgrade", "new"),
                 onClick = onNavigateToUpdates
             ),
-            SettingsItemData(
+            CategoryData(
                 key = "about",
+                title = stringResource(R.string.settings_about),
+                subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                 icon = Icons.Outlined.Info,
-                titleResId = R.string.settings_about,
-                subtitleResId = R.string.settings_version,
-                subtitleArg = BuildConfig.VERSION_NAME,
-                searchKeywords = listOf(
-                    "about",
-                    "version",
-                    "license",
-                    "privacy",
-                    "terms",
-                    "acknowledgments"
-                ),
                 onClick = onNavigateToAbout
-            )
-        ) + if (BuildConfig.DEBUG) {
-            listOf(
-                SettingsItemData(
-                    key = "developer_tools",
+            ),
+            if (BuildConfig.DEBUG) {
+                CategoryData(
+                    key = "dev_tools",
+                    title = stringResource(R.string.settings_developer_tools),
+                    subtitle = stringResource(R.string.settings_developer_tools_desc),
                     icon = Icons.Outlined.Build,
-                    titleResId = R.string.settings_developer_tools,
-                    subtitleResId = R.string.settings_developer_tools_desc,
-                    searchKeywords = listOf(
-                        "developer",
-                        "debug",
-                        "tools",
-                        "test",
-                        "notification",
-                        "update"
-                    ),
                     onClick = onNavigateToDeveloperTools
                 )
-            )
+            } else null
+        )
+
+        val filteredCategories = if (searchQuery.isBlank()) {
+            allCategories
         } else {
-            emptyList()
-        }
-    }
-
-    // Filter items based on search query
-    val filteredItems by remember(searchQuery, settingsItems) {
-        derivedStateOf {
-            if (searchQuery.isBlank()) {
-                settingsItems
-            } else {
-                val query = searchQuery.lowercase().trim()
-                settingsItems.filter { item ->
-                    item.searchKeywords.any { keyword -> keyword.contains(query) }
-                }
+            allCategories.filter {
+                it.title.contains(searchQuery, ignoreCase = true) ||
+                        it.subtitle.contains(searchQuery, ignoreCase = true)
             }
         }
-    }
 
-    val isSearching = searchQuery.isNotBlank()
-
-    Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_back)
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Search Bar - pinned at top of content
-            item(key = "search") {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text(stringResource(R.string.settings_search_placeholder))
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Search,
-                            contentDescription = stringResource(R.string.a11y_settings_search),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(
-                                    Icons.Outlined.Clear,
-                                    contentDescription = stringResource(R.string.clear),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = CircleShape,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceContainer
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = { keyboardController?.hide() }
-                    )
+        if (filteredCategories.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No settings found",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
+        } else {
+            SettingsGroup {
+                filteredCategories.forEachIndexed { index, category ->
+                    val shape = when {
+                        filteredCategories.size == 1 -> RoundedCornerShape(24.dp)
+                        index == 0 -> RoundedCornerShape(
+                            topStart = 24.dp,
+                            topEnd = 24.dp,
+                            bottomStart = 4.dp,
+                            bottomEnd = 4.dp
+                        )
 
-            // Show filtered results or grouped items
-            if (isSearching) {
-                // Flat list when searching
-                if (filteredItems.isEmpty()) {
-                    item(key = "no_results") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = stringResource(R.string.search_no_results),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                } else {
-                    item(key = "search_results") {
-                        SettingsGroup {
-                            filteredItems.forEachIndexed { index, item ->
-                                val subtitle =
-                                    if (item.subtitleArg != null && item.subtitleResId != null) {
-                                        stringResource(item.subtitleResId, item.subtitleArg)
-                                    } else if (item.subtitleResId != null) {
-                                        stringResource(item.subtitleResId)
-                                    } else {
-                                        null
-                                    }
+                        index == filteredCategories.size - 1 -> RoundedCornerShape(
+                            topStart = 4.dp,
+                            topEnd = 4.dp,
+                            bottomStart = 24.dp,
+                            bottomEnd = 24.dp
+                        )
 
-                                SettingsItem(
-                                    icon = item.icon,
-                                    title = stringResource(item.titleResId),
-                                    subtitle = subtitle,
-                                    onClick = item.onClick
-                                )
-                                if (index < filteredItems.lastIndex) {
-                                    SettingsDivider()
-                                }
-                            }
-                        }
+                        else -> RoundedCornerShape(4.dp)
                     }
-                }
-            } else {
-                // Grouped layout when not searching
 
-                // Look & Feel Group
-                item(key = "group_look_and_feel") {
-                    SettingsGroup {
-                        SettingsItem(
-                            icon = Icons.Outlined.Palette,
-                            title = stringResource(R.string.settings_look_and_feel),
-                            subtitle = stringResource(R.string.settings_look_and_feel_desc),
-                            onClick = onNavigateToLookAndFeel
-                        )
-                    }
-                }
-
-                // Notifications & Storage Group
-                item(key = "group_notifications_storage") {
-                    SettingsGroup {
-                        SettingsItem(
-                            icon = Icons.Outlined.Notifications,
-                            title = stringResource(R.string.settings_notifications),
-                            subtitle = stringResource(R.string.settings_notifications_desc),
-                            onClick = onNavigateToNotifications
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.Storage,
-                            title = stringResource(R.string.settings_storage),
-                            subtitle = stringResource(
-                                R.string.settings_storage_subtitle,
-                                cacheSize
-                            ),
-                            onClick = onNavigateToStorage
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.CloudUpload,
-                            title = stringResource(R.string.settings_media_upload),
-                            subtitle = stringResource(R.string.settings_media_upload_desc),
-                            onClick = onNavigateToMediaUpload
-                        )
-                    }
-                }
-
-                // Account & About Group
-                item(key = "group_account_about") {
-                    SettingsGroup {
-                        SettingsItem(
-                            icon = Icons.Outlined.AccountCircle,
-                            title = stringResource(R.string.settings_account),
-                            subtitle = stringResource(R.string.settings_account_desc),
-                            onClick = onNavigateToAccount
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = Icons.Rounded.Link,
-                            title = stringResource(R.string.settings_app_links),
-                            subtitle = stringResource(R.string.settings_app_links_desc),
-                            onClick = { showAppLinksDialog = true }
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.Update,
-                            title = stringResource(R.string.settings_updates),
-                            subtitle = stringResource(R.string.settings_updates_desc),
-                            onClick = onNavigateToUpdates
-                        )
-                        SettingsDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.Info,
-                            title = stringResource(R.string.settings_about),
-                            subtitle = stringResource(
-                                R.string.settings_version,
-                                BuildConfig.VERSION_NAME
-                            ),
-                            onClick = onNavigateToAbout
-                        )
-                    }
-                }
-
-                // Developer Tools (debug builds only)
-                if (BuildConfig.DEBUG) {
-                    item(key = "group_developer_tools") {
-                        SettingsGroup {
-                            SettingsItem(
-                                icon = Icons.Outlined.Build,
-                                title = stringResource(R.string.settings_developer_tools),
-                                subtitle = stringResource(R.string.settings_developer_tools_desc),
-                                onClick = onNavigateToDeveloperTools
-                            )
-                        }
-                    }
+                    ExpressiveCategoryItem(
+                        title = category.title,
+                        subtitle = category.subtitle,
+                        icon = category.icon,
+                        customColors = getCategoryColors(category.key, isDark),
+                        onClick = category.onClick,
+                        shape = shape
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ExpressiveCategoryItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    customColors: Pair<Color, Color>,
+    onClick: () -> Unit,
+    shape: androidx.compose.ui.graphics.Shape
+) {
+    Surface(
+        onClick = onClick,
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(88.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(customColors.first)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = customColors.second,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                Text(
+                    text = subtitle,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                    maxLines = 2
+                )
+            }
+        }
+    }
+}
+
+private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> {
+    return if (isDark) {
+        when (key) {
+            "lookandfeel" -> Color(0xFF7D5260) to Color(0xFFFFD8E4)
+            "notifications" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
+            "storage" -> Color(0xFF3B4869) to Color(0xFFD9E2FF)
+            "media_upload" -> Color(0xFF004F58) to Color(0xFF88FAFF)
+            "account" -> Color(0xFF37474F) to Color(0xFFBBD9E8)
+            "links" -> Color(0xFF324F34) to Color(0xFFCBEFD0)
+            "updates" -> Color(0xFF004D61) to Color(0xFFACEFEE)
+            "about" -> Color(0xFF3F474D) to Color(0xFFDEE3EB)
+            "dev_tools" -> Color(0xFF6E4E13) to Color(0xFFFFDEAC)
+            else -> Color(0xFF37474F) to Color(0xFFBBD9E8)
+        }
+    } else {
+        when (key) {
+            "lookandfeel" -> Color(0xFFFFD8E4) to Color(0xFF631835)
+            "notifications" -> Color(0xFFD7E3FF) to Color(0xFF253347)
+            "storage" -> Color(0xFFD9E2FF) to Color(0xFF27304E)
+            "media_upload" -> Color(0xFFCCE8EA) to Color(0xFF004F58)
+            "account" -> Color(0xFFD6EAF5) to Color(0xFF103548)
+            "links" -> Color(0xFFCBEFD0) to Color(0xFF042106)
+            "updates" -> Color(0xFFACEFEE) to Color(0xFF002022)
+            "about" -> Color(0xFFEFF1F7) to Color(0xFF44474F)
+            "dev_tools" -> Color(0xFFFFDEAC) to Color(0xFF281900)
+            else -> Color(0xFFD6EAF5) to Color(0xFF103548)
         }
     }
 }

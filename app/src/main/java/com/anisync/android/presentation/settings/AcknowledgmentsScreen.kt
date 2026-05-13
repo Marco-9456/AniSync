@@ -34,7 +34,6 @@ fun AcknowledgmentsScreen(
 ) {
     val context = LocalContext.current
 
-    // Data Providers
     val dataProviders = listOf(
         AcknowledgmentItem(
             nameResId = R.string.acknowledgments_anilist,
@@ -43,7 +42,6 @@ fun AcknowledgmentsScreen(
         )
     )
 
-    // Core Libraries
     val coreLibraries = listOf(
         AcknowledgmentItem(
             nameResId = R.string.acknowledgments_android_jetpack,
@@ -62,7 +60,6 @@ fun AcknowledgmentsScreen(
         )
     )
 
-    // Community
     val community = listOf(
         AcknowledgmentItem(
             nameResId = R.string.acknowledgments_contributors,
@@ -87,11 +84,10 @@ fun AcknowledgmentsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Data Providers Section
         SectionHeader(stringResource(R.string.acknowledgments_section_data))
         Spacer(modifier = Modifier.height(8.dp))
         SettingsGroup {
-            dataProviders.forEachIndexed { index, item ->
+            dataProviders.forEach { item ->
                 SettingsItem(
                     title = stringResource(item.nameResId),
                     subtitle = stringResource(item.descriptionResId),
@@ -102,19 +98,15 @@ fun AcknowledgmentsScreen(
                         }
                     }
                 )
-                if (index < dataProviders.lastIndex) {
-                    SettingsDivider(startPadding = 20.dp)
-                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Core Libraries Section
         SectionHeader(stringResource(R.string.acknowledgments_section_libraries))
         Spacer(modifier = Modifier.height(8.dp))
         SettingsGroup {
-            coreLibraries.forEachIndexed { index, item ->
+            coreLibraries.forEach { item ->
                 SettingsItem(
                     title = stringResource(item.nameResId),
                     subtitle = stringResource(item.descriptionResId),
@@ -125,27 +117,20 @@ fun AcknowledgmentsScreen(
                         }
                     }
                 )
-                if (index < coreLibraries.lastIndex) {
-                    SettingsDivider(startPadding = 20.dp)
-                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Community Section
         SectionHeader(stringResource(R.string.acknowledgments_section_community))
         Spacer(modifier = Modifier.height(8.dp))
         SettingsGroup {
-            community.forEachIndexed { index, item ->
+            community.forEach { item ->
                 SettingsItem(
                     title = stringResource(item.nameResId),
                     subtitle = stringResource(item.descriptionResId),
                     onClick = {}
                 )
-                if (index < community.lastIndex) {
-                    SettingsDivider(startPadding = 20.dp)
-                }
             }
         }
 
@@ -153,9 +138,6 @@ fun AcknowledgmentsScreen(
     }
 }
 
-/**
- * Section header text.
- */
 @Composable
 private fun SectionHeader(text: String) {
     Text(

@@ -22,8 +22,8 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Visibility
@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -72,11 +73,6 @@ import com.anisync.android.presentation.settings.components.PhonePreview
 import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.ThemePalette
 
-/**
- * Look and Feel settings screen.
- * Contains visual theme selector with mini-app previews, title language,
- * streaming service, and haptic feedback settings.
- */
 private val TitleLanguages = TitleLanguage.entries
 private val StreamingServices = StreamingService.entries
 private val ThemeModes = ThemeMode.entries
@@ -102,7 +98,6 @@ fun LookAndFeelScreen(
     val navBarShowLabels = uiState.navBarShowLabels
     val navBarCornerRadius = uiState.navBarCornerRadius
 
-    // Theme palette settings
     val selectedPaletteId = uiState.selectedPaletteId
     val customSeedColor = uiState.customSeedColor
     val paletteStyle = uiState.paletteStyle
@@ -115,7 +110,6 @@ fun LookAndFeelScreen(
     var showCoverQualityDialog by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Determine dark mode for preview rendering
     val isSystemDark = isSystemInDarkTheme()
     val isDarkMode = remember(themeMode, isSystemDark) {
         when (themeMode) {
@@ -125,7 +119,6 @@ fun LookAndFeelScreen(
         }
     }
 
-    // Build palette list: filter out Dynamic on pre-Android 12, include custom if set
     val supportseDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val palettes = remember(customSeedColor, supportseDynamicColor) {
         val presets = if (supportseDynamicColor) {
@@ -140,7 +133,6 @@ fun LookAndFeelScreen(
         }
     }
 
-    // Auto-reset orphaned "custom" palette state
     LaunchedEffect(selectedPaletteId, palettes, uiState.isLoaded) {
         if (uiState.isLoaded && palettes.none { it.id == selectedPaletteId }) {
             viewModel.onAction(SettingsAction.SetSelectedPalette(palettes.firstOrNull()?.id ?: "dynamic"))
@@ -160,7 +152,6 @@ fun LookAndFeelScreen(
         { style: com.materialkolor.PaletteStyle -> viewModel.onAction(SettingsAction.SetPaletteStyle(style)) }
     }
 
-    // Color picker bottom sheet
     if (showColorPicker) {
         ColorPickerSheet(
             currentColor = customSeedColor,
@@ -169,7 +160,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    // Dialogs
     if (showTitleLanguageDialog) {
         TitleLanguageSelectionDialog(
             currentLanguage = titleLanguage,
@@ -241,10 +231,6 @@ fun LookAndFeelScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        // =================================================================
-        // PREVIEW SECTION
-        // =================================================================
-
         Text(
             text = stringResource(R.string.preview),
             style = MaterialTheme.typography.labelLarge,
@@ -252,13 +238,11 @@ fun LookAndFeelScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        // Get the seed color for the currently selected palette
         val selectedPalette = remember(palettes, selectedPaletteId) {
             palettes.find { it.id == selectedPaletteId }
         }
         val seedColor = if (selectedPalette?.isDynamic == true) null else selectedPalette?.seedColor
 
-        // Phone mockup preview — only render after settings have loaded to prevent flicker
         if (uiState.isLoaded) {
             PhonePreview(
                 seedColor = seedColor,
@@ -270,10 +254,6 @@ fun LookAndFeelScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // =================================================================
-        // COLOR SCHEME SECTION
-        // =================================================================
-
         Text(
             text = stringResource(R.string.color_scheme),
             style = MaterialTheme.typography.labelLarge,
@@ -281,7 +261,6 @@ fun LookAndFeelScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        // Color scheme selector with palette circles
         ColorSchemeSelector(
             palettes = palettes,
             selectedPaletteId = selectedPaletteId,
@@ -292,14 +271,12 @@ fun LookAndFeelScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Custom Color & Palette Style Row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Custom Color Button
             OutlinedButton(
                 onClick = { showColorPicker = true },
                 modifier = Modifier.weight(1f)
@@ -316,7 +293,6 @@ fun LookAndFeelScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Palette Style Selector (disabled when Dynamic palette is selected)
         PaletteStyleSelector(
             selectedStyle = paletteStyle,
             onStyleSelected = onStyleSelected,
@@ -327,10 +303,6 @@ fun LookAndFeelScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        // =================================================================
-        // APPEARANCE SECTION
-        // =================================================================
 
         SettingsGroup {
             SelectionSettingsItem(
@@ -346,10 +318,6 @@ fun LookAndFeelScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // =================================================================
-        // DISPLAY & CONTENT SECTION
-        // =================================================================
 
         SettingsGroup {
             SelectionSettingsItem(
@@ -376,10 +344,6 @@ fun LookAndFeelScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // =================================================================
-        // NAVIGATION SECTION
-        // =================================================================
-
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.Navigation,
@@ -397,19 +361,21 @@ fun LookAndFeelScreen(
                 }
             )
             SettingsDivider()
-            NavBarCornerRadiusSlider(
-                value = navBarCornerRadius,
-                onValueChange = {
-                    viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
-                }
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                NavBarCornerRadiusSlider(
+                    value = navBarCornerRadius,
+                    onValueChange = {
+                        viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
+                    }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // =================================================================
-        // STREAMING & INTERACTION SECTION
-        // =================================================================
 
         SettingsGroup {
             SelectionSettingsItem(
@@ -433,18 +399,9 @@ fun LookAndFeelScreen(
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetShowAdultContent(it)) }
             )
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
-// =============================================================================
-// SELECTION DIALOGS
-// =============================================================================
-
-/**
- * Title Language selection dialog.
- */
 @Composable
 fun TitleLanguageSelectionDialog(
     currentLanguage: TitleLanguage,
@@ -528,9 +485,6 @@ fun TitleLanguageSelectionDialog(
     }
 }
 
-/**
- * Streaming Service selection dialog with service icons.
- */
 @Composable
 fun StreamingServiceSelectionDialog(
     currentService: StreamingService,
@@ -652,9 +606,6 @@ private fun rememberBrandColors(): Map<StreamingService, Color?> {
     }
 }
 
-/**
- * Theme Mode selection dialog.
- */
 @Composable
 fun ThemeModeSelectionDialog(
     currentMode: ThemeMode,
@@ -735,14 +686,6 @@ fun ThemeModeSelectionDialog(
     }
 }
 
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * App Language selection dialog.
- * Shows language names in their native script so users can always identify their language.
- */
 @Composable
 fun AppLanguageSelectionDialog(
     currentLocale: AppLocale,
@@ -827,10 +770,6 @@ fun AppLanguageSelectionDialog(
         }
     }
 }
-
-// =============================================================================
-// TITLE LANGUAGE HELPER FUNCTIONS
-// =============================================================================
 
 @Composable
 private fun getTitleLanguageLabel(language: TitleLanguage): String {

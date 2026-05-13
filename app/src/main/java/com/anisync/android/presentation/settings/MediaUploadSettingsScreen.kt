@@ -93,10 +93,18 @@ fun MediaUploadSettingsScreen(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
-                    LitterboxDurationRow(
-                        selected = litterboxDuration,
-                        onSelect = viewModel::setLitterboxDuration
-                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        LitterboxDurationRow(
+                            selected = litterboxDuration,
+                            onSelect = viewModel::setLitterboxDuration
+                        )
+                    }
                 }
             }
             SettingsDivider()
@@ -114,16 +122,24 @@ fun MediaUploadSettingsScreen(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
-                    CustomHostCard(
-                        url = customUrl,
-                        field = customField,
-                        auth = customAuth,
-                        jsonPath = customJsonPath,
-                        onUrlChange = viewModel::setCustomHostUrl,
-                        onFieldChange = viewModel::setCustomHostFileField,
-                        onAuthChange = viewModel::setCustomHostAuthHeader,
-                        onJsonPathChange = viewModel::setCustomHostResponseJsonPath
-                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        CustomHostCard(
+                            url = customUrl,
+                            field = customField,
+                            auth = customAuth,
+                            jsonPath = customJsonPath,
+                            onUrlChange = viewModel::setCustomHostUrl,
+                            onFieldChange = viewModel::setCustomHostFileField,
+                            onAuthChange = viewModel::setCustomHostAuthHeader,
+                            onJsonPathChange = viewModel::setCustomHostResponseJsonPath
+                        )
+                    }
                 }
             }
         }
@@ -231,7 +247,7 @@ private fun CustomHostCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
+            .padding(start = 20.dp, end = 20.dp, bottom = 16.dp, top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         LabeledField(
