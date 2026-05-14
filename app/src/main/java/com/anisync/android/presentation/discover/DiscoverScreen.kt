@@ -313,8 +313,7 @@ fun DiscoverScreen(
             mainListState = mainListState,
             pullToRefreshState = pullToRefreshState,
             paddingValues = PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = 80.dp
+                top = paddingValues.calculateTopPadding()
             ),
             trendingTitle = trendingTitle,
             popularTitle = popularTitle,
