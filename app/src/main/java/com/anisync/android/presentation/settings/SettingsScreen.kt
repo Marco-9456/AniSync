@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -28,11 +27,13 @@ import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -102,7 +103,7 @@ fun SettingsScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search settings") },
+            placeholder = { Text(stringResource(R.string.search_settings)) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -113,7 +114,10 @@ fun SettingsScreen(
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = stringResource(R.string.clear_search)
+                        )
                     }
                 }
             },
@@ -216,7 +220,7 @@ fun SettingsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No settings found",
+                    text = stringResource(R.string.no_settings_found),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -238,7 +242,6 @@ fun SettingsScreen(
                             bottomStart = 24.dp,
                             bottomEnd = 24.dp
                         )
-
                         else -> RoundedCornerShape(4.dp)
                     }
 
@@ -283,7 +286,7 @@ fun ExpressiveCategoryItem(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(CircleShape)
+                    .clip(MaterialShapes.Clover8Leaf.toShape())
                     .background(customColors.first)
             ) {
                 Icon(

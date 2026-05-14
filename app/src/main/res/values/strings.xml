@@ -361,6 +361,9 @@
     <string name="settings_anilist_api_desc">Data provided by AniList GraphQL API</string>
     <string name="settings_made_with_love">Made with love for anime fans</string>
     <string name="settings_search_placeholder">Search settings</string>
+    <string name="search_settings">Search settings</string>
+    <string name="clear_search">Clear search</string>
+    <string name="no_settings_found">No settings found</string>
     <string name="settings_oss_description">AniSync is built with the following open source libraries:</string>
     <string name="settings_oss_footer">All libraries are used in accordance with their respective licenses.</string>
 
