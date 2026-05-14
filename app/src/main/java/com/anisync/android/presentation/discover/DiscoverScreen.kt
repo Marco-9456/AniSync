@@ -573,7 +573,7 @@ private fun DiscoverContent(
         LazyColumn(
             state = mainListState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = LocalMainNavBarInset.current)
+            contentPadding = PaddingValues(bottom = 24.dp + LocalMainNavBarInset.current)
         ) {
             when {
                 isLoading -> {
