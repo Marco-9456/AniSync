@@ -83,7 +83,8 @@ fun CompactNavBar(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            // M3 spec: 12dp above the indicator, 16dp below the label.
+                            .padding(start = 8.dp, end = 8.dp, top = 12.dp, bottom = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         content = content
@@ -103,11 +104,13 @@ fun CompactNavBar(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        // M3 spec: 12dp above the indicator, 16dp below the label.
+                        // Bottom also consumes the system nav bar inset.
                         .padding(
                             start = 8.dp,
                             end = 8.dp,
                             top = 12.dp,
-                            bottom = systemBarInsets.calculateBottomPadding() + 12.dp
+                            bottom = systemBarInsets.calculateBottomPadding() + 16.dp
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -174,16 +177,22 @@ fun RowScope.CompactNavBarItem(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            ),
+            )
+            // With labels hidden the item collapses to just the pill, making the
+            // bar look like a thin strip. Reserve the vertical space the label
+            // would have occupied so the bar keeps a balanced height.
+            .then(if (!showLabel) Modifier.padding(vertical = 10.dp) else Modifier),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Pill indicator (animates from transparent to filled). Wraps the icon so
         // it grows with the icon's natural size.
+        // M3 spec: active indicator pill is 32dp tall, 56dp wide (24dp icon +
+        // 16dp horizontal padding each side).
         Box(
             modifier = Modifier
                 .background(indicatorColor, IndicatorShape)
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .height(28.dp),
+                .height(32.dp)
+                .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             CompositionLocalProvider(LocalContentColor provides iconTint) {
