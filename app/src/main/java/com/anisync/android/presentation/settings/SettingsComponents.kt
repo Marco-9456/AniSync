@@ -1,14 +1,5 @@
 package com.anisync.android.presentation.settings
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.rememberTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,54 +12,34 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.anisync.android.R
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 
 /**
- * Redesigned Scaffold for settings screens with collapsing hero TopBar and enter animations.
+ * Scaffold for settings screens. A thin wrapper around the app-wide [CollapsingTopBarScaffold]
+ * that supplies the settings-specific scrolling container: a single [LazyColumn] whose items are
+ * stacked with an 8dp gap and inset 16dp horizontally.
  */
 @Composable
 fun SettingsScreenScaffold(
@@ -77,92 +48,20 @@ fun SettingsScreenScaffold(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val density = LocalDensity.current
-    val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
 
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val minTopBarHeight = 64.dp + statusBarHeight
-    val maxTopBarHeight = if (title.length > 18) 200.dp else 170.dp
-
-    val minTopBarHeightPx = with(density) { minTopBarHeight.toPx() }
-    val maxTopBarHeightPx = with(density) { maxTopBarHeight.toPx() }
-
-    val topBarHeight = remember(maxTopBarHeightPx) { Animatable(maxTopBarHeightPx) }
-    var collapseFraction by remember { mutableFloatStateOf(0f) }
-
-    LaunchedEffect(topBarHeight.value, maxTopBarHeightPx) {
-        collapseFraction = 1f - ((topBarHeight.value - minTopBarHeightPx) / (maxTopBarHeightPx - minTopBarHeightPx)).coerceIn(0f, 1f)
-    }
-
-    val transitionState = remember { MutableTransitionState(false) }
-    LaunchedEffect(Unit) { transitionState.targetState = true }
-
-    val transition = rememberTransition(transitionState, label = "SettingsAppearTransition")
-    val contentAlpha by transition.animateFloat(
-        label = "ContentAlpha",
-        transitionSpec = { tween(durationMillis = 500) }
-    ) { if (it) 1f else 0f }
-    val contentOffset by transition.animateDp(
-        label = "ContentOffset",
-        transitionSpec = { tween(durationMillis = 400, easing = FastOutSlowInEasing) }
-    ) { if (it) 0.dp else 40.dp }
-
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val delta = available.y
-                val isScrollingDown = delta < 0
-
-                if (!isScrollingDown && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)) {
-                    return Offset.Zero
-                }
-
-                val previousHeight = topBarHeight.value
-                val newHeight = (previousHeight + delta).coerceIn(minTopBarHeightPx, maxTopBarHeightPx)
-                val consumed = newHeight - previousHeight
-
-                if (consumed.roundToInt() != 0) {
-                    coroutineScope.launch { topBarHeight.snapTo(newHeight) }
-                }
-
-                val canConsumeScroll = !(isScrollingDown && newHeight == minTopBarHeightPx)
-                return if (canConsumeScroll) Offset(0f, consumed) else Offset.Zero
-            }
-        }
-    }
-
-    LaunchedEffect(lazyListState.isScrollInProgress) {
-        if (!lazyListState.isScrollInProgress) {
-            val shouldExpand = topBarHeight.value > (minTopBarHeightPx + maxTopBarHeightPx) / 2
-            val canExpand = lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset == 0
-            val targetValue = if (shouldExpand && canExpand) maxTopBarHeightPx else minTopBarHeightPx
-
-            if (topBarHeight.value != targetValue) {
-                coroutineScope.launch {
-                    topBarHeight.animateTo(targetValue, spring(stiffness = Spring.StiffnessMedium))
-                }
-            }
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
-            .nestedScroll(nestedScrollConnection)
-            .fillMaxSize()
-            .graphicsLayer {
-                alpha = contentAlpha
-                translationY = contentOffset.toPx()
-            }
-    ) {
-        val currentTopBarHeightDp = with(density) { topBarHeight.value.toDp() }
-
+    CollapsingTopBarScaffold(
+        title = title,
+        onBackClick = onBackClick,
+        modifier = modifier,
+        scrollableState = lazyListState,
+        enableEnterAnimation = true
+    ) { topContentPadding ->
         LazyColumn(
             state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                top = currentTopBarHeightDp + 8.dp,
+                top = topContentPadding + 8.dp,
                 start = 16.dp,
                 end = 16.dp,
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 32.dp
@@ -176,66 +75,6 @@ fun SettingsScreenScaffold(
                     content()
                 }
             }
-        }
-
-        CollapsibleCommonTopBar(
-            title = title,
-            collapseFraction = collapseFraction,
-            headerHeight = currentTopBarHeightDp,
-            onBackClick = onBackClick
-        )
-    }
-}
-
-@Composable
-fun CollapsibleCommonTopBar(
-    title: String,
-    collapseFraction: Float,
-    headerHeight: Dp,
-    onBackClick: () -> Unit,
-    maxLines: Int = 2,
-    expandedTitleStartPadding: Dp = 16.dp,
-    collapsedTitleStartPadding: Dp = 68.dp
-) {
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val containerColor = MaterialTheme.colorScheme.background
-    val scrolledColor = MaterialTheme.colorScheme.surfaceContainer
-    val backgroundColor = androidx.compose.ui.graphics.lerp(containerColor, scrolledColor, collapseFraction)
-
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(headerHeight),
-        color = backgroundColor
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .padding(top = statusBarHeight + 4.dp, start = 4.dp)
-                    .align(Alignment.TopStart)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = stringResource(R.string.navigate_back),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            val titleStartPadding = androidx.compose.ui.unit.lerp(expandedTitleStartPadding, collapsedTitleStartPadding, collapseFraction)
-            val titleBottomPadding = androidx.compose.ui.unit.lerp(16.dp, 16.dp, collapseFraction)
-            val titleFontSize = androidx.compose.ui.unit.lerp(32.sp, 20.sp, collapseFraction)
-
-            Text(
-                text = title,
-                fontSize = titleFontSize,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = if (collapseFraction > 0.8f) 1 else maxLines,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = titleFontSize * 1.2f,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = titleStartPadding, bottom = titleBottomPadding)
-            )
         }
     }
 }

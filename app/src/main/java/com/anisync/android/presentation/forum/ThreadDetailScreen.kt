@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,19 +44,15 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -73,18 +68,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.toCommentNode
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
@@ -133,8 +127,6 @@ fun ThreadDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val scrollBehavior =
-        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
@@ -295,29 +287,12 @@ fun ThreadDetailScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            MediumTopAppBar(
-                title = {
-                    Text(
-                        text = threadTitle.ifEmpty { stringResource(R.string.forum_thread_appbar) },
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_navigate_back)
-                        )
-                    }
-                },
-                actions = {
+    CollapsingTopBarScaffold(
+        title = threadTitle.ifEmpty { stringResource(R.string.forum_thread_appbar) },
+        onBackClick = onBackClick,
+        scrollableState = listState,
+        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        actions = {
                     val siteUrl = uiState.thread?.siteUrl
                     if (siteUrl != null) {
                         IconButton(onClick = {
@@ -386,13 +361,6 @@ fun ThreadDetailScreen(
                         }
                     }
                 },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                )
-            )
-        },
         floatingActionButton = {
             val thread = uiState.thread
             if (thread != null && !thread.isLocked) {
@@ -414,7 +382,7 @@ fun ThreadDetailScreen(
                 }
             }
         }
-    ) { innerPadding ->
+    ) { topContentPadding ->
         PullToRefreshBox(
             isRefreshing = uiState.isLoading && uiState.thread != null,
             state = pullToRefreshState,
@@ -425,19 +393,29 @@ fun ThreadDetailScreen(
                     state = pullToRefreshState,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
+                        .padding(top = topContentPadding)
                 )
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             CompositionLocalProvider(LocalExoPlayerCache provides playerCache) {
                 when {
-                    uiState.isLoading && uiState.thread == null -> ThreadDetailSkeleton()
-                    uiState.errorMessage != null -> ErrorState(
-                        message = uiState.errorMessage!!,
-                        onRetry = { viewModel.onAction(ThreadDetailAction.Load(threadId)) })
+                    uiState.isLoading && uiState.thread == null -> Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding)
+                    ) { ThreadDetailSkeleton() }
+
+                    uiState.errorMessage != null -> Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding)
+                    ) {
+                        ErrorState(
+                            message = uiState.errorMessage!!,
+                            onRetry = { viewModel.onAction(ThreadDetailAction.Load(threadId)) }
+                        )
+                    }
 
                     else -> {
                         val thread = uiState.thread ?: return@CompositionLocalProvider
@@ -445,6 +423,7 @@ fun ThreadDetailScreen(
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(top = topContentPadding),
                             verticalArrangement = Arrangement.spacedBy(8.dp) // Expressive vertical spacing
                         ) {
                             item(key = "thread_header_top") {

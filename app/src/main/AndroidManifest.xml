@@ -119,15 +119,6 @@
             android:launchMode="singleInstance"
             android:theme="@style/Theme.AniSync" />
 
-        <!-- Widget Configuration Activity -->
-        <activity
-            android:name=".widget.config.UpNextWidgetConfigActivity"
-            android:exported="true"
-            android:theme="@style/Theme.AniSync">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

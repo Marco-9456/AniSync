@@ -7,9 +7,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,19 +17,12 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -44,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -52,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.discover.components.SearchFiltersRow
 import com.anisync.android.presentation.util.AppMotion
@@ -74,58 +65,48 @@ fun MediaGridContent(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val gridState = rememberLazyGridState()
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
-                ),
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+    CollapsingTopBarScaffold(
+        title = title,
+        onBackClick = onBackClick,
+        scrollableState = gridState,
+        scrolledContainerColor = MaterialTheme.colorScheme.background
+    ) { topContentPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
             when {
                 isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator()
                     }
                 }
 
                 errorMessage != null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
                     }
                 }
 
                 else -> {
                     LazyVerticalGrid(
+                        state = gridState,
                         columns = GridCells.Adaptive(minSize = 150.dp),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            top = topContentPadding + 16.dp,
+                            end = 16.dp,
+                            bottom = 16.dp
+                        ),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
@@ -183,8 +164,6 @@ fun SectionGridScreen(
             viewModel.onAction(SectionGridAction.LoadNextPage)
         }
     }
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
     var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
@@ -266,48 +245,22 @@ fun SectionGridScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            with(sharedTransitionScope) {
-                LargeTopAppBar(
-                    modifier = Modifier
-                        .renderInSharedTransitionScopeOverlay(
-                            zIndexInOverlay = 1f,
-                            renderInOverlay = { shouldRenderTopBarInOverlay }
-                        )
-                        .graphicsLayer {
-                            alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
-                        },
-                    title = {
-                        Text(
-                            text = sectionTitle,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    ),
-                    scrollBehavior = scrollBehavior
+    CollapsingTopBarScaffold(
+        title = sectionTitle,
+        onBackClick = onBackClick,
+        scrollableState = gridState,
+        scrolledContainerColor = MaterialTheme.colorScheme.background,
+        topBarModifier = with(sharedTransitionScope) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(
+                    zIndexInOverlay = 1f,
+                    renderInOverlay = { shouldRenderTopBarInOverlay }
                 )
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+                .graphicsLayer {
+                    alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                }
+        },
+        belowBar = {
             Surface(
                 modifier = filtersOverlayModifier,
                 color = MaterialTheme.colorScheme.background
@@ -324,12 +277,15 @@ fun SectionGridScreen(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                when {
+        }
+    ) { topContentPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            when {
                     uiState.isLoading -> {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = topContentPadding),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
@@ -338,7 +294,9 @@ fun SectionGridScreen(
 
                     uiState.errorMessage != null -> {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = topContentPadding),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -350,7 +308,9 @@ fun SectionGridScreen(
 
                     uiState.items.isEmpty() -> {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = topContentPadding),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -366,7 +326,12 @@ fun SectionGridScreen(
 
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 150.dp),
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = topContentPadding + 16.dp,
+                                end = 16.dp,
+                                bottom = 16.dp
+                            ),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxSize(),
@@ -408,7 +373,6 @@ fun SectionGridScreen(
                 }
             }
         }
-    }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)

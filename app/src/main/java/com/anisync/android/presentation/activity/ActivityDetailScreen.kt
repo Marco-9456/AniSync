@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,15 +37,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -63,18 +58,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
@@ -106,7 +100,6 @@ fun ActivityDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
@@ -226,27 +219,12 @@ fun ActivityDetailScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.activity_detail_title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                actions = {
+    CollapsingTopBarScaffold(
+        title = stringResource(R.string.activity_detail_title),
+        onBackClick = onBackClick,
+        scrollableState = listState,
+        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        actions = {
                     val siteUrl = uiState.activity?.siteUrl
                     if (siteUrl != null) {
                         IconButton(onClick = {
@@ -315,13 +293,6 @@ fun ActivityDetailScreen(
                         }
                     }
                 },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
-            )
-        },
         floatingActionButton = {
             if (uiState.activity != null) {
                 Box(modifier = Modifier.navigationBarsPadding()) {
@@ -338,7 +309,7 @@ fun ActivityDetailScreen(
                 }
             }
         }
-    ) { innerPadding ->
+    ) { topContentPadding ->
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             state = pullToRefreshState,
@@ -349,28 +320,38 @@ fun ActivityDetailScreen(
                     state = pullToRefreshState,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
+                        .padding(top = topContentPadding)
                 )
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             when {
                 uiState.isLoading && uiState.activity == null -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularWavyProgressIndicator() }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding),
+                        contentAlignment = Alignment.Center
+                    ) { CircularWavyProgressIndicator() }
                 }
                 uiState.errorMessage != null && uiState.activity == null -> {
-                    ErrorState(
-                        message = uiState.errorMessage!!,
-                        onRetry = { viewModel.onAction(ActivityDetailAction.Load(activityId)) }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding)
+                    ) {
+                        ErrorState(
+                            message = uiState.errorMessage!!,
+                            onRetry = { viewModel.onAction(ActivityDetailAction.Load(activityId)) }
+                        )
+                    }
                 }
                 uiState.activity != null -> {
                     val activity = uiState.activity!!
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = topContentPadding),
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         item(key = "activity_header_top") {

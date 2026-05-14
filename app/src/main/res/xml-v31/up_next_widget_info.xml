@@ -12,6 +12,4 @@
     android:targetCellHeight="2"
     android:initialLayout="@layout/widget_preview_up_next"
     android:previewLayout="@layout/widget_preview_up_next"
-    android:widgetCategory="home_screen"
-    android:configure="com.anisync.android.widget.config.UpNextWidgetConfigActivity"
-    android:widgetFeatures="reconfigurable" />
+    android:widgetCategory="home_screen" />

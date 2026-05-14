@@ -3,7 +3,6 @@ package com.anisync.android.presentation.notifications
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,17 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -35,13 +32,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.NotificationFilter
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
@@ -60,7 +57,6 @@ fun NotificationsScreen(
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val listState = rememberLazyListState()
     val pullState = rememberPullToRefreshState()
 
@@ -76,100 +72,103 @@ fun NotificationsScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.notifications_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = stringResource(R.string.navigate_back)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = stringResource(R.string.settings_notifications)
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
+    CollapsingTopBarScaffold(
+        title = stringResource(R.string.notifications_title),
+        onBackClick = onBackClick,
+        modifier = modifier,
+        scrollableState = listState,
+        actions = {
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = stringResource(R.string.settings_notifications)
+                )
+            }
+        },
+        belowBar = {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                FilterChipsRow(
+                    selected = uiState.filter,
+                    onSelect = { viewModel.onAction(NotificationsAction.SetFilter(it)) }
+                )
+            }
         }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+    ) { topContentPadding ->
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.onAction(NotificationsAction.Refresh) },
+            state = pullState,
+            modifier = Modifier.fillMaxSize(),
+            indicator = {
+                CustomPullToRefreshIndicator(
+                    isRefreshing = uiState.isRefreshing,
+                    state = pullState,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = topContentPadding)
+                )
+            }
         ) {
-            FilterChipsRow(
-                selected = uiState.filter,
-                onSelect = { viewModel.onAction(NotificationsAction.SetFilter(it)) }
-            )
-
-            PullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = { viewModel.onAction(NotificationsAction.Refresh) },
-                state = pullState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                indicator = {
-                    CustomPullToRefreshIndicator(
-                        isRefreshing = uiState.isRefreshing,
-                        state = pullState,
+            when {
+                uiState.isLoading && uiState.entries.isEmpty() -> {
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 16.dp)
-                    )
+                            .fillMaxSize()
+                            .padding(top = topContentPadding),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
                 }
-            ) {
-                when {
-                    uiState.isLoading && uiState.entries.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) { CircularProgressIndicator() }
-                    }
-                    uiState.errorMessage != null && uiState.entries.isEmpty() -> {
+                uiState.errorMessage != null && uiState.entries.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding)
+                    ) {
                         ErrorState(
                             message = uiState.errorMessage ?: "",
                             onRetry = { viewModel.onAction(NotificationsAction.Retry) }
                         )
                     }
-                    uiState.entries.isEmpty() -> {
+                }
+                uiState.entries.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding)
+                    ) {
                         EmptyStateConfigs.NoNotifications()
                     }
-                    else -> {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(uiState.entries, key = { it.key }) { entry ->
-                                NotificationGroupCard(
-                                    entry = entry,
-                                    onMediaClick = onMediaClick,
-                                    onUserClick = onUserClick,
-                                    onActivityClick = onActivityClick,
-                                    onThreadClick = onThreadClick
-                                )
-                            }
-                            if (uiState.isPaginating) {
-                                item(key = "paginating") {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(28.dp))
-                                    }
+                }
+                else -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = topContentPadding + 8.dp,
+                            bottom = 8.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(uiState.entries, key = { it.key }) { entry ->
+                            NotificationGroupCard(
+                                entry = entry,
+                                onMediaClick = onMediaClick,
+                                onUserClick = onUserClick,
+                                onActivityClick = onActivityClick,
+                                onThreadClick = onThreadClick
+                            )
+                        }
+                        if (uiState.isPaginating) {
+                            item(key = "paginating") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
                                 }
                             }
                         }

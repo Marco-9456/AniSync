@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,13 +24,8 @@ import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.ErrorState
 import java.text.DateFormat
 import java.util.Date
@@ -65,56 +60,51 @@ fun ReviewDetailScreen(
 
     LaunchedEffect(reviewId) { viewModel.load(reviewId) }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.label_review),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
-            )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            when {
-                uiState.isLoading && uiState.review == null -> {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
-                }
+    val scrollState = rememberScrollState()
 
-                uiState.errorMessage != null && uiState.review == null -> {
+    CollapsingTopBarScaffold(
+        title = stringResource(R.string.label_review),
+        onBackClick = onBackClick,
+        scrollableState = scrollState,
+        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+    ) { topContentPadding ->
+        when {
+            uiState.isLoading && uiState.review == null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = topContentPadding),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+            }
+
+            uiState.errorMessage != null && uiState.review == null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = topContentPadding)
+                ) {
                     ErrorState(
                         message = uiState.errorMessage!!,
                         onRetry = { viewModel.load(reviewId) }
                     )
                 }
+            }
 
-                uiState.review != null -> {
-                    val review = uiState.review!!
-                    val mediaId = uiState.mediaId
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp, vertical = 16.dp)
-                    ) {
+            uiState.review != null -> {
+                val review = uiState.review!!
+                val mediaId = uiState.mediaId
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(
+                            start = 20.dp,
+                            end = 20.dp,
+                            top = topContentPadding + 16.dp,
+                            bottom = 16.dp
+                        )
+                ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -210,8 +200,7 @@ fun ReviewDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                             )
                         }
-                        Spacer(Modifier.height(48.dp))
-                    }
+                    Spacer(Modifier.height(48.dp))
                 }
             }
         }
