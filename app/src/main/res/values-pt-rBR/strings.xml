@@ -834,4 +834,17 @@
     <string name="studio_label_type">Tipo</string>
     <string name="studio_main_studio_chip">Estúdio principal</string>
     <string name="media_attach_error_catbox_rejected">Catbox rejeitou esse arquivo. Tente um arquivo diferente, ou troque para o Litterbox em Configurações → Upload de mídia.</string>
+    <string name="settings_navigation">Navegação</string>
+    <string name="setting_nav_bar_style">Estilo da barra inferior</string>
+    <string name="setting_nav_bar_style_anchored">Ancorada</string>
+    <string name="setting_nav_bar_style_anchored_desc">Repousada no canto inferior com os cantos superiores arredondados</string>
+    <string name="setting_nav_bar_style_floating">Pílula flutuante</string>
+    <string name="setting_nav_bar_style_floating_desc">Pílula destacada e com espaçamento nas bordas</string>
+    <string name="setting_nav_bar_show_labels">Mostrar nomes</string>
+    <string name="setting_nav_bar_show_labels_desc">Mostrar nomes dos botões junto aos ícones</string>
+    <string name="nav_bar_style_dialog_title">Estilo da barra inferior</string>
+    <string name="setting_nav_bar_corner_radius">Raio da borda</string>
+    <string name="year_picker_hint_empty">Selecione um ano. Selecione um segundo para criar um intervalo.</string>
+    <string name="year_picker_hint_single">Selecione outro ano para o intervalo</string>
+    <string name="year_picker_hint_range">Selecione qualquer ano para iniciar novamente</string>
 </resources>
