@@ -4,7 +4,7 @@
     <string name="nav_discover">Descobrir</string>
     <string name="nav_forum">Fórum</string>
     <string name="nav_profile">Perfil</string>
-    <string name="feed_filter_all">Todos</string>
+    <string name="feed_filter_all">Tudo</string>
     <string name="feed_filter_list">Lista</string>
     <string name="feed_scope_following">Seguindo</string>
     <string name="feed_empty_global">Sem atividade — Deslize para baixo para atualizar.</string>
@@ -25,7 +25,7 @@
     <string name="forum_page_of">Página %1$d de %2$d</string>
     <string name="forum_load_earlier_count">Carregar anteriores · %1$d acima</string>
     <string name="forum_load_more_count">Carregar mais %1$d · %2$d restantes</string>
-    <string name="forum_jump_to_page">Ir à pagina</string>
+    <string name="forum_jump_to_page">Pular para a página</string>
     <string name="forum_first_page">Primeiro</string>
     <string name="forum_latest_page">Último</string>
     <string name="forum_current_page_label">Atual</string>
@@ -59,7 +59,7 @@
     <string name="status_watching">Assistindo</string>
     <string name="status_reading">Lendo</string>
     <string name="status_planning">Planejado</string>
-    <string name="status_completed">Completo</string>
+    <string name="status_completed">Concluído</string>
     <string name="status_paused">Pausado</string>
     <string name="status_dropped">Abandonado</string>
     <string name="status_repeating">Repetindo</string>
@@ -94,7 +94,7 @@
     <string name="empty_watching">Você não está assistindo nada no momento.</string>
     <string name="empty_reading">Você não está lendo nada no momento.</string>
     <string name="empty_planning">Sua lista de planejados está vazia.</string>
-    <string name="empty_completed">Ainda sem itens completos.</string>
+    <string name="empty_completed">Ainda sem itens concluídos.</string>
     <string name="empty_default">Nada a mostrar aqui.</string>
     <string name="section_cast">Elenco</string>
     <string name="section_related">Relacionado</string>
@@ -145,13 +145,13 @@
     <string name="stat_studio">Estúdio</string>
     <string name="episodes_tba">A ser anunciado</string>
     <string name="media_status_upcoming">Em breve</string>
-    <string name="chapters_suffix">Cap.</string>
+    <string name="chapters_suffix">Caps.</string>
     <string name="episodes_suffix">Eps.</string>
     <string name="minutes_suffix">min</string>
     <string name="stat_time_watched">Tempo assistido</string>
     <string name="stat_days">Dias</string>
     <string name="stat_mean_score">NOTA MÉDIA</string>
-    <string name="stat_anime_completed">Anime Completado</string>
+    <string name="stat_anime_completed">Anime Concluído</string>
     <string name="stat_chapters_read">Capítulos lido</string>
     <string name="section_favorites">Favoritos</string>
     <string name="section_settings">Configurações</string>
@@ -161,8 +161,8 @@
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Escuro</string>
     <string name="theme_system">Sistema</string>
-    <string name="color_and_style">Cor e estilo</string>
-    <string name="palette_style">Estilo da paleta</string>
+    <string name="color_and_style">Cor &amp; Estilo</string>
+    <string name="palette_style">Paleta de estilos</string>
     <string name="custom_color">Cor customizada</string>
     <string name="custom_color_description">Selecione uma cor inicial para gerar seu tema único.</string>
     <string name="quick_pick">Seleção rápida</string>
@@ -267,7 +267,7 @@
     <string name="cover_quality_large">Alta</string>
     <string name="cover_quality_large_desc">Nitidez na maioria das superfícies. Recomendado.</string>
     <string name="cover_quality_medium">Média</string>
-    <string name="cover_quality_medium_desc">Menor e mais rápida. Desfoque visível nas telas de detalhe.</string>
+    <string name="cover_quality_medium_desc">Menor e mais rápida. Embaçado visível em telas mais detalhadas.</string>
     <string name="title_language_english">Inglês</string>
     <string name="title_language_native">Nativo</string>
     <string name="title_language_romaji_example">Ex. Shingeki no Kyojin</string>
@@ -360,7 +360,7 @@
     </plurals>
     <string name="profile_edit">Editar perfil</string>
     <string name="profile_unknown_error">Algo deu errado enquanto carregava o seu perfil.</string>
-    <string name="profile_user_load_error">Nós não conseguimos carregar esse perfil de usuário nesse momento. A conta pode ser privada, indisponível ou temporariamente limitada por excesso de solicitações.</string>
+    <string name="profile_user_load_error">Nós não conseguimos carregar o perfil desse usuário nesse momento. A conta pode ser privada, indisponível ou temporariamente limitada por excesso de solicitações.</string>
     <string name="profile_tab_overview">Visão geral</string>
     <string name="profile_tab_activity">Atividade</string>
     <string name="profile_activity_all">Tudo</string>
@@ -398,7 +398,7 @@
     <string name="section_anime_status">Status de anime</string>
     <string name="section_recent_updates">Atualizações recentes</string>
     <string name="status_watching_count">Assistindo %1$d</string>
-    <string name="status_completed_count">Completado %1$d</string>
+    <string name="status_completed_count">Concluído %1$d</string>
     <string name="status_on_hold">Pausado</string>
     <string name="status_on_hold_count">Pausado %1$d</string>
     <string name="status_dropped_count">Dropado %1$d</string>
@@ -406,15 +406,15 @@
     <string name="content_description_media_cover">Capa para %1$s</string>
     <string name="dialog_enable_notifications_title">Habilitar notificações</string>
     <string name="dialog_enable_notifications_message">Por favor, habilite as notificações nas configurações do sistema.</string>
-    <string name="section_external_links">Links de streaming e externos</string>
+    <string name="section_external_links">Links de Streaming &amp; Externos</string>
     <string name="subsection_streaming">Assistido em</string>
     <string name="subsection_reading">Lido em</string>
     <string name="subsection_external">Links externos</string>
     <string name="edit_entry">Editar item</string>
     <string name="no_score">Sem nota</string>
     <string name="dates">Datas</string>
-    <string name="start_date">Data inicial</string>
-    <string name="completed_date">Data finalizado</string>
+    <string name="start_date">Data de início</string>
+    <string name="completed_date">Data de concluído</string>
     <string name="no_date">Não definido</string>
     <string name="times_rewatched">Vezes reassistido</string>
     <string name="times_reread">Vezes relido</string>
@@ -430,7 +430,7 @@
     <string name="login_with_anilist">Login com AniList</string>
     <string name="login_sync_your">Sincronizar seu</string>
     <string name="login_world">Mundo</string>
-    <string name="login_tagline">Seu parceiro definitivo para rastreio do Anime e Mangá, provido por AniList.</string>
+    <string name="login_tagline">Seu parceiro definitivo para rastreio do Anime &amp; Mangá, provido por AniList.</string>
     <string name="login_get_started">Iniciado</string>
     <string name="login_description">Conecte-se para acessar sua biblioteca e descobrir novos favoritos.</string>
     <string name="login_continue_with_anilist">Continue com AniList</string>
@@ -847,4 +847,7 @@
     <string name="year_picker_hint_empty">Selecione um ano. Selecione um segundo para criar um intervalo.</string>
     <string name="year_picker_hint_single">Selecione outro ano para o intervalo</string>
     <string name="year_picker_hint_range">Selecione qualquer ano para iniciar novamente</string>
+    <string name="search_settings">Configurações de pesquisa</string>
+    <string name="clear_search">Limpar pesquisa</string>
+    <string name="no_settings_found">Nenhuma configuração encontrada</string>
 </resources>
