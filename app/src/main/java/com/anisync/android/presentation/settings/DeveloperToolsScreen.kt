@@ -28,6 +28,7 @@ import com.anisync.android.R
 @Composable
 fun DeveloperToolsScreen(
     onBackClick: () -> Unit,
+    onFontPlaygroundClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -36,6 +37,17 @@ fun DeveloperToolsScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
+        // Font Playground — live variable-font axis sliders
+        SettingsGroup {
+            SettingsItem(
+                title = stringResource(R.string.settings_font_playground),
+                subtitle = stringResource(R.string.settings_font_playground_subtitle),
+                onClick = onFontPlaygroundClick
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Build Information
         SettingsGroup {
             Surface(

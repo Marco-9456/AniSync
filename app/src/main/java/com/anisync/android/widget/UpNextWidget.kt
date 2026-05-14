@@ -40,7 +40,6 @@ import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
@@ -239,10 +238,8 @@ private fun UpNextSingleItem(
                     Spacer(modifier = GlanceModifier.width(4.dp))
                     Text(
                         text = "Up Next",
-                        style = TextStyle(
-                            color = GlanceTheme.colors.primary,
-                            fontSize = WidgetTypography.Label.large,
-                            fontWeight = FontWeight.Bold
+                        style = WidgetTypography.labelLarge(
+                            color = GlanceTheme.colors.primary
                         )
                     )
                 }
@@ -251,10 +248,8 @@ private fun UpNextSingleItem(
 
                 Text(
                     text = episode.titleUserPreferred,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = WidgetTypography.Body.large,
-                        fontWeight = FontWeight.Bold
+                    style = WidgetTypography.bodyLarge(
+                        color = GlanceTheme.colors.onSurface
                     ),
                     maxLines = 2
                 )
@@ -266,10 +261,9 @@ private fun UpNextSingleItem(
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
                         text = formatTimeUntil(episode.airingAt, nowSeconds),
-                        style = TextStyle(
+                        style = WidgetTypography.labelLarge(
                             color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = WidgetTypography.Label.large,
-                            fontWeight = FontWeight.Medium
+                            weight = FontWeight.Medium
                         ),
                         maxLines = 1
                     )
@@ -323,10 +317,8 @@ private fun UpNextList(
 
             Text(
                 text = "Up Next",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.large,
-                    fontWeight = FontWeight.Bold
+                style = WidgetTypography.titleLarge(
+                    color = GlanceTheme.colors.onSurface
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
@@ -366,10 +358,8 @@ private fun UpNextList(
                         Column(modifier = GlanceModifier.defaultWeight()) {
                             Text(
                                 text = episode.titleUserPreferred,
-                                style = TextStyle(
-                                    color = GlanceTheme.colors.onSurface,
-                                    fontSize = WidgetTypography.Body.large,
-                                    fontWeight = FontWeight.Bold
+                                style = WidgetTypography.bodyLarge(
+                                    color = GlanceTheme.colors.onSurface
                                 ),
                                 maxLines = 2
                             )
@@ -453,10 +443,9 @@ private fun WatchButton(intent: Intent, fontSize: TextUnit) {
     ) {
         Text(
             text = "Watch",
-            style = TextStyle(
+            style = WidgetTypography.badgeText(
                 color = GlanceTheme.colors.onPrimary,
-                fontSize = fontSize,
-                fontWeight = FontWeight.Bold
+                fontSize = fontSize
             )
         )
     }

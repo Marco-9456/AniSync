@@ -23,6 +23,7 @@ import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -72,7 +73,7 @@ class SettingsViewModel @Inject constructor(
         refreshCacheSize()
     }
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    private val coreUiState: Flow<SettingsUiState> = combine(
         combine(
             appSettings.themeMode,
             appSettings.titleLanguage,
@@ -180,6 +181,37 @@ class SettingsViewModel @Inject constructor(
             userProfile = profile as UserProfile?,
             isLoaded = true
         )
+    }
+
+    // Font playground axis values + active flag. Kept as its own flow because the main
+    // combine above is already at the 5-argument limit of the typed combine() overload.
+    private val fontPlaygroundFlow: Flow<FontPlaygroundUiState> = combine(
+        appSettings.fontPlaygroundEnabled,
+        combine(
+            appSettings.fontWeight,
+            appSettings.fontWidth,
+            appSettings.fontOpticalSize,
+            appSettings.fontSlant,
+            appSettings.fontRoundness,
+        ) { weight, width, opsz, slant, roundness ->
+            floatArrayOf(weight, width, opsz, slant, roundness)
+        },
+    ) { active, values ->
+        FontPlaygroundUiState(
+            active = active,
+            weight = values[0],
+            width = values[1],
+            opticalSize = values[2],
+            slant = values[3],
+            roundness = values[4],
+        )
+    }
+
+    val uiState: StateFlow<SettingsUiState> = combine(
+        coreUiState,
+        fontPlaygroundFlow,
+    ) { core, fontPlayground ->
+        core.copy(fontPlayground = fontPlayground)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -288,6 +320,15 @@ class SettingsViewModel @Inject constructor(
                 toastManager.showToast(action.code, "This is a test message for error code ${action.code}.", countdown)
             }
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
+
+            is SettingsAction.SetFontAxis -> when (action.axis) {
+                FontPlaygroundAxis.WEIGHT -> appSettings.setFontWeight(action.value)
+                FontPlaygroundAxis.WIDTH -> appSettings.setFontWidth(action.value)
+                FontPlaygroundAxis.OPTICAL_SIZE -> appSettings.setFontOpticalSize(action.value)
+                FontPlaygroundAxis.SLANT -> appSettings.setFontSlant(action.value)
+                FontPlaygroundAxis.ROUNDNESS -> appSettings.setFontRoundness(action.value)
+            }
+            SettingsAction.ResetFontAxes -> appSettings.resetFontAxes()
         }
     }
 

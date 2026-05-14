@@ -418,6 +418,15 @@
     <string name="debug_clear_all">Clear All</string>
     <string name="settings_developer_tools">Developer Tools</string>
     <string name="settings_developer_tools_desc">Debug utilities and test tools</string>
+    <string name="settings_font_playground">Font Playground</string>
+    <string name="settings_font_playground_subtitle">Live variable-font axis controls</string>
+    <string name="font_playground_title">Typography</string>
+    <string name="font_playground_reset">Reset font axes</string>
+    <string name="font_axis_weight">Weight (wght)</string>
+    <string name="font_axis_width">Width (wdth)</string>
+    <string name="font_axis_optical_size">Optical Size (opsz)</string>
+    <string name="font_axis_slant">Slant (slnt)</string>
+    <string name="font_axis_rounded">Rounded (ROND)</string>
     <string name="debug_build_info">Build Information</string>
     <string name="debug_update_section">Update Debug</string>
     <string name="debug_force_update_check">Force Update Check</string>

@@ -2,6 +2,7 @@ package com.anisync.android.presentation.settings
 
 import androidx.compose.ui.graphics.Color
 import com.anisync.android.data.AppLocale
+import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
@@ -65,7 +66,34 @@ sealed interface SettingsAction {
     data class ShowTestToast(val code: Int) : SettingsAction
 
     data object FetchLatestRelease : SettingsAction
+
+    // Font playground (developer screen) — live variable-font axis controls.
+    data class SetFontAxis(val axis: FontPlaygroundAxis, val value: Float) : SettingsAction
+    data object ResetFontAxes : SettingsAction
 }
+
+/** The five Google Sans Flex axes exposed by the developer font playground. */
+enum class FontPlaygroundAxis {
+    WEIGHT,
+    WIDTH,
+    OPTICAL_SIZE,
+    SLANT,
+    ROUNDNESS,
+}
+
+/**
+ * UI state for the developer font playground: the five raw axis values plus whether the
+ * global override is currently [active]. The values are shown by the sliders even while
+ * inactive, so the user can dial them in before they take effect.
+ */
+data class FontPlaygroundUiState(
+    val active: Boolean = false,
+    val weight: Float = AppSettings.DEFAULT_FONT_WEIGHT,
+    val width: Float = AppSettings.DEFAULT_FONT_WIDTH,
+    val opticalSize: Float = AppSettings.DEFAULT_FONT_OPSZ,
+    val slant: Float = AppSettings.DEFAULT_FONT_SLANT,
+    val roundness: Float = AppSettings.DEFAULT_FONT_ROUNDNESS,
+)
 
 data class SettingsUiState(
     val isLoaded: Boolean = false,
@@ -116,5 +144,8 @@ data class SettingsUiState(
     
     // Updates
     val isAutoUpdateEnabled: Boolean = false,
-    val isPrereleaseAllowed: Boolean = false
+    val isPrereleaseAllowed: Boolean = false,
+
+    // Font playground (developer screen)
+    val fontPlayground: FontPlaygroundUiState = FontPlaygroundUiState()
 )

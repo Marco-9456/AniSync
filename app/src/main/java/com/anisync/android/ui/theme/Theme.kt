@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.PaletteStyle
@@ -268,6 +269,8 @@ fun AppTheme(
     seedColor: Color? = null,
     // Palette style for MaterialKolor color generation
     paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
+    // Live variable-font axis overrides from the developer font playground
+    fontAxisOverrides: FontAxisOverrides = FontAxisOverrides.None,
     content: @Composable () -> Unit
 ) {
     // Priority order for color scheme selection:
@@ -303,12 +306,19 @@ fun AppTheme(
         }
     }
 
+    // Rebuild typography only when the font-axis overrides change, so dragging a slider in
+    // the developer font playground re-renders the whole app's text in real time.
+    val typography = remember(fontAxisOverrides) { buildAppTypography(fontAxisOverrides) }
+    val expressiveTypography = remember(fontAxisOverrides) {
+        defaultExpressiveTypography(fontAxisOverrides)
+    }
+
     CompositionLocalProvider(
-        LocalExpressiveTypography provides defaultExpressiveTypography()
+        LocalExpressiveTypography provides expressiveTypography
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = AppTypography,
+            typography = typography,
             shapes = AppShapes,
             motionScheme = MotionScheme.expressive(),
             content = content

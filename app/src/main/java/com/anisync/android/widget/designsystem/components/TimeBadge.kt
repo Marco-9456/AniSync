@@ -9,9 +9,7 @@ import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.padding
-import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
 import com.anisync.android.widget.designsystem.tokens.WidgetTypography
@@ -52,10 +50,9 @@ fun TimeBadge(
     ) {
         Text(
             text = timeString,
-            style = TextStyle(
+            style = WidgetTypography.badgeText(
                 color = textColor,
                 fontSize = fontSize,
-                fontWeight = FontWeight.Bold
             )
         )
     }
@@ -84,10 +81,9 @@ fun TimeBadgeFromString(
     ) {
         Text(
             text = timeString,
-            style = TextStyle(
+            style = WidgetTypography.badgeText(
                 color = textColor,
                 fontSize = fontSize,
-                fontWeight = FontWeight.Bold
             )
         )
     }

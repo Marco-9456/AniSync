@@ -46,7 +46,6 @@ import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
@@ -255,10 +254,8 @@ private fun CalendarExpanded(
 
             Text(
                 text = "Weekly Schedule",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.large,
-                    fontWeight = FontWeight.Bold
+                style = WidgetTypography.titleLarge(
+                    color = GlanceTheme.colors.onSurface
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
@@ -277,11 +274,9 @@ private fun CalendarExpanded(
             ) {
                 Text(
                     text = if (isMyList) "My List" else "All",
-                    style = TextStyle(
+                    style = WidgetTypography.labelLarge(
                         color = if (isMyList) GlanceTheme.colors.onPrimary
-                        else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Label.large,
-                        fontWeight = FontWeight.Bold
+                        else GlanceTheme.colors.onSurfaceVariant
                     )
                 )
             }
@@ -323,21 +318,19 @@ private fun CalendarExpanded(
                     ) {
                         Text(
                             text = dayChar,
-                            style = TextStyle(
+                            style = WidgetTypography.labelLarge(
                                 color = if (isSelected) GlanceTheme.colors.onPrimary
                                 else GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = WidgetTypography.Label.large,
-                                fontWeight = FontWeight.Medium
+                                weight = FontWeight.Medium
                             )
                         )
                         Spacer(modifier = GlanceModifier.height(2.dp))
                         Text(
                             text = dateNum,
-                            style = TextStyle(
+                            style = WidgetTypography.bodyLarge(
                                 color = if (isSelected) GlanceTheme.colors.onPrimary
                                 else GlanceTheme.colors.onSurface,
-                                fontSize = WidgetTypography.Body.large,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                weight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         )
                     }
@@ -383,10 +376,8 @@ private fun CalendarExpanded(
                         ) {
                             Text(
                                 text = formatTimeCompact(episode.airingAt),
-                                style = TextStyle(
-                                    color = GlanceTheme.colors.primary,
-                                    fontSize = WidgetTypography.Body.large,
-                                    fontWeight = FontWeight.Bold
+                                style = WidgetTypography.bodyLarge(
+                                    color = GlanceTheme.colors.primary
                                 ),
                                 modifier = GlanceModifier.width(48.dp)
                             )
@@ -405,10 +396,8 @@ private fun CalendarExpanded(
                             Column(modifier = GlanceModifier.defaultWeight()) {
                                 Text(
                                     text = episode.titleUserPreferred,
-                                    style = TextStyle(
-                                        color = GlanceTheme.colors.onSurface,
-                                        fontSize = WidgetTypography.Body.large,
-                                        fontWeight = FontWeight.Bold
+                                    style = WidgetTypography.bodyLarge(
+                                        color = GlanceTheme.colors.onSurface
                                     ),
                                     maxLines = 2
                                 )

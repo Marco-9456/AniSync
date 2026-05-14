@@ -40,7 +40,6 @@ import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
@@ -265,10 +264,8 @@ private fun AiringImmediateItem(
                     Spacer(modifier = GlanceModifier.width(4.dp))
                     Text(
                         text = headerText,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.primary,
-                            fontSize = WidgetTypography.Label.large,
-                            fontWeight = FontWeight.Bold
+                        style = WidgetTypography.labelLarge(
+                            color = GlanceTheme.colors.primary
                         ),
                         maxLines = 1
                     )
@@ -278,10 +275,8 @@ private fun AiringImmediateItem(
 
                 Text(
                     text = schedule.titleUserPreferred,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = WidgetTypography.Body.large,
-                        fontWeight = FontWeight.Bold
+                    style = WidgetTypography.bodyLarge(
+                        color = GlanceTheme.colors.onSurface
                     ),
                     maxLines = 2
                 )
@@ -340,10 +335,8 @@ private fun AiringExpanded(
 
             Text(
                 text = "Airing Today",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.large,
-                    fontWeight = FontWeight.Bold
+                style = WidgetTypography.titleLarge(
+                    color = GlanceTheme.colors.onSurface
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
@@ -362,11 +355,9 @@ private fun AiringExpanded(
             ) {
                 Text(
                     text = if (isMyList) "My List" else "All",
-                    style = TextStyle(
+                    style = WidgetTypography.labelLarge(
                         color = if (isMyList) GlanceTheme.colors.onPrimary
-                        else GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Label.large,
-                        fontWeight = FontWeight.Bold
+                        else GlanceTheme.colors.onSurfaceVariant
                     )
                 )
             }
@@ -470,10 +461,8 @@ private fun TimelineItem(
                 ) {
                     Text(
                         text = timeString,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onPrimaryContainer,
-                            fontSize = WidgetTypography.Label.medium,
-                            fontWeight = FontWeight.Bold
+                        style = WidgetTypography.labelMedium(
+                            color = GlanceTheme.colors.onPrimaryContainer
                         )
                     )
                 }
@@ -510,10 +499,8 @@ private fun TimelineItem(
                     Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(
                             text = schedule.titleUserPreferred,
-                            style = TextStyle(
-                                color = GlanceTheme.colors.onSurface,
-                                fontSize = WidgetTypography.Body.large,
-                                fontWeight = FontWeight.Bold
+                            style = WidgetTypography.bodyLarge(
+                                color = GlanceTheme.colors.onSurface
                             ),
                             maxLines = 2
                         )

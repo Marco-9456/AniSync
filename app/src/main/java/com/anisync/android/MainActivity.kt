@@ -137,6 +137,9 @@ class MainActivity : AppCompatActivity() {
                 val coverQuality by appSettings.coverQuality.collectAsStateWithLifecycle(
                     initialValue = com.anisync.android.data.CoverQuality.LARGE
                 )
+                val fontAxisOverrides by appSettings.fontAxisOverrides.collectAsStateWithLifecycle(
+                    initialValue = com.anisync.android.ui.theme.FontAxisOverrides.None
+                )
                 val isSystemDark = isSystemInDarkTheme()
 
                 val useDarkTheme = remember(themeMode, isSystemDark) {
@@ -168,7 +171,8 @@ class MainActivity : AppCompatActivity() {
                         darkTheme = useDarkTheme,
                         dynamicColor = useDynamicColor,
                         seedColor = seedColor,
-                        paletteStyle = paletteStyle
+                        paletteStyle = paletteStyle,
+                        fontAxisOverrides = fontAxisOverrides
                     ) {
                         Surface(
                             modifier = Modifier.fillMaxSize(),

@@ -48,6 +48,7 @@ import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
+import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
@@ -1089,6 +1090,19 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 DeveloperToolsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onFontPlaygroundClick = { navController.navigate(SettingsFontPlayground) }
+                )
+            }
+
+            // Font Playground (debug builds only — route is only navigated to from debug UI)
+            composable<SettingsFontPlayground>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                FontSettingsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }
