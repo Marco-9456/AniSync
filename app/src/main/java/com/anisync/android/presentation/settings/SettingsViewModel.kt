@@ -16,9 +16,10 @@ import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
-import com.anisync.android.domain.UserProfile
+import com.anisync.android.ui.theme.FontAxisOverrides
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -183,29 +185,10 @@ class SettingsViewModel @Inject constructor(
         )
     }
 
-    // Font playground axis values + active flag. Kept as its own flow because the main
-    // combine above is already at the 5-argument limit of the typed combine() overload.
-    private val fontPlaygroundFlow: Flow<FontPlaygroundUiState> = combine(
-        appSettings.fontPlaygroundEnabled,
-        combine(
-            appSettings.fontWeight,
-            appSettings.fontWidth,
-            appSettings.fontOpticalSize,
-            appSettings.fontSlant,
-            appSettings.fontRoundness,
-        ) { weight, width, opsz, slant, roundness ->
-            floatArrayOf(weight, width, opsz, slant, roundness)
-        },
-    ) { active, values ->
-        FontPlaygroundUiState(
-            active = active,
-            weight = values[0],
-            width = values[1],
-            opticalSize = values[2],
-            slant = values[3],
-            roundness = values[4],
-        )
-    }
+    // Per-category font playground overrides. Its own flow because the main combine above is
+    // already at the 5-argument limit of the typed combine() overload.
+    private val fontPlaygroundFlow: Flow<FontPlaygroundUiState> =
+        appSettings.typographyOverrides.map { FontPlaygroundUiState(it) }
 
     val uiState: StateFlow<SettingsUiState> = combine(
         coreUiState,
@@ -321,14 +304,13 @@ class SettingsViewModel @Inject constructor(
             }
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
 
-            is SettingsAction.SetFontAxis -> when (action.axis) {
-                FontPlaygroundAxis.WEIGHT -> appSettings.setFontWeight(action.value)
-                FontPlaygroundAxis.WIDTH -> appSettings.setFontWidth(action.value)
-                FontPlaygroundAxis.OPTICAL_SIZE -> appSettings.setFontOpticalSize(action.value)
-                FontPlaygroundAxis.SLANT -> appSettings.setFontSlant(action.value)
-                FontPlaygroundAxis.ROUNDNESS -> appSettings.setFontRoundness(action.value)
+            is SettingsAction.SetFontAxis -> appSettings.updateTypographyCategory(action.category) {
+                it.withAxis(action.axis, action.value)
             }
-            SettingsAction.ResetFontAxes -> appSettings.resetFontAxes()
+            is SettingsAction.SetFontAxisAll -> appSettings.updateTypographyAll {
+                it.withAxis(action.axis, action.value)
+            }
+            SettingsAction.ResetFontAxes -> appSettings.resetTypography()
         }
     }
 
@@ -440,3 +422,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 }
+
+/** Sets a single variable-font axis on a [FontAxisOverrides], keyed by [FontPlaygroundAxis]. */
+private fun FontAxisOverrides.withAxis(axis: FontPlaygroundAxis, value: Float): FontAxisOverrides =
+    when (axis) {
+        FontPlaygroundAxis.WEIGHT -> copy(weight = value)
+        FontPlaygroundAxis.WIDTH -> copy(width = value)
+        FontPlaygroundAxis.OPTICAL_SIZE -> copy(opticalSize = value)
+        FontPlaygroundAxis.SLANT -> copy(slant = value)
+        FontPlaygroundAxis.ROUNDNESS -> copy(roundness = value)
+    }

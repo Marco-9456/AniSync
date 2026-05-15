@@ -21,21 +21,24 @@ object TypographyAxisConfig {
     /** The active variable-font axis registry. */
     val registry: VariableFontAxes = GoogleSansFlexAxes
 
+    // `roundness = 100f` is the app-wide default — AniSync ships fully rounded; the playground
+    // can still override it per category.
+
     /** Display roles (57–36sp): large, tight letterforms. */
-    val display = FontAxes(weight = 400f, opticalSize = 144f, width = 100f)
+    val display = FontAxes(weight = 400f, opticalSize = 144f, width = 100f, roundness = 100f)
 
     /** Headline roles (32–24sp). Weight lifted to 500 per MD3 Expressive guidance. */
-    val headline = FontAxes(weight = 500f, opticalSize = 48f, width = 100f)
+    val headline = FontAxes(weight = 500f, opticalSize = 48f, width = 100f, roundness = 100f)
 
     /** Title roles (22–14sp). */
-    val title = FontAxes(weight = 500f, opticalSize = 18f, width = 100f)
+    val title = FontAxes(weight = 500f, opticalSize = 18f, width = 100f, roundness = 100f)
 
     /** Body roles (16–12sp): opsz tracks the text size for maximum legibility. */
-    val body = FontAxes(weight = 400f, opticalSize = 14f, width = 100f)
+    val body = FontAxes(weight = 400f, opticalSize = 14f, width = 100f, roundness = 100f)
 
     /** Label roles (14–11sp): smallest opsz, most open letterforms. */
-    val label = FontAxes(weight = 500f, opticalSize = 11f, width = 100f)
+    val label = FontAxes(weight = 500f, opticalSize = 11f, width = 100f, roundness = 100f)
 
     /** Tabular numerics for the editorial / statistics surfaces (see [ExpressiveTypography]). */
-    val numeric = FontAxes(weight = 700f, opticalSize = 48f, width = 100f)
+    val numeric = FontAxes(weight = 700f, opticalSize = 48f, width = 100f, roundness = 100f)
 }

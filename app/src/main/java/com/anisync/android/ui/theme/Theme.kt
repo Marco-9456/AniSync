@@ -269,8 +269,8 @@ fun AppTheme(
     seedColor: Color? = null,
     // Palette style for MaterialKolor color generation
     paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
-    // Live variable-font axis overrides from the developer font playground
-    fontAxisOverrides: FontAxisOverrides = FontAxisOverrides.None,
+    // Live per-category variable-font axis overrides from the developer font playground
+    typographyOverrides: TypographyOverrides = TypographyOverrides.None,
     content: @Composable () -> Unit
 ) {
     // Priority order for color scheme selection:
@@ -308,9 +308,9 @@ fun AppTheme(
 
     // Rebuild typography only when the font-axis overrides change, so dragging a slider in
     // the developer font playground re-renders the whole app's text in real time.
-    val typography = remember(fontAxisOverrides) { buildAppTypography(fontAxisOverrides) }
-    val expressiveTypography = remember(fontAxisOverrides) {
-        defaultExpressiveTypography(fontAxisOverrides)
+    val typography = remember(typographyOverrides) { buildAppTypography(typographyOverrides) }
+    val expressiveTypography = remember(typographyOverrides) {
+        defaultExpressiveTypography(typographyOverrides)
     }
 
     CompositionLocalProvider(

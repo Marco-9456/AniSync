@@ -13,6 +13,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.media.MediaHost
 import com.anisync.android.ui.theme.FontAxisOverrides
+import com.anisync.android.ui.theme.TypeCategory
+import com.anisync.android.ui.theme.TypographyOverrides
 import com.anisync.android.widget.UpNextWidget
 import com.materialkolor.PaletteStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,12 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -332,56 +332,59 @@ class AppSettings @Inject constructor(
     }
 
     // ==========================================================================
-    // FONT PLAYGROUND — live variable-font axis overrides (developer screen)
+    // FONT PLAYGROUND — live per-category variable-font axis overrides (developer screen)
     // ==========================================================================
 
-    private val _fontPlaygroundEnabled = MutableStateFlow(
-        prefs.getBoolean(KEY_FONT_PLAYGROUND_ENABLED, false)
-    )
-    val fontPlaygroundEnabled: StateFlow<Boolean> = _fontPlaygroundEnabled.asStateFlow()
+    // The whole TypographyOverrides object is persisted as a single JSON string. With five
+    // categories x five axes that is far less boilerplate than 25 typed preference keys, and
+    // the structure can evolve without a migration as long as unknown keys are ignored.
+    private val typographyJson = Json { ignoreUnknownKeys = true }
+    private val _typographyOverrides = MutableStateFlow(readTypographyOverrides())
+    val typographyOverrides: StateFlow<TypographyOverrides> = _typographyOverrides.asStateFlow()
 
-    private val _fontWeight = MutableStateFlow(prefs.getFloat(KEY_FONT_WEIGHT, DEFAULT_FONT_WEIGHT))
-    val fontWeight: StateFlow<Float> = _fontWeight.asStateFlow()
+    private fun readTypographyOverrides(): TypographyOverrides {
+        val json = prefs.getString(KEY_TYPOGRAPHY_OVERRIDES, null) ?: return TypographyOverrides.None
+        return runCatching { typographyJson.decodeFromString<TypographyOverrides>(json) }
+            .getOrDefault(TypographyOverrides.None)
+    }
 
-    private val _fontWidth = MutableStateFlow(prefs.getFloat(KEY_FONT_WIDTH, DEFAULT_FONT_WIDTH))
-    val fontWidth: StateFlow<Float> = _fontWidth.asStateFlow()
+    private fun persistTypographyOverrides(value: TypographyOverrides) {
+        _typographyOverrides.value = value
+        prefs.edit()
+            .putString(KEY_TYPOGRAPHY_OVERRIDES, typographyJson.encodeToString(value))
+            .apply()
+    }
 
-    private val _fontOpticalSize = MutableStateFlow(prefs.getFloat(KEY_FONT_OPSZ, DEFAULT_FONT_OPSZ))
-    val fontOpticalSize: StateFlow<Float> = _fontOpticalSize.asStateFlow()
+    /** Update one M3 role [category]'s axis overrides (used by the per-category sliders). */
+    fun updateTypographyCategory(
+        category: TypeCategory,
+        transform: (FontAxisOverrides) -> FontAxisOverrides,
+    ) {
+        val current = _typographyOverrides.value
+        persistTypographyOverrides(
+            current.withCategory(category, transform(current.forCategory(category))),
+        )
+    }
 
-    private val _fontSlant = MutableStateFlow(prefs.getFloat(KEY_FONT_SLANT, DEFAULT_FONT_SLANT))
-    val fontSlant: StateFlow<Float> = _fontSlant.asStateFlow()
+    /** "All" shortcut — apply the same axis [transform] to every category at once. */
+    fun updateTypographyAll(transform: (FontAxisOverrides) -> FontAxisOverrides) {
+        val current = _typographyOverrides.value
+        persistTypographyOverrides(
+            TypographyOverrides(
+                display = transform(current.display),
+                headline = transform(current.headline),
+                title = transform(current.title),
+                body = transform(current.body),
+                label = transform(current.label),
+            ),
+        )
+    }
 
-    private val _fontRoundness = MutableStateFlow(
-        prefs.getFloat(KEY_FONT_ROUNDNESS, DEFAULT_FONT_ROUNDNESS)
-    )
-    val fontRoundness: StateFlow<Float> = _fontRoundness.asStateFlow()
-
-    /**
-     * Resolved live font-axis overrides. When the playground is disabled this is
-     * [FontAxisOverrides.None] and the app renders with its normal per-role typography;
-     * when enabled, all five axis values are applied globally.
-     */
-    val fontAxisOverrides: StateFlow<FontAxisOverrides> = combine(
-        _fontPlaygroundEnabled,
-        combine(
-            _fontWeight,
-            _fontWidth,
-            _fontOpticalSize,
-            _fontSlant,
-            _fontRoundness,
-        ) { weight, width, opsz, slant, roundness ->
-            FontAxisOverrides(
-                weight = weight,
-                width = width,
-                opticalSize = opsz,
-                slant = slant,
-                roundness = roundness,
-            )
-        },
-    ) { enabled, overrides ->
-        if (enabled) overrides else FontAxisOverrides.None
-    }.stateIn(scope, SharingStarted.Eagerly, FontAxisOverrides.None)
+    /** Clears the playground — every category back to its per-role preset typography. */
+    fun resetTypography() {
+        _typographyOverrides.value = TypographyOverrides.None
+        prefs.edit().remove(KEY_TYPOGRAPHY_OVERRIDES).apply()
+    }
 
     /**
      * Set the app theme mode.
@@ -613,61 +616,6 @@ class AppSettings @Inject constructor(
         prefs.edit().putString(KEY_CUSTOM_HOST_JSON_PATH, value).apply()
     }
 
-    // ==========================================================================
-    // FONT PLAYGROUND SETTERS
-    // ==========================================================================
-    // Each axis setter coerces to the font's valid range and auto-enables the playground,
-    // mirroring the prototype where touching any slider takes effect immediately.
-
-    fun setFontWeight(value: Float) =
-        setFontAxis(_fontWeight, KEY_FONT_WEIGHT, value, MIN_FONT_WEIGHT, MAX_FONT_WEIGHT)
-
-    fun setFontWidth(value: Float) =
-        setFontAxis(_fontWidth, KEY_FONT_WIDTH, value, MIN_FONT_WIDTH, MAX_FONT_WIDTH)
-
-    fun setFontOpticalSize(value: Float) =
-        setFontAxis(_fontOpticalSize, KEY_FONT_OPSZ, value, MIN_FONT_OPSZ, MAX_FONT_OPSZ)
-
-    fun setFontSlant(value: Float) =
-        setFontAxis(_fontSlant, KEY_FONT_SLANT, value, MIN_FONT_SLANT, MAX_FONT_SLANT)
-
-    fun setFontRoundness(value: Float) =
-        setFontAxis(_fontRoundness, KEY_FONT_ROUNDNESS, value, MIN_FONT_ROUNDNESS, MAX_FONT_ROUNDNESS)
-
-    private fun setFontAxis(
-        flow: MutableStateFlow<Float>,
-        key: String,
-        value: Float,
-        min: Float,
-        max: Float,
-    ) {
-        val coerced = value.coerceIn(min, max)
-        flow.value = coerced
-        _fontPlaygroundEnabled.value = true
-        prefs.edit()
-            .putFloat(key, coerced)
-            .putBoolean(KEY_FONT_PLAYGROUND_ENABLED, true)
-            .apply()
-    }
-
-    /** Clears the playground: restores every axis to its default and disables the override. */
-    fun resetFontAxes() {
-        _fontWeight.value = DEFAULT_FONT_WEIGHT
-        _fontWidth.value = DEFAULT_FONT_WIDTH
-        _fontOpticalSize.value = DEFAULT_FONT_OPSZ
-        _fontSlant.value = DEFAULT_FONT_SLANT
-        _fontRoundness.value = DEFAULT_FONT_ROUNDNESS
-        _fontPlaygroundEnabled.value = false
-        prefs.edit()
-            .putFloat(KEY_FONT_WEIGHT, DEFAULT_FONT_WEIGHT)
-            .putFloat(KEY_FONT_WIDTH, DEFAULT_FONT_WIDTH)
-            .putFloat(KEY_FONT_OPSZ, DEFAULT_FONT_OPSZ)
-            .putFloat(KEY_FONT_SLANT, DEFAULT_FONT_SLANT)
-            .putFloat(KEY_FONT_ROUNDNESS, DEFAULT_FONT_ROUNDNESS)
-            .putBoolean(KEY_FONT_PLAYGROUND_ENABLED, false)
-            .apply()
-    }
-
     /**
      * Get the preferred streaming service directly from SharedPreferences.
      * Use this for widgets to ensure the latest value is always read.
@@ -731,14 +679,10 @@ companion object {
         const val DEFAULT_FONT_SLANT = 0f
         const val MIN_FONT_ROUNDNESS = 0f
         const val MAX_FONT_ROUNDNESS = 100f
-        const val DEFAULT_FONT_ROUNDNESS = 0f
+        // AniSync ships fully rounded — see TypographyAxisConfig.
+        const val DEFAULT_FONT_ROUNDNESS = 100f
 
-        private const val KEY_FONT_PLAYGROUND_ENABLED = "font_playground_enabled"
-        private const val KEY_FONT_WEIGHT = "font_weight"
-        private const val KEY_FONT_WIDTH = "font_width"
-        private const val KEY_FONT_OPSZ = "font_opsz"
-        private const val KEY_FONT_SLANT = "font_slant"
-        private const val KEY_FONT_ROUNDNESS = "font_roundness"
+        private const val KEY_TYPOGRAPHY_OVERRIDES = "typography_overrides"
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"

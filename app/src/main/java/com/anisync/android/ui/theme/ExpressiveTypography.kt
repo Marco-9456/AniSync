@@ -38,12 +38,14 @@ data class ExpressiveTypography(
 /**
  * Builds the editorial type set, applying the runtime [overrides] from the developer font
  * playground so hero / stat text tracks the axis sliders together with the rest of the app.
+ * The editorial numeric + body families follow the BODY category override.
  */
 internal fun defaultExpressiveTypography(
-    overrides: FontAxisOverrides = FontAxisOverrides.None,
+    overrides: TypographyOverrides = TypographyOverrides.None,
 ): ExpressiveTypography {
-    val numericFamily: FontFamily = roleFamily(TypographyAxisConfig.numeric, listOf(400, 700, 900), overrides)
-    val bodyFamily: FontFamily = roleFamily(TypographyAxisConfig.body, listOf(400, 500, 700), overrides)
+    val bodyOverride = overrides.body
+    val numericFamily: FontFamily = roleFamily(TypographyAxisConfig.numeric, listOf(400, 700, 900), bodyOverride)
+    val bodyFamily: FontFamily = roleFamily(TypographyAxisConfig.body, listOf(400, 500, 700), bodyOverride)
     return ExpressiveTypography(
         heroNumeric = TextStyle(
             fontFamily = numericFamily,

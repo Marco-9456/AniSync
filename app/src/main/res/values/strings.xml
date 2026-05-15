@@ -427,6 +427,12 @@
     <string name="font_axis_optical_size">Optical Size (opsz)</string>
     <string name="font_axis_slant">Slant (slnt)</string>
     <string name="font_axis_rounded">Rounded (ROND)</string>
+    <string name="font_category_all">All</string>
+    <string name="font_category_display">Display</string>
+    <string name="font_category_headline">Headline</string>
+    <string name="font_category_title">Title</string>
+    <string name="font_category_body">Body</string>
+    <string name="font_category_label">Label</string>
     <string name="debug_build_info">Build Information</string>
     <string name="debug_update_section">Update Debug</string>
     <string name="debug_force_update_check">Force Update Check</string>

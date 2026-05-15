@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
+import kotlin.math.roundToInt
 
 /*
  * Material 3 typography for AniSync, assembled from two centralized inputs:
@@ -16,8 +17,8 @@ import com.anisync.android.R
  *
  * To change how a role group LOOKS (weight, optical size, width, slant, roundness), edit
  * TypographyAxisConfig — not this file. To change a role's SIZE, edit M3TypeScale. To change
- * the axes at runtime (the developer "font playground"), pass FontAxisOverrides to
- * buildAppTypography().
+ * the axes at runtime (the developer "font playground"), pass TypographyOverrides to
+ * buildAppTypography() — each M3 role category is overridden independently.
  *
  * Headlines are lifted to W500 (from the MD3 default W400) per MD3 Expressive guidance.
  */
@@ -41,18 +42,26 @@ val NumericFontFamily: FontFamily = roleFamily(TypographyAxisConfig.numeric, lis
 /**
  * Builds the FontFamily for one role group: its [TypographyAxisConfig] preset merged with the
  * runtime [overrides], spread across [weights]. opsz / width / slant / roundness come from the
- * (possibly overridden) preset; only the weight axis varies across the family members.
+ * (possibly overridden) preset.
+ *
+ * When the weight axis is overridden, the family collapses to a single member at that weight —
+ * otherwise [VariableFontFactory.family]'s per-member `axes.copy(weight = w)` would overwrite
+ * the override and the weight slider would do nothing.
  */
 internal fun roleFamily(
     preset: FontAxes,
     weights: List<Int>,
     overrides: FontAxisOverrides = FontAxisOverrides.None,
-): FontFamily = VariableFontFactory.family(
-    resId = FONT_RES_ID,
-    axes = preset.merge(overrides),
-    weights = weights,
-    registry = TypographyAxisConfig.registry,
-)
+): FontFamily {
+    val merged = preset.merge(overrides)
+    val effectiveWeights = overrides.weight?.let { listOf(it.roundToInt()) } ?: weights
+    return VariableFontFactory.family(
+        resId = FONT_RES_ID,
+        axes = merged,
+        weights = effectiveWeights,
+        registry = TypographyAxisConfig.registry,
+    )
+}
 
 private fun textStyle(
     family: FontFamily,
@@ -69,16 +78,16 @@ private fun textStyle(
 )
 
 /**
- * Assembles the Material 3 [Typography] for the app, applying the runtime [overrides] from the
- * developer font playground. Called by [AppTheme] inside a `remember(overrides)` so the whole
- * app re-renders when an axis slider moves.
+ * Assembles the Material 3 [Typography] for the app, applying the per-category runtime
+ * [overrides] from the developer font playground. Called by [AppTheme] inside a
+ * `remember(overrides)` so the whole app re-renders when an axis slider moves.
  */
-fun buildAppTypography(overrides: FontAxisOverrides = FontAxisOverrides.None): Typography {
-    val displayFamily = roleFamily(TypographyAxisConfig.display, listOf(300, 400, 500, 700, 900), overrides)
-    val headlineFamily = roleFamily(TypographyAxisConfig.headline, listOf(400, 500, 700), overrides)
-    val titleFamily = roleFamily(TypographyAxisConfig.title, listOf(400, 500, 700), overrides)
-    val bodyFamily = roleFamily(TypographyAxisConfig.body, listOf(400, 500, 700), overrides)
-    val labelFamily = roleFamily(TypographyAxisConfig.label, listOf(400, 500, 700), overrides)
+fun buildAppTypography(overrides: TypographyOverrides = TypographyOverrides.None): Typography {
+    val displayFamily = roleFamily(TypographyAxisConfig.display, listOf(300, 400, 500, 700, 900), overrides.display)
+    val headlineFamily = roleFamily(TypographyAxisConfig.headline, listOf(400, 500, 700), overrides.headline)
+    val titleFamily = roleFamily(TypographyAxisConfig.title, listOf(400, 500, 700), overrides.title)
+    val bodyFamily = roleFamily(TypographyAxisConfig.body, listOf(400, 500, 700), overrides.body)
+    val labelFamily = roleFamily(TypographyAxisConfig.label, listOf(400, 500, 700), overrides.label)
     return Typography(
         displayLarge = textStyle(displayFamily, FontWeight.W400, M3TypeScale.displayLarge),
         displayMedium = textStyle(displayFamily, FontWeight.W400, M3TypeScale.displayMedium),

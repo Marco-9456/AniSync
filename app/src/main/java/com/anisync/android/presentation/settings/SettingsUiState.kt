@@ -2,7 +2,6 @@ package com.anisync.android.presentation.settings
 
 import androidx.compose.ui.graphics.Color
 import com.anisync.android.data.AppLocale
-import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
@@ -10,6 +9,8 @@ import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.data.update.Release
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.ui.theme.TypeCategory
+import com.anisync.android.ui.theme.TypographyOverrides
 import com.materialkolor.PaletteStyle
 
 sealed interface SettingsAction {
@@ -67,8 +68,16 @@ sealed interface SettingsAction {
 
     data object FetchLatestRelease : SettingsAction
 
-    // Font playground (developer screen) — live variable-font axis controls.
-    data class SetFontAxis(val axis: FontPlaygroundAxis, val value: Float) : SettingsAction
+    // Font playground (developer screen) — live per-category variable-font axis controls.
+    data class SetFontAxis(
+        val category: TypeCategory,
+        val axis: FontPlaygroundAxis,
+        val value: Float,
+    ) : SettingsAction
+
+    /** "All" shortcut — write one axis value into every category at once. */
+    data class SetFontAxisAll(val axis: FontPlaygroundAxis, val value: Float) : SettingsAction
+
     data object ResetFontAxes : SettingsAction
 }
 
@@ -82,17 +91,11 @@ enum class FontPlaygroundAxis {
 }
 
 /**
- * UI state for the developer font playground: the five raw axis values plus whether the
- * global override is currently [active]. The values are shown by the sliders even while
- * inactive, so the user can dial them in before they take effect.
+ * UI state for the developer font playground: the per-category axis overrides. The selected
+ * category is screen-local UI state, so it is not held here.
  */
 data class FontPlaygroundUiState(
-    val active: Boolean = false,
-    val weight: Float = AppSettings.DEFAULT_FONT_WEIGHT,
-    val width: Float = AppSettings.DEFAULT_FONT_WIDTH,
-    val opticalSize: Float = AppSettings.DEFAULT_FONT_OPSZ,
-    val slant: Float = AppSettings.DEFAULT_FONT_SLANT,
-    val roundness: Float = AppSettings.DEFAULT_FONT_ROUNDNESS,
+    val overrides: TypographyOverrides = TypographyOverrides.None,
 )
 
 data class SettingsUiState(
