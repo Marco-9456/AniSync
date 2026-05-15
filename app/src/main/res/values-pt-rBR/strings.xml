@@ -765,9 +765,9 @@
     <string name="feed_filter_status">Status</string>
     <string name="feed_scope_global">Global</string>
     <string name="forum_browse_categories">Navegar entre categorias</string>
-    <string name="forum_jump">Pular</string>
-    <string name="forum_a11y_open_page_jumper">Abrir pulador de páginas</string>
-    <string name="forum_op_badge">OP</string>
+    <string name="forum_jump">Ir</string>
+    <string name="forum_a11y_open_page_jumper">Abrir seletor de página</string>
+    <string name="forum_op_badge">Autor</string>
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="error_oops">Oops!</string>
@@ -857,4 +857,22 @@
     <string name="notification_activity_messages">Mensagens diretas</string>
     <string name="debug_test_watching">Teste Assistindo</string>
     <string name="debug_test_planning">Teste Planejado</string>
+    <string name="settings_font_playground">Área de teste de fontes</string>
+    <string name="settings_font_playground_subtitle">Ajuste dinâmico de fontes</string>
+    <string name="dev_tools_unlocked">Ferramentas de desenvolvedor destravadas</string>
+    <string name="dev_tools_already_unlocked">As ferramentas de desenvolvedor já estão destravadas</string>
+    <string name="dev_tools_taps_remaining">%1$d toques para destravar as Ferramentas de Desenvolvedor</string>
+    <string name="font_playground_title">Tipografia</string>
+    <string name="font_playground_reset">Resetar valores das fontes</string>
+    <string name="font_axis_weight">Espessura</string>
+    <string name="font_axis_width">Largura</string>
+    <string name="font_axis_optical_size">Tamanho Ótico</string>
+    <string name="font_axis_slant">Inclinação</string>
+    <string name="font_axis_rounded">Arredondado</string>
+    <string name="font_category_all">Tudo</string>
+    <string name="font_category_display">Exibição</string>
+    <string name="font_category_headline">Título Principal</string>
+    <string name="font_category_title">Título</string>
+    <string name="font_category_body">Corpo</string>
+    <string name="font_category_label">Rótulo</string>
 </resources>
