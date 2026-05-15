@@ -66,6 +66,8 @@ import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
+import com.anisync.android.presentation.util.MainNavBarSuppressor
 import kotlin.reflect.KClass
 
 private data class BottomNavItem<T : Any>(
@@ -85,11 +87,13 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     val navBarStyle by viewModel.navBarStyle.collectAsStateWithLifecycle()
     val navBarShowLabels by viewModel.navBarShowLabels.collectAsStateWithLifecycle()
     val navBarCornerRadius by viewModel.navBarCornerRadius.collectAsStateWithLifecycle()
+    val navBarSuppressor = remember { MainNavBarSuppressor() }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshNotificationBadge()
     }
 
+    CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -143,6 +147,7 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
             TopToastHost(toastManager = viewModel.toastManager)
         }
     }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -195,15 +200,17 @@ private fun MainBottomBar(
     }
 
     val navBackStackEntryState = navController.currentBackStackEntryAsState()
+    val navBarSuppressor = LocalMainNavBarSuppressor.current
 
-    val isBottomBarVisible by remember {
+    val isBottomBarVisible by remember(navBarSuppressor) {
         derivedStateOf {
             val dest = navBackStackEntryState.value?.destination
-            dest?.hasRoute<Library>() == true ||
+            val onWhitelistedRoute = dest?.hasRoute<Library>() == true ||
                     dest?.hasRoute<Discover>() == true ||
                     dest?.hasRoute<Feed>() == true ||
                     dest?.hasRoute<Forum>() == true ||
                     dest?.hasRoute<Profile>() == true
+            onWhitelistedRoute && navBarSuppressor?.isSuppressed != true
         }
     }
 

@@ -1,8 +1,10 @@
 package com.anisync.android.presentation.components.richtext
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
+import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
 
 /**
  * Header-less full-screen rich-text input. Use for edits that have no extra metadata
@@ -21,6 +23,14 @@ fun RichTextInputScreen(
     minLength: Int = 1,
     maxLength: Int = 10_000
 ) {
+    // Hide main bottom nav bar while overlay visible — covers the Edit Profile case
+    // where the parent Profile route stays in the bottom-bar whitelist.
+    val navBarSuppressor = LocalMainNavBarSuppressor.current
+    DisposableEffect(navBarSuppressor) {
+        navBarSuppressor?.acquire()
+        onDispose { navBarSuppressor?.release() }
+    }
+
     RichTextScaffold(
         title = title,
         initialBody = initialBody,
