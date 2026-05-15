@@ -9,6 +9,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-05-15
+
+### Added
+
+#### Editing & Composition
+- **Edit + Delete Across Posts** - Threads, thread comments, activity replies, and TextActivity status posts gain edit + delete actions, gated by authorship; delete confirms via `AlertDialog`. Backed by `SaveThread` / `SaveThreadComment` / `SaveActivityReply` / `SaveTextActivity` id-aware mutations + `DeleteThread` / `DeleteThreadComment` ops. Closes #9.
+- **DM Edit + Delete from Any Profile** - Overflow menu on direct messages no longer gated by `isOwnProfile`. `canDelete` / `canEdit` derive from authorship; mod-authored messages hide delete to prevent 401 logout. `ActivityRepository.saveMessageActivity(id=...)` added. `ActivityFields` / `GetActivity` fetch `textRaw` / `rawMessage` so edits prefill with markdown.
+- **RichText Bio Editor** - Profile bio editor swapped from `AlertDialog` to `RichTextInputScreen`; `GetUserProfile` now fetches `aboutRaw` so the editor round-trips markdown rather than corrupting via the rendered HTML.
+- **Media Upload in Composers** - New `MediaAttachSheet` uploads images, GIFs, and videos to a configurable host (Catbox / Litterbox 1h/24h/72h / custom multipart) and inserts the AniList `img%(url)` markdown at the cursor. `MediaSizeChoice` (small / medium / large / custom px or %) drives the inserted size. Dedicated 10-minute-timeout OkHttpClient streams from content URIs via `UriRequestBody` so large files don't OOM. Closes #6.
+- **IME Sticker / GIF Insert** - `RichTextScaffold` and `RichTextInputSheet` accept stickers and GIFs straight from Gboard via `contentReceiver`; uploads run in the background and surface a compact `ImeUploadStrip` (filename + animated progress + cancel) above the format bar.
+- **Discard Draft Confirmation** - Composers warn before discarding unsaved drafts via `AlertDialog`; sheets are partially-expandable.
+- **Forum Media Categories** - The thread compose sheet now attaches `mediaCategories` on `SaveThread` instead of inlining a markdown link; selected media render as removable chips next to forum category chips, and re-tapping in the search list removes.
+
+#### Library & Navigation
+- **Drag-to-Reorder Library Tabs** - All Library tabs reorderable with per-tab visibility toggling; visibility persists across sessions. Closes #10.
+- **Per-Type Last-Tab Memory** - Library remembers the last selected tab per media type (Anime / Manga independently) and restores it on reopen. Falls back to the first visible tab if the saved tab was deleted/hidden. Closes #11.
+- **Compact Nav Bar** - New `CompactNavBar` replaces M3 `NavigationBar`: floating-pill or anchored-rounded-top styles, user-toggleable label visibility with height animation, and corner-radius slider (0-36 dp). Floating-bar mode renders as a content overlay so scrollable content shows through its side margins; tab screens consume `LocalMainNavBarInset` as bottom contentPadding. `navigateSafely()` absorbs rapid taps during transitions. Parallax + scale push/pop transitions for detail screens. Closes #20.
+- **Collapsing Hero Top Bar App-Wide** - Extracted `CollapsingTopBarScaffold` applied to `ReviewDetail`, `ForumCategory`, `Notifications`, `ActivityDetail`, `ThreadDetail`, `GridsScreen`, `SectionGridScreen`. Synchronous nested-scroll height updates eliminate the bar/content padding desync; collapsed title vertically aligns with action icons; expanded state stops consuming the gesture so inner `PullToRefreshBox` can still trigger refresh.
+
+#### Search & Discover
+- **Advanced Search Rebuild** - Full AniList filter parity: unified chip bar + per-filter bottom sheets, Type chip (All / Anime / Manga / Characters / Staff / Users / Studios) that overrides the screen-level Anime/Manga selector, M3-spec year-range grid (1940..current+1) replacing the dual wheel, persisted list/grid view toggle, results header with category chip strip. `IncludeExcludeChip` restyled to M3 filter-chip spec. More filters consolidated into one sheet of inline-expanding groups with a Reset action. Adult genres gated behind a settings toggle. Closes #18.
+- **Discover Hero Carousel Rewrite** - From-scratch MD3-polish rewrite of the trending hero carousel.
+
+#### Toasts & Alerts
+- **Global TopAlertToast System** - Toast-based alert system (`ToastManager`, `ToastMessage`, `ToastType`, `TopAlertToast`, `TopToastHost`) replaces every Material `Snackbar` site (Feed, Forum, Library, Profile, Settings, Forum subscreens). Swipe-to-dismiss, countdown timers for retry/rate-limit, theme-aware surfaces.
+- **Error Code + Countdown on Result.Error** - `Result.Error` now carries HTTP status code and countdown seconds; `NetworkUtil.safeApiCall` populates them from `ApiError` and Apollo exception types so the UI can show contextual error toasts with retry timers.
+
+#### Crash Handling
+- **In-App Crash Reporter** - `CrashReportActivity` surfaces uncaught exceptions in a themed screen with Copy-and-Exit; runs in a separate `:crash` process so it survives main app death. `AppInfo` helper formats version / Android / ABI for both bug reports and crashes. About screen gains a "Copy app info" entry. GitHub bug/feature issue templates added.
+
+#### Details
+- **Selectable Text + Long-Press Copy** - Titles, synopsis, character/staff name card, attributes wrapped in `SelectionContainer` for partial-text selection. Long-press copies the full string from non-text-selectable items (cast tile, external-link chip, voiced-character row, voice-actor card). Per-content-type `ClipData` labels (Title, Synopsis, Character name, Staff name, External link) so the OS clipboard / Gboard chip shows useful provenance. Closes #8.
+
+#### Settings & Look-and-Feel
+- **Cover Image Quality Setting** - Look-and-Feel setting (Extra Large / Large / Medium) applies app-wide without restart. `LocalCoverQuality` `CompositionLocal` flips at the root from `AppSettings.coverQuality`; library and media-details Room entities gain `coverMedium` / `coverLarge` / `coverExtraLarge` columns (auto-migration v12 -> v13).
+- **Expressive Settings UI** - Modernized cards and improved search; missing search strings (`search_settings`, `clear_search`, `no_settings_found`) added.
+- **Developer Tools Unlock** - Tap the About-screen version label 7x to permanently unlock Developer Tools in release builds; crash-trigger group still gated behind `BuildConfig.DEBUG`.
+
+#### Studio & People
+- **Studio Detail Screen** - New `StudioDetailsScreen` with hero, attributes, works list, fav toggle, share. VA / staff / studio stat cards clickable across Statistics, Search, Profile Favorites, MediaDetails. Room schema bump v13 -> v14 (`studioId` column on `media_details`).
+- **Stats Cards Redesign** - VoiceActor / Staff cards adopt a tombstone-arch image with uppercase bold name; Studio card text-only with tertiary gradient and fixed height to stop `LazyRow` jitter; release-year histogram and donut chart shrunk so counts/years no longer wrap.
+
+#### Localization
+- **Weblate Integration** - Every UI string externalized to `strings.xml`; `app_name` references switched to placeholders to prevent translation; Weblate workflow added.
+
+#### Branding & Typography
+- **New App Icon** - Updated launcher icon, monochrome variant, notification icon, and F-Droid metadata. Resolves #12.
+- **Google Sans Flex Typography** - Centralized variable-font system swaps Roboto Flex for Google Sans Flex; M3 Expressive scale; ROND 100 (fully rounded) is the new app-wide default. Glance widget layer migrated to shared role tokens.
+- **Per-Category Font Axis Playground** - Developer tool: weight / width / optical-size / slant / roundness per M3 role (Display / Headline / Title / Body / Label) with an "All" shortcut. Persisted as a JSON blob in `AppSettings`.
+- **Wavy Progress Indicators** - Material 3 wavy circular / linear progress variants across upload, refresh, and other progress surfaces.
+
+### Changed
+- **Unified RichText Composer Family** - Consolidated `MarkdownComposeSheet`, `MarkdownFullEditor`, `MessageComposerSheet`, and `CreateThreadScreen` into `RichText{Scaffold,InputSheet,InputScreen,FormatBar,Ops}` under `presentation/components/richtext/`. `RichTextInsertController` exposes a cursor-aware insert handle. Migrated to `TextFieldState` + `BasicTextField` for in-place mutations via `TextFieldState.edit`.
+- **Composer IME Docking** - Toolbar docks to the IME via `imePadding()` (mirrored in `RichTextInputSheet` via `navigationBarsPadding() + imePadding()`); each modifier consumes only its own inset.
+- **Input Max Length** - Title and body fields enforce AniList max length via `MaxLengthInputTransformation`; `canSubmit` gates on `withinMaxLength`; `ForumThreadInputScreen` title clamped via `take(TitleBounds.max)`.
+- **Litterbox Duration Selector** - `LITTERBOX_1H/24H/72H` consolidated into a single `LITTERBOX` host with an expiry duration setting. Imgur uploader removed.
+- **Profile Header Polish** - `RainbowDonatorBadge` / `RegularDonatorBadge` extracted to isolate animation invalidation; `joinedDate` and gradient brushes cached via `remember`; profile action buttons switched to `IconButton` variants.
+- **Notifications Filter Snapshots** - `NotificationsViewModel` caches per-filter snapshots so chip switches are instant. Worker passes `typeIn` so it actually receives the configured notification types.
+- **Toast Performance** - Pre-calculated `surfaceColor` / `codeBackgroundColor` on `ToastType`; `codeToTypeMap` for O(1) `fromCode`; `CountdownTimerText` extracted so only the timer recomposes; swipe animation defers state reads to draw via `graphicsLayer`; `AtomicInteger` IDs replace `UUID`; `collectAsStateWithLifecycle` for safer state collection.
+- **Memory Footprint** - Coil bitmaps enforced as `RGB_565` (halves cover-art memory); ExoPlayer instances use a strict `DefaultLoadControl` capping per-video buffer at 2 MB (down from 32 MB); `CoverImage` strings deduplicated and marked `@Immutable`; `ExoPlayer.prepare()` deferred until the player attaches to the UI.
+- **Main Thread Offload** - Notification scheduling and update checks moved off the main thread to `Dispatchers.IO`; `MainActivity` refactored to extract update handling into `AppUpdateHandler`; auth token parsing optimized.
+- **Upload Progress Smoothing** - `UriRequestBody` chunk bumped to 256 KB with a 50 ms minimum gap between `onProgress` fires plus a guaranteed final fire on EOF; response reads bounded via `peekBody` (4 KB for URL responses, 64 KB for custom-host JSON) so a misconfigured host can't OOM the parser; `retryOnConnectionFailure` disabled on the upload client.
+- **`Menu` Primitive** - M3 Expressive dropdown menu wrapper with item / divider / gap DSL covering segmented shapes, group containers, partial-width dividers, refined motion. Adopted across CharacterDetails sort field, activity-card overflow, PaletteStyle selector.
+
+### Fixed
+- **Emoji Truncation in Posts** - 4-byte UTF-8 codepoints silently truncated posts in AniList's utf8 (3-byte) MySQL column. `AniListTextEncoder.encodeForAniList` now replaces every codepoint above U+FFFF with its decimal HTML entity (e.g. `🤔` -> `&#129300;`) at the wire boundary across all seven mutation sites (forum body/title/comments, activity text/messages, profile messages); composer keeps showing raw emoji.
+- **Catbox Upload Reliability** - HTTP/2 edge intermittently RST'd upload streams ("stream was reset: PROTOCOL_ERROR") and the default OkHttp UA tripped Catbox's bot filter → 412 "Invalid uploader". Pinned `Protocol.HTTP_1_1` and `AniSync/<ver> (Android <sdk>)` UA on the shared media-upload OkHttpClient; residual 412 errors map to a "switch to Litterbox" hint instead of the raw response.
+- **Auth Storage Recovery** - `EncryptedSharedPreferences` AEADBadTagException (corrupt keystore on some OEMs) used to lock the user out; auth flow now detects it and recovers cleanly.
+- **Deleted-Activity Deep Links** - Opening a deleted activity via notification deep link no longer hits a dead-end error screen. `ActivityRepositoryImpl` throws `ApiError.GraphQLError(404)`; `ActivityDetailViewModel` detects 404 in `load()`, shows a `TopAlertToast`, and pops via `finishedEvents`.
+- **Mod-Authored DM Delete** - Deleting a moderator's message activity used to trigger a 401 logout. `ActivityFields` and `GetActivity` now fetch `moderatorRoles` on the messenger; `isAuthorMod` mapped onto `UserActivity` / `ActivityDetail`; `canDelete` guarded across `ActivityDetailScreen` / `ProfileActivitySection` / `RecentUpdatesSection`. `AuthorizationInterceptor` also refactored to extract operation name from the request body (Apollo 4.x) and detect permission errors in HTTP 200 GraphQL responses.
+- **Duplicate Forum Threads** - `ForumViewModel` deduplicates threads by id when appending pages.
+- **Rich-Text Image Width Crash** - Malformed AniList markdown (e.g. `img<width>(url)` with an enormous width) overflowed Compose `Constraints` (~262143 px max) and crashed the layout pass. Absolute width clamped to `MAX_RICH_IMAGE_WIDTH_DP` (3000dp); percent width clamped to `0f..1f`.
+- **Memory Caches Bounded + Glance Leak** - Bounded internal caches, fixed a Glance leak, added OOM crash protection.
+- **Compact Nav Bar Label Clipping** - 20 dp rounded-corner clip wrapping the bottom-nav item Column nibbled bold-Discover and other wide labels; clip dropped (no ripple to contain). Nav labels and `AnimatedTab` get `maxLines = 1, softWrap = false, overflow = Ellipsis` so long locale strings ellipsize cleanly. Arabic `nav_profile` shortened (`الملف`); missing `nav_feed` entries added for `ar` (`النشاط`) and `de` (`Feed`).
+- **Compact Nav Bar M3 Alignment** - Reserve label-height padding when labels hidden; active indicator pill to 32 dp tall; item padding 12 dp top / 16 dp bottom across both nav-bar styles.
+- **Discover Bottom Inset** - Dropped leftover `bottom = 80.dp` hardcoded on `DiscoverContent`'s padding; the inner `LazyColumn` already reserves space via `LocalMainNavBarInset`. Added 24 dp on top of the inset so the last row gets breathing room above the floating pill.
+- **Settings Search Strings + Shape Clip** - Added missing `search_settings` / `clear_search` / `no_settings_found` strings; `MaterialShapes.Clover8Leaf` converted via `toShape()` so it works with `clip()`.
+- **Search Polish** - View-mode toggle collapsed to a single icon button; year filter rebuilt to M3 year-grid spec; adult genres gated; wheel-picker edges softened.
+- **Toolbar Polish** - `STATUS` filter uses `AutoMirrored` icon; `TopAppBar` colors deprecation fixed; redundant `else` branch in `ThreadDetailViewModel` removed; `onBackPressed` deprecated on `CrashReportActivity`.
+
 ## [1.6.0] - 2026-05-01
 
 ### Added

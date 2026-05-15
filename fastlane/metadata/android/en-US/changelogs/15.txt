@@ -1,0 +1,29 @@
+Added:
+- Edit and delete forum threads, comments, replies, status posts, and DMs from any profile.
+- Media attachments (images, GIFs, videos) in rich-text composers via Catbox/Litterbox/custom hosts, with size choices and IME sticker/GIF support.
+- Drag-to-reorder Library tabs with per-tab visibility, and per-media-type "last tab" memory.
+- Compact bottom nav bar with floating-pill and anchored styles, label toggle, and corner-radius slider.
+- Global TopAlertToast system replacing snackbars across every screen, with countdown timers and swipe-to-dismiss.
+- In-app crash reporter (runs in its own :crash process) with Copy-and-Exit.
+- Advanced Search rebuild with full AniList filter parity, M3 year-range grid, chip bar, grid view.
+- Studio detail screen + clickable VA/staff/studio cards across Statistics, Search, Profile, Media Details.
+- App-wide cover image quality setting.
+- Selectable text and long-press-copy across Media/Character/Staff detail screens.
+- Weblate integration: every UI string externalized for community translations.
+
+Changed:
+- New app icon, monochrome variant, and notification icon.
+- Variable-font typography: Google Sans Flex with rounded default and a per-category developer playground.
+- Collapsing hero top bar adopted app-wide (Settings, Notifications, ThreadDetail, ReviewDetail, ActivityDetail, GridsScreen).
+- Wavy Material 3 progress indicators across upload, refresh, and load surfaces.
+- Memory + main-thread perf pass: RGB_565 covers, capped ExoPlayer buffers, string dedup, @Immutable cover models, off-thread update/notification scheduling.
+
+Fixed:
+- Emoji and 4-byte codepoints no longer truncate posts (encoded as HTML entities at the wire boundary).
+- Catbox upload reliability: pin HTTP/1.1, identifying User-Agent.
+- Auth recovers from EncryptedSharedPreferences AEADBadTagException instead of locking the user out.
+- Deleted-activity deep links show a 404 toast and pop back instead of a dead-end error screen.
+- Mod-authored DMs hide the delete button (was triggering a 401 logout).
+- Duplicate forum threads de-duplicated by id during pagination.
+- Rich-text malformed image widths clamped to avoid Constraints overflow crash.
+- Compact nav bar label clipping under rounded corners and long locales (Arabic/German).
