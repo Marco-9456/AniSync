@@ -207,130 +207,137 @@ fun NotificationsScreen(
             }
         }
 
-        AnimatedVisibility(
-            visible = isNotificationsEnabled,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Spacer(modifier = Modifier.height(8.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.height(8.dp))
 
-                NotificationGroupHeader(
-                    title = stringResource(R.string.notification_group_airing)
+            NotificationGroupHeader(
+                title = stringResource(R.string.notification_group_airing)
+            )
+
+            SettingsGroup {
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_watching),
+                    subtitle = stringResource(R.string.notification_watching_desc),
+                    checked = watchingEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetWatchingNotificationsEnabled(it)) }
                 )
-
-                SettingsGroup {
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_watching),
-                        subtitle = stringResource(R.string.notification_watching_desc),
-                        checked = watchingEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetWatchingNotificationsEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_planning),
-                        subtitle = stringResource(R.string.notification_planning_desc),
-                        checked = planningEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetPlanningNotificationsEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_upcoming),
-                        subtitle = stringResource(R.string.notification_upcoming_desc),
-                        checked = upcomingEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetUpcomingNotificationsEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        StreamingDelayItem(
-                            minutes = streamingDelayMinutes,
-                            onValueChange = { viewModel.onAction(SettingsAction.SetStreamingDelayMinutes(it)) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                NotificationGroupHeader(
-                    title = stringResource(R.string.notification_group_forum)
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_planning),
+                    subtitle = stringResource(R.string.notification_planning_desc),
+                    checked = planningEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetPlanningNotificationsEnabled(it)) }
                 )
-
-                SettingsGroup {
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_thread_comment_reply),
-                        subtitle = stringResource(R.string.notification_thread_comment_reply_desc),
-                        checked = threadCommentReplyEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadCommentReplyEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_thread_subscribed),
-                        subtitle = stringResource(R.string.notification_thread_subscribed_desc),
-                        checked = threadSubscribedEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadSubscribedEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_thread_comment_mention),
-                        subtitle = stringResource(R.string.notification_thread_comment_mention_desc),
-                        checked = threadCommentMentionEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadCommentMentionEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_thread_like),
-                        subtitle = stringResource(R.string.notification_thread_like_desc),
-                        checked = threadLikeEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadLikeEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_thread_comment_like),
-                        subtitle = stringResource(R.string.notification_thread_comment_like_desc),
-                        checked = threadCommentLikeEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadCommentLikeEnabled(it)) }
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_upcoming),
+                    subtitle = stringResource(R.string.notification_upcoming_desc),
+                    checked = upcomingEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetUpcomingNotificationsEnabled(it)) }
+                )
+                SettingsDivider()
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    StreamingDelayItem(
+                        minutes = streamingDelayMinutes,
+                        enabled = isNotificationsEnabled,
+                        onValueChange = { viewModel.onAction(SettingsAction.SetStreamingDelayMinutes(it)) }
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                NotificationGroupHeader(
-                    title = stringResource(R.string.notification_group_activity)
+            NotificationGroupHeader(
+                title = stringResource(R.string.notification_group_forum)
+            )
+
+            SettingsGroup {
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_thread_comment_reply),
+                    subtitle = stringResource(R.string.notification_thread_comment_reply_desc),
+                    checked = threadCommentReplyEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadCommentReplyEnabled(it)) }
                 )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_thread_subscribed),
+                    subtitle = stringResource(R.string.notification_thread_subscribed_desc),
+                    checked = threadSubscribedEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadSubscribedEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_thread_comment_mention),
+                    subtitle = stringResource(R.string.notification_thread_comment_mention_desc),
+                    checked = threadCommentMentionEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadCommentMentionEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_thread_like),
+                    subtitle = stringResource(R.string.notification_thread_like_desc),
+                    checked = threadLikeEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadLikeEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_thread_comment_like),
+                    subtitle = stringResource(R.string.notification_thread_comment_like_desc),
+                    checked = threadCommentLikeEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetThreadCommentLikeEnabled(it)) }
+                )
+            }
 
-                SettingsGroup {
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_channel_activity_reply),
-                        subtitle = stringResource(R.string.notification_channel_activity_reply_desc),
-                        checked = activityReplyEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityReplyEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_channel_activity_mention),
-                        subtitle = stringResource(R.string.notification_channel_activity_mention_desc),
-                        checked = activityMentionEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityMentionEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_channel_activity_like),
-                        subtitle = stringResource(R.string.notification_channel_activity_like_desc),
-                        checked = activityLikeEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityLikeEnabled(it)) }
-                    )
-                    SettingsDivider()
-                    SwitchSettingsItem(
-                        title = stringResource(R.string.notification_channel_activity_message),
-                        subtitle = stringResource(R.string.notification_channel_activity_message_desc),
-                        checked = activityMessageEnabled,
-                        onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityMessageEnabled(it)) }
-                    )
-                }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            NotificationGroupHeader(
+                title = stringResource(R.string.notification_group_activity)
+            )
+
+            SettingsGroup {
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_channel_activity_reply),
+                    subtitle = stringResource(R.string.notification_channel_activity_reply_desc),
+                    checked = activityReplyEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityReplyEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_channel_activity_mention),
+                    subtitle = stringResource(R.string.notification_channel_activity_mention_desc),
+                    checked = activityMentionEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityMentionEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_channel_activity_like),
+                    subtitle = stringResource(R.string.notification_channel_activity_like_desc),
+                    checked = activityLikeEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityLikeEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_channel_activity_message),
+                    subtitle = stringResource(R.string.notification_channel_activity_message_desc),
+                    checked = activityMessageEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityMessageEnabled(it)) }
+                )
             }
         }
     }
@@ -352,8 +359,17 @@ private fun NotificationGroupHeader(
 @Composable
 private fun StreamingDelayItem(
     minutes: Int,
-    onValueChange: (Int) -> Unit
+    onValueChange: (Int) -> Unit,
+    enabled: Boolean = true
 ) {
+    val disabledAlpha = 0.38f
+    val titleColor = if (enabled) MaterialTheme.colorScheme.onSurface
+        else MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
+    val valueColor = if (enabled) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.primary.copy(alpha = disabledAlpha)
+    val subtitleColor = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -367,6 +383,7 @@ private fun StreamingDelayItem(
             Text(
                 stringResource(R.string.notification_streaming_delay),
                 style = MaterialTheme.typography.bodyLarge,
+                color = titleColor,
                 modifier = Modifier.weight(1f)
             )
             Text(
@@ -376,19 +393,20 @@ private fun StreamingDelayItem(
                     stringResource(R.string.notification_streaming_delay_value, minutes)
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = valueColor
             )
         }
         Text(
             stringResource(R.string.notification_streaming_delay_desc),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = subtitleColor,
             modifier = Modifier.padding(top = 4.dp)
         )
         Slider(
             value = minutes.toFloat(),
             onValueChange = { onValueChange(it.toInt()) },
             valueRange = 0f..180f,
+            enabled = enabled,
             modifier = Modifier.padding(top = 8.dp)
         )
     }
