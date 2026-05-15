@@ -386,6 +386,21 @@ class AppSettings @Inject constructor(
         prefs.edit().remove(KEY_TYPOGRAPHY_OVERRIDES).apply()
     }
 
+    // ==========================================================================
+    // DEVELOPER TOOLS — unlock flag (lets release builds reach the dev screens)
+    // ==========================================================================
+
+    private val _devToolsUnlocked = MutableStateFlow(
+        prefs.getBoolean(KEY_DEV_TOOLS_UNLOCKED, false)
+    )
+    val devToolsUnlocked: StateFlow<Boolean> = _devToolsUnlocked.asStateFlow()
+
+    /** Permanently reveals the Developer Tools entry — triggered by the hidden tap gesture. */
+    fun unlockDevTools() {
+        _devToolsUnlocked.value = true
+        prefs.edit().putBoolean(KEY_DEV_TOOLS_UNLOCKED, true).apply()
+    }
+
     /**
      * Set the app theme mode.
      */
@@ -683,6 +698,7 @@ companion object {
         const val DEFAULT_FONT_ROUNDNESS = 100f
 
         private const val KEY_TYPOGRAPHY_OVERRIDES = "typography_overrides"
+        private const val KEY_DEV_TOOLS_UNLOCKED = "dev_tools_unlocked"
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
