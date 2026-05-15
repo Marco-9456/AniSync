@@ -850,4 +850,8 @@
     <string name="search_settings">Configurações de pesquisa</string>
     <string name="clear_search">Limpar pesquisa</string>
     <string name="no_settings_found">Nenhuma configuração encontrada</string>
+    <string name="debug_test_watching"></string>
+    <string name="media_upload_custom_field"></string>
+    <string name="debug_test_planning"></string>
+    <string name="debug_notifications"></string>
 </resources>
