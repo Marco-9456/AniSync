@@ -128,7 +128,7 @@ fun StaffDetailsScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 ),

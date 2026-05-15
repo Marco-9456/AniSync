@@ -21,7 +21,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -86,12 +85,10 @@ fun NotificationsScreen(
             }
         },
         belowBar = {
-            Surface(color = MaterialTheme.colorScheme.background) {
-                FilterChipsRow(
-                    selected = uiState.filter,
-                    onSelect = { viewModel.onAction(NotificationsAction.SetFilter(it)) }
-                )
-            }
+            FilterChipsRow(
+                selected = uiState.filter,
+                onSelect = { viewModel.onAction(NotificationsAction.SetFilter(it)) }
+            )
         }
     ) { topContentPadding ->
         PullToRefreshBox(

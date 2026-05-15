@@ -206,6 +206,14 @@ fun CollapsingTopBarScaffold(
     val topBarHeightDp = with(density) { topBarHeightPx.toDp() }
     val belowBarHeightDp = with(density) { belowBarHeightPx.toDp() }
 
+    // Same lerp the collapsing top bar uses, hoisted so the below-bar strip can
+    // share it — `background` while expanded, `surfaceContainer` while collapsed.
+    val barBackgroundColor = androidx.compose.ui.graphics.lerp(
+        containerColor,
+        scrolledContainerColor,
+        collapseFraction
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -232,6 +240,7 @@ fun CollapsingTopBarScaffold(
                         .fillMaxWidth()
                         .align(Alignment.TopStart)
                         .offset { IntOffset(0, topBarHeightPx.roundToInt()) }
+                        .background(barBackgroundColor)
                         .onSizeChanged { belowBarHeightPx = it.height }
                 ) {
                     belowBar()

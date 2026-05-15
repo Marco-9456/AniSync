@@ -21,7 +21,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -249,7 +248,6 @@ fun SectionGridScreen(
         title = sectionTitle,
         onBackClick = onBackClick,
         scrollableState = gridState,
-        scrolledContainerColor = MaterialTheme.colorScheme.background,
         topBarModifier = with(sharedTransitionScope) {
             Modifier
                 .renderInSharedTransitionScopeOverlay(
@@ -261,10 +259,7 @@ fun SectionGridScreen(
                 }
         },
         belowBar = {
-            Surface(
-                modifier = filtersOverlayModifier,
-                color = MaterialTheme.colorScheme.background
-            ) {
+            Box(modifier = filtersOverlayModifier) {
                 SearchFiltersRow(
                     mediaType = uiState.mediaType,
                     selectedFormat = uiState.selectedFormat,
