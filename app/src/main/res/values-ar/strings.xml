@@ -5,9 +5,8 @@
     <!-- Navigation -->
     <string name="nav_library">المكتبة</string>
     <string name="nav_discover">اكتشف</string>
-    <string name="nav_feed">النشاط</string>
-    <string name="nav_profile">الملف</string>
-
+    <string name="nav_feed"></string>
+    <string name="nav_profile">الملف الشخصي</string>
     <!-- Common -->
     <string name="back">رجوع</string>
     <string name="search">بحث</string>
@@ -22,14 +21,12 @@
     <string name="error_oops">عذرًا!</string>
     <string name="feature_coming_soon">قريبًا</string>
     <string name="not_available">غ/م</string>
-
     <!-- Media Types -->
     <string name="media_type_anime">أنمي</string>
     <string name="media_type_manga">مانجا</string>
     <string name="media_type_tv">TV</string>
     <string name="media_type_media">وسائط</string>
     <string name="format_tv_series">مسلسل تلفزيوني</string>
-
     <!-- Status Labels -->
     <string name="status_watching">أشاهد حاليًا</string>
     <string name="status_reading">أقرأ حاليًا</string>
@@ -40,7 +37,6 @@
     <string name="status_repeating">إعادة</string>
     <string name="status_rewatching">إعادة مشاهدة</string>
     <string name="status_rereading">إعادة قراءة</string>
-
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">ابحث عن أنمي…</string>
     <string name="search_manga_placeholder">ابحث عن مانجا…</string>
@@ -50,7 +46,6 @@
     <string name="section_tba">سيُعلن لاحقًا</string>
     <string name="error_failed_to_load">فشل تحميل المحتوى</string>
     <string name="search_no_results">لم يتم العثور على نتائج.</string>
-
     <!-- Library Screen -->
     <string name="library_title">المكتبة</string>
     <string name="search_library_placeholder">ابحث في المكتبة…</string>
@@ -72,14 +67,12 @@
     <string name="airing_episode_in">الحلقة %1$d خلال %2$s</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">؟</string>
-
     <!-- Library Empty States -->
     <string name="empty_watching">لا تشاهد شيئًا حاليًا.</string>
     <string name="empty_reading">لا تقرأ شيئًا حاليًا.</string>
     <string name="empty_planning">قائمة خططك فارغة.</string>
     <string name="empty_completed">لا توجد عناصر مكتملة بعد.</string>
     <string name="empty_default">لا يوجد شيء لعرضه هنا.</string>
-
     <!-- Details Screen -->
     <string name="section_cast">طاقم التمثيل</string>
     <string name="section_related">ذو صلة</string>
@@ -133,7 +126,6 @@
     <string name="episodes_suffix">حلقات</string>
     <string name="chapters_suffix">فصول</string>
     <string name="minutes_suffix">دقيقة</string>
-
     <!-- Profile Screen -->
     <string name="profile_id">المعرّف: %1$d</string>
     <string name="stat_time_watched">وقت المشاهدة</string>
@@ -149,7 +141,6 @@
     <string name="theme_light">فاتح</string>
     <string name="theme_dark">داكن</string>
     <string name="theme_system">حسب النظام</string>
-
     <!-- Theme Palette Selection -->
     <string name="color_and_style">اللون &amp; الأسلوب</string>
     <string name="palette_style">نمط الألوان</string>
@@ -174,7 +165,6 @@
     <string name="notification_upcoming">العروض الأولى القادمة</string>
     <string name="notification_upcoming_desc">إشعار مسبق قبل عرض الحلقات</string>
     <string name="notification_permission_revoked">تم إلغاء إذن الإشعارات. انقر لفتح الإعدادات.</string>
-
     <!-- Settings Screens -->
     <string name="navigate_back">الرجوع</string>
     <string name="settings_look_and_feel">المظهر والأسلوب</string>
@@ -221,12 +211,10 @@
     <string name="settings_search_placeholder">البحث في الإعدادات</string>
     <string name="settings_oss_description">تم بناء AniSync باستخدام مكتبات المصادر المفتوحة التالية:</string>
     <string name="settings_oss_footer">جميع المكتبات مستخدمة وفقًا لتراخيصها الخاصة.</string>
-
     <!-- Logout Dialog -->
     <string name="logout_dialog_title">تسجيل الخروج</string>
     <string name="logout_dialog_message">هل أنت متأكد أنك تريد تسجيل الخروج؟</string>
     <string name="logout_dialog_confirm">تسجيل الخروج</string>
-
     <!-- Settings Accessibility -->
     <string name="a11y_settings_search">البحث في الإعدادات</string>
     <string name="a11y_settings_clear_search">مسح البحث</string>
@@ -239,10 +227,8 @@
     <string name="a11y_settings_selected">محدد</string>
     <string name="a11y_back_button">الرجوع</string>
     <string name="a11y_app_icon">أيقونة التطبيق</string>
-
     <!-- Theme Mode Dialog -->
     <string name="theme_mode_dialog_title">السمة</string>
-
     <!-- Acknowledgments Screen -->
     <string name="settings_acknowledgments_description">لم يكن AniSync ممكنًا لولا مجتمع المصادر المفتوحة الرائع والمساهمين التالين:</string>
     <string name="acknowledgments_section_data">مزودو البيانات</string>
@@ -261,7 +247,6 @@
     <string name="acknowledgments_users">مستخدمونا</string>
     <string name="acknowledgments_users_desc">شكرًا لاستخدامكم AniSync وتقديم ملاحظاتكم القيّمة</string>
     <string name="acknowledgments_footer">صُنع بحب لعشاق الأنمي في كل مكان.</string>
-
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">المطوّر</string>
     <string name="debug_notifications">تصحيح الإشعارات</string>
@@ -270,7 +255,6 @@
     <string name="debug_test_advance">اختبار متقدم (١٢ ساعة)</string>
     <string name="debug_test_imminent">اختبار وشيك (ساعتان)</string>
     <string name="debug_clear_all">مسح الكل</string>
-
     <string name="control_log_out">تسجيل الخروج</string>
     <string name="content_description_avatar">الصورة الرمزية</string>
     <string name="profile_level">المستوى %1$d</string>
@@ -288,17 +272,14 @@
     <string name="profile_favorites_studios">الاستوديوهات</string>
     <string name="content_description_profile_avatar">الصورة الرمزية للملف الشخصي</string>
     <string name="content_description_media_cover">غلاف %1$s</string>
-
     <!-- Notification Dialog -->
     <string name="dialog_enable_notifications_title">تفعيل الإشعارات</string>
     <string name="dialog_enable_notifications_message">يرجى تفعيل الإشعارات من إعدادات النظام.</string>
-
     <!-- External Links -->
     <string name="section_external_links">روابط خارجية &amp; بث</string>
     <string name="subsection_streaming">شاهد على</string>
     <string name="subsection_reading">اقرأ على</string>
     <string name="subsection_external">روابط خارجية</string>
-
     <!-- Edit Library Entry -->
     <string name="edit_entry">تعديل العنصر</string>
     <string name="no_score">بدون تقييم</string>
@@ -314,16 +295,14 @@
     <string name="delete_entry_confirm">هل تريد إزالة هذا العنصر من مكتبتك؟</string>
     <string name="entry_saved">تم حفظ العنصر</string>
     <string name="entry_deleted">تمت إزالة العنصر</string>
-
     <!-- Login Screen -->
-    <string name="login_sync_your">زامن </string>
+    <string name="login_sync_your">زامن</string>
     <string name="login_world">عالمك</string>
     <string name="login_tagline">الرفيق المثالي لتتبع الأنمي &amp; المانجا، مدعوم من AniList.</string>
     <string name="login_get_started">ابدأ الآن</string>
     <string name="login_description">سجّل الدخول للوصول إلى مكتبتك واكتشاف مفضلات جديدة.</string>
     <string name="login_continue_with_anilist">المتابعة عبر AniList</string>
     <string name="login_terms">بالمتابعة، فإنك توافق على شروط الخدمة الخاصة بنا.</string>
-
     <!-- Search Filters -->
     <string name="filter">تصفية</string>
     <string name="filter_clear_all">مسح الكل</string>
@@ -332,20 +311,17 @@
     <string name="filter_season">الموسم</string>
     <string name="filter_format">الصيغة</string>
     <string name="filter_status">الحالة</string>
-
     <!-- Seasons -->
     <string name="season_winter">الشتاء</string>
     <string name="season_spring">الربيع</string>
     <string name="season_summer">الصيف</string>
     <string name="season_fall">الخريف</string>
-
     <!-- Media Status (for search filter) -->
     <string name="media_status_airing">يُعرض حاليًا</string>
     <string name="media_status_finished">منتهٍ</string>
     <string name="media_status_not_yet_released">لم يصدر بعد</string>
     <string name="media_status_cancelled">ملغى</string>
     <string name="media_status_hiatus">متوقف</string>
-
     <!-- Media Formats -->
     <string name="format_tv">TV</string>
     <string name="format_tv_short">TV قصير</string>
@@ -356,15 +332,13 @@
     <string name="format_music">موسيقى</string>
     <string name="format_novel">رواية</string>
     <string name="format_one_shot">ون شوت</string>
-    <string name="separator_bullet">•</string>
-
+    <string name="separator_bullet" translatable="false">•</string>
     <!-- Widget Descriptions -->
     <string name="widget_weekly_calendar_description">عرض جدول الأنمي لسبعة أيام بنظرة سريعة</string>
     <string name="widget_airing_today_description">يعرض حلقات الأنمي التي تُبث اليوم</string>
     <string name="widget_up_next_description">وصول سريع إلى حلقتك التالية</string>
     <string name="widget_quick_update_description">تحديث تقدم الحلقات بسرعة</string>
     <string name="widget_trending_description">اطّلع على ما هو رائج في عالم الأنمي</string>
-
     <!-- Widget Configuration -->
     <string name="widget_config_title">إعداد الأداة</string>
     <string name="widget_config_subtitle">خصّص مظهر وسلوك أداة الحلقة التالية</string>
@@ -380,7 +354,6 @@
     <string name="widget_config_include_planning_desc">عرض العناصر من قائمة خططك</string>
     <string name="widget_config_add_widget">إضافة الأداة</string>
     <string name="widget_config_items_visible">العناصر المرئية في الأداة</string>
-
     <!-- Statistics Screen -->
     <string name="statistics_title">الإحصائيات</string>
     <string name="statistics_total_anime">إجمالي الأنمي</string>
@@ -394,7 +367,6 @@
     <string name="statistics_by_year">حسب سنة الإصدار</string>
     <string name="statistics_anime_label">أنمي</string>
     <string name="statistics_view">عرض الإحصائيات</string>
-
     <string name="statistics_anime">أنمي</string>
     <string name="statistics_manga">مانجا</string>
     <string name="statistics_total_manga">إجمالي المانجا</string>
@@ -403,7 +375,6 @@
     <string name="statistics_no_manga_stats">لا تتوفر إحصائيات مانجا</string>
     <string name="statistics_entries">%d عنصر</string>
     <string name="statistics_no_data">لا تتوفر بيانات إحصائية</string>
-
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">التقييم %1$d: %2$d عنصر</string>
@@ -411,7 +382,6 @@
     <string name="a11y_studio_stat">استوديو %1$s: %2$d أنمي، متوسط التقييم %3$.1f</string>
     <string name="a11y_format_stat">صيغة %1$s: %2$d عنصر، متوسط التقييم %3$.1f</string>
     <string name="a11y_year_stat">سنة %1$d: %2$d عنصر</string>
-
     <!-- Accessibility: Actions -->
     <string name="a11y_action_increment_progress">زيادة التقدم بمقدار واحد</string>
     <string name="a11y_action_decrement_progress">إنقاص التقدم بمقدار واحد</string>
@@ -425,7 +395,6 @@
     <string name="a11y_action_collapse_synopsis">طي القصة</string>
     <string name="a11y_action_select_tab">تحديد تبويب %1$s</string>
     <string name="a11y_action_open_search_result">فتح %1$s</string>
-
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">ملصق %1$s</string>
     <string name="a11y_character_image">صورة %1$s</string>
@@ -433,7 +402,6 @@
     <string name="a11y_banner_image">صورة الغلاف لـ %1$s</string>
     <string name="a11y_rating_score">التقييم: %1$.1f من 10</string>
     <string name="a11y_media_card">%1$s، %2$s، التقييم %3$.1f</string>
-
     <!-- Accessibility: State Descriptions -->
     <string name="a11y_state_progress">التقدم: %1$d من %2$s</string>
     <string name="a11y_state_airing_soon">الحلقة التالية تُعرض خلال %1$s</string>
@@ -445,7 +413,6 @@
     <string name="a11y_state_tab_not_selected">%1$s</string>
     <string name="a11y_state_expanded">موسّع</string>
     <string name="a11y_state_collapsed">مطوي، انقر مرتين للتوسيع</string>
-
     <!-- Accessibility: Headings -->
     <string name="a11y_heading_trending">قسم الرائج</string>
     <string name="a11y_heading_popular">قسم الشائع</string>
@@ -453,18 +420,15 @@
     <string name="a11y_heading_relations">قسم الوسائط ذات الصلة</string>
     <string name="a11y_heading_synopsis">قسم القصة</string>
     <string name="a11y_heading_information">قسم المعلومات</string>
-
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">تم تحديث التقدم إلى %1$d</string>
     <string name="a11y_error_occurred">خطأ: %1$s</string>
     <string name="action_play_trailer">تشغيل العرض الدعائي</string>
-
     <!-- App Links Prompt -->
     <string name="enable_app_links_title">تفعيل روابط التطبيق</string>
     <string name="samsung_app_links_instructions">لفتح روابط AniList مباشرة في AniSync، يرجى تفعيل الروابط المدعومة في إعدادات Android لديك.\n\n1. اضغط على \'فتح الإعدادات\'\n2. ابحث عن \'AniSync\' في القائمة واضغط عليه\n3. اضغط على \'إضافة رابط\'\n4. حدد \'anilist.co\' واحفظ.</string>
     <string name="default_app_links_instructions">لفتح روابط AniList مباشرة في AniSync، يرجى تفعيل الروابط المدعومة لهذا التطبيق في إعدادات Android لديك.\n\n1. اضغط على \'فتح الإعدادات\'\n2. اضغط على \'إضافة رابط\'\n3. حدد \'anilist.co\' واحفظ.</string>
     <string name="open_settings">فتح الإعدادات</string>
-
     <!-- Missing translations -->
     <string name="about_improve_translations">تحسين الترجمات</string>
     <string name="about_improve_translations_desc">ساعد في ترجمة AniSync</string>
@@ -610,4 +574,358 @@
     <string name="statistics_taste_focused">ذوقك مركّز جداً</string>
     <string name="statistics_taste_balanced">ذوق متوازن</string>
     <string name="statistics_taste_eclectic">ذوق متنوع وواسع</string>
+    <string name="message_composer_hint"></string>
+    <string name="search_header_characters"></string>
+    <string name="media_attach_retry"></string>
+    <string name="test_code"></string>
+    <string name="thread_delete_confirm_title"></string>
+    <string name="forum_load_earlier_count"></string>
+    <string name="locked"></string>
+    <string name="download_started"></string>
+    <string name="notifications_title"></string>
+    <string name="font_axis_rounded"></string>
+    <string name="font_category_body"></string>
+    <string name="richtext_format_link"></string>
+    <string name="cd_continue_thread"></string>
+    <string name="dialog_delete_activity_body"></string>
+    <string name="cd_download"></string>
+    <string name="notification_channel_activity_reply"></string>
+    <string name="media_attach_error_catbox_rejected"></string>
+    <string name="section_following"></string>
+    <string name="settings_media_upload"></string>
+    <string name="font_axis_optical_size"></string>
+    <string name="cd_thread_depth"></string>
+    <string name="font_axis_slant"></string>
+    <string name="clip_label_title"></string>
+    <string name="copied_title"></string>
+    <string name="label_categories"></string>
+    <string name="new_list_name"></string>
+    <string name="message_composer_private"></string>
+    <string name="cannot_edit_activity_type"></string>
+    <string name="empty_search_results_action"></string>
+    <string name="notifications_filter_forum"></string>
+    <string name="copied_to_clipboard"></string>
+    <string name="empty_favorites_button"></string>
+    <string name="media_attach_uploading"></string>
+    <string name="no_settings_found"></string>
+    <string name="thread_locked_desc"></string>
+    <string name="notification_streaming_delay_desc"></string>
+    <string name="link_developer"></string>
+    <string name="cd_developer_avatar"></string>
+    <string name="support_anisync"></string>
+    <string name="empty_discussions_button"></string>
+    <string name="media_attach_size_original"></string>
+    <string name="media_attach_upload"></string>
+    <string name="login_with_anilist"></string>
+    <string name="settings_media_upload_desc"></string>
+    <string name="edit_profile_title"></string>
+    <string name="clip_label_external_link"></string>
+    <string name="cover_quality_medium_desc"></string>
+    <string name="label_all_languages"></string>
+    <string name="setting_nav_bar_show_labels"></string>
+    <string name="media_attach_url_input_hint"></string>
+    <string name="custom_lists"></string>
+    <string name="empty_notifications_action"></string>
+    <string name="login_welcome_to"></string>
+    <string name="profile_manga_stats_coming_soon"></string>
+    <string name="setting_nav_bar_style_floating_desc"></string>
+    <string name="clip_label_synopsis"></string>
+    <string name="empty_favorites_title"></string>
+    <string name="media_upload_custom_json_path_hint"></string>
+    <string name="debug_bump_inbox_badge"></string>
+    <string name="media_attach_size_output"></string>
+    <string name="thread_unsaved"></string>
+    <string name="notification_activity_likes"></string>
+    <string name="char_count"></string>
+    <string name="feed_filter_status"></string>
+    <string name="activity_detail_wrote_to"></string>
+    <string name="empty_list_anime_action"></string>
+    <string name="richtext_format_spoiler"></string>
+    <string name="cd_navigate_back"></string>
+    <string name="empty_forum_search_title"></string>
+    <string name="cover_quality_large_desc"></string>
+    <string name="notification_channel_activity_message_desc"></string>
+    <string name="notification_streaming_delay"></string>
+    <string name="forum_jump_to_page"></string>
+    <string name="support_description"></string>
+    <string name="search_settings"></string>
+    <string name="login_tagline_short"></string>
+    <string name="activity_likes_empty"></string>
+    <string name="font_playground_reset"></string>
+    <string name="cd_reply"></string>
+    <string name="richtext_format_code"></string>
+    <string name="label_custom"></string>
+    <string name="media_upload_custom_field"></string>
+    <string name="empty_discussions_title"></string>
+    <string name="cd_share"></string>
+    <string name="media_attach_size_large"></string>
+    <string name="cd_write_status"></string>
+    <string name="empty_airing_today_title"></string>
+    <string name="media_attach_size_title"></string>
+    <string name="media_attach_pick_video"></string>
+    <string name="font_category_title"></string>
+    <plurals name="notifications_unread_count_a11y">
+    </plurals>
+    <string name="notifications_filter_status"></string>
+    <string name="all"></string>
+    <string name="empty_upcoming_action"></string>
+    <string name="media_attach_size_custom"></string>
+    <string name="studio_label_type"></string>
+    <string name="feed_compose_placeholder"></string>
+    <string name="settings_copy_app_info"></string>
+    <string name="media_upload_intro"></string>
+    <string name="settings_cover_quality_desc"></string>
+    <string name="empty_sign_in_button"></string>
+    <string name="settings_navigation"></string>
+    <string name="empty_notifications_title"></string>
+    <string name="empty_upcoming_title"></string>
+    <string name="empty_search_results_button"></string>
+    <string name="empty_list_title"></string>
+    <string name="media_attach_url_input"></string>
+    <string name="cd_clear_search"></string>
+    <string name="media_attach"></string>
+    <string name="richtext_format_italic"></string>
+    <string name="font_playground_title"></string>
+    <string name="feed_filter_list"></string>
+    <string name="edit"></string>
+    <string name="notification_streaming_delay_off"></string>
+    <string name="episodes_behind"></string>
+    <string name="voiced_characters"></string>
+    <string name="create_new_list"></string>
+    <string name="richtext_char_count"></string>
+    <string name="forum_first_page"></string>
+    <string name="feed_scope_global"></string>
+    <string name="cd_comments"></string>
+    <string name="feed_empty_global"></string>
+    <string name="empty_connection_action"></string>
+    <string name="list_deleted"></string>
+    <string name="cd_manage_lists"></string>
+    <string name="search_header_users"></string>
+    <string name="studio_label_other_studio"></string>
+    <string name="font_category_headline"></string>
+    <string name="forum_link_media_title"></string>
+    <string name="status_posted"></string>
+    <string name="forum_current_page_label"></string>
+    <string name="label_pinned"></string>
+    <string name="cd_youtube_thumbnail"></string>
+    <string name="test_message_error_code"></string>
+    <string name="richtext_format_bold"></string>
+    <string name="dev_tools_already_unlocked"></string>
+    <string name="editor_discard_confirm"></string>
+    <string name="settings_font_playground"></string>
+    <string name="media_upload_custom_url"></string>
+    <string name="year_picker_hint_empty"></string>
+    <string name="missing_recipient"></string>
+    <string name="copied_name"></string>
+    <string name="font_axis_weight"></string>
+    <string name="activity_detail_no_replies"></string>
+    <string name="debug_trigger_crash"></string>
+    <string name="manage_tabs"></string>
+    <string name="message_composer_send"></string>
+    <string name="label_genres"></string>
+    <string name="media_upload_litterbox_expiry"></string>
+    <string name="filter_on_my_list"></string>
+    <string name="dev_tools_taps_remaining"></string>
+    <string name="editor_discard_keep"></string>
+    <string name="studio_label_website"></string>
+    <string name="setting_nav_bar_show_labels_desc"></string>
+    <string name="cover_quality_medium"></string>
+    <string name="notification_activity_messages"></string>
+    <string name="empty_characters_title"></string>
+    <string name="forum_categories_title"></string>
+    <string name="setting_nav_bar_style_anchored"></string>
+    <string name="delete"></string>
+    <string name="media_attach_insert"></string>
+    <string name="activity_detail_replies"></string>
+    <string name="cd_login"></string>
+    <string name="media_attach_pick_image_desc"></string>
+    <string name="feed_compose_title"></string>
+    <string name="pinned"></string>
+    <string name="font_category_display"></string>
+    <string name="forum_media_no_results"></string>
+    <string name="label_character"></string>
+    <string name="sponsor_project"></string>
+    <string name="notification_activity_mentions"></string>
+    <string name="notification_channel_activity_message"></string>
+    <string name="dev_tools_unlocked"></string>
+    <string name="empty_upcoming_button"></string>
+    <string name="font_axis_width"></string>
+    <string name="filter_show_results"></string>
+    <string name="feed_empty_following"></string>
+    <string name="setting_nav_bar_style"></string>
+    <string name="media_upload_host_catbox_desc"></string>
+    <string name="media_upload_litterbox_1h"></string>
+    <string name="notifications_unread_indicator_a11y"></string>
+    <string name="media_attach_paste_url_desc"></string>
+    <string name="mute"></string>
+    <string name="media_attach_pick_video_desc"></string>
+    <string name="search_header_anime_manga"></string>
+    <string name="link_repository"></string>
+    <string name="empty_comments_title"></string>
+    <string name="media_upload_litterbox_24h"></string>
+    <string name="editor_discard_title"></string>
+    <string name="feed_compose_submit"></string>
+    <string name="empty_comments_action"></string>
+    <string name="cd_like"></string>
+    <string name="empty_favorites_action"></string>
+    <string name="activity_detail_private"></string>
+    <string name="post"></string>
+    <string name="font_category_all"></string>
+    <string name="label_review"></string>
+    <string name="cd_toggle_save"></string>
+    <string name="nav_bar_style_dialog_title"></string>
+    <string name="setting_nav_bar_corner_radius"></string>
+    <string name="setting_nav_bar_style_anchored_desc"></string>
+    <string name="cover_quality_extra_large"></string>
+    <string name="cover_quality_large"></string>
+    <string name="forum_add_categories"></string>
+    <string name="studio_label_total_works"></string>
+    <string name="also_known_as"></string>
+    <string name="cd_play"></string>
+    <string name="notifications_filter_airing"></string>
+    <string name="media_upload_custom_auth_hint"></string>
+    <string name="media_upload_custom_json_path"></string>
+    <string name="cd_delete_list"></string>
+    <string name="cd_play_video"></string>
+    <string name="login_lets_get_started"></string>
+    <string name="empty_search_alt_action"></string>
+    <string name="forum_a11y_open_page_jumper"></string>
+    <string name="notification_channel_activity_description"></string>
+    <string name="by_author"></string>
+    <string name="message_composer_title"></string>
+    <string name="copied_link"></string>
+    <string name="forum_remove_media_category"></string>
+    <string name="replied_to"></string>
+    <string name="sponsor"></string>
+    <string name="notification_channel_activity_like_desc"></string>
+    <string name="settings_font_playground_subtitle"></string>
+    <string name="activity_likes_title"></string>
+    <string name="empty_forum_search_action"></string>
+    <string name="empty_discussions_action"></string>
+    <string name="activity_edit_reply_title"></string>
+    <string name="activity_delete_confirm_body"></string>
+    <string name="feed_scope_following"></string>
+    <string name="notification_group_activity"></string>
+    <string name="message_sent"></string>
+    <string name="forum_edit_thread_title"></string>
+    <string name="list_created"></string>
+    <string name="featured_media"></string>
+    <string name="media_attach_paste_url"></string>
+    <string name="activity_deleted"></string>
+    <string name="studio_main_studio_chip"></string>
+    <string name="media_attach_pick_image"></string>
+    <string name="notification_channel_activity_name"></string>
+    <string name="cd_go_back_one_level"></string>
+    <string name="empty_sign_in_action"></string>
+    <string name="edit_profile_about_label"></string>
+    <string name="year_picker_hint_single"></string>
+    <string name="clip_label_studio_name"></string>
+    <string name="activity_edit_status_title"></string>
+    <string name="media_attach_size_small"></string>
+    <string name="media_upload_custom_help"></string>
+    <string name="empty_connection_title"></string>
+    <string name="clip_label_staff_name"></string>
+    <string name="failed_to_load_review"></string>
+    <string name="cd_like_review"></string>
+    <string name="notification_channel_activity_reply_desc"></string>
+    <string name="forum_load_more_count"></string>
+    <string name="notifications_filter_follows"></string>
+    <string name="search_header_staff"></string>
+    <string name="notification_activity_replies"></string>
+    <string name="forum_page_of"></string>
+    <string name="notifications_filter_messages"></string>
+    <string name="label_spoiler"></string>
+    <string name="subscribed_to_thread"></string>
+    <string name="forum_comments_count"></string>
+    <string name="dialog_delete_activity_title"></string>
+    <string name="all_following"></string>
+    <string name="studio_label_animation_studio"></string>
+    <string name="media_upload_litterbox_72h"></string>
+    <string name="font_category_label"></string>
+    <string name="media_attach_cancel"></string>
+    <string name="media_upload_custom_auth"></string>
+    <string name="empty_generic_title"></string>
+    <string name="forum_latest_page"></string>
+    <string name="hide_from_status_lists_desc"></string>
+    <string name="forum_media_search_hint"></string>
+    <string name="write"></string>
+    <string name="cd_reorder"></string>
+    <string name="feed_filter_all"></string>
+    <string name="message_composer_sent"></string>
+    <string name="unsubscribed_from_thread"></string>
+    <string name="media_attach_size_medium"></string>
+    <string name="media_upload_host_litterbox"></string>
+    <string name="notifications_open"></string>
+    <string name="lead_developer"></string>
+    <string name="notifications_filter_all"></string>
+    <string name="download_failed"></string>
+    <string name="empty_airing_today_action"></string>
+    <string name="media_upload_custom_url_hint"></string>
+    <string name="studio_label_works"></string>
+    <string name="cd_dislike"></string>
+    <string name="forum_comment_unavailable"></string>
+    <string name="activity_edit_save"></string>
+    <string name="label_locked"></string>
+    <string name="media_upload_host_custom"></string>
+    <string name="clear_search"></string>
+    <string name="review_not_found"></string>
+    <string name="cd_author_avatar"></string>
+    <string name="thread_delete_confirm_body"></string>
+    <string name="reply_delete_confirm_title"></string>
+    <string name="cd_expand"></string>
+    <string name="cd_to"></string>
+    <string name="reply_delete_confirm_body"></string>
+    <string name="year_picker_hint_range"></string>
+    <string name="activity_detail_title"></string>
+    <string name="settings_cover_quality"></string>
+    <string name="label_attributes"></string>
+    <string name="more_options"></string>
+    <string name="downloading_high_res_image"></string>
+    <string name="settings_app_info_copied"></string>
+    <string name="label_spoilers"></string>
+    <string name="activity_detail_reply"></string>
+    <string name="message_composer_char_count"></string>
+    <string name="notification_streaming_delay_value"></string>
+    <string name="search_favourites_count"></string>
+    <string name="private_entry_desc"></string>
+    <string name="forum_search_results_label"></string>
+    <string name="forum_jump"></string>
+    <string name="activity_delete_confirm_title"></string>
+    <string name="cd_dislike_review"></string>
+    <string name="activity_updated"></string>
+    <string name="unmute"></string>
+    <string name="media_upload_host_litterbox_desc"></string>
+    <string name="media_attach_size_custom_hint"></string>
+    <string name="media_upload_host_catbox"></string>
+    <string name="clip_label_character_name"></string>
+    <string name="richtext_format_strikethrough"></string>
+    <string name="privacy"></string>
+    <string name="empty_list_anime_button"></string>
+    <string name="debug_crash_section"></string>
+    <string name="thread_saved"></string>
+    <string name="empty_search_results_title"></string>
+    <string name="notifications_filter_media"></string>
+    <string name="label_tags"></string>
+    <string name="editor_discard_body"></string>
+    <string name="forum_media_searching"></string>
+    <string name="notification_channel_activity_mention_desc"></string>
+    <string name="search_header_studios"></string>
+    <string name="notifications_unread_overflow_a11y"></string>
+    <string name="notification_channel_activity_mention"></string>
+    <string name="media_attach_error_invalid_url"></string>
+    <string name="private_entry"></string>
+    <string name="empty_list_manga_action"></string>
+    <string name="empty_list_manga_button"></string>
+    <string name="media_upload_host_custom_desc"></string>
+    <string name="notification_channel_activity_like"></string>
+    <string name="setting_nav_bar_style_floating"></string>
+    <string name="cover_quality_extra_large_desc"></string>
+    <string name="settings_copy_app_info_desc"></string>
+    <string name="hide_from_status_lists"></string>
+    <string name="cd_zoomable_image"></string>
+    <string name="empty_no_items"></string>
+    <string name="cd_toggle_subscription"></string>
+    <string name="empty_characters_action"></string>
+    <string name="a11y_action_copy"></string>
+    <string name="empty_sign_in_title"></string>
 </resources>
