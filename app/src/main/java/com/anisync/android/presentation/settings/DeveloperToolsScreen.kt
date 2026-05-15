@@ -28,6 +28,7 @@ import com.anisync.android.R
 @Composable
 fun DeveloperToolsScreen(
     onBackClick: () -> Unit,
+    onFontPlaygroundClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -36,6 +37,17 @@ fun DeveloperToolsScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
+        // Font Playground — live variable-font axis sliders
+        SettingsGroup {
+            SettingsItem(
+                title = stringResource(R.string.settings_font_playground),
+                subtitle = stringResource(R.string.settings_font_playground_subtitle),
+                onClick = onFontPlaygroundClick
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Build Information
         SettingsGroup {
             Surface(
@@ -179,37 +191,39 @@ fun DeveloperToolsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Crash Reporter Debug
-        SettingsGroup {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.debug_crash_section),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    FilledTonalButton(
-                        onClick = {
-                            throw RuntimeException("Debug-triggered crash from Developer Tools")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        // Crash Reporter Debug — debug builds only; never reachable in an unlocked release.
+        if (BuildConfig.DEBUG) {
+            SettingsGroup {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            stringResource(R.string.debug_crash_section),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.tertiary
                         )
-                    ) {
-                        Text(stringResource(R.string.debug_trigger_crash))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        FilledTonalButton(
+                            onClick = {
+                                throw RuntimeException("Debug-triggered crash from Developer Tools")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Text(stringResource(R.string.debug_trigger_crash))
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Toast Debug
         SettingsGroup {

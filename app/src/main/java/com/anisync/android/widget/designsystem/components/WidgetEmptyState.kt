@@ -18,7 +18,6 @@ import androidx.glance.layout.height
 import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.widget.core.SizeClass
 import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
 import com.anisync.android.widget.designsystem.tokens.WidgetTypography
@@ -77,10 +76,9 @@ private fun EmptyStateCompact(
     ) {
         Text(
             text = config.title,
-            style = TextStyle(
+            style = WidgetTypography.bodyMedium(
                 color = GlanceTheme.colors.onSurface,
-                fontSize = WidgetTypography.Body.medium,
-                fontWeight = FontWeight.Medium
+                weight = FontWeight.Medium
             )
         )
     }
@@ -118,10 +116,9 @@ private fun EmptyStateMedium(
             }
             Text(
                 text = config.title,
-                style = TextStyle(
+                style = WidgetTypography.titleSmall(
                     color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.small,
-                    fontWeight = FontWeight.Bold
+                    weight = FontWeight.Bold
                 )
             )
         }
@@ -149,19 +146,16 @@ private fun EmptyStateExpanded(
             }
             Text(
                 text = config.title,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.medium,
-                    fontWeight = FontWeight.Medium
+                style = WidgetTypography.titleMedium(
+                    color = GlanceTheme.colors.onSurface
                 )
             )
             if (config.subtitle != null) {
                 Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
                 Text(
                     text = config.subtitle,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Body.medium
+                    style = WidgetTypography.bodyMedium(
+                        color = GlanceTheme.colors.onSurfaceVariant
                     )
                 )
             }

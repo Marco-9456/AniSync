@@ -40,7 +40,6 @@ import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.R
 import com.anisync.android.data.local.dao.TrendingDao
 import com.anisync.android.data.local.entity.TrendingEntity
@@ -254,10 +253,8 @@ private fun TrendingCompact(
                     Spacer(modifier = GlanceModifier.width(4.dp))
                     Text(
                         text = "Trending",
-                        style = TextStyle(
-                            color = GlanceTheme.colors.primary,
-                            fontSize = WidgetTypography.Label.large,
-                            fontWeight = FontWeight.Bold
+                        style = WidgetTypography.labelLarge(
+                            color = GlanceTheme.colors.primary
                         )
                     )
                 }
@@ -266,10 +263,8 @@ private fun TrendingCompact(
 
                 Text(
                     text = item.titleUserPreferred,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = WidgetTypography.Body.large,
-                        fontWeight = FontWeight.Bold
+                    style = WidgetTypography.bodyLarge(
+                        color = GlanceTheme.colors.onSurface
                     ),
                     maxLines = 2
                 )
@@ -286,10 +281,9 @@ private fun TrendingCompact(
                         Spacer(modifier = GlanceModifier.width(4.dp))
                         Text(
                             text = "${item.averageScore}%",
-                            style = TextStyle(
+                            style = WidgetTypography.labelLarge(
                                 color = GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = WidgetTypography.Label.large,
-                                fontWeight = FontWeight.Medium
+                                weight = FontWeight.Medium
                             ),
                             maxLines = 1
                         )
@@ -342,10 +336,8 @@ private fun TrendingMedium(
 
                 Text(
                     text = item.titleUserPreferred,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = WidgetTypography.Label.large,
-                        fontWeight = FontWeight.Bold
+                    style = WidgetTypography.labelLarge(
+                        color = GlanceTheme.colors.onSurface
                     ),
                     maxLines = 1
                 )
@@ -393,10 +385,8 @@ private fun TrendingExpanded(
 
             Text(
                 text = "Trending Now",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.large,
-                    fontWeight = FontWeight.Bold
+                style = WidgetTypography.titleLarge(
+                    color = GlanceTheme.colors.onSurface
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
@@ -456,10 +446,8 @@ private fun TrendingExpanded(
                         Column(modifier = GlanceModifier.defaultWeight()) {
                             Text(
                                 text = item.titleUserPreferred,
-                                style = TextStyle(
-                                    color = GlanceTheme.colors.onSurface,
-                                    fontSize = WidgetTypography.Body.large,
-                                    fontWeight = FontWeight.Bold
+                                style = WidgetTypography.bodyLarge(
+                                    color = GlanceTheme.colors.onSurface
                                 ),
                                 maxLines = 2
                             )
@@ -476,10 +464,9 @@ private fun TrendingExpanded(
                                     Spacer(modifier = GlanceModifier.width(4.dp))
                                     Text(
                                         text = "${item.averageScore}% Score",
-                                        style = TextStyle(
+                                        style = WidgetTypography.labelLarge(
                                             color = GlanceTheme.colors.onSurfaceVariant,
-                                            fontSize = WidgetTypography.Label.large,
-                                            fontWeight = FontWeight.Medium
+                                            weight = FontWeight.Medium
                                         )
                                     )
                                 }
@@ -515,10 +502,8 @@ private fun RankBadge(rank: Int) {
     ) {
         Text(
             text = "#$rank",
-            style = TextStyle(
-                color = GlanceTheme.colors.onPrimary,
-                fontSize = WidgetTypography.Label.medium,
-                fontWeight = FontWeight.Bold
+            style = WidgetTypography.labelMedium(
+                color = GlanceTheme.colors.onPrimary
             ),
             modifier = GlanceModifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )

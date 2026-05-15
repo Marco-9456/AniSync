@@ -55,6 +55,7 @@ import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
+import com.anisync.android.presentation.util.LocalAppSettings
 
 private data class CategoryData(
     val key: String,
@@ -82,6 +83,10 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Developer Tools is visible in debug builds, or once unlocked via the hidden tap gesture
+    // on the About screen's version label (see AboutScreen).
+    val devToolsUnlocked by LocalAppSettings.current.devToolsUnlocked
+        .collectAsStateWithLifecycle(initialValue = false)
     var showAppLinksDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -192,7 +197,7 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Info,
                 onClick = onNavigateToAbout
             ),
-            if (BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG || devToolsUnlocked) {
                 CategoryData(
                     key = "dev_tools",
                     title = stringResource(R.string.settings_developer_tools),

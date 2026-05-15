@@ -12,6 +12,9 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.anisync.android.R
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.media.MediaHost
+import com.anisync.android.ui.theme.FontAxisOverrides
+import com.anisync.android.ui.theme.TypeCategory
+import com.anisync.android.ui.theme.TypographyOverrides
 import com.anisync.android.widget.UpNextWidget
 import com.materialkolor.PaletteStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -327,6 +331,76 @@ class AppSettings @Inject constructor(
             .getOrDefault(MediaHost.CATBOX)
     }
 
+    // ==========================================================================
+    // FONT PLAYGROUND — live per-category variable-font axis overrides (developer screen)
+    // ==========================================================================
+
+    // The whole TypographyOverrides object is persisted as a single JSON string. With five
+    // categories x five axes that is far less boilerplate than 25 typed preference keys, and
+    // the structure can evolve without a migration as long as unknown keys are ignored.
+    private val typographyJson = Json { ignoreUnknownKeys = true }
+    private val _typographyOverrides = MutableStateFlow(readTypographyOverrides())
+    val typographyOverrides: StateFlow<TypographyOverrides> = _typographyOverrides.asStateFlow()
+
+    private fun readTypographyOverrides(): TypographyOverrides {
+        val json = prefs.getString(KEY_TYPOGRAPHY_OVERRIDES, null) ?: return TypographyOverrides.None
+        return runCatching { typographyJson.decodeFromString<TypographyOverrides>(json) }
+            .getOrDefault(TypographyOverrides.None)
+    }
+
+    private fun persistTypographyOverrides(value: TypographyOverrides) {
+        _typographyOverrides.value = value
+        prefs.edit()
+            .putString(KEY_TYPOGRAPHY_OVERRIDES, typographyJson.encodeToString(value))
+            .apply()
+    }
+
+    /** Update one M3 role [category]'s axis overrides (used by the per-category sliders). */
+    fun updateTypographyCategory(
+        category: TypeCategory,
+        transform: (FontAxisOverrides) -> FontAxisOverrides,
+    ) {
+        val current = _typographyOverrides.value
+        persistTypographyOverrides(
+            current.withCategory(category, transform(current.forCategory(category))),
+        )
+    }
+
+    /** "All" shortcut — apply the same axis [transform] to every category at once. */
+    fun updateTypographyAll(transform: (FontAxisOverrides) -> FontAxisOverrides) {
+        val current = _typographyOverrides.value
+        persistTypographyOverrides(
+            TypographyOverrides(
+                display = transform(current.display),
+                headline = transform(current.headline),
+                title = transform(current.title),
+                body = transform(current.body),
+                label = transform(current.label),
+            ),
+        )
+    }
+
+    /** Clears the playground — every category back to its per-role preset typography. */
+    fun resetTypography() {
+        _typographyOverrides.value = TypographyOverrides.None
+        prefs.edit().remove(KEY_TYPOGRAPHY_OVERRIDES).apply()
+    }
+
+    // ==========================================================================
+    // DEVELOPER TOOLS — unlock flag (lets release builds reach the dev screens)
+    // ==========================================================================
+
+    private val _devToolsUnlocked = MutableStateFlow(
+        prefs.getBoolean(KEY_DEV_TOOLS_UNLOCKED, false)
+    )
+    val devToolsUnlocked: StateFlow<Boolean> = _devToolsUnlocked.asStateFlow()
+
+    /** Permanently reveals the Developer Tools entry — triggered by the hidden tap gesture. */
+    fun unlockDevTools() {
+        _devToolsUnlocked.value = true
+        prefs.edit().putBoolean(KEY_DEV_TOOLS_UNLOCKED, true).apply()
+    }
+
     /**
      * Set the app theme mode.
      */
@@ -604,6 +678,28 @@ companion object {
         const val MIN_NAV_BAR_CORNER_RADIUS = 0f
         const val MAX_NAV_BAR_CORNER_RADIUS = 36f
         const val DEFAULT_NAV_BAR_CORNER_RADIUS = 28f
+
+        // Font playground axis ranges + defaults (Google Sans Flex).
+        const val MIN_FONT_WEIGHT = 100f
+        const val MAX_FONT_WEIGHT = 1000f
+        const val DEFAULT_FONT_WEIGHT = 400f
+        const val MIN_FONT_WIDTH = 25f
+        const val MAX_FONT_WIDTH = 151f
+        const val DEFAULT_FONT_WIDTH = 100f
+        const val MIN_FONT_OPSZ = 8f
+        const val MAX_FONT_OPSZ = 144f
+        const val DEFAULT_FONT_OPSZ = 24f
+        const val MIN_FONT_SLANT = -10f
+        const val MAX_FONT_SLANT = 0f
+        const val DEFAULT_FONT_SLANT = 0f
+        const val MIN_FONT_ROUNDNESS = 0f
+        const val MAX_FONT_ROUNDNESS = 100f
+        // AniSync ships fully rounded — see TypographyAxisConfig.
+        const val DEFAULT_FONT_ROUNDNESS = 100f
+
+        private const val KEY_TYPOGRAPHY_OVERRIDES = "typography_overrides"
+        private const val KEY_DEV_TOOLS_UNLOCKED = "dev_tools_unlocked"
+
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
         private const val KEY_COVER_QUALITY = "cover_quality"

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -23,6 +24,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -53,6 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -81,11 +84,13 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.util.AppInfo
 import kotlin.math.PI
@@ -348,11 +353,45 @@ private fun AboutHero(
             )
         }
 
+        // Hidden gesture: tapping the version label 7x unlocks Developer Tools in any build.
+        val context = LocalContext.current
+        val appSettings = LocalAppSettings.current
+        val devToolsUnlocked by appSettings.devToolsUnlocked
+            .collectAsStateWithLifecycle(initialValue = false)
+        var versionTapCount by remember { mutableIntStateOf(0) }
+        val unlockTaps = 7
         Text(
             text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.clickable {
+                if (devToolsUnlocked) {
+                    Toast.makeText(
+                        context,
+                        R.string.dev_tools_already_unlocked,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    return@clickable
+                }
+                versionTapCount++
+                val remaining = unlockTaps - versionTapCount
+                when {
+                    remaining <= 0 -> {
+                        appSettings.unlockDevTools()
+                        Toast.makeText(
+                            context,
+                            R.string.dev_tools_unlocked,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    remaining <= 3 -> Toast.makeText(
+                        context,
+                        context.getString(R.string.dev_tools_taps_remaining, remaining),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
         )
     }
 }

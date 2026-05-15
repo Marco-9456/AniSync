@@ -14,7 +14,6 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.height
 import androidx.glance.layout.size
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
 import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 
@@ -55,9 +54,8 @@ fun WidgetLoadingState(
                 Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.medium))
                 Text(
                     text = message,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Body.medium
+                    style = WidgetTypography.bodyMedium(
+                        color = GlanceTheme.colors.onSurfaceVariant
                     )
                 )
             }

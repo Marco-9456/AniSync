@@ -599,6 +599,14 @@ private fun RenderBlocks(
     }
 }
 
+/**
+ * Upper bound for an explicit image width from AniList markdown. Malformed markup such as
+ * `img2147483647(url)` parses into a huge [RichTextBlock.Image.width]; feeding that straight
+ * into [Modifier.widthIn] overflows Compose's `Constraints` (max ~262143 px) and crashes the
+ * whole layout pass. 3000 dp is far past any real screen yet safe at every density.
+ */
+private const val MAX_RICH_IMAGE_WIDTH_DP = 3000
+
 @Composable
 private fun RichImage(
     img: RichTextBlock.Image,
@@ -608,8 +616,12 @@ private fun RichImage(
 ) {
     val mod = when {
         fillWidth -> Modifier.fillMaxWidth()
-        img.isPercent && img.width != null -> Modifier.fillMaxWidth(img.width / 100f)
-        img.width != null -> Modifier.widthIn(max = img.width.dp)
+        // Clamp malformed widths: a percent fraction must stay in 0f..1f, and an absolute
+        // width must stay within Constraints limits — see MAX_RICH_IMAGE_WIDTH_DP.
+        img.isPercent && img.width != null ->
+            Modifier.fillMaxWidth((img.width / 100f).coerceIn(0f, 1f))
+        img.width != null ->
+            Modifier.widthIn(max = img.width.coerceIn(0, MAX_RICH_IMAGE_WIDTH_DP).dp)
         else -> Modifier
     }
 

@@ -38,11 +38,13 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -100,11 +102,7 @@ fun ProfileTopSection(
     onTopActionClick: () -> Unit = onSettingsClick,
     modifier: Modifier = Modifier
 ) {
-    val surfaceColor = MaterialTheme.colorScheme.background
 
-    val expressiveAvatarShape = remember {
-        ExpressiveBadgeShape(waves = 16, amplitude = 0.04f)
-    }
 
     // Cached to avoid format initialization over multiple re-renders
     val joinedDate = remember(profile.createdAt) {
@@ -177,7 +175,7 @@ fun ProfileTopSection(
                 .fillMaxWidth()
                 .padding(top = BannerHeight - CardOverlap),
             shape = ContentCardShape,
-            color = surfaceColor,
+            color = MaterialTheme.colorScheme.background,
             tonalElevation = 0.dp
         ) {
             Column(
@@ -326,9 +324,9 @@ fun ProfileTopSection(
             Box(
                 modifier = Modifier
                     .size(AvatarSize)
-                    .background(surfaceColor, expressiveAvatarShape)
+                    .background(MaterialTheme.colorScheme.onSecondaryContainer, MaterialShapes.Clover8Leaf.toShape())
                     .padding(6.dp)
-                    .clip(expressiveAvatarShape)
+                    .clip(MaterialShapes.Clover8Leaf.toShape())
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 AsyncImage(

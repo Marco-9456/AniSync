@@ -16,17 +16,20 @@ import com.anisync.android.data.NotificationPreferences
 import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
-import com.anisync.android.domain.UserProfile
+import com.anisync.android.ui.theme.FontAxisOverrides
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -72,7 +75,7 @@ class SettingsViewModel @Inject constructor(
         refreshCacheSize()
     }
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    private val coreUiState: Flow<SettingsUiState> = combine(
         combine(
             appSettings.themeMode,
             appSettings.titleLanguage,
@@ -180,6 +183,18 @@ class SettingsViewModel @Inject constructor(
             userProfile = profile as UserProfile?,
             isLoaded = true
         )
+    }
+
+    // Per-category font playground overrides. Its own flow because the main combine above is
+    // already at the 5-argument limit of the typed combine() overload.
+    private val fontPlaygroundFlow: Flow<FontPlaygroundUiState> =
+        appSettings.typographyOverrides.map { FontPlaygroundUiState(it) }
+
+    val uiState: StateFlow<SettingsUiState> = combine(
+        coreUiState,
+        fontPlaygroundFlow,
+    ) { core, fontPlayground ->
+        core.copy(fontPlayground = fontPlayground)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -288,6 +303,14 @@ class SettingsViewModel @Inject constructor(
                 toastManager.showToast(action.code, "This is a test message for error code ${action.code}.", countdown)
             }
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
+
+            is SettingsAction.SetFontAxis -> appSettings.updateTypographyCategory(action.category) {
+                it.withAxis(action.axis, action.value)
+            }
+            is SettingsAction.SetFontAxisAll -> appSettings.updateTypographyAll {
+                it.withAxis(action.axis, action.value)
+            }
+            SettingsAction.ResetFontAxes -> appSettings.resetTypography()
         }
     }
 
@@ -399,3 +422,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 }
+
+/** Sets a single variable-font axis on a [FontAxisOverrides], keyed by [FontPlaygroundAxis]. */
+private fun FontAxisOverrides.withAxis(axis: FontPlaygroundAxis, value: Float): FontAxisOverrides =
+    when (axis) {
+        FontPlaygroundAxis.WEIGHT -> copy(weight = value)
+        FontPlaygroundAxis.WIDTH -> copy(width = value)
+        FontPlaygroundAxis.OPTICAL_SIZE -> copy(opticalSize = value)
+        FontPlaygroundAxis.SLANT -> copy(slant = value)
+        FontPlaygroundAxis.ROUNDNESS -> copy(roundness = value)
+    }

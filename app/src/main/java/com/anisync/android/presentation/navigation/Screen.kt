@@ -253,6 +253,12 @@ object SettingsLinks
 object SettingsDeveloperTools
 
 /**
+ * Font playground — live variable-font axis sliders (debug builds only).
+ */
+@Serializable
+object SettingsFontPlayground
+
+/**
  * Media upload host configuration (Catbox / Litterbox / custom).
  */
 @Serializable

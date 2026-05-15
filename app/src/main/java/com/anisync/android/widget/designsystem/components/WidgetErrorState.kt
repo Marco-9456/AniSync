@@ -20,7 +20,6 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import com.anisync.android.widget.designsystem.tokens.WidgetDimensions
 import com.anisync.android.widget.designsystem.tokens.WidgetTypography
 
@@ -73,10 +72,8 @@ fun WidgetErrorState(
             
             Text(
                 text = title,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = WidgetTypography.Title.small,
-                    fontWeight = FontWeight.Medium
+                style = WidgetTypography.titleSmall(
+                    color = GlanceTheme.colors.onSurface
                 )
             )
             
@@ -84,9 +81,8 @@ fun WidgetErrorState(
                 Spacer(modifier = GlanceModifier.height(WidgetDimensions.Spacer.xsmall))
                 Text(
                     text = message,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = WidgetTypography.Body.medium
+                    style = WidgetTypography.bodyMedium(
+                        color = GlanceTheme.colors.onSurfaceVariant
                     )
                 )
             }
@@ -105,10 +101,9 @@ fun WidgetErrorState(
                 ) {
                     Text(
                         text = "Tap to retry",
-                        style = TextStyle(
+                        style = WidgetTypography.bodyMedium(
                             color = GlanceTheme.colors.onPrimaryContainer,
-                            fontSize = WidgetTypography.Body.medium,
-                            fontWeight = FontWeight.Medium
+                            weight = FontWeight.Medium
                         )
                     )
                 }

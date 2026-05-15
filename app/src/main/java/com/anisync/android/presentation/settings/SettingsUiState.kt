@@ -9,6 +9,8 @@ import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.data.update.Release
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.ui.theme.TypeCategory
+import com.anisync.android.ui.theme.TypographyOverrides
 import com.materialkolor.PaletteStyle
 
 sealed interface SettingsAction {
@@ -65,7 +67,36 @@ sealed interface SettingsAction {
     data class ShowTestToast(val code: Int) : SettingsAction
 
     data object FetchLatestRelease : SettingsAction
+
+    // Font playground (developer screen) — live per-category variable-font axis controls.
+    data class SetFontAxis(
+        val category: TypeCategory,
+        val axis: FontPlaygroundAxis,
+        val value: Float,
+    ) : SettingsAction
+
+    /** "All" shortcut — write one axis value into every category at once. */
+    data class SetFontAxisAll(val axis: FontPlaygroundAxis, val value: Float) : SettingsAction
+
+    data object ResetFontAxes : SettingsAction
 }
+
+/** The five Google Sans Flex axes exposed by the developer font playground. */
+enum class FontPlaygroundAxis {
+    WEIGHT,
+    WIDTH,
+    OPTICAL_SIZE,
+    SLANT,
+    ROUNDNESS,
+}
+
+/**
+ * UI state for the developer font playground: the per-category axis overrides. The selected
+ * category is screen-local UI state, so it is not held here.
+ */
+data class FontPlaygroundUiState(
+    val overrides: TypographyOverrides = TypographyOverrides.None,
+)
 
 data class SettingsUiState(
     val isLoaded: Boolean = false,
@@ -116,5 +147,8 @@ data class SettingsUiState(
     
     // Updates
     val isAutoUpdateEnabled: Boolean = false,
-    val isPrereleaseAllowed: Boolean = false
+    val isPrereleaseAllowed: Boolean = false,
+
+    // Font playground (developer screen)
+    val fontPlayground: FontPlaygroundUiState = FontPlaygroundUiState()
 )
