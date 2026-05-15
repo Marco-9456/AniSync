@@ -126,8 +126,12 @@ fun RichTextScaffold(
         LaunchedEffect(Unit) { focusRequester.requestFocus() }
     }
 
-    BackHandler(enabled = hasUnsavedChanges) {
-        showDiscardDialog = true
+    // Always intercept system back so the overlay dismisses itself instead of
+    // letting the gesture pop the parent route off the nav stack (which would
+    // drop the user back to the start destination, e.g. Library, when the
+    // editor is rendered as an inline overlay on Feed / Profile).
+    BackHandler {
+        if (hasUnsavedChanges) showDiscardDialog = true else onDismiss()
     }
 
     if (showDiscardDialog) {
