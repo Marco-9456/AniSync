@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
@@ -182,7 +183,10 @@ fun AnimatedTab(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                color = contentColor
+                color = contentColor,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

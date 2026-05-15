@@ -5,6 +5,7 @@
     <!-- Navigation -->
     <string name="nav_library">Bibliothek</string>
     <string name="nav_discover">Entdecken</string>
+    <string name="nav_feed">Feed</string>
     <string name="nav_profile">Profil</string>
 
     <!-- Common -->

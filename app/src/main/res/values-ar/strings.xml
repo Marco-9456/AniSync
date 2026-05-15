@@ -5,7 +5,8 @@
     <!-- Navigation -->
     <string name="nav_library">المكتبة</string>
     <string name="nav_discover">اكتشف</string>
-    <string name="nav_profile">الملف الشخصي</string>
+    <string name="nav_feed">النشاط</string>
+    <string name="nav_profile">الملف</string>
 
     <!-- Common -->
     <string name="back">رجوع</string>

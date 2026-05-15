@@ -33,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
@@ -172,7 +171,10 @@ fun RowScope.CompactNavBarItem(
     Column(
         modifier = modifier
             .weight(1f)
-            .clip(RoundedCornerShape(20.dp))
+            // No clip on the column itself — `indication = null` means there is no
+            // ripple to contain, and clipping here would nibble the first/last
+            // glyphs of labels long enough to span the column's rounded corners
+            // (e.g. bold "Discover", "Bibliothek").
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
