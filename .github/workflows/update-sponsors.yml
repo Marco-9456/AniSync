@@ -72,20 +72,23 @@ jobs:
                     tier { monthlyPriceInDollars }
                     sponsorEntity {
                       ... on User { login name avatarUrl url }
-                      ... on Organization { login name avatarUrl url }
                     }
                   }
                 }
               }
             }' --jq '{
               updatedAt: (now | todate),
-              sponsors: [.data.user.sponsorshipsAsMaintainer.nodes[] | {
-                login: .sponsorEntity.login,
-                name: (.sponsorEntity.name // .sponsorEntity.login),
-                avatarUrl: .sponsorEntity.avatarUrl,
-                url: .sponsorEntity.url,
-                tier: .tier.monthlyPriceInDollars
-              }]
+              sponsors: [
+                .data.user.sponsorshipsAsMaintainer.nodes[]
+                | select(.sponsorEntity.login != null)
+                | {
+                    login: .sponsorEntity.login,
+                    name: (.sponsorEntity.name // .sponsorEntity.login),
+                    avatarUrl: .sponsorEntity.avatarUrl,
+                    url: .sponsorEntity.url,
+                    tier: .tier.monthlyPriceInDollars
+                  }
+              ]
             }' > app/src/main/assets/sponsors.json
 
       # --- Commit ---
