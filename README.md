@@ -45,13 +45,13 @@
 Thanks to everyone who supports AniSync. [Become a sponsor →](https://github.com/sponsors/Marco-9456)
 
 ### Generous Supporters
-<!-- sponsors-generous --><!-- sponsors-generous -->
+<!-- sponsors-generous -->_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">Become a Generous Supporter</a>_<!-- sponsors-generous -->
 
 ### Backers
-<!-- sponsors-backer --><!-- sponsors-backer -->
+<!-- sponsors-backer -->_<a href="https://github.com/sponsors/Marco-9456">Become a Backer</a>_<!-- sponsors-backer -->
 
 ### Sponsors
-<!-- sponsors-sponsor --><!-- sponsors-sponsor -->
+<!-- sponsors-sponsor -->_<a href="https://github.com/sponsors/Marco-9456">Become a Sponsor</a>_<!-- sponsors-sponsor -->
 
 ---
 
