@@ -61,8 +61,10 @@ data class MediaDetails(
     val bannerUrl: String?,
     val description: String,
     val score: Int?,
+    val popularity: Int? = null,
+    val favourites: Int? = null,
     val episodes: Int?,
-    val nextAiringEpisode: Int? = null,
+    val nextAiringEpisode: NextAiringEpisode? = null,
     val chapters: Int?,
     val volumes: Int?,
     val type: MediaType?,
@@ -87,6 +89,8 @@ data class MediaDetails(
     val listEntryHiddenFromStatusLists: Boolean? = null,
     // Characters
     val characters: List<CharacterInfo>,
+    // Staff
+    val staff: List<StaffInfo> = emptyList(),
     // Related media
     val relations: List<RelatedMedia>,
     // External and streaming links
@@ -113,6 +117,24 @@ data class CharacterInfo(
     val nameUserPreferred: String,
     val imageUrl: String?,
     val role: String
+)
+
+@Serializable
+data class NextAiringEpisode(
+    val episode: Int,
+    val airingAt: Long,         // unix seconds, absolute — survives cache reads
+    val timeUntilAiring: Int    // seconds, snapshot at fetch time (fallback only)
+)
+
+@Serializable
+data class StaffInfo(
+    val id: Int,
+    val nameFull: String,
+    val nameNative: String?,
+    val nameUserPreferred: String,
+    val imageUrl: String?,
+    val role: String,
+    val primaryOccupations: List<String> = emptyList()
 )
 
 @Serializable

@@ -19,12 +19,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,7 +46,9 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.presentation.util.formatCountdownAdaptive
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.delay
 
 /**
  * Displays media information in a scrollable horizontal list with pill-style cards.
@@ -117,6 +125,25 @@ private fun buildInfoItems(
         )
     )
 
+    // 1b. Airing countdown (only when next episode known)
+    details.nextAiringEpisode?.let { airing ->
+        val remaining = rememberLiveCountdownSeconds(airing.airingAt, airing.timeUntilAiring)
+        if (remaining > 0) {
+            items.add(
+                InfoItem(
+                    icon = Icons.Default.HourglassBottom,
+                    label = stringResource(R.string.stat_next_episode),
+                    value = stringResource(
+                        R.string.airing_countdown_value,
+                        airing.episode,
+                        formatCountdownAdaptive(remaining)
+                    ),
+                    iconTint = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+    }
+
     // 2. Episodes
     val episodesLabel = if (details.type == MediaType.MANGA) {
         stringResource(R.string.stat_chapters)
@@ -128,7 +155,7 @@ private fun buildInfoItems(
     } else {
         when {
             details.episodes != null -> "${details.episodes}"
-            details.nextAiringEpisode != null -> "${details.nextAiringEpisode - 1}"
+            details.nextAiringEpisode != null -> "${details.nextAiringEpisode.episode - 1}"
             else -> "?"
         }
     }
@@ -325,6 +352,29 @@ private fun InfoPillContent(
             )
         }
     }
+}
+
+/**
+ * Live ticker that returns seconds remaining until [airingAt] (unix seconds, absolute).
+ * Uses absolute time so the value stays accurate across cache reads and backgrounding.
+ * [fallbackSeconds] is used only if airingAt is in the past relative to device clock
+ * (e.g., clock skew vs. server-snapshot time).
+ */
+@Composable
+private fun rememberLiveCountdownSeconds(airingAt: Long, fallbackSeconds: Int): Int {
+    var secs by remember(airingAt) {
+        val now = System.currentTimeMillis() / 1000
+        val initial = (airingAt - now).toInt()
+        mutableIntStateOf(if (initial > 0) initial else fallbackSeconds.coerceAtLeast(0))
+    }
+    LaunchedEffect(airingAt) {
+        while (secs > 0) {
+            delay(1_000)
+            val now = System.currentTimeMillis() / 1000
+            secs = ((airingAt - now).coerceAtLeast(0)).toInt()
+        }
+    }
+    return secs
 }
 
 @Composable

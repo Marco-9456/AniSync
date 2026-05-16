@@ -61,6 +61,7 @@ import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.domain.StaffInfo
 import com.anisync.android.domain.VoicedCharacter
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
@@ -156,6 +157,99 @@ fun CharacterItem(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Start
         )
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun StaffItem(
+    staff: StaffInfo,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
+) {
+    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val copyToClipboard = rememberCopyToClipboard()
+    val copyLabel = stringResource(R.string.a11y_action_copy)
+    val nameClipLabel = stringResource(R.string.clip_label_staff_name)
+    val copiedNameMessage = stringResource(R.string.copied_name)
+
+    val roleText = staff.role.takeIf { it.isNotBlank() }
+        ?: staff.primaryOccupations.firstOrNull().orEmpty()
+
+    Column(
+        horizontalAlignment = Alignment.Start,
+        modifier = modifier
+            .width(dimensionResource(R.dimen.character_item_width))
+            .clip(imageShape)
+            .bouncyCombinedClickable(
+                onClick = onClick,
+                role = Role.Button,
+                onClickLabel = stringResource(
+                    R.string.a11y_action_open_details,
+                    staff.nameUserPreferred
+                ),
+                onLongClickLabel = copyLabel,
+                onLongClick = {
+                    copyToClipboard(nameClipLabel, staff.nameUserPreferred, copiedNameMessage)
+                }
+            )
+            .padding(bottom = dimensionResource(R.dimen.spacing_small))
+    ) {
+        val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+            val spatialSpec = AppMotion.rememberSpatialSpec()
+            with(sharedTransitionScope) {
+                Modifier
+                    .height(dimensionResource(R.dimen.character_image_height))
+                    .fillMaxWidth()
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(
+                            key = TransitionKeys.staffImage(staff.id)
+                        ),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec },
+                        clipInOverlayDuringTransition = OverlayClip(imageShape)
+                    )
+                    .clip(imageShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            }
+        } else {
+            Modifier
+                .height(dimensionResource(R.dimen.character_image_height))
+                .fillMaxWidth()
+                .clip(imageShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        }
+
+        AsyncImage(
+            model = staff.imageUrl,
+            contentDescription = stringResource(
+                R.string.a11y_staff_image,
+                staff.nameUserPreferred
+            ),
+            contentScale = ContentScale.Crop,
+            modifier = imageModifier
+        )
+        Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+        Text(
+            text = staff.nameUserPreferred,
+            style = MaterialTheme.typography.labelMedium.emphasis(),
+            textAlign = TextAlign.Start,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.primary
+        )
+        if (roleText.isNotEmpty()) {
+            Text(
+                text = roleText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Start,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

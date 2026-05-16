@@ -135,6 +135,7 @@
 
     <!-- Details Screen -->
     <string name="section_cast">Cast</string>
+    <string name="section_staff">Staff</string>
     <string name="section_related">Related</string>
     <string name="section_recommendations">Recommendations</string>
     <string name="section_reviews">Reviews</string>
@@ -151,6 +152,10 @@
     <string name="stat_chapters">Chapters</string>
     <string name="stat_status">Status</string>
     <string name="stat_source">Source</string>
+    <string name="stat_popularity">Popularity</string>
+    <string name="stat_favorites">Favorites</string>
+    <string name="stat_next_episode">Next Episode</string>
+    <string name="airing_countdown_value">Ep %1$d in %2$s</string>
     <string name="source_original">Original</string>
     <string name="source_manga">Manga</string>
     <string name="source_light_novel">Light Novel</string>
@@ -183,6 +188,7 @@
     <string name="stat_format">Format</string>
     <string name="badge_up_to_date">Up to Date</string>
     <string name="empty_no_characters">No characters found</string>
+    <string name="empty_no_staff">No staff found</string>
     <string name="empty_no_related">No related media found</string>
     <string name="action_favorite">Favorite</string>
     <string name="action_share">Share</string>
@@ -687,6 +693,7 @@
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">Poster for %1$s</string>
     <string name="a11y_character_image">Image of %1$s</string>
+    <string name="a11y_staff_image">Image of %1$s</string>
     <string name="a11y_user_avatar">Profile picture for %1$s</string>
     <string name="a11y_banner_image">Banner image for %1$s</string>
     <string name="a11y_rating_score">Rating: %1$.1f out of 10</string>

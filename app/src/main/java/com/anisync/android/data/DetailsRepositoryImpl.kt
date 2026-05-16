@@ -105,6 +105,19 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
+            val staff = media.staff?.edges?.filterNotNull()?.mapNotNull { edge ->
+                val node = edge.node ?: return@mapNotNull null
+                com.anisync.android.domain.StaffInfo(
+                    id = node.id,
+                    nameFull = node.name?.full ?: "Unknown",
+                    nameNative = node.name?.native,
+                    nameUserPreferred = node.name?.userPreferred ?: node.name?.full ?: "Unknown",
+                    imageUrl = node.image?.large,
+                    role = edge.role.orEmpty(),
+                    primaryOccupations = node.primaryOccupations?.filterNotNull().orEmpty()
+                )
+            } ?: emptyList()
+
             val relations = media.relations?.edges?.filterNotNull()?.map { edge ->
                 val node = edge.node
                 RelatedMedia(
@@ -218,8 +231,16 @@ class DetailsRepositoryImpl @Inject constructor(
                 bannerUrl = media.bannerImage,
                 description = media.description?.stripHtml() ?: "",
                 score = media.averageScore,
+                popularity = media.popularity,
+                favourites = media.favourites,
                 episodes = media.episodes,
-                nextAiringEpisode = media.nextAiringEpisode?.episode,
+                nextAiringEpisode = media.nextAiringEpisode?.let { airing ->
+                    com.anisync.android.domain.NextAiringEpisode(
+                        episode = airing.episode,
+                        airingAt = airing.airingAt.toLong(),
+                        timeUntilAiring = airing.timeUntilAiring
+                    )
+                },
                 chapters = media.chapters,
                 volumes = media.volumes,
                 type = media.type,
@@ -244,6 +265,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 listEntryPrivate = listEntry?.`private`,
                 listEntryHiddenFromStatusLists = listEntry?.hiddenFromStatusLists,
                 characters = characters,
+                staff = staff,
                 relations = relations,
                 externalLinks = externalLinks,
                 recommendations = recommendations,

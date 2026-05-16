@@ -33,9 +33,15 @@ data class MediaDetailsEntity(
     val bannerUrl: String?,
     val description: String,
     val score: Int?,
+    @ColumnInfo(defaultValue = "NULL")
+    val popularity: Int? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val favourites: Int? = null,
     val episodes: Int?,
     val nextAiringEpisode: Int? = null,
     val nextAiringEpisodeTime: Long? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val nextAiringTimeUntil: Int? = null,
     val chapters: Int?,
     val volumes: Int?,
     val mediaType: MediaType?,
@@ -60,6 +66,8 @@ data class MediaDetailsEntity(
     val listEntryPrivate: Boolean? = null,
     val listEntryHiddenFromStatusLists: Boolean? = null,
     val characters: List<CharacterInfo>,
+    @ColumnInfo(defaultValue = "[]")
+    val staff: List<com.anisync.android.domain.StaffInfo> = emptyList(),
     val relations: List<RelatedMedia>,
     val externalLinks: List<ExternalLink>,
     @ColumnInfo(defaultValue = "[]")

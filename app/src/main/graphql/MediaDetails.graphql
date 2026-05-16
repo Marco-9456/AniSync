@@ -15,10 +15,14 @@ query GetMediaDetails($id: Int) {
         bannerImage
         description(asHtml: true)
         averageScore
+        popularity
+        favourites
         episodes
         duration
         nextAiringEpisode {
             episode
+            airingAt
+            timeUntilAiring
         }
         chapters
         volumes
@@ -78,6 +82,23 @@ query GetMediaDetails($id: Int) {
                     image {
                         large
                     }
+                }
+            }
+        }
+        staff(sort: [RELEVANCE, ID], perPage: 25) {
+            edges {
+                role
+                node {
+                    id
+                    name {
+                        userPreferred
+                        full
+                        native
+                    }
+                    image {
+                        large
+                    }
+                    primaryOccupations
                 }
             }
         }

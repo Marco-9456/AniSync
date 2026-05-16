@@ -118,6 +118,8 @@ object TransitionKeys {
      * @return Key in format: "character_image_{characterId}"
      */
     fun characterImage(characterId: Int): String = "character_image_$characterId"
+
+    fun staffImage(staffId: Int): String = "staff_image_$staffId"
     
     /**
      * Creates a shared element key for character names.

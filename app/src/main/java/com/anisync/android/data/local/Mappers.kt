@@ -96,8 +96,18 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     bannerUrl = bannerUrl,
     description = description,
     score = score,
+    popularity = popularity,
+    favourites = favourites,
     episodes = episodes,
-    nextAiringEpisode = nextAiringEpisode,
+    nextAiringEpisode = nextAiringEpisode?.let { ep ->
+        nextAiringEpisodeTime?.let { airingAt ->
+            com.anisync.android.domain.NextAiringEpisode(
+                episode = ep,
+                airingAt = airingAt,
+                timeUntilAiring = nextAiringTimeUntil ?: ((airingAt - System.currentTimeMillis() / 1000).toInt().coerceAtLeast(0))
+            )
+        }
+    },
     chapters = chapters,
     volumes = volumes,
     type = mediaType,
@@ -122,6 +132,7 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     listEntryPrivate = listEntryPrivate,
     listEntryHiddenFromStatusLists = listEntryHiddenFromStatusLists,
     characters = characters,
+    staff = staff,
     relations = relations,
     externalLinks = externalLinks,
     recommendations = recommendations,
@@ -142,8 +153,12 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     bannerUrl = bannerUrl,
     description = description,
     score = score,
+    popularity = popularity,
+    favourites = favourites,
     episodes = episodes,
-    nextAiringEpisode = nextAiringEpisode,
+    nextAiringEpisode = nextAiringEpisode?.episode,
+    nextAiringEpisodeTime = nextAiringEpisode?.airingAt,
+    nextAiringTimeUntil = nextAiringEpisode?.timeUntilAiring,
     chapters = chapters,
     volumes = volumes,
     mediaType = type,
@@ -167,6 +182,7 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     listEntryPrivate = listEntryPrivate,
     listEntryHiddenFromStatusLists = listEntryHiddenFromStatusLists,
     characters = characters,
+    staff = staff,
     relations = relations,
     externalLinks = externalLinks,
     recommendations = recommendations,

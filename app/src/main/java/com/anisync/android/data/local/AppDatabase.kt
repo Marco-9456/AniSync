@@ -19,6 +19,12 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v15 (May 2026):
+ *   - Added fields to media_details:
+ *     • popularity, favourites - AniList community stats
+ *     • nextAiringTimeUntil - seconds-snapshot fallback for next episode airing
+ *     • staff - lightweight staff list for media details page
+ *
  * v4 (Mar 2026):
  *   - Added saved_forum_threads table for local thread bookmarks
  *     • threadId, title, authorName, authorAvatarUrl
@@ -64,7 +70,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -77,7 +83,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 10, to = 11),
         androidx.room.AutoMigration(from = 11, to = 12),
         androidx.room.AutoMigration(from = 12, to = 13),
-        androidx.room.AutoMigration(from = 13, to = 14)
+        androidx.room.AutoMigration(from = 13, to = 14),
+        androidx.room.AutoMigration(from = 14, to = 15)
     ]
 )
 @TypeConverters(Converters::class)

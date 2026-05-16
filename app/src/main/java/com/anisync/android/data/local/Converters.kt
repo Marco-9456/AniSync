@@ -58,6 +58,16 @@ class Converters {
     fun toCharacterList(list: List<CharacterInfo>): String = json.encodeToString(list)
 
     @TypeConverter
+    fun fromStaffInfoList(value: String): List<com.anisync.android.domain.StaffInfo> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toStaffInfoList(list: List<com.anisync.android.domain.StaffInfo>): String = json.encodeToString(list)
+
+    @TypeConverter
     fun fromRelationList(value: String): List<RelatedMedia> = json.decodeFromString(value)
 
     @TypeConverter

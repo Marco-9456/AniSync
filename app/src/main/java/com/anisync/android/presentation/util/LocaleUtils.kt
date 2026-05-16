@@ -27,6 +27,42 @@ fun formatTimeUntilAiring(seconds: Int): String {
 }
 
 /**
+ * Adaptive D:H:M:S countdown formatter. Drops higher units when zero.
+ *   95412 -> "1d 02:30:12"
+ *    8412 -> "02:20:12"
+ *     412 -> "06:52"
+ *      12 -> "00:12"
+ */
+fun formatCountdownAdaptive(totalSeconds: Int): String {
+    if (totalSeconds <= 0) return "00:00"
+    val d = totalSeconds / 86400
+    val h = (totalSeconds % 86400) / 3600
+    val m = (totalSeconds % 3600) / 60
+    val s = totalSeconds % 60
+    return when {
+        d > 0 -> "%dd %02d:%02d:%02d".format(d, h, m, s)
+        h > 0 -> "%02d:%02d:%02d".format(h, m, s)
+        else  -> "%02d:%02d".format(m, s)
+    }
+}
+
+/**
+ * Compact human-readable number: 1234 -> "1.2K", 1500000 -> "1.5M".
+ * Integer values stay integer ("1K" not "1.0K").
+ */
+fun formatCompactNumber(value: Int): String = when {
+    value >= 1_000_000 -> {
+        val v = value / 1_000_000.0
+        if (v % 1.0 == 0.0) "%.0fM".format(v) else "%.1fM".format(v)
+    }
+    value >= 1_000 -> {
+        val v = value / 1_000.0
+        if (v % 1.0 == 0.0) "%.0fK".format(v) else "%.1fK".format(v)
+    }
+    else -> value.toString()
+}
+
+/**
  * Formats the number of episodes behind using plural resources.
  *
  * @param count The number of episodes behind

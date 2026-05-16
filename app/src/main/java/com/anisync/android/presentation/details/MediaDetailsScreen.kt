@@ -42,9 +42,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -123,6 +125,7 @@ import com.anisync.android.presentation.details.components.FollowingListSheet
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
+import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.util.AppMotion
@@ -147,8 +150,10 @@ fun MediaDetailsScreen(
     onBackClick: () -> Unit,
     onRelationClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
+    onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
     onCastSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onStaffSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onUserClick: (String) -> Unit = {},
     viewModel: MediaDetailsViewModel = hiltViewModel(),
@@ -190,6 +195,14 @@ fun MediaDetailsScreen(
             shouldKeepChromeOverlayForReturn = true
             hasObservedDetailsReEnter = false
             onCharacterClick(characterId)
+        }
+    }
+
+    val navigateToStaffDetails: (Int) -> Unit = remember(onStaffClick) {
+        { staffId ->
+            shouldKeepChromeOverlayForReturn = true
+            hasObservedDetailsReEnter = false
+            onStaffClick(staffId)
         }
     }
 
@@ -471,11 +484,20 @@ fun MediaDetailsScreen(
                                 hasMoreFollowing = hasMoreFollowing,
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
+                                onStaffClick = navigateToStaffDetails,
                                 onStudioClick = onStudioClick,
                                 onCastSeeAllClick = {
                                     shouldKeepChromeOverlayForReturn = true
                                     hasObservedDetailsReEnter = false
                                     onCastSeeAllClick(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage)
+                                    )
+                                },
+                                onStaffSeeAllClick = {
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
+                                    onStaffSeeAllClick(
                                         state.details.id,
                                         state.details.getTitle(titleLanguage)
                                     )
@@ -576,8 +598,10 @@ fun DetailsPageContent(
     hasMoreFollowing: Boolean,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
     onStudioClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
+    onStaffSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
     onUserClick: (String) -> Unit,
     onFavouriteClick: () -> Unit,
@@ -714,6 +738,39 @@ fun DetailsPageContent(
                                     character = character,
                                     onClick = { onCharacterClick(character.id) },
                                     modifier = Modifier.animateItem(), // Expressive motion
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 7b. Staff
+            item(key = "staff") {
+                val displayStaff = remember(details.staff) {
+                    details.staff.distinctBy { it.id }.take(10)
+                }
+                if (displayStaff.isNotEmpty()) {
+                    Column {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                        SectionHeader(
+                            title = stringResource(R.string.section_staff),
+                            level = HeaderLevel.Section,
+                            onActionClick = if (details.staff.size > 10) onStaffSeeAllClick else null
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                            modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
+                        ) {
+                            items(items = displayStaff, key = { "staff_${it.id}" }) { staff ->
+                                StaffItem(
+                                    staff = staff,
+                                    onClick = { onStaffClick(staff.id) },
+                                    modifier = Modifier.animateItem(),
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
@@ -1229,16 +1286,24 @@ private fun ContentRow(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Metadata Tags (Year, Format, Score)
-            MetadataTags(details, formattedScore)
+            // Row 1: Format · Year
+            MetadataTags(details)
+
+            if (details.score != null || details.popularity != null || details.favourites != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                // Row 2: ★ Score · 👥 Popularity · ♥ Favorites
+                StatsStrip(details = details, formattedScore = formattedScore)
+            }
         }
     }
 }
 
 @Composable
-private fun MetadataTags(details: MediaDetails, formattedScore: String?) {
+private fun MetadataTags(details: MediaDetails) {
     val formattedFormat = remember(details.format) { details.format?.formatAsTitle() }
     val formattedYear = remember(details.seasonYear) { details.seasonYear?.toString() }
+
+    if (formattedFormat == null && formattedYear == null) return
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -1248,37 +1313,76 @@ private fun MetadataTags(details: MediaDetails, formattedScore: String?) {
             MetadataText(formattedFormat)
         }
 
-        if (details.format != null && details.seasonYear != null) {
+        if (formattedFormat != null && formattedYear != null) {
             MetadataSeparator()
         }
 
         if (formattedYear != null) {
             MetadataText(formattedYear)
         }
+    }
+}
 
-        if (details.score != null) {
-            MetadataSeparator()
-        }
+@Composable
+private fun StatsStrip(details: MediaDetails, formattedScore: String?) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        var hasPrevious = false
 
         if (formattedScore != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFFC107),
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = formattedScore,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            StatItem(
+                icon = Icons.Filled.Star,
+                iconTint = Color(0xFFFFC107),
+                text = formattedScore
+            )
+            hasPrevious = true
         }
+
+        if (details.popularity != null && details.popularity > 0) {
+            if (hasPrevious) MetadataSeparator()
+            StatItem(
+                icon = Icons.AutoMirrored.Filled.TrendingUp,
+                iconTint = MaterialTheme.colorScheme.primary,
+                text = com.anisync.android.presentation.util.formatCompactNumber(details.popularity)
+            )
+            hasPrevious = true
+        }
+
+        if (details.favourites != null && details.favourites > 0) {
+            if (hasPrevious) MetadataSeparator()
+            StatItem(
+                icon = Icons.Filled.Favorite,
+                iconTint = MaterialTheme.colorScheme.error,
+                text = com.anisync.android.presentation.util.formatCompactNumber(details.favourites)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconTint: Color,
+    text: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(14.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
