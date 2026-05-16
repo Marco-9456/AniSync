@@ -402,10 +402,10 @@ fun AboutScreen(
     onNavigateToOpenSourceLicenses: () -> Unit,
     onNavigateToAcknowledgments: () -> Unit,
     onNavigateToLinks: () -> Unit,
+    onNavigateToSponsors: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var showSponsorSheet by remember { mutableStateOf(false) }
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
@@ -415,7 +415,7 @@ fun AboutScreen(
         AboutHero(modifier = Modifier.padding(top = 40.dp, bottom = 16.dp))
 
         ElevatedButton(
-            onClick = { showSponsorSheet = true },
+            onClick = onNavigateToSponsors,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 8.dp)
@@ -504,161 +504,6 @@ fun AboutScreen(
         }
     }
 
-    if (showSponsorSheet) {
-        SponsorBottomSheet(
-            onDismissRequest = { showSponsorSheet = false },
-            onSponsorClick = {
-                showSponsorSheet = false
-                context.launchUrl("https://github.com/sponsors/Marco-9456")
-            }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SponsorBottomSheet(
-    onDismissRequest: () -> Unit,
-    onSponsorClick: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        containerColor = MaterialTheme.colorScheme.surface
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.VolunteerActivism,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(48.dp)
-                    .padding(bottom = 8.dp)
-            )
-
-            Text(
-                text = stringResource(R.string.support_anisync, stringResource(R.string.app_name)),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.support_description),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Developer Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Static easter egg avatar
-                    StaticDeveloperAvatar(modifier = Modifier.size(56.dp))
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Mohammed",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = stringResource(R.string.lead_developer),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
-
-                    Button(
-                        onClick = onSponsorClick,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(stringResource(R.string.sponsor))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(48.dp))
-        }
-    }
-}
-
-@Composable
-private fun StaticDeveloperAvatar(modifier: Modifier = Modifier) {
-    BoxWithConstraints(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        val imageScale = 1.3f
-        val yOffset = maxWidth * (-12f / 115f)
-
-        // Body Layer
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(ExpressiveMorphShape(vertices = 12f, roundness = 0.2f))
-                .background(MaterialTheme.colorScheme.tertiaryContainer)
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(AVATAR_URL)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scale(imageScale)
-                    .offset(y = yOffset)
-            )
-        }
-
-        // Head Layer (Popping out)
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(AVATAR_URL)
-                .crossfade(true)
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .scale(imageScale)
-                .offset(y = yOffset)
-                .clip(CircleShape)
-                .drawWithContent {
-                    clipRect(bottom = size.height * 0.45f) {
-                        this@drawWithContent.drawContent()
-                    }
-                }
-        )
-    }
 }
 
 private fun Context.launchUrl(url: String) {

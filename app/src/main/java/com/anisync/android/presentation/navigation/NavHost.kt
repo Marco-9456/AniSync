@@ -48,6 +48,7 @@ import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
+import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LinksScreen
@@ -1059,7 +1060,20 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) },
                     onNavigateToAcknowledgments = { navController.navigate(SettingsAcknowledgments) },
-                    onNavigateToLinks = { navController.navigate(SettingsLinks) }
+                    onNavigateToLinks = { navController.navigate(SettingsLinks) },
+                    onNavigateToSponsors = { navController.navigate(SettingsSponsors) }
+                )
+            }
+
+            // Sponsors Settings
+            composable<SettingsSponsors>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                SponsorsScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

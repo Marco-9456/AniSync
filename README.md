@@ -40,6 +40,19 @@
   <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
 
+## :heart: Sponsors
+
+Thanks to everyone who supports AniSync. [Become a sponsor →](https://github.com/sponsors/Marco-9456)
+
+### Generous Supporters
+<!-- sponsors-generous --><!-- sponsors-generous -->
+
+### Backers
+<!-- sponsors-backer --><!-- sponsors-backer -->
+
+### Sponsors
+<!-- sponsors-sponsor --><!-- sponsors-sponsor -->
+
 ---
 
 ## Overview

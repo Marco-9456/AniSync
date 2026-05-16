@@ -895,6 +895,22 @@
     <string name="sponsor_project">Sponsor the Project</string>
     <string name="support_anisync">Support %s</string>
     <string name="support_description">AniSync is a passion project built entirely in my free time. If you enjoy using the app, consider sponsoring to help keep development alive.</string>
+
+    <!-- Sponsors screen -->
+    <string name="sponsors_title">Sponsors</string>
+    <string name="sponsors_hero_headline">Thank you for keeping AniSync alive</string>
+    <string name="sponsors_hero_body">Open Source survives on community support.</string>
+    <string name="sponsors_become_button">Become a Sponsor</string>
+    <string name="sponsors_refresh">Refresh</string>
+    <string name="sponsors_updated_at">Updated %1$s</string>
+    <string name="sponsor_tier_generous">Generous Supporters</string>
+    <string name="sponsor_tier_backer">Backers</string>
+    <string name="sponsor_tier_sponsor">Sponsors</string>
+    <string name="sponsor_tier_count">%1$s · %2$d</string>
+    <string name="sponsors_empty_tier_cta">Be the first — Become a $%1$d supporter</string>
+    <string name="sponsors_load_error">Couldn\'t load sponsors. Pull to retry.</string>
+    <string name="sponsors_open_external">Open on GitHub</string>
+    <string name="a11y_sponsor_avatar">Avatar of %1$s</string>
     <string name="lead_developer">Lead Developer</string>
     <string name="sponsor">Sponsor</string>
     <string name="link_repository">Repository</string>

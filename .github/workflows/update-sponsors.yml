@@ -1,0 +1,98 @@
+name: Update Sponsors
+
+# Pulls the current GitHub Sponsors list and writes it to:
+#   - README.md (3 tier-grouped marker blocks)
+#   - app/src/main/assets/sponsors.json (in-app sponsor list)
+#
+# Requires a repo secret SPONSORS_PAT: classic PAT belonging to the maintainer
+# with the `read:user` scope.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  workflow_dispatch:
+  repository_dispatch:
+    types: [sponsor-changed]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- README tier blocks ---
+
+      - name: Update Generous Supporters block
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_PAT }}
+          file: 'README.md'
+          marker: 'sponsors-generous'
+          minimum: 2000
+          template: '<a href="{{{ websiteUrl }}}" title="{{{ name }}}"><img src="{{{ avatarUrl }}}&s=80" width="64" height="64" alt="{{{ login }}}" /></a>'
+          fallback: '_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">Become a Generous Supporter</a>_'
+
+      - name: Update Backers block
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_PAT }}
+          file: 'README.md'
+          marker: 'sponsors-backer'
+          minimum: 1000
+          maximum: 1999
+          template: '<a href="{{{ websiteUrl }}}" title="{{{ name }}}"><img src="{{{ avatarUrl }}}&s=64" width="56" height="56" alt="{{{ login }}}" /></a>'
+          fallback: '_<a href="https://github.com/sponsors/Marco-9456">Become a Backer</a>_'
+
+      - name: Update Sponsors block
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_PAT }}
+          file: 'README.md'
+          marker: 'sponsors-sponsor'
+          minimum: 500
+          maximum: 999
+          template: '<a href="{{{ websiteUrl }}}" title="{{{ name }}}"><img src="{{{ avatarUrl }}}&s=48" width="48" height="48" alt="{{{ login }}}" /></a>'
+          fallback: '_<a href="https://github.com/sponsors/Marco-9456">Become a Sponsor</a>_'
+
+      # --- JSON asset for in-app screen ---
+
+      - name: Generate sponsors.json
+        env:
+          GH_TOKEN: ${{ secrets.SPONSORS_PAT }}
+        run: |
+          mkdir -p app/src/main/assets
+          gh api graphql -f query='
+            query {
+              user(login: "Marco-9456") {
+                sponsorshipsAsMaintainer(first: 100, activeOnly: true) {
+                  nodes {
+                    tier { monthlyPriceInDollars }
+                    sponsorEntity {
+                      ... on User { login name avatarUrl url }
+                      ... on Organization { login name avatarUrl url }
+                    }
+                  }
+                }
+              }
+            }' --jq '{
+              updatedAt: (now | todate),
+              sponsors: [.data.user.sponsorshipsAsMaintainer.nodes[] | {
+                login: .sponsorEntity.login,
+                name: (.sponsorEntity.name // .sponsorEntity.login),
+                avatarUrl: .sponsorEntity.avatarUrl,
+                url: .sponsorEntity.url,
+                tier: .tier.monthlyPriceInDollars
+              }]
+            }' > app/src/main/assets/sponsors.json
+
+      # --- Commit ---
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(sponsors): sync README and in-app sponsor list"
+          file_pattern: 'README.md app/src/main/assets/sponsors.json'
+          commit_user_name: 'github-actions[bot]'
+          commit_user_email: '41898282+github-actions[bot]@users.noreply.github.com'

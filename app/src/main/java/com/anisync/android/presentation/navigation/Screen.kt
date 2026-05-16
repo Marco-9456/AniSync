@@ -234,6 +234,12 @@ object SettingsAccount
 object SettingsAbout
 
 /**
+ * Sponsors screen — lists GitHub Sponsors backers.
+ */
+@Serializable
+object SettingsSponsors
+
+/**
  * Open source licenses screen.
  */
 @Serializable
