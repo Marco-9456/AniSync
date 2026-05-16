@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -49,6 +51,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +63,9 @@ import com.anisync.android.domain.SponsorTier
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.ui.theme.AppShapes
 import com.anisync.android.ui.theme.ExpressiveShapes
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 private const val SPONSOR_URL = "https://github.com/sponsors/Marco-9456"
 private const val KOFI_URL = "https://ko-fi.com/marco_9456"
@@ -162,8 +168,8 @@ private fun RefreshAction(
 private fun SponsorsContent(
     sponsors: List<Sponsor>,
     updatedAt: String,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    topPadding: androidx.compose.ui.unit.Dp,
+    listState: LazyListState,
+    topPadding: Dp,
     onSponsorClick: (Sponsor) -> Unit,
     onGitHubSponsorsClick: () -> Unit,
     onKofiClick: () -> Unit
@@ -171,7 +177,8 @@ private fun SponsorsContent(
     val grouped = remember(sponsors) {
         sponsors
             .sortedByDescending { it.tier }
-            .groupBy { SponsorTier.forAmount(it.tier) }
+            .mapNotNull { s -> SponsorTier.forAmount(s.tier)?.let { it to s } }
+            .groupBy({ it.first }, { it.second })
     }
 
     LazyColumn(
@@ -340,13 +347,19 @@ private fun SponsorRow(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val cloverShape = MaterialShapes.Clover8Leaf.toShape()
         AsyncImage(
             model = imageRequest,
             contentDescription = stringResource(R.string.a11y_sponsor_avatar, sponsor.name),
             modifier = Modifier
                 .size(48.dp)
-                .clip(MaterialShapes.Clover8Leaf.toShape())
+                .clip(cloverShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    shape = cloverShape
+                )
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -391,10 +404,10 @@ private fun EmptyTierCta(
 
 private fun formatUpdatedAt(iso: String): String {
     return try {
-        val instant = java.time.Instant.parse(iso)
-        val formatter = java.time.format.DateTimeFormatter
+        val instant = Instant.parse(iso)
+        val formatter = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm 'UTC'")
-            .withZone(java.time.ZoneOffset.UTC)
+            .withZone(ZoneOffset.UTC)
         formatter.format(instant)
     } catch (e: Exception) {
         iso

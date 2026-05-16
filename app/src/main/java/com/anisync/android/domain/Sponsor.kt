@@ -24,13 +24,11 @@ enum class SponsorTier(
     @StringRes val label: Int
 ) {
     GENEROUS(20, R.string.sponsor_tier_generous),
-    BACKER(10, R.string.sponsor_tier_backer),
-    SPONSOR(5, R.string.sponsor_tier_sponsor);
+    BACKER(10, R.string.sponsor_tier_backer);
 
     companion object {
-        fun forAmount(monthlyDollars: Int): SponsorTier = entries
+        fun forAmount(monthlyDollars: Int): SponsorTier? = entries
             .sortedByDescending { it.minDollars }
             .firstOrNull { monthlyDollars >= it.minDollars }
-            ?: SPONSOR
     }
 }
