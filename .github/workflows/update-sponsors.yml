@@ -97,5 +97,6 @@ jobs:
         with:
           commit_message: "chore(sponsors): sync README and in-app sponsor list"
           file_pattern: 'README.md app/src/main/assets/sponsors.json'
-          commit_user_name: 'github-actions[bot]'
-          commit_user_email: '41898282+github-actions[bot]@users.noreply.github.com'
+          commit_user_name: 'Marco-9456'
+          commit_user_email: '41828058+Marco-9456@users.noreply.github.com'
+          commit_author: 'Marco-9456 <41828058+Marco-9456@users.noreply.github.com>'
