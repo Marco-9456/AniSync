@@ -402,7 +402,6 @@ fun AboutScreen(
     onNavigateToOpenSourceLicenses: () -> Unit,
     onNavigateToAcknowledgments: () -> Unit,
     onNavigateToLinks: () -> Unit,
-    onNavigateToSponsors: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -413,36 +412,6 @@ fun AboutScreen(
         modifier = modifier
     ) {
         AboutHero(modifier = Modifier.padding(top = 40.dp, bottom = 16.dp))
-
-        ElevatedButton(
-            onClick = onNavigateToSponsors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(
-                topStart = 24.dp,
-                topEnd = 24.dp,
-                bottomStart = 24.dp,
-                bottomEnd = 8.dp
-            ),
-            colors = ButtonDefaults.elevatedButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.VolunteerActivism,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.sponsor_project),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 

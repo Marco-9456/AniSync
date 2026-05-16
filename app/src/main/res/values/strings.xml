@@ -897,6 +897,8 @@
     <string name="support_description">AniSync is a passion project built entirely in my free time. If you enjoy using the app, consider sponsoring to help keep development alive.</string>
 
     <!-- Sponsors screen -->
+    <string name="settings_sponsors">Sponsors</string>
+    <string name="settings_sponsors_desc">People supporting AniSync\'s development</string>
     <string name="sponsors_title">Sponsors</string>
     <string name="sponsors_hero_headline">Thank you for keeping AniSync alive</string>
     <string name="sponsors_hero_body">Open Source survives on community support.</string>

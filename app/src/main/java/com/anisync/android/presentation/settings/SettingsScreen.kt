@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialShapes
@@ -75,6 +76,7 @@ fun SettingsScreen(
     onNavigateToStorage: () -> Unit,
     onNavigateToAccount: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onNavigateToSponsors: () -> Unit,
     onNavigateToUpdates: () -> Unit,
     onNavigateToDeveloperTools: () -> Unit,
     onNavigateToMediaUpload: () -> Unit,
@@ -189,6 +191,13 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_updates_desc),
                 icon = Icons.Outlined.Update,
                 onClick = onNavigateToUpdates
+            ),
+            CategoryData(
+                key = "sponsors",
+                title = stringResource(R.string.settings_sponsors),
+                subtitle = stringResource(R.string.settings_sponsors_desc),
+                icon = Icons.Rounded.VolunteerActivism,
+                onClick = onNavigateToSponsors
             ),
             CategoryData(
                 key = "about",

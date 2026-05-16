@@ -989,6 +989,7 @@ fun AniSyncNavHost(
                     onNavigateToStorage = { navController.navigate(SettingsStorage) },
                     onNavigateToAccount = { navController.navigate(SettingsAccount) },
                     onNavigateToAbout = { navController.navigate(SettingsAbout) },
+                    onNavigateToSponsors = { navController.navigate(SettingsSponsors) },
                     onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
                     onNavigateToDeveloperTools = { navController.navigate(SettingsDeveloperTools) },
                     onNavigateToMediaUpload = { navController.navigate(SettingsMediaUpload) },
@@ -1060,8 +1061,7 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) },
                     onNavigateToAcknowledgments = { navController.navigate(SettingsAcknowledgments) },
-                    onNavigateToLinks = { navController.navigate(SettingsLinks) },
-                    onNavigateToSponsors = { navController.navigate(SettingsSponsors) }
+                    onNavigateToLinks = { navController.navigate(SettingsLinks) }
                 )
             }
 
