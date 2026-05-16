@@ -287,7 +287,9 @@ private fun CharacterDetailsContent(
                     Text(
                         text = stringResource(R.string.label_character),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 ToggleButton(
@@ -306,7 +308,10 @@ private fun CharacterDetailsContent(
                     Text(
                         text = stringResource(R.string.section_voice_actors),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (uniqueVoiceActorsCount > 0) {
                         Spacer(Modifier.width(6.dp))
@@ -314,7 +319,8 @@ private fun CharacterDetailsContent(
                             text = uniqueVoiceActorsCount.toString(),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold
-                            )
+                            ),
+                            maxLines = 1
                         )
                     }
                 }
