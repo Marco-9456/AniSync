@@ -209,7 +209,7 @@ fun MediaStaffGridScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(staff, key = { it.id }) { member ->
+                            items(staff, key = { "${it.id}_${it.role}" }) { member ->
                                 StaffItem(
                                     staff = member,
                                     onClick = { navigateToStaffDetails(member.id) },

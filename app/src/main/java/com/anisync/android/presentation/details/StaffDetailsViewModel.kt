@@ -139,8 +139,10 @@ class StaffDetailsViewModel @Inject constructor(
         oldList: List<StaffProductionMedia>,
         newList: List<StaffProductionMedia>
     ): List<StaffProductionMedia> {
-        val seen = oldList.mapTo(mutableSetOf()) { it.mediaId }
-        return oldList + newList.filter { seen.add(it.mediaId) }
+        // Compose key with role: AniList returns one edge per (media, staffRole),
+        // so the same mediaId can legitimately appear with different roles.
+        val seen = oldList.mapTo(mutableSetOf()) { "${it.mediaId}_${it.staffRole.orEmpty()}" }
+        return oldList + newList.filter { seen.add("${it.mediaId}_${it.staffRole.orEmpty()}") }
     }
 
     fun toggleFavourite() {

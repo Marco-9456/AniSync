@@ -772,7 +772,7 @@ fun MediaCharactersGridScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(characters, key = { it.id }) { character ->
+                            items(characters, key = { "${it.id}_${it.role}" }) { character ->
                                 CharacterItem(
                                     character = character,
                                     onClick = { navigateToCharacterDetails(character.id) },
@@ -1471,7 +1471,7 @@ fun StaffProductionMediaGridScreen(
                                 }
                             }
 
-                            items(sortedMedia, key = { it.mediaId }) { media ->
+                            items(sortedMedia, key = { "${it.mediaId}_${it.staffRole.orEmpty()}" }) { media ->
                                 FeaturedMediaItem(
                                     mediaId = media.mediaId,
                                     coverUrl = media.coverUrl,

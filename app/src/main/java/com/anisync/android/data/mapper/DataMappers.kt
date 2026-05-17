@@ -48,7 +48,7 @@ fun mapFuzzyDateToLong(year: Int?, month: Int?, day: Int?): Long? {
 }
 
 fun Long.toFuzzyDateInput(): FuzzyDateInput {
-    val date = LocalDate.ofInstant(Instant.ofEpochMilli(this), SYSTEM_ZONE)
+    val date = Instant.ofEpochMilli(this).atZone(SYSTEM_ZONE).toLocalDate()
     return FuzzyDateInput(
         year = Optional.present(date.year),
         month = Optional.present(date.monthValue),

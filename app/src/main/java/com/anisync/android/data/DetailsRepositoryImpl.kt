@@ -104,7 +104,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     imageUrl = edge.node?.image?.large,
                     role = edge.role?.name ?: "UNKNOWN"
                 )
-            } ?: emptyList()
+            }?.distinctBy { "${it.id}_${it.role}" } ?: emptyList()
 
             val staff = media.staff?.edges?.filterNotNull()?.mapNotNull { edge ->
                 val node = edge.node ?: return@mapNotNull null
@@ -117,7 +117,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     role = edge.role.orEmpty(),
                     primaryOccupations = node.primaryOccupations?.filterNotNull().orEmpty()
                 )
-            } ?: emptyList()
+            }?.distinctBy { "${it.id}_${it.role}" } ?: emptyList()
 
             val relations = media.relations?.edges?.filterNotNull()?.map { edge ->
                 val node = edge.node
@@ -807,7 +807,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     favourites = node.favourites,
                     isOnList = node.mediaListEntry?.id != null
                 )
-            } ?: emptyList()
+            }?.distinctBy { "${it.mediaId}_${it.staffRole.orEmpty()}" } ?: emptyList()
             val productionMediaHasNextPage =
                 staffData.staffMedia?.pageInfo?.hasNextPage ?: false
 
