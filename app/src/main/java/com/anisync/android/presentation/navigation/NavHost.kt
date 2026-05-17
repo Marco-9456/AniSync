@@ -31,6 +31,7 @@ import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
+import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
 import com.anisync.android.presentation.details.StudioDetailsScreen
 import com.anisync.android.presentation.details.StudioMediaGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
@@ -680,7 +681,12 @@ fun AniSyncNavHost(
                     },
                     onMediaSeeAllClick = { staffId, staffName ->
                         navController.navigate(StaffMediaGrid(staffId, staffName))
-                    }
+                    },
+                    onProductionSeeAllClick = { staffId, staffName ->
+                        navController.navigate(StaffProductionMediaGrid(staffId, staffName))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 
@@ -751,6 +757,28 @@ fun AniSyncNavHost(
                     },
                     onCharacterClick = { characterId ->
                         navController.navigate(CharacterDetails(characterId))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // STAFF PRODUCTION MEDIA GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<StaffProductionMediaGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: StaffProductionMediaGrid = backStackEntry.toRoute()
+                StaffProductionMediaGridScreen(
+                    staffId = grid.staffId,
+                    staffName = grid.staffName,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "staff_production_grid"))
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this

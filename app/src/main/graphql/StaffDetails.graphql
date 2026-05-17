@@ -1,4 +1,4 @@
-query GetStaffDetails($id: Int!, $page: Int = 1) {
+query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
     Staff(id: $id) {
         id
         name {
@@ -69,6 +69,38 @@ query GetStaffDetails($id: Int!, $page: Int = 1) {
                     }
                     image {
                         medium
+                    }
+                }
+            }
+        }
+        staffMedia(page: $staffMediaPage, sort: [START_DATE_DESC], perPage: 25) {
+            pageInfo {
+                hasNextPage
+            }
+            edges {
+                staffRole
+                node {
+                    id
+                    title {
+                        userPreferred
+                        romaji
+                        english
+                        native
+                    }
+                    coverImage {
+                        medium
+                        large
+                        extraLarge
+                    }
+                    startDate {
+                        year
+                    }
+                    type
+                    popularity
+                    averageScore
+                    favourites
+                    mediaListEntry {
+                        id
                     }
                 }
             }

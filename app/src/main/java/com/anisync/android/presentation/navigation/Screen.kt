@@ -76,6 +76,18 @@ data class StudioMediaGrid(
 )
 
 /**
+ * Grid screen for displaying all media where a staff member has a production role
+ * (director, writer, composer, etc.) — distinct from the voiced-characters grid.
+ * @param staffId The ID of the staff member
+ * @param staffName The name of the staff member (for display in app bar)
+ */
+@Serializable
+data class StaffProductionMediaGrid(
+    val staffId: Int,
+    val staffName: String
+)
+
+/**
  * Section grid screen route for displaying all items from a Discover section.
  * @param sectionTitle The title of the section to display
  * @param sectionType The type of section: "trending", "popular", "upcoming", or "tba"

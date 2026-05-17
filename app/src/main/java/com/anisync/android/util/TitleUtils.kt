@@ -73,3 +73,7 @@ fun CharacterMedia.getTitle(language: TitleLanguage): String {
 fun CharacterMediaAppearance.getTitle(language: TitleLanguage): String {
     return TitleUtils.getTitle(language, mediaTitleRomaji, mediaTitleEnglish, mediaTitleNative, mediaTitle)
 }
+
+fun com.anisync.android.domain.StaffProductionMedia.getTitle(language: TitleLanguage): String {
+    return TitleUtils.getTitle(language, titleRomaji, titleEnglish, titleNative, titleUserPreferred)
+}

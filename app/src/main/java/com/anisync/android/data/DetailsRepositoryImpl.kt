@@ -645,7 +645,8 @@ class DetailsRepositoryImpl @Inject constructor(
                     status = node.status?.toDomainStatus()
                         ?: com.anisync.android.domain.LibraryStatus.UNKNOWN,
                     score = node.score?.takeIf { it > 0.0 },
-                    progress = node.progress
+                    progress = node.progress,
+                    scoreFormat = mapScoreFormat(user.mediaListOptions?.scoreFormat?.name)
                 )
             }
 
@@ -714,11 +715,19 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getStaffDetails(id: Int, page: Int): Result<StaffDetails> {
+    override suspend fun getStaffDetails(
+        id: Int,
+        page: Int,
+        staffMediaPage: Int
+    ): Result<StaffDetails> {
         return safeApiCall {
             // See getCharacterDetails — favourite toggle doesn't update the cache.
             val response = apolloClient.query(
-                GetStaffDetailsQuery(id = id, page = Optional.presentIfNotNull(page))
+                GetStaffDetailsQuery(
+                    id = id,
+                    page = Optional.presentIfNotNull(page),
+                    staffMediaPage = Optional.presentIfNotNull(staffMediaPage)
+                )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .execute()
@@ -775,6 +784,33 @@ class DetailsRepositoryImpl @Inject constructor(
             val effectiveIsFav =
                 favouriteOverrideStore.get(FavouriteEntity.STAFF, id) ?: serverIsFav
 
+            val productionMedia = staffData.staffMedia?.edges?.filterNotNull()?.mapNotNull { edge ->
+                val node = edge.node ?: return@mapNotNull null
+                val nodeId = node.id ?: return@mapNotNull null
+                com.anisync.android.domain.StaffProductionMedia(
+                    mediaId = nodeId,
+                    titleUserPreferred = node.title?.userPreferred ?: "Unknown",
+                    titleRomaji = node.title?.romaji,
+                    titleEnglish = node.title?.english,
+                    titleNative = node.title?.native,
+                    coverUrl = node.coverImage?.large,
+                    cover = com.anisync.android.domain.CoverImage.of(
+                        node.coverImage?.medium,
+                        node.coverImage?.large,
+                        node.coverImage?.extraLarge
+                    ),
+                    type = node.type,
+                    startYear = node.startDate?.year,
+                    staffRole = edge.staffRole,
+                    popularity = node.popularity,
+                    averageScore = node.averageScore,
+                    favourites = node.favourites,
+                    isOnList = node.mediaListEntry?.id != null
+                )
+            } ?: emptyList()
+            val productionMediaHasNextPage =
+                staffData.staffMedia?.pageInfo?.hasNextPage ?: false
+
             StaffDetails(
                 id = staffData.id,
                 name = staffData.name?.full ?: "Unknown",
@@ -799,7 +835,9 @@ class DetailsRepositoryImpl @Inject constructor(
                 yearsActive = staffData.yearsActive?.filterNotNull() ?: emptyList(),
                 homeTown = staffData.homeTown,
                 voicedCharacters = voicedCharacters,
-                hasNextPage = hasNextPage
+                hasNextPage = hasNextPage,
+                productionMedia = productionMedia,
+                productionMediaHasNextPage = productionMediaHasNextPage
             )
         }
     }

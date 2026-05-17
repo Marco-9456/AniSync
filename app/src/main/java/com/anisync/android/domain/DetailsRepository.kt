@@ -43,7 +43,11 @@ interface DetailsRepository {
 
     suspend fun getCharacterDetails(id: Int, page: Int = 1): Result<CharacterDetails>
 
-    suspend fun getStaffDetails(id: Int, page: Int = 1): Result<StaffDetails>
+    suspend fun getStaffDetails(
+        id: Int,
+        page: Int = 1,
+        staffMediaPage: Int = 1
+    ): Result<StaffDetails>
 
     suspend fun getStudioDetails(id: Int, page: Int = 1): Result<StudioDetails>
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.StaffProductionMedia
 import com.anisync.android.domain.VoicedCharacter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +31,9 @@ class StaffDetailsViewModel @Inject constructor(
     val uiState: StateFlow<StaffDetailsUiState> = _uiState.asStateFlow()
 
     private var currentPage = 1
+    private var currentStaffMediaPage = 1
     private var isFetching = false
+    private var isFetchingProduction = false
 
     init {
         loadStaffDetails()
@@ -40,7 +43,8 @@ class StaffDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = StaffDetailsUiState.Loading
             currentPage = 1
-            when (val result = detailsRepository.getStaffDetails(staffId, currentPage)) {
+            currentStaffMediaPage = 1
+            when (val result = detailsRepository.getStaffDetails(staffId, currentPage, currentStaffMediaPage)) {
                 is Result.Success -> {
                     _uiState.value = StaffDetailsUiState.Success(result.data)
                 }
@@ -59,7 +63,8 @@ class StaffDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             isFetching = true
             currentPage++
-            when (val result = detailsRepository.getStaffDetails(staffId, currentPage)) {
+            // Pin staffMediaPage to 1 here — paging only voiced characters.
+            when (val result = detailsRepository.getStaffDetails(staffId, currentPage, staffMediaPage = 1)) {
                 is Result.Success -> {
                     val newVoicedCharacters = mergeVoicedCharacters(
                         currentState.details.voicedCharacters,
@@ -81,6 +86,36 @@ class StaffDetailsViewModel @Inject constructor(
         }
     }
 
+    fun loadMoreProductionMedia() {
+        val currentState = _uiState.value as? StaffDetailsUiState.Success ?: return
+        if (isFetchingProduction || !currentState.details.productionMediaHasNextPage) return
+
+        viewModelScope.launch {
+            isFetchingProduction = true
+            currentStaffMediaPage++
+            // Pin characterMedia page to 1 — paging only production media.
+            when (val result = detailsRepository.getStaffDetails(staffId, page = 1, staffMediaPage = currentStaffMediaPage)) {
+                is Result.Success -> {
+                    val mergedProduction = mergeProductionMedia(
+                        currentState.details.productionMedia,
+                        result.data.productionMedia
+                    )
+                    _uiState.value = StaffDetailsUiState.Success(
+                        currentState.details.copy(
+                            productionMedia = mergedProduction,
+                            productionMediaHasNextPage = result.data.productionMediaHasNextPage
+                        )
+                    )
+                }
+
+                is Result.Error -> {
+                    currentStaffMediaPage--
+                }
+            }
+            isFetchingProduction = false
+        }
+    }
+
     private fun mergeVoicedCharacters(
         oldList: List<VoicedCharacter>,
         newList: List<VoicedCharacter>
@@ -98,6 +133,14 @@ class StaffDetailsViewModel @Inject constructor(
             }
         }
         return map.values.toList()
+    }
+
+    private fun mergeProductionMedia(
+        oldList: List<StaffProductionMedia>,
+        newList: List<StaffProductionMedia>
+    ): List<StaffProductionMedia> {
+        val seen = oldList.mapTo(mutableSetOf()) { it.mediaId }
+        return oldList + newList.filter { seen.add(it.mediaId) }
     }
 
     fun toggleFavourite() {
