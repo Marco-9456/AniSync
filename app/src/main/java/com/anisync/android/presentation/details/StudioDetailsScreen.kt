@@ -26,11 +26,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -47,15 +47,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -74,11 +71,14 @@ import com.anisync.android.R
 import com.anisync.android.domain.StudioDetails
 import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
-import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.ui.theme.emphasis
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,6 +86,7 @@ fun StudioDetailsScreen(
     studioId: Int,
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
+    onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     viewModel: StudioDetailsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -168,7 +169,9 @@ fun StudioDetailsScreen(
                         studio = state.details,
                         onMediaClick = onMediaClick,
                         onFavouriteClick = viewModel::toggleFavourite,
-                        onLoadMore = viewModel::loadMoreMedia
+                        onMediaSeeAllClick = {
+                            onMediaSeeAllClick(state.details.id, state.details.name)
+                        }
                     )
                 }
 
@@ -189,20 +192,13 @@ private fun StudioDetailsContent(
     studio: StudioDetails,
     onMediaClick: (Int) -> Unit,
     onFavouriteClick: () -> Unit,
-    onLoadMore: () -> Unit
+    onMediaSeeAllClick: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
     val listState = rememberLazyListState()
 
-    LaunchedEffect(listState, studio.media.size, studio.hasNextPage) {
-        snapshotFlow {
-            val info = listState.layoutInfo
-            val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
-            last >= info.totalItemsCount - 5
-        }.collect { nearEnd ->
-            if (nearEnd && studio.hasNextPage) onLoadMore()
-        }
-    }
+    val previewMedia = remember(studio.media) { studio.media.take(WORKS_PREVIEW_COUNT) }
+    val hasMore = studio.media.size > WORKS_PREVIEW_COUNT || studio.hasNextPage
 
     val typeLabel = stringResource(
         if (studio.isAnimationStudio) R.string.studio_label_animation_studio
@@ -225,20 +221,12 @@ private fun StudioDetailsContent(
             bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp
         )
     ) {
-        item(key = "hero") {
-            StudioHero(studio = studio)
-        }
-
-        item(key = "name") {
-            Spacer(modifier = Modifier.height(12.dp))
-            NameCard(
-                name = studio.name,
-                nativeName = null,
-                alternativeNames = emptyList(),
-                favourites = studio.favourites,
-                isFavourite = studio.isFavourite,
+        item(key = "header") {
+            val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            StudioHeader(
+                studio = studio,
                 onFavouriteClick = onFavouriteClick,
-                nameClipLabel = stringResource(R.string.clip_label_studio_name)
+                topPadding = statusBarPadding + 56.dp
             )
         }
 
@@ -278,13 +266,14 @@ private fun StudioDetailsContent(
                 SectionHeader(
                     title = stringResource(R.string.studio_label_works),
                     level = HeaderLevel.Section,
-                    iconColor = MaterialTheme.colorScheme.primary
+                    iconColor = MaterialTheme.colorScheme.primary,
+                    onActionClick = if (hasMore) onMediaSeeAllClick else null
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
             items(
-                items = studio.media,
+                items = previewMedia,
                 key = { "studio_work_${it.mediaId}" }
             ) { media ->
                 StudioWorkItem(
@@ -294,97 +283,113 @@ private fun StudioDetailsContent(
                 )
             }
         }
-
-        if (studio.hasNextPage) {
-            item(key = "load_more") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-        }
     }
 }
 
-@Composable
-private fun StudioHero(studio: StudioDetails) {
-    val tertiary = MaterialTheme.colorScheme.tertiaryContainer
-    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
-    val gradient = remember(tertiary, surfaceHigh) {
-        Brush.verticalGradient(colors = listOf(tertiary, surfaceHigh))
-    }
-    val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+private const val WORKS_PREVIEW_COUNT = 10
 
-    Box(
+@Composable
+private fun StudioHeader(
+    studio: StudioDetails,
+    onFavouriteClick: () -> Unit,
+    topPadding: androidx.compose.ui.unit.Dp
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp)
-            .background(gradient)
+            .padding(start = 24.dp, end = 24.dp, top = topPadding, bottom = 8.dp)
     ) {
-        // Decorative icon stays clear of the system bar and top app bar.
-        Icon(
-            imageVector = Icons.Default.Business,
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = statusBarPadding + 72.dp, end = 24.dp)
-                .size(72.dp),
-            tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.18f)
-        )
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-        ) {
-            if (studio.isAnimationStudio) {
-                StudioHeroChip(label = stringResource(R.string.studio_label_animation_studio))
-                Spacer(Modifier.height(8.dp))
-            }
-            Text(
-                text = studio.name,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (studio.favourites > 0) {
-                Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = studio.favourites.toString(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
+        Row(verticalAlignment = Alignment.Top) {
+            StudioIconTile()
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                if (studio.isAnimationStudio) {
+                    StudioTypeChip(label = stringResource(R.string.studio_label_animation_studio))
+                    Spacer(Modifier.height(12.dp))
                 }
+                Text(
+                    text = studio.name,
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+        }
+        if (studio.favourites > 0) {
+            Spacer(Modifier.height(20.dp))
+            FavouritePill(
+                count = studio.favourites,
+                isFavourite = studio.isFavourite,
+                onClick = onFavouriteClick
+            )
         }
     }
 }
 
 @Composable
-private fun StudioHeroChip(label: String) {
+private fun StudioIconTile() {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.size(60.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.Default.Business,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StudioTypeChip(label: String) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.12f)
+        color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            text = label.uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = androidx.compose.ui.unit.TextUnit(0.8f, androidx.compose.ui.unit.TextUnitType.Sp)
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
         )
+    }
+}
+
+@Composable
+private fun FavouritePill(
+    count: Int,
+    isFavourite: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = CircleShape
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 6.dp, end = 20.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedFavoriteButton(
+                isFavorite = isFavourite,
+                onClick = onClick,
+                iconSize = 22.dp,
+                activeColor = MaterialTheme.colorScheme.error
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = NumberFormat.getNumberInstance(Locale.getDefault()).format(count),
+                style = MaterialTheme.typography.titleMedium.emphasis(),
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
     }
 }
 

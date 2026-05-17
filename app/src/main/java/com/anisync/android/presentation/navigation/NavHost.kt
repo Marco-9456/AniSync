@@ -32,6 +32,7 @@ import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StudioDetailsScreen
+import com.anisync.android.presentation.details.StudioMediaGridScreen
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
@@ -702,7 +703,32 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "studio"))
+                    },
+                    onMediaSeeAllClick = { studioId, studioName ->
+                        navController.navigate(StudioMediaGrid(studioId, studioName))
                     }
+                )
+            }
+
+            // =================================================================
+            // STUDIO MEDIA GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<StudioMediaGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: StudioMediaGrid = backStackEntry.toRoute()
+                StudioMediaGridScreen(
+                    studioId = grid.studioId,
+                    studioName = grid.studioName,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "studio_grid"))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 

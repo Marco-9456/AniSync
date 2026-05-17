@@ -47,6 +47,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.CharacterMedia
+import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
@@ -981,4 +982,277 @@ fun MediaRelationsGridScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@Composable
+fun StudioMediaGridScreen(
+    studioId: Int,
+    studioName: String,
+    onBackClick: () -> Unit,
+    onMediaClick: (Int) -> Unit = {},
+    viewModel: StudioDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
+
+    var showSortSheet by rememberSaveable { mutableStateOf(false) }
+    var selectedSort by rememberSaveable { mutableStateOf(MediaSort.NEWEST) }
+    var isSortAscending by rememberSaveable { mutableStateOf(false) }
+    var onlyOnList by rememberSaveable { mutableStateOf(false) }
+    var onlyMainStudio by rememberSaveable { mutableStateOf(false) }
+
+    var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
+    var hasObservedGridReEnter by rememberSaveable { mutableStateOf(false) }
+
+    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
+        { mediaId ->
+            shouldKeepTopBarOverlayForReturn = true
+            hasObservedGridReEnter = false
+            onMediaClick(mediaId)
+        }
+    }
+
+    val listState = rememberLazyGridState()
+
+    val isGridEnteringFromBackStack by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.PreEnter &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridTargetingVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.targetState == EnterExitState.Visible
+        }
+    }
+    val isGridFullyVisible by remember(animatedVisibilityScope) {
+        derivedStateOf {
+            animatedVisibilityScope?.transition?.currentState == EnterExitState.Visible &&
+                animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    val isSharedTransitionRunning by remember(sharedTransitionScope) {
+        derivedStateOf { sharedTransitionScope?.isTransitionActive == true }
+    }
+    val shouldRenderTopBarInOverlay by remember(
+        sharedTransitionScope,
+        animatedVisibilityScope
+    ) {
+        derivedStateOf {
+            sharedTransitionScope != null &&
+                animatedVisibilityScope != null &&
+                shouldKeepTopBarOverlayForReturn &&
+                isGridTargetingVisible &&
+                (
+                    isGridEnteringFromBackStack ||
+                        (hasObservedGridReEnter && isSharedTransitionRunning)
+                    )
+        }
+    }
+    val topBarOverlayAlpha = if (animatedVisibilityScope != null) {
+        val alpha by animatedVisibilityScope.transition.animateFloat(label = "StudioMediaGridTopBarOverlayAlpha") { state ->
+            if (state == EnterExitState.Visible) 1f else 0f
+        }
+        alpha
+    } else {
+        1f
+    }
+
+    LaunchedEffect(shouldKeepTopBarOverlayForReturn, isGridEnteringFromBackStack) {
+        if (shouldKeepTopBarOverlayForReturn && isGridEnteringFromBackStack) {
+            hasObservedGridReEnter = true
+        }
+    }
+
+    LaunchedEffect(
+        shouldKeepTopBarOverlayForReturn,
+        hasObservedGridReEnter,
+        isGridFullyVisible,
+        isSharedTransitionRunning
+    ) {
+        if (
+            shouldKeepTopBarOverlayForReturn &&
+            hasObservedGridReEnter &&
+            isGridFullyVisible &&
+            !isSharedTransitionRunning
+        ) {
+            shouldKeepTopBarOverlayForReturn = false
+            hasObservedGridReEnter = false
+        }
+    }
+
+    val topBarOverlayModifier = if (sharedTransitionScope != null) {
+        with(sharedTransitionScope) {
+            Modifier
+                .renderInSharedTransitionScopeOverlay(
+                    zIndexInOverlay = 1f,
+                    renderInOverlay = { shouldRenderTopBarInOverlay }
+                )
+                .graphicsLayer {
+                    alpha = if (shouldRenderTopBarInOverlay) topBarOverlayAlpha else 1f
+                }
+        }
+    } else {
+        Modifier
+    }
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex != null && uiState is StudioDetailsUiState.Success) {
+                    val details = (uiState as StudioDetailsUiState.Success).details
+                    val totalItems = listState.layoutInfo.totalItemsCount
+                    if (lastIndex >= totalItems - 4 && details.hasNextPage) {
+                        viewModel.loadMoreMedia()
+                    }
+                }
+            }
+    }
+
+    CollapsingTopBarScaffold(
+        title = stringResource(R.string.studio_label_works),
+        onBackClick = onBackClick,
+        scrollableState = listState,
+        topBarModifier = topBarOverlayModifier,
+        scrolledContainerColor = MaterialTheme.colorScheme.background,
+        actions = {
+            IconButton(onClick = { showSortSheet = true }) {
+                Icon(
+                    imageVector = Icons.Default.SwapVert,
+                    contentDescription = stringResource(R.string.sort)
+                )
+            }
+        }
+    ) { topContentPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            when (val state = uiState) {
+                is StudioDetailsUiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                is StudioDetailsUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = topContentPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                is StudioDetailsUiState.Success -> {
+                    val sortedMedia =
+                        remember(state.details.media, selectedSort, isSortAscending, onlyOnList, onlyMainStudio) {
+                            val filtered = state.details.media
+                                .let { if (onlyOnList) it.filter { m -> m.isOnList } else it }
+                                .let { if (onlyMainStudio) it.filter { m -> m.isMainStudio } else it }
+                            sortStudioMedia(filtered, selectedSort, isSortAscending)
+                        }
+
+                    if (sortedMedia.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = topContentPadding),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (onlyOnList) "No works on your list" else "No works",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        val mainStudioChipLabel = stringResource(R.string.studio_main_studio_chip)
+                        LazyVerticalGrid(
+                            state = listState,
+                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = topContentPadding + 8.dp,
+                                end = 16.dp,
+                                bottom = 96.dp
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = onlyOnList,
+                                        onClick = { onlyOnList = !onlyOnList },
+                                        label = { Text(stringResource(R.string.filter_on_my_list)) }
+                                    )
+                                    FilterChip(
+                                        selected = onlyMainStudio,
+                                        onClick = { onlyMainStudio = !onlyMainStudio },
+                                        label = { Text(mainStudioChipLabel) }
+                                    )
+                                }
+                            }
+
+                            items(sortedMedia, key = { it.mediaId }) { media ->
+                                FeaturedMediaItem(
+                                    mediaId = media.mediaId,
+                                    coverUrl = media.coverUrl,
+                                    cover = media.cover,
+                                    title = media.titleUserPreferred,
+                                    type = media.type?.name,
+                                    role = if (media.isMainStudio) mainStudioChipLabel else null,
+                                    year = media.year,
+                                    onClick = { navigateToMediaDetails(media.mediaId) },
+                                    transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.STUDIO_GRID,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    MediaSortBottomSheet(
+        visible = showSortSheet,
+        onDismiss = { showSortSheet = false },
+        selectedSort = selectedSort,
+        isAscending = isSortAscending,
+        onSortSelected = { sort, ascending ->
+            selectedSort = sort
+            isSortAscending = ascending
+        }
+    )
+}
+
+private fun sortStudioMedia(
+    media: List<StudioMediaEntry>,
+    sort: MediaSort,
+    ascending: Boolean
+): List<StudioMediaEntry> {
+    val sorted = media.sortedWith(compareBy { m ->
+        when (sort) {
+            MediaSort.POPULARITY -> m.popularity ?: 0
+            MediaSort.AVERAGE_SCORE -> m.averageScore ?: 0
+            MediaSort.FAVORITES -> m.favourites ?: 0
+            MediaSort.NEWEST -> m.year ?: 0
+            MediaSort.OLDEST -> m.year ?: Int.MAX_VALUE
+            MediaSort.TITLE -> m.titleUserPreferred.lowercase()
+        }
+    })
+    return if (ascending) sorted else sorted.reversed()
 }

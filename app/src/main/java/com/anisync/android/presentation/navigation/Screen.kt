@@ -65,6 +65,17 @@ data class StaffMediaGrid(
 )
 
 /**
+ * Grid screen for displaying all works (media productions) of a studio.
+ * @param studioId The ID of the studio
+ * @param studioName The name of the studio (for display in app bar)
+ */
+@Serializable
+data class StudioMediaGrid(
+    val studioId: Int,
+    val studioName: String
+)
+
+/**
  * Section grid screen route for displaying all items from a Discover section.
  * @param sectionTitle The title of the section to display
  * @param sectionType The type of section: "trending", "popular", "upcoming", or "tba"
