@@ -292,6 +292,7 @@ fun ThreadDetailScreen(
         onBackClick = onBackClick,
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        enableEnterAnimation = true,
         actions = {
                     val siteUrl = uiState.thread?.siteUrl
                     if (siteUrl != null) {

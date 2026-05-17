@@ -224,6 +224,7 @@ fun ActivityDetailScreen(
         onBackClick = onBackClick,
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        enableEnterAnimation = true,
         actions = {
                     val siteUrl = uiState.activity?.siteUrl
                     if (siteUrl != null) {

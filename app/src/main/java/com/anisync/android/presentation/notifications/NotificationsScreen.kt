@@ -76,6 +76,7 @@ fun NotificationsScreen(
         onBackClick = onBackClick,
         modifier = modifier,
         scrollableState = listState,
+        enableEnterAnimation = true,
         actions = {
             IconButton(onClick = onSettingsClick) {
                 Icon(

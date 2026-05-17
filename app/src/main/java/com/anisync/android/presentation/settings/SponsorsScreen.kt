@@ -87,6 +87,7 @@ fun SponsorsScreen(
         onBackClick = onBackClick,
         scrollableState = listState,
         modifier = modifier,
+        enableEnterAnimation = true,
         actions = {
             RefreshAction(
                 isRefreshing = isRefreshing,
