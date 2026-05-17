@@ -1,7 +1,5 @@
 package com.anisync.android.presentation.settings
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Person
@@ -9,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.net.toUri
 import com.anisync.android.R
+import com.anisync.android.util.launchUrl
 
 @Composable
 fun LinksScreen(
@@ -39,14 +37,5 @@ fun LinksScreen(
                 onClick = { context.launchUrl("https://github.com/Marco-9456") }
             )
         }
-    }
-}
-
-private fun Context.launchUrl(url: String) {
-    try {
-        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-        startActivity(intent)
-    } catch (e: Exception) {
-        e.printStackTrace()
     }
 }

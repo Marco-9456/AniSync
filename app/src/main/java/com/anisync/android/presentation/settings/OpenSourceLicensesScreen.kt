@@ -1,7 +1,5 @@
 package com.anisync.android.presentation.settings
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.settings.components.InfoNotice
+import com.anisync.android.util.launchUrl
 
 /**
  * Data class representing an open source library.
@@ -24,40 +23,41 @@ private data class OpenSourceLibrary(
     val url: String? = null
 )
 
+// Keep versions in sync with gradle/libs.versions.toml when bumping dependencies.
 private val libraries = listOf(
     OpenSourceLibrary(
         name = "Kotlin",
-        version = "2.0.0",
+        version = "2.2.21",
         license = "Apache License 2.0",
         url = "https://kotlinlang.org"
     ),
     OpenSourceLibrary(
-        name = "Jetpack Compose",
-        version = "2024.12.01",
+        name = "Jetpack Compose (BOM)",
+        version = "2026.04.01",
         license = "Apache License 2.0",
         url = "https://developer.android.com/jetpack/compose"
     ),
     OpenSourceLibrary(
         name = "Material 3",
-        version = "1.4.0-alpha05",
+        version = "1.5.0-alpha18",
         license = "Apache License 2.0",
         url = "https://m3.material.io"
     ),
     OpenSourceLibrary(
         name = "Apollo Kotlin",
-        version = "4.1.1",
+        version = "4.4.3",
         license = "MIT License",
         url = "https://www.apollographql.com/docs/kotlin"
     ),
     OpenSourceLibrary(
-        name = "Hilt",
-        version = "2.55",
+        name = "Hilt (Dagger)",
+        version = "2.59.2",
         license = "Apache License 2.0",
         url = "https://dagger.dev/hilt"
     ),
     OpenSourceLibrary(
         name = "Room",
-        version = "2.6.1",
+        version = "2.8.4",
         license = "Apache License 2.0",
         url = "https://developer.android.com/training/data-storage/room"
     ),
@@ -69,33 +69,81 @@ private val libraries = listOf(
     ),
     OpenSourceLibrary(
         name = "Navigation Compose",
-        version = "2.8.6",
+        version = "2.9.8",
         license = "Apache License 2.0",
         url = "https://developer.android.com/jetpack/compose/navigation"
     ),
     OpenSourceLibrary(
         name = "WorkManager",
-        version = "2.10.0",
+        version = "2.11.2",
         license = "Apache License 2.0",
         url = "https://developer.android.com/topic/libraries/architecture/workmanager"
     ),
     OpenSourceLibrary(
         name = "Glance (AppWidgets)",
-        version = "1.1.1",
+        version = "1.2.0-rc01",
         license = "Apache License 2.0",
         url = "https://developer.android.com/jetpack/compose/glance"
     ),
     OpenSourceLibrary(
         name = "kotlinx.serialization",
-        version = "1.7.3",
+        version = "1.11.0",
         license = "Apache License 2.0",
         url = "https://github.com/Kotlin/kotlinx.serialization"
     ),
     OpenSourceLibrary(
-        name = "kotlinx.coroutines",
-        version = "1.8.1",
+        name = "kotlinx-collections-immutable",
+        version = "0.4.0",
         license = "Apache License 2.0",
-        url = "https://github.com/Kotlin/kotlinx.coroutines"
+        url = "https://github.com/Kotlin/kotlinx.collections.immutable"
+    ),
+    OpenSourceLibrary(
+        name = "MaterialKolor",
+        version = "4.1.1",
+        license = "Apache License 2.0",
+        url = "https://github.com/jordond/materialkolor"
+    ),
+    OpenSourceLibrary(
+        name = "Media3 (ExoPlayer)",
+        version = "1.6.1",
+        license = "Apache License 2.0",
+        url = "https://developer.android.com/media/media3"
+    ),
+    OpenSourceLibrary(
+        name = "JSoup",
+        version = "1.22.2",
+        license = "MIT License",
+        url = "https://jsoup.org"
+    ),
+    OpenSourceLibrary(
+        name = "OkHttp",
+        version = "4.12.0",
+        license = "Apache License 2.0",
+        url = "https://square.github.io/okhttp"
+    ),
+    OpenSourceLibrary(
+        name = "Reorderable",
+        version = "3.1.0",
+        license = "Apache License 2.0",
+        url = "https://github.com/Calvin-LL/Reorderable"
+    ),
+    OpenSourceLibrary(
+        name = "LeakCanary",
+        version = "2.14",
+        license = "Apache License 2.0",
+        url = "https://square.github.io/leakcanary"
+    ),
+    OpenSourceLibrary(
+        name = "Security Crypto",
+        version = "1.1.0",
+        license = "Apache License 2.0",
+        url = "https://developer.android.com/jetpack/androidx/releases/security"
+    ),
+    OpenSourceLibrary(
+        name = "KSP",
+        version = "2.3.2",
+        license = "Apache License 2.0",
+        url = "https://github.com/google/ksp"
     )
 )
 
@@ -128,12 +176,7 @@ fun OpenSourceLicensesScreen(
                 SettingsItem(
                     title = library.name,
                     subtitle = "${library.version} - ${library.license}",
-                    onClick = {
-                        library.url?.let { url ->
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            context.startActivity(intent)
-                        }
-                    }
+                    onClick = { library.url?.let(context::launchUrl) }
                 )
             }
         }

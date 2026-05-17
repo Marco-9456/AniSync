@@ -2,7 +2,20 @@ package com.anisync.android.util
 
 import android.content.Context
 import android.content.Intent
+import androidx.core.net.toUri
 import com.anisync.android.type.MediaType
+
+/**
+ * Opens the given URL in the system browser. Swallows ActivityNotFoundException
+ * on devices without a browser to avoid crashing.
+ */
+fun Context.launchUrl(url: String) {
+    try {
+        startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
 
 /**
  * Utility object for building AniList URLs and sharing media content.

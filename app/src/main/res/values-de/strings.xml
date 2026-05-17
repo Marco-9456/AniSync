@@ -200,8 +200,6 @@
     <string name="settings_view_on_anilist">Auf AniList ansehen</string>
     <string name="settings_view_on_anilist_desc">Dein Profil auf AniList öffnen</string>
     <string name="settings_logout_warning">Beim Abmelden wird deine Sitzung entfernt. Du kannst dich jederzeit wieder anmelden.</string>
-    <string name="settings_privacy_policy">Datenschutzrichtlinie</string>
-    <string name="settings_terms_of_service">Nutzungsbedingungen</string>
     <string name="settings_open_source_licenses">Open-Source-Lizenzen</string>
     <string name="settings_acknowledgments">Danksagungen</string>
     <string name="settings_acknowledgments_desc">Dank an Mitwirkende und Bibliotheken</string>
@@ -234,13 +232,6 @@
     <string name="acknowledgments_section_data">Datenanbieter</string>
     <string name="acknowledgments_anilist">AniList</string>
     <string name="acknowledgments_anilist_desc">Die Anime- und Manga-Datenbank, die diese App antreibt</string>
-    <string name="acknowledgments_section_libraries">Kernbibliotheken</string>
-    <string name="acknowledgments_android_jetpack">Android Jetpack</string>
-    <string name="acknowledgments_android_jetpack_desc">Moderne Android-Entwicklungskomponenten von Google</string>
-    <string name="acknowledgments_kotlin">Kotlin</string>
-    <string name="acknowledgments_kotlin_desc">Die Programmiersprache, die Android-Entwicklung zur Freude macht</string>
-    <string name="acknowledgments_materialkolor">MaterialKolor</string>
-    <string name="acknowledgments_materialkolor_desc">Wunderschöne Material You Farbgenerierung</string>
     <string name="acknowledgments_section_community">Community</string>
     <string name="acknowledgments_contributors">Open-Source-Mitwirkende</string>
     <string name="acknowledgments_contributors_desc">Alle Entwickler, die die von uns genutzten Bibliotheken pflegen</string>

@@ -285,8 +285,6 @@
     <string name="settings_view_on_anilist">Visualizar no AniList</string>
     <string name="settings_view_on_anilist_desc">Abrir seu perfil no AniList</string>
     <string name="settings_logout_warning">Desconectar removerá sua sessão. Você pode conectar novamente a qualquer momento.</string>
-    <string name="settings_privacy_policy">Política de privacidade</string>
-    <string name="settings_terms_of_service">Termos de Serviço</string>
     <string name="settings_open_source_licenses">Licenças de código aberto</string>
     <string name="settings_acknowledgments">Agradecimentos</string>
     <string name="settings_acknowledgments_desc">Agradecimentos aos contribuidores e bibliotecas</string>
@@ -314,10 +312,6 @@
     <string name="settings_acknowledgments_description">AniSync não seria possível sem a maravilhosa comunidade de código aberto e os seguintes contribuidores:</string>
     <string name="acknowledgments_section_data">Provedores de dados</string>
     <string name="acknowledgments_anilist_desc">O banco de dados de anime e mangá que possibilita esse aplicativo</string>
-    <string name="acknowledgments_section_libraries">Bibliotecas principais</string>
-    <string name="acknowledgments_android_jetpack_desc">Componentes de desenvolvimento do Android moderno pelo Google</string>
-    <string name="acknowledgments_kotlin_desc">Linguagem de programação que faz o desenvolvimento Android ser prazeroso</string>
-    <string name="acknowledgments_materialkolor_desc">Lindo gerador de cor do Material You</string>
     <string name="acknowledgments_section_community">Comunidade</string>
     <string name="acknowledgments_contributors">Contribuidores de código aberto</string>
     <string name="acknowledgments_contributors_desc">Todos os desenvolvedores que mantém as bibliotecas que nós usamos</string>
@@ -792,9 +786,6 @@
     <string name="download_update">Download</string>
     <string name="title_language_romaji">Romaji</string>
     <string name="acknowledgments_anilist">AniList</string>
-    <string name="acknowledgments_android_jetpack">Android Jetpack</string>
-    <string name="acknowledgments_kotlin">Kotlin</string>
-    <string name="acknowledgments_materialkolor">MaterialKolor</string>
     <string name="content_description_avatar">Avatar</string>
     <string name="notifications_filter_status">Status</string>
     <string name="profile_tab_social">Social</string>

@@ -3,7 +3,6 @@ package com.anisync.android.presentation.settings
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColor
@@ -41,7 +40,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -83,7 +81,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.imageLoader
@@ -93,6 +90,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.util.AppInfo
+import com.anisync.android.util.launchUrl
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -417,16 +415,6 @@ fun AboutScreen(
 
         SettingsGroup {
             SettingsItem(
-                title = stringResource(R.string.settings_privacy_policy),
-                onClick = { context.launchUrl("https://anisync.app/privacy") }
-            )
-            SettingsDivider()
-            SettingsItem(
-                title = stringResource(R.string.settings_terms_of_service),
-                onClick = { context.launchUrl("https://anisync.app/terms") }
-            )
-            SettingsDivider()
-            SettingsItem(
                 title = stringResource(R.string.settings_open_source_licenses),
                 onClick = onNavigateToOpenSourceLicenses
             )
@@ -473,15 +461,6 @@ fun AboutScreen(
         }
     }
 
-}
-
-private fun Context.launchUrl(url: String) {
-    try {
-        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-        startActivity(intent)
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
 }
 
 private fun Context.copyAppInfo() {
