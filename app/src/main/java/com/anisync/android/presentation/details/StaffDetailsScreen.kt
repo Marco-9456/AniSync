@@ -1,6 +1,9 @@
 package com.anisync.android.presentation.details
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,7 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -54,12 +60,14 @@ import com.anisync.android.presentation.details.components.AttributesCard
 import com.anisync.android.presentation.details.components.CharacterSkeletonContent
 import com.anisync.android.presentation.details.components.DetailHeroImage
 import com.anisync.android.presentation.details.components.ExpandableBiography
+import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoicedCharacterItem
+import com.anisync.android.util.getTitle
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.util.getName
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun StaffDetailsScreen(
     staffId: Int,
@@ -67,7 +75,10 @@ fun StaffDetailsScreen(
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    viewModel: StaffDetailsViewModel = hiltViewModel()
+    onProductionSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    viewModel: StaffDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
@@ -155,8 +166,13 @@ fun StaffDetailsScreen(
                         onMediaSeeAllClick = {
                             onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
                         },
+                        onProductionSeeAllClick = {
+                            onProductionSeeAllClick(state.details.id, state.details.getName(titleLanguage))
+                        },
                         transitionPrefix = TransitionKeys.STAFF,
-                        onFavouriteClick = viewModel::toggleFavourite
+                        onFavouriteClick = viewModel::toggleFavourite,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
 
@@ -179,8 +195,11 @@ private fun StaffDetailsContent(
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onMediaSeeAllClick: () -> Unit,
+    onProductionSeeAllClick: () -> Unit,
     transitionPrefix: String,
-    onFavouriteClick: () -> Unit
+    onFavouriteClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
 
@@ -210,6 +229,12 @@ private fun StaffDetailsContent(
         staff.voicedCharacters.take(5)
     }
 
+    val previewProduction = remember(staff.productionMedia) {
+        staff.productionMedia.take(10)
+    }
+    val hasMoreProduction =
+        staff.productionMedia.size > previewProduction.size || staff.productionMediaHasNextPage
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -222,7 +247,10 @@ private fun StaffDetailsContent(
                 imageUrl = staff.imageUrl,
                 contentDescription = staff.getName(titleLanguage),
                 id = staff.id,
-                onImageClick = { showImageViewer = true }
+                onImageClick = { showImageViewer = true },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                transitionKey = TransitionKeys.staffImage(staff.id)
             )
         }
 
@@ -263,6 +291,39 @@ private fun StaffDetailsContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 Box(modifier = Modifier.padding(horizontal = 24.dp)) {
                     AttributesCard(attributes = displayAttributes)
+                }
+            }
+        }
+
+        if (previewProduction.isNotEmpty()) {
+            item(key = "production_header") {
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionHeader(
+                    title = stringResource(R.string.production_roles),
+                    level = HeaderLevel.Section,
+                    iconColor = MaterialTheme.colorScheme.primary,
+                    onActionClick = if (hasMoreProduction) onProductionSeeAllClick else null
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            item(key = "production_row") {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(previewProduction, key = { it.mediaId }) { media ->
+                        FeaturedMediaItem(
+                            mediaId = media.mediaId,
+                            coverUrl = media.coverUrl,
+                            cover = media.cover,
+                            title = media.getTitle(titleLanguage),
+                            role = media.staffRole,
+                            year = media.startYear,
+                            type = media.type?.name,
+                            onClick = { onMediaClick(media.mediaId) },
+                            transitionPrefix = transitionPrefix
+                        )
+                    }
                 }
             }
         }

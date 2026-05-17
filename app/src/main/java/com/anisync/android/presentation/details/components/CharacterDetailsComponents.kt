@@ -10,7 +10,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,21 +80,20 @@ fun DetailHeroImage(
     onImageClick: () -> Unit = {},
     backdropUrl: String? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedVisibilityScope: AnimatedVisibilityScope? = null
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    transitionKey: String = TransitionKeys.characterImage(id)
 ) {
     val bannerImageUrl = backdropUrl ?: imageUrl
+    val portraitShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
     val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         val spatialSpec = AppMotion.rememberSpatialSpec()
         with(sharedTransitionScope) {
             Modifier
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(
-                        key = TransitionKeys.characterImage(
-                            id
-                        )
-                    ),
+                    sharedContentState = rememberSharedContentState(key = transitionKey),
                     animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> spatialSpec }
+                    boundsTransform = { _, _ -> spatialSpec },
+                    clipInOverlayDuringTransition = OverlayClip(portraitShape)
                 )
         }
     } else {
@@ -142,7 +140,9 @@ fun DetailHeroImage(
                 )
         )
 
-        // Overlapping Portrait
+        // Overlapping Portrait — matches MediaCover styling: same rounded shape
+        // as the source thumbnail (corner_radius_large) so sharedBounds clip
+        // morph is smooth, no border.
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(imageUrl)
@@ -153,12 +153,11 @@ fun DetailHeroImage(
             modifier = Modifier
                 .padding(start = 24.dp, top = 220.dp)
                 .width(140.dp)
-                .height(200.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(4.dp, MaterialTheme.colorScheme.background, RoundedCornerShape(28.dp))
-                .clickable(onClick = onImageClick)
+                .aspectRatio(5f / 7f)
                 .then(imageModifier)
+                .clip(portraitShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(onClick = onImageClick)
         )
     }
 }
