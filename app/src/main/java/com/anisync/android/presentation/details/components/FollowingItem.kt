@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaFollowingEntry
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
@@ -107,7 +108,7 @@ fun FollowingItem(
             // Reserve bottom area so cards stay the same height regardless of score
             Spacer(modifier = Modifier.height(6.dp))
             if (entry.score != null) {
-                ScoreChip(score = entry.score)
+                ScoreChip(score = entry.score, format = entry.scoreFormat)
             }
         }
     }
@@ -181,7 +182,7 @@ fun FollowingRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatusPill(label = statusLabel, icon = statusIcon, color = statusColor)
-                if (entry.score != null) ScoreChip(score = entry.score)
+                if (entry.score != null) ScoreChip(score = entry.score, format = entry.scoreFormat)
                 if (entry.progress != null && entry.progress > 0) {
                     Text(
                         text = stringResource(R.string.separator_bullet) + " ${entry.progress}",
@@ -225,10 +226,23 @@ private fun StatusPill(
 }
 
 @Composable
-private fun ScoreChip(score: Double) {
-    val formatted = remember(score) {
-        if (score % 1.0 == 0.0) score.toInt().toString()
+private fun ScoreChip(score: Double, format: ScoreFormat?) {
+    val formatted = remember(score, format) {
+        val numeric = if (score % 1.0 == 0.0) score.toInt().toString()
         else String.format("%.1f", score)
+        when (format) {
+            ScoreFormat.POINT_100 -> "${score.toInt()}/100"
+            ScoreFormat.POINT_10 -> "${score.toInt()}/10"
+            ScoreFormat.POINT_10_DECIMAL -> "$numeric/10"
+            ScoreFormat.POINT_5 -> "${score.toInt()}/5"
+            ScoreFormat.POINT_3 -> when {
+                score >= 3.0 -> ":)"
+                score >= 2.0 -> ":|"
+                score >= 1.0 -> ":("
+                else -> numeric
+            }
+            null -> numeric
+        }
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,

@@ -20,6 +20,9 @@ query GetMediaFollowing($mediaId: Int!, $page: Int!, $perPage: Int!) {
           large
           medium
         }
+        mediaListOptions {
+          scoreFormat
+        }
       }
     }
   }

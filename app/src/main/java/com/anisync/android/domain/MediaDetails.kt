@@ -179,7 +179,8 @@ data class MediaFollowingEntry(
     val userAvatarUrl: String?,
     val status: LibraryStatus,
     val score: Double?,
-    val progress: Int?
+    val progress: Int?,
+    val scoreFormat: ScoreFormat? = null
 )
 
 /**
