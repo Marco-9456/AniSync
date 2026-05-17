@@ -420,6 +420,14 @@
     <string name="dev_tools_unlocked">Developer Tools unlocked</string>
     <string name="dev_tools_already_unlocked">Developer Tools already unlocked</string>
     <string name="dev_tools_taps_remaining">%1$d taps to unlock Developer Tools</string>
+    <string name="dev_tools_lock_section">Disable</string>
+    <string name="dev_tools_lock_button">Hide Developer Tools</string>
+    <string name="dev_tools_lock_subtitle">Removes the Developer Tools entry. Tap the version label seven times in About to bring it back.</string>
+    <string name="dev_tools_lock_dialog_title">Hide Developer Tools?</string>
+    <string name="dev_tools_lock_dialog_message">The Developer Tools entry will be removed from Settings. You can re-enable it by tapping the version label seven times in About.</string>
+    <string name="dev_tools_lock_dialog_confirm">Hide</string>
+    <string name="dev_tools_lock_dialog_cancel">Cancel</string>
+    <string name="dev_tools_locked_toast">Developer Tools hidden</string>
     <string name="font_playground_title">Typography</string>
     <string name="font_playground_reset">Reset font axes</string>
     <string name="font_axis_weight">Weight (wght)</string>

@@ -402,6 +402,16 @@ class AppSettings @Inject constructor(
     }
 
     /**
+     * Re-hides the Developer Tools entry. In debug builds the entry is still shown because
+     * [SettingsScreen] also checks `BuildConfig.DEBUG`, so this only has a visible effect on
+     * release builds where the gesture-unlock is the gate.
+     */
+    fun lockDevTools() {
+        _devToolsUnlocked.value = false
+        prefs.edit().putBoolean(KEY_DEV_TOOLS_UNLOCKED, false).apply()
+    }
+
+    /**
      * Set the app theme mode.
      */
     fun setThemeMode(mode: ThemeMode) {
