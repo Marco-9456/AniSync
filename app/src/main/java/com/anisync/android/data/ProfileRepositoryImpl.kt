@@ -22,9 +22,12 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
 import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 
@@ -38,7 +41,7 @@ class ProfileRepositoryImpl @Inject constructor(
             .map { entity -> entity?.toDomain() }
     }
 
-    override suspend fun fetchUserProfile(username: String): Result<UserProfile> {
+    override suspend fun fetchUserProfile(username: String, forceNetwork: Boolean): Result<UserProfile> {
         return safeApiCall {
             // For the viewer's own profile we previously always issued GetViewerQuery
             // just to learn the username. Reuse the cached profile name when present
@@ -54,10 +57,12 @@ class ProfileRepositoryImpl @Inject constructor(
                     }
             }
 
+            val policy = if (forceNetwork) FetchPolicy.NetworkOnly else FetchPolicy.CacheFirst
+
             val response = apolloClient.query(
                 GetUserProfileQuery(name = Optional.present(actualUsername))
             )
-            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .fetchPolicy(policy)
             .execute()
 
             if (response.hasErrors()) {
@@ -75,10 +80,10 @@ class ProfileRepositoryImpl @Inject constructor(
                     apolloClient.query(
                         GetUserActivitiesQuery(userId = Optional.present(user.id))
                     )
-                        .fetchPolicy(FetchPolicy.NetworkOnly)
+                        .fetchPolicy(policy)
                         .execute()
                 }
-                val favoritesDeferred = async { fetchFavorites(user.id ?: 0) }
+                val favoritesDeferred = async { fetchFavorites(user.id ?: 0, policy) }
                 activitiesDeferred.await() to favoritesDeferred.await()
             }
 
@@ -222,8 +227,8 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun refreshProfile(username: String): Result<Unit> {
-        return when (val result = fetchUserProfile(username)) {
+    override suspend fun refreshProfile(username: String, forceNetwork: Boolean): Result<Unit> {
+        return when (val result = fetchUserProfile(username, forceNetwork)) {
             is Result.Success -> {
                 userProfileDao.insert(result.data.toEntity())
                 Result.Success(Unit)
@@ -247,53 +252,90 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun fetchFavorites(userId: Int): List<LibraryEntry> {
-        val allFavorites = mutableListOf<LibraryEntry>()
-        var page = 1
-        var hasNextPage = true
-
-        try {
-            while (hasNextPage) {
-                val response = apolloClient.query(
-                    GetUserFavoritesQuery(userId = Optional.present(userId), page = Optional.present(page))
-                )
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .execute()
-
-                val data = response.data?.User?.favourites?.anime
-                val nodes = data?.nodes?.filterNotNull() ?: emptyList()
-                val pageInfo = data?.pageInfo
-
-                val entries = nodes.map { media ->
-                    LibraryEntry(
-                        id = 0, // Not a full library entry, just a favorite
-                        mediaId = media.id ?: 0,
-                        titleRomaji = media.title?.romaji,
-                        titleEnglish = media.title?.english,
-                        titleNative = media.title?.native,
-                        titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                        coverUrl = media.coverImage?.large,
-                        cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
-                        progress = 0,
-                        totalEpisodes = media.episodes,
-                        totalChapters = media.chapters,
-                        totalVolumes = media.volumes,
-                        type = media.type,
-                        status = LibraryStatus.UNKNOWN
-                    )
-                }
-                
-                allFavorites.addAll(entries)
-                
-                hasNextPage = pageInfo?.hasNextPage == true
-                page++
-            }
+    private suspend fun fetchFavorites(
+        userId: Int,
+        policy: FetchPolicy = FetchPolicy.NetworkOnly
+    ): List<LibraryEntry> {
+        // Fetch page 1 sequentially to learn `lastPage`, then fan out the
+        // remaining pages with a bounded Semaphore so the refresh latency is
+        // O(slowest page) instead of O(total pages).
+        val firstPage = try {
+            fetchFavoritesPage(userId, 1, policy)
         } catch (e: Exception) {
-            // Log error but return what we have so far
-            android.util.Log.e("ProfileRepository", "Error fetching favorites page $page", e)
+            android.util.Log.e("ProfileRepository", "Error fetching favorites page 1", e)
+            return emptyList()
         }
 
-        return allFavorites
+        val lastPage = firstPage.lastPage ?: 1
+        if (lastPage <= 1) return firstPage.entries
+
+        val concurrencyLimit = Semaphore(permits = 4)
+        val rest = coroutineScope {
+            (2..lastPage).map { page ->
+                async {
+                    concurrencyLimit.withPermit {
+                        try {
+                            fetchFavoritesPage(userId, page, policy).entries
+                        } catch (e: Exception) {
+                            android.util.Log.e(
+                                "ProfileRepository",
+                                "Error fetching favorites page $page",
+                                e
+                            )
+                            emptyList()
+                        }
+                    }
+                }
+            }.awaitAll()
+        }
+
+        val total = ArrayList<LibraryEntry>(firstPage.entries.size + rest.sumOf { it.size })
+        total.addAll(firstPage.entries)
+        rest.forEach(total::addAll)
+        return total
+    }
+
+    private data class FavoritesPage(val entries: List<LibraryEntry>, val lastPage: Int?)
+
+    private suspend fun fetchFavoritesPage(
+        userId: Int,
+        page: Int,
+        policy: FetchPolicy
+    ): FavoritesPage {
+        val response = apolloClient.query(
+            GetUserFavoritesQuery(userId = Optional.present(userId), page = Optional.present(page))
+        )
+            .fetchPolicy(policy)
+            .execute()
+
+        val data = response.data?.User?.favourites?.anime
+        val nodes = data?.nodes?.filterNotNull() ?: emptyList()
+        val pageInfo = data?.pageInfo
+
+        val entries = nodes.map { media ->
+            LibraryEntry(
+                id = 0,
+                mediaId = media.id ?: 0,
+                titleRomaji = media.title?.romaji,
+                titleEnglish = media.title?.english,
+                titleNative = media.title?.native,
+                titleUserPreferred = media.title?.userPreferred ?: "Unknown",
+                coverUrl = media.coverImage?.large,
+                cover = com.anisync.android.domain.CoverImage.of(
+                    media.coverImage?.medium,
+                    media.coverImage?.large,
+                    media.coverImage?.extraLarge
+                ),
+                progress = 0,
+                totalEpisodes = media.episodes,
+                totalChapters = media.chapters,
+                totalVolumes = media.volumes,
+                type = media.type,
+                status = LibraryStatus.UNKNOWN
+            )
+        }
+
+        return FavoritesPage(entries = entries, lastPage = pageInfo?.lastPage)
     }
 
     override suspend fun getSocialData(userId: Int, page: Int): Result<com.anisync.android.domain.UserSocialPage> {

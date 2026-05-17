@@ -9,14 +9,17 @@ interface ProfileRepository {
     fun observeProfile(): Flow<UserProfile?>
 
     /**
-     * Fetch fresh profile from network and update cache.
+     * Fetch fresh profile and update cache. When [forceNetwork] is false the
+     * Apollo normalized cache is consulted first, falling through to network
+     * on a miss — used for cold-open paths where instant render beats freshness.
      */
-    suspend fun refreshProfile(username: String): Result<Unit>
+    suspend fun refreshProfile(username: String, forceNetwork: Boolean = true): Result<Unit>
 
     /**
-     * Fetch user profile from network without saving it to the local cache.
+     * Fetch user profile without saving it to the local cache. [forceNetwork]
+     * behaves the same as in [refreshProfile].
      */
-    suspend fun fetchUserProfile(username: String): Result<UserProfile>
+    suspend fun fetchUserProfile(username: String, forceNetwork: Boolean = true): Result<UserProfile>
 
     /**
      * Update user's about section.

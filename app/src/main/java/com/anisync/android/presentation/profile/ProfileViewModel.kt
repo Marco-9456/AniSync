@@ -165,7 +165,10 @@ class ProfileViewModel @Inject constructor(
         ?.trim()
         ?.removePrefix("@")
         ?.takeIf { it.isNotBlank() }
-    private val targetRefreshSignal = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
+    // Payload `forceNetwork` controls Apollo fetch policy for the target-profile
+    // path (other users). `false` is used by the cold-open auto-refresh so the
+    // normalized cache renders instantly; `true` is used by pull-to-refresh.
+    private val targetRefreshSignal = MutableSharedFlow<Boolean>(replay = 0, extraBufferCapacity = 1)
 
     private val profileState = if (targetUsername.isNullOrBlank()) {
         getProfileUseCase()
@@ -183,11 +186,11 @@ class ProfileViewModel @Inject constructor(
             .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
     } else {
         targetRefreshSignal
-            .onStart { emit(Unit) }
-            .flatMapLatest {
+            .onStart { emit(false) }
+            .flatMapLatest { forceNetwork ->
                 kotlinx.coroutines.flow.flow {
                     emit(ProfileUiState(isLoading = true))
-                    when (val result = profileRepository.fetchUserProfile(targetUsername)) {
+                    when (val result = profileRepository.fetchUserProfile(targetUsername, forceNetwork)) {
                         is Result.Success -> emit(ProfileUiState(isLoading = false, profile = result.data))
                         is Result.Error -> {
                             val message = if (
@@ -308,8 +311,10 @@ class ProfileViewModel @Inject constructor(
     )
 
     init {
-        // Trigger initial refresh
-        onAction(ProfileAction.Refresh)
+        // Cold-open auto-refresh: forceNetwork=false lets Apollo's normalized
+        // cache render instantly when present, falling through to network on a
+        // cache miss. The user's pull-to-refresh still forces a network refresh.
+        onAction(ProfileAction.Refresh(forceNetwork = false))
 
         observeTargetProfileForFollowState()
 
@@ -340,7 +345,7 @@ class ProfileViewModel @Inject constructor(
 
     fun onAction(action: ProfileAction) {
         when (action) {
-            is ProfileAction.Refresh -> refresh()
+            is ProfileAction.Refresh -> refresh(forceNetwork = action.forceNetwork)
             is ProfileAction.ToggleFollow -> toggleFollow()
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {
@@ -607,16 +612,16 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun refresh() {
+    private fun refresh(forceNetwork: Boolean = true) {
         viewModelScope.launch {
             localState.update { it.copy(isRefreshing = true) }
             val selectedTab = localState.value.selectedTab
 
             val refreshJob = launch {
                 if (targetUsername.isNullOrBlank()) {
-                    profileRepository.refreshProfile("")
+                    profileRepository.refreshProfile("", forceNetwork = forceNetwork)
                 } else {
-                    targetRefreshSignal.tryEmit(Unit)
+                    targetRefreshSignal.tryEmit(forceNetwork)
                 }
             }
 
@@ -631,15 +636,20 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
+            // Follow state for other users only depends on the cached `profile.id`;
+            // fire it in parallel with the profile + tab fetches instead of waiting
+            // on their joins. If the profile id isn't known yet (first ever load),
+            // observeTargetProfileForFollowState() picks it up after refreshJob.
+            val followStateJob = if (!targetUsername.isNullOrBlank()) {
+                uiState.value.profile?.id?.let { userId ->
+                    launch { fetchFollowState(userId) }
+                }
+            } else null
+
             refreshJob.join()
             activeTabJob.join()
+            followStateJob?.join()
 
-            if (!targetUsername.isNullOrBlank()) {
-                uiState.value.profile?.id?.let { userId ->
-                    fetchFollowState(userId)
-                }
-            }
-            
             localState.update { it.copy(isRefreshing = false) }
         }
     }

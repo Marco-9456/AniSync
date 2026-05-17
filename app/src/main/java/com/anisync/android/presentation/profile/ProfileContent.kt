@@ -97,7 +97,7 @@ fun ProfileContent(
 
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
-        onRefresh = { onAction(ProfileAction.Refresh) },
+        onRefresh = { onAction(ProfileAction.Refresh()) },
         state = pullToRefreshState,
         modifier = modifier.fillMaxSize(),
         indicator = {

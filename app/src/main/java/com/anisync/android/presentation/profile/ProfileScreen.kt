@@ -82,7 +82,7 @@ fun ProfileScreen(
                         } else {
                             stringResource(R.string.profile_user_load_error)
                         },
-                        onRetry = { viewModel.onAction(ProfileAction.Refresh) }
+                        onRetry = { viewModel.onAction(ProfileAction.Refresh()) }
                     )
                 }
 
@@ -120,7 +120,7 @@ fun ProfileScreen(
                         } else {
                             stringResource(R.string.profile_user_load_error)
                         },
-                        onRetry = { viewModel.onAction(ProfileAction.Refresh) }
+                        onRetry = { viewModel.onAction(ProfileAction.Refresh()) }
                     )
                 }
             }

@@ -189,7 +189,12 @@ enum class ProfileStatsType(@StringRes val labelRes: Int) {
 }
 
 sealed interface ProfileAction {
-    data object Refresh : ProfileAction
+    /**
+     * [forceNetwork] = true is the user-pull behavior (hit network unconditionally).
+     * [forceNetwork] = false serves Apollo's normalized cache when available and
+     * is used by the screen's auto-refresh on entry so cold opens render instantly.
+     */
+    data class Refresh(val forceNetwork: Boolean = true) : ProfileAction
     data object ToggleFollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
