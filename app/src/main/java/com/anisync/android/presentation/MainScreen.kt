@@ -30,11 +30,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -83,6 +85,13 @@ private data class BottomNavItem<T : Any>(
 @Composable
 fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    LaunchedEffect(navController) {
+        val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
+        activity.newIntents.collect { intent ->
+            navController.handleDeepLink(intent)
+        }
+    }
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
     val navBarStyle by viewModel.navBarStyle.collectAsStateWithLifecycle()
     val navBarShowLabels by viewModel.navBarShowLabels.collectAsStateWithLifecycle()

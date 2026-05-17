@@ -674,8 +674,10 @@ class NotificationWorker @AssistedInject constructor(
         val media = notification.media
         val title = media?.title ?: "New Episode"
         val content = "Episode ${notification.episode} has aired!"
-        
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/${media?.id ?: 0}"))
+
+        // Body tap opens the in-app inbox rather than the media details page
+        // so the user lands on the same row that fired the system notification.
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://notifications"))
         val pendingIntent = PendingIntent.getActivity(
             applicationContext,
             notificationId,

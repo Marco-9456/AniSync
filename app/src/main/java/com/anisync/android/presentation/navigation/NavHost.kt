@@ -990,6 +990,9 @@ fun AniSyncNavHost(
             // NOTIFICATIONS INBOX - Shared Axis Z (Depth)
             // =================================================================
             composable<Notifications>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://notifications" }
+                ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },

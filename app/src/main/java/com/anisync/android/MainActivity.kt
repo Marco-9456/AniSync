@@ -50,6 +50,9 @@ import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -73,6 +76,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var linkPreviewProvider: LinkPreviewProvider
+
+    private val _newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 4)
+    val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val onCreateTime = measureTimeMillis {
@@ -229,7 +235,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleAuthRedirect(intent)
+        _newIntents.tryEmit(intent)
     }
 
     private fun handleAuthRedirect(intent: Intent?) {
