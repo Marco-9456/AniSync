@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -434,8 +433,7 @@ private fun StudioWorkItem(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .width(60.dp)
-                    .wrapContentHeight()
+                    .size(width = 60.dp, height = 90.dp)
                     .clip(coverShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
