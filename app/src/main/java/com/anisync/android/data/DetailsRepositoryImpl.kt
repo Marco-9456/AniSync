@@ -73,7 +73,8 @@ private fun formatFuzzyDateShort(month: Int?, day: Int?, year: Int?): String? {
 class DetailsRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val mediaDetailsDao: MediaDetailsDao,
-    private val libraryDao: LibraryDao
+    private val libraryDao: LibraryDao,
+    private val favouriteOverrideStore: FavouriteOverrideStore
 ) : DetailsRepository {
 
     override fun observeMediaDetails(id: Int): Flow<MediaDetails?> {
@@ -405,7 +406,10 @@ class DetailsRepositoryImpl @Inject constructor(
         return result
     }
 
-    override suspend fun toggleCharacterFavourite(characterId: Int): Result<Boolean> {
+    override suspend fun toggleCharacterFavourite(
+        characterId: Int,
+        newState: Boolean
+    ): Result<Unit> {
         return safeApiCall {
             val mutation = ToggleFavouriteMutation(
                 animeId = Optional.absent(),
@@ -422,13 +426,19 @@ class DetailsRepositoryImpl @Inject constructor(
                     response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
                 throw Exception(errorMessage)
             }
-
-            response.data?.ToggleFavourite?.characters?.nodes
-                ?.any { it?.id == characterId } ?: false
+            // Mutation success is sufficient — do not derive state from the
+            // paged characters.nodes (only ~25 per page; toggled item often absent).
+            // Override bridges AniList's eventual-consistency window: a follow-up
+            // Character(id) query can still return the pre-toggle isFavourite for
+            // several seconds. Cleared by getCharacterDetails once server catches up.
+            favouriteOverrideStore.set(FavouriteEntity.CHARACTER, characterId, newState)
         }
     }
 
-    override suspend fun toggleStaffFavourite(staffId: Int): Result<Boolean> {
+    override suspend fun toggleStaffFavourite(
+        staffId: Int,
+        newState: Boolean
+    ): Result<Unit> {
         return safeApiCall {
             val mutation = ToggleFavouriteMutation(
                 animeId = Optional.absent(),
@@ -445,13 +455,15 @@ class DetailsRepositoryImpl @Inject constructor(
                     response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
                 throw Exception(errorMessage)
             }
-
-            response.data?.ToggleFavourite?.staff?.nodes
-                ?.any { it?.id == staffId } ?: false
+            // See toggleCharacterFavourite — paged response + EC window.
+            favouriteOverrideStore.set(FavouriteEntity.STAFF, staffId, newState)
         }
     }
 
-    override suspend fun toggleStudioFavourite(studioId: Int): Result<Boolean> {
+    override suspend fun toggleStudioFavourite(
+        studioId: Int,
+        newState: Boolean
+    ): Result<Unit> {
         return safeApiCall {
             val mutation = ToggleFavouriteMutation(
                 animeId = Optional.absent(),
@@ -468,17 +480,20 @@ class DetailsRepositoryImpl @Inject constructor(
                     response.errors?.firstOrNull()?.message ?: "Toggle favourite failed"
                 throw Exception(errorMessage)
             }
-
-            response.data?.ToggleFavourite?.studios?.nodes
-                ?.any { it?.id == studioId } ?: false
+            // See toggleCharacterFavourite — paged response + EC window.
+            favouriteOverrideStore.set(FavouriteEntity.STUDIO, studioId, newState)
         }
     }
 
     override suspend fun getCharacterDetails(id: Int, page: Int): Result<CharacterDetails> {
         return safeApiCall {
+            // NetworkOnly: the toggle favourite mutation does not patch the normalized
+            // cache, so CacheFirst would serve stale isFavourite on re-entry.
             val response = apolloClient.query(
                 GetCharacterDetailsQuery(id = id, page = Optional.presentIfNotNull(page))
-            ).execute()
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
 
             val charData = response.data?.Character
                 ?: throw Exception("Character not found")
@@ -523,6 +538,13 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
+            val serverIsFav = charData.isFavourite ?: false
+            // Bridge AniList eventual consistency: clear override if server caught up,
+            // else apply override on top of (stale) server value.
+            favouriteOverrideStore.clearIfMatches(FavouriteEntity.CHARACTER, id, serverIsFav)
+            val effectiveIsFav =
+                favouriteOverrideStore.get(FavouriteEntity.CHARACTER, id) ?: serverIsFav
+
             CharacterDetails(
                 id = charData.id ?: 0,
                 name = charData.name?.full ?: "Unknown",
@@ -540,7 +562,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     } else null
                 },
                 favourites = charData.favourites,
-                isFavourite = charData.isFavourite ?: false,
+                isFavourite = effectiveIsFav,
                 media = mediaList,
                 hasNextPage = hasNextPage
             )
@@ -694,9 +716,12 @@ class DetailsRepositoryImpl @Inject constructor(
 
     override suspend fun getStaffDetails(id: Int, page: Int): Result<StaffDetails> {
         return safeApiCall {
+            // See getCharacterDetails — favourite toggle doesn't update the cache.
             val response = apolloClient.query(
                 GetStaffDetailsQuery(id = id, page = Optional.presentIfNotNull(page))
-            ).execute()
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
 
             val staffData = response.data?.Staff
                 ?: throw Exception("Staff not found")
@@ -745,6 +770,11 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             }
 
+            val serverIsFav = staffData.isFavourite ?: false
+            favouriteOverrideStore.clearIfMatches(FavouriteEntity.STAFF, id, serverIsFav)
+            val effectiveIsFav =
+                favouriteOverrideStore.get(FavouriteEntity.STAFF, id) ?: serverIsFav
+
             StaffDetails(
                 id = staffData.id,
                 name = staffData.name?.full ?: "Unknown",
@@ -763,7 +793,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     formatFuzzyDateShort(it.month, it.day, it.year)
                 },
                 favourites = staffData.favourites,
-                isFavourite = staffData.isFavourite ?: false,
+                isFavourite = effectiveIsFav,
                 language = staffData.languageV2,
                 primaryOccupations = staffData.primaryOccupations?.filterNotNull() ?: emptyList(),
                 yearsActive = staffData.yearsActive?.filterNotNull() ?: emptyList(),
@@ -776,9 +806,12 @@ class DetailsRepositoryImpl @Inject constructor(
 
     override suspend fun getStudioDetails(id: Int, page: Int): Result<StudioDetails> {
         return safeApiCall {
+            // See getCharacterDetails — favourite toggle doesn't update the cache.
             val response = apolloClient.query(
                 GetStudioDetailsQuery(id = Optional.present(id), page = Optional.present(page))
-            ).execute()
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
 
             val studioData = response.data?.Studio
                 ?: throw Exception("Studio not found")
@@ -819,13 +852,18 @@ class DetailsRepositoryImpl @Inject constructor(
                 ?.map { (_, group) -> group.firstOrNull { it.isMainStudio } ?: group.first() }
                 ?: emptyList()
 
+            val serverIsFav = studioData.isFavourite
+            favouriteOverrideStore.clearIfMatches(FavouriteEntity.STUDIO, id, serverIsFav)
+            val effectiveIsFav =
+                favouriteOverrideStore.get(FavouriteEntity.STUDIO, id) ?: serverIsFav
+
             StudioDetails(
                 id = studioData.id,
                 name = studioData.name,
                 isAnimationStudio = studioData.isAnimationStudio,
                 siteUrl = studioData.siteUrl,
                 favourites = studioData.favourites ?: 0,
-                isFavourite = studioData.isFavourite,
+                isFavourite = effectiveIsFav,
                 media = mediaList,
                 hasNextPage = hasNextPage
             )

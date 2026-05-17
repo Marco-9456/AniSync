@@ -35,11 +35,11 @@ interface DetailsRepository {
      */
     suspend fun toggleFavourite(mediaId: Int, mediaType: MediaType): Result<Boolean>
 
-    suspend fun toggleCharacterFavourite(characterId: Int): Result<Boolean>
+    suspend fun toggleCharacterFavourite(characterId: Int, newState: Boolean): Result<Unit>
 
-    suspend fun toggleStaffFavourite(staffId: Int): Result<Boolean>
+    suspend fun toggleStaffFavourite(staffId: Int, newState: Boolean): Result<Unit>
 
-    suspend fun toggleStudioFavourite(studioId: Int): Result<Boolean>
+    suspend fun toggleStudioFavourite(studioId: Int, newState: Boolean): Result<Unit>
 
     suspend fun getCharacterDetails(id: Int, page: Int = 1): Result<CharacterDetails>
 

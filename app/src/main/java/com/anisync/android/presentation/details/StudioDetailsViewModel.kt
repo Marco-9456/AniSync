@@ -90,16 +90,14 @@ class StudioDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState =
                 _uiState.value as? StudioDetailsUiState.Success ?: return@launch
+            val newState = !currentState.details.isFavourite
             _uiState.value = StudioDetailsUiState.Success(
-                currentState.details.copy(isFavourite = !currentState.details.isFavourite)
+                currentState.details.copy(isFavourite = newState)
             )
-            when (val result = detailsRepository.toggleStudioFavourite(studioId)) {
+            when (detailsRepository.toggleStudioFavourite(studioId, newState)) {
                 is Result.Success -> {
-                    val state =
-                        _uiState.value as? StudioDetailsUiState.Success ?: return@launch
-                    _uiState.value = StudioDetailsUiState.Success(
-                        state.details.copy(isFavourite = result.data)
-                    )
+                    // Keep optimistic state. Mutation success is sufficient;
+                    // the paged response payload cannot be trusted to derive the new flag.
                 }
 
                 is Result.Error -> {
