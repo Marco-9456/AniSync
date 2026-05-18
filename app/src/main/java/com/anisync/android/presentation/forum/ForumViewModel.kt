@@ -322,10 +322,6 @@ class ForumViewModel @Inject constructor(
     }
 
     private fun showResultError(result: Result.Error) {
-        if (result.code != null) {
-            toastManager.showToast(result.code, result.message)
-        } else {
-            toastManager.showToast(ToastType.INFO, message = result.message)
-        }
+        toastManager.showResultError(result)
     }
 }

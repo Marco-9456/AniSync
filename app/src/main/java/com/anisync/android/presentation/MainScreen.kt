@@ -56,6 +56,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
 import com.anisync.android.data.NavBarStyle
+import com.anisync.android.presentation.components.alert.ProvideToastManager
 import com.anisync.android.presentation.components.alert.TopToastHost
 import com.anisync.android.presentation.components.navigation.CompactNavBar
 import com.anisync.android.presentation.components.navigation.CompactNavBarItem
@@ -102,6 +103,7 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
         viewModel.refreshNotificationBadge()
     }
 
+    ProvideToastManager(toastManager = viewModel.toastManager) {
     CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -155,6 +157,7 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
 
             TopToastHost(toastManager = viewModel.toastManager)
         }
+    }
     }
     }
 }

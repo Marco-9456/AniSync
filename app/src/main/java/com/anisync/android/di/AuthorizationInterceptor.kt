@@ -4,6 +4,7 @@ import android.util.Log
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.di.AuthorizationInterceptor.Companion.MAX_RETRY_AFTER_SECONDS
+import com.anisync.android.presentation.components.alert.ToastManager
 import com.apollographql.apollo.api.http.HttpRequest
 import com.apollographql.apollo.api.http.HttpResponse
 import com.apollographql.apollo.network.http.HttpInterceptor
@@ -32,7 +33,8 @@ import javax.inject.Inject
  * - Burst limiter also exists (undocumented threshold)
  */
 class AuthorizationInterceptor @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val toastManager: ToastManager
 ) : HttpInterceptor {
 
     companion object {
@@ -180,6 +182,14 @@ class AuthorizationInterceptor @Inject constructor(
 
         Log.w(TAG, "Rate limited (429). Waiting ${cappedRetryAfter}s before retrying...")
 
+        // User-visible feedback while the interceptor blocks: without this the
+        // UI just shows a spinner for up to 2 minutes with no explanation.
+        toastManager.showToast(
+            code = 429,
+            message = "AniList is rate-limiting requests. Retrying in ${cappedRetryAfter}s.",
+            countdownSeconds = cappedRetryAfter
+        )
+
         // Reset our tracked remaining count
         rateLimitRemaining.set(0)
 
@@ -198,6 +208,11 @@ class AuthorizationInterceptor @Inject constructor(
                 ?: DEFAULT_RETRY_AFTER_SECONDS
 
             Log.e(TAG, "Still rate limited after retry. Giving up.")
+            toastManager.showToast(
+                code = 429,
+                message = "Still rate-limited after retry. Try again in ${secondRetryAfter}s.",
+                countdownSeconds = secondRetryAfter
+            )
             throw ApiError.RateLimited(secondRetryAfter)
         }
 

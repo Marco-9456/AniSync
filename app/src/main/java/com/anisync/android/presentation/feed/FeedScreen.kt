@@ -46,6 +46,7 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.EmptyStateCompact
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
@@ -110,7 +111,7 @@ fun FeedScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             state = pullToRefreshState,
-            onRefresh = { viewModel.onAction(FeedAction.Refresh) },
+            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(FeedAction.Refresh) },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isRefreshing,

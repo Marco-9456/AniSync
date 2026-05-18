@@ -2,6 +2,9 @@ package com.anisync.android.presentation.profile
 
 import android.content.Context
 import android.net.Uri
+import android.os.SystemClock
+import android.os.Trace
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -506,11 +509,7 @@ class ProfileViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     localState.update { it.copy(isSavingActivityEdit = false) }
-                    if (result.code != null) {
-                        toastManager.showToast(result.code, result.message)
-                    } else {
-                        toastManager.showToast(ToastType.INFO, message = result.message)
-                    }
+                    toastManager.showResultError(result)
                 }
             }
         }
@@ -533,11 +532,7 @@ class ProfileViewModel @Inject constructor(
                 }
             is Result.Error -> {
                 activityLikeOverrides.update { it - activityId }
-                if (result.code != null) {
-                    toastManager.showToast(result.code, result.message)
-                } else {
-                    toastManager.showToast(ToastType.INFO, message = result.message)
-                }
+                toastManager.showResultError(result)
             }
             }
         }
@@ -554,11 +549,7 @@ class ProfileViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     deletedActivityIds.update { it - activityId }
-                    if (result.code != null) {
-                        toastManager.showToast(result.code, result.message)
-                    } else {
-                        toastManager.showToast(ToastType.INFO, message = result.message)
-                    }
+                    toastManager.showResultError(result)
                 }
             }
         }
@@ -614,25 +605,47 @@ class ProfileViewModel @Inject constructor(
 
     private fun refresh(forceNetwork: Boolean = true) {
         viewModelScope.launch {
+            Trace.beginSection("AniSync.Profile.Refresh.Total")
+            val totalStart = SystemClock.elapsedRealtime()
             localState.update { it.copy(isRefreshing = true) }
             val selectedTab = localState.value.selectedTab
 
+            var profileTimings: com.anisync.android.domain.ProfileRefreshTimings? = null
+            var refreshJobMs = 0L
             val refreshJob = launch {
-                if (targetUsername.isNullOrBlank()) {
-                    profileRepository.refreshProfile("", forceNetwork = forceNetwork)
-                } else {
-                    targetRefreshSignal.tryEmit(forceNetwork)
+                Trace.beginSection("AniSync.Profile.Refresh.RefreshJob")
+                val s = SystemClock.elapsedRealtime()
+                try {
+                    if (targetUsername.isNullOrBlank()) {
+                        when (val r = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
+                            is Result.Success -> profileTimings = r.data
+                            is Result.Error -> Unit
+                        }
+                    } else {
+                        targetRefreshSignal.tryEmit(forceNetwork)
+                    }
+                } finally {
+                    refreshJobMs = SystemClock.elapsedRealtime() - s
+                    Trace.endSection()
                 }
             }
 
+            var activeTabMs = 0L
             val activeTabJob = launch {
-                when (selectedTab) {
-                    ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
-                    ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
-                    ProfileTab.STATS -> fetchStats(forceRefresh = true)
-                    ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
-                    ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
-                    else -> Unit
+                Trace.beginSection("AniSync.Profile.Refresh.ActiveTabJob.$selectedTab")
+                val s = SystemClock.elapsedRealtime()
+                try {
+                    when (selectedTab) {
+                        ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
+                        ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
+                        ProfileTab.STATS -> fetchStats(forceRefresh = true)
+                        ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
+                        ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
+                        else -> Unit
+                    }
+                } finally {
+                    activeTabMs = SystemClock.elapsedRealtime() - s
+                    Trace.endSection()
                 }
             }
 
@@ -640,9 +653,19 @@ class ProfileViewModel @Inject constructor(
             // fire it in parallel with the profile + tab fetches instead of waiting
             // on their joins. If the profile id isn't known yet (first ever load),
             // observeTargetProfileForFollowState() picks it up after refreshJob.
+            var followStateMs = -1L
             val followStateJob = if (!targetUsername.isNullOrBlank()) {
                 uiState.value.profile?.id?.let { userId ->
-                    launch { fetchFollowState(userId) }
+                    launch {
+                        Trace.beginSection("AniSync.Profile.Refresh.FollowStateJob")
+                        val s = SystemClock.elapsedRealtime()
+                        try {
+                            fetchFollowState(userId)
+                        } finally {
+                            followStateMs = SystemClock.elapsedRealtime() - s
+                            Trace.endSection()
+                        }
+                    }
                 }
             } else null
 
@@ -651,6 +674,23 @@ class ProfileViewModel @Inject constructor(
             followStateJob?.join()
 
             localState.update { it.copy(isRefreshing = false) }
+            val totalMs = SystemClock.elapsedRealtime() - totalStart
+            Trace.endSection()
+
+            Log.i(
+                "AniSyncPerf",
+                "profile.refresh own=${targetUsername.isNullOrBlank()} tab=$selectedTab " +
+                    "total=${totalMs}ms refreshJob=${refreshJobMs}ms " +
+                    "profileQuery=${profileTimings?.profileQueryMs ?: -1}ms " +
+                    "activities=${profileTimings?.activitiesQueryMs ?: -1}ms " +
+                    "favoritesTotal=${profileTimings?.favoritesTotalMs ?: -1}ms " +
+                    "favoritesFirstPage=${profileTimings?.favoritesFirstPageMs ?: -1}ms " +
+                    "favoritesRest=${profileTimings?.favoritesRestMs ?: -1}ms " +
+                    "favoritesPages=${profileTimings?.favoritesPageCount ?: -1} " +
+                    "activeTab=${activeTabMs}ms " +
+                    "followState=${if (followStateMs < 0) "skipped" else "${followStateMs}ms"} " +
+                    "forceNetwork=$forceNetwork"
+            )
         }
     }
 

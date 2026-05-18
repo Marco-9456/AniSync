@@ -81,6 +81,7 @@ import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.LocalExoPlayerCache
@@ -387,7 +388,7 @@ fun ThreadDetailScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isLoading && uiState.thread != null,
             state = pullToRefreshState,
-            onRefresh = { viewModel.onAction(ThreadDetailAction.Load(threadId)) },
+            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ThreadDetailAction.Load(threadId)) },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isLoading && uiState.thread != null,

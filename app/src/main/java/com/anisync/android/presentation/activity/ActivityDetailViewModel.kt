@@ -142,7 +142,7 @@ class ActivityDetailViewModel @Inject constructor(
                     if (activityResult.code == 404) {
                         // Activity was deleted or not found — show a toast and pop back
                         // instead of a dead-end error screen (e.g. when opening from a notification)
-                        toastManager.showToast(activityResult.code, activityResult.message)
+                        toastManager.showResultError(activityResult)
                         _uiState.update { it.copy(isLoading = false, isRefreshing = false) }
                         _finishedEvents.tryEmit(Unit)
                     } else {
@@ -338,13 +338,7 @@ class ActivityDetailViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = repository.deleteActivity(id)) {
                 is Result.Success -> _finishedEvents.tryEmit(Unit)
-                is Result.Error -> {
-                    if (result.code != null) {
-                        toastManager.showToast(result.code, result.message)
-                    } else {
-                        toastManager.showToast(ToastType.INFO, message = result.message)
-                    }
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
         }
     }

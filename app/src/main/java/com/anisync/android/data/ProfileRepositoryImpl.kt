@@ -11,8 +11,11 @@ import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.util.safeApiCall
+import android.os.SystemClock
+import android.os.Trace
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ProfileRefreshTimings
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
@@ -42,6 +45,16 @@ class ProfileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchUserProfile(username: String, forceNetwork: Boolean): Result<UserProfile> {
+        return when (val r = fetchUserProfileTimed(username, forceNetwork)) {
+            is Result.Success -> Result.Success(r.data.first)
+            is Result.Error -> r
+        }
+    }
+
+    private suspend fun fetchUserProfileTimed(
+        username: String,
+        forceNetwork: Boolean
+    ): Result<Pair<UserProfile, ProfileRefreshTimings>> {
         return safeApiCall {
             // For the viewer's own profile we previously always issued GetViewerQuery
             // just to learn the username. Reuse the cached profile name when present
@@ -59,11 +72,18 @@ class ProfileRepositoryImpl @Inject constructor(
 
             val policy = if (forceNetwork) FetchPolicy.NetworkOnly else FetchPolicy.CacheFirst
 
-            val response = apolloClient.query(
-                GetUserProfileQuery(name = Optional.present(actualUsername))
-            )
-            .fetchPolicy(policy)
-            .execute()
+            val profileQueryStart = SystemClock.elapsedRealtime()
+            Trace.beginSection("AniSync.Profile.Query.UserProfile")
+            val response = try {
+                apolloClient.query(
+                    GetUserProfileQuery(name = Optional.present(actualUsername))
+                )
+                    .fetchPolicy(policy)
+                    .execute()
+            } finally {
+                Trace.endSection()
+            }
+            val profileQueryMs = SystemClock.elapsedRealtime() - profileQueryStart
 
             if (response.hasErrors()) {
                 val firstError = response.errors?.firstOrNull()?.message
@@ -75,15 +95,28 @@ class ProfileRepositoryImpl @Inject constructor(
 
             // Activities and favorites pagination both depend on user.id but not on
             // each other; run them in parallel to halve the post-profile latency.
+            var activitiesMs = 0L
+            var favoritesResult = FavoritesResult(emptyList(), 0, 0L, 0L)
             val (activitiesResponse, favorites) = coroutineScope {
                 val activitiesDeferred = async {
-                    apolloClient.query(
-                        GetUserActivitiesQuery(userId = Optional.present(user.id))
-                    )
-                        .fetchPolicy(policy)
-                        .execute()
+                    val start = SystemClock.elapsedRealtime()
+                    Trace.beginSection("AniSync.Profile.Query.UserActivities")
+                    try {
+                        apolloClient.query(
+                            GetUserActivitiesQuery(userId = Optional.present(user.id))
+                        )
+                            .fetchPolicy(policy)
+                            .execute()
+                    } finally {
+                        Trace.endSection()
+                        activitiesMs = SystemClock.elapsedRealtime() - start
+                    }
                 }
-                val favoritesDeferred = async { fetchFavorites(user.id ?: 0, policy) }
+                val favoritesDeferred = async {
+                    val r = fetchFavoritesTimed(user.id ?: 0, policy)
+                    favoritesResult = r
+                    r.entries
+                }
                 activitiesDeferred.await() to favoritesDeferred.await()
             }
 
@@ -198,7 +231,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
-            UserProfile(
+            val profile = UserProfile(
                 id = user.id ?: 0,
                 name = user.name ?: "Unknown",
                 avatarUrl = user.avatar?.large,
@@ -224,14 +257,34 @@ class ProfileRepositoryImpl @Inject constructor(
                 moderatorRoles = user.moderatorRoles?.filterNotNull()?.map { it.name } ?: emptyList(),
                 createdAt = user.createdAt?.toLong()?.times(1000)
             )
+
+            val timings = ProfileRefreshTimings(
+                profileQueryMs = profileQueryMs,
+                activitiesQueryMs = activitiesMs,
+                favoritesTotalMs = favoritesResult.firstPageMs + favoritesResult.restMs,
+                favoritesFirstPageMs = favoritesResult.firstPageMs,
+                favoritesRestMs = favoritesResult.restMs,
+                favoritesPageCount = favoritesResult.pageCount
+            )
+            profile to timings
         }
     }
 
     override suspend fun refreshProfile(username: String, forceNetwork: Boolean): Result<Unit> {
-        return when (val result = fetchUserProfile(username, forceNetwork)) {
+        return when (val r = refreshProfileTimed(username, forceNetwork)) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> r
+        }
+    }
+
+    override suspend fun refreshProfileTimed(
+        username: String,
+        forceNetwork: Boolean
+    ): Result<ProfileRefreshTimings> {
+        return when (val result = fetchUserProfileTimed(username, forceNetwork)) {
             is Result.Success -> {
-                userProfileDao.insert(result.data.toEntity())
-                Result.Success(Unit)
+                userProfileDao.insert(result.data.first.toEntity())
+                Result.Success(result.data.second)
             }
             is Result.Error -> result
         }
@@ -252,28 +305,39 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun fetchFavorites(
+    private suspend fun fetchFavoritesTimed(
         userId: Int,
         policy: FetchPolicy = FetchPolicy.NetworkOnly
-    ): List<LibraryEntry> {
+    ): FavoritesResult {
         // Fetch page 1 sequentially to learn `lastPage`, then fan out the
         // remaining pages with a bounded Semaphore so the refresh latency is
         // O(slowest page) instead of O(total pages).
+        val firstPageStart = SystemClock.elapsedRealtime()
         val firstPage = try {
-            fetchFavoritesPage(userId, 1, policy)
+            Trace.beginSection("AniSync.Profile.Query.Favorites.Page1")
+            try {
+                fetchFavoritesPage(userId, 1, policy)
+            } finally {
+                Trace.endSection()
+            }
         } catch (e: Exception) {
             android.util.Log.e("ProfileRepository", "Error fetching favorites page 1", e)
-            return emptyList()
+            return FavoritesResult(emptyList(), 0, SystemClock.elapsedRealtime() - firstPageStart, 0L)
         }
+        val firstPageMs = SystemClock.elapsedRealtime() - firstPageStart
 
         val lastPage = firstPage.lastPage ?: 1
-        if (lastPage <= 1) return firstPage.entries
+        if (lastPage <= 1) {
+            return FavoritesResult(firstPage.entries, 1, firstPageMs, 0L)
+        }
 
         val concurrencyLimit = Semaphore(permits = 4)
+        val restStart = SystemClock.elapsedRealtime()
         val rest = coroutineScope {
             (2..lastPage).map { page ->
                 async {
                     concurrencyLimit.withPermit {
+                        Trace.beginSection("AniSync.Profile.Query.Favorites.Page$page")
                         try {
                             fetchFavoritesPage(userId, page, policy).entries
                         } catch (e: Exception) {
@@ -283,17 +347,27 @@ class ProfileRepositoryImpl @Inject constructor(
                                 e
                             )
                             emptyList()
+                        } finally {
+                            Trace.endSection()
                         }
                     }
                 }
             }.awaitAll()
         }
+        val restMs = SystemClock.elapsedRealtime() - restStart
 
         val total = ArrayList<LibraryEntry>(firstPage.entries.size + rest.sumOf { it.size })
         total.addAll(firstPage.entries)
         rest.forEach(total::addAll)
-        return total
+        return FavoritesResult(total, lastPage, firstPageMs, restMs)
     }
+
+    private data class FavoritesResult(
+        val entries: List<LibraryEntry>,
+        val pageCount: Int,
+        val firstPageMs: Long,
+        val restMs: Long
+    )
 
     private data class FavoritesPage(val entries: List<LibraryEntry>, val lastPage: Int?)
 

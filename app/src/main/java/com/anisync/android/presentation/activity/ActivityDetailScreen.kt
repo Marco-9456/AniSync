@@ -70,6 +70,7 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
@@ -314,7 +315,7 @@ fun ActivityDetailScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             state = pullToRefreshState,
-            onRefresh = { viewModel.onAction(ActivityDetailAction.Refresh) },
+            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ActivityDetailAction.Refresh) },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isRefreshing,

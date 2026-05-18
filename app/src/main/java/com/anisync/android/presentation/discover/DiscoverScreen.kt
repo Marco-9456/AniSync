@@ -89,6 +89,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
@@ -256,7 +257,7 @@ fun DiscoverScreen(
     }
 
     val onRefresh: () -> Unit =
-        remember(viewModel) { { viewModel.onAction(DiscoverAction.Refresh) } }
+        rememberRateLimitedRefresh { viewModel.onAction(DiscoverAction.Refresh) }
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         keyboardController?.hide()

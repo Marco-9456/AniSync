@@ -30,6 +30,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
@@ -76,7 +77,7 @@ fun ForumCategoryScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             state = pullToRefreshState,
-            onRefresh = { viewModel.onAction(ForumCategoryAction.Refresh) },
+            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ForumCategoryAction.Refresh) },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isRefreshing,

@@ -2,6 +2,20 @@ package com.anisync.android.domain
 
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Per-phase timings captured during a profile refresh. Emitted to logcat
+ * (`AniSyncPerf`) so device-side issue reports can attribute slow refreshes
+ * to a specific GraphQL phase instead of a single opaque total.
+ */
+data class ProfileRefreshTimings(
+    val profileQueryMs: Long,
+    val activitiesQueryMs: Long,
+    val favoritesTotalMs: Long,
+    val favoritesFirstPageMs: Long,
+    val favoritesRestMs: Long,
+    val favoritesPageCount: Int
+)
+
 interface ProfileRepository {
     /**
      * Observe user profile from local cache (reactive).
@@ -14,6 +28,11 @@ interface ProfileRepository {
      * on a miss — used for cold-open paths where instant render beats freshness.
      */
     suspend fun refreshProfile(username: String, forceNetwork: Boolean = true): Result<Unit>
+
+    /**
+     * Same as [refreshProfile] but also returns per-phase timings.
+     */
+    suspend fun refreshProfileTimed(username: String, forceNetwork: Boolean = true): Result<ProfileRefreshTimings>
 
     /**
      * Fetch user profile without saving it to the local cache. [forceNetwork]

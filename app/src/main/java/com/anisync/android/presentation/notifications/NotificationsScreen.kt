@@ -40,6 +40,7 @@ import com.anisync.android.domain.NotificationFilter
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.notifications.components.NotificationGroupCard
 
@@ -94,7 +95,7 @@ fun NotificationsScreen(
     ) { topContentPadding ->
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            onRefresh = { viewModel.onAction(NotificationsAction.Refresh) },
+            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(NotificationsAction.Refresh) },
             state = pullState,
             modifier = Modifier.fillMaxSize(),
             indicator = {

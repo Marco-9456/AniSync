@@ -78,6 +78,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
@@ -294,7 +295,7 @@ fun ForumScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             state = pullToRefreshState,
-            onRefresh = { viewModel.onAction(ForumAction.Refresh) },
+            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ForumAction.Refresh) },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isRefreshing,

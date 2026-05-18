@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
@@ -97,7 +98,7 @@ fun ProfileContent(
 
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
-        onRefresh = { onAction(ProfileAction.Refresh()) },
+        onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
         state = pullToRefreshState,
         modifier = modifier.fillMaxSize(),
         indicator = {
