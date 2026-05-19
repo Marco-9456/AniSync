@@ -16,6 +16,20 @@ data class ProfileRefreshTimings(
     val favoritesPageCount: Int
 )
 
+/**
+ * Caller-controlled cache policy. Lets callers choose between hitting Apollo's
+ * normalized cache and bypassing it without leaking the Apollo `FetchPolicy`
+ * type into the domain layer. Maps 1-to-1 to Apollo `FetchPolicy` in the impl.
+ *
+ * - [CacheFirst]: Apollo cache first; falls through to network on miss. Used on
+ *   tab re-entry within the staleness window.
+ * - [NetworkOnly]: Always hit network. Used on user-initiated pull-to-refresh.
+ * - [NetworkFirst]: Network first; falls back to cache on network failure.
+ *   Used as the default for read-only queries that want freshness when possible
+ *   but tolerate a stale value when offline or rate-limited.
+ */
+enum class CachePolicy { CacheFirst, NetworkOnly, NetworkFirst }
+
 interface ProfileRepository {
     /**
      * Observe user profile from local cache (reactive).
@@ -48,12 +62,19 @@ interface ProfileRepository {
     /**
      * Fetch social data.
      */
-    suspend fun getSocialData(userId: Int, page: Int = 1): Result<UserSocialPage>
+    suspend fun getSocialData(
+        userId: Int,
+        page: Int = 1,
+        policy: CachePolicy = CachePolicy.NetworkFirst
+    ): Result<UserSocialPage>
 
     /**
      * Check whether the authenticated user follows [userId].
      */
-    suspend fun getFollowState(userId: Int): Result<Boolean>
+    suspend fun getFollowState(
+        userId: Int,
+        policy: CachePolicy = CachePolicy.NetworkFirst
+    ): Result<Boolean>
 
     /**
      * Toggle follow state for [userId] and return the new state.
@@ -63,7 +84,11 @@ interface ProfileRepository {
     /**
      * Fetch user's reviews.
      */
-    suspend fun getUserReviews(userId: Int, page: Int = 1): Result<UserReviewsPage>
+    suspend fun getUserReviews(
+        userId: Int,
+        page: Int = 1,
+        policy: CachePolicy = CachePolicy.NetworkFirst
+    ): Result<UserReviewsPage>
 
     /**
      * Fetch user's anime list.

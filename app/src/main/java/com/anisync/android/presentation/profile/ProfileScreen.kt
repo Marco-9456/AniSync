@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import android.os.SystemClock
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -48,10 +51,17 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    if (isOwnProfile) {
-        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-            viewModel.refreshNotificationBadge()
+    // Cooldown-gated ON_RESUME refresh. Notification badge no longer needs a
+    // separate refresh — it rides on GetUserProfile via @include directive.
+    // The 60s floor prevents quick app-switch from re-firing a refresh; the
+    // ViewModel's profileCooldown (15s) is the second line of defence.
+    val lastResumeAtMs = remember { mutableLongStateOf(0L) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastResumeAtMs.longValue > 60_000L) {
+            viewModel.onAction(ProfileAction.Refresh(forceNetwork = false))
         }
+        lastResumeAtMs.longValue = now
     }
 
     Scaffold(

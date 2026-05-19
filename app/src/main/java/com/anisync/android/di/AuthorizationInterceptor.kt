@@ -2,6 +2,7 @@ package com.anisync.android.di
 
 import android.util.Log
 import com.anisync.android.data.AuthRepository
+import com.anisync.android.data.network.TokenBucket
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.di.AuthorizationInterceptor.Companion.MAX_RETRY_AFTER_SECONDS
 import com.anisync.android.presentation.components.alert.ToastManager
@@ -34,7 +35,8 @@ import javax.inject.Inject
  */
 class AuthorizationInterceptor @Inject constructor(
     private val authRepository: AuthRepository,
-    private val toastManager: ToastManager
+    private val toastManager: ToastManager,
+    private val tokenBucket: TokenBucket
 ) : HttpInterceptor {
 
     companion object {
@@ -76,6 +78,13 @@ class AuthorizationInterceptor @Inject constructor(
         request: HttpRequest,
         chain: HttpInterceptorChain
     ): HttpResponse {
+        // ── Step 0: Client-side budget gate ─────────────────────────────
+        // Serializes parallel bursts against AniList's undocumented burst
+        // limiter. The post-response remaining-count throttle below cannot
+        // help here because N parallel intercept() invocations all read the
+        // same `remaining` before the first response updates it.
+        tokenBucket.acquire()
+
         // ── Step 1: Attach Bearer token ─────────────────────────────────
         val token = authRepository.getToken()
         val authorizedRequest = if (token != null) {
@@ -146,6 +155,7 @@ class AuthorizationInterceptor @Inject constructor(
                 }
                 "x-ratelimit-limit" -> {
                     Log.d(TAG, "Rate limit: ${header.value}/min")
+                    header.value.toIntOrNull()?.let(tokenBucket::onLimitHeader)
                 }
                 "x-ratelimit-reset" -> {
                     header.value.toLongOrNull()?.let { value ->

@@ -37,6 +37,17 @@ class NotificationBadgeStore @Inject constructor(
     private val _unreadCount = MutableStateFlow(0)
     val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
 
+    /**
+     * Update from a count already obtained out-of-band (e.g. piggy-backed on
+     * a `GetUserProfile` query that included `Viewer.unreadNotificationCount`).
+     * Lets us skip the separate `GetViewer` round-trip when the profile
+     * refresh already fetched the value — see Horizon A patch A2.
+     */
+    fun setFromServer(count: Int) {
+        _serverCount.value = count.coerceAtLeast(0)
+        recompute()
+    }
+
     /** Network refresh; keeps the previous value on failure (offline, rate-limit). */
     suspend fun refresh() {
         try {

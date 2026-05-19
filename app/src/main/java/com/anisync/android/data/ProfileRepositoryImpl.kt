@@ -13,6 +13,7 @@ import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.util.safeApiCall
 import android.os.SystemClock
 import android.os.Trace
+import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRefreshTimings
@@ -29,15 +30,42 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 
 class ProfileRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
-    private val userProfileDao: UserProfileDao
+    private val userProfileDao: UserProfileDao,
+    private val notificationBadgeStore: NotificationBadgeStore
 ) : ProfileRepository {
+
+    /**
+     * In-flight request dedup keyed by (operation + params hash). A second
+     * concurrent caller suspends on the mutex until the first completes;
+     * the second's Apollo query (still `CacheFirst` when policy allows)
+     * then hits the now-warm normalized cache instead of hitting network.
+     */
+    private val inflightMutexes = ConcurrentHashMap<String, Mutex>()
+
+    private suspend fun <T> dedupe(key: String, block: suspend () -> T): T {
+        val mtx = inflightMutexes.computeIfAbsent(key) { Mutex() }
+        return try {
+            mtx.withLock { block() }
+        } finally {
+            if (!mtx.isLocked) inflightMutexes.remove(key, mtx)
+        }
+    }
+
+    private fun CachePolicy.toFetchPolicy(): FetchPolicy = when (this) {
+        CachePolicy.CacheFirst -> FetchPolicy.CacheFirst
+        CachePolicy.NetworkOnly -> FetchPolicy.NetworkOnly
+        CachePolicy.NetworkFirst -> FetchPolicy.NetworkFirst
+    }
 
     override fun observeProfile(): Flow<UserProfile?> {
         return userProfileDao.observe()
@@ -54,8 +82,9 @@ class ProfileRepositoryImpl @Inject constructor(
     private suspend fun fetchUserProfileTimed(
         username: String,
         forceNetwork: Boolean
-    ): Result<Pair<UserProfile, ProfileRefreshTimings>> {
-        return safeApiCall {
+    ): Result<Pair<UserProfile, ProfileRefreshTimings>> = dedupe("profile:${username}:$forceNetwork") {
+        safeApiCall {
+            val isOwnProfile = username.isBlank()
             // For the viewer's own profile we previously always issued GetViewerQuery
             // just to learn the username. Reuse the cached profile name when present
             // so refresh skips a sequential network round-trip.
@@ -76,7 +105,13 @@ class ProfileRepositoryImpl @Inject constructor(
             Trace.beginSection("AniSync.Profile.Query.UserProfile")
             val response = try {
                 apolloClient.query(
-                    GetUserProfileQuery(name = Optional.present(actualUsername))
+                    GetUserProfileQuery(
+                        name = Optional.present(actualUsername),
+                        // Piggyback viewer fields onto the own-profile query so the
+                        // notification badge can be updated without a separate
+                        // `GetViewer` round-trip on every screen resume.
+                        includeViewer = Optional.present(isOwnProfile)
+                    )
                 )
                     .fetchPolicy(policy)
                     .execute()
@@ -92,6 +127,43 @@ class ProfileRepositoryImpl @Inject constructor(
 
             val user = response.data?.User
                 ?: throw Exception("User not found: @$actualUsername")
+
+            // Refresh the notification badge from the piggy-backed Viewer block.
+            // Skipped when `includeViewer` is false or the server omitted it.
+            response.data?.Viewer?.unreadNotificationCount?.let {
+                notificationBadgeStore.setFromServer(it)
+            }
+
+            // Build a page-1 seed for the favorites paginator from the inline
+            // `favourites.anime` block in the same `GetUserProfile` response.
+            // Avoids a redundant `GetUserFavorites(page=1)` round-trip on every
+            // refresh — the first page is already paid for in the profile fetch.
+            val seedAnimePage = user.favourites?.anime
+            val seedFavorites = FavoritesPage(
+                entries = seedAnimePage?.nodes?.filterNotNull()?.map { node ->
+                    LibraryEntry(
+                        id = 0,
+                        mediaId = node.id ?: 0,
+                        titleRomaji = node.title?.romaji,
+                        titleEnglish = node.title?.english,
+                        titleNative = node.title?.native,
+                        titleUserPreferred = node.title?.userPreferred ?: "Unknown",
+                        coverUrl = node.coverImage?.large,
+                        cover = com.anisync.android.domain.CoverImage.of(
+                            node.coverImage?.medium,
+                            node.coverImage?.large,
+                            node.coverImage?.extraLarge
+                        ),
+                        progress = 0,
+                        totalEpisodes = node.episodes,
+                        totalChapters = node.chapters,
+                        totalVolumes = node.volumes,
+                        type = node.type,
+                        status = LibraryStatus.UNKNOWN
+                    )
+                }.orEmpty(),
+                lastPage = seedAnimePage?.pageInfo?.lastPage
+            )
 
             // Activities and favorites pagination both depend on user.id but not on
             // each other; run them in parallel to halve the post-profile latency.
@@ -113,7 +185,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     }
                 }
                 val favoritesDeferred = async {
-                    val r = fetchFavoritesTimed(user.id ?: 0, policy)
+                    val r = fetchFavoritesTimed(user.id ?: 0, policy, seedFavorites)
                     favoritesResult = r
                     r.entries
                 }
@@ -307,24 +379,33 @@ class ProfileRepositoryImpl @Inject constructor(
 
     private suspend fun fetchFavoritesTimed(
         userId: Int,
-        policy: FetchPolicy = FetchPolicy.NetworkOnly
+        policy: FetchPolicy = FetchPolicy.NetworkOnly,
+        // Page 1 served from the calling `GetUserProfile` response when the
+        // caller already paid for it inline. `null` falls back to issuing
+        // `GetUserFavoritesQuery(page=1)` separately.
+        seedPageOne: FavoritesPage? = null
     ): FavoritesResult {
         // Fetch page 1 sequentially to learn `lastPage`, then fan out the
         // remaining pages with a bounded Semaphore so the refresh latency is
         // O(slowest page) instead of O(total pages).
         val firstPageStart = SystemClock.elapsedRealtime()
-        val firstPage = try {
-            Trace.beginSection("AniSync.Profile.Query.Favorites.Page1")
+        val firstPage = if (seedPageOne != null) {
+            seedPageOne
+        } else {
             try {
-                fetchFavoritesPage(userId, 1, policy)
-            } finally {
-                Trace.endSection()
+                Trace.beginSection("AniSync.Profile.Query.Favorites.Page1")
+                try {
+                    fetchFavoritesPage(userId, 1, policy)
+                } finally {
+                    Trace.endSection()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ProfileRepository", "Error fetching favorites page 1", e)
+                return FavoritesResult(emptyList(), 0, SystemClock.elapsedRealtime() - firstPageStart, 0L)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("ProfileRepository", "Error fetching favorites page 1", e)
-            return FavoritesResult(emptyList(), 0, SystemClock.elapsedRealtime() - firstPageStart, 0L)
         }
-        val firstPageMs = SystemClock.elapsedRealtime() - firstPageStart
+        // Seeded calls cost zero ms; only count real network time.
+        val firstPageMs = if (seedPageOne != null) 0L else SystemClock.elapsedRealtime() - firstPageStart
 
         val lastPage = firstPage.lastPage ?: 1
         if (lastPage <= 1) {
@@ -412,15 +493,19 @@ class ProfileRepositoryImpl @Inject constructor(
         return FavoritesPage(entries = entries, lastPage = pageInfo?.lastPage)
     }
 
-    override suspend fun getSocialData(userId: Int, page: Int): Result<com.anisync.android.domain.UserSocialPage> {
-        return safeApiCall {
+    override suspend fun getSocialData(
+        userId: Int,
+        page: Int,
+        policy: CachePolicy
+    ): Result<com.anisync.android.domain.UserSocialPage> = dedupe("social:$userId:$page:$policy") {
+        safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetUserSocialDataQuery(
                     userId = userId,
                     page = Optional.present(page)
                 )
             )
-            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .fetchPolicy(policy.toFetchPolicy())
             .execute()
 
             if (response.hasErrors()) {
@@ -508,18 +593,21 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFollowState(userId: Int): Result<Boolean> {
-        return safeApiCall {
-            val response = apolloClient.query(GetUserFollowStateQuery(userId = userId))
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .execute()
-            if (response.hasErrors()) {
-                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to get follow state")
-            }
+    override suspend fun getFollowState(userId: Int, policy: CachePolicy): Result<Boolean> =
+        dedupe("follow:$userId:$policy") {
+            safeApiCall {
+                val response = apolloClient.query(GetUserFollowStateQuery(userId = userId))
+                    .fetchPolicy(policy.toFetchPolicy())
+                    .execute()
+                if (response.hasErrors()) {
+                    throw Exception(
+                        response.errors?.firstOrNull()?.message ?: "Failed to get follow state"
+                    )
+                }
 
-            response.data?.User?.isFollowing ?: false
+                response.data?.User?.isFollowing ?: false
+            }
         }
-    }
 
     override suspend fun toggleFollow(userId: Int): Result<Boolean> {
         return safeApiCall {
@@ -532,15 +620,19 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserReviews(userId: Int, page: Int): Result<com.anisync.android.domain.UserReviewsPage> {
-        return safeApiCall {
+    override suspend fun getUserReviews(
+        userId: Int,
+        page: Int,
+        policy: CachePolicy
+    ): Result<com.anisync.android.domain.UserReviewsPage> = dedupe("reviews:$userId:$page:$policy") {
+        safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetUserReviewsQuery(
                     userId = userId,
                     page = Optional.present(page)
                 )
             )
-            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .fetchPolicy(policy.toFetchPolicy())
             .execute()
 
             if (response.hasErrors()) {
@@ -575,13 +667,15 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>> {
-        return fetchUserList(username, com.anisync.android.type.MediaType.ANIME)
-    }
+    override suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>> =
+        dedupe("animeList:$username") {
+            fetchUserList(username, com.anisync.android.type.MediaType.ANIME)
+        }
 
-    override suspend fun getUserMangaList(username: String): Result<List<LibraryEntry>> {
-        return fetchUserList(username, com.anisync.android.type.MediaType.MANGA)
-    }
+    override suspend fun getUserMangaList(username: String): Result<List<LibraryEntry>> =
+        dedupe("mangaList:$username") {
+            fetchUserList(username, com.anisync.android.type.MediaType.MANGA)
+        }
 
     private suspend fun fetchUserList(username: String, type: com.anisync.android.type.MediaType): Result<List<LibraryEntry>> {
         return safeApiCall {

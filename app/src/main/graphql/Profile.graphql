@@ -1,4 +1,11 @@
-query GetUserProfile($name: String) {
+query GetUserProfile($name: String, $includeViewer: Boolean = false) {
+  Viewer @include(if: $includeViewer) {
+    id
+    unreadNotificationCount
+    mediaListOptions {
+      scoreFormat
+    }
+  }
   User(name: $name) {
     name
     id
@@ -35,10 +42,11 @@ query GetUserProfile($name: String) {
       }
     }
     favourites {
-      anime(page: 1, perPage: 25) {
+      anime(page: 1, perPage: 50) {
         pageInfo {
           hasNextPage
           total
+          lastPage
         }
         nodes {
           id

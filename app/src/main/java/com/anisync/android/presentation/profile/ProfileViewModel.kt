@@ -12,6 +12,7 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
+import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -26,6 +27,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,6 +42,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 
 private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
@@ -68,7 +71,41 @@ class ProfileViewModel @Inject constructor(
 
     companion object {
         private const val LIST_REFRESH_INTERVAL_MS = 5 * 60 * 1000L
+
+        /** Minimum gap between non-user-initiated refreshes (init / ON_RESUME). */
+        private const val AUTO_REFRESH_COOLDOWN_MS = 15_000L
+
+        /** Minimum gap between user-initiated refreshes (pull-to-refresh). */
+        private const val GESTURE_REFRESH_COOLDOWN_MS = 5_000L
     }
+
+    /**
+     * Per-resource cooldown. Independent from the 429 toast gate — that one only
+     * activates *after* AniList already returned 429. This gate prevents the
+     * runaway-pull spam path that gets us there in the first place. The 429 toast
+     * still overrides (its `isRateLimited` flag short-circuits the UI gesture).
+     */
+    private class FetchCooldown {
+        private var lastAt: Long = 0L
+        fun shouldFetch(userInitiated: Boolean): Boolean {
+            val floor = if (userInitiated) GESTURE_REFRESH_COOLDOWN_MS else AUTO_REFRESH_COOLDOWN_MS
+            val now = SystemClock.elapsedRealtime()
+            return (now - lastAt >= floor).also { ok -> if (ok) lastAt = now }
+        }
+    }
+
+    /** Serializes refresh() invocations so a double-pull only fans out once. */
+    private val refreshMutex = Mutex()
+
+    /** Gates the orchestrator-level refresh(); per-tab fetches keep their own dedup. */
+    private val profileCooldown = FetchCooldown()
+
+    /**
+     * Tick that re-fires the follow-state collector on every pull-to-refresh so
+     * the user sees fresh follow state without scheduling a parallel job inside
+     * refresh() (which would double-fire follow state on cold open).
+     */
+    private val followStateTick = MutableStateFlow(0L)
 
     // Settings from AppSettings (needed for display in profile)
     val titleLanguage: StateFlow<com.anisync.android.data.TitleLanguage> = appSettings.titleLanguage
@@ -314,19 +351,22 @@ class ProfileViewModel @Inject constructor(
     )
 
     init {
-        // Cold-open auto-refresh: forceNetwork=false lets Apollo's normalized
-        // cache render instantly when present, falling through to network on a
-        // cache miss. The user's pull-to-refresh still forces a network refresh.
-        onAction(ProfileAction.Refresh(forceNetwork = false))
-
         observeTargetProfileForFollowState()
 
         viewModelScope.launch {
             viewerIdFlow.value = activityRepository.getViewerId()
         }
 
-        if (targetUsername.isNullOrBlank()) {
-            refreshNotificationBadge()
+        // Defer the network refresh past the first frame so the Room-cached
+        // profile paints first. The cooldown gate prevents back-to-back VM
+        // constructions (rapid screen back-then-in) from re-firing the burst.
+        // Notification badge is now folded into GetUserProfile via @include —
+        // no separate GetViewer round-trip needed on the own-profile path.
+        viewModelScope.launch {
+            delay(500)
+            if (profileCooldown.shouldFetch(userInitiated = false)) {
+                refresh(forceNetwork = false)
+            }
         }
     }
 
@@ -604,93 +644,89 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun refresh(forceNetwork: Boolean = true) {
+        // Synchronous early-return so a second pull-to-refresh while the first
+        // is still in flight is dropped, not stacked. The 429 toast gate only
+        // fires AFTER a rate limit happens; this prevents the burst from
+        // queuing in the first place.
+        if (!refreshMutex.tryLock()) return
+        localState.update { it.copy(isRefreshing = true) }
+
         viewModelScope.launch {
             Trace.beginSection("AniSync.Profile.Refresh.Total")
             val totalStart = SystemClock.elapsedRealtime()
-            localState.update { it.copy(isRefreshing = true) }
             val selectedTab = localState.value.selectedTab
 
             var profileTimings: com.anisync.android.domain.ProfileRefreshTimings? = null
             var refreshJobMs = 0L
-            val refreshJob = launch {
-                Trace.beginSection("AniSync.Profile.Refresh.RefreshJob")
-                val s = SystemClock.elapsedRealtime()
-                try {
-                    if (targetUsername.isNullOrBlank()) {
-                        when (val r = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
-                            is Result.Success -> profileTimings = r.data
-                            is Result.Error -> Unit
+
+            try {
+                val refreshJob = launch {
+                    Trace.beginSection("AniSync.Profile.Refresh.RefreshJob")
+                    val s = SystemClock.elapsedRealtime()
+                    try {
+                        if (targetUsername.isNullOrBlank()) {
+                            when (val r = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
+                                is Result.Success -> profileTimings = r.data
+                                is Result.Error -> Unit
+                            }
+                        } else {
+                            targetRefreshSignal.tryEmit(forceNetwork)
                         }
-                    } else {
-                        targetRefreshSignal.tryEmit(forceNetwork)
+                    } finally {
+                        refreshJobMs = SystemClock.elapsedRealtime() - s
+                        Trace.endSection()
                     }
-                } finally {
-                    refreshJobMs = SystemClock.elapsedRealtime() - s
-                    Trace.endSection()
                 }
-            }
 
-            var activeTabMs = 0L
-            val activeTabJob = launch {
-                Trace.beginSection("AniSync.Profile.Refresh.ActiveTabJob.$selectedTab")
-                val s = SystemClock.elapsedRealtime()
-                try {
-                    when (selectedTab) {
-                        ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
-                        ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
-                        ProfileTab.STATS -> fetchStats(forceRefresh = true)
-                        ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
-                        ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
-                        else -> Unit
-                    }
-                } finally {
-                    activeTabMs = SystemClock.elapsedRealtime() - s
-                    Trace.endSection()
-                }
-            }
-
-            // Follow state for other users only depends on the cached `profile.id`;
-            // fire it in parallel with the profile + tab fetches instead of waiting
-            // on their joins. If the profile id isn't known yet (first ever load),
-            // observeTargetProfileForFollowState() picks it up after refreshJob.
-            var followStateMs = -1L
-            val followStateJob = if (!targetUsername.isNullOrBlank()) {
-                uiState.value.profile?.id?.let { userId ->
-                    launch {
-                        Trace.beginSection("AniSync.Profile.Refresh.FollowStateJob")
-                        val s = SystemClock.elapsedRealtime()
-                        try {
-                            fetchFollowState(userId)
-                        } finally {
-                            followStateMs = SystemClock.elapsedRealtime() - s
-                            Trace.endSection()
+                var activeTabMs = 0L
+                val activeTabJob = launch {
+                    Trace.beginSection("AniSync.Profile.Refresh.ActiveTabJob.$selectedTab")
+                    val s = SystemClock.elapsedRealtime()
+                    try {
+                        when (selectedTab) {
+                            ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
+                            ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
+                            ProfileTab.STATS -> fetchStats(forceRefresh = true)
+                            ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
+                            ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
+                            else -> Unit
                         }
+                    } finally {
+                        activeTabMs = SystemClock.elapsedRealtime() - s
+                        Trace.endSection()
                     }
                 }
-            } else null
 
-            refreshJob.join()
-            activeTabJob.join()
-            followStateJob?.join()
+                // Follow-state is fired via the tick instead of an inline job — the
+                // observer combine() below picks up the tick and runs fetchFollowState.
+                // Only tick on user-initiated (forceNetwork=true) so cold-open doesn't
+                // double-fire follow-state alongside the observer's initial emission.
+                if (!targetUsername.isNullOrBlank() && forceNetwork) {
+                    followStateTick.value = SystemClock.elapsedRealtime()
+                }
 
-            localState.update { it.copy(isRefreshing = false) }
-            val totalMs = SystemClock.elapsedRealtime() - totalStart
-            Trace.endSection()
+                refreshJob.join()
+                activeTabJob.join()
 
-            Log.i(
-                "AniSyncPerf",
-                "profile.refresh own=${targetUsername.isNullOrBlank()} tab=$selectedTab " +
-                    "total=${totalMs}ms refreshJob=${refreshJobMs}ms " +
-                    "profileQuery=${profileTimings?.profileQueryMs ?: -1}ms " +
-                    "activities=${profileTimings?.activitiesQueryMs ?: -1}ms " +
-                    "favoritesTotal=${profileTimings?.favoritesTotalMs ?: -1}ms " +
-                    "favoritesFirstPage=${profileTimings?.favoritesFirstPageMs ?: -1}ms " +
-                    "favoritesRest=${profileTimings?.favoritesRestMs ?: -1}ms " +
-                    "favoritesPages=${profileTimings?.favoritesPageCount ?: -1} " +
-                    "activeTab=${activeTabMs}ms " +
-                    "followState=${if (followStateMs < 0) "skipped" else "${followStateMs}ms"} " +
-                    "forceNetwork=$forceNetwork"
-            )
+                val totalMs = SystemClock.elapsedRealtime() - totalStart
+                Log.i(
+                    "AniSyncPerf",
+                    "profile.refresh own=${targetUsername.isNullOrBlank()} tab=$selectedTab " +
+                        "total=${totalMs}ms refreshJob=${refreshJobMs}ms " +
+                        "profileQuery=${profileTimings?.profileQueryMs ?: -1}ms " +
+                        "activities=${profileTimings?.activitiesQueryMs ?: -1}ms " +
+                        "favoritesTotal=${profileTimings?.favoritesTotalMs ?: -1}ms " +
+                        "favoritesFirstPage=${profileTimings?.favoritesFirstPageMs ?: -1}ms " +
+                        "favoritesRest=${profileTimings?.favoritesRestMs ?: -1}ms " +
+                        "favoritesPages=${profileTimings?.favoritesPageCount ?: -1} " +
+                        "activeTab=${activeTabMs}ms followState=async " +
+                        "forceNetwork=$forceNetwork"
+                )
+            } finally {
+                localState.update { it.copy(isRefreshing = false) }
+                Trace.endSection()
+                refreshMutex.unlock()
+            }
         }
     }
 
@@ -698,20 +734,28 @@ class ProfileViewModel @Inject constructor(
         if (targetUsername.isNullOrBlank()) return
 
         viewModelScope.launch {
-            uiState
-                .map { it.profile?.id }
-                .filterNotNull()
-                .distinctUntilChanged()
-                .collect { userId ->
-                    fetchFollowState(userId)
+            // Combine: re-emits when EITHER the profile id changes OR the
+            // followStateTick fires. Initial emission uses the default (cache-friendly)
+            // policy; pull-to-refresh ticks force a fresh network query.
+            combine(
+                uiState.map { it.profile?.id }.filterNotNull().distinctUntilChanged(),
+                followStateTick
+            ) { id, tick -> id to tick }
+                .collect { (userId, tick) ->
+                    fetchFollowState(
+                        userId = userId,
+                        // First emission (tick==0L) is cold-open: prefer cache fallback;
+                        // subsequent ticks are user-initiated refresh: force network.
+                        policy = if (tick == 0L) CachePolicy.NetworkFirst else CachePolicy.NetworkOnly
+                    )
                 }
         }
     }
 
-    private fun fetchFollowState(userId: Int) {
+    private fun fetchFollowState(userId: Int, policy: CachePolicy = CachePolicy.NetworkFirst) {
         viewModelScope.launch {
             localState.update { it.copy(isFollowLoading = true) }
-            when (val result = profileRepository.getFollowState(userId)) {
+            when (val result = profileRepository.getFollowState(userId, policy)) {
                 is Result.Success -> {
                     localState.update {
                         it.copy(
@@ -763,7 +807,8 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = profileRepository.getUserReviews(userId, page = 1)) {
+            val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
+            when (val result = profileRepository.getUserReviews(userId, page = 1, policy = policy)) {
                 is Result.Success -> {
                     reviewsState.update {
                         it.copy(
@@ -1094,7 +1139,8 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = profileRepository.getSocialData(userId, page = 1)) {
+            val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
+            when (val result = profileRepository.getSocialData(userId, page = 1, policy = policy)) {
                 is Result.Success -> {
                     val page = result.data
                     socialState.update {
