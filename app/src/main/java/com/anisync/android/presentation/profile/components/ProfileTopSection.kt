@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,10 +61,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.ui.theme.emphasis
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -324,10 +325,16 @@ fun ProfileTopSection(
             Box(
                 modifier = Modifier
                     .size(AvatarSize)
-                    .background(MaterialTheme.colorScheme.onSecondaryContainer, MaterialShapes.Clover8Leaf.toShape())
-                    .padding(6.dp)
                     .clip(MaterialShapes.Clover8Leaf.toShape())
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = MaterialShapes.Clover8Leaf.toShape()
+                    )
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        MaterialShapes.Clover8Leaf.toShape()
+                    )
             ) {
                 AsyncImage(
                     model = profile.avatarUrl,

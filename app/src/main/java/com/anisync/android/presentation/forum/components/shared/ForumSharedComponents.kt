@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.forum.components.shared
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -11,8 +12,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,7 +82,12 @@ fun AuthorRow(
                 contentDescription = "Avatar of $name",
                 modifier = Modifier
                     .size(avatarSize)
-                    .clip(CircleShape),
+                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = MaterialShapes.Clover8Leaf.toShape()
+                    ),
                 contentScale = ContentScale.Crop
             )
         } else {
@@ -87,7 +95,12 @@ fun AuthorRow(
             Box(
                 modifier = Modifier
                     .size(avatarSize)
-                    .clip(CircleShape)
+                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = MaterialShapes.Clover8Leaf.toShape()
+                    )
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center
             ) {

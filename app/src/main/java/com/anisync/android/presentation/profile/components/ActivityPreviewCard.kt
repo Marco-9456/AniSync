@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.profile.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,10 +32,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -133,7 +136,12 @@ private fun ActivityHeader(
                 contentDescription = activity.userName,
                 size = 36.dp,
                 modifier = Modifier
-                    .clip(CircleShape)
+                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = MaterialShapes.Clover8Leaf.toShape()
+                    )
                     .clickable { activity.userName?.let { onUserClick(it) } }
             )
 
@@ -151,7 +159,12 @@ private fun ActivityHeader(
                     contentDescription = activity.recipientName,
                     size = 28.dp,
                     modifier = Modifier
-                        .clip(CircleShape)
+                        .clip(MaterialShapes.Clover8Leaf.toShape())
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = MaterialShapes.Clover8Leaf.toShape()
+                        )
                         .clickable { activity.recipientName?.let { onUserClick(it) } }
                 )
             }
@@ -283,7 +296,13 @@ private fun ActivityFooter(
                             url = activity.replyUserAvatarUrl,
                             contentDescription = activity.replyUserName,
                             size = 18.dp,
-                            modifier = Modifier.clip(CircleShape)
+                            modifier = Modifier
+                                .clip(MaterialShapes.Clover8Leaf.toShape())
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = MaterialShapes.Clover8Leaf.toShape()
+                                )
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(

@@ -27,7 +27,7 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileActivityFilter
-import com.anisync.android.presentation.profile.RecentUpdateCard
+import com.anisync.android.presentation.profile.components.RecentUpdateCard
 import com.anisync.android.presentation.profile.components.ActivityPreviewCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 

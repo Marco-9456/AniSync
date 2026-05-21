@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.components.likes
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,11 +21,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -65,52 +69,68 @@ fun LikesSheet(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.7f)
-        ) {
-            Text(
-                text = stringResource(R.string.activity_likes_title),
-                style = MaterialTheme.typography.titleLarge.emphasis(),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-            )
+        LikesSheetContent(
+            users = users,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            onUserClick = onUserClick
+        )
+    }
+}
 
-            when {
-                isLoading && users.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
+@Composable
+fun LikesSheetContent(
+    users: List<UserSummary>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onUserClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.7f)
+    ) {
+        Text(
+            text = stringResource(R.string.activity_likes_title),
+            style = MaterialTheme.typography.titleLarge.emphasis(),
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+        )
+
+        when {
+            isLoading && users.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-                errorMessage != null && users.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = errorMessage ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+            }
+            errorMessage != null && users.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
-                users.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = stringResource(R.string.activity_likes_empty),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+            }
+            users.isEmpty() -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.activity_likes_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(users, key = { it.id }) { user ->
-                            LikerRow(user = user, onClick = { onUserClick(user.name) })
-                        }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(users, key = { it.id }) { user ->
+                        LikerRow(user = user, onClick = { onUserClick(user.name) })
                     }
                 }
             }
@@ -141,8 +161,9 @@ private fun LikerRow(user: UserSummary, onClick: () -> Unit) {
             model = avatarRequest,
             contentDescription = null,
             modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
+                .size(48.dp)
+                .clip(MaterialShapes.Clover8Leaf.toShape())
+                .border(1.dp, MaterialTheme.colorScheme.primary, MaterialShapes.Clover8Leaf.toShape())
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -153,6 +174,64 @@ private fun LikerRow(user: UserSummary, onClick: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Loading State")
+@Composable
+private fun LikesSheetContentPreview_Loading() {
+    MaterialTheme {
+        LikesSheetContent(
+            users = emptyList(),
+            isLoading = true,
+            errorMessage = null,
+            onUserClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Empty State")
+@Composable
+private fun LikesSheetContentPreview_Empty() {
+    MaterialTheme {
+        LikesSheetContent(
+            users = emptyList(),
+            isLoading = false,
+            errorMessage = null,
+            onUserClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Error State")
+@Composable
+private fun LikesSheetContentPreview_Error() {
+    MaterialTheme {
+        LikesSheetContent(
+            users = emptyList(),
+            isLoading = false,
+            errorMessage = "Failed to load likes. Please try again.",
+            onUserClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Populated State")
+@Composable
+private fun LikesSheetContentPreview_Populated() {
+    val dummyUsers = listOf(
+        UserSummary(id = 1, name = "Spike Spiegel", avatarUrl = ""),
+        UserSummary(id = 2, name = "Faye Valentine", avatarUrl = ""),
+        UserSummary(id = 3, name = "Jet Black", avatarUrl = ""),
+        UserSummary(id = 4, name = "Edward", avatarUrl = "")
+    )
+    MaterialTheme {
+        LikesSheetContent(
+            users = dummyUsers,
+            isLoading = false,
+            errorMessage = null,
+            onUserClick = {}
         )
     }
 }

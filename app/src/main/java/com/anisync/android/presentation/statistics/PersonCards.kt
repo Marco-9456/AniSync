@@ -18,8 +18,10 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +39,7 @@ import com.anisync.android.domain.StaffStat
 import com.anisync.android.domain.VoiceActorStat
 
 internal val StatPersonCardWidth = 152.dp
-internal val StatPersonCardHeight = 268.dp
+internal val StatPersonCardHeight = 236.dp
 
 @Composable
 fun VoiceActorCardModern(va: VoiceActorStat, onClick: () -> Unit = {}) {
@@ -66,12 +68,7 @@ private fun PersonCard(
     countLabel: String,
     onClick: () -> Unit = {}
 ) {
-    val imageShape = RoundedCornerShape(
-        topStart = 64.dp,
-        topEnd = 64.dp,
-        bottomStart = 16.dp,
-        bottomEnd = 16.dp
-    )
+    val imageShape = MaterialShapes.Clover8Leaf.toShape()
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -91,7 +88,7 @@ private fun PersonCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(0.72f)
+                    .aspectRatio(1f)
                     .clip(imageShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center
@@ -120,9 +117,10 @@ private fun PersonCard(
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 0.5.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                minLines = 2,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -164,6 +162,11 @@ private fun StaffNullImagePreview() {
     }
 }
 
+@Preview(
+    name = "Pixel 10 Pro XL",
+    showBackground = true,
+    device = "id:pixel_10_pro_xl"
+)
 @Preview(showBackground = true, name = "PersonCard — long name truncation")
 @Composable
 private fun PersonCardLongNamePreview() {

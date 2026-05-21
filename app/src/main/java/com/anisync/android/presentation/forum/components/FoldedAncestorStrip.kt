@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.forum.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +17,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
@@ -68,7 +71,12 @@ fun FoldedAncestorStrip(
                 contentDescription = stringResource(R.string.cd_go_back_one_level),
                 modifier = Modifier
                     .size(28.dp)
-                    .clip(CircleShape)
+                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = MaterialShapes.Clover8Leaf.toShape()
+                    )
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable(onClick = onNavigateBack)
                     .padding(4.dp),

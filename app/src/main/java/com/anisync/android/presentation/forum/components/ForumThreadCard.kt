@@ -39,10 +39,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -132,7 +134,12 @@ private fun ThreadHeader(
             contentDescription = thread.authorName,
             size = 36.dp,
             modifier = Modifier
-                .clip(CircleShape)
+                .clip(MaterialShapes.Clover8Leaf.toShape())
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = MaterialShapes.Clover8Leaf.toShape()
+                )
                 .clickable { onUserClick(thread.authorName) }
         )
 
@@ -293,7 +300,13 @@ private fun ThreadFooter(
                             url = thread.replyUserAvatarUrl,
                             contentDescription = thread.replyUserName,
                             size = 18.dp,
-                            modifier = Modifier.clip(CircleShape)
+                            modifier = Modifier
+                                .clip(MaterialShapes.Clover8Leaf.toShape())
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = MaterialShapes.Clover8Leaf.toShape()
+                                )
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(

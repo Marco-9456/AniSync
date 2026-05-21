@@ -52,7 +52,7 @@ import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.feed.components.FeedFilterBar
-import com.anisync.android.presentation.profile.RecentUpdateCard
+import com.anisync.android.presentation.profile.components.RecentUpdateCard
 import com.anisync.android.presentation.profile.components.ActivityPreviewCard
 import kotlinx.coroutines.flow.collectLatest
 
