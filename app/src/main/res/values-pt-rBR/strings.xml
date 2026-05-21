@@ -866,4 +866,5 @@
     <string name="font_category_title">Título</string>
     <string name="font_category_body">Corpo</string>
     <string name="font_category_label">Rótulo</string>
+    <string name="media_upload_custom_field"></string>
 </resources>
