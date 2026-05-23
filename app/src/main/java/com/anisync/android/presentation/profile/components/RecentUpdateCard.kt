@@ -26,12 +26,10 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -53,6 +51,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.ui.theme.LocalAvatarShape
 
 @Composable
 fun RecentUpdateCard(
@@ -159,11 +158,13 @@ private fun UpdateHeader(
             contentDescription = activity.userName,
             size = 34.dp,
             modifier = Modifier
-                .clip(MaterialShapes.Clover8Leaf.toShape())
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialShapes.Clover8Leaf.toShape()
+                .clip(LocalAvatarShape.current)
+                .then(
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = LocalAvatarShape.current
+                    )
                 )
                 .clickable { activity.userName?.let { onUserClick(it) } }
         )
@@ -282,11 +283,13 @@ private fun UpdateFooter(
                             contentDescription = activity.replyUserName,
                             size = 16.dp,
                             modifier = Modifier
-                                .clip(MaterialShapes.Clover8Leaf.toShape())
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = MaterialShapes.Clover8Leaf.toShape()
+                                .clip(LocalAvatarShape.current)
+                                .then(
+                                    Modifier.border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = LocalAvatarShape.current
+                                    )
                                 )
                         )
                         Spacer(modifier = Modifier.width(6.dp))

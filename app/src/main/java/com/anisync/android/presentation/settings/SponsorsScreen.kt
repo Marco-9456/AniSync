@@ -32,11 +32,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -63,6 +61,7 @@ import com.anisync.android.domain.SponsorTier
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.ui.theme.AppShapes
 import com.anisync.android.ui.theme.ExpressiveShapes
+import com.anisync.android.ui.theme.LocalAvatarShape
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -348,7 +347,7 @@ private fun SponsorRow(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val cloverShape = MaterialShapes.Clover8Leaf.toShape()
+        val cloverShape = LocalAvatarShape.current
         AsyncImage(
             model = imageRequest,
             contentDescription = stringResource(R.string.a11y_sponsor_avatar, sponsor.name),

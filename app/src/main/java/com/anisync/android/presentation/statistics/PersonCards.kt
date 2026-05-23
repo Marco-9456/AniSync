@@ -18,10 +18,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.domain.StaffStat
 import com.anisync.android.domain.VoiceActorStat
+import com.anisync.android.ui.theme.LocalAvatarShape
 
 internal val StatPersonCardWidth = 152.dp
 internal val StatPersonCardHeight = 236.dp
@@ -68,7 +67,7 @@ private fun PersonCard(
     countLabel: String,
     onClick: () -> Unit = {}
 ) {
-    val imageShape = MaterialShapes.Clover8Leaf.toShape()
+    val imageShape = LocalAvatarShape.current
     Card(
         onClick = onClick,
         modifier = Modifier

@@ -133,6 +133,20 @@ class AppSettings @Inject constructor(
         ThemeMode.entries.getOrElse(prefs.getInt(KEY_THEME_MODE, ThemeMode.SYSTEM.ordinal)) { ThemeMode.SYSTEM }
     )
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    // Avatar shape setting
+    private val _avatarShape = MutableStateFlow(readAvatarShape())
+    val avatarShape: StateFlow<AvatarShape> = _avatarShape.asStateFlow()
+
+    private fun readAvatarShape(): AvatarShape {
+        val name = runCatching { prefs.getString(KEY_AVATAR_SHAPE, null) }.getOrNull()
+        return runCatching { AvatarShape.valueOf(name ?: AvatarShape.CLOVER.name) }
+            .getOrDefault(AvatarShape.CLOVER)
+    }
+
+    // Avatar background enabled setting
+    private val _avatarBackgroundEnabled = MutableStateFlow(prefs.getBoolean(KEY_AVATAR_BACKGROUND_ENABLED, true))
+    val avatarBackgroundEnabled: StateFlow<Boolean> = _avatarBackgroundEnabled.asStateFlow()
     
     // Haptic feedback setting
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
@@ -418,6 +432,16 @@ class AppSettings @Inject constructor(
         _themeMode.value = mode
         prefs.edit().putInt(KEY_THEME_MODE, mode.ordinal).apply()
     }
+
+    fun setAvatarShape(shape: AvatarShape) {
+        _avatarShape.value = shape
+        prefs.edit().putString(KEY_AVATAR_SHAPE, shape.name).apply()
+    }
+    
+    fun setAvatarBackgroundEnabled(enabled: Boolean) {
+        _avatarBackgroundEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AVATAR_BACKGROUND_ENABLED, enabled).apply()
+    }
     
     /**
      * Enable or disable haptic feedback.
@@ -680,6 +704,7 @@ class AppSettings @Inject constructor(
 companion object {
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_AVATAR_SHAPE = "avatar_shape"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_NAV_BAR_STYLE = "nav_bar_style"
         private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
@@ -712,6 +737,7 @@ companion object {
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
+        private const val KEY_AVATAR_BACKGROUND_ENABLED = "avatar_background_enabled"
         private const val KEY_COVER_QUALITY = "cover_quality"
         private const val KEY_PREFERRED_STREAMING_SERVICE = "preferred_streaming_service"
         private const val KEY_SELECTED_PALETTE = "selected_palette"

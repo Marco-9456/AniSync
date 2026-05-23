@@ -2,6 +2,7 @@ package com.anisync.android.presentation.settings
 
 import androidx.compose.ui.graphics.Color
 import com.anisync.android.data.AppLocale
+import com.anisync.android.data.AvatarShape
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
@@ -21,6 +22,8 @@ sealed interface SettingsAction {
     data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
     data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
     data class SetNavBarCornerRadius(val radius: Float) : SettingsAction
+    data class SetAvatarShape(val shape: AvatarShape) : SettingsAction
+    data class SetAvatarBackgroundEnabled(val enabled: Boolean) : SettingsAction
     data class SetShowAdultContent(val enabled: Boolean) : SettingsAction
     data class SetPreferredStreamingService(val service: StreamingService) : SettingsAction
     data class SetAppLocale(val locale: AppLocale) : SettingsAction
@@ -109,6 +112,8 @@ data class SettingsUiState(
     val navBarStyle: NavBarStyle = NavBarStyle.ANCHORED,
     val navBarShowLabels: Boolean = true,
     val navBarCornerRadius: Float = 28f,
+    val avatarShape: AvatarShape = AvatarShape.CLOVER,
+    val avatarBackgroundEnabled: Boolean = true,
     val showAdultContent: Boolean = false,
     val preferredStreamingService: StreamingService = StreamingService.CRUNCHYROLL,
     

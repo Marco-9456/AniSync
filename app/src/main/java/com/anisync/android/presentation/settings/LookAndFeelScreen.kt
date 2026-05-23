@@ -1,9 +1,11 @@
 package com.anisync.android.presentation.settings
 
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Navigation
@@ -79,6 +82,7 @@ private val ThemeModes = ThemeMode.entries
 private val AppLocales = AppLocale.entries
 private val CoverQualities = CoverQuality.entries
 private val NavBarStyles = NavBarStyle.entries
+private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
 
 @Composable
 fun LookAndFeelScreen(
@@ -97,6 +101,8 @@ fun LookAndFeelScreen(
     val navBarStyle = uiState.navBarStyle
     val navBarShowLabels = uiState.navBarShowLabels
     val navBarCornerRadius = uiState.navBarCornerRadius
+    val avatarShape = uiState.avatarShape
+    val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
 
     val selectedPaletteId = uiState.selectedPaletteId
     val customSeedColor = uiState.customSeedColor
@@ -109,6 +115,7 @@ fun LookAndFeelScreen(
     var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
     var showCoverQualityDialog by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleDialog by rememberSaveable { mutableStateOf(false) }
+    var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
 
     val isSystemDark = isSystemInDarkTheme()
     val isDarkMode = remember(themeMode, isSystemDark) {
@@ -223,6 +230,20 @@ fun LookAndFeelScreen(
                 showNavBarStyleDialog = false
             },
             onDismiss = { showNavBarStyleDialog = false }
+        )
+    }
+
+    if (showAvatarShapeDialog) {
+        AvatarShapeSelectionDialog(
+            currentShape = avatarShape,
+            backgroundEnabled = avatarBackgroundEnabled,
+            onShapeSelected = {
+                viewModel.onAction(SettingsAction.SetAvatarShape(it))
+            },
+            onBackgroundEnabledChange = {
+                viewModel.onAction(SettingsAction.SetAvatarBackgroundEnabled(it))
+            },
+            onDismiss = { showAvatarShapeDialog = false }
         )
     }
 
@@ -373,6 +394,17 @@ fun LookAndFeelScreen(
                     }
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        SettingsGroup {
+            SelectionSettingsItem(
+                icon = Icons.Default.Face,
+                title = stringResource(R.string.setting_avatar_shape),
+                currentValue = avatarShapeLabel(avatarShape),
+                onClick = { showAvatarShapeDialog = true }
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1015,6 +1047,138 @@ fun CoverQualitySelectionDialog(
 
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun avatarShapeLabel(shape: com.anisync.android.data.AvatarShape): String = stringResource(
+    when (shape) {
+        com.anisync.android.data.AvatarShape.CLOVER -> R.string.avatar_shape_clover
+        com.anisync.android.data.AvatarShape.CIRCLE -> R.string.avatar_shape_circle
+        com.anisync.android.data.AvatarShape.CLOVER_4_LEAF -> R.string.avatar_shape_clover_4_leaf
+        com.anisync.android.data.AvatarShape.GHOSTISH -> R.string.avatar_shape_ghostish
+    }
+)
+
+@Composable
+private fun avatarShapeDescription(shape: com.anisync.android.data.AvatarShape): String = stringResource(
+    when (shape) {
+        com.anisync.android.data.AvatarShape.CLOVER -> R.string.avatar_shape_clover_desc
+        com.anisync.android.data.AvatarShape.CIRCLE -> R.string.avatar_shape_circle_desc
+        com.anisync.android.data.AvatarShape.CLOVER_4_LEAF -> R.string.avatar_shape_clover_4_leaf_desc
+        com.anisync.android.data.AvatarShape.GHOSTISH -> R.string.avatar_shape_ghostish_desc
+    }
+)
+
+@Composable
+fun AvatarShapeSelectionDialog(
+    currentShape: com.anisync.android.data.AvatarShape,
+    backgroundEnabled: Boolean,
+    onShapeSelected: (com.anisync.android.data.AvatarShape) -> Unit,
+    onBackgroundEnabledChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+        ) {
+            LazyColumn(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                item {
+                    Text(
+                        text = stringResource(R.string.avatar_shape_dialog_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                items(items = AvatarShapes, key = { it.name }) { shape ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onShapeSelected(shape) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = currentShape == shape,
+                            onClick = { onShapeSelected(shape) },
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = avatarShapeLabel(shape),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = avatarShapeDescription(shape),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        
+                        // Preview
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(shape.toComposeShape())
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onBackgroundEnabledChange(!backgroundEnabled) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Avatar Background",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        androidx.compose.material3.Switch(
+                            checked = backgroundEnabled,
+                            onCheckedChange = onBackgroundEnabledChange
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(16.dp))
 

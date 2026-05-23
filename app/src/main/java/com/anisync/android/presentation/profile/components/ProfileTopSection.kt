@@ -39,13 +39,11 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -64,6 +62,7 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.emphasis
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -325,16 +324,22 @@ fun ProfileTopSection(
             Box(
                 modifier = Modifier
                     .size(AvatarSize)
-                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .clip(LocalAvatarShape.current)
                     .border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = MaterialShapes.Clover8Leaf.toShape()
+                        shape = LocalAvatarShape.current
                     )
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant,
-                        MaterialShapes.Clover8Leaf.toShape()
+                    .then(
+                        if (com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled.current) {
+                            Modifier.background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                LocalAvatarShape.current
+                            )
+                        } else Modifier
                     )
+                    .padding(3.dp)
+                    .clip(LocalAvatarShape.current)
             ) {
                 AsyncImage(
                     model = profile.avatarUrl,

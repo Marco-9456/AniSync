@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Person
@@ -23,20 +22,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.anisync.android.ui.theme.emphasis
-import com.anisync.android.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.anisync.android.R
+import com.anisync.android.ui.theme.LocalAvatarShape
+import com.anisync.android.ui.theme.emphasis
 
 /**
  * Uppercase icon+text marker row rendered at the very top of content cards.
@@ -224,15 +224,15 @@ private fun AvatarCircle(
 ) {
     val base = Modifier
         .size(size)
-        .clip(CircleShape)
+        .clip(LocalAvatarShape.current)
         .background(MaterialTheme.colorScheme.surfaceVariant)
     val ringed = if (ringColor != null) {
         Modifier
             .size(size + 4.dp)
-            .clip(CircleShape)
+            .clip(LocalAvatarShape.current)
             .background(ringColor)
             .padding(2.dp)
-            .clip(CircleShape)
+            .clip(LocalAvatarShape.current)
             .background(MaterialTheme.colorScheme.surfaceVariant)
     } else base
     Box(
@@ -246,7 +246,7 @@ private fun AvatarCircle(
                 model = avatarUrl,
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().clip(CircleShape)
+                modifier = Modifier.fillMaxSize().clip(LocalAvatarShape.current)
             )
         } else {
             Icon(

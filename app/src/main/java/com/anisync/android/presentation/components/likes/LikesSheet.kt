@@ -17,17 +17,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,9 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.UserSummary
+import com.anisync.android.ui.theme.LocalAvatarShape
+import com.anisync.android.ui.theme.emphasis
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,8 +160,8 @@ private fun LikerRow(user: UserSummary, onClick: () -> Unit) {
             contentDescription = null,
             modifier = Modifier
                 .size(48.dp)
-                .clip(MaterialShapes.Clover8Leaf.toShape())
-                .border(1.dp, MaterialTheme.colorScheme.primary, MaterialShapes.Clover8Leaf.toShape())
+                .clip(LocalAvatarShape.current)
+                .border(1.dp, MaterialTheme.colorScheme.primary, LocalAvatarShape.current)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))

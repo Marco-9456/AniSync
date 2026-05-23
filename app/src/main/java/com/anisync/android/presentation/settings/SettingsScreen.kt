@@ -28,13 +28,11 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,6 +55,7 @@ import com.anisync.android.R
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.ui.theme.LocalAvatarShape
 
 private data class CategoryData(
     val key: String,
@@ -300,7 +299,7 @@ fun ExpressiveCategoryItem(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .clip(LocalAvatarShape.current)
                     .background(customColors.first)
             ) {
                 Icon(

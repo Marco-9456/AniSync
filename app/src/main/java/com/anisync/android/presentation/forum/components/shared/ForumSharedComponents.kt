@@ -8,14 +8,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,12 +20,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import com.anisync.android.R
 import coil.compose.AsyncImage
+import com.anisync.android.R
+import com.anisync.android.ui.theme.LocalAvatarShape
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -82,11 +80,11 @@ fun AuthorRow(
                 contentDescription = "Avatar of $name",
                 modifier = Modifier
                     .size(avatarSize)
-                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .clip(LocalAvatarShape.current)
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = MaterialShapes.Clover8Leaf.toShape()
+                        shape = LocalAvatarShape.current
                     ),
                 contentScale = ContentScale.Crop
             )
@@ -95,11 +93,11 @@ fun AuthorRow(
             Box(
                 modifier = Modifier
                     .size(avatarSize)
-                    .clip(MaterialShapes.Clover8Leaf.toShape())
+                    .clip(LocalAvatarShape.current)
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = MaterialShapes.Clover8Leaf.toShape()
+                        shape = LocalAvatarShape.current
                     )
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center

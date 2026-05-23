@@ -77,19 +77,25 @@ class SettingsViewModel @Inject constructor(
 
     private val coreUiState: Flow<SettingsUiState> = combine(
         combine(
-            appSettings.themeMode,
-            appSettings.titleLanguage,
-            appSettings.hapticEnabled,
-            appSettings.preferredStreamingService,
-            appSettings.appLocale
-        ) { theme, title, haptic, streaming, locale ->
-            SettingsUiState(
-                themeMode = theme,
-                titleLanguage = title,
-                hapticEnabled = haptic,
-                preferredStreamingService = streaming,
-                appLocale = locale
-            )
+            combine(
+                appSettings.themeMode,
+                appSettings.titleLanguage,
+                appSettings.hapticEnabled,
+                appSettings.preferredStreamingService,
+                appSettings.appLocale
+            ) { theme, title, haptic, streaming, locale ->
+                SettingsUiState(
+                    themeMode = theme,
+                    titleLanguage = title,
+                    hapticEnabled = haptic,
+                    preferredStreamingService = streaming,
+                    appLocale = locale
+                )
+            },
+            appSettings.avatarShape,
+            appSettings.avatarBackgroundEnabled
+        ) { state, avatarShape, bgEnabled ->
+            state.copy(avatarShape = avatarShape, avatarBackgroundEnabled = bgEnabled)
         },
         combine(
             appSettings.selectedPaletteId,
@@ -210,6 +216,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
             is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
+            is SettingsAction.SetAvatarShape -> appSettings.setAvatarShape(action.shape)
+            is SettingsAction.SetAvatarBackgroundEnabled -> appSettings.setAvatarBackgroundEnabled(action.enabled)
             is SettingsAction.SetShowAdultContent -> appSettings.setShowAdultContent(action.enabled)
             is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
                 action.service

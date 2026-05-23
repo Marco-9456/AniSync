@@ -146,6 +146,12 @@ class MainActivity : AppCompatActivity() {
                 val typographyOverrides by appSettings.typographyOverrides.collectAsStateWithLifecycle(
                     initialValue = com.anisync.android.ui.theme.TypographyOverrides.None
                 )
+                val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle(
+                    initialValue = com.anisync.android.data.AvatarShape.CLOVER
+                )
+                val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle(
+                    initialValue = true
+                )
                 val isSystemDark = isSystemInDarkTheme()
 
                 val useDarkTheme = remember(themeMode, isSystemDark) {
@@ -171,7 +177,9 @@ class MainActivity : AppCompatActivity() {
                 CompositionLocalProvider(
                     LocalAppSettings provides appSettings,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
-                    com.anisync.android.domain.LocalCoverQuality provides coverQuality
+                    com.anisync.android.domain.LocalCoverQuality provides coverQuality,
+                    com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
+                    com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled
                 ) {
                     AppTheme(
                         darkTheme = useDarkTheme,
