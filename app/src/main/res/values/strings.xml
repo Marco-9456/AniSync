@@ -245,6 +245,10 @@
     <string name="setting_nav_bar_corner_radius">Corner radius</string>
     <string name="setting_avatar_shape">Avatar Shape</string>
     <string name="avatar_shape_dialog_title">Avatar Shape</string>
+    <string name="avatar_shape_disable_profile">Disable shape for own profile</string>
+    <string name="avatar_shape_disable_profile_desc">Shows the original image shape for your own profile only</string>
+    <string name="avatar_shape_background">Avatar Background</string>
+    <string name="avatar_shape_background_desc">Adds a themed background behind the avatar</string>
     <string name="avatar_shape_clover">8-Leaf Clover</string>
     <string name="avatar_shape_clover_desc">The default 8-leaf clover shape</string>
     <string name="avatar_shape_circle">Circle</string>

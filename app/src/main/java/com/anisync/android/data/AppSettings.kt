@@ -148,6 +148,10 @@ class AppSettings @Inject constructor(
     private val _avatarBackgroundEnabled = MutableStateFlow(prefs.getBoolean(KEY_AVATAR_BACKGROUND_ENABLED, true))
     val avatarBackgroundEnabled: StateFlow<Boolean> = _avatarBackgroundEnabled.asStateFlow()
     
+    // Disable avatar shape for own profile setting
+    private val _disableAvatarShapeProfile = MutableStateFlow(prefs.getBoolean(KEY_DISABLE_AVATAR_SHAPE_PROFILE, false))
+    val disableAvatarShapeProfile: StateFlow<Boolean> = _disableAvatarShapeProfile.asStateFlow()
+    
     // Haptic feedback setting
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
@@ -441,6 +445,11 @@ class AppSettings @Inject constructor(
     fun setAvatarBackgroundEnabled(enabled: Boolean) {
         _avatarBackgroundEnabled.value = enabled
         prefs.edit().putBoolean(KEY_AVATAR_BACKGROUND_ENABLED, enabled).apply()
+    }
+
+    fun setDisableAvatarShapeProfile(disabled: Boolean) {
+        _disableAvatarShapeProfile.value = disabled
+        prefs.edit().putBoolean(KEY_DISABLE_AVATAR_SHAPE_PROFILE, disabled).apply()
     }
     
     /**
@@ -738,6 +747,7 @@ companion object {
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
         private const val KEY_AVATAR_BACKGROUND_ENABLED = "avatar_background_enabled"
+        private const val KEY_DISABLE_AVATAR_SHAPE_PROFILE = "disable_avatar_shape_profile"
         private const val KEY_COVER_QUALITY = "cover_quality"
         private const val KEY_PREFERRED_STREAMING_SERVICE = "preferred_streaming_service"
         private const val KEY_SELECTED_PALETTE = "selected_palette"

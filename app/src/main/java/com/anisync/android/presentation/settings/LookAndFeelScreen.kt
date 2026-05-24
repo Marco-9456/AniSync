@@ -1,20 +1,25 @@
 package com.anisync.android.presentation.settings
 
 import android.os.Build
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,26 +27,38 @@ import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.RoundedCorner
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.outlined.DynamicFeed
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +73,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -103,6 +121,7 @@ fun LookAndFeelScreen(
     val navBarCornerRadius = uiState.navBarCornerRadius
     val avatarShape = uiState.avatarShape
     val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
+    val disableAvatarShapeProfile = uiState.disableAvatarShapeProfile
 
     val selectedPaletteId = uiState.selectedPaletteId
     val customSeedColor = uiState.customSeedColor
@@ -114,7 +133,7 @@ fun LookAndFeelScreen(
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
     var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
     var showCoverQualityDialog by rememberSaveable { mutableStateOf(false) }
-    var showNavBarStyleDialog by rememberSaveable { mutableStateOf(false) }
+    var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
 
     val isSystemDark = isSystemInDarkTheme()
@@ -222,26 +241,40 @@ fun LookAndFeelScreen(
         )
     }
 
-    if (showNavBarStyleDialog) {
-        NavBarStyleSelectionDialog(
+    if (showNavBarStyleSheet) {
+        NavBarStyleSelectionSheet(
             currentStyle = navBarStyle,
+            showLabels = navBarShowLabels,
+            cornerRadius = navBarCornerRadius,
             onStyleSelected = {
                 viewModel.onAction(SettingsAction.SetNavBarStyle(it))
-                showNavBarStyleDialog = false
             },
-            onDismiss = { showNavBarStyleDialog = false }
+            onShowLabelsChange = {
+                viewModel.onAction(SettingsAction.SetNavBarShowLabels(it))
+            },
+            onCornerRadiusChange = {
+                viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
+            },
+            onDismiss = { showNavBarStyleSheet = false }
         )
     }
 
     if (showAvatarShapeDialog) {
-        AvatarShapeSelectionDialog(
+        AvatarShapeSelectionSheet(
             currentShape = avatarShape,
             backgroundEnabled = avatarBackgroundEnabled,
+            disableProfileShape = disableAvatarShapeProfile,
             onShapeSelected = {
                 viewModel.onAction(SettingsAction.SetAvatarShape(it))
             },
             onBackgroundEnabledChange = {
                 viewModel.onAction(SettingsAction.SetAvatarBackgroundEnabled(it))
+            },
+            onDisableProfileShapeChange = {
+                viewModel.onAction(SettingsAction.SetDisableAvatarShapeProfile(it))
+                if (it) {
+                    viewModel.onAction(SettingsAction.SetAvatarBackgroundEnabled(false))
+                }
             },
             onDismiss = { showAvatarShapeDialog = false }
         )
@@ -370,30 +403,8 @@ fun LookAndFeelScreen(
                 icon = Icons.Default.Navigation,
                 title = stringResource(R.string.setting_nav_bar_style),
                 currentValue = navBarStyleLabel(navBarStyle),
-                onClick = { showNavBarStyleDialog = true }
+                onClick = { showNavBarStyleSheet = true }
             )
-            SettingsDivider()
-            SwitchSettingsItem(
-                icon = Icons.AutoMirrored.Filled.Label,
-                title = stringResource(R.string.setting_nav_bar_show_labels),
-                checked = navBarShowLabels,
-                onCheckedChange = {
-                    viewModel.onAction(SettingsAction.SetNavBarShowLabels(it))
-                }
-            )
-            SettingsDivider()
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                NavBarCornerRadiusSlider(
-                    value = navBarCornerRadius,
-                    onValueChange = {
-                        viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
-                    }
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -859,12 +870,13 @@ private fun navBarStyleDescription(style: NavBarStyle): String = stringResource(
 private fun NavBarCornerRadiusSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(contentPadding)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -891,6 +903,7 @@ private fun NavBarCornerRadiusSlider(
         Slider(
             value = value,
             onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
             valueRange = AppSettings.MIN_NAV_BAR_CORNER_RADIUS..AppSettings.MAX_NAV_BAR_CORNER_RADIUS,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
@@ -900,81 +913,231 @@ private fun NavBarCornerRadiusSlider(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavBarStyleSelectionDialog(
+fun NavBarStyleSelectionSheet(
     currentStyle: NavBarStyle,
+    showLabels: Boolean,
+    cornerRadius: Float,
     onStyleSelected: (NavBarStyle) -> Unit,
+    onShowLabelsChange: (Boolean) -> Unit,
+    onCornerRadiusChange: (Float) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+                .padding(bottom = 32.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.nav_bar_style_dialog_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+            Text(
+                text = stringResource(R.string.nav_bar_style_dialog_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
 
-                items(items = NavBarStyles, key = { it.name }) { style ->
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 1. Live Preview Area
+            val shape = if (currentStyle == NavBarStyle.FLOATING) {
+                RoundedCornerShape(cornerRadius.dp)
+            } else {
+                RoundedCornerShape(topStart = cornerRadius.dp, topEnd = cornerRadius.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+            }
+
+            val padding = if (currentStyle == NavBarStyle.FLOATING) {
+                PaddingValues(horizontal = 16.dp, vertical = 16.dp)
+            } else {
+                PaddingValues(0.dp)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(padding),
+                    shape = shape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = if (currentStyle == NavBarStyle.FLOATING) 8.dp else 0.dp
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onStyleSelected(style) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .height(if (showLabels) 80.dp else 64.dp)
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(
-                            selected = currentStyle == style,
-                            onClick = { onStyleSelected(style) },
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = navBarStyleLabel(style),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = navBarStyleDescription(style),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        MockNavItem(Icons.Filled.VideoLibrary, "Library", selected = true, showLabel = showLabels, modifier = Modifier.weight(1f))
+                        MockNavItem(Icons.Outlined.Explore, "Explore", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
+                        MockNavItem(Icons.Outlined.DynamicFeed, "Feed", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
+                        MockNavItem(Icons.Outlined.Forum, "Forum", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
+                        MockNavItem(Icons.Outlined.Person, "Profile", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
                     }
                 }
+            }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
+            // 2. Style Selection Cards
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                NavBarStyles.forEach { style ->
+                    val isSelected = currentStyle == style
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        label = "card_bg_color"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        label = "card_border_color"
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(100.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { onStyleSelected(style) },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(2.dp, borderColor)
                     ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (style == NavBarStyle.FLOATING) Icons.Default.RoundedCorner else Icons.Default.Navigation,
+                                contentDescription = null,
+                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = navBarStyleLabel(style),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 3. Settings Block (Labels + Corner Radius)
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onShowLabelsChange(!showLabels) }
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Label,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.setting_nav_bar_show_labels),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "Show text labels under icons",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Switch(
+                            checked = showLabels,
+                            onCheckedChange = onShowLabelsChange
+                        )
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    NavBarCornerRadiusSlider(
+                        value = cornerRadius,
+                        onValueChange = onCornerRadiusChange,
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MockNavItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    selected: Boolean,
+    showLabel: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier.padding(vertical = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        if (showLabel) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -1074,121 +1237,156 @@ private fun avatarShapeLabel(shape: com.anisync.android.data.AvatarShape): Strin
     }
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun avatarShapeDescription(shape: com.anisync.android.data.AvatarShape): String = stringResource(
-    when (shape) {
-        com.anisync.android.data.AvatarShape.CLOVER -> R.string.avatar_shape_clover_desc
-        com.anisync.android.data.AvatarShape.CIRCLE -> R.string.avatar_shape_circle_desc
-        com.anisync.android.data.AvatarShape.CLOVER_4_LEAF -> R.string.avatar_shape_clover_4_leaf_desc
-        com.anisync.android.data.AvatarShape.GHOSTISH -> R.string.avatar_shape_ghostish_desc
-    }
-)
-
-@Composable
-fun AvatarShapeSelectionDialog(
+fun AvatarShapeSelectionSheet(
     currentShape: com.anisync.android.data.AvatarShape,
     backgroundEnabled: Boolean,
+    disableProfileShape: Boolean,
     onShapeSelected: (com.anisync.android.data.AvatarShape) -> Unit,
     onBackgroundEnabledChange: (Boolean) -> Unit,
+    onDisableProfileShapeChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+                .padding(bottom = 32.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.avatar_shape_dialog_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+            Text(
+                text = stringResource(R.string.avatar_shape_dialog_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
 
-                items(items = AvatarShapes, key = { it.name }) { shape ->
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(AvatarShapes) { shape ->
+                    val isSelected = currentShape == shape
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        label = "card_bg_color"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        label = "card_border_color"
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(140.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable { onShapeSelected(shape) },
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(2.dp, borderColor)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(shape.toComposeShape())
+                                    .background(
+                                        if (isSelected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = avatarShapeLabel(shape),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            ) {
+                Column {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onShapeSelected(shape) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                            .clickable { onDisableProfileShapeChange(!disableProfileShape) }
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(
-                            selected = currentShape == shape,
-                            onClick = { onShapeSelected(shape) },
-                        )
-                        Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = avatarShapeLabel(shape),
-                                style = MaterialTheme.typography.bodyLarge,
+                                text = stringResource(R.string.avatar_shape_disable_profile),
+                                style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = avatarShapeDescription(shape),
+                                text = stringResource(R.string.avatar_shape_disable_profile_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        
-                        // Preview
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(shape.toComposeShape())
-                                .background(MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(16.dp))
+                        Switch(
+                            checked = disableProfileShape,
+                            onCheckedChange = onDisableProfileShapeChange
                         )
                     }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onBackgroundEnabledChange(!backgroundEnabled) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "Avatar Background",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                        androidx.compose.material3.Switch(
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.avatar_shape_background),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.avatar_shape_background_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Switch(
                             checked = backgroundEnabled,
                             onCheckedChange = onBackgroundEnabledChange
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
-                        }
                     }
                 }
             }

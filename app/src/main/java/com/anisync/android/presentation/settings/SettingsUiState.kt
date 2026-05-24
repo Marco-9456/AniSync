@@ -24,6 +24,7 @@ sealed interface SettingsAction {
     data class SetNavBarCornerRadius(val radius: Float) : SettingsAction
     data class SetAvatarShape(val shape: AvatarShape) : SettingsAction
     data class SetAvatarBackgroundEnabled(val enabled: Boolean) : SettingsAction
+    data class SetDisableAvatarShapeProfile(val disabled: Boolean) : SettingsAction
     data class SetShowAdultContent(val enabled: Boolean) : SettingsAction
     data class SetPreferredStreamingService(val service: StreamingService) : SettingsAction
     data class SetAppLocale(val locale: AppLocale) : SettingsAction
@@ -114,6 +115,7 @@ data class SettingsUiState(
     val navBarCornerRadius: Float = 28f,
     val avatarShape: AvatarShape = AvatarShape.CLOVER,
     val avatarBackgroundEnabled: Boolean = true,
+    val disableAvatarShapeProfile: Boolean = false,
     val showAdultContent: Boolean = false,
     val preferredStreamingService: StreamingService = StreamingService.CRUNCHYROLL,
     

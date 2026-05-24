@@ -52,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -321,25 +322,34 @@ fun ProfileTopSection(
                 .offset(y = BannerHeight - CardOverlap - AvatarHalfSize),
             verticalAlignment = Alignment.Bottom
         ) {
+            val isShapeDisabled = isOwnProfile && com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile.current
+            val shapeToUse = if (isShapeDisabled) {
+                RectangleShape
+            } else {
+                LocalAvatarShape.current
+            }
+
             Box(
                 modifier = Modifier
                     .size(AvatarSize)
-                    .clip(LocalAvatarShape.current)
-                    .border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = LocalAvatarShape.current
+                    .clip(shapeToUse)
+                    .then(
+                        if (isShapeDisabled) Modifier else Modifier.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = shapeToUse
+                        )
                     )
                     .then(
-                        if (com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled.current) {
+                        if (com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled.current && !isShapeDisabled) {
                             Modifier.background(
                                 MaterialTheme.colorScheme.surfaceVariant,
-                                LocalAvatarShape.current
+                                shapeToUse
                             )
                         } else Modifier
                     )
-                    .padding(3.dp)
-                    .clip(LocalAvatarShape.current)
+                    .padding(if (isShapeDisabled) 0.dp else 3.dp)
+                    .clip(shapeToUse)
             ) {
                 AsyncImage(
                     model = profile.avatarUrl,

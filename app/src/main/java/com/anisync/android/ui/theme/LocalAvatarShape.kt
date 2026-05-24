@@ -14,3 +14,8 @@ val LocalAvatarShape =
  * CompositionLocal providing whether the user wants avatar backgrounds enabled.
  */
 val LocalAvatarBackgroundEnabled = staticCompositionLocalOf<Boolean> { true }
+
+/**
+ * CompositionLocal providing whether the user wants to disable the avatar shape on their own profile.
+ */
+val LocalDisableAvatarShapeProfile = staticCompositionLocalOf<Boolean> { false }

@@ -93,9 +93,14 @@ class SettingsViewModel @Inject constructor(
                 )
             },
             appSettings.avatarShape,
-            appSettings.avatarBackgroundEnabled
-        ) { state, avatarShape, bgEnabled ->
-            state.copy(avatarShape = avatarShape, avatarBackgroundEnabled = bgEnabled)
+            appSettings.avatarBackgroundEnabled,
+            appSettings.disableAvatarShapeProfile
+        ) { state, avatarShape, bgEnabled, disableProfile ->
+            state.copy(
+                avatarShape = avatarShape, 
+                avatarBackgroundEnabled = bgEnabled,
+                disableAvatarShapeProfile = disableProfile
+            )
         },
         combine(
             appSettings.selectedPaletteId,
@@ -218,6 +223,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
             is SettingsAction.SetAvatarShape -> appSettings.setAvatarShape(action.shape)
             is SettingsAction.SetAvatarBackgroundEnabled -> appSettings.setAvatarBackgroundEnabled(action.enabled)
+            is SettingsAction.SetDisableAvatarShapeProfile -> appSettings.setDisableAvatarShapeProfile(action.disabled)
             is SettingsAction.SetShowAdultContent -> appSettings.setShowAdultContent(action.enabled)
             is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
                 action.service

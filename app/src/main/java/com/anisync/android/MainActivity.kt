@@ -152,6 +152,9 @@ class MainActivity : AppCompatActivity() {
                 val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle(
                     initialValue = true
                 )
+                val disableAvatarShapeProfile by appSettings.disableAvatarShapeProfile.collectAsStateWithLifecycle(
+                    initialValue = false
+                )
                 val isSystemDark = isSystemInDarkTheme()
 
                 val useDarkTheme = remember(themeMode, isSystemDark) {
@@ -179,7 +182,8 @@ class MainActivity : AppCompatActivity() {
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
                     com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
-                    com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled
+                    com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled,
+                    com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile provides disableAvatarShapeProfile
                 ) {
                     AppTheme(
                         darkTheme = useDarkTheme,
