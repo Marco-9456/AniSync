@@ -20,14 +20,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Palette
@@ -127,12 +130,12 @@ fun LookAndFeelScreen(
     val customSeedColor = uiState.customSeedColor
     val paletteStyle = uiState.paletteStyle
 
-    var showTitleLanguageDialog by rememberSaveable { mutableStateOf(false) }
-    var showStreamingServiceDialog by rememberSaveable { mutableStateOf(false) }
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
-    var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
-    var showCoverQualityDialog by rememberSaveable { mutableStateOf(false) }
+    var showTitleLanguageSheet by rememberSaveable { mutableStateOf(false) }
+    var showAppLanguageSheet by rememberSaveable { mutableStateOf(false) }
+    var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
+    var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -186,25 +189,25 @@ fun LookAndFeelScreen(
         )
     }
 
-    if (showTitleLanguageDialog) {
-        TitleLanguageSelectionDialog(
+    if (showTitleLanguageSheet) {
+        TitleLanguageSelectionSheet(
             currentLanguage = titleLanguage,
             onLanguageSelected = {
                 viewModel.onAction(SettingsAction.SetTitleLanguage(it))
-                showTitleLanguageDialog = false
+                showTitleLanguageSheet = false
             },
-            onDismiss = { showTitleLanguageDialog = false }
+            onDismiss = { showTitleLanguageSheet = false }
         )
     }
 
-    if (showStreamingServiceDialog) {
-        StreamingServiceSelectionDialog(
+    if (showStreamingServiceSheet) {
+        StreamingServiceSelectionSheet(
             currentService = preferredStreamingService,
             onServiceSelected = {
                 viewModel.onAction(SettingsAction.SetPreferredStreamingService(it))
-                showStreamingServiceDialog = false
+                showStreamingServiceSheet = false
             },
-            onDismiss = { showStreamingServiceDialog = false }
+            onDismiss = { showStreamingServiceSheet = false }
         )
     }
 
@@ -219,25 +222,24 @@ fun LookAndFeelScreen(
         )
     }
 
-    if (showAppLanguageDialog) {
-        AppLanguageSelectionDialog(
+    if (showAppLanguageSheet) {
+        AppLanguageSelectionSheet(
             currentLocale = appLocale,
             onLocaleSelected = {
                 viewModel.onAction(SettingsAction.SetAppLocale(it))
-                showAppLanguageDialog = false
+                showAppLanguageSheet = false
             },
-            onDismiss = { showAppLanguageDialog = false }
+            onDismiss = { showAppLanguageSheet = false }
         )
     }
 
-    if (showCoverQualityDialog) {
-        CoverQualitySelectionDialog(
+    if (showCoverQualitySheet) {
+        CoverQualitySelectionSheet(
             currentQuality = coverQuality,
             onQualitySelected = {
                 viewModel.onAction(SettingsAction.SetCoverQuality(it))
-                showCoverQualityDialog = false
             },
-            onDismiss = { showCoverQualityDialog = false }
+            onDismiss = { showCoverQualitySheet = false }
         )
     }
 
@@ -378,21 +380,21 @@ fun LookAndFeelScreen(
                 icon = Icons.Default.Translate,
                 title = stringResource(R.string.settings_app_language),
                 currentValue = appLocale.displayName,
-                onClick = { showAppLanguageDialog = true }
+                onClick = { showAppLanguageSheet = true }
             )
             SettingsDivider()
             SelectionSettingsItem(
                 icon = Icons.Default.Language,
                 title = stringResource(R.string.settings_title_language),
                 currentValue = getTitleLanguageLabel(titleLanguage),
-                onClick = { showTitleLanguageDialog = true }
+                onClick = { showTitleLanguageSheet = true }
             )
             SettingsDivider()
             SelectionSettingsItem(
                 icon = Icons.Default.HighQuality,
                 title = stringResource(R.string.settings_cover_quality),
                 currentValue = coverQualityLabel(coverQuality),
-                onClick = { showCoverQualityDialog = true }
+                onClick = { showCoverQualitySheet = true }
             )
         }
 
@@ -425,7 +427,7 @@ fun LookAndFeelScreen(
                 icon = Icons.Default.PlayCircle,
                 title = stringResource(R.string.setting_streaming_service),
                 currentValue = preferredStreamingService.displayName,
-                onClick = { showStreamingServiceDialog = true }
+                onClick = { showStreamingServiceSheet = true }
             )
             SettingsDivider()
             SwitchSettingsItem(
@@ -445,81 +447,74 @@ fun LookAndFeelScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TitleLanguageSelectionDialog(
+fun TitleLanguageSelectionSheet(
     currentLanguage: TitleLanguage,
     onLanguageSelected: (TitleLanguage) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+                .padding(bottom = 32.dp)
         ) {
+            Text(
+                text = stringResource(R.string.settings_title_language),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.settings_title_language),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
                 items(
                     items = TitleLanguages,
                     key = { it.name },
                 ) { language ->
+                    val isSelected = currentLanguage == language
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .clickable { onLanguageSelected(language) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                            .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else Color.Transparent)
+                            .padding(vertical = 16.dp, horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(
-                            selected = currentLanguage == language,
-                            onClick = { onLanguageSelected(language) },
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = getTitleLanguageLabel(language),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = getTitleLanguageExample(language),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
+                        if (isSelected) {
+                            Spacer(Modifier.width(16.dp))
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -528,106 +523,286 @@ fun TitleLanguageSelectionDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StreamingServiceSelectionDialog(
-    currentService: StreamingService,
-    onServiceSelected: (StreamingService) -> Unit,
+fun AppLanguageSelectionSheet(
+    currentLocale: AppLocale,
+    onLocaleSelected: (AppLocale) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val brandColors = rememberBrandColors()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+                .padding(bottom = 32.dp)
         ) {
+            Text(
+                text = stringResource(R.string.settings_app_language),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.setting_streaming_service),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = stringResource(R.string.setting_streaming_service_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
                 items(
-                    items = StreamingServices,
+                    items = AppLocales,
                     key = { it.name },
-                ) { service ->
-                    val brandColor = brandColors[service]
+                ) { locale ->
+                    val isSelected = currentLocale == locale
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onServiceSelected(service) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onLocaleSelected(locale) }
+                            .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else Color.Transparent)
+                            .padding(vertical = 16.dp, horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(
-                            selected = currentService == service,
-                            onClick = { onServiceSelected(service) },
-                        )
-                        Spacer(Modifier.width(12.dp))
-
-                        if (service.iconUrl != null) {
-                            AsyncImage(
-                                model = service.iconUrl,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                contentScale = ContentScale.Fit,
-                                colorFilter = brandColor?.let { ColorFilter.tint(it) },
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = locale.displayName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
                             )
-                        } else {
-                            Icon(
-                                Icons.Default.PlayCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (locale == AppLocale.SYSTEM) {
+                                Text(
+                                    text = stringResource(R.string.settings_app_language_system_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
 
-                        Spacer(Modifier.width(12.dp))
-
-                        Text(
-                            text = service.displayName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                        if (isSelected) {
+                            Spacer(Modifier.width(16.dp))
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
+            }
+        }
+    }
+}
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StreamingServiceSelectionSheet(
+    currentService: StreamingService,
+    onServiceSelected: (StreamingService) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val brandColors = rememberBrandColors()
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.setting_streaming_service),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Text(
+                text = stringResource(R.string.setting_streaming_service_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 100.dp),
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(StreamingServices) { service ->
+                    val isSelected = currentService == service
+                    val brandColor = brandColors[service]
+
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        label = "card_bg"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        label = "card_border"
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .height(110.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { onServiceSelected(service) },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(2.dp, borderColor)
                     ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (service.iconUrl != null) {
+                                AsyncImage(
+                                    model = service.iconUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(36.dp),
+                                    contentScale = ContentScale.Fit,
+                                    colorFilter = brandColor?.let { ColorFilter.tint(it) },
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.PlayCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(36.dp),
+                                    tint = brandColor ?: if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Text(
+                                text = service.displayName,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CoverQualitySelectionSheet(
+    currentQuality: CoverQuality,
+    onQualitySelected: (CoverQuality) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_cover_quality),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Text(
+                text = stringResource(R.string.settings_cover_quality_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Central Fixed-Size Preview Image
+            val imageUrl = when(currentQuality) {
+                CoverQuality.MEDIUM -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/bx105333-GybuoSoOZfpH.jpg"
+                CoverQuality.LARGE -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx105333-GybuoSoOZfpH.jpg"
+                CoverQuality.EXTRA_LARGE -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx105333-GybuoSoOZfpH.jpg"
+            }
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Cover Quality Preview",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .height(280.dp)
+                        .width(190.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Quality Options List
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                CoverQualities.forEach { quality ->
+                    val isSelected = currentQuality == quality
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        label = "card_bg"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        label = "card_border"
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(64.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onQualitySelected(quality) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(2.dp, borderColor)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = coverQualityLabel(quality),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
@@ -648,6 +823,10 @@ private fun rememberBrandColors(): Map<StreamingService, Color?> {
         }
     }
 }
+
+// -----------------------------------------------------------------------------------------
+// Original Dialogs (Theme Mode)
+// -----------------------------------------------------------------------------------------
 
 @Composable
 fun ThemeModeSelectionDialog(
@@ -729,90 +908,9 @@ fun ThemeModeSelectionDialog(
     }
 }
 
-@Composable
-fun AppLanguageSelectionDialog(
-    currentLocale: AppLocale,
-    onLocaleSelected: (AppLocale) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-        ) {
-            LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.settings_app_language),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                items(
-                    items = AppLocales,
-                    key = { it.name },
-                ) { locale ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onLocaleSelected(locale) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(
-                            selected = currentLocale == locale,
-                            onClick = { onLocaleSelected(locale) },
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = locale.displayName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (locale == AppLocale.SYSTEM) {
-                                Text(
-                                    text = stringResource(R.string.settings_app_language_system_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+// -----------------------------------------------------------------------------------------
+// Helper Components
+// -----------------------------------------------------------------------------------------
 
 @Composable
 private fun getTitleLanguageLabel(language: TitleLanguage): String {
@@ -842,27 +940,10 @@ private fun coverQualityLabel(quality: CoverQuality): String = stringResource(
 )
 
 @Composable
-private fun coverQualityDescription(quality: CoverQuality): String = stringResource(
-    when (quality) {
-        CoverQuality.MEDIUM -> R.string.cover_quality_medium_desc
-        CoverQuality.LARGE -> R.string.cover_quality_large_desc
-        CoverQuality.EXTRA_LARGE -> R.string.cover_quality_extra_large_desc
-    }
-)
-
-@Composable
 private fun navBarStyleLabel(style: NavBarStyle): String = stringResource(
     when (style) {
         NavBarStyle.ANCHORED -> R.string.setting_nav_bar_style_anchored
         NavBarStyle.FLOATING -> R.string.setting_nav_bar_style_floating
-    }
-)
-
-@Composable
-private fun navBarStyleDescription(style: NavBarStyle): String = stringResource(
-    when (style) {
-        NavBarStyle.ANCHORED -> R.string.setting_nav_bar_style_anchored_desc
-        NavBarStyle.FLOATING -> R.string.setting_nav_bar_style_floating_desc
     }
 )
 
@@ -983,7 +1064,7 @@ fun NavBarStyleSelectionSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         MockNavItem(Icons.Filled.VideoLibrary, "Library", selected = true, showLabel = showLabels, modifier = Modifier.weight(1f))
-                        MockNavItem(Icons.Outlined.Explore, "Explore", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
+                        MockNavItem(Icons.Outlined.Explore, "Discover", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
                         MockNavItem(Icons.Outlined.DynamicFeed, "Feed", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
                         MockNavItem(Icons.Outlined.Forum, "Forum", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
                         MockNavItem(Icons.Outlined.Person, "Profile", selected = false, showLabel = showLabels, modifier = Modifier.weight(1f))
@@ -1138,91 +1219,6 @@ private fun MockNavItem(
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
-        }
-    }
-}
-
-@Composable
-fun CoverQualitySelectionDialog(
-    currentQuality: CoverQuality,
-    onQualitySelected: (CoverQuality) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-        ) {
-            LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.settings_cover_quality),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.settings_cover_quality_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                items(items = CoverQualities, key = { it.name }) { quality ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onQualitySelected(quality) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(
-                            selected = currentQuality == quality,
-                            onClick = { onQualitySelected(quality) },
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = coverQualityLabel(quality),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = coverQualityDescription(quality),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                    }
-                }
-            }
         }
     }
 }
