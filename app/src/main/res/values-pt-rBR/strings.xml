@@ -899,4 +899,18 @@
     <string name="media_upload_custom_json_path">Caminho da resposta em JSON (opcional)</string>
     <string name="media_upload_custom_json_path_hint">ex. data.url — deixa vazio se a resposta for a URL</string>
     <string name="media_upload_custom_help">Deixe o caminho JSON vazio se o servidor retornar com a URL diretamente no corpo da resposta.</string>
+    <string name="setting_avatar_shape">Formato do Avatar</string>
+    <string name="avatar_shape_dialog_title">Formato do Avatar</string>
+    <string name="avatar_shape_disable_profile">Desabilitar o formato para o seu perfil</string>
+    <string name="avatar_shape_disable_profile_desc">Mostrar o formato original da imagem apenas para o seu perfil</string>
+    <string name="avatar_shape_background">Fundo do Avatar</string>
+    <string name="avatar_shape_background_desc">Adiciona um fundo baseado no tema atrás do avatar</string>
+    <string name="avatar_shape_clover">Trevo de 8 folhas</string>
+    <string name="avatar_shape_clover_desc">O formato padrão de trevo de 8 folhas</string>
+    <string name="avatar_shape_circle">Círculo</string>
+    <string name="avatar_shape_circle_desc">Clássico avatar circular</string>
+    <string name="avatar_shape_clover_4_leaf">Trevo de 4 folhas</string>
+    <string name="avatar_shape_clover_4_leaf_desc">Um suave trevo de 4 folhas alternativo ao quadrado</string>
+    <string name="avatar_shape_ghostish">Fantasma</string>
+    <string name="avatar_shape_ghostish_desc">Um formato de fantasma divertido</string>
 </resources>
