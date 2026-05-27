@@ -468,11 +468,11 @@
     <string name="widget_config_add_widget">Adicionar Widget</string>
     <string name="widget_config_items_visible">Itens visíveis no widget</string>
     <string name="statistics_title">Estatísticas</string>
-    <string name="statistics_total_anime">Totas de animes</string>
+    <string name="statistics_total_anime">Total de animes</string>
     <string name="statistics_episodes">Episódios</string>
     <string name="statistics_days_watched">Dias assistidos</string>
     <string name="statistics_mean_score">Nota média</string>
-    <string name="statistics_score_distribution">Notas distribuídas</string>
+    <string name="statistics_score_distribution">Distribuição de notas</string>
     <string name="statistics_top_genres">Top Gêneros</string>
     <string name="statistics_formats">Formatos</string>
     <string name="statistics_top_studios">Top Estúdios</string>
@@ -750,7 +750,7 @@
     <string name="statistics_start_year">Começou a assistir</string>
     <string name="statistics_status_breakdown">Detalhamento de Status</string>
     <string name="statistics_country_distribution">Países</string>
-    <string name="statistics_peak_year">Seu ano de auge</string>
+    <string name="statistics_peak_year">Seu maior ano</string>
     <string name="statistics_time_breakdown">Tempo gasto</string>
     <string name="statistics_taste_focused">Seu gosto é cirúrgico</string>
     <string name="statistics_taste_balanced">Gosto balanceado</string>
