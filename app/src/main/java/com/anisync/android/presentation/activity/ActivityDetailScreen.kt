@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.ui.theme.LocalAvatarShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -694,20 +696,17 @@ private fun MessageActivityHeader(
 @Composable
 private fun HeaderAvatar(url: String?, name: String, onClick: () -> Unit) {
     if (url != null) {
-        AsyncImage(
-            model = url,
+        UserAvatar(
+            url = url,
             contentDescription = name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .clickable { onClick() }
+            size = 44.dp,
+            modifier = Modifier.clickable { onClick() }
         )
     } else {
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .clip(CircleShape)
+                .clip(LocalAvatarShape.current)
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center

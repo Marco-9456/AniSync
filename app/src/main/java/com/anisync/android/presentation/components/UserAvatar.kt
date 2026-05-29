@@ -3,6 +3,7 @@ package com.anisync.android.presentation.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,15 +38,17 @@ import com.anisync.android.ui.theme.LocalAvatarShape
  */
 @Composable
 fun UserAvatar(
-    url: String?,
     contentDescription: String?,
     size: Dp,
     modifier: Modifier = Modifier,
+    url: String? = null,
+    model: Any? = url,
     shape: Shape = LocalAvatarShape.current,
     showFrame: Boolean = true,
     borderWidth: Dp = 1.dp,
     borderColor: Color = MaterialTheme.colorScheme.primary,
     framePadding: Dp = 0.dp,
+    overlay: @Composable BoxScope.() -> Unit = {},
 ) {
     val showBackground = showFrame && LocalAvatarBackgroundEnabled.current
     Box(
@@ -66,9 +69,9 @@ fun UserAvatar(
             .clip(shape),
         contentAlignment = Alignment.Center
     ) {
-        if (url != null) {
+        if (model != null) {
             AsyncImage(
-                model = url,
+                model = model,
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -81,5 +84,6 @@ fun UserAvatar(
                 modifier = Modifier.size(size * 0.7f)
             )
         }
+        overlay()
     }
 }

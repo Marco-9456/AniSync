@@ -44,6 +44,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.UserSummary
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.emphasis
 
@@ -155,14 +156,10 @@ private fun LikerRow(user: UserSummary, onClick: () -> Unit) {
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = avatarRequest,
+        UserAvatar(
             contentDescription = null,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(LocalAvatarShape.current)
-                .border(1.dp, MaterialTheme.colorScheme.primary, LocalAvatarShape.current)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+            size = 48.dp,
+            model = avatarRequest
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(

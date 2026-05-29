@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -74,42 +75,11 @@ fun AuthorRow(
             if (onUserClick != null) Modifier.clickable { onUserClick(name) } else Modifier
         )
     ) {
-        if (avatarUrl != null) {
-            AsyncImage(
-                model = avatarUrl,
-                contentDescription = "Avatar of $name",
-                modifier = Modifier
-                    .size(avatarSize)
-                    .clip(LocalAvatarShape.current)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = LocalAvatarShape.current
-                    ),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            // Placeholder avatar when URL is null
-            Box(
-                modifier = Modifier
-                    .size(avatarSize)
-                    .clip(LocalAvatarShape.current)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = LocalAvatarShape.current
-                    )
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(avatarSize * 0.6f),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+        UserAvatar(
+            url = avatarUrl,
+            contentDescription = "Avatar of $name",
+            size = avatarSize
+        )
         Spacer(Modifier.width(8.dp))
         Text(
             text = name,

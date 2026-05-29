@@ -43,6 +43,8 @@ import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
+import androidx.compose.ui.unit.Dp
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 
 private val StarColor = Color(0xFFFFC107)
@@ -82,15 +84,7 @@ fun FollowingItem(
         ) {
             AnimatedAvatar(
                 url = entry.userAvatarUrl,
-                modifier = Modifier
-                    .size(FollowingAvatarSize)
-                    .clip(LocalAvatarShape.current)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = LocalAvatarShape.current
-                    )
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                size = FollowingAvatarSize
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -129,6 +123,7 @@ fun FollowingItem(
 @Composable
 private fun AnimatedAvatar(
     url: String?,
+    size: Dp,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -139,16 +134,11 @@ private fun AnimatedAvatar(
             .crossfade(true)
             .build()
     }
-    AsyncImage(
-        model = request,
+    UserAvatar(
         contentDescription = null,
+        size = size,
+        model = request,
         modifier = modifier
-            .clip(LocalAvatarShape.current)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = LocalAvatarShape.current
-            )
     )
 }
 
@@ -174,15 +164,7 @@ fun FollowingRow(
     ) {
         AnimatedAvatar(
             url = entry.userAvatarUrl,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(LocalAvatarShape.current)
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = LocalAvatarShape.current
-                )
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+            size = 48.dp
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.fillMaxWidth()) {

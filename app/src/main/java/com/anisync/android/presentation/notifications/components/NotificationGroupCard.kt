@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import com.anisync.android.presentation.components.UserAvatar
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MergeType
@@ -282,33 +283,16 @@ private fun StackedAvatars(
         visible.asReversed().forEachIndexed { reversedIdx, actor ->
             val actualIdx = visible.size - 1 - reversedIdx
             val startOffset = (size - overlapAmount) * actualIdx
-            Box(
+            UserAvatar(
+                url = actor.avatarUrl,
+                contentDescription = actor.name,
+                size = size,
                 modifier = Modifier
                     .padding(start = startOffset)
-                    .size(size)
-                    .border(2.dp, overlapColor, CircleShape)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { actor.name.let(onUserClick) }
-            ) {
-                if (actor.avatarUrl != null) {
-                    AsyncImage(
-                        model = actor.avatarUrl,
-                        contentDescription = actor.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxSize()
-                    )
-                }
-            }
+                    .clickable { actor.name.let(onUserClick) },
+                borderWidth = 2.dp,
+                borderColor = overlapColor
+            )
         }
     }
 }
