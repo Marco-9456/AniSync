@@ -55,7 +55,7 @@ import com.anisync.android.R
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
-import com.anisync.android.ui.theme.LocalAvatarShape
+import com.anisync.android.ui.theme.decorativeAvatarShape
 
 private data class CategoryData(
     val key: String,
@@ -299,7 +299,7 @@ fun ExpressiveCategoryItem(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(LocalAvatarShape.current)
+                    .clip(decorativeAvatarShape())
                     .background(customColors.first)
             ) {
                 Icon(

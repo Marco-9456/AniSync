@@ -182,6 +182,7 @@ class MainActivity : AppCompatActivity() {
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
                     com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
+                    com.anisync.android.ui.theme.LocalAvatarShapeId provides avatarShape,
                     com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled,
                     com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile provides disableAvatarShapeProfile
                 ) {
