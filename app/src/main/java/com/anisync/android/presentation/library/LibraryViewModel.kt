@@ -344,15 +344,46 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    // Coalesces rapid +/- taps on the same media into one SaveMediaListEntry of the
+    // settled value (was one network save per tap). Each tap updates the UI
+    // optimistically across every list the entry appears in; a +1 then −1 nets to a
+    // no-op. On failure the optimistic value rolls back to the last known-good one.
+    private val progressBaseline = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    private val progressCoalescer =
+        com.anisync.android.presentation.util.MutationCoalescer<Int, Int>(viewModelScope, debounceMs = 600L) { mediaId, progress ->
+            when (val result = libraryRepository.updateProgress(mediaId, progress)) {
+                is Result.Success -> {
+                    progressBaseline[mediaId] = progress
+                    true
+                }
+                is Result.Error -> {
+                    progressBaseline[mediaId]?.let { patchEntryProgress(mediaId, it) }
+                    showResultError(result)
+                    false
+                }
+            }
+        }
+
     private fun updateProgress(mediaId: Int, delta: Int) {
         val entry = _uiState.value.entries.find { it.mediaId == mediaId } ?: return
+        progressCoalescer.seed(mediaId, entry.progress)
+        progressBaseline.putIfAbsent(mediaId, entry.progress)
         val newProgress = (entry.progress + delta).coerceAtLeast(0)
+        patchEntryProgress(mediaId, newProgress)
+        progressCoalescer.submit(mediaId, newProgress)
+    }
 
-        viewModelScope.launch {
-            when (val result = libraryRepository.updateProgress(mediaId, newProgress)) {
-                is Result.Success -> {}
-                is Result.Error -> showResultError(result)
-            }
+    /** Optimistically set [mediaId]'s progress across every list it appears in. */
+    private fun patchEntryProgress(mediaId: Int, newProgress: Int) {
+        fun List<LibraryEntry>.patched(): List<LibraryEntry> =
+            map { if (it.mediaId == mediaId) it.copy(progress = newProgress) else it }
+        _uiState.update { st ->
+            st.copy(
+                entries = st.entries.patched(),
+                groupedEntries = st.groupedEntries.mapValues { it.value.patched() },
+                customListEntries = st.customListEntries.mapValues { it.value.patched() },
+                favoriteEntries = st.favoriteEntries.patched()
+            )
         }
     }
 

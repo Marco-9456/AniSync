@@ -1,9 +1,9 @@
 package com.anisync.android.data
 
+import com.anisync.android.GetFullUserProfileQuery
 import com.anisync.android.GetUserActivitiesQuery
 import com.anisync.android.GetUserFavoritesQuery
 import com.anisync.android.GetUserFollowStateQuery
-import com.anisync.android.GetUserProfileQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.ToggleUserFollowMutation
 import com.anisync.android.data.local.dao.UserProfileDao
@@ -85,32 +85,48 @@ class ProfileRepositoryImpl @Inject constructor(
     ): Result<Pair<UserProfile, ProfileRefreshTimings>> = dedupe("profile:${username}:$forceNetwork") {
         safeApiCall {
             val isOwnProfile = username.isBlank()
-            // For the viewer's own profile we previously always issued GetViewerQuery
-            // just to learn the username. Reuse the cached profile name when present
-            // so refresh skips a sequential network round-trip.
-            val actualUsername = username.ifBlank {
-                userProfileDao.get()?.name?.takeIf { it.isNotBlank() }
-                    ?: run {
-                        val viewerResponse = apolloClient.query(GetViewerQuery())
-                            .fetchPolicy(FetchPolicy.NetworkOnly)
-                            .execute()
-                        viewerResponse.data?.Viewer?.name
-                            ?: throw Exception("Unable to get current user")
-                    }
+
+            // Resolve the userId up front when we can. The own profile reuses its
+            // cached id; a cold first launch with no cache pays a one-time
+            // GetViewer to learn id + name. Knowing the id lets us fold the
+            // activity feeds into the single GetFullUserProfile request via
+            // `includeActivities`. Target profiles are addressed by name (their id
+            // is unknown until User resolves), so they fetch activities as a
+            // lightweight follow-up — still fewer round-trips than before and with
+            // no favourites fan-out.
+            var knownUserId: Int? = null
+            var queryName: String? = null
+            if (isOwnProfile) {
+                knownUserId = userProfileDao.get()?.id?.takeIf { it > 0 }
+                if (knownUserId == null) {
+                    val viewerResponse = apolloClient.query(GetViewerQuery())
+                        .fetchPolicy(FetchPolicy.NetworkOnly)
+                        .execute()
+                    val viewer = viewerResponse.data?.Viewer
+                        ?: throw Exception("Unable to get current user")
+                    knownUserId = viewer.id
+                    queryName = viewer.name
+                }
+            } else {
+                queryName = username
             }
 
+            val includeActivities = knownUserId != null
             val policy = if (forceNetwork) FetchPolicy.NetworkOnly else FetchPolicy.CacheFirst
 
             val profileQueryStart = SystemClock.elapsedRealtime()
-            Trace.beginSection("AniSync.Profile.Query.UserProfile")
+            Trace.beginSection("AniSync.Profile.Query.FullProfile")
             val response = try {
                 apolloClient.query(
-                    GetUserProfileQuery(
-                        name = Optional.present(actualUsername),
-                        // Piggyback viewer fields onto the own-profile query so the
-                        // notification badge can be updated without a separate
-                        // `GetViewer` round-trip on every screen resume.
-                        includeViewer = Optional.present(isOwnProfile)
+                    GetFullUserProfileQuery(
+                        userId = knownUserId?.let { Optional.present(it) } ?: Optional.absent(),
+                        name = queryName?.let { Optional.present(it) } ?: Optional.absent(),
+                        // Own-profile path piggybacks viewer fields so the notification
+                        // badge updates without a separate GetViewer round-trip.
+                        includeViewer = Optional.present(isOwnProfile),
+                        // Activity feeds only resolve when the userId is already known;
+                        // otherwise they're fetched once User has resolved the id below.
+                        includeActivities = Optional.present(includeActivities)
                     )
                 )
                     .fetchPolicy(policy)
@@ -126,86 +142,64 @@ class ProfileRepositoryImpl @Inject constructor(
             }
 
             val user = response.data?.User
-                ?: throw Exception("User not found: @$actualUsername")
+                ?: throw Exception("User not found: @${queryName ?: knownUserId}")
 
             // Refresh the notification badge from the piggy-backed Viewer block.
-            // Skipped when `includeViewer` is false or the server omitted it.
             response.data?.Viewer?.unreadNotificationCount?.let {
                 notificationBadgeStore.setFromServer(it)
             }
 
-            // Build a page-1 seed for the favorites paginator from the inline
-            // `favourites.anime` block in the same `GetUserProfile` response.
-            // Avoids a redundant `GetUserFavorites(page=1)` round-trip on every
-            // refresh — the first page is already paid for in the profile fetch.
-            val seedAnimePage = user.favourites?.anime
-            val seedFavorites = FavoritesPage(
-                entries = seedAnimePage?.nodes?.filterNotNull()?.map { node ->
-                    LibraryEntry(
-                        id = 0,
-                        mediaId = node.id ?: 0,
-                        titleRomaji = node.title?.romaji,
-                        titleEnglish = node.title?.english,
-                        titleNative = node.title?.native,
-                        titleUserPreferred = node.title?.userPreferred ?: "Unknown",
-                        coverUrl = node.coverImage?.large,
-                        cover = com.anisync.android.domain.CoverImage.of(
-                            node.coverImage?.medium,
-                            node.coverImage?.large,
-                            node.coverImage?.extraLarge
-                        ),
-                        progress = 0,
-                        totalEpisodes = node.episodes,
-                        totalChapters = node.chapters,
-                        totalVolumes = node.volumes,
-                        type = node.type,
-                        status = LibraryStatus.UNKNOWN
-                    )
-                }.orEmpty(),
-                lastPage = seedAnimePage?.pageInfo?.lastPage
-            )
+            // Page-1 favourites preview only — the eager all-pages fan-out is gone.
+            // The Favorites tab pulls the remaining pages on demand via
+            // getFavoriteAnime(), so a profile load/refresh costs a single request.
+            val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { node ->
+                val m = node.mediaCardFields
+                LibraryEntry(
+                    id = 0,
+                    mediaId = m.id,
+                    titleRomaji = m.title?.romaji,
+                    titleEnglish = m.title?.english,
+                    titleNative = m.title?.native,
+                    titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                    coverUrl = m.coverImage?.large,
+                    cover = com.anisync.android.domain.CoverImage.of(
+                        m.coverImage?.medium,
+                        m.coverImage?.large,
+                        m.coverImage?.extraLarge
+                    ),
+                    progress = 0,
+                    totalEpisodes = m.episodes,
+                    totalChapters = m.chapters,
+                    totalVolumes = m.volumes,
+                    type = m.type,
+                    status = LibraryStatus.UNKNOWN
+                )
+            }.orEmpty()
 
-            // Activities and favorites pagination both depend on user.id but not on
-            // each other; run them in parallel to halve the post-profile latency.
-            var activitiesMs = 0L
-            var favoritesResult = FavoritesResult(emptyList(), 0, 0L, 0L)
-            val (activitiesResponse, favorites) = coroutineScope {
-                val activitiesDeferred = async {
-                    val start = SystemClock.elapsedRealtime()
-                    Trace.beginSection("AniSync.Profile.Query.UserActivities")
-                    try {
-                        apolloClient.query(
-                            GetUserActivitiesQuery(userId = Optional.present(user.id))
-                        )
-                            .fetchPolicy(policy)
-                            .execute()
-                    } finally {
-                        Trace.endSection()
-                        activitiesMs = SystemClock.elapsedRealtime() - start
-                    }
-                }
-                val favoritesDeferred = async {
-                    val r = fetchFavoritesTimed(user.id ?: 0, policy, seedFavorites)
-                    favoritesResult = r
-                    r.entries
-                }
-                activitiesDeferred.await() to favoritesDeferred.await()
-            }
-
+            // Activities: folded into the unified response when the userId was known
+            // up front; otherwise fetched now that User has resolved the id.
+            val activitiesStart = SystemClock.elapsedRealtime()
             val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
-
-            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach {
-                rawActivities.add(it.activityFields)
+            if (includeActivities) {
+                response.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+                response.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+                response.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+                response.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            } else {
+                Trace.beginSection("AniSync.Profile.Query.UserActivities")
+                val activitiesResponse = try {
+                    apolloClient.query(GetUserActivitiesQuery(userId = Optional.present(user.id)))
+                        .fetchPolicy(policy)
+                        .execute()
+                } finally {
+                    Trace.endSection()
+                }
+                activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+                activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+                activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+                activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
             }
-            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach {
-                rawActivities.add(it.activityFields)
-            }
-            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach {
-                rawActivities.add(it.activityFields)
-            }
-            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach {
-                rawActivities.add(it.activityFields)
-            }
+            val activitiesMs = SystemClock.elapsedRealtime() - activitiesStart
 
             val activities = rawActivities
                 .mapNotNull { it.activityFieldsToDomain() }
@@ -244,20 +238,21 @@ class ProfileRepositoryImpl @Inject constructor(
             // Favorites already fetched in parallel with activities above.
 
                     val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
+                        val m = media.mediaCardFields
                         com.anisync.android.domain.LibraryEntry(
                             id = 0,
-                            mediaId = media.id,
-                            titleRomaji = media.title?.romaji,
-                            titleEnglish = media.title?.english,
-                            titleNative = media.title?.native,
-                            titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                            coverUrl = media.coverImage?.large,
-                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
+                            mediaId = m.id,
+                            titleRomaji = m.title?.romaji,
+                            titleEnglish = m.title?.english,
+                            titleNative = m.title?.native,
+                            titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                            coverUrl = m.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                             progress = 0,
                             totalEpisodes = null,
-                            totalChapters = media.chapters,
-                            totalVolumes = media.volumes,
-                            type = media.type,
+                            totalChapters = m.chapters,
+                            totalVolumes = m.volumes,
+                            type = m.type,
                             format = null,
                             status = com.anisync.android.domain.LibraryStatus.UNKNOWN
                         )
@@ -333,10 +328,12 @@ class ProfileRepositoryImpl @Inject constructor(
             val timings = ProfileRefreshTimings(
                 profileQueryMs = profileQueryMs,
                 activitiesQueryMs = activitiesMs,
-                favoritesTotalMs = favoritesResult.firstPageMs + favoritesResult.restMs,
-                favoritesFirstPageMs = favoritesResult.firstPageMs,
-                favoritesRestMs = favoritesResult.restMs,
-                favoritesPageCount = favoritesResult.pageCount
+                // Favourites are page-1 only on the hot path now; the rest loads
+                // lazily from the Favorites tab, so there's no fan-out to time here.
+                favoritesTotalMs = 0L,
+                favoritesFirstPageMs = 0L,
+                favoritesRestMs = 0L,
+                favoritesPageCount = 1
             )
             profile to timings
         }
@@ -467,31 +464,41 @@ class ProfileRepositoryImpl @Inject constructor(
         val nodes = data?.nodes?.filterNotNull() ?: emptyList()
         val pageInfo = data?.pageInfo
 
-        val entries = nodes.map { media ->
+        val entries = nodes.map { node ->
+            val m = node.mediaCardFields
             LibraryEntry(
                 id = 0,
-                mediaId = media.id ?: 0,
-                titleRomaji = media.title?.romaji,
-                titleEnglish = media.title?.english,
-                titleNative = media.title?.native,
-                titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                coverUrl = media.coverImage?.large,
+                mediaId = m.id,
+                titleRomaji = m.title?.romaji,
+                titleEnglish = m.title?.english,
+                titleNative = m.title?.native,
+                titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                coverUrl = m.coverImage?.large,
                 cover = com.anisync.android.domain.CoverImage.of(
-                    media.coverImage?.medium,
-                    media.coverImage?.large,
-                    media.coverImage?.extraLarge
+                    m.coverImage?.medium,
+                    m.coverImage?.large,
+                    m.coverImage?.extraLarge
                 ),
                 progress = 0,
-                totalEpisodes = media.episodes,
-                totalChapters = media.chapters,
-                totalVolumes = media.volumes,
-                type = media.type,
+                totalEpisodes = m.episodes,
+                totalChapters = m.chapters,
+                totalVolumes = m.volumes,
+                type = m.type,
                 status = LibraryStatus.UNKNOWN
             )
         }
 
         return FavoritesPage(entries = entries, lastPage = pageInfo?.lastPage)
     }
+
+    override suspend fun getFavoriteAnime(userId: Int, policy: CachePolicy): Result<List<LibraryEntry>> =
+        dedupe("favAnime:$userId:$policy") {
+            safeApiCall {
+                // Page 1 + bounded fan-out for the remaining pages. Invoked only when
+                // the Favorites tab opens, never on the profile load/refresh hot path.
+                fetchFavoritesTimed(userId, policy.toFetchPolicy(), seedPageOne = null).entries
+            }
+        }
 
     override suspend fun getSocialData(
         userId: Int,

@@ -79,25 +79,35 @@ class CharacterDetailsViewModel @Inject constructor(
         }
     }
 
-    fun toggleFavourite() {
-        viewModelScope.launch {
-            val currentState =
-                _uiState.value as? CharacterDetailsUiState.Success ?: return@launch
-            val newState = !currentState.details.isFavourite
-            // Optimistic update
-            _uiState.value = CharacterDetailsUiState.Success(
-                currentState.details.copy(isFavourite = newState)
-            )
-            when (detailsRepository.toggleCharacterFavourite(characterId, newState)) {
-                is Result.Success -> {
-                    // Keep optimistic state. Mutation success is sufficient;
-                    // the paged response payload cannot be trusted to derive the new flag.
-                }
+    @Volatile private var isTogglingFavourite = false
 
-                is Result.Error -> {
-                    // Revert optimistic update
-                    _uiState.value = currentState
+    fun toggleFavourite() {
+        // Drop taps while a toggle is in flight; favourite is eventually-consistent
+        // on AniList, so stacking requests risks flip-flopping the state.
+        if (isTogglingFavourite) return
+        isTogglingFavourite = true
+        viewModelScope.launch {
+            try {
+                val currentState =
+                    _uiState.value as? CharacterDetailsUiState.Success ?: return@launch
+                val newState = !currentState.details.isFavourite
+                // Optimistic update
+                _uiState.value = CharacterDetailsUiState.Success(
+                    currentState.details.copy(isFavourite = newState)
+                )
+                when (detailsRepository.toggleCharacterFavourite(characterId, newState)) {
+                    is Result.Success -> {
+                        // Keep optimistic state. Mutation success is sufficient;
+                        // the paged response payload cannot be trusted to derive the new flag.
+                    }
+
+                    is Result.Error -> {
+                        // Revert optimistic update
+                        _uiState.value = currentState
+                    }
                 }
+            } finally {
+                isTogglingFavourite = false
             }
         }
     }

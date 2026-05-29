@@ -1,0 +1,156 @@
+"""
+Single-request universal search. Collapses the former 3-request fan-out
+(SearchMedia[ANIME] + SearchMedia[MANGA] + SearchAll) into one operation using
+aliased Page selections. The `$wantAnime` / `$wantManga` / `$wantEntities`
+booleans gate each bucket via @include so a type-pinned search fetches only what
+it needs while Auto mode fetches all buckets — still one HTTP round-trip.
+
+Media field set mirrors SearchMedia; entity field set mirrors SearchAll, so the
+existing mappers port over unchanged. Fragments are intentionally NOT used yet
+(see P3) to keep generated field access identical to the current queries.
+"""
+query SearchEverything(
+  $search: String,
+  $perPage: Int = 20,
+  $wantAnime: Boolean!,
+  $wantManga: Boolean!,
+  $wantEntities: Boolean!,
+  $sort: [MediaSort],
+  $genre_in: [String],
+  $genre_not_in: [String],
+  $tag_in: [String],
+  $tag_not_in: [String],
+  $format_in: [MediaFormat],
+  $status_in: [MediaStatus],
+  $source_in: [MediaSource],
+  $startDate_greater: FuzzyDateInt,
+  $startDate_lesser: FuzzyDateInt,
+  $season: MediaSeason,
+  $averageScore: Int,
+  $averageScore_greater: Int,
+  $averageScore_lesser: Int,
+  $episodes: Int,
+  $episodes_greater: Int,
+  $episodes_lesser: Int,
+  $chapters: Int,
+  $chapters_greater: Int,
+  $chapters_lesser: Int,
+  $countryOfOrigin: CountryCode,
+  $isAdult: Boolean
+) {
+  anime: Page(page: 1, perPage: $perPage) @include(if: $wantAnime) {
+    pageInfo {
+      total
+      currentPage
+      hasNextPage
+    }
+    media(
+      search: $search,
+      type: ANIME,
+      sort: $sort,
+      genre_in: $genre_in,
+      genre_not_in: $genre_not_in,
+      tag_in: $tag_in,
+      tag_not_in: $tag_not_in,
+      format_in: $format_in,
+      status_in: $status_in,
+      source_in: $source_in,
+      startDate_greater: $startDate_greater,
+      startDate_lesser: $startDate_lesser,
+      season: $season,
+      averageScore: $averageScore,
+      averageScore_greater: $averageScore_greater,
+      averageScore_lesser: $averageScore_lesser,
+      episodes: $episodes,
+      episodes_greater: $episodes_greater,
+      episodes_lesser: $episodes_lesser,
+      chapters: $chapters,
+      chapters_greater: $chapters_greater,
+      chapters_lesser: $chapters_lesser,
+      countryOfOrigin: $countryOfOrigin,
+      isAdult: $isAdult
+    ) {
+      ...MediaCardFields
+    }
+  }
+  manga: Page(page: 1, perPage: $perPage) @include(if: $wantManga) {
+    pageInfo {
+      total
+      currentPage
+      hasNextPage
+    }
+    media(
+      search: $search,
+      type: MANGA,
+      sort: $sort,
+      genre_in: $genre_in,
+      genre_not_in: $genre_not_in,
+      tag_in: $tag_in,
+      tag_not_in: $tag_not_in,
+      format_in: $format_in,
+      status_in: $status_in,
+      source_in: $source_in,
+      startDate_greater: $startDate_greater,
+      startDate_lesser: $startDate_lesser,
+      season: $season,
+      averageScore: $averageScore,
+      averageScore_greater: $averageScore_greater,
+      averageScore_lesser: $averageScore_lesser,
+      episodes: $episodes,
+      episodes_greater: $episodes_greater,
+      episodes_lesser: $episodes_lesser,
+      chapters: $chapters,
+      chapters_greater: $chapters_greater,
+      chapters_lesser: $chapters_lesser,
+      countryOfOrigin: $countryOfOrigin,
+      isAdult: $isAdult
+    ) {
+      ...MediaCardFields
+    }
+  }
+  characters: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+    characters(search: $search, sort: [FAVOURITES_DESC]) {
+      id
+      name {
+        full
+        native
+        userPreferred
+      }
+      image {
+        medium
+      }
+      favourites
+    }
+  }
+  staff: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+    staff(search: $search, sort: [FAVOURITES_DESC]) {
+      id
+      name {
+        full
+        native
+        userPreferred
+      }
+      image {
+        medium
+      }
+      primaryOccupations
+      favourites
+    }
+  }
+  users: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+    users(search: $search, sort: [SEARCH_MATCH]) {
+      id
+      name
+      avatar {
+        medium
+      }
+    }
+  }
+  studios: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+    studios(search: $search, sort: [SEARCH_MATCH]) {
+      id
+      name
+      favourites
+    }
+  }
+}

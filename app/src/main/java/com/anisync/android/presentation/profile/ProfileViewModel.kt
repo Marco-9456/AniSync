@@ -188,12 +188,45 @@ class ProfileViewModel @Inject constructor(
 
     private val mediaListState = MutableStateFlow(MediaListState())
 
+    /**
+     * Full favourite-anime list, loaded lazily when the Favorites tab opens. Null
+     * until first fetch — the UI falls back to the page-1 preview the profile
+     * itself carries. Keeping it out of the profile until populated means a normal
+     * profile load/refresh never fans out across favourite pages.
+     */
+    private data class FavoritesState(
+        val fullAnime: List<LibraryEntry>? = null,
+        val isLoading: Boolean = false,
+        val hasFetched: Boolean = false
+    )
+
+    private val favoritesState = MutableStateFlow(FavoritesState())
+
     // Overlay for optimistic activity subscription toggles: activityId -> isSubscribed
     private val activitySubscriptionOverrides = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
 
     // Overlay for optimistic activity like toggles: activityId -> (isLiked, likeCount).
     private val activityLikeOverrides =
         MutableStateFlow<Map<Int, Pair<Boolean, Int>>>(emptyMap())
+
+    // Coalesces rapid like taps into a single network toggle. Each tap flips the
+    // optimistic override instantly; only the settled state is sent, so a
+    // like→unlike→like burst hits the network at most once (or not at all).
+    private val activityLikeCoalescer =
+        com.anisync.android.presentation.util.MutationCoalescer<Int, Boolean>(viewModelScope) { activityId, _ ->
+            when (val result = activityRepository.toggleActivityLike(activityId)) {
+                is Result.Success -> {
+                    val server = result.data
+                    activityLikeOverrides.update { it + (activityId to (server.isLiked to server.likeCount)) }
+                    true
+                }
+                is Result.Error -> {
+                    activityLikeOverrides.update { it - activityId }
+                    toastManager.showResultError(result)
+                    false
+                }
+            }
+        }
 
     // Optimistically-deleted activity ids hidden from the UI until confirmed.
     private val deletedActivityIds = MutableStateFlow<Set<Int>>(emptySet())
@@ -258,7 +291,8 @@ class ProfileViewModel @Inject constructor(
         activityLikeOverrides,
         deletedActivityIds,
         viewerIdFlow,
-        notificationBadgeStore.unreadCount
+        notificationBadgeStore.unreadCount,
+        favoritesState
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -274,6 +308,7 @@ class ProfileViewModel @Inject constructor(
         val deletedIds = params[8] as Set<Int>
         val viewerId = params[9] as Int?
         val unreadCount = params[10] as Int
+        val favoritesOverlay = params[11] as FavoritesState
 
         val needsOverlay = remote.profile != null &&
             (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty())
@@ -296,7 +331,15 @@ class ProfileViewModel @Inject constructor(
             remote.copy(profile = profile.copy(activities = patched))
         }
 
-        remoteWithOverrides.copy(
+        // Swap in the lazily-loaded full favourite-anime list once available;
+        // until then the page-1 preview carried by the profile fetch stands.
+        val withFavorites = favoritesOverlay.fullAnime?.let { full ->
+            remoteWithOverrides.profile?.let { p ->
+                remoteWithOverrides.copy(profile = p.copy(favoriteAnime = full))
+            }
+        } ?: remoteWithOverrides
+
+        withFavorites.copy(
             isRefreshing = local.isRefreshing,
             isFollowingUser = local.isFollowingUser,
             isFollowLoading = local.isFollowLoading,
@@ -401,6 +444,8 @@ class ProfileViewModel @Inject constructor(
                     fetchReviews()
                 } else if (action.tab == ProfileTab.STATS && !statsState.value.hasFetchedStats) {
                     fetchStats()
+                } else if (action.tab == ProfileTab.FAVORITES && !favoritesState.value.hasFetched) {
+                    fetchFullFavoriteAnime()
                 } else if (action.tab == ProfileTab.ANIME &&
                     shouldRefreshAnimeList() &&
                     !mediaListState.value.isUserAnimeListLoading
@@ -558,24 +603,13 @@ class ProfileViewModel @Inject constructor(
     private fun toggleActivityLike(activityId: Int) {
         val current = uiState.value.profile?.activities?.firstOrNull { it.id == activityId } ?: return
         val wasLiked = current.isLiked
+        // Baseline = server-side liked state (recorded once); each tap flips the
+        // optimistic override and the coalescer sends only the settled result.
+        activityLikeCoalescer.seed(activityId, wasLiked)
         val nextLiked = !wasLiked
         val nextCount = (current.likeCount + if (wasLiked) -1 else 1).coerceAtLeast(0)
         activityLikeOverrides.update { it + (activityId to (nextLiked to nextCount)) }
-
-        viewModelScope.launch {
-            when (val result = activityRepository.toggleActivityLike(activityId)) {
-                is Result.Success -> {
-                    val server = result.data
-                    activityLikeOverrides.update {
-                        it + (activityId to (server.isLiked to server.likeCount))
-                    }
-                }
-            is Result.Error -> {
-                activityLikeOverrides.update { it - activityId }
-                toastManager.showResultError(result)
-            }
-            }
-        }
+        activityLikeCoalescer.submit(activityId, nextLiked)
     }
 
     private fun deleteActivity(activityId: Int) {
@@ -687,6 +721,7 @@ class ProfileViewModel @Inject constructor(
                             ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
                             ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
                             ProfileTab.STATS -> fetchStats(forceRefresh = true)
+                            ProfileTab.FAVORITES -> fetchFullFavoriteAnime(forceRefresh = true)
                             ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
                             ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
                             else -> Unit
@@ -857,6 +892,31 @@ class ProfileViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     reviewsState.update { it.copy(isReviewsPaginating = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads the full favourite-anime list (all pages) on demand. Triggered when the
+     * Favorites tab is first opened, or re-run on pull-to-refresh while that tab is
+     * active. The overview/profile fetch only carries page 1, so this is the only
+     * place the favourites fan-out runs — never on the common load/refresh path.
+     */
+    private fun fetchFullFavoriteAnime(forceRefresh: Boolean = false) {
+        if (favoritesState.value.isLoading) return
+        if (!forceRefresh && favoritesState.value.hasFetched) return
+
+        viewModelScope.launch {
+            val userId = uiState.value.profile?.id?.takeIf { it > 0 } ?: return@launch
+            favoritesState.update { it.copy(isLoading = true) }
+            val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
+            when (val result = profileRepository.getFavoriteAnime(userId, policy)) {
+                is Result.Success -> favoritesState.update {
+                    it.copy(fullAnime = result.data, isLoading = false, hasFetched = true)
+                }
+                is Result.Error -> favoritesState.update {
+                    it.copy(isLoading = false, hasFetched = true)
                 }
             }
         }

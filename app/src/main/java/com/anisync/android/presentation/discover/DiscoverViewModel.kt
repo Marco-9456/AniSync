@@ -202,7 +202,7 @@ class DiscoverViewModel @Inject constructor(
     private fun observeSearchQuery() {
         viewModelScope.launch {
             searchTrigger
-                .debounce(300L)
+                .debounce(350L)
                 .distinctUntilChanged()
                 .collectLatest { trigger ->
                     val currentState =
@@ -224,54 +224,35 @@ class DiscoverViewModel @Inject constructor(
 
                     _uiState.update { currentState.copy(isSearching = true) }
 
-                    // Resolve which media buckets to fetch:
-                    //   ANIME explicit  → anime only
-                    //   MANGA explicit  → manga only
-                    //   non-media       → neither (searchAll handles those entities)
-                    //   null (Auto)     → BOTH, surfaced as two sections in the UI
+                    // Which buckets to surface — same gating as the old 3-request
+                    // fan-out, but it now rides a single SearchEverything request:
+                    //   ANIME/MANGA explicit → that media bucket only
+                    //   null (Auto)          → both media buckets + entities
+                    //   non-media type       → entities only (projected below)
+                    // Entities require an actual search string, so they're gated on
+                    // a non-blank query.
                     val wantAnime = filters.searchType == SearchType.ANIME ||
                         (filters.searchType == null && !filters.isNonMediaType)
                     val wantManga = filters.searchType == SearchType.MANGA ||
                         (filters.searchType == null && !filters.isNonMediaType)
-
-                    val animeDeferred = if (wantAnime) async {
-                        searchRepository.searchMedia(
-                            query = query,
-                            type = MediaType.ANIME,
-                            filters = filters
-                        )
-                    } else null
-                    val mangaDeferred = if (wantManga) async {
-                        searchRepository.searchMedia(
-                            query = query,
-                            type = MediaType.MANGA,
-                            filters = filters
-                        )
-                    } else null
-                    // SearchAll only kicks in once the user has typed something —
-                    // it's a multi-entity (character/staff/user/studio) lookup
-                    // that needs an actual search string. When the user has pinned
-                    // Type to ANIME or MANGA, the entity buckets must stay empty,
-                    // so skip the call entirely (saves a network roundtrip).
-                    val needsAll = query.isNotBlank() &&
+                    val wantEntities = query.isNotBlank() &&
                         filters.searchType != SearchType.ANIME &&
                         filters.searchType != SearchType.MANGA
-                    val allDeferred = if (needsAll) {
-                        async { searchRepository.searchAll(query) }
-                    } else null
 
-                    val animeResult = animeDeferred?.await()
-                    val mangaResult = mangaDeferred?.await()
-                    val allResult = allDeferred?.await()
+                    val result = searchRepository.searchEverything(
+                        query = query,
+                        filters = filters,
+                        wantAnime = wantAnime,
+                        wantManga = wantManga,
+                        wantEntities = wantEntities
+                    )
 
-                    val animeEntries = (animeResult as? Result.Success)?.data?.entries.orEmpty()
-                    val mangaEntries = (mangaResult as? Result.Success)?.data?.entries.orEmpty()
-                    val grouped = when (allResult) {
-                        is Result.Success -> allResult.data.projectFor(filters.searchType)
-                        is Result.Error, null -> GroupedSearchResults()
-                    }
-                    val error = (animeResult as? Result.Error)?.message
-                        ?: (mangaResult as? Result.Error)?.message
+                    val data = (result as? Result.Success)?.data
+                    val animeEntries = data?.anime.orEmpty()
+                    val mangaEntries = data?.manga.orEmpty()
+                    val grouped = (data?.grouped ?: GroupedSearchResults())
+                        .projectFor(filters.searchType)
+                    val error = (result as? Result.Error)?.message
 
                     _uiState.update { existing ->
                         (existing as? DiscoverUiState.Success)?.let { st ->
@@ -360,8 +341,15 @@ class DiscoverViewModel @Inject constructor(
     }
 
     private fun DiscoverUiState.Success.shouldSearch(): Boolean =
-        searchQuery.isNotBlank() || searchFilters.hasActiveFilters
+        searchQuery.trim().length >= MIN_SEARCH_QUERY_LENGTH || searchFilters.hasActiveFilters
 }
+
+/**
+ * Minimum query length before a text-driven search fires. Single-character queries
+ * match almost everything and just burn rate-limit budget; filters can still drive
+ * a search with a shorter/blank query.
+ */
+private const val MIN_SEARCH_QUERY_LENGTH = 2
 
 data class SearchTaxonomy(
     val genres: List<String> = emptyList(),

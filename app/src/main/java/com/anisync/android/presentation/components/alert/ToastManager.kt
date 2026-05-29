@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components.alert
 
+import android.os.SystemClock
 import com.anisync.android.domain.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,9 @@ class ToastManager @Inject constructor() {
      */
     private val _isRateLimited = MutableStateFlow(false)
     val isRateLimited: StateFlow<Boolean> = _isRateLimited.asStateFlow()
+
+    /** Last time a throttle notice was shown; rate-limits the notice itself. */
+    @Volatile private var lastThrottleNoticeAt: Long = 0L
 
     fun showToast(type: ToastType, title: String? = null, message: String, countdownSeconds: Long? = null) {
         _toast.value = ToastMessage(type = type, title = title, message = message, countdownSeconds = countdownSeconds)
@@ -60,5 +64,26 @@ class ToastManager @Inject constructor() {
         } else {
             showToast(ToastType.INFO, message = error.message)
         }
+    }
+
+    /**
+     * Brief, non-blocking notice that the app is deliberately pacing requests to
+     * stay under AniList's rate limit. Unlike the 429 countdown toast it does NOT
+     * set [isRateLimited], so it never gates pull-to-refresh — it just explains a
+     * momentary slowdown instead of leaving the user on an unexplained spinner
+     * (the "feels broken/slow" complaint). Self-throttled to at most once per
+     * [THROTTLE_NOTICE_INTERVAL_MS], and suppressed while a 429 countdown is up so
+     * it never clobbers the more important rate-limit toast.
+     */
+    fun showThrottleNotice() {
+        if (_isRateLimited.value) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastThrottleNoticeAt < THROTTLE_NOTICE_INTERVAL_MS) return
+        lastThrottleNoticeAt = now
+        showToast(ToastType.INFO, message = "Slowing down to stay within AniList's rate limit…")
+    }
+
+    private companion object {
+        const val THROTTLE_NOTICE_INTERVAL_MS = 6_000L
     }
 }

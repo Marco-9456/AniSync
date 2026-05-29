@@ -1,0 +1,33 @@
+"""
+Shared media-card selection. Used by every list/grid that renders a media cover
++ title + basic counts (favourites, search results) so the field set stays
+consistent and Apollo's normalized cache entries are complete across queries.
+Superset of what those mappers read; manga simply returns null for the
+anime-only fields (episodes, nextAiringEpisode).
+"""
+fragment MediaCardFields on Media {
+  id
+  type
+  status
+  format
+  episodes
+  chapters
+  volumes
+  averageScore
+  nextAiringEpisode {
+    episode
+    timeUntilAiring
+    airingAt
+  }
+  title {
+    userPreferred
+    romaji
+    english
+    native
+  }
+  coverImage {
+    medium
+    large
+    extraLarge
+  }
+}

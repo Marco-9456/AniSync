@@ -2,6 +2,7 @@ package com.anisync.android.data
 
 import com.anisync.android.GetSearchTaxonomyQuery
 import com.anisync.android.SearchAllQuery
+import com.anisync.android.SearchEverythingQuery
 import com.anisync.android.SearchMediaQuery
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.GroupedSearchResults
@@ -10,6 +11,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaTag
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.map
+import com.anisync.android.domain.SearchEverythingResult
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchPage
 import com.anisync.android.domain.SearchRepository
@@ -19,6 +21,9 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,6 +34,22 @@ class SearchRepositoryImpl @Inject constructor(
 
     @Volatile private var cachedGenres: List<String>? = null
     @Volatile private var cachedTags: List<MediaTag>? = null
+
+    /**
+     * In-flight dedup keyed by query + filters. A re-trigger of the same search
+     * (rotation, refocus, rapid identical input) suspends on the mutex and then
+     * hits the now-warm normalized cache instead of issuing a second request.
+     */
+    private val inflightMutexes = ConcurrentHashMap<String, Mutex>()
+
+    private suspend fun <T> dedupe(key: String, block: suspend () -> T): T {
+        val mtx = inflightMutexes.computeIfAbsent(key) { Mutex() }
+        return try {
+            mtx.withLock { block() }
+        } finally {
+            if (!mtx.isLocked) inflightMutexes.remove(key, mtx)
+        }
+    }
 
     override suspend fun searchMedia(
         query: String,
@@ -153,6 +174,161 @@ class SearchRepositoryImpl @Inject constructor(
                 users = users,
                 studios = studios
             )
+        }
+    }
+
+    override suspend fun searchEverything(
+        query: String,
+        filters: SearchFilters,
+        perPage: Int,
+        wantAnime: Boolean,
+        wantManga: Boolean,
+        wantEntities: Boolean
+    ): Result<SearchEverythingResult> {
+        val key = "all:$query:${filters.hashCode()}:$perPage:$wantAnime:$wantManga:$wantEntities"
+        return dedupe(key) {
+            safeApiCall {
+                val response = apolloClient.query(
+                    SearchEverythingQuery(
+                        search = if (query.isBlank()) Optional.absent() else Optional.present(query),
+                        perPage = Optional.present(perPage),
+                        wantAnime = wantAnime,
+                        wantManga = wantManga,
+                        wantEntities = wantEntities,
+                        sort = Optional.present(listOf(filters.sort.apiValue)),
+                        genre_in = filters.genresIncluded.toOptionalList(),
+                        genre_not_in = filters.genresExcluded.toOptionalList(),
+                        tag_in = filters.tagsIncluded.toOptionalList(),
+                        tag_not_in = filters.tagsExcluded.toOptionalList(),
+                        format_in = filters.formats.toOptionalList(),
+                        status_in = filters.statuses.toOptionalList(),
+                        source_in = filters.sources.toOptionalList(),
+                        startDate_greater = filters.yearRange.min?.let { Optional.present(it * 10000 + 101) }
+                            ?: Optional.absent(),
+                        startDate_lesser = filters.yearRange.max?.let { Optional.present(it * 10000 + 1231) }
+                            ?: Optional.absent(),
+                        season = filters.season?.let { Optional.present(it) } ?: Optional.absent(),
+                        averageScore = filters.score.exact(),
+                        averageScore_greater = filters.score.greater(),
+                        averageScore_lesser = filters.score.lesser(),
+                        episodes = filters.episodes.exact(),
+                        episodes_greater = filters.episodes.greater(),
+                        episodes_lesser = filters.episodes.lesser(),
+                        chapters = filters.chapters.exact(),
+                        chapters_greater = filters.chapters.greater(),
+                        chapters_lesser = filters.chapters.lesser(),
+                        countryOfOrigin = filters.country?.let { Optional.present(it.code) }
+                            ?: Optional.absent(),
+                        isAdult = when (filters.adultMode) {
+                            com.anisync.android.domain.AdultMode.ANY -> Optional.absent()
+                            com.anisync.android.domain.AdultMode.HIDE -> Optional.present(false)
+                            com.anisync.android.domain.AdultMode.ONLY -> Optional.present(true)
+                        }
+                    )
+                )
+                    .fetchPolicy(FetchPolicy.NetworkFirst)
+                    .execute()
+
+                val data = response.data
+
+                val animeEntries = data?.anime?.media?.filterNotNull()?.map { node ->
+                    val m = node.mediaCardFields
+                    LibraryEntry(
+                        id = 0,
+                        mediaId = m.id,
+                        titleRomaji = m.title?.romaji,
+                        titleEnglish = m.title?.english,
+                        titleNative = m.title?.native,
+                        titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                        coverUrl = m.coverImage?.extraLarge,
+                        cover = com.anisync.android.domain.CoverImage.of(
+                            m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge
+                        ),
+                        progress = 0,
+                        totalEpisodes = m.episodes,
+                        totalChapters = m.chapters,
+                        totalVolumes = m.volumes,
+                        type = m.type,
+                        format = m.format,
+                        status = LibraryStatus.UNKNOWN,
+                        mediaStatus = m.status?.name
+                    )
+                }.orEmpty()
+
+                val mangaEntries = data?.manga?.media?.filterNotNull()?.map { node ->
+                    val m = node.mediaCardFields
+                    LibraryEntry(
+                        id = 0,
+                        mediaId = m.id,
+                        titleRomaji = m.title?.romaji,
+                        titleEnglish = m.title?.english,
+                        titleNative = m.title?.native,
+                        titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                        coverUrl = m.coverImage?.extraLarge,
+                        cover = com.anisync.android.domain.CoverImage.of(
+                            m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge
+                        ),
+                        progress = 0,
+                        totalEpisodes = m.episodes,
+                        totalChapters = m.chapters,
+                        totalVolumes = m.volumes,
+                        type = m.type,
+                        format = m.format,
+                        status = LibraryStatus.UNKNOWN,
+                        mediaStatus = m.status?.name
+                    )
+                }.orEmpty()
+
+                val characters = data?.characters?.characters?.filterNotNull()?.map { c ->
+                    SearchResult.CharacterResult(
+                        id = c.id,
+                        displayName = c.name?.userPreferred ?: c.name?.full ?: "Unknown",
+                        nativeName = c.name?.native,
+                        imageUrl = c.image?.medium,
+                        favourites = c.favourites
+                    )
+                } ?: emptyList()
+
+                val staff = data?.staff?.staff?.filterNotNull()?.map { s ->
+                    SearchResult.StaffResult(
+                        id = s.id,
+                        displayName = s.name?.userPreferred ?: s.name?.full ?: "Unknown",
+                        nativeName = s.name?.native,
+                        imageUrl = s.image?.medium,
+                        primaryOccupations = s.primaryOccupations?.filterNotNull() ?: emptyList(),
+                        favourites = s.favourites
+                    )
+                } ?: emptyList()
+
+                val users = data?.users?.users?.filterNotNull()?.map { u ->
+                    SearchResult.UserResult(
+                        id = u.id,
+                        displayName = u.name,
+                        imageUrl = u.avatar?.medium
+                    )
+                } ?: emptyList()
+
+                val studios = data?.studios?.studios?.filterNotNull()?.map { s ->
+                    SearchResult.StudioResult(
+                        id = s.id,
+                        displayName = s.name,
+                        favourites = s.favourites
+                    )
+                } ?: emptyList()
+
+                SearchEverythingResult(
+                    anime = animeEntries,
+                    manga = mangaEntries,
+                    animeHasNextPage = data?.anime?.pageInfo?.hasNextPage ?: false,
+                    mangaHasNextPage = data?.manga?.pageInfo?.hasNextPage ?: false,
+                    grouped = GroupedSearchResults(
+                        characters = characters,
+                        staff = staff,
+                        users = users,
+                        studios = studios
+                    )
+                )
+            }
         }
     }
 

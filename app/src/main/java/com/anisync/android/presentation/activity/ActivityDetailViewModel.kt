@@ -33,6 +33,36 @@ class ActivityDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ActivityDetailUiState())
     val uiState: StateFlow<ActivityDetailUiState> = _uiState.asStateFlow()
 
+    // Server-truth (isLiked, likeCount) for the activity so a coalesced like burst
+    // rolls back correctly on error. Each tap flips the optimistic UI instantly;
+    // the coalescer sends at most one toggle once the burst settles.
+    private var activityLikeServer: Pair<Boolean, Int>? = null
+    private val activityLikeCoalescer =
+        com.anisync.android.presentation.util.MutationCoalescer<Int, Boolean>(viewModelScope) { id, _ ->
+            when (val result = repository.toggleActivityLike(id)) {
+                is Result.Success -> {
+                    val s = result.data
+                    activityLikeServer = s.isLiked to s.likeCount
+                    _uiState.update { st ->
+                        st.copy(activity = st.activity?.copy(isLiked = s.isLiked, likeCount = s.likeCount))
+                    }
+                    true
+                }
+                is Result.Error -> {
+                    activityLikeServer?.let { (liked, count) ->
+                        _uiState.update { st ->
+                            st.copy(activity = st.activity?.copy(isLiked = liked, likeCount = count))
+                        }
+                    }
+                    false
+                }
+            }
+        }
+
+    // Reply ids with a like toggle in flight; a repeat tap is dropped until it
+    // completes so rapid tapping can't stack reply-like requests.
+    private val inFlightReplyLikes = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+
     private val _finishedEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val finishedEvents: SharedFlow<Unit> = _finishedEvents.asSharedFlow()
 
@@ -158,29 +188,23 @@ class ActivityDetailViewModel @Inject constructor(
     private fun toggleActivityLike() {
         val current = _uiState.value.activity ?: return
         val wasLiked = current.isLiked
-        val optimistic = current.copy(
-            isLiked = !wasLiked,
-            likeCount = (if (wasLiked) current.likeCount - 1 else current.likeCount + 1).coerceAtLeast(0)
-        )
-        _uiState.update { it.copy(activity = optimistic) }
-        viewModelScope.launch {
-            when (val result = repository.toggleActivityLike(current.id)) {
-                is Result.Success -> _uiState.update { state ->
-                    state.copy(
-                        activity = state.activity?.copy(
-                            likeCount = result.data.likeCount,
-                            isLiked = result.data.isLiked
-                        )
-                    )
-                }
-                is Result.Error -> _uiState.update { it.copy(activity = current) }
-            }
+        if (activityLikeServer == null) activityLikeServer = wasLiked to current.likeCount
+        activityLikeCoalescer.seed(current.id, wasLiked)
+        _uiState.update {
+            it.copy(
+                activity = current.copy(
+                    isLiked = !wasLiked,
+                    likeCount = (if (wasLiked) current.likeCount - 1 else current.likeCount + 1).coerceAtLeast(0)
+                )
+            )
         }
+        activityLikeCoalescer.submit(current.id, !wasLiked)
     }
 
     private fun toggleReplyLike(replyId: Int) {
         val activity = _uiState.value.activity ?: return
         val original = activity.replies.firstOrNull { it.id == replyId } ?: return
+        if (!inFlightReplyLikes.add(replyId)) return
         val wasLiked = original.isLiked
         val flipped = original.copy(
             isLiked = !wasLiked,
@@ -189,11 +213,15 @@ class ActivityDetailViewModel @Inject constructor(
         applyReplyChange(replyId) { flipped }
 
         viewModelScope.launch {
-            when (val result = repository.toggleReplyLike(replyId)) {
-                is Result.Success -> applyReplyChange(replyId) {
-                    it.copy(isLiked = result.data.isLiked, likeCount = result.data.likeCount)
+            try {
+                when (val result = repository.toggleReplyLike(replyId)) {
+                    is Result.Success -> applyReplyChange(replyId) {
+                        it.copy(isLiked = result.data.isLiked, likeCount = result.data.likeCount)
+                    }
+                    is Result.Error -> applyReplyChange(replyId) { original }
                 }
-                is Result.Error -> applyReplyChange(replyId) { original }
+            } finally {
+                inFlightReplyLikes.remove(replyId)
             }
         }
     }
