@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.ErrorState
@@ -109,15 +110,11 @@ fun ReviewDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            AsyncImage(
-                                model = review.userAvatarUrl,
+                            UserAvatar(
+                                url = review.userAvatarUrl,
                                 contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .clickable { onUserClick(review.userName) }
+                                size = 48.dp,
+                                modifier = Modifier.clickable { onUserClick(review.userName) }
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(

@@ -57,6 +57,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 
 @Composable
@@ -131,14 +132,7 @@ private fun ThreadHeader(
             url = thread.authorAvatarUrl,
             contentDescription = thread.authorName,
             size = 36.dp,
-            modifier = Modifier
-                .clip(LocalAvatarShape.current)
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = LocalAvatarShape.current
-                )
-                .clickable { onUserClick(thread.authorName) }
+            modifier = Modifier.clickable { onUserClick(thread.authorName) }
         )
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -297,14 +291,7 @@ private fun ThreadFooter(
                         UserAvatar(
                             url = thread.replyUserAvatarUrl,
                             contentDescription = thread.replyUserName,
-                            size = 18.dp,
-                            modifier = Modifier
-                                .clip(LocalAvatarShape.current)
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = LocalAvatarShape.current
-                                )
+                            size = 18.dp
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -441,36 +428,7 @@ private fun StatItem(
     }
 }
 
-@Composable
-private fun UserAvatar(
-    url: String?,
-    contentDescription: String?,
-    size: Dp,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        if (url != null) {
-            AsyncImage(
-                model = url,
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(size * 0.7f)
-            )
-        }
-    }
-}
+// UserAvatar now lives in presentation/components/UserAvatar.kt (shared).
 
 // ============================================================================
 // --- Enhanced Skeleton Loader ---

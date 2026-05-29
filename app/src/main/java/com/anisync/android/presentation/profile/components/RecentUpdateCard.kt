@@ -51,6 +51,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 
 @Composable
@@ -157,16 +158,7 @@ private fun UpdateHeader(
             url = activity.userAvatarUrl,
             contentDescription = activity.userName,
             size = 34.dp,
-            modifier = Modifier
-                .clip(LocalAvatarShape.current)
-                .then(
-                    Modifier.border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = LocalAvatarShape.current
-                    )
-                )
-                .clickable { activity.userName?.let { onUserClick(it) } }
+            modifier = Modifier.clickable { activity.userName?.let { onUserClick(it) } }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -281,16 +273,7 @@ private fun UpdateFooter(
                         UserAvatar(
                             url = activity.replyUserAvatarUrl,
                             contentDescription = activity.replyUserName,
-                            size = 16.dp,
-                            modifier = Modifier
-                                .clip(LocalAvatarShape.current)
-                                .then(
-                                    Modifier.border(
-                                        width = 1.dp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = LocalAvatarShape.current
-                                    )
-                                )
+                            size = 16.dp
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -368,33 +351,4 @@ private fun StatusBadge(
     }
 }
 
-@Composable
-private fun UserAvatar(
-    url: String?,
-    contentDescription: String?,
-    size: Dp,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        if (url != null) {
-            AsyncImage(
-                model = url,
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(size * 0.7f)
-            )
-        }
-    }
-}
+// UserAvatar now lives in presentation/components/UserAvatar.kt (shared).

@@ -109,15 +109,12 @@ fun ReviewCard(
                         .clickable { onUserClick(review.userName) }
                         .padding(vertical = 4.dp)
                 ) {
-                    // User avatar
-                    AsyncImage(
-                        model = review.userAvatarUrl,
+                    // User avatar — shared component so it honors the avatar shape +
+                    // background settings (was hardcoded to a circle).
+                    UserAvatar(
+                        url = review.userAvatarUrl,
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                        size = 32.dp
                     )
 
                     Text(

@@ -63,6 +63,7 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.emphasis
 import java.text.SimpleDateFormat
@@ -323,41 +324,15 @@ fun ProfileTopSection(
             verticalAlignment = Alignment.Bottom
         ) {
             val isShapeDisabled = isOwnProfile && com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile.current
-            val shapeToUse = if (isShapeDisabled) {
-                RectangleShape
-            } else {
-                LocalAvatarShape.current
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(AvatarSize)
-                    .clip(shapeToUse)
-                    .then(
-                        if (isShapeDisabled) Modifier else Modifier.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = shapeToUse
-                        )
-                    )
-                    .then(
-                        if (com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled.current && !isShapeDisabled) {
-                            Modifier.background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shapeToUse
-                            )
-                        } else Modifier
-                    )
-                    .padding(if (isShapeDisabled) 0.dp else 3.dp)
-                    .clip(shapeToUse)
-            ) {
-                AsyncImage(
-                    model = profile.avatarUrl,
-                    contentDescription = stringResource(R.string.content_description_profile_avatar),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            UserAvatar(
+                url = profile.avatarUrl,
+                contentDescription = stringResource(R.string.content_description_profile_avatar),
+                size = AvatarSize,
+                shape = if (isShapeDisabled) RectangleShape else LocalAvatarShape.current,
+                showFrame = !isShapeDisabled,
+                borderWidth = 2.dp,
+                framePadding = 3.dp
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
