@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -232,7 +234,15 @@ fun ForumScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            Box(modifier = Modifier.padding(bottom = 100.dp)) {
+            // Offset above the main bottom nav bar using the real insets — the system
+            // navigation inset (gesture/3-button) plus the bar's own height — instead
+            // of a fixed dp. A hardcoded value overlapped the bar on devices with a
+            // taller gesture inset / edge-to-edge enforcement (e.g. Android 16). (#34)
+            Box(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = LocalMainNavBarInset.current)
+            ) {
                 FloatingActionButton(
                     onClick = onCreateThreadClick,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
