@@ -63,7 +63,11 @@ import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -499,6 +503,25 @@ fun LibraryScreen(
                     val effectsSpec =
                         remember(motionScheme) { motionScheme.defaultEffectsSpec<Float>() }
 
+                    // Pull-to-refresh wraps the tab pager so any list — including an
+                    // empty/glitched one — can be refreshed without restarting (#35).
+                    // Gated by rememberRateLimitedRefresh so it no-ops during a 429.
+                    val pullToRefreshState = rememberPullToRefreshState()
+                    PullToRefreshBox(
+                        isRefreshing = uiState.isRefreshing,
+                        onRefresh = rememberRateLimitedRefresh { viewModel.onAction(LibraryAction.Refresh) },
+                        state = pullToRefreshState,
+                        modifier = Modifier.fillMaxSize(),
+                        indicator = {
+                            CustomPullToRefreshIndicator(
+                                isRefreshing = uiState.isRefreshing,
+                                state = pullToRefreshState,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 16.dp)
+                            )
+                        }
+                    ) {
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
@@ -534,7 +557,19 @@ fun LibraryScreen(
 
                         if (entries.isEmpty()) {
                             val emptyStatus = if (tab is LibraryTab.Standard) tab.status else null
-                            EmptyLibraryTabState(emptyStatus, mediaType)
+                            // One full-height item so the empty state still emits
+                            // nested scroll — otherwise pull-to-refresh can't fire on
+                            // an empty/glitched tab, which is exactly the #35 case.
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillParentMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        EmptyLibraryTabState(emptyStatus, mediaType)
+                                    }
+                                }
+                            }
                         } else {
                             AnimatedContent(
                                 targetState = isGridView,
@@ -633,6 +668,7 @@ fun LibraryScreen(
                                 }
                             }
                         }
+                    }
                     }
                 }
             }
