@@ -342,11 +342,18 @@ fun MediaDetailsScreen(
                     if (state is DetailsUiState.Success) {
                         val details = state.details
                         val haptic = rememberHapticFeedback()
+                        // The whole details content Box uses sharedBounds, so during a
+                        // transition it renders in the shared-element overlay (on top).
+                        // The FAB must be lifted into that same overlay at a higher
+                        // zIndex, otherwise it's drawn behind the page until the
+                        // transition ends — appearing as a square stub poking out from
+                        // under the content. This is needed on a forward enter too, not
+                        // just the return, so gate on the transition being active.
                         val fabOverlayModifier = with(sharedTransitionScope) {
                             Modifier
                                 .renderInSharedTransitionScopeOverlay(
                                     zIndexInOverlay = 1f,
-                                    renderInOverlay = { shouldRenderChromeInOverlay }
+                                    renderInOverlay = { isSharedTransitionRunning || shouldRenderChromeInOverlay }
                                 )
                                 .graphicsLayer {
                                     alpha =
