@@ -14,3 +14,18 @@ data class SearchPage(
     val hasNextPage: Boolean,
     val currentPage: Int
 )
+
+/**
+ * Combined result of a single [SearchRepository.searchEverything] request. Carries
+ * the anime + manga media pages and the non-media entity buckets together so the
+ * universal search overlay renders from one round-trip instead of three. Buckets
+ * not requested for a given search (via the `want*` gates) come back empty.
+ */
+@Immutable
+data class SearchEverythingResult(
+    val anime: List<LibraryEntry> = emptyList(),
+    val manga: List<LibraryEntry> = emptyList(),
+    val animeHasNextPage: Boolean = false,
+    val mangaHasNextPage: Boolean = false,
+    val grouped: GroupedSearchResults = GroupedSearchResults()
+)

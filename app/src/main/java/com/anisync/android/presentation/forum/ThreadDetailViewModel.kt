@@ -419,7 +419,14 @@ class ThreadDetailViewModel @Inject constructor(
         }
     }
 
+    // Thread/comment targets with a like toggle in flight. A repeat tap on the same
+    // target is dropped until the first completes, so rapid tapping can't stack
+    // toggle requests (same guard the feed like button uses).
+    private val inFlightLikes = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
     private fun toggleLike(action: ThreadDetailAction.ToggleLike) {
+        val likeKey = (if (action.isThread) "t:" else "c:") + action.id
+        if (!inFlightLikes.add(likeKey)) return
         _uiState.update { state ->
             if (action.isThread) {
                 val thread = state.thread ?: return@update state
@@ -437,29 +444,33 @@ class ThreadDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val result = if (action.isThread) {
-                forumRepository.toggleLikeThread(action.id)
-            } else {
-                forumRepository.toggleLikeComment(action.id)
-            }
+            try {
+                val result = if (action.isThread) {
+                    forumRepository.toggleLikeThread(action.id)
+                } else {
+                    forumRepository.toggleLikeComment(action.id)
+                }
 
-            if (result is Result.Error) {
-                _uiState.update { state ->
-                    if (action.isThread) {
-                        val thread = state.thread ?: return@update state
-                        val revertedCount =
-                            if (action.currentLiked) thread.likeCount + 1 else thread.likeCount - 1
-                        state.copy(
-                            thread = thread.copy(
-                                isLiked = action.currentLiked,
-                                likeCount = revertedCount.coerceAtLeast(0)
+                if (result is Result.Error) {
+                    _uiState.update { state ->
+                        if (action.isThread) {
+                            val thread = state.thread ?: return@update state
+                            val revertedCount =
+                                if (action.currentLiked) thread.likeCount + 1 else thread.likeCount - 1
+                            state.copy(
+                                thread = thread.copy(
+                                    isLiked = action.currentLiked,
+                                    likeCount = revertedCount.coerceAtLeast(0)
+                                )
                             )
-                        )
-                    } else {
-                        val revertAction = action.copy(currentLiked = !action.currentLiked)
-                        state.copy(comments = state.comments.map { it.updateCommentLike(revertAction) })
+                        } else {
+                            val revertAction = action.copy(currentLiked = !action.currentLiked)
+                            state.copy(comments = state.comments.map { it.updateCommentLike(revertAction) })
+                        }
                     }
                 }
+            } finally {
+                inFlightLikes.remove(likeKey)
             }
         }
     }

@@ -221,10 +221,32 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 
+    // Coalesces rating taps so dragging through values sends one rate + one refresh
+    // instead of one pair per intermediate value. Ratings are absolute sets, so no
+    // baseline seeding is needed (a re-submit of the same value is a no-op).
+    private val reviewRatingCoalescer =
+        com.anisync.android.presentation.util.MutationCoalescer<Int, com.anisync.android.type.ReviewRating>(viewModelScope) { reviewId, rating ->
+            when (detailsRepository.rateReview(reviewId, rating)) {
+                is Result.Success -> { refresh(); true }
+                is Result.Error -> false
+            }
+        }
+    private val recommendationRatingCoalescer =
+        com.anisync.android.presentation.util.MutationCoalescer<Int, com.anisync.android.type.RecommendationRating>(viewModelScope) { recId, rating ->
+            when (detailsRepository.rateRecommendation(mediaId, recId, rating)) {
+                is Result.Success -> { refresh(); true }
+                is Result.Error -> false
+            }
+        }
+
     /**
      * Toggle favourite status for the current media.
      */
     fun toggleFavourite() {
+        // Favourite is a toggle endpoint and eventually-consistent on AniList, so
+        // stacking toggles risks flip-flopping. Drop taps while one is in flight —
+        // same in-flight guard the feed like button uses.
+        if (_isSaving.value) return
         viewModelScope.launch {
             val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
             val mediaType = details.type ?: return@launch
@@ -265,17 +287,7 @@ class MediaDetailsViewModel @Inject constructor(
      * Rate a review.
      */
     fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating) {
-        viewModelScope.launch {
-            when (val result = detailsRepository.rateReview(reviewId, rating)) {
-                is Result.Success -> {
-                    // Update cache for immediate feedback
-                    refresh()
-                }
-                is Result.Error -> {
-                    // Handled implicitly or via snackbar later
-                }
-            }
-        }
+        reviewRatingCoalescer.submit(reviewId, rating)
     }
 
     companion object {
@@ -283,11 +295,6 @@ class MediaDetailsViewModel @Inject constructor(
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
-        viewModelScope.launch {
-            when (detailsRepository.rateRecommendation(mediaId, recommendationId, rating)) {
-                is Result.Success -> refresh()
-                is Result.Error -> {}
-            }
-        }
+        recommendationRatingCoalescer.submit(recommendationId, rating)
     }
 }

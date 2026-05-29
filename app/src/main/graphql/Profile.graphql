@@ -129,6 +129,170 @@ query GetUserProfile($name: String, $includeViewer: Boolean = false) {
   }
 }
 
+"""
+Single-request profile fetch. Folds the former GetUserProfile + GetUserActivities
+into one operation. Activity feeds are gated by `$includeActivities` so the
+own-profile path (cached/known userId) gets everything in one round-trip, while
+the target-by-name path (userId unknown until User resolves) sets it false and
+issues GetUserActivities as a follow-up. Favourites are page-1 only here — the
+rest is paginated lazily when the Favorites tab opens (no eager fan-out).
+"""
+query GetFullUserProfile(
+  $userId: Int,
+  $name: String,
+  $includeViewer: Boolean = false,
+  $includeActivities: Boolean = false
+) {
+  Viewer @include(if: $includeViewer) {
+    id
+    unreadNotificationCount
+    mediaListOptions {
+      scoreFormat
+    }
+  }
+  User(id: $userId, name: $name) {
+    name
+    id
+    avatar {
+      large
+    }
+    bannerImage
+    about(asHtml: true)
+    aboutRaw: about(asHtml: false)
+    updatedAt
+    donatorTier
+    donatorBadge
+    moderatorRoles
+    createdAt
+    statistics {
+      anime {
+        count
+        minutesWatched
+        meanScore
+        statuses {
+          count
+          status
+        }
+        genres(sort: [COUNT_DESC], limit: 5) {
+          genre
+          count
+          meanScore
+        }
+      }
+      manga {
+        count
+        chaptersRead
+        meanScore
+      }
+    }
+    favourites {
+      anime(page: 1, perPage: 50) {
+        pageInfo {
+          hasNextPage
+          total
+          lastPage
+        }
+        nodes {
+          id
+          type
+          status
+          format
+          episodes
+          chapters
+          volumes
+          averageScore
+          nextAiringEpisode {
+            episode
+            timeUntilAiring
+            airingAt
+          }
+          title {
+            userPreferred
+            romaji
+            english
+            native
+          }
+          coverImage {
+            medium
+            large
+            extraLarge
+          }
+        }
+      }
+      manga(page: 1, perPage: 25) {
+        nodes {
+          id
+          type
+          status
+          format
+          chapters
+          volumes
+          averageScore
+          title {
+            userPreferred
+            romaji
+            english
+            native
+          }
+          coverImage {
+            medium
+            large
+            extraLarge
+          }
+        }
+      }
+      characters(page: 1, perPage: 25) {
+        nodes {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+        }
+      }
+      staff(page: 1, perPage: 25) {
+        nodes {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+        }
+      }
+      studios(page: 1, perPage: 25) {
+        nodes {
+          id
+          name
+        }
+      }
+    }
+  }
+  allActivities: Page(perPage: 50) @include(if: $includeActivities) {
+    activities(userId: $userId, sort: [PINNED, ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
+      ...ActivityFields
+    }
+  }
+  textActivities: Page(perPage: 20) @include(if: $includeActivities) {
+    activities(userId: $userId, sort: [PINNED, ID_DESC], type_in: [TEXT]) {
+      ...ActivityFields
+    }
+  }
+  messageReceived: Page(perPage: 20) @include(if: $includeActivities) {
+    activities(userId: $userId, sort: [ID_DESC], type_in: [MESSAGE]) {
+      ...ActivityFields
+    }
+  }
+  messageSent: Page(perPage: 20) @include(if: $includeActivities) {
+    activities(messengerId: $userId, sort: [ID_DESC], type_in: [MESSAGE]) {
+      ...ActivityFields
+    }
+  }
+}
+
 query GetUserFavorites($userId: Int, $page: Int) {
   User(id: $userId) {
     favourites {

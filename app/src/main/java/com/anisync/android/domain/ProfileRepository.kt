@@ -91,6 +91,16 @@ interface ProfileRepository {
     ): Result<UserReviewsPage>
 
     /**
+     * Fetch the user's full favourite-anime list (all pages). Loaded lazily when
+     * the Favorites tab opens; the profile fetch itself only carries page 1, so
+     * a normal profile load/refresh no longer fans out across favourite pages.
+     */
+    suspend fun getFavoriteAnime(
+        userId: Int,
+        policy: CachePolicy = CachePolicy.NetworkFirst
+    ): Result<List<LibraryEntry>>
+
+    /**
      * Fetch user's anime list.
      */
     suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>>

@@ -1,5 +1,6 @@
 package com.anisync.android.di
 
+import android.os.SystemClock
 import android.util.Log
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.network.TokenBucket
@@ -48,6 +49,13 @@ class AuthorizationInterceptor @Inject constructor(
         /** Delay in ms when proactively throttling (remaining < THROTTLE_THRESHOLD) */
         private const val THROTTLE_DELAY_MS = 2000L
 
+        /**
+         * If client-side pacing (token-bucket wait + proactive throttle) delays a
+         * request by at least this long before it even reaches the network, show a
+         * brief notice so the resulting slowness isn't mistaken for the app hanging.
+         */
+        private const val THROTTLE_NOTICE_THRESHOLD_MS = 800L
+
         /** Default wait time in seconds if 429 has no Retry-After header (AniList docs say "1 minute timeout") */
         private const val DEFAULT_RETRY_AFTER_SECONDS = 60L
 
@@ -83,6 +91,7 @@ class AuthorizationInterceptor @Inject constructor(
         // limiter. The post-response remaining-count throttle below cannot
         // help here because N parallel intercept() invocations all read the
         // same `remaining` before the first response updates it.
+        val pacingStart = SystemClock.elapsedRealtime()
         tokenBucket.acquire()
 
         // ── Step 1: Attach Bearer token ─────────────────────────────────
@@ -102,6 +111,12 @@ class AuthorizationInterceptor @Inject constructor(
         if (remaining in 1 until THROTTLE_THRESHOLD) {
             Log.w(TAG, "Rate limit low ($remaining remaining), throttling ${THROTTLE_DELAY_MS}ms")
             delay(THROTTLE_DELAY_MS)
+        }
+
+        // Client-side pacing just delayed this request perceptibly; surface a
+        // low-key notice so the wait reads as deliberate, not a frozen app.
+        if (SystemClock.elapsedRealtime() - pacingStart >= THROTTLE_NOTICE_THRESHOLD_MS) {
+            toastManager.showThrottleNotice()
         }
 
         // ── Step 3: Execute the request ─────────────────────────────────

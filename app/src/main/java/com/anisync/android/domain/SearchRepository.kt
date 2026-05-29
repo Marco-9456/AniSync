@@ -20,6 +20,21 @@ interface SearchRepository {
 
     suspend fun searchAll(query: String): Result<GroupedSearchResults>
 
+    /**
+     * Universal search in a single request. Collapses the former 3-request fan-out
+     * (anime media + manga media + entity lookup) into one operation. The caller
+     * passes which buckets it wants; unrequested buckets are skipped server-side
+     * via @include and come back empty. Used by the discover search overlay.
+     */
+    suspend fun searchEverything(
+        query: String,
+        filters: SearchFilters = SearchFilters(),
+        perPage: Int = 20,
+        wantAnime: Boolean,
+        wantManga: Boolean,
+        wantEntities: Boolean
+    ): Result<SearchEverythingResult>
+
     /** AniList genre vocabulary. Cached aggressively — changes rarely. */
     suspend fun getGenres(): Result<List<String>>
 
