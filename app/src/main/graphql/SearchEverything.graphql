@@ -70,26 +70,7 @@ query SearchEverything(
       countryOfOrigin: $countryOfOrigin,
       isAdult: $isAdult
     ) {
-      id
-      title {
-        userPreferred
-        romaji
-        english
-        native
-      }
-      coverImage {
-        medium
-        large
-        extraLarge
-      }
-      status
-      averageScore
-      episodes
-      chapters
-      volumes
-      type
-      format
-      genres
+      ...MediaCardFields
     }
   }
   manga: Page(page: 1, perPage: $perPage) @include(if: $wantManga) {
@@ -124,26 +105,7 @@ query SearchEverything(
       countryOfOrigin: $countryOfOrigin,
       isAdult: $isAdult
     ) {
-      id
-      title {
-        userPreferred
-        romaji
-        english
-        native
-      }
-      coverImage {
-        medium
-        large
-        extraLarge
-      }
-      status
-      averageScore
-      episodes
-      chapters
-      volumes
-      type
-      format
-      genres
+      ...MediaCardFields
     }
   }
   characters: Page(page: 1, perPage: 5) @include(if: $wantEntities) {

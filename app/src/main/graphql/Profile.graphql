@@ -49,52 +49,12 @@ query GetUserProfile($name: String, $includeViewer: Boolean = false) {
           lastPage
         }
         nodes {
-          id
-          type
-          status
-          format
-          episodes
-          chapters
-          volumes
-          averageScore
-          nextAiringEpisode {
-            episode
-            timeUntilAiring
-            airingAt
-          }
-          title {
-            userPreferred
-            romaji
-            english
-            native
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
+          ...MediaCardFields
         }
       }
       manga(page: 1, perPage: 25) {
         nodes {
-          id
-          type
-          status
-          format
-          chapters
-          volumes
-          averageScore
-          title {
-            userPreferred
-            romaji
-            english
-            native
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
+          ...MediaCardFields
         }
       }
       characters(page: 1, perPage: 25) {
@@ -193,52 +153,12 @@ query GetFullUserProfile(
           lastPage
         }
         nodes {
-          id
-          type
-          status
-          format
-          episodes
-          chapters
-          volumes
-          averageScore
-          nextAiringEpisode {
-            episode
-            timeUntilAiring
-            airingAt
-          }
-          title {
-            userPreferred
-            romaji
-            english
-            native
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
+          ...MediaCardFields
         }
       }
       manga(page: 1, perPage: 25) {
         nodes {
-          id
-          type
-          status
-          format
-          chapters
-          volumes
-          averageScore
-          title {
-            userPreferred
-            romaji
-            english
-            native
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
+          ...MediaCardFields
         }
       }
       characters(page: 1, perPage: 25) {
@@ -303,30 +223,7 @@ query GetUserFavorites($userId: Int, $page: Int) {
           lastPage
         }
         nodes {
-          id
-          type
-          status
-          format
-          episodes
-          chapters
-          volumes
-          averageScore
-          nextAiringEpisode {
-            episode
-            timeUntilAiring
-            airingAt
-          }
-          title {
-            userPreferred
-            romaji
-            english
-            native
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
+          ...MediaCardFields
         }
       }
     }

@@ -153,24 +153,25 @@ class ProfileRepositoryImpl @Inject constructor(
             // The Favorites tab pulls the remaining pages on demand via
             // getFavoriteAnime(), so a profile load/refresh costs a single request.
             val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { node ->
+                val m = node.mediaCardFields
                 LibraryEntry(
                     id = 0,
-                    mediaId = node.id ?: 0,
-                    titleRomaji = node.title?.romaji,
-                    titleEnglish = node.title?.english,
-                    titleNative = node.title?.native,
-                    titleUserPreferred = node.title?.userPreferred ?: "Unknown",
-                    coverUrl = node.coverImage?.large,
+                    mediaId = m.id,
+                    titleRomaji = m.title?.romaji,
+                    titleEnglish = m.title?.english,
+                    titleNative = m.title?.native,
+                    titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                    coverUrl = m.coverImage?.large,
                     cover = com.anisync.android.domain.CoverImage.of(
-                        node.coverImage?.medium,
-                        node.coverImage?.large,
-                        node.coverImage?.extraLarge
+                        m.coverImage?.medium,
+                        m.coverImage?.large,
+                        m.coverImage?.extraLarge
                     ),
                     progress = 0,
-                    totalEpisodes = node.episodes,
-                    totalChapters = node.chapters,
-                    totalVolumes = node.volumes,
-                    type = node.type,
+                    totalEpisodes = m.episodes,
+                    totalChapters = m.chapters,
+                    totalVolumes = m.volumes,
+                    type = m.type,
                     status = LibraryStatus.UNKNOWN
                 )
             }.orEmpty()
@@ -237,20 +238,21 @@ class ProfileRepositoryImpl @Inject constructor(
             // Favorites already fetched in parallel with activities above.
 
                     val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
+                        val m = media.mediaCardFields
                         com.anisync.android.domain.LibraryEntry(
                             id = 0,
-                            mediaId = media.id,
-                            titleRomaji = media.title?.romaji,
-                            titleEnglish = media.title?.english,
-                            titleNative = media.title?.native,
-                            titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                            coverUrl = media.coverImage?.large,
-                            cover = com.anisync.android.domain.CoverImage.of(media.coverImage?.medium, media.coverImage?.large, media.coverImage?.extraLarge),
+                            mediaId = m.id,
+                            titleRomaji = m.title?.romaji,
+                            titleEnglish = m.title?.english,
+                            titleNative = m.title?.native,
+                            titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                            coverUrl = m.coverImage?.large,
+                            cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
                             progress = 0,
                             totalEpisodes = null,
-                            totalChapters = media.chapters,
-                            totalVolumes = media.volumes,
-                            type = media.type,
+                            totalChapters = m.chapters,
+                            totalVolumes = m.volumes,
+                            type = m.type,
                             format = null,
                             status = com.anisync.android.domain.LibraryStatus.UNKNOWN
                         )
@@ -462,25 +464,26 @@ class ProfileRepositoryImpl @Inject constructor(
         val nodes = data?.nodes?.filterNotNull() ?: emptyList()
         val pageInfo = data?.pageInfo
 
-        val entries = nodes.map { media ->
+        val entries = nodes.map { node ->
+            val m = node.mediaCardFields
             LibraryEntry(
                 id = 0,
-                mediaId = media.id ?: 0,
-                titleRomaji = media.title?.romaji,
-                titleEnglish = media.title?.english,
-                titleNative = media.title?.native,
-                titleUserPreferred = media.title?.userPreferred ?: "Unknown",
-                coverUrl = media.coverImage?.large,
+                mediaId = m.id,
+                titleRomaji = m.title?.romaji,
+                titleEnglish = m.title?.english,
+                titleNative = m.title?.native,
+                titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                coverUrl = m.coverImage?.large,
                 cover = com.anisync.android.domain.CoverImage.of(
-                    media.coverImage?.medium,
-                    media.coverImage?.large,
-                    media.coverImage?.extraLarge
+                    m.coverImage?.medium,
+                    m.coverImage?.large,
+                    m.coverImage?.extraLarge
                 ),
                 progress = 0,
-                totalEpisodes = media.episodes,
-                totalChapters = media.chapters,
-                totalVolumes = media.volumes,
-                type = media.type,
+                totalEpisodes = m.episodes,
+                totalChapters = m.chapters,
+                totalVolumes = m.volumes,
+                type = m.type,
                 status = LibraryStatus.UNKNOWN
             )
         }

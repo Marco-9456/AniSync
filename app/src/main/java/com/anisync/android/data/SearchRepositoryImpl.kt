@@ -231,10 +231,11 @@ class SearchRepositoryImpl @Inject constructor(
 
                 val data = response.data
 
-                val animeEntries = data?.anime?.media?.filterNotNull()?.map { m ->
+                val animeEntries = data?.anime?.media?.filterNotNull()?.map { node ->
+                    val m = node.mediaCardFields
                     LibraryEntry(
                         id = 0,
-                        mediaId = m.id ?: 0,
+                        mediaId = m.id,
                         titleRomaji = m.title?.romaji,
                         titleEnglish = m.title?.english,
                         titleNative = m.title?.native,
@@ -254,10 +255,11 @@ class SearchRepositoryImpl @Inject constructor(
                     )
                 }.orEmpty()
 
-                val mangaEntries = data?.manga?.media?.filterNotNull()?.map { m ->
+                val mangaEntries = data?.manga?.media?.filterNotNull()?.map { node ->
+                    val m = node.mediaCardFields
                     LibraryEntry(
                         id = 0,
-                        mediaId = m.id ?: 0,
+                        mediaId = m.id,
                         titleRomaji = m.title?.romaji,
                         titleEnglish = m.title?.english,
                         titleNative = m.title?.native,
