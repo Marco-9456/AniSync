@@ -44,13 +44,14 @@ fun UserAvatar(
     url: String? = null,
     model: Any? = url,
     shape: Shape = LocalAvatarShape.current,
-    showFrame: Boolean = true,
+    showFrame: Boolean = LocalAvatarBackgroundEnabled.current,
     borderWidth: Dp = 1.dp,
     borderColor: Color = MaterialTheme.colorScheme.primary,
     framePadding: Dp = 0.dp,
     overlay: @Composable BoxScope.() -> Unit = {},
 ) {
-    val showBackground = showFrame && LocalAvatarBackgroundEnabled.current
+    // Single "frame" toggle: border + background fill + inset move together.
+    val showBackground = showFrame
     Box(
         modifier = modifier
             .size(size)

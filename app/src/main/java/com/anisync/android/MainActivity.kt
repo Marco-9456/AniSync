@@ -147,7 +147,7 @@ class MainActivity : AppCompatActivity() {
                     initialValue = com.anisync.android.ui.theme.TypographyOverrides.None
                 )
                 val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle(
-                    initialValue = com.anisync.android.data.AvatarShape.CLOVER
+                    initialValue = com.anisync.android.data.AvatarShape.CLOVER_8_LEAF
                 )
                 val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle(
                     initialValue = true

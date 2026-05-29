@@ -113,7 +113,7 @@ data class SettingsUiState(
     val navBarStyle: NavBarStyle = NavBarStyle.ANCHORED,
     val navBarShowLabels: Boolean = true,
     val navBarCornerRadius: Float = 28f,
-    val avatarShape: AvatarShape = AvatarShape.CLOVER,
+    val avatarShape: AvatarShape = AvatarShape.CLOVER_8_LEAF,
     val avatarBackgroundEnabled: Boolean = true,
     val disableAvatarShapeProfile: Boolean = false,
     val showAdultContent: Boolean = false,

@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -55,7 +56,11 @@ fun ProfileScreen(
     // separate refresh — it rides on GetUserProfile via @include directive.
     // The 60s floor prevents quick app-switch from re-firing a refresh; the
     // ViewModel's profileCooldown (15s) is the second line of defence.
-    val lastResumeAtMs = remember { mutableLongStateOf(0L) }
+    // rememberSaveable (not remember): survives this screen's composition being
+    // disposed on navigation. Otherwise the 60s gate resets to 0 on every back-nav
+    // and the ON_RESUME refresh re-fires, re-fetching the active tab and resetting
+    // scroll position.
+    val lastResumeAtMs = rememberSaveable { mutableLongStateOf(0L) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         val now = SystemClock.elapsedRealtime()
         if (now - lastResumeAtMs.longValue > 60_000L) {

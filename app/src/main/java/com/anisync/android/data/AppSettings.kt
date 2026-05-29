@@ -140,8 +140,10 @@ class AppSettings @Inject constructor(
 
     private fun readAvatarShape(): AvatarShape {
         val name = runCatching { prefs.getString(KEY_AVATAR_SHAPE, null) }.getOrNull()
-        return runCatching { AvatarShape.valueOf(name ?: AvatarShape.CLOVER.name) }
-            .getOrDefault(AvatarShape.CLOVER)
+        // Legacy: the 8-leaf clover used to be stored as "CLOVER"; map it forward.
+        if (name == "CLOVER") return AvatarShape.CLOVER_8_LEAF
+        return runCatching { AvatarShape.valueOf(name ?: AvatarShape.CLOVER_8_LEAF.name) }
+            .getOrDefault(AvatarShape.CLOVER_8_LEAF)
     }
 
     // Avatar background enabled setting

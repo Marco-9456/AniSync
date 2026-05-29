@@ -323,13 +323,10 @@ fun ProfileTopSection(
                 .offset(y = BannerHeight - CardOverlap - AvatarHalfSize),
             verticalAlignment = Alignment.Bottom
         ) {
-            val isShapeDisabled = isOwnProfile && com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile.current
             UserAvatar(
                 url = profile.avatarUrl,
                 contentDescription = stringResource(R.string.content_description_profile_avatar),
                 size = AvatarSize,
-                shape = if (isShapeDisabled) RectangleShape else LocalAvatarShape.current,
-                showFrame = !isShapeDisabled,
                 borderWidth = 2.dp,
                 framePadding = 3.dp
             )

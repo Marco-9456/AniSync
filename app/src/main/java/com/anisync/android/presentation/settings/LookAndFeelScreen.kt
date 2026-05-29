@@ -264,19 +264,12 @@ fun LookAndFeelScreen(
     if (showAvatarShapeDialog) {
         AvatarShapeSelectionSheet(
             currentShape = avatarShape,
-            backgroundEnabled = avatarBackgroundEnabled,
-            disableProfileShape = disableAvatarShapeProfile,
+            frameEnabled = avatarBackgroundEnabled,
             onShapeSelected = {
                 viewModel.onAction(SettingsAction.SetAvatarShape(it))
             },
-            onBackgroundEnabledChange = {
+            onFrameEnabledChange = {
                 viewModel.onAction(SettingsAction.SetAvatarBackgroundEnabled(it))
-            },
-            onDisableProfileShapeChange = {
-                viewModel.onAction(SettingsAction.SetDisableAvatarShapeProfile(it))
-                if (it) {
-                    viewModel.onAction(SettingsAction.SetAvatarBackgroundEnabled(false))
-                }
             },
             onDismiss = { showAvatarShapeDialog = false }
         )
@@ -1226,10 +1219,11 @@ private fun MockNavItem(
 @Composable
 private fun avatarShapeLabel(shape: com.anisync.android.data.AvatarShape): String = stringResource(
     when (shape) {
-        com.anisync.android.data.AvatarShape.CLOVER -> R.string.avatar_shape_clover
+        com.anisync.android.data.AvatarShape.CLOVER_8_LEAF -> R.string.avatar_shape_clover
         com.anisync.android.data.AvatarShape.CIRCLE -> R.string.avatar_shape_circle
         com.anisync.android.data.AvatarShape.CLOVER_4_LEAF -> R.string.avatar_shape_clover_4_leaf
         com.anisync.android.data.AvatarShape.GHOSTISH -> R.string.avatar_shape_ghostish
+        com.anisync.android.data.AvatarShape.NONE -> R.string.avatar_shape_none
     }
 )
 
@@ -1237,11 +1231,9 @@ private fun avatarShapeLabel(shape: com.anisync.android.data.AvatarShape): Strin
 @Composable
 fun AvatarShapeSelectionSheet(
     currentShape: com.anisync.android.data.AvatarShape,
-    backgroundEnabled: Boolean,
-    disableProfileShape: Boolean,
+    frameEnabled: Boolean,
     onShapeSelected: (com.anisync.android.data.AvatarShape) -> Unit,
-    onBackgroundEnabledChange: (Boolean) -> Unit,
-    onDisableProfileShapeChange: (Boolean) -> Unit,
+    onFrameEnabledChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -1327,63 +1319,30 @@ fun AvatarShapeSelectionSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onDisableProfileShapeChange(!disableProfileShape) }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.avatar_shape_disable_profile),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.avatar_shape_disable_profile_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Switch(
-                            checked = disableProfileShape,
-                            onCheckedChange = onDisableProfileShapeChange
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onFrameEnabledChange(!frameEnabled) }
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.avatar_shape_show_frame),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.avatar_shape_show_frame_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant
+                    Spacer(Modifier.width(16.dp))
+                    Switch(
+                        checked = frameEnabled,
+                        onCheckedChange = onFrameEnabledChange
                     )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onBackgroundEnabledChange(!backgroundEnabled) }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.avatar_shape_background),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.avatar_shape_background_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Switch(
-                            checked = backgroundEnabled,
-                            onCheckedChange = onBackgroundEnabledChange
-                        )
-                    }
                 }
             }
         }

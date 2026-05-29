@@ -243,6 +243,13 @@ class ProfileViewModel @Inject constructor(
     // normalized cache renders instantly; `true` is used by pull-to-refresh.
     private val targetRefreshSignal = MutableSharedFlow<Boolean>(replay = 0, extraBufferCapacity = 1)
 
+    /**
+     * Last successfully-loaded target profile. Lets a refresh (e.g. the ON_RESUME
+     * re-fetch) skip the Loading skeleton, so the content stays mounted and the
+     * scroll position / selected tab survive re-entry instead of being reset.
+     */
+    private var lastLoadedTargetProfile: com.anisync.android.domain.UserProfile? = null
+
     private val profileState = if (targetUsername.isNullOrBlank()) {
         getProfileUseCase()
             .map { profileResult ->
@@ -262,18 +269,32 @@ class ProfileViewModel @Inject constructor(
             .onStart { emit(false) }
             .flatMapLatest { forceNetwork ->
                 kotlinx.coroutines.flow.flow {
-                    emit(ProfileUiState(isLoading = true))
+                    // Skeleton only on the first load. On a refresh keep the loaded
+                    // profile on screen so ProfileContent stays mounted and scroll /
+                    // tab state are preserved (don't flash a Loading state on enter).
+                    if (lastLoadedTargetProfile == null) {
+                        emit(ProfileUiState(isLoading = true))
+                    }
                     when (val result = profileRepository.fetchUserProfile(targetUsername, forceNetwork)) {
-                        is Result.Success -> emit(ProfileUiState(isLoading = false, profile = result.data))
+                        is Result.Success -> {
+                            lastLoadedTargetProfile = result.data
+                            emit(ProfileUiState(isLoading = false, profile = result.data))
+                        }
                         is Result.Error -> {
-                            val message = if (
-                                result.message.contains("not found", ignoreCase = true)
-                            ) {
-                                "Could not load @$targetUsername right now. The account may be private, temporarily unavailable, or rate-limited."
+                            val cached = lastLoadedTargetProfile
+                            if (cached != null) {
+                                // Refresh failed but the profile is already on screen — keep it.
+                                emit(ProfileUiState(isLoading = false, profile = cached))
                             } else {
-                                result.message
+                                val message = if (
+                                    result.message.contains("not found", ignoreCase = true)
+                                ) {
+                                    "Could not load @$targetUsername right now. The account may be private, temporarily unavailable, or rate-limited."
+                                } else {
+                                    result.message
+                                }
+                                emit(ProfileUiState(isLoading = false, errorMessage = message))
                             }
-                            emit(ProfileUiState(isLoading = false, errorMessage = message))
                         }
                     }
                 }

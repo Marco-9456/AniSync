@@ -249,6 +249,8 @@
     <string name="avatar_shape_disable_profile_desc">Shows the original image shape for your own profile only</string>
     <string name="avatar_shape_background">Avatar Background</string>
     <string name="avatar_shape_background_desc">Adds a themed background behind the avatar</string>
+    <string name="avatar_shape_show_frame">Show frame</string>
+    <string name="avatar_shape_show_frame_desc">Draws a ring and background behind avatars</string>
     <string name="avatar_shape_clover">8-Leaf Clover</string>
     <string name="avatar_shape_clover_desc">The default 8-leaf clover shape</string>
     <string name="avatar_shape_circle">Circle</string>
@@ -257,6 +259,8 @@
     <string name="avatar_shape_clover_4_leaf_desc">A softer, 4-leaf clover alternative to a square</string>
     <string name="avatar_shape_ghostish">Ghostish</string>
     <string name="avatar_shape_ghostish_desc">A playful, ghost-like shape</string>
+    <string name="avatar_shape_none">None</string>
+    <string name="avatar_shape_none_desc">Show the avatar image in its natural shape</string>
     <string name="setting_streaming_service">Streaming Service</string>
     <string name="setting_streaming_service_desc">Choose your preferred streaming platform for the Up Next widget icon</string>
     <string name="control_notifications">Notifications</string>
