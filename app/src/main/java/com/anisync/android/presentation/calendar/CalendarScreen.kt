@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.calendar
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,24 +10,29 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -41,8 +47,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -55,6 +66,7 @@ import com.anisync.android.presentation.components.EmptyStateWithAction
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.ui.theme.ExpressiveShapes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -107,60 +119,65 @@ fun CalendarScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.calendar_title)) },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.navigate_back)
-                            )
-                        }
-                    },
-                    actions = {
-                        FilledIconToggleButton(
-                            checked = uiState.followingOnly,
-                            onCheckedChange = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.onAction(CalendarAction.ToggleFollowingOnly)
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 3.dp
+            ) {
+                Column {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.calendar_title)) },
+                        navigationIcon = {
+                            IconButton(onClick = onBackClick) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.navigate_back)
+                                )
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.FilterList,
-                                contentDescription = stringResource(R.string.calendar_following_only)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        },
+                        actions = {
+                            FilledIconToggleButton(
+                                checked = uiState.followingOnly,
+                                onCheckedChange = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.onAction(CalendarAction.ToggleFollowingOnly)
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.FilterList,
+                                    contentDescription = stringResource(R.string.calendar_following_only)
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
-                )
 
-                WeekSelector(
-                    weekStart = uiState.weekStart,
-                    isCurrentWeek = isCurrentWeek,
-                    onPrev = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.onAction(CalendarAction.PrevWeek)
-                    },
-                    onNext = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.onAction(CalendarAction.NextWeek)
-                    },
-                    onThisWeek = { viewModel.onAction(CalendarAction.ThisWeek) }
-                )
-
-                if (uiState.days.size == DAYS_IN_WEEK) {
-                    DayTabRow(
-                        days = uiState.days,
-                        selectedIndex = pagerState.currentPage,
-                        today = today,
-                        onSelect = { index ->
+                    WeekSelector(
+                        weekStart = uiState.weekStart,
+                        isCurrentWeek = isCurrentWeek,
+                        onPrev = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                        }
+                            viewModel.onAction(CalendarAction.PrevWeek)
+                        },
+                        onNext = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.onAction(CalendarAction.NextWeek)
+                        },
+                        onThisWeek = { viewModel.onAction(CalendarAction.ThisWeek) }
                     )
+
+                    if (uiState.days.size == DAYS_IN_WEEK) {
+                        WeekDayStrip(
+                            days = uiState.days,
+                            selectedIndex = pagerState.currentPage,
+                            today = today,
+                            onSelect = { index ->
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -301,14 +318,17 @@ private fun WeekSelector(
                 color = MaterialTheme.colorScheme.onSurface
             )
             if (!isCurrentWeek) {
-                Text(
-                    text = stringResource(R.string.calendar_jump_to_today),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .clickable(onClick = onThisWeek)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                AssistChip(
+                    onClick = onThisWeek,
+                    label = { Text(stringResource(R.string.calendar_jump_to_today)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Today,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    },
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
@@ -322,59 +342,114 @@ private fun WeekSelector(
 }
 
 @Composable
-private fun DayTabRow(
+private fun WeekDayStrip(
     days: List<CalendarDay>,
     selectedIndex: Int,
     today: LocalDate,
-    onSelect: (Int) -> Unit
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    PrimaryScrollableTabRow(
-        selectedTabIndex = selectedIndex.coerceIn(0, days.lastIndex.coerceAtLeast(0)),
-        edgePadding = 12.dp,
-        containerColor = MaterialTheme.colorScheme.surface
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         days.forEachIndexed { index, day ->
-            val isToday = day.date == today
-            Tab(
+            DayCell(
+                day = day,
                 selected = index == selectedIndex,
-                onClick = { onSelect(index) }
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = day.date.dayOfWeek
-                            .getDisplayName(TextStyle.SHORT, Locale.getDefault()),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isToday) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                    Text(
-                        text = day.date.dayOfMonth.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isToday) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
-                    )
-                    Text(
-                        text = if (day.episodes.isEmpty()) "–" else day.episodes.size.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (day.episodes.isEmpty()) {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
-            }
+                isToday = day.date == today,
+                onClick = { onSelect(index) },
+                modifier = Modifier.weight(1f)
+            )
         }
+    }
+}
+
+@Composable
+private fun DayCell(
+    day: CalendarDay,
+    selected: Boolean,
+    isToday: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Animate the pill background so selection feels continuous as the pager swipes.
+    val containerColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        label = "dayCellContainer"
+    )
+
+    val weekdayColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val numberColor = when {
+        selected -> MaterialTheme.colorScheme.onPrimary
+        isToday -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val isEmpty = day.episodes.isEmpty()
+    val countColor = when {
+        selected -> MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+        isEmpty -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val locale = Locale.getDefault()
+    // Merge the three texts into one TalkBack node; selection state comes from selectable().
+    val cellDescription = remember(day.date) {
+        val weekdayFull = day.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+        val dateLabel = day.date.format(DateTimeFormatter.ofPattern("MMMM d", locale))
+        "$weekdayFull, $dateLabel"
+    }
+
+    Column(
+        modifier = modifier
+            .clip(ExpressiveShapes.pill)
+            .background(containerColor)
+            .selectable(
+                selected = selected,
+                role = Role.Tab,
+                onClick = onClick
+            )
+            .semantics(mergeDescendants = true) { contentDescription = cellDescription }
+            .padding(vertical = 10.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale),
+            style = MaterialTheme.typography.labelMedium,
+            color = weekdayColor
+        )
+        Text(
+            text = day.date.dayOfMonth.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = numberColor
+        )
+        Text(
+            text = if (isEmpty) "–" else day.episodes.size.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            color = countColor
+        )
+        // Today marker — drawn for every cell (transparent unless today) so all pills keep
+        // the same height; visible only when today isn't the currently selected day.
+        Box(
+            modifier = Modifier
+                .size(4.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isToday && !selected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        Color.Transparent
+                    }
+                )
+        )
     }
 }
 
