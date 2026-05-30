@@ -143,7 +143,7 @@ internal class RichTextHtmlParser(
 
     private fun walkElement(element: Element, ctx: ParseContext) {
         val tag = element.tagName().lowercase()
-        val textAlign = parseAlignment(tag, element.attr("align"), ctx.align)
+        val textAlign = parseAlignment(tag, element.attr("align"), ctx.align, element.attr("style"))
         val isNewAlign = textAlign != ctx.align
 
         val workingCtx = if (isNewAlign) {
@@ -373,7 +373,7 @@ internal class RichTextHtmlParser(
             val cells = mutableListOf<TableCell>()
             for (td in tr.children()) {
                 if (td.tagName() !in TABLE_CELL_TAGS) continue
-                val cellAlign = parseAlignment(td.tagName(), td.attr("align"), ctx.align)
+                val cellAlign = parseAlignment(td.tagName(), td.attr("align"), ctx.align, td.attr("style"))
                 val cellCtx = ctx.detached(
                     align = cellAlign,
                     currentLinkUrl = ctx.currentLinkUrl
@@ -396,11 +396,7 @@ internal class RichTextHtmlParser(
         ctx.flushText()
         val listItems = mutableListOf<ListItem>()
         val depth = ctx.listDepth
-        val bulletSymbol = when (depth % 3) {
-            0 -> "•"
-            1 -> "◦"
-            else -> "▪"
-        }
+        val bulletSymbol = bulletSymbol(depth)
 
         var itemIndex = element.attr("start").toIntOrNull() ?: 1
 
@@ -478,7 +474,7 @@ internal class RichTextHtmlParser(
         val hashWidth = widthAttr.startsWith("#")
         ctx.emitBlock(
             RichTextBlock.Image(
-                url = src,
+                url = upgradeImageScheme(src),
                 width = if (hashWidth) null else widthAttr.replace(nonDigitRegex, "").toIntOrNull(),
                 height = heightAttr.replace(nonDigitRegex, "").toIntOrNull(),
                 isPercent = if (hashWidth) false else widthAttr.contains("%"),

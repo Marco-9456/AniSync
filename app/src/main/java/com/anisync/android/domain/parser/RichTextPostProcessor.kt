@@ -24,6 +24,22 @@ internal object RichTextPostProcessor {
                 continue
             }
 
+            // Merge contiguous lists into one. AniList markup can split a single logical
+            // list across blocks — e.g. a stranded markdown bullet followed by a real <ul> —
+            // which would otherwise render as two lists with a gap between them.
+            if (block is RichTextBlock.ListBlock) {
+                val align = block.align
+                val mergedItems = mutableListOf<ListItem>()
+                while (index < blocks.size &&
+                    blocks[index].let { it is RichTextBlock.ListBlock && it.align == align }
+                ) {
+                    mergedItems.addAll((blocks[index] as RichTextBlock.ListBlock).items)
+                    index++
+                }
+                result.add(recursivelyGroupChildren(RichTextBlock.ListBlock(mergedItems, align)))
+                continue
+            }
+
             // Group contiguous AnilistLinks together
             if (block is RichTextBlock.AnilistLink) {
                 val group = mutableListOf<RichTextBlock>()

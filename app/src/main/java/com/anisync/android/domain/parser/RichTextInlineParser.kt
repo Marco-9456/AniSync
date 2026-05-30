@@ -75,6 +75,61 @@ internal class RichTextInlineParser(
                         }
                     }
 
+                    // Markdown unordered list: a line beginning with "- ", "* ", or "+ "
+                    // (a single marker followed by whitespace). AniList occasionally emits a
+                    // bullet as raw text outside its <ul> (e.g. stranded inside a spoiler's
+                    // opening <p>), which previously rendered as a literal "- item". Collect the
+                    // run of bullet lines into a real list; the PostProcessor then merges it with
+                    // an adjacent HTML <ul> so the items read as one list.
+                    if ((lineChar == '-' || lineChar == '*' || lineChar == '+') &&
+                        ws + 1 < length &&
+                        (preparedText[ws + 1] == ' ' || preparedText[ws + 1] == '\t')
+                    ) {
+                        flushPlain()
+                        ctx.flushText()
+                        val bullet = bulletSymbol(ctx.listDepth)
+                        val items = mutableListOf<ListItem>()
+                        var lineStart = index
+                        while (lineStart < length) {
+                            var marker = lineStart
+                            while (marker < length &&
+                                (preparedText[marker] == ' ' || preparedText[marker] == '\t')
+                            ) marker++
+                            val isBullet = marker < length &&
+                                (preparedText[marker] == '-' || preparedText[marker] == '*' || preparedText[marker] == '+') &&
+                                marker + 1 < length &&
+                                (preparedText[marker + 1] == ' ' || preparedText[marker + 1] == '\t')
+                            if (!isBullet) break
+
+                            var eol = preparedText.indexOf('\n', marker)
+                            if (eol == -1) eol = length
+                            var contentStart = marker + 1
+                            while (contentStart < eol &&
+                                (preparedText[contentStart] == ' ' || preparedText[contentStart] == '\t')
+                            ) contentStart++
+                            val content = preparedText.substring(contentStart, eol).trim()
+                            items.add(
+                                ListItem(
+                                    children = listOf(
+                                        RichTextBlock.Text(
+                                            inlines = parseInlineOnly(content, ctx.currentLinkUrl),
+                                            align = ctx.align
+                                        )
+                                    ),
+                                    bullet = bullet
+                                )
+                            )
+                            lineStart = if (eol < length) eol + 1 else length
+                        }
+
+                        if (items.isNotEmpty()) {
+                            ctx.emitBlock(RichTextBlock.ListBlock(items = items, align = ctx.align))
+                            index = lineStart
+                            lastAppend = index
+                            continue
+                        }
+                    }
+
                     if (lineChar == '#') {
                         var j = ws
                         while (j < length && preparedText[j] == '#') j++
@@ -210,7 +265,7 @@ internal class RichTextInlineParser(
                     if (url.isNotBlank()) {
                         ctx.emitBlock(
                             RichTextBlock.Image(
-                                url = url,
+                                url = upgradeImageScheme(url),
                                 width = size.replace("%", "").toIntOrNull(),
                                 height = null,
                                 isPercent = size.endsWith("%"),
@@ -341,7 +396,7 @@ internal class RichTextInlineParser(
                         val url = preparedText.substring(closeBracket + 2, closeParen)
                         ctx.emitBlock(
                             RichTextBlock.Image(
-                                url = url,
+                                url = upgradeImageScheme(url),
                                 width = null,
                                 height = null,
                                 isPercent = false,
@@ -377,7 +432,7 @@ internal class RichTextInlineParser(
                                         linkText.substring(innerCloseBracket + 2, innerCloseParen)
                                     ctx.emitBlock(
                                         RichTextBlock.Image(
-                                            url = imgUrl,
+                                            url = upgradeImageScheme(imgUrl),
                                             width = null,
                                             height = null,
                                             isPercent = false,

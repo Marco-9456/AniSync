@@ -46,6 +46,12 @@ internal fun isBlankInlineList(inlines: List<RichTextInline>): Boolean {
     }
 }
 
+internal fun bulletSymbol(depth: Int): String = when (depth % 3) {
+    0 -> "•"
+    1 -> "◦"
+    else -> "▪"
+}
+
 internal fun headingKind(level: Int): RichTextTextKind = when (level) {
     1 -> RichTextTextKind.Heading1
     2 -> RichTextTextKind.Heading2
@@ -58,13 +64,42 @@ internal fun headingKind(level: Int): RichTextTextKind = when (level) {
 internal fun parseAlignment(
     tagName: String,
     alignAttr: String,
-    fallback: RichTextAlignment
+    fallback: RichTextAlignment,
+    styleAttr: String = ""
 ): RichTextAlignment {
     if (tagName == "center") return RichTextAlignment.Center
-    return when (alignAttr.lowercase()) {
+    // The HTML `align` attribute wins over CSS, then fall back to `style="text-align: …"`.
+    // AniList's renderer emits CSS text-align in many places, so reading only the attribute
+    // silently dropped alignment (e.g. `<p style="text-align:center">`).
+    alignmentKeyword(alignAttr)?.let { return it }
+    cssTextAlign(styleAttr)?.let { alignmentKeyword(it)?.let { resolved -> return resolved } }
+    return fallback
+}
+
+private fun alignmentKeyword(value: String): RichTextAlignment? =
+    when (value.trim().lowercase()) {
         "center" -> RichTextAlignment.Center
         "right" -> RichTextAlignment.End
         "justify" -> RichTextAlignment.Justify
-        else -> fallback
+        "left" -> RichTextAlignment.Start
+        else -> null
     }
+
+private fun cssTextAlign(style: String): String? {
+    if (style.isEmpty()) return null
+    val keyIndex = style.indexOf("text-align", ignoreCase = true)
+    if (keyIndex < 0) return null
+    val colon = style.indexOf(':', keyIndex)
+    if (colon < 0) return null
+    val end = style.indexOf(';', colon).let { if (it < 0) style.length else it }
+    return style.substring(colon + 1, end).trim().ifEmpty { null }
 }
+
+/**
+ * Upgrades a cleartext `http://` image URL to `https://`. AniList content frequently embeds
+ * legacy `http` imgur links; with the app's default network policy (no cleartext permission on
+ * modern target SDKs) Coil silently fails to load them. Nearly every image host serves the same
+ * asset over TLS, so the upgrade lets these images render instead of leaving blank gaps.
+ */
+internal fun upgradeImageScheme(url: String): String =
+    if (url.startsWith("http://", ignoreCase = true)) "https://" + url.substring(7) else url

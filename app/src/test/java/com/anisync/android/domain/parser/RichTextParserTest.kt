@@ -183,6 +183,105 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `http image urls are upgraded to https`() = runBlocking {
+        val parsed = RichTextParser.parse("<img src='http://i.imgur.com/abc.jpg'>")
+        val image = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Image>().first()
+        assertEquals("https://i.imgur.com/abc.jpg", image.url)
+        assertEquals(listOf("https://i.imgur.com/abc.jpg"), parsed.imageUrls)
+    }
+
+    @Test
+    fun `linked http image keeps destination and upgrades scheme`() = runBlocking {
+        val parsed = RichTextParser.parse(
+            "<center>[<img src='http://i.imgur.com/hy3tXpl.jpg'>](https://www.patreon.com/ani_chart_list)</center>"
+        )
+        val image = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Image>().first()
+        assertEquals("https://i.imgur.com/hy3tXpl.jpg", image.url)
+        assertEquals("https://www.patreon.com/ani_chart_list", image.linkUrl)
+        assertEquals(RichTextAlignment.Center, image.align)
+    }
+
+    @Test
+    fun `https image urls are left untouched`() = runBlocking {
+        val parsed = RichTextParser.parse("<img src='https://i.imgur.com/CY32yPS.png'>")
+        val image = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Image>().first()
+        assertEquals("https://i.imgur.com/CY32yPS.png", image.url)
+    }
+
+    @Test
+    fun `css text-align center is honored`() = runBlocking {
+        val parsed = RichTextParser.parse("<p style=\"text-align: center;\">styled</p>")
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals(RichTextAlignment.Center, text.align)
+    }
+
+    @Test
+    fun `css text-align right is honored`() = runBlocking {
+        val parsed = RichTextParser.parse("<div style=\"text-align:right\">styled</div>")
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals(RichTextAlignment.End, text.align)
+    }
+
+    @Test
+    fun `align attribute wins over conflicting style`() = runBlocking {
+        val parsed =
+            RichTextParser.parse("<p align=\"right\" style=\"text-align:center\">x</p>")
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals(RichTextAlignment.End, text.align)
+    }
+
+    @Test
+    fun `markdown dash bullets become a list`() = runBlocking {
+        val parsed = RichTextParser.parse("- one\n- two\n- three")
+        val list = parsed.blocks.filterIsInstance<RichTextBlock.ListBlock>().first()
+        assertEquals(3, list.items.size)
+        val first = list.items.first().children.filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals("one", first.debugInlineText())
+        // The literal "- " marker must not leak into the rendered text.
+        assertFalse(first.debugInlineText().startsWith("-"))
+    }
+
+    @Test
+    fun `markdown star and plus bullets become a list`() = runBlocking {
+        val parsed = RichTextParser.parse("* a\n+ b")
+        val list = parsed.blocks.filterIsInstance<RichTextBlock.ListBlock>().first()
+        assertEquals(2, list.items.size)
+    }
+
+    @Test
+    fun `emphasis at line start is not treated as a bullet`() = runBlocking {
+        val parsed = RichTextParser.parse("*italic* text")
+        assertTrue(parsed.blocks.none { it is RichTextBlock.ListBlock })
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+        assertTrue(text.inlines.containsInline { it is RichTextInline.Italic })
+    }
+
+    @Test
+    fun `adjacent markdown bullet and html list merge into one`() = runBlocking {
+        val parsed = RichTextParser.parse("- zero\n<ul><li>one</li><li>two</li></ul>")
+        val lists = parsed.blocks.filterIsInstance<RichTextBlock.ListBlock>()
+        assertEquals(1, lists.size)
+        assertEquals(3, lists.first().items.size)
+    }
+
+    @Test
+    fun `stranded markdown bullet in spoiler merges with html list`() = runBlocking {
+        // Mirrors AniList's malformed output (e.g. Marina Inoue's bio): the spoiler span
+        // opens inside a <p> with the first list item as a raw "- " bullet, the rest arrive
+        // as a real <ul>, and the span closes inside the final <li>.
+        val html = "<p><strong>Roles:</strong><br />\n" +
+            "<span class='markdown_spoiler'><span>- Pallas - Arknights (VG)</p>\n" +
+            "<ul>\n<li>Elysia - Honkai Impact 3rd (VG)</li>\n" +
+            "<li>Yanqing - Honkai: Star Rail (VG)<br />\n</span></span></li>\n</ul>"
+        val parsed = RichTextParser.parse(html)
+        val spoiler = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Spoiler>().first()
+        val list = spoiler.children.filterIsInstance<RichTextBlock.ListBlock>().first()
+        assertEquals(3, list.items.size)
+        val firstItem = list.items.first().children.filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals("Pallas - Arknights (VG)", firstItem.debugInlineText())
+    }
+
+    @Test
     fun `empty input returns empty result`() = runBlocking {
         val parsed = RichTextParser.parse("  ")
         assertTrue(parsed.blocks.isEmpty())
