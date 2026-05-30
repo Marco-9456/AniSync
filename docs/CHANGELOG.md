@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-05-30
+
+### Added
+
+- **Weekly Airing Calendar** - New in-app screen showing the week's airing schedule, with a pill-style day selector, a "today" marker, and a jump-to-today chip.
+- **In-App Sponsors Screen** - Dedicated Sponsors screen whose list is synced from GitHub Sponsors via CI.
+- **Avatar Shape Customization** - Choose an avatar shape (Clover-8 leaf and others) and toggle a global profile background. A shared `UserAvatar` renders consistently across review cards, profile, and other avatar sites.
+- **Library Pull-to-Refresh** - Pull-to-refresh on the Library tabs.
+
+### Changed
+
+- **Rate-Limit Resilience** - Added a stale-while-revalidate `ResourceFetcher` primitive, cut profile/search request volume to stop rate-limit stalls, and surfaced rate-limit feedback through the toast system.
+- **Detail-Push Enter Animation** - Detail screens pushed onto the stack now animate in.
+- **About Screen Refresh** - Reworked About screen and open-source acknowledgements list.
+- **Hide Developer Tools** - Developer Tools can be disabled/hidden from settings.
+
+### Fixed
+
+- FAB now stays above content during the media-details enter transition and above the bottom nav bar on Feed and Forum.
+- Profile keeps its scroll position when navigating back.
+- Custom lists exclude `status:*` entries; studio cover sizes are uniform.
+- Clover-8 item-icon shape is preserved when the avatar shape is set to None.
+- In-app notification taps route through the `NavController` instead of restarting the activity.
+- Voice-actor count badge no longer clips on character screens.
+
 ## [1.7.0] - 2026-05-15
 
 ### Added

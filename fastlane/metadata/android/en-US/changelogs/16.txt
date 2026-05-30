@@ -1,0 +1,18 @@
+Added:
+- Weekly Airing Calendar screen with day-picker pills, a today marker, and a jump-to-today chip.
+- In-app Sponsors screen, synced from GitHub Sponsors.
+- Avatar shape customization (Clover-8 leaf and others) plus a profile background toggle.
+- Pull-to-refresh on the Library tabs.
+
+Changed:
+- Rate-limit resilience: stale-while-revalidate fetcher, lower profile/search request volume, and rate-limit toast feedback.
+- Shared avatar rendering across review cards and profile, honoring the chosen shape and background.
+- Enter animation on detail-push screens; refreshed About screen and open-source list.
+- Developer Tools can now be hidden.
+
+Fixed:
+- FAB stays above content and the bottom nav on media details, feed, and forum.
+- Profile keeps its scroll position when navigating back.
+- Custom lists exclude status:* entries; studio cover sizes are uniform.
+- In-app notification taps route through the navigation graph.
+- Voice-actor count badge no longer clips on character screens.
