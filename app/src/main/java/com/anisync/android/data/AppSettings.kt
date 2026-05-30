@@ -795,5 +795,8 @@ enum class AppLocale(val tag: String, val displayName: String) {
     SYSTEM("", "System Default"),
     ENGLISH("en", "English"),
     GERMAN("de", "Deutsch"),
-    ARABIC("ar", "العربية")
+    ARABIC("ar", "العربية"),
+    SPANISH("es", "Español"),
+    PORTUGUESE_BR("pt-BR", "Português (Brasil)"),
+    PORTUGUESE("pt", "Português")
 }

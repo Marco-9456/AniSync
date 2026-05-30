@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **In-App Sponsors Screen** - Dedicated Sponsors screen whose list is synced from GitHub Sponsors via CI.
 - **Avatar Shape Customization** - Choose an avatar shape (Clover-8 leaf and others) and toggle a global profile background. A shared `UserAvatar` renders consistently across review cards, profile, and other avatar sites.
 - **Library Pull-to-Refresh** - Pull-to-refresh on the Library tabs.
+- **More Languages** - Added Spanish and Portuguese (Portugal) translations and refreshed Arabic, German, and Portuguese (Brazil) via Weblate.
 
 ### Changed
 
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clover-8 item-icon shape is preserved when the avatar shape is set to None.
 - In-app notification taps route through the `NavController` instead of restarting the activity.
 - Voice-actor count badge no longer clips on character screens.
+- The in-app App Language sheet now lists every bundled language; it previously only offered English, German, and Arabic.
 
 ## [1.7.0] - 2026-05-15
 

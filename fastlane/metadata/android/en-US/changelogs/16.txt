@@ -3,6 +3,7 @@ Added:
 - In-app Sponsors screen, synced from GitHub Sponsors.
 - Avatar shape customization (Clover-8 leaf and others) plus a profile background toggle.
 - Pull-to-refresh on the Library tabs.
+- Spanish and Portuguese translations; the in-app language picker now lists every bundled language.
 
 Changed:
 - Rate-limit resilience: stale-while-revalidate fetcher, lower profile/search request volume, and rate-limit toast feedback.
