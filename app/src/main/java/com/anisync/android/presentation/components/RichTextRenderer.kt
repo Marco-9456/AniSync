@@ -53,6 +53,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
@@ -144,34 +145,34 @@ fun RichTextRenderer(
         previews.putAll(fetched)
     }
 
-    val customUriHandler = remember(linkRouter) {
-        object : androidx.compose.ui.platform.UriHandler {
-            override fun openUri(uri: String) {
-                linkRouter.navigate(uri)
-            }
+    // A single, stable click listener for every inline link. Built once per router
+    // identity (the router is now remembered), so the AnnotatedString link annotations
+    // keep stable identity across recompositions. Previously a per-recomposition
+    // UriHandler override changed the LocalUriHandler value on every recomposition,
+    // tearing down the Text link pointer-input node mid-gesture and dropping taps.
+    val linkListener = remember(linkRouter) {
+        LinkInteractionListener { link ->
+            if (link is LinkAnnotation.Clickable) linkRouter.navigate(link.tag)
         }
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(
-        androidx.compose.ui.platform.LocalUriHandler provides customUriHandler
-    ) {
-        SelectionContainer(modifier = modifier) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                RenderBlocks(
-                    blocks = parsedData.blocks,
-                    style = style,
-                    color = color,
-                    linkColor = linkColor,
-                    codeBackground = codeBackground,
-                    spoilerColor = spoilerColor,
-                    previews = previews,
-                    onImageClick = { url ->
-                        val idx = parsedData.imageUrls.indexOf(url)
-                        if (idx >= 0) viewerInitialIndex = idx
-                    },
-                    onLinkClick = { linkRouter.navigate(it) }
-                )
-            }
+    SelectionContainer(modifier = modifier) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            RenderBlocks(
+                blocks = parsedData.blocks,
+                style = style,
+                color = color,
+                linkColor = linkColor,
+                codeBackground = codeBackground,
+                spoilerColor = spoilerColor,
+                previews = previews,
+                onImageClick = { url ->
+                    val idx = parsedData.imageUrls.indexOf(url)
+                    if (idx >= 0) viewerInitialIndex = idx
+                },
+                onLinkClick = { linkRouter.navigate(it) },
+                linkListener = linkListener
+            )
         }
     }
 
@@ -222,7 +223,8 @@ private fun RenderBlocks(
     spoilerColor: Color,
     previews: Map<LinkPreviewKey, LinkPreview>,
     onImageClick: (String) -> Unit,
-    onLinkClick: (String) -> Unit
+    onLinkClick: (String) -> Unit,
+    linkListener: LinkInteractionListener
 ) {
     for (block in blocks) {
         val blockAlignment = when (block.align.toTextAlign()) {
@@ -244,7 +246,8 @@ private fun RenderBlocks(
                             baseColor = color,
                             linkColor = linkColor,
                             codeBackground = codeBackground,
-                            headingKind = block.kind
+                            headingKind = block.kind,
+                            linkListener = linkListener
                         ),
                         style = style.copy(color = color),
                         textAlign = block.align.toTextAlign(),
@@ -279,7 +282,8 @@ private fun RenderBlocks(
                                             baseColor = color,
                                             linkColor = linkColor,
                                             codeBackground = codeBackground,
-                                            headingKind = child.kind
+                                            headingKind = child.kind,
+                                            linkListener = linkListener
                                         ),
                                         style = style.copy(color = color),
                                         textAlign = child.align.toTextAlign(),
@@ -345,7 +349,8 @@ private fun RenderBlocks(
                                         spoilerColor = spoilerColor,
                                         previews = previews,
                                         onImageClick = onImageClick,
-                                        onLinkClick = onLinkClick
+                                        onLinkClick = onLinkClick,
+                                        linkListener = linkListener
                                     )
                                 }
                             }
@@ -420,7 +425,8 @@ private fun RenderBlocks(
                                                 spoilerColor = spoilerColor,
                                                 previews = previews,
                                                 onImageClick = onImageClick,
-                                                onLinkClick = onLinkClick
+                                                onLinkClick = onLinkClick,
+                                                linkListener = linkListener
                                             )
                                         }
                                     }
@@ -496,7 +502,8 @@ private fun RenderBlocks(
                                     spoilerColor = spoilerColor,
                                     previews = previews,
                                     onImageClick = onImageClick,
-                                    onLinkClick = onLinkClick
+                                    onLinkClick = onLinkClick,
+                                    linkListener = linkListener
                                 )
                             }
                         }
@@ -529,7 +536,8 @@ private fun RenderBlocks(
                             spoilerColor = spoilerColor,
                             previews = previews,
                             onImageClick = onImageClick,
-                            onLinkClick = onLinkClick
+                            onLinkClick = onLinkClick,
+                            linkListener = linkListener
                         )
                     }
                 }
@@ -699,14 +707,16 @@ private fun List<RichTextInline>.toAnnotatedString(
     baseColor: Color,
     linkColor: Color,
     codeBackground: Color,
-    headingKind: RichTextTextKind
+    headingKind: RichTextTextKind,
+    linkListener: LinkInteractionListener
 ): AnnotatedString = buildAnnotatedString {
     withStyle(headingKind.toSpanStyle(baseStyle)) {
         appendInlines(
             inlines = this@toAnnotatedString,
             baseColor = baseColor,
             linkColor = linkColor,
-            codeBackground = codeBackground
+            codeBackground = codeBackground,
+            linkListener = linkListener
         )
     }
 }
@@ -715,18 +725,19 @@ private fun AnnotatedString.Builder.appendInlines(
     inlines: List<RichTextInline>,
     baseColor: Color,
     linkColor: Color,
-    codeBackground: Color
+    codeBackground: Color,
+    linkListener: LinkInteractionListener
 ) {
     for (inline in inlines) {
         when (inline) {
             is RichTextInline.Text -> append(inline.value)
             is RichTextInline.LineBreak -> append("\n")
             is RichTextInline.Bold -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
             }
 
             is RichTextInline.Italic -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
             }
 
             is RichTextInline.BoldItalic -> withStyle(
@@ -735,23 +746,37 @@ private fun AnnotatedString.Builder.appendInlines(
                     fontStyle = FontStyle.Italic
                 )
             ) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
             }
 
             is RichTextInline.Strikethrough -> withStyle(
                 SpanStyle(textDecoration = TextDecoration.LineThrough)
             ) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
             }
 
             is RichTextInline.Link -> {
+                // Clickable annotation with a stable listener — the tap is delivered by the
+                // annotation itself rather than via a global LocalUriHandler override, so
+                // recompositions never tear down the link's gesture node. The url rides along
+                // as the annotation tag and is routed by AniLinkRouter on click.
                 pushLink(
-                    LinkAnnotation.Url(
-                        inline.url,
-                        TextLinkStyles(style = SpanStyle(color = linkColor))
+                    LinkAnnotation.Clickable(
+                        tag = inline.url,
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = linkColor,
+                                textDecoration = TextDecoration.Underline
+                            ),
+                            pressedStyle = SpanStyle(
+                                color = linkColor.copy(alpha = 0.6f),
+                                textDecoration = TextDecoration.Underline
+                            )
+                        ),
+                        linkInteractionListener = linkListener
                     )
                 )
-                appendInlines(inline.children, baseColor, linkColor, codeBackground)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
                 pop()
             }
 

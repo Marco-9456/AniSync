@@ -2,6 +2,7 @@ package com.anisync.android.presentation.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -223,5 +224,5 @@ class AniLinkRouter(
 fun rememberAniLinkRouter(): AniLinkRouter {
     val callbacks = LocalAniLinkCallbacks.current
     val uriHandler = LocalUriHandler.current
-    return AniLinkRouter(callbacks, uriHandler)
+    return remember(callbacks, uriHandler) { AniLinkRouter(callbacks, uriHandler) }
 }

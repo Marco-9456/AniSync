@@ -616,13 +616,20 @@ fun ExpandableSynopsis(text: String) {
             )
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
-            SelectionContainer {
-                Text(
-                    text = text,
+            // Rich renderer so inline AniList links in anime/manga (and character)
+            // descriptions are clickable. Collapse via a clipped height box, mirroring the
+            // biography composable above — the renderer already wraps its content in a
+            // SelectionContainer, so wrapping again here would nest (and crash) one.
+            Box(
+                modifier = if (!expanded) Modifier
+                    .height(110.dp)
+                    .clip(RoundedCornerShape(0.dp))
+                else Modifier
+            ) {
+                com.anisync.android.presentation.components.AsyncRichTextRenderer(
+                    html = text,
                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    maxLines = if (expanded) Int.MAX_VALUE else 4,
-                    overflow = TextOverflow.Ellipsis
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
             }
 
