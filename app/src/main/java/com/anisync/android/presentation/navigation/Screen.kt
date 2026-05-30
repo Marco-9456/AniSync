@@ -17,6 +17,12 @@ object Library
 @Serializable
 object Discover
 
+/**
+ * Airing calendar — weekly anime airing schedule. Reached from the Library top bar.
+ */
+@Serializable
+object Calendar
+
 @Serializable
 object Feed
 

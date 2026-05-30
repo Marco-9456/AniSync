@@ -1044,4 +1044,20 @@
     <string name="statistics_taste_focused">Your taste is laser-focused</string>
     <string name="statistics_taste_balanced">Balanced taste</string>
     <string name="statistics_taste_eclectic">Wide, eclectic taste</string>
+
+    <!-- Airing calendar -->
+    <string name="calendar_title">Airing Calendar</string>
+    <string name="calendar_open">Airing calendar</string>
+    <string name="calendar_following_only">Show only shows on your list</string>
+    <string name="calendar_previous_week">Previous week</string>
+    <string name="calendar_next_week">Next week</string>
+    <string name="calendar_jump_to_today">Jump to this week</string>
+    <string name="calendar_episode_number">Episode %1$d</string>
+    <string name="calendar_aired">Aired</string>
+    <string name="calendar_airs_in">in %1$s</string>
+    <string name="calendar_chip_watching">Watching</string>
+    <string name="calendar_chip_planning">Planning</string>
+    <string name="calendar_empty_title">Nothing airing</string>
+    <string name="calendar_empty_desc">No episodes air on this day.</string>
+    <string name="calendar_empty_following_desc">No shows from your list air on this day.</string>
 </resources>

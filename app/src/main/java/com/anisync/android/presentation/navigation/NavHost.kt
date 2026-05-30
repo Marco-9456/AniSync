@@ -23,12 +23,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.activity.ActivityDetailScreen
+import com.anisync.android.presentation.calendar.CalendarScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaCharactersGridScreen
-import com.anisync.android.presentation.details.MediaStaffGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.MediaStaffGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
@@ -50,7 +51,6 @@ import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
-import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LinksScreen
@@ -59,6 +59,7 @@ import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsScreen
+import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
@@ -279,6 +280,7 @@ fun AniSyncNavHost(
                 
                 LibraryScreen(
                     onMediaClick = onLibraryMediaClick,
+                    onNavigateToCalendar = { navController.navigate(Calendar) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -1011,6 +1013,26 @@ fun AniSyncNavHost(
                         )
                     },
                     onSettingsClick = { navController.navigate(SettingsNotifications) }
+                )
+            }
+
+            // =================================================================
+            // AIRING CALENDAR - Shared Axis Z (Depth)
+            // =================================================================
+            composable<Calendar>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://calendar" }
+                ),
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                CalendarScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "calendar"))
+                    }
                 )
             }
 

@@ -66,8 +66,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
-import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -99,10 +97,12 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.components.CompletedCardConfig
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.MediaTypeSelector
 import com.anisync.android.presentation.components.WatchingCardConfig
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.library.components.EmptyLibraryTabState
 import com.anisync.android.presentation.library.components.LibraryListCard
@@ -116,7 +116,6 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -153,6 +152,7 @@ sealed class LibraryTab {
 @Composable
 fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
+    onNavigateToCalendar: () -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope
@@ -315,7 +315,8 @@ fun LibraryScreen(
             onToggleSort = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 showSortMenu = true
-            }
+            },
+            onNavigateToCalendar = onNavigateToCalendar
         )
     }
     val isLibraryEnteringFromBackStack by remember {
@@ -811,7 +812,8 @@ private fun LibrarySearchBarInputField(
     onBackClick: () -> Unit,
     onClearClick: () -> Unit,
     onToggleView: () -> Unit,
-    onToggleSort: () -> Unit
+    onToggleSort: () -> Unit,
+    onNavigateToCalendar: () -> Unit
 ) {
     SearchBarDefaults.InputField(
         enabled = !showListManagement,
@@ -849,6 +851,13 @@ private fun LibrarySearchBarInputField(
                 }
             } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
                 Row {
+                    IconButton(onClick = onNavigateToCalendar) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = stringResource(R.string.calendar_open)
+                        )
+                    }
+
                     IconButton(onClick = onToggleView) {
                         Icon(
                             imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,

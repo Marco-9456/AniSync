@@ -1,6 +1,7 @@
 package com.anisync.android.di
 
 import com.anisync.android.data.ActivityRepositoryImpl
+import com.anisync.android.data.CalendarRepositoryImpl
 import com.anisync.android.data.DetailsRepositoryImpl
 import com.anisync.android.data.DiscoverRepositoryImpl
 import com.anisync.android.data.FeedRepositoryImpl
@@ -13,6 +14,7 @@ import com.anisync.android.data.SearchRepositoryImpl
 import com.anisync.android.data.StatisticsRepositoryImpl
 import com.anisync.android.data.repository.PreferencesRepositoryImpl
 import com.anisync.android.domain.ActivityRepository
+import com.anisync.android.domain.CalendarRepository
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.FeedRepository
@@ -92,4 +94,9 @@ abstract class RepositoryModule {
     abstract fun bindFeedRepository(
         impl: FeedRepositoryImpl
     ): FeedRepository
+
+    @Binds
+    abstract fun bindCalendarRepository(
+        impl: CalendarRepositoryImpl
+    ): CalendarRepository
 }
