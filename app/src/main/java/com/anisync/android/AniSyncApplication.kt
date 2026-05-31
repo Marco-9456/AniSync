@@ -57,6 +57,10 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
         }
         Log.d("PerfMetrics", "Main thread AppInit took $mainThreadTime ms")
 
+        // Prime the WebView/Chromium provider early (posted, off the cold-start critical path) so
+        // the first SVG-heavy bio/activity doesn't pay the WebView init stall on screen entry.
+        com.anisync.android.presentation.components.WebViewWarmer.warmUp(this)
+
         applicationScope.launch {
             val backgroundInitTime = measureTimeMillis {
                 scheduleWorkersBackground()

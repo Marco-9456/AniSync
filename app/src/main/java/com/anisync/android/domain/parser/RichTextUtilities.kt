@@ -85,9 +85,14 @@ private fun alignmentKeyword(value: String): RichTextAlignment? =
         else -> null
     }
 
-private fun cssTextAlign(style: String): String? {
+private fun cssTextAlign(style: String): String? = cssProperty(style, "text-align")
+
+/** Reads a CSS `float` declaration value (e.g. `left`/`right`) from an inline style string. */
+internal fun cssFloat(style: String): String? = cssProperty(style, "float")?.lowercase()
+
+private fun cssProperty(style: String, name: String): String? {
     if (style.isEmpty()) return null
-    val keyIndex = style.indexOf("text-align", ignoreCase = true)
+    val keyIndex = style.indexOf(name, ignoreCase = true)
     if (keyIndex < 0) return null
     val colon = style.indexOf(':', keyIndex)
     if (colon < 0) return null

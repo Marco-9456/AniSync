@@ -391,6 +391,51 @@ class RichTextParserTest {
         assertTrue(parsed.blocks.none { it is RichTextBlock.InlineGroup })
     }
 
+    @Test
+    fun `unclosed code fence whose language swallowed an img is recovered as rich content`() =
+        runBlocking {
+            // AniList activity 1085212654: a ```<img …> fence with no space wraps the entire post
+            // in <pre><code class="language-<img …>">. It must render as rich content, not as a
+            // literal code dump.
+            val html = """
+                <pre><code class="language-&lt;img width=&#039;350&#039; src=&#039;https://i.postimg.cc/bY2HsjQc/IMG-3950.png&#039;&gt;">_____
+                &lt;img width='100' src='https://fontmeme.com/permalink/260531/a91260bc.png'&gt;
+
+                &lt;img width='250' src='https://i.postimg.cc/0245B09D/IMG-4344.jpg'&gt;
+
+                __"Our Aim Is To Satisfy by Red Snapper"__
+                _____
+                [ Source Site: 1001 Album Generator ](https://1001albumsgenerator.com/)
+                __[&lt;— Day 20](https://anilist.co/activity/1084893698)__</code></pre>
+            """.trimIndent()
+
+            val parsed = RichTextParser.parse(html)
+            val blocks = parsed.blocks.deepBlocks()
+
+            // The whole post must NOT collapse into a literal code block anymore.
+            assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+
+            // The swallowed banner and the in-body album cover both render as images.
+            assertTrue(parsed.imageUrls.contains("https://i.postimg.cc/bY2HsjQc/IMG-3950.png"))
+            assertTrue(parsed.imageUrls.contains("https://i.postimg.cc/0245B09D/IMG-4344.jpg"))
+
+            // Body text and links survive as rich content (markdown links stay inline links).
+            val textBlocks = blocks.filterIsInstance<RichTextBlock.Text>()
+            val allText = textBlocks.joinToString("\n") { it.debugInlineText() }
+            assertTrue(allText.contains("Our Aim Is To Satisfy by Red Snapper"))
+            assertTrue(textBlocks.any { it.hasLink("https://1001albumsgenerator.com/") })
+            assertTrue(textBlocks.any { it.hasLink("https://anilist.co/activity/1084893698") })
+        }
+
+    @Test
+    fun `genuine code block with a real language is still rendered as code`() = runBlocking {
+        val parsed = RichTextParser.parse(
+            "<pre><code class=\"language-kotlin\">val x = 1</code></pre>"
+        )
+        val code = parsed.blocks.filterIsInstance<RichTextBlock.CodeBlock>().firstOrNull()
+        assertTrue(code != null && code.code.contains("val x = 1"))
+    }
+
     private fun RichTextBlock.Text.debugInlineText(): String = inlines.toDebugPlainText()
 
     private fun RichTextBlock.Text.hasBold(): Boolean =

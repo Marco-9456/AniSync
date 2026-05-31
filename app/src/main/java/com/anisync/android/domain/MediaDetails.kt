@@ -58,6 +58,8 @@ data class MediaDetails(
     val titleUserPreferred: String,
     val coverUrl: String?,
     val cover: CoverImage? = null,
+    /** Average cover color as a `#RRGGBB` hex string; used to tint link-preview cards. */
+    val coverColor: String? = null,
     val bannerUrl: String?,
     val description: String,
     val score: Int?,

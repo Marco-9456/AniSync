@@ -11,6 +11,7 @@ query GetMediaDetails($id: Int) {
           medium
           large
           extraLarge
+          color
         }
         bannerImage
         description(asHtml: true)

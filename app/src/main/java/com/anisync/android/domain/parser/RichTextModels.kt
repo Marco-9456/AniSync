@@ -18,6 +18,16 @@ enum class RichTextAlignment {
     Justify
 }
 
+/**
+ * Float behaviour for an image, from HTML `align="left|right"` or CSS `float`. Unlike block
+ * [RichTextAlignment], a floated image lets the following content wrap alongside it.
+ */
+enum class RichTextFloat {
+    None,
+    Start,
+    End
+}
+
 enum class RichTextTextKind {
     Paragraph,
     Heading1,
@@ -61,7 +71,9 @@ sealed interface RichTextBlock {
         val height: Int?,
         val isPercent: Boolean,
         val linkUrl: String?,
-        override val align: RichTextAlignment = RichTextAlignment.Start
+        override val align: RichTextAlignment = RichTextAlignment.Start,
+        /** When not [RichTextFloat.None], following content wraps beside this image. */
+        val floatSide: RichTextFloat = RichTextFloat.None
     ) : RichTextBlock
 
     data class Table(

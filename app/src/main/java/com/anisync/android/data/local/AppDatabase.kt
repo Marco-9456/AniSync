@@ -19,6 +19,12 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v16 (May 2026):
+ *   - Added field to media_details:
+ *     • coverColor - average cover hex color, used to tint rich-text link cards
+ *       (previously only fetched on the network path, so cached media link cards
+ *        rendered with no accent tint)
+ *
  * v15 (May 2026):
  *   - Added fields to media_details:
  *     • popularity, favourites - AniList community stats
@@ -70,7 +76,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -84,7 +90,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 11, to = 12),
         androidx.room.AutoMigration(from = 12, to = 13),
         androidx.room.AutoMigration(from = 13, to = 14),
-        androidx.room.AutoMigration(from = 14, to = 15)
+        androidx.room.AutoMigration(from = 14, to = 15),
+        androidx.room.AutoMigration(from = 15, to = 16)
     ]
 )
 @TypeConverters(Converters::class)

@@ -1,0 +1,934 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 16,
+    "identityHash": "b66ac19da356643ba1d0a08c9fe28bc5",
+    "entities": [
+      {
+        "tableName": "library_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `mediaId` INTEGER NOT NULL, `titleRomaji` TEXT, `titleEnglish` TEXT, `titleNative` TEXT, `titleUserPreferred` TEXT NOT NULL, `coverUrl` TEXT, `coverMedium` TEXT DEFAULT NULL, `coverLarge` TEXT DEFAULT NULL, `coverExtraLarge` TEXT DEFAULT NULL, `progress` INTEGER NOT NULL, `totalEpisodes` INTEGER, `totalChapters` INTEGER, `totalVolumes` INTEGER, `mediaType` TEXT, `status` TEXT NOT NULL, `nextAiringEpisode` INTEGER, `timeUntilAiring` INTEGER, `mediaStatus` TEXT, `nextAiringEpisodeTime` INTEGER, `score` REAL, `rewatches` INTEGER NOT NULL, `notes` TEXT, `startedAt` INTEGER, `completedAt` INTEGER, `updatedAt` INTEGER, `createdAt` INTEGER, `mediaStartDate` INTEGER, `customLists` TEXT NOT NULL DEFAULT '[]', `isPrivate` INTEGER NOT NULL DEFAULT 0, `hiddenFromStatusLists` INTEGER NOT NULL DEFAULT 0, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mediaId",
+            "columnName": "mediaId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titleRomaji",
+            "columnName": "titleRomaji",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "titleEnglish",
+            "columnName": "titleEnglish",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "titleNative",
+            "columnName": "titleNative",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "titleUserPreferred",
+            "columnName": "titleUserPreferred",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverUrl",
+            "columnName": "coverUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coverMedium",
+            "columnName": "coverMedium",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "coverLarge",
+            "columnName": "coverLarge",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "coverExtraLarge",
+            "columnName": "coverExtraLarge",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "progress",
+            "columnName": "progress",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalEpisodes",
+            "columnName": "totalEpisodes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "totalChapters",
+            "columnName": "totalChapters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "totalVolumes",
+            "columnName": "totalVolumes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "mediaType",
+            "columnName": "mediaType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextAiringEpisode",
+            "columnName": "nextAiringEpisode",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "timeUntilAiring",
+            "columnName": "timeUntilAiring",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "mediaStatus",
+            "columnName": "mediaStatus",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nextAiringEpisodeTime",
+            "columnName": "nextAiringEpisodeTime",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "rewatches",
+            "columnName": "rewatches",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "mediaStartDate",
+            "columnName": "mediaStartDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "customLists",
+            "columnName": "customLists",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "isPrivate",
+            "columnName": "isPrivate",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "hiddenFromStatusLists",
+            "columnName": "hiddenFromStatusLists",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_library_entries_mediaType",
+            "unique": false,
+            "columnNames": [
+              "mediaType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_mediaType` ON `${TABLE_NAME}` (`mediaType`)"
+          },
+          {
+            "name": "index_library_entries_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_library_entries_mediaType_status",
+            "unique": false,
+            "columnNames": [
+              "mediaType",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_mediaType_status` ON `${TABLE_NAME}` (`mediaType`, `status`)"
+          },
+          {
+            "name": "index_library_entries_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          },
+          {
+            "name": "index_library_entries_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          },
+          {
+            "name": "index_library_entries_timeUntilAiring",
+            "unique": false,
+            "columnNames": [
+              "timeUntilAiring"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_timeUntilAiring` ON `${TABLE_NAME}` (`timeUntilAiring`)"
+          },
+          {
+            "name": "index_library_entries_score",
+            "unique": false,
+            "columnNames": [
+              "score"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_score` ON `${TABLE_NAME}` (`score`)"
+          },
+          {
+            "name": "index_library_entries_progress",
+            "unique": false,
+            "columnNames": [
+              "progress"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_progress` ON `${TABLE_NAME}` (`progress`)"
+          },
+          {
+            "name": "index_library_entries_mediaStartDate",
+            "unique": false,
+            "columnNames": [
+              "mediaStartDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_entries_mediaStartDate` ON `${TABLE_NAME}` (`mediaStartDate`)"
+          }
+        ]
+      },
+      {
+        "tableName": "media_details",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `titleRomaji` TEXT, `titleEnglish` TEXT, `titleNative` TEXT, `titleUserPreferred` TEXT NOT NULL, `coverUrl` TEXT, `coverMedium` TEXT DEFAULT NULL, `coverLarge` TEXT DEFAULT NULL, `coverExtraLarge` TEXT DEFAULT NULL, `coverColor` TEXT DEFAULT NULL, `bannerUrl` TEXT, `description` TEXT NOT NULL, `score` INTEGER, `popularity` INTEGER DEFAULT NULL, `favourites` INTEGER DEFAULT NULL, `episodes` INTEGER, `nextAiringEpisode` INTEGER, `nextAiringEpisodeTime` INTEGER, `nextAiringTimeUntil` INTEGER DEFAULT NULL, `chapters` INTEGER, `volumes` INTEGER, `mediaType` TEXT, `status` TEXT NOT NULL, `format` TEXT, `genres` TEXT NOT NULL, `source` TEXT, `studio` TEXT, `studioId` INTEGER DEFAULT NULL, `year` INTEGER, `startDate` TEXT, `endDate` TEXT, `season` TEXT, `seasonYear` INTEGER, `duration` INTEGER, `tags` TEXT NOT NULL, `trailer` TEXT, `listEntryId` INTEGER, `listStatus` TEXT, `listProgress` INTEGER, `listEntryPrivate` INTEGER, `listEntryHiddenFromStatusLists` INTEGER, `characters` TEXT NOT NULL, `staff` TEXT NOT NULL DEFAULT '[]', `relations` TEXT NOT NULL, `externalLinks` TEXT NOT NULL, `recommendations` TEXT NOT NULL DEFAULT '[]', `reviews` TEXT NOT NULL DEFAULT '[]', `isFavourite` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titleRomaji",
+            "columnName": "titleRomaji",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "titleEnglish",
+            "columnName": "titleEnglish",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "titleNative",
+            "columnName": "titleNative",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "titleUserPreferred",
+            "columnName": "titleUserPreferred",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverUrl",
+            "columnName": "coverUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coverMedium",
+            "columnName": "coverMedium",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "coverLarge",
+            "columnName": "coverLarge",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "coverExtraLarge",
+            "columnName": "coverExtraLarge",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "coverColor",
+            "columnName": "coverColor",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "bannerUrl",
+            "columnName": "bannerUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "popularity",
+            "columnName": "popularity",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "favourites",
+            "columnName": "favourites",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "episodes",
+            "columnName": "episodes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nextAiringEpisode",
+            "columnName": "nextAiringEpisode",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nextAiringEpisodeTime",
+            "columnName": "nextAiringEpisodeTime",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nextAiringTimeUntil",
+            "columnName": "nextAiringTimeUntil",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "chapters",
+            "columnName": "chapters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "volumes",
+            "columnName": "volumes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "mediaType",
+            "columnName": "mediaType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "format",
+            "columnName": "format",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "genres",
+            "columnName": "genres",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "studio",
+            "columnName": "studio",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "studioId",
+            "columnName": "studioId",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "year",
+            "columnName": "year",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "season",
+            "columnName": "season",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seasonYear",
+            "columnName": "seasonYear",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trailer",
+            "columnName": "trailer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "listEntryId",
+            "columnName": "listEntryId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "listStatus",
+            "columnName": "listStatus",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "listProgress",
+            "columnName": "listProgress",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "listEntryPrivate",
+            "columnName": "listEntryPrivate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "listEntryHiddenFromStatusLists",
+            "columnName": "listEntryHiddenFromStatusLists",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "characters",
+            "columnName": "characters",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "staff",
+            "columnName": "staff",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "relations",
+            "columnName": "relations",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalLinks",
+            "columnName": "externalLinks",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recommendations",
+            "columnName": "recommendations",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "reviews",
+            "columnName": "reviews",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "isFavourite",
+            "columnName": "isFavourite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "user_profile",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `avatarUrl` TEXT, `bannerUrl` TEXT, `about` TEXT, `activeAt` INTEGER, `animeCount` INTEGER NOT NULL, `daysWatched` REAL NOT NULL, `mangaCount` INTEGER NOT NULL, `chaptersRead` INTEGER NOT NULL, `meanScore` REAL NOT NULL, `animeStatusCounts` TEXT NOT NULL, `favoriteAnime` TEXT NOT NULL, `activities` TEXT NOT NULL, `lastUpdated` INTEGER NOT NULL, `topGenres` TEXT NOT NULL DEFAULT '[]', `favoriteMangaOverview` TEXT NOT NULL DEFAULT '[]', `favoriteCharactersOverview` TEXT NOT NULL DEFAULT '[]', `favoriteStaffOverview` TEXT NOT NULL DEFAULT '[]', `favoriteStudiosOverview` TEXT NOT NULL DEFAULT '[]', `donatorTier` INTEGER NOT NULL DEFAULT 0, `donatorBadge` TEXT DEFAULT '', `moderatorRoles` TEXT NOT NULL DEFAULT '[]', `createdAt` INTEGER DEFAULT 0, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarUrl",
+            "columnName": "avatarUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bannerUrl",
+            "columnName": "bannerUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "about",
+            "columnName": "about",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "activeAt",
+            "columnName": "activeAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "animeCount",
+            "columnName": "animeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "daysWatched",
+            "columnName": "daysWatched",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mangaCount",
+            "columnName": "mangaCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chaptersRead",
+            "columnName": "chaptersRead",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "meanScore",
+            "columnName": "meanScore",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "animeStatusCounts",
+            "columnName": "animeStatusCounts",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favoriteAnime",
+            "columnName": "favoriteAnime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activities",
+            "columnName": "activities",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topGenres",
+            "columnName": "topGenres",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "favoriteMangaOverview",
+            "columnName": "favoriteMangaOverview",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "favoriteCharactersOverview",
+            "columnName": "favoriteCharactersOverview",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "favoriteStaffOverview",
+            "columnName": "favoriteStaffOverview",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "favoriteStudiosOverview",
+            "columnName": "favoriteStudiosOverview",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "donatorTier",
+            "columnName": "donatorTier",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "donatorBadge",
+            "columnName": "donatorBadge",
+            "affinity": "TEXT",
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "moderatorRoles",
+            "columnName": "moderatorRoles",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "airing_schedule",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `mediaId` INTEGER NOT NULL, `airingAt` INTEGER NOT NULL, `episode` INTEGER NOT NULL, `titleUserPreferred` TEXT NOT NULL, `coverUrl` TEXT, `format` TEXT, `isWatching` INTEGER NOT NULL, `streamingSeriesUrl` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mediaId",
+            "columnName": "mediaId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "airingAt",
+            "columnName": "airingAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "episode",
+            "columnName": "episode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titleUserPreferred",
+            "columnName": "titleUserPreferred",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverUrl",
+            "columnName": "coverUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "format",
+            "columnName": "format",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isWatching",
+            "columnName": "isWatching",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "streamingSeriesUrl",
+            "columnName": "streamingSeriesUrl",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "trending_media",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `titleUserPreferred` TEXT NOT NULL, `coverUrl` TEXT, `averageScore` INTEGER, `rank` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titleUserPreferred",
+            "columnName": "titleUserPreferred",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverUrl",
+            "columnName": "coverUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "averageScore",
+            "columnName": "averageScore",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rank",
+            "columnName": "rank",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "saved_forum_threads",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`threadId` INTEGER NOT NULL, `title` TEXT NOT NULL, `authorName` TEXT NOT NULL, `authorAvatarUrl` TEXT, `replyCount` INTEGER NOT NULL, `viewCount` INTEGER NOT NULL, `likeCount` INTEGER NOT NULL, `isLiked` INTEGER NOT NULL DEFAULT 0, `isLocked` INTEGER NOT NULL DEFAULT 0, `repliedAt` INTEGER, `replyUserName` TEXT, `replyUserAvatarUrl` TEXT, `categories` TEXT NOT NULL DEFAULT '[]', `mediaTitle` TEXT, `mediaCoverUrl` TEXT, `savedAt` INTEGER NOT NULL, PRIMARY KEY(`threadId`))",
+        "fields": [
+          {
+            "fieldPath": "threadId",
+            "columnName": "threadId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorName",
+            "columnName": "authorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorAvatarUrl",
+            "columnName": "authorAvatarUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "replyCount",
+            "columnName": "replyCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "viewCount",
+            "columnName": "viewCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "likeCount",
+            "columnName": "likeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isLiked",
+            "columnName": "isLiked",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isLocked",
+            "columnName": "isLocked",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "repliedAt",
+            "columnName": "repliedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "replyUserName",
+            "columnName": "replyUserName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "replyUserAvatarUrl",
+            "columnName": "replyUserAvatarUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categories",
+            "columnName": "categories",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'[]'"
+          },
+          {
+            "fieldPath": "mediaTitle",
+            "columnName": "mediaTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mediaCoverUrl",
+            "columnName": "mediaCoverUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "savedAt",
+            "columnName": "savedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "threadId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b66ac19da356643ba1d0a08c9fe28bc5')"
+    ]
+  }
+}

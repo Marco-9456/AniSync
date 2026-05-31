@@ -81,7 +81,8 @@ internal class RichTextHtmlParser(
                             // Large/unknown images or percents should break the flow to prevent buggy Compose wrapping
                             // and to allow the PostProcessor to assemble adjacent images into grids.
                             val isIcon =
-                                block.width != null && !block.isPercent && block.width <= 128
+                                block.width != null && !block.isPercent && block.width <= 128 &&
+                                    block.floatSide == RichTextFloat.None
 
                             if (isIcon) {
                                 currentGroup.add(block)
@@ -183,22 +184,41 @@ internal class RichTextHtmlParser(
 
             "pre" -> {
                 workingCtx.flushText()
-                val code = element.selectFirst("code")?.wholeText() ?: element.wholeText()
+                val codeEl = element.selectFirst("code")
+                val code = codeEl?.wholeText() ?: element.wholeText()
                 if (code.isNotBlank()) {
                     val trimmed = code.trim()
-                    if (looksLikeEscapedHtml(trimmed)) {
-                        val reparsed = Jsoup.parseBodyFragment(
-                            RichTextNormalizer.normalize(trimmed)
-                        ).body()
-                        walkChildren(reparsed, workingCtx)
-                        workingCtx.flushText()
-                    } else {
-                        workingCtx.emitBlock(
-                            RichTextBlock.CodeBlock(
-                                code = trimmed,
-                                align = workingCtx.align
+                    // AniList misparse: a fenced ``` opened with no space before its info string
+                    // (e.g. ```<img ...>) makes the server swallow real content into the code
+                    // "language" and wrap the WHOLE post in <pre><code class="language-<img ...>">.
+                    // Recover the swallowed markup and re-parse everything as rich content instead
+                    // of dumping the post as a literal code block.
+                    val swallowed = codeEl?.let { swallowedLanguageContent(it.attr("class")) }
+                    when {
+                        swallowed != null -> {
+                            val reparsed = Jsoup.parseBodyFragment(
+                                RichTextNormalizer.normalize("$swallowed\n$trimmed")
+                            ).body()
+                            walkChildren(reparsed, workingCtx)
+                            workingCtx.flushText()
+                        }
+
+                        looksLikeEscapedHtml(trimmed) -> {
+                            val reparsed = Jsoup.parseBodyFragment(
+                                RichTextNormalizer.normalize(trimmed)
+                            ).body()
+                            walkChildren(reparsed, workingCtx)
+                            workingCtx.flushText()
+                        }
+
+                        else -> {
+                            workingCtx.emitBlock(
+                                RichTextBlock.CodeBlock(
+                                    code = trimmed,
+                                    align = workingCtx.align
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -493,9 +513,27 @@ internal class RichTextHtmlParser(
                 height = heightAttr.replace(nonDigitRegex, "").toIntOrNull(),
                 isPercent = if (hashWidth) false else widthAttr.contains("%"),
                 linkUrl = linkUrl,
-                align = ctx.align
+                align = ctx.align,
+                floatSide = parseImageFloat(element.attr("align"), element.attr("style"))
             )
         )
+    }
+
+    /**
+     * HTML `align="left|right"` on an <img> (and CSS `float`) floats the image so following content
+     * wraps beside it — distinct from block alignment. Vertical aligns (top/middle/bottom) and
+     * `center` are not floats.
+     */
+    private fun parseImageFloat(alignAttr: String, styleAttr: String): RichTextFloat {
+        when (alignAttr.trim().lowercase()) {
+            "right" -> return RichTextFloat.End
+            "left" -> return RichTextFloat.Start
+        }
+        return when (cssFloat(styleAttr)) {
+            "right" -> RichTextFloat.End
+            "left" -> RichTextFloat.Start
+            else -> RichTextFloat.None
+        }
     }
 
     private fun youtubeUrl(id: String): String =
@@ -692,6 +730,19 @@ internal class RichTextHtmlParser(
         val sample = if (text.length > 500) text.substring(0, 500) else text
         val tagCount = ESCAPED_HTML_TAG_REGEX.findAll(sample).count()
         return tagCount >= 3
+    }
+
+    /**
+     * A `<code class="language-…">` info string normally names a language (e.g. `language-kotlin`).
+     * When AniList's fence parser swallows post content into it (an unclosed/space-less ```` ```<img …> ````),
+     * the info string carries real markup instead. Returns that swallowed markup so the caller can
+     * re-parse it as content, or null for a normal/empty language token.
+     */
+    private fun swallowedLanguageContent(codeClass: String): String? {
+        val trimmed = codeClass.trim()
+        if (!trimmed.startsWith("language-")) return null
+        val info = trimmed.removePrefix("language-")
+        return info.takeIf { ESCAPED_HTML_TAG_REGEX.containsMatchIn(it) }
     }
 
     private fun hasBlockChildren(element: Element): Boolean =

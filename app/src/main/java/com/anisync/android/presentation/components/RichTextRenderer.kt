@@ -54,6 +54,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -70,6 +72,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -82,6 +86,7 @@ import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.domain.parser.ParserConfig
 import com.anisync.android.domain.parser.RichTextAlignment
 import com.anisync.android.domain.parser.RichTextBlock
+import com.anisync.android.domain.parser.RichTextFloat
 import com.anisync.android.domain.parser.RichTextInline
 import com.anisync.android.domain.parser.RichTextParser
 import com.anisync.android.domain.parser.RichTextTextKind
@@ -233,7 +238,59 @@ private fun RenderBlocks(
     onLinkClick: (String) -> Unit,
     linkListener: LinkInteractionListener
 ) {
+    // A floated image (HTML <img align="left|right">) lets the blocks after it wrap alongside it.
+    // Render the blocks before the float normally, then hand the float image + the remaining blocks
+    // to RichFloatLayout: it places the wrap content beside the image and lets later content reflow
+    // to full width once it clears the image's bottom.
+    val floatIndex = blocks.indexOfFirst {
+        it is RichTextBlock.Image && it.floatSide != RichTextFloat.None
+    }
+    if (floatIndex in 0 until blocks.lastIndex) {
+        for (i in 0 until floatIndex) {
+            RenderSingleBlock(
+                blocks[i], style, color, linkColor, codeBackground, spoilerColor,
+                previews, onImageClick, onLinkClick, linkListener
+            )
+        }
+        val floatImg = blocks[floatIndex] as RichTextBlock.Image
+        RichFloatLayout(
+            floatSide = floatImg.floatSide,
+            image = { RichImage(floatImg, onImageClick, onLinkClick) },
+            flowContent = blocks.subList(floatIndex + 1, blocks.size).map { child ->
+                @Composable {
+                    RenderSingleBlock(
+                        child, style, color, linkColor, codeBackground, spoilerColor,
+                        previews, onImageClick, onLinkClick, linkListener
+                    )
+                }
+            }
+        )
+        return
+    }
+
     for (block in blocks) {
+        RenderSingleBlock(
+            block, style, color, linkColor, codeBackground, spoilerColor,
+            previews, onImageClick, onLinkClick, linkListener
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun RenderSingleBlock(
+    block: RichTextBlock,
+    style: TextStyle,
+    color: Color,
+    linkColor: Color,
+    codeBackground: Color,
+    spoilerColor: Color,
+    previews: Map<LinkPreviewKey, LinkPreview>,
+    onImageClick: (String) -> Unit,
+    onLinkClick: (String) -> Unit,
+    linkListener: LinkInteractionListener
+) {
+    run {
         val blockAlignment = when (block.align.toTextAlign()) {
             TextAlign.Center -> Alignment.CenterHorizontally
             TextAlign.Right -> Alignment.End
@@ -651,6 +708,67 @@ private fun RenderBlocks(
  */
 private const val MAX_RICH_IMAGE_WIDTH_DP = 3000
 
+/**
+ * Lays out a floated image with the following content wrapping beside it, then reflowing to full
+ * width once it clears the image's bottom — a block-granular approximation of CSS `float` (Compose
+ * text can't reflow around a float mid-paragraph, but per-block width switching matches AniList for
+ * the short captions/headings that typically sit beside a profile image).
+ */
+@Composable
+private fun RichFloatLayout(
+    floatSide: RichTextFloat,
+    image: @Composable () -> Unit,
+    flowContent: List<@Composable () -> Unit>,
+    modifier: Modifier = Modifier,
+    gap: Dp = 8.dp
+) {
+    SubcomposeLayout(modifier = modifier.fillMaxWidth()) { constraints ->
+        val totalWidth = constraints.maxWidth
+        val gapPx = gap.roundToPx()
+
+        val imagePlaceable = subcompose("float-image", image).firstOrNull()
+            ?.measure(Constraints(maxWidth = totalWidth))
+        val iw = imagePlaceable?.width ?: 0
+        val ih = imagePlaceable?.height ?: 0
+
+        val reducedWidth = (totalWidth - iw - gapPx).coerceAtLeast(1)
+        val besideX = if (floatSide == RichTextFloat.End) 0 else iw + gapPx
+        val imageX = if (floatSide == RichTextFloat.End) (totalWidth - iw).coerceAtLeast(0) else 0
+
+        val placeables = ArrayList<Placeable>(flowContent.size)
+        val xs = ArrayList<Int>(flowContent.size)
+        val ys = ArrayList<Int>(flowContent.size)
+
+        var y = 0
+        var index = 0
+        // Beside phase: wrap items in the narrowed column until they pass the image's bottom.
+        while (index < flowContent.size && y < ih) {
+            if (index > 0) y += gapPx
+            val p = subcompose(index, flowContent[index]).first()
+                .measure(Constraints(maxWidth = reducedWidth))
+            placeables.add(p); xs.add(besideX); ys.add(y)
+            y += p.height
+            index++
+        }
+        // Below phase: the rest clears the image and spans the full width.
+        var belowY = maxOf(y, ih)
+        while (index < flowContent.size) {
+            if (index > 0) belowY += gapPx
+            val p = subcompose(index, flowContent[index]).first()
+                .measure(Constraints(maxWidth = totalWidth))
+            placeables.add(p); xs.add(0); ys.add(belowY)
+            belowY += p.height
+            index++
+        }
+
+        val height = maxOf(belowY, ih, y)
+        layout(totalWidth, height) {
+            imagePlaceable?.place(imageX, 0)
+            for (k in placeables.indices) placeables[k].place(xs[k], ys[k])
+        }
+    }
+}
+
 @Composable
 private fun RichImage(
     img: RichTextBlock.Image,
@@ -704,8 +822,8 @@ private fun RichImage(
                     ).fillMaxWidth()
                 else -> Modifier.fillMaxWidth()
             }
-            RichSvgWebView(
-                html = resolved.html,
+            RichSvgView(
+                svg = resolved,
                 linkUrl = img.linkUrl,
                 onLinkClick = onLinkClick,
                 modifier = svgMod

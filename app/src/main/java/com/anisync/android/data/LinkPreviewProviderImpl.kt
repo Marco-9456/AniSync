@@ -32,10 +32,14 @@ class LinkPreviewProviderImpl @Inject constructor(
 
         for (link in mediaLinks) {
             val entity = mediaDetailsDao.getById(link.id)
-            if (entity != null) {
+            // Only serve from cache when the cover color is also present. Rows cached before the
+            // coverColor column existed (v16) have a null color; falling through to the network
+            // fetch lets those cards pick up their accent tint instead of rendering grey.
+            if (entity != null && entity.coverColor != null) {
                 result[link.previewKey] = LinkPreview(
                     title = entity.titleUserPreferred,
                     imageUrl = entity.coverUrl,
+                    coverColor = entity.coverColor,
                     subtitle = buildMediaSubtitle(entity.format, entity.seasonYear ?: entity.year)
                 )
             } else {

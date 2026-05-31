@@ -30,6 +30,8 @@ data class MediaDetailsEntity(
     val coverLarge: String? = null,
     @ColumnInfo(defaultValue = "NULL")
     val coverExtraLarge: String? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val coverColor: String? = null,
     val bannerUrl: String?,
     val description: String,
     val score: Int?,
