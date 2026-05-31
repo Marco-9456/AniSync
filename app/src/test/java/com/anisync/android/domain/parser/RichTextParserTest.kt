@@ -127,6 +127,21 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `bold spanning an empty anchor renders bold without literal underscores`() = runBlocking {
+        // AniList turns `[Fanart(s)]()` into an empty <a>, which split the run and left the
+        // surrounding `__ __` as literal underscores.
+        val parsed = RichTextParser.parse(
+            "<center>__Direct Source is added in the <a>Fanart(s)</a>__</center>"
+        )
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+            .first { it.debugInlineText().contains("Direct Source") }
+
+        assertTrue(text.hasBold())
+        assertTrue(text.debugInlineText().contains("Fanart(s)"))
+        assertFalse(text.debugInlineText().contains("__"))
+    }
+
+    @Test
     fun `parses html table with headers`() = runBlocking {
         val parsed =
             RichTextParser.parse("<table><tr><th>Name</th></tr><tr><td>Value</td></tr></table>")

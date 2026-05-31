@@ -19,6 +19,7 @@ internal object RichTextNormalizer {
         processed = fixMangledMarkdownLinks(processed)
         processed = decodeAniListEscapedParenthesis(processed)
         processed = convertLinkedImages(processed)
+        processed = unwrapEmptyAnchors(processed)
         processed = convertMarkdownSpoilerSpans(processed)
         processed = replaceCenterTags(processed)
         processed = replaceCenterMarkdownBlocks(processed)
@@ -207,6 +208,17 @@ internal object RichTextNormalizer {
             val linkUrl = match.groupValues[2]
             "<a href=\"$linkUrl\">$imgTag</a>"
         }
+
+    // AniList turns an empty markdown link `[text]()` into an attribute-less `<a>text</a>`. Such an
+    // anchor has no destination and, worse, splits the surrounding text into separate jsoup nodes —
+    // breaking markdown emphasis that spans it (e.g. `__text <a>x</a> more__` would keep its literal
+    // underscores). Unwrap these dead anchors to their text so the run rejoins before parsing.
+    private val EMPTY_ANCHOR_REGEX = Regex("""<a\s*>(.*?)</a>""", RegexOption.DOT_MATCHES_ALL)
+
+    private fun unwrapEmptyAnchors(text: String): String {
+        if (!text.contains("<a")) return text
+        return text.replace(EMPTY_ANCHOR_REGEX) { it.groupValues[1] }
+    }
 
     private fun replaceCenterTags(text: String): String =
         text
