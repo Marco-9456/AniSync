@@ -127,6 +127,29 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `full-width divider is not grouped into a thumbnail grid`() = runBlocking {
+        // A wide divider (width=500) directly before a row of 20% "Day N" thumbnails must stay on
+        // its own row; otherwise it gets packed into the grid's FlowRow and shoves it out of line.
+        val html = "<center><img width='500' src='https://x/divider.png'>" +
+            "[<img width='20%' src='https://x/d1.jpg'>](https://anilist.co/activity/1)" +
+            "[<img width='20%' src='https://x/d2.jpg'>](https://anilist.co/activity/2)" +
+            "[<img width='20%' src='https://x/d3.jpg'>](https://anilist.co/activity/3)</center>"
+        val parsed = RichTextParser.parse(html)
+
+        val grid = parsed.blocks.filterIsInstance<RichTextBlock.InlineGroup>()
+            .firstOrNull { it.children.size == 3 && it.children.all { c -> c is RichTextBlock.Image } }
+        assertTrue("expected a 3-thumbnail grid", grid != null)
+        assertTrue(
+            "the 500px divider must not be inside the grid",
+            grid!!.children.none { (it as RichTextBlock.Image).width == 500 }
+        )
+        assertTrue(
+            "the divider should be a standalone image block",
+            parsed.blocks.any { it is RichTextBlock.Image && it.width == 500 }
+        )
+    }
+
+    @Test
     fun `bold spanning an empty anchor renders bold without literal underscores`() = runBlocking {
         // AniList turns `[Fanart(s)]()` into an empty <a>, which split the run and left the
         // surrounding `__ __` as literal underscores.

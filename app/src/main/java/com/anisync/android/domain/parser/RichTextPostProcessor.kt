@@ -1,6 +1,10 @@
 package com.anisync.android.domain.parser
 
 internal object RichTextPostProcessor {
+    // An absolute width at/above this is treated as a full-width banner/divider rather than a
+    // grid thumbnail, so it gets its own row instead of being packed into an image grid.
+    private const val FULL_WIDTH_IMAGE_THRESHOLD = 400
+
     fun groupInlineBlocks(blocks: List<RichTextBlock>): List<RichTextBlock> {
         val result = mutableListOf<RichTextBlock>()
         var index = 0
@@ -8,19 +12,35 @@ internal object RichTextPostProcessor {
         while (index < blocks.size) {
             val block = blocks[index]
 
-            // Only group contiguous Images together to prevent buggy text wrapping
+            // Group contiguous Images to prevent buggy text wrapping, but keep full-width images
+            // (banners/dividers) on their own row — packing a wide divider into a FlowRow with small
+            // thumbnails (e.g. 20% "Day N" tiles) shoves the grid out of alignment.
             if (block is RichTextBlock.Image) {
-                val group = mutableListOf<RichTextBlock>()
                 val align = block.align
+                val run = mutableListOf<RichTextBlock.Image>()
                 while (index < blocks.size && blocks[index] is RichTextBlock.Image && blocks[index].align == align) {
-                    group.add(blocks[index])
+                    run.add(blocks[index] as RichTextBlock.Image)
                     index++
                 }
-                if (group.size > 1) {
-                    result.add(RichTextBlock.InlineGroup(group, align))
-                } else {
-                    result.add(group.first())
+
+                val pending = mutableListOf<RichTextBlock.Image>()
+                fun flushPending() {
+                    when (pending.size) {
+                        0 -> Unit
+                        1 -> result.add(pending.first())
+                        else -> result.add(RichTextBlock.InlineGroup(pending.toList(), align))
+                    }
+                    pending.clear()
                 }
+                for (img in run) {
+                    if (img.isFullWidthImage()) {
+                        flushPending()
+                        result.add(img)
+                    } else {
+                        pending.add(img)
+                    }
+                }
+                flushPending()
                 continue
             }
 
@@ -62,6 +82,16 @@ internal object RichTextPostProcessor {
         }
 
         return result
+    }
+
+    /**
+     * Whether an image should occupy a full row rather than join a thumbnail grid: a percent width
+     * near 100, no explicit width (renders fillMaxWidth), or a large absolute width.
+     */
+    private fun RichTextBlock.Image.isFullWidthImage(): Boolean = when {
+        isPercent -> (width ?: 100) >= 90
+        width == null -> true
+        else -> width >= FULL_WIDTH_IMAGE_THRESHOLD
     }
 
     fun extractImageUrls(blocks: List<RichTextBlock>): List<String> {
