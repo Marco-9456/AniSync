@@ -166,11 +166,14 @@ class RichTextParserTest {
     }
 
     @Test
-    fun `anilist user link becomes preview block`() = runBlocking {
-        val parsed = RichTextParser.parse("https://anilist.co/user/12345")
+    fun `anilist user link becomes preview block keyed by username`() = runBlocking {
+        // AniList user URLs use a username, not a numeric id.
+        val parsed = RichTextParser.parse("https://anilist.co/user/Goldiizz")
         val link = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.AnilistLink>().first()
         assertEquals("user", link.type)
-        assertEquals(12345, link.id)
+        assertEquals("Goldiizz", link.slug)
+        assertEquals("Goldiizz", link.displayTitle)
+        assertEquals(LinkPreviewKey("user", 0, "Goldiizz"), link.previewKey)
     }
 
     @Test
@@ -308,19 +311,23 @@ class RichTextParserTest {
     }
 
     @Test
-    fun `mixed markdown and html link becomes inline group`() = runBlocking {
+    fun `small icon image inside a link renders inline`() = runBlocking {
         val parsed =
             RichTextParser.parse("[ <img src='https://example.com/icon.png' width='16'> Instagram](https://instagram.com)")
 
-        val group = parsed.blocks.filterIsInstance<RichTextBlock.InlineGroup>().first()
+        // A 16px icon is emoji-sized, so it flows inline within the link (icon + label as one
+        // clickable run) rather than breaking out to a standalone image block.
+        val texts = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+        assertTrue(
+            texts.any { text ->
+                text.inlines.containsInline {
+                    it is RichTextInline.Image && it.url == "https://example.com/icon.png"
+                }
+            }
+        )
 
-        val image = group.children.filterIsInstance<RichTextBlock.Image>().first()
-        assertEquals("https://example.com/icon.png", image.url)
-        assertEquals("https://instagram.com", image.linkUrl)
-
-        val text = group.children.filterIsInstance<RichTextBlock.Text>().first()
-        assertTrue(text.debugInlineText().contains("Instagram"))
-        assertTrue(text.hasLink("https://instagram.com"))
+        val labelled = texts.first { it.debugInlineText().contains("Instagram") }
+        assertTrue(labelled.hasLink("https://instagram.com"))
     }
 
     @Test

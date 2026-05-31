@@ -9,7 +9,10 @@ query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int], $staffIds: [Int]) 
               medium
               large
               extraLarge
+              color
             }
+            format
+            seasonYear
             type
         }
     }
@@ -33,6 +36,18 @@ query GetLinkPreviews($mediaIds: [Int], $characterIds: [Int], $staffIds: [Int]) 
             image {
                 large
             }
+        }
+    }
+}
+
+# Users can't be batched (Page.users has no id_in) and are addressed by username, so fetch
+# each user link individually by name.
+query GetUserPreview($name: String) {
+    user: User(name: $name) {
+        id
+        name
+        avatar {
+            large
         }
     }
 }

@@ -282,6 +282,20 @@ internal class RichTextHtmlParser(
 
             "br" -> ctx.appendInline(RichTextInline.LineBreak)
             "span" -> handleSpan(element, ctx)
+            "img" -> {
+                // In an inline context (e.g. an emoji `<img width=20>` after a heading word),
+                // keep an emoji-sized image in the text flow instead of breaking to its own block.
+                val src = element.attr("src")
+                val widthAttr = element.attr("width")
+                val hashWidth = widthAttr.startsWith("#")
+                val width = if (hashWidth) null else widthAttr.replace(nonDigitRegex, "").toIntOrNull()
+                val isPercent = !hashWidth && widthAttr.contains("%")
+                if (src.isNotBlank() && !isPercent && width != null && width <= INLINE_IMAGE_MAX_WIDTH) {
+                    ctx.appendInline(RichTextInline.Image(upgradeImageScheme(src), width, null))
+                } else {
+                    handleImage(element, ctx, ctx.currentLinkUrl)
+                }
+            }
             else -> walkElement(element, ctx)
         }
     }

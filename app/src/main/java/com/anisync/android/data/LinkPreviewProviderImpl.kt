@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetLinkPreviewsQuery
+import com.anisync.android.GetUserPreviewQuery
 import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.LinkPreviewProvider
@@ -34,14 +35,15 @@ class LinkPreviewProviderImpl @Inject constructor(
             if (entity != null) {
                 result[link.previewKey] = LinkPreview(
                     title = entity.titleUserPreferred,
-                    imageUrl = entity.coverUrl
+                    imageUrl = entity.coverUrl,
+                    subtitle = buildMediaSubtitle(entity.format, entity.seasonYear ?: entity.year)
                 )
             } else {
                 uncachedMediaIds.add(link.id)
             }
         }
 
-        // Phase 2: Collect character/staff IDs that need network fetch
+        // Phase 2: Collect character/staff/user IDs that need network fetch
         val characterIds = uniqueLinks
             .filter { it.type == "character" }
             .map { it.id }
@@ -50,8 +52,12 @@ class LinkPreviewProviderImpl @Inject constructor(
             .filter { it.type == "staff" }
             .map { it.id }
             .distinct()
+        val userNames = uniqueLinks
+            .filter { it.type == "user" }
+            .mapNotNull { it.slug }
+            .distinct()
 
-        // Phase 3: Batch fetch uncached media + characters from API
+        // Phase 3: Batch fetch uncached media + characters + staff from API
         if (uncachedMediaIds.isNotEmpty() || characterIds.isNotEmpty() || staffIds.isNotEmpty()) {
             try {
                 val response = apolloClient.query(
@@ -67,7 +73,9 @@ class LinkPreviewProviderImpl @Inject constructor(
                     val type = media.type?.name?.lowercase() ?: "anime"
                     result[LinkPreviewKey(type, id)] = LinkPreview(
                         title = media.title?.userPreferred ?: return@forEach,
-                        imageUrl = media.coverImage?.large
+                        imageUrl = media.coverImage?.large,
+                        coverColor = media.coverImage?.color,
+                        subtitle = buildMediaSubtitle(media.format?.rawValue, media.seasonYear)
                     )
                 }
 
@@ -86,11 +94,47 @@ class LinkPreviewProviderImpl @Inject constructor(
                         imageUrl = staff.image?.large
                     )
                 }
+
             } catch (_: Exception) {
                 // Network failure — callers will fall back to slug-derived titles
             }
         }
 
+        // Users can't be batched and are addressed by username, so fetch each individually by name.
+        for (name in userNames) {
+            try {
+                val user = apolloClient.query(GetUserPreviewQuery(Optional.present(name)))
+                    .execute().data?.user ?: continue
+                // Key by the URL username (matches AnilistLink.previewKey), not the canonical name.
+                result[LinkPreviewKey("user", 0, name)] = LinkPreview(
+                    title = user.name,
+                    imageUrl = user.avatar?.large
+                )
+            } catch (_: Exception) {
+                // Skip on failure — caller falls back to slug-derived title
+            }
+        }
+
         return result
+    }
+
+    /** Media secondary line, e.g. "TV · 2024". Either part may be missing. */
+    private fun buildMediaSubtitle(format: String?, year: Int?): String? {
+        val parts = listOfNotNull(format?.let(::prettyFormat), year?.toString())
+        return parts.joinToString(" · ").takeIf { it.isNotBlank() }
+    }
+
+    private fun prettyFormat(raw: String): String = when (raw.uppercase()) {
+        "TV" -> "TV"
+        "TV_SHORT" -> "TV Short"
+        "OVA" -> "OVA"
+        "ONA" -> "ONA"
+        "MOVIE" -> "Movie"
+        "SPECIAL" -> "Special"
+        "MUSIC" -> "Music"
+        "MANGA" -> "Manga"
+        "NOVEL" -> "Light Novel"
+        "ONE_SHOT" -> "One-shot"
+        else -> raw.lowercase().replaceFirstChar { it.uppercase() }
     }
 }

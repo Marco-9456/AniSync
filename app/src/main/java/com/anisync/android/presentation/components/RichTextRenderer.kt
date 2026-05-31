@@ -72,6 +72,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
@@ -246,7 +247,18 @@ private fun RenderBlocks(
         ) {
             when (block) {
                 is RichTextBlock.Text -> {
-                    val render = block.inlines.toRichInlineText(
+                    // A centered heading/line that ends with inline image(s) — e.g. an emoji after
+                    // "…the Heavens" — can't stay centered through Compose text layout: a wrapped
+                    // line holding only inline content gets left-aligned and won't sit on the
+                    // previous line. For that case, peel the trailing images off and render them in
+                    // a row the parent Column centers. Internal inline images stay in the text.
+                    val trailingImages = block.inlines.takeLastWhile { it is RichTextInline.Image }
+                    val peel = block.align == RichTextAlignment.Center &&
+                        trailingImages.isNotEmpty() &&
+                        trailingImages.size < block.inlines.size
+                    val textInlines = if (peel) block.inlines.dropLast(trailingImages.size) else block.inlines
+
+                    val render = textInlines.toRichInlineText(
                         baseStyle = style,
                         baseColor = color,
                         linkColor = linkColor,
@@ -261,10 +273,24 @@ private fun RenderBlocks(
                         textAlign = block.align.toTextAlign(),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (peel) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            trailingImages.forEach { inline ->
+                                val emoji = inline as RichTextInline.Image
+                                val side = (emoji.width ?: 24).coerceIn(14, 72)
+                                AsyncImage(
+                                    model = emoji.url,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.size(side.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 is RichTextBlock.Image -> {
-                    RichImage(block, onImageClick, onLinkClick)
+                    RichImage(block, onImageClick, onLinkClick, scaleToWidth = true)
                 }
 
                 is RichTextBlock.InlineGroup -> {
@@ -630,7 +656,11 @@ private fun RichImage(
     img: RichTextBlock.Image,
     onClick: (String) -> Unit,
     onLinkClick: (String) -> Unit,
-    fillWidth: Boolean = false
+    fillWidth: Boolean = false,
+    // Standalone block images should display AT their declared width (scaled up if the source is
+    // smaller), matching AniList. Grid/inline images keep it as a cap only, so the FlowRow can wrap
+    // several per row instead of forcing each to full width.
+    scaleToWidth: Boolean = false
 ) {
     val mod = when {
         fillWidth -> Modifier.fillMaxWidth()
@@ -640,6 +670,7 @@ private fun RichImage(
             Modifier.fillMaxWidth((img.width / 100f).coerceIn(0f, 1f))
         img.width != null ->
             Modifier.widthIn(max = img.width.coerceIn(0, MAX_RICH_IMAGE_WIDTH_DP).dp)
+                .let { if (scaleToWidth) it.fillMaxWidth() else it }
         // No width hint: fill the available width so the image always has a concrete width to
         // render into. A vector source with no intrinsic size would otherwise collapse to 0×0.
         else -> Modifier.fillMaxWidth()
@@ -705,7 +736,14 @@ private fun RichImage(
                     .decoderFactory(SvgDecoder.Factory())
                     .build(),
                 contentDescription = null,
-                contentScale = if (fillWidth || img.width != null) ContentScale.Fit else ContentScale.Inside,
+                // FillWidth reliably scales the image to the box width regardless of an unbounded
+                // height — needed so a tall standalone image (e.g. a 400x600 gif declared width=500)
+                // displays at full width like AniList instead of collapsing to a thumbnail.
+                contentScale = when {
+                    scaleToWidth -> ContentScale.FillWidth
+                    fillWidth || img.width != null -> ContentScale.Fit
+                    else -> ContentScale.Inside
+                },
                 loading = {
                     ImageLoadingSkeleton(
                         modifier = if (isSmallUnknown) Modifier.size(48.dp) else Modifier.fillMaxWidth(),
@@ -913,14 +951,19 @@ private fun AnnotatedString.Builder.appendInlines(
                         placeholderVerticalAlign = PlaceholderVerticalAlign.Center
                     )
                 ) {
-                    SubcomposeAsyncImage(
+                    // Plain AsyncImage (not SubcomposeAsyncImage): a SubcomposeLayout inside text
+                    // inline content can mis-measure and drop the box out of the line flow.
+                    AsyncImage(
                         model = inline.url,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                appendInlineContent(id, "￼")
+                // Use a non-breaking space as the placeholder char so the line breaker never
+                // inserts a break before the emoji box — it stays on its preceding word's line
+                // (and thus honors the heading's center alignment) instead of wrapping alone.
+                appendInlineContent(id, " ")
             }
         }
     }

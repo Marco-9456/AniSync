@@ -3,8 +3,8 @@ package com.anisync.android.domain.parser
 private val HORIZONTAL_RULE_REGEX = Regex("[-*_]{3,}")
 private val SETEXT_UNDERLINE_REGEX = Regex("[=-]{2,}")
 
-/** Max width (px) for an `img<n>(...)` to render inline with text rather than as its own block. */
-private const val INLINE_IMAGE_MAX_WIDTH = 48
+/** Max width (px) for a sized image to render inline with text rather than as its own block. */
+internal const val INLINE_IMAGE_MAX_WIDTH = 48
 
 internal class RichTextInlineParser(
     val config: ParserConfig
@@ -13,8 +13,10 @@ internal class RichTextInlineParser(
     private val webmRegex = Regex("""webm\((.*?)\)""")
     private val imageMdRegex = Regex("""img(\d+%?)?\((.*?)\)""")
     private val bareUrlRegex = Regex("""https?://[^\s<>"\[\]~!`)]+""")
+    // User links are addressed by username (group 1); everything else by numeric id (groups 2-4:
+    // type, id, optional slug). AniList never uses a numeric id in a /user/ URL.
     private val anilistLinkRegex = Regex(
-        """https?://anilist\.co/(anime|manga|character|staff|user|activity)/([0-9]+)(?:/([A-Za-z0-9][A-Za-z0-9-]*))?/?"""
+        """https?://anilist\.co/(?:user/([A-Za-z0-9_-]+)|(anime|manga|character|staff|activity)/([0-9]+)(?:/([A-Za-z0-9][A-Za-z0-9-]*))?)/?"""
     )
 
     fun parseInto(text: String, ctx: ParseContext) {
@@ -369,12 +371,9 @@ internal class RichTextInlineParser(
 
                 if (preparedText.startsWith(marker2, index)) {
                     val end = preparedText.indexOf(marker2, index + 2)
-                    // Opener must be tight (no space after `**`/`__`, so a stray ` __ ` never
-                    // opens), but allow a space before the closer to match AniList, which bolds
-                    // `__text __` even with a trailing space (CommonMark would not).
-                    if (end > index + 2 &&
-                        !preparedText[index + 2].isWhitespace()
-                    ) {
+                    // AniList pairs `**`/`__` even with surrounding spaces (e.g. `__ text __`),
+                    // which CommonMark would not. Only require non-empty content between markers.
+                    if (end > index + 2) {
                         flushPlain()
                         val child = parseInlineOnly(
                             preparedText.substring(index + 2, end),
@@ -491,10 +490,16 @@ internal class RichTextInlineParser(
                     val anilistMatch = anilistLinkRegex.find(url)
                     if (config.enableAniListLinkBlocks && anilistMatch != null && anilistMatch.range.first == 0) {
                         ctx.flushText()
-                        val type = anilistMatch.groupValues[1]
-                        val id = anilistMatch.groupValues[2].toIntOrNull() ?: 0
-                        val slug = anilistMatch.groupValues.getOrNull(3)?.takeIf { it.isNotEmpty() }
-                        ctx.emitBlock(RichTextBlock.AnilistLink(type, id, url, slug, ctx.align))
+                        val username = anilistMatch.groupValues[1]
+                        val block = if (username.isNotEmpty()) {
+                            RichTextBlock.AnilistLink("user", 0, url, username, ctx.align)
+                        } else {
+                            val type = anilistMatch.groupValues[2]
+                            val id = anilistMatch.groupValues[3].toIntOrNull() ?: 0
+                            val slug = anilistMatch.groupValues.getOrNull(4)?.takeIf { it.isNotEmpty() }
+                            RichTextBlock.AnilistLink(type, id, url, slug, ctx.align)
+                        }
+                        ctx.emitBlock(block)
                         index = match.range.last + 1
                         lastAppend = index
                         continue
@@ -684,11 +689,8 @@ internal class RichTextInlineParser(
 
                 if (text.startsWith(marker2, index)) {
                     val end = text.indexOf(marker2, index + 2)
-                    // See parseInto: tight opener, but allow a space before the closer (AniList
-                    // bolds `__text __`).
-                    if (end > index + 2 &&
-                        !text[index + 2].isWhitespace()
-                    ) {
+                    // See parseInto: pair `**`/`__` even with surrounding spaces (AniList).
+                    if (end > index + 2) {
                         flushPlain()
                         val child = parseInlineOnly(
                             text.substring(index + 2, end),
