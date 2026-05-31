@@ -3,6 +3,9 @@ package com.anisync.android.domain.parser
 private val HORIZONTAL_RULE_REGEX = Regex("[-*_]{3,}")
 private val SETEXT_UNDERLINE_REGEX = Regex("[=-]{2,}")
 
+/** Max width (px) for an `img<n>(...)` to render inline with text rather than as its own block. */
+private const val INLINE_IMAGE_MAX_WIDTH = 48
+
 internal class RichTextInlineParser(
     val config: ParserConfig
 ) {
@@ -258,21 +261,32 @@ internal class RichTextInlineParser(
             if (c == 'i' && preparedText.startsWith("img", index)) {
                 val match = imageMdRegex.find(preparedText, index)
                 if (match != null && match.range.first == index) {
-                    flushPlain()
-                    ctx.flushText()
                     val size = match.groupValues[1]
                     val url = match.groupValues[2].trim()
+                    val width = size.replace("%", "").toIntOrNull()
+                    val isPercent = size.endsWith("%")
                     if (url.isNotBlank()) {
-                        ctx.emitBlock(
-                            RichTextBlock.Image(
-                                url = upgradeImageScheme(url),
-                                width = size.replace("%", "").toIntOrNull(),
-                                height = null,
-                                isPercent = size.endsWith("%"),
-                                linkUrl = ctx.currentLinkUrl,
-                                align = ctx.align
+                        if (!isPercent && width != null && width <= INLINE_IMAGE_MAX_WIDTH) {
+                            // Emoji-sized image: keep it in the text flow instead of breaking to a
+                            // block, so it renders inline (e.g. a 20px icon after a heading word).
+                            flushPlain()
+                            ctx.appendInline(
+                                RichTextInline.Image(upgradeImageScheme(url), width, null)
                             )
-                        )
+                        } else {
+                            flushPlain()
+                            ctx.flushText()
+                            ctx.emitBlock(
+                                RichTextBlock.Image(
+                                    url = upgradeImageScheme(url),
+                                    width = width,
+                                    height = null,
+                                    isPercent = isPercent,
+                                    linkUrl = ctx.currentLinkUrl,
+                                    align = ctx.align
+                                )
+                            )
+                        }
                     }
                     index = match.range.last + 1
                     lastAppend = index
@@ -355,9 +369,11 @@ internal class RichTextInlineParser(
 
                 if (preparedText.startsWith(marker2, index)) {
                     val end = preparedText.indexOf(marker2, index + 2)
+                    // Opener must be tight (no space after `**`/`__`, so a stray ` __ ` never
+                    // opens), but allow a space before the closer to match AniList, which bolds
+                    // `__text __` even with a trailing space (CommonMark would not).
                     if (end > index + 2 &&
-                        !preparedText[index + 2].isWhitespace() &&
-                        !preparedText[end - 1].isWhitespace()
+                        !preparedText[index + 2].isWhitespace()
                     ) {
                         flushPlain()
                         val child = parseInlineOnly(
@@ -668,9 +684,10 @@ internal class RichTextInlineParser(
 
                 if (text.startsWith(marker2, index)) {
                     val end = text.indexOf(marker2, index + 2)
+                    // See parseInto: tight opener, but allow a space before the closer (AniList
+                    // bolds `__text __`).
                     if (end > index + 2 &&
-                        !text[index + 2].isWhitespace() &&
-                        !text[end - 1].isWhitespace()
+                        !text[index + 2].isWhitespace()
                     ) {
                         flushPlain()
                         val child = parseInlineOnly(

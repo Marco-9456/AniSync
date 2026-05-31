@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -25,6 +26,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -40,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +58,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
@@ -240,16 +246,18 @@ private fun RenderBlocks(
         ) {
             when (block) {
                 is RichTextBlock.Text -> {
+                    val render = block.inlines.toRichInlineText(
+                        baseStyle = style,
+                        baseColor = color,
+                        linkColor = linkColor,
+                        codeBackground = codeBackground,
+                        headingKind = block.kind,
+                        linkListener = linkListener
+                    )
                     Text(
-                        text = block.inlines.toAnnotatedString(
-                            baseStyle = style,
-                            baseColor = color,
-                            linkColor = linkColor,
-                            codeBackground = codeBackground,
-                            headingKind = block.kind,
-                            linkListener = linkListener
-                        ),
-                        style = style.copy(color = color),
+                        text = render.text,
+                        inlineContent = render.inlineContent,
+                        style = block.kind.withHeadingLineHeight(style).copy(color = color),
                         textAlign = block.align.toTextAlign(),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -276,16 +284,18 @@ private fun RenderBlocks(
                         block.children.forEach { child ->
                             when (child) {
                                 is RichTextBlock.Text -> {
+                                    val render = child.inlines.toRichInlineText(
+                                        baseStyle = style,
+                                        baseColor = color,
+                                        linkColor = linkColor,
+                                        codeBackground = codeBackground,
+                                        headingKind = child.kind,
+                                        linkListener = linkListener
+                                    )
                                     Text(
-                                        text = child.inlines.toAnnotatedString(
-                                            baseStyle = style,
-                                            baseColor = color,
-                                            linkColor = linkColor,
-                                            codeBackground = codeBackground,
-                                            headingKind = child.kind,
-                                            linkListener = linkListener
-                                        ),
-                                        style = style.copy(color = color),
+                                        text = render.text,
+                                        inlineContent = render.inlineContent,
+                                        style = child.kind.withHeadingLineHeight(style).copy(color = color),
                                         textAlign = child.align.toTextAlign(),
                                         modifier = Modifier.align(Alignment.CenterVertically)
                                     )
@@ -630,45 +640,86 @@ private fun RichImage(
             Modifier.fillMaxWidth((img.width / 100f).coerceIn(0f, 1f))
         img.width != null ->
             Modifier.widthIn(max = img.width.coerceIn(0, MAX_RICH_IMAGE_WIDTH_DP).dp)
-        else -> Modifier
+        // No width hint: fill the available width so the image always has a concrete width to
+        // render into. A vector source with no intrinsic size would otherwise collapse to 0×0.
+        else -> Modifier.fillMaxWidth()
     }
 
-    val isSvg =
-        img.url.endsWith(".svg", ignoreCase = true) || img.url.contains("spotify-github-profile")
-
-    val placeholderAspectRatio = if (img.width != null && img.height != null && img.height > 0) {
-        img.width.toFloat() / img.height.toFloat()
-    } else {
-        null
+    // Resolve whether this URL is actually an SVG (by content type — badge/widget services serve
+    // image/svg+xml from extension-less URLs). SVGs are routed to a WebView because Coil's
+    // AndroidSVG backend can't render foreignObject/CSS-animated widgets or nested-SVG logos.
+    val initialKind = remember(img.url) { RichSvgResolver.quickKind(img.url) }
+    val kind by produceState(initialKind, img.url) {
+        if (value is RichImgKind.Loading) value = RichSvgResolver.resolve(img.url)
     }
 
-    val isSmallUnknown = img.width == null && !fillWidth
-
-    SubcomposeAsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(img.url)
-            .crossfade(true)
-            .apply {
-                if (isSvg) {
-                    decoderFactory(SvgDecoder.Factory())
-                    allowHardware(false)
-                }
+    when (val resolved = kind) {
+        is RichImgKind.Svg -> {
+            // Size the WebView to the badge's natural width (capped) so a small badge isn't
+            // stretched to full width; the centered Column then centers it and the tap target
+            // matches the badge instead of spanning the row. An explicit width/percent on the
+            // source still wins; only width-less SVGs fall back to the intrinsic width.
+            val svgMod = when {
+                fillWidth -> Modifier.fillMaxWidth()
+                img.isPercent && img.width != null ->
+                    Modifier.fillMaxWidth((img.width / 100f).coerceIn(0f, 1f))
+                img.width != null ->
+                    Modifier.widthIn(max = img.width.coerceIn(0, MAX_RICH_IMAGE_WIDTH_DP).dp)
+                        .fillMaxWidth()
+                resolved.naturalWidthDp != null ->
+                    Modifier.widthIn(
+                        max = resolved.naturalWidthDp
+                            .coerceIn(1f, MAX_RICH_IMAGE_WIDTH_DP.toFloat()).dp
+                    ).fillMaxWidth()
+                else -> Modifier.fillMaxWidth()
             }
-            .build(),
-        contentDescription = null,
-        contentScale = if (fillWidth || img.width != null) ContentScale.Fit else ContentScale.Inside,
-        loading = {
-            ImageLoadingSkeleton(
-                modifier = if (isSmallUnknown) Modifier.size(48.dp) else Modifier.fillMaxWidth(),
-                aspectRatio = if (isSmallUnknown) null else placeholderAspectRatio
+            RichSvgWebView(
+                html = resolved.html,
+                linkUrl = img.linkUrl,
+                onLinkClick = onLinkClick,
+                modifier = svgMod
+                    .aspectRatio(resolved.aspectRatio)
+                    .clip(RoundedCornerShape(8.dp))
             )
-        },
-        modifier = mod
-            .clip(RoundedCornerShape(8.dp))
-            .clickable {
-                if (img.linkUrl != null) onLinkClick(img.linkUrl) else onClick(img.url)
-            }
-    )
+        }
+
+        RichImgKind.Loading -> {
+            ImageLoadingSkeleton(modifier = mod, aspectRatio = null)
+        }
+
+        RichImgKind.Raster -> {
+            val placeholderAspectRatio =
+                if (img.width != null && img.height != null && img.height > 0) {
+                    img.width.toFloat() / img.height.toFloat()
+                } else {
+                    null
+                }
+            val isSmallUnknown = img.width == null && !fillWidth
+
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(img.url)
+                    .crossfade(true)
+                    // Kept as an offline-safe fallback: if the SVG probe failed (e.g. no network)
+                    // a simple SVG still decodes here. No-op for raster sources.
+                    .decoderFactory(SvgDecoder.Factory())
+                    .build(),
+                contentDescription = null,
+                contentScale = if (fillWidth || img.width != null) ContentScale.Fit else ContentScale.Inside,
+                loading = {
+                    ImageLoadingSkeleton(
+                        modifier = if (isSmallUnknown) Modifier.size(48.dp) else Modifier.fillMaxWidth(),
+                        aspectRatio = if (isSmallUnknown) null else placeholderAspectRatio
+                    )
+                },
+                modifier = mod
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        if (img.linkUrl != null) onLinkClick(img.linkUrl) else onClick(img.url)
+                    }
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -702,23 +753,79 @@ private fun RichTextAlignment.toTextAlign(): TextAlign = when (this) {
     RichTextAlignment.Justify -> TextAlign.Justify
 }
 
-private fun List<RichTextInline>.toAnnotatedString(
+private class RichInlineText(
+    val text: AnnotatedString,
+    val inlineContent: Map<String, InlineTextContent>
+)
+
+/**
+ * Make the space immediately before an inline [RichTextInline.Image] non-breaking, so a trailing
+ * emoji stays on the same line as the word it follows (e.g. "Heavens 🙂") instead of wrapping to a
+ * line of its own — which, when it contains only inline content, fails to honor center alignment.
+ */
+private fun List<RichTextInline>.bindInlineImagesToText(): List<RichTextInline> {
+    val result = ArrayList<RichTextInline>(size)
+    for (inline in this) {
+        val processed = when (inline) {
+            is RichTextInline.Bold -> RichTextInline.Bold(inline.children.bindInlineImagesToText())
+            is RichTextInline.Italic -> RichTextInline.Italic(inline.children.bindInlineImagesToText())
+            is RichTextInline.BoldItalic -> RichTextInline.BoldItalic(inline.children.bindInlineImagesToText())
+            is RichTextInline.Strikethrough -> RichTextInline.Strikethrough(inline.children.bindInlineImagesToText())
+            is RichTextInline.Link -> RichTextInline.Link(inline.url, inline.children.bindInlineImagesToText())
+            else -> inline
+        }
+        if (processed is RichTextInline.Image && result.isNotEmpty()) {
+            result[result.lastIndex] = result.last().withNonBreakingTrailingSpace()
+        }
+        result.add(processed)
+    }
+    return result
+}
+
+private fun RichTextInline.withNonBreakingTrailingSpace(): RichTextInline = when (this) {
+    is RichTextInline.Text ->
+        if (value.endsWith(' ')) RichTextInline.Text(value.dropLast(1) + ' ') else this
+    is RichTextInline.Bold ->
+        if (children.isEmpty()) this
+        else RichTextInline.Bold(children.dropLast(1) + children.last().withNonBreakingTrailingSpace())
+    is RichTextInline.Italic ->
+        if (children.isEmpty()) this
+        else RichTextInline.Italic(children.dropLast(1) + children.last().withNonBreakingTrailingSpace())
+    is RichTextInline.BoldItalic ->
+        if (children.isEmpty()) this
+        else RichTextInline.BoldItalic(children.dropLast(1) + children.last().withNonBreakingTrailingSpace())
+    is RichTextInline.Strikethrough ->
+        if (children.isEmpty()) this
+        else RichTextInline.Strikethrough(children.dropLast(1) + children.last().withNonBreakingTrailingSpace())
+    is RichTextInline.Link ->
+        if (children.isEmpty()) this
+        else RichTextInline.Link(url, children.dropLast(1) + children.last().withNonBreakingTrailingSpace())
+    else -> this
+}
+
+private fun List<RichTextInline>.toRichInlineText(
     baseStyle: TextStyle,
     baseColor: Color,
     linkColor: Color,
     codeBackground: Color,
     headingKind: RichTextTextKind,
     linkListener: LinkInteractionListener
-): AnnotatedString = buildAnnotatedString {
-    withStyle(headingKind.toSpanStyle(baseStyle)) {
-        appendInlines(
-            inlines = this@toAnnotatedString,
-            baseColor = baseColor,
-            linkColor = linkColor,
-            codeBackground = codeBackground,
-            linkListener = linkListener
-        )
+): RichInlineText {
+    val inlineContent = LinkedHashMap<String, InlineTextContent>()
+    val prepared = bindInlineImagesToText()
+    val text = buildAnnotatedString {
+        withStyle(headingKind.toSpanStyle(baseStyle)) {
+            appendInlines(
+                inlines = prepared,
+                baseColor = baseColor,
+                linkColor = linkColor,
+                codeBackground = codeBackground,
+                linkListener = linkListener,
+                inlineContent = inlineContent
+            )
+        }
     }
+    return RichInlineText(text, inlineContent)
 }
 
 private fun AnnotatedString.Builder.appendInlines(
@@ -726,18 +833,19 @@ private fun AnnotatedString.Builder.appendInlines(
     baseColor: Color,
     linkColor: Color,
     codeBackground: Color,
-    linkListener: LinkInteractionListener
+    linkListener: LinkInteractionListener,
+    inlineContent: MutableMap<String, InlineTextContent>
 ) {
     for (inline in inlines) {
         when (inline) {
             is RichTextInline.Text -> append(inline.value)
             is RichTextInline.LineBreak -> append("\n")
             is RichTextInline.Bold -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener, inlineContent)
             }
 
             is RichTextInline.Italic -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener, inlineContent)
             }
 
             is RichTextInline.BoldItalic -> withStyle(
@@ -746,13 +854,13 @@ private fun AnnotatedString.Builder.appendInlines(
                     fontStyle = FontStyle.Italic
                 )
             ) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener, inlineContent)
             }
 
             is RichTextInline.Strikethrough -> withStyle(
                 SpanStyle(textDecoration = TextDecoration.LineThrough)
             ) {
-                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener, inlineContent)
             }
 
             is RichTextInline.Link -> {
@@ -776,7 +884,7 @@ private fun AnnotatedString.Builder.appendInlines(
                         linkInteractionListener = linkListener
                     )
                 )
-                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener)
+                appendInlines(inline.children, baseColor, linkColor, codeBackground, linkListener, inlineContent)
                 pop()
             }
 
@@ -792,6 +900,28 @@ private fun AnnotatedString.Builder.appendInlines(
                     append(inline.code)
                 }
             }
+
+            is RichTextInline.Image -> {
+                // Emoji-sized inline image: register an InlineTextContent box sized to the
+                // requested px (≈sp) so it flows with the surrounding text on the same line.
+                val id = "inline-img-${inlineContent.size}"
+                val side = (inline.width ?: 24).coerceIn(14, 72)
+                inlineContent[id] = InlineTextContent(
+                    Placeholder(
+                        width = side.sp,
+                        height = side.sp,
+                        placeholderVerticalAlign = PlaceholderVerticalAlign.Center
+                    )
+                ) {
+                    SubcomposeAsyncImage(
+                        model = inline.url,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                appendInlineContent(id, "￼")
+            }
         }
     }
 }
@@ -803,6 +933,21 @@ private fun RichTextTextKind.toSpanStyle(base: TextStyle): SpanStyle = when (thi
     RichTextTextKind.Heading3 -> SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)
     RichTextTextKind.Heading4 -> SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     RichTextTextKind.Heading5 -> SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+}
+
+/**
+ * Heading font sizes are applied per-span via [toSpanStyle], but a paragraph's [lineHeight] stays
+ * at the base body style (~20sp). A 28sp heading in a 20sp line box overlaps when it wraps and even
+ * overflows into the next block. Scale the line height to the heading size (≈1.2×) so wrapped
+ * headings lay out cleanly. Paragraphs keep the base line height.
+ */
+private fun RichTextTextKind.withHeadingLineHeight(base: TextStyle): TextStyle = when (this) {
+    RichTextTextKind.Paragraph -> base
+    RichTextTextKind.Heading1 -> base.copy(lineHeight = 34.sp)
+    RichTextTextKind.Heading2 -> base.copy(lineHeight = 30.sp)
+    RichTextTextKind.Heading3 -> base.copy(lineHeight = 26.sp)
+    RichTextTextKind.Heading4 -> base.copy(lineHeight = 24.sp)
+    RichTextTextKind.Heading5 -> base.copy(lineHeight = 22.sp)
 }
 
 private fun extractYouTubeVideoId(value: String): String {

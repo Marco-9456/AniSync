@@ -415,6 +415,7 @@ class RichTextParserTest {
                 is RichTextInline.BoldItalic -> appendInlineText(inline.children)
                 is RichTextInline.Strikethrough -> appendInlineText(inline.children)
                 is RichTextInline.Link -> appendInlineText(inline.children)
+                is RichTextInline.Image -> Unit
             }
         }
     }
