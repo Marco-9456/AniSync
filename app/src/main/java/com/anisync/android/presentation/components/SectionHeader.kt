@@ -63,7 +63,14 @@ fun SectionHeader(
     onActionClick: (() -> Unit)? = null,
     actionLabel: String? = null,
     actionIcon: ImageVector? = null,
-    padding: androidx.compose.foundation.layout.PaddingValues? = null
+    padding: androidx.compose.foundation.layout.PaddingValues? = null,
+    /**
+     * Optional composable rendered in the trailing area, immediately before the
+     * "See all" action button (e.g. an add or write icon). Shown even when
+     * [onActionClick] is null, so a section with no "See all" can still expose
+     * an action.
+     */
+    trailingContent: (@Composable () -> Unit)? = null
 ) {
     Row(
         modifier = modifier
@@ -131,22 +138,29 @@ fun SectionHeader(
             }
         }
 
-        // Action Button (See All / More)
-        if (onActionClick != null) {
+        // Trailing area: optional custom action(s) followed by the See All button.
+        if (trailingContent != null || onActionClick != null) {
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .bouncyClickable(
-                        onClick = onActionClick,
-                        clipShape = RoundedCornerShape(50)
-                    )
-                    .semantics {
-                        role = Role.Button
-                        contentDescription = actionLabel ?: "See all $title"
-                    }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                trailingContent?.invoke()
+
+                if (onActionClick != null) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .bouncyClickable(
+                                onClick = onActionClick,
+                                clipShape = RoundedCornerShape(50)
+                            )
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = actionLabel ?: "See all $title"
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                 if (actionLabel != null) {
                     Text(
                         text = actionLabel,
@@ -162,15 +176,17 @@ fun SectionHeader(
                         modifier = Modifier
                             .size(24.dp)
                     )
-                } else {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .size(24.dp)
-                            .padding(start = 4.dp)
-                    )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(start = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

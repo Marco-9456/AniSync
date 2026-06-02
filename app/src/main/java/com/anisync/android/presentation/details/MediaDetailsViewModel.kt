@@ -36,6 +36,7 @@ class MediaDetailsViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val libraryDao: LibraryDao,
     private val appSettings: AppSettings,
+    private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -296,5 +297,29 @@ class MediaDetailsViewModel @Inject constructor(
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
         recommendationRatingCoalescer.submit(recommendationId, rating)
+    }
+
+    /**
+     * Recommend a media as similar to the current one. Upvotes (creates) the
+     * recommendation pairing this media -> [mediaRecommendationId], then refreshes
+     * details so the new entry appears in the Recommendations section.
+     */
+    fun recommendMedia(mediaRecommendationId: Int) {
+        viewModelScope.launch {
+            when (val result = detailsRepository.rateRecommendation(
+                mediaId = mediaId,
+                recommendationId = mediaRecommendationId,
+                rating = com.anisync.android.type.RecommendationRating.RATE_UP
+            )) {
+                is Result.Success -> {
+                    refresh()
+                    toastManager.showToast(
+                        type = com.anisync.android.presentation.components.alert.ToastType.SUCCESS,
+                        message = "Recommendation added"
+                    )
+                }
+                is Result.Error -> toastManager.showResultError(result)
+            }
+        }
     }
 }

@@ -102,7 +102,11 @@ data class MediaDetails(
     // Reviews
     val reviews: List<MediaReview> = emptyList(),
     // Whether this media is in user's favorites
-    val isFavourite: Boolean = false
+    val isFavourite: Boolean = false,
+    // Whether this media is blocked from being recommended to/from (null = unknown)
+    val isRecommendationBlocked: Boolean? = null,
+    // Whether this media is blocked from being reviewed (null = unknown)
+    val isReviewBlocked: Boolean? = null
 )
 
 @Serializable

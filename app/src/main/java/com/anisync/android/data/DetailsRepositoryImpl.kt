@@ -272,7 +272,9 @@ class DetailsRepositoryImpl @Inject constructor(
                 externalLinks = externalLinks,
                 recommendations = recommendations,
                 reviews = reviews,
-                isFavourite = media.isFavourite ?: false
+                isFavourite = media.isFavourite ?: false,
+                isRecommendationBlocked = media.isRecommendationBlocked,
+                isReviewBlocked = media.isReviewBlocked
             )
 
             mediaDetailsDao.insert(details.toEntity())
@@ -713,6 +715,93 @@ class DetailsRepositoryImpl @Inject constructor(
                 ?: throw Exception("Failed to rate recommendation")
 
             Pair(data.rating ?: 0, data.userRating?.name)
+        }
+    }
+
+    @Volatile
+    private var cachedViewerId: Int? = null
+
+    private suspend fun resolveViewerId(): Int? {
+        cachedViewerId?.let { return it }
+        return try {
+            val response = apolloClient.query(com.anisync.android.GetViewerQuery())
+                .fetchPolicy(FetchPolicy.CacheFirst)
+                .execute()
+            response.data?.Viewer?.id?.also { cachedViewerId = it }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override suspend fun getViewerReview(mediaId: Int): Result<com.anisync.android.domain.ViewerReview?> {
+        return safeApiCall {
+            val viewerId = resolveViewerId() ?: throw Exception("Not signed in")
+            val response = apolloClient.query(
+                com.anisync.android.GetViewerReviewQuery(mediaId = mediaId, userId = viewerId)
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to load review")
+            }
+
+            val node = response.data?.Page?.reviews?.filterNotNull()?.firstOrNull()
+                ?: return@safeApiCall null
+
+            com.anisync.android.domain.ViewerReview(
+                id = node.id,
+                summary = node.summary ?: "",
+                body = node.body ?: "",
+                score = node.score ?: 0,
+                isPrivate = node.`private` ?: false
+            )
+        }
+    }
+
+    override suspend fun saveReview(
+        reviewId: Int?,
+        mediaId: Int,
+        body: String,
+        summary: String,
+        score: Int,
+        private: Boolean
+    ): Result<Int> {
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.SaveReviewMutation(
+                    id = Optional.presentIfNotNull(reviewId),
+                    mediaId = Optional.present(mediaId),
+                    body = Optional.present(body),
+                    summary = Optional.present(summary),
+                    score = Optional.present(score),
+                    private = Optional.present(private)
+                )
+            ).execute()
+
+            if (response.hasErrors() || response.data?.SaveReview == null) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to save review")
+            }
+
+            // Pull the new review into the cached details so the section updates.
+            refreshMediaDetails(mediaId)
+
+            response.data?.SaveReview?.id ?: 0
+        }
+    }
+
+    override suspend fun deleteReview(reviewId: Int, mediaId: Int): Result<Unit> {
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.DeleteReviewMutation(id = Optional.present(reviewId))
+            ).execute()
+
+            if (response.hasErrors() || response.data?.DeleteReview?.deleted != true) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to delete review")
+            }
+
+            // Drop the deleted review from the cached details.
+            refreshMediaDetails(mediaId)
         }
     }
 

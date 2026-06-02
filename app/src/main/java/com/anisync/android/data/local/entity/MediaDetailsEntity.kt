@@ -77,5 +77,9 @@ data class MediaDetailsEntity(
     @ColumnInfo(defaultValue = "[]")
     val reviews: List<MediaReview> = emptyList(),
     val isFavourite: Boolean = false,
+    @ColumnInfo(defaultValue = "NULL")
+    val isRecommendationBlocked: Boolean? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val isReviewBlocked: Boolean? = null,
     val lastUpdated: Long = System.currentTimeMillis()
 )

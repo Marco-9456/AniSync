@@ -123,6 +123,7 @@ import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.FollowingItem
 import com.anisync.android.presentation.details.components.FollowingListSheet
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
+import com.anisync.android.presentation.details.components.RecommendMediaSheet
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.details.components.StaffItem
@@ -155,6 +156,8 @@ fun MediaDetailsScreen(
     onCastSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onStaffSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
     onUserClick: (String) -> Unit = {},
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
@@ -517,6 +520,21 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
+                                onRecommendationsSeeAllClick = {
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
+                                    onRecommendationsSeeAllClick(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage)
+                                    )
+                                },
+                                onWriteReviewClick = {
+                                    onWriteReviewClick(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage)
+                                    )
+                                },
+                                onRecommendMedia = viewModel::recommendMedia,
                                 onUserClick = onUserClick,
                                 onFavouriteClick = viewModel::toggleFavourite,
                                 onShareClick = { viewModel.shareMedia(context) },
@@ -610,6 +628,9 @@ fun DetailsPageContent(
     onCastSeeAllClick: () -> Unit,
     onStaffSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
+    onRecommendationsSeeAllClick: () -> Unit,
+    onWriteReviewClick: () -> Unit,
+    onRecommendMedia: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     onFavouriteClick: () -> Unit,
     onShareClick: () -> Unit,
@@ -654,6 +675,7 @@ fun DetailsPageContent(
     var selectedReview by remember { mutableStateOf<MediaReview?>(null) }
     var showAllReviewsSheet by remember { mutableStateOf(false) }
     var showAllFollowingSheet by remember { mutableStateOf(false) }
+    var showRecommendSheet by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -822,13 +844,30 @@ fun DetailsPageContent(
 
             // 9. Recommendations
             item(key = "recommendations") {
-                if (displayRecommendations.isNotEmpty()) {
+                val canRecommend = details.isRecommendationBlocked != true
+                val hasMoreRecommendations = remember(details.recommendations) {
+                    details.recommendations.distinctBy { it.id }.size > 10
+                }
+                if (displayRecommendations.isNotEmpty() || canRecommend) {
                     Column {
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                         SectionHeader(
                             title = stringResource(R.string.section_recommendations),
-                            level = HeaderLevel.Section
+                            level = HeaderLevel.Section,
+                            onActionClick = if (hasMoreRecommendations) onRecommendationsSeeAllClick else null,
+                            trailingContent = if (canRecommend) {
+                                {
+                                    IconButton(onClick = { showRecommendSheet = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = stringResource(R.string.cd_add_recommendation),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            } else null
                         )
+                        if (displayRecommendations.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
@@ -858,6 +897,7 @@ fun DetailsPageContent(
                                     modifier = Modifier.animateItem()
                                 )
                             }
+                        }
                         }
                     }
                 }
@@ -892,14 +932,26 @@ fun DetailsPageContent(
             }
 
             // 11. Reviews
-            if (displayReviews.isNotEmpty()) {
+            val canReview = details.isReviewBlocked != true
+            if (displayReviews.isNotEmpty() || canReview) {
                 item(key = "reviews_header") {
                     Column {
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
                         SectionHeader(
                             title = stringResource(R.string.section_reviews),
                             level = HeaderLevel.Section,
-                            onActionClick = if (displayReviews.size >= 5) { { showAllReviewsSheet = true } } else null
+                            onActionClick = if (displayReviews.size >= 5) { { showAllReviewsSheet = true } } else null,
+                            trailingContent = if (canReview) {
+                                {
+                                    IconButton(onClick = onWriteReviewClick) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = stringResource(R.string.cd_write_review),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            } else null
                         )
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                     }
@@ -998,6 +1050,17 @@ fun DetailsPageContent(
             initialIndex = 0,
             onDismiss = { showImageViewer = false }
         )
+    }
+
+    if (showRecommendSheet) {
+        details.type?.let { mediaType ->
+            RecommendMediaSheet(
+                mediaType = mediaType,
+                sourceMediaId = details.id,
+                onRecommend = onRecommendMedia,
+                onDismiss = { showRecommendSheet = false }
+            )
+        }
     }
 }
 

@@ -87,4 +87,42 @@ interface DetailsRepository {
         recommendationId: Int,
         rating: com.anisync.android.type.RecommendationRating
     ): Result<Pair<Int, String?>>
+
+    /**
+     * Fetch the authenticated viewer's own review for a media, if one exists.
+     * Returns null when the viewer hasn't reviewed this media (used to decide
+     * between create vs. edit in the review editor).
+     */
+    suspend fun getViewerReview(mediaId: Int): Result<ViewerReview?>
+
+    /**
+     * Create or update a review. Pass [reviewId] to update an existing review,
+     * or null to create a new one.
+     */
+    suspend fun saveReview(
+        reviewId: Int?,
+        mediaId: Int,
+        body: String,
+        summary: String,
+        score: Int,
+        private: Boolean
+    ): Result<Int>
+
+    /**
+     * Delete the viewer's review. [mediaId] is used to refresh the cached media
+     * details so the removed review drops out of the reviews section.
+     */
+    suspend fun deleteReview(reviewId: Int, mediaId: Int): Result<Unit>
 }
+
+/**
+ * The authenticated viewer's own review for a media, with the raw markdown body
+ * so it can be loaded back into the editor for editing.
+ */
+data class ViewerReview(
+    val id: Int,
+    val summary: String,
+    val body: String,
+    val score: Int,
+    val isPrivate: Boolean
+)

@@ -189,6 +189,7 @@
     <string name="badge_up_to_date">Up to Date</string>
     <string name="empty_no_characters">No characters found</string>
     <string name="empty_no_staff">No staff found</string>
+    <string name="empty_no_recommendations">No recommendations yet</string>
     <string name="empty_no_related">No related media found</string>
     <string name="action_favorite">Favorite</string>
     <string name="action_share">Share</string>
@@ -812,6 +813,29 @@
     <string name="forum_media_searching">Searching…</string>
     <string name="forum_media_no_results">No results for "%1$s"</string>
     <string name="forum_remove_media_category">Remove media</string>
+
+    <!-- Recommendations (media details) -->
+    <string name="cd_add_recommendation">Recommend a similar media</string>
+    <string name="recommend_media_title">Recommend similar</string>
+    <string name="recommend_media_hint">Search to recommend…</string>
+    <string name="recommend_added">Recommendation added</string>
+
+    <!-- Reviews (media details) -->
+    <string name="cd_write_review">Write a review</string>
+    <string name="write_review_title">Write review</string>
+    <string name="edit_review_title">Edit review</string>
+    <string name="review_summary_hint">Review summary</string>
+    <string name="review_body_hint">Write your review…</string>
+    <string name="review_score_label">Score</string>
+    <string name="review_private_label">Private</string>
+    <string name="review_delete">Delete review</string>
+    <string name="review_delete_confirm_title">Delete review?</string>
+    <string name="review_delete_confirm_body">This permanently deletes your review. This cannot be undone.</string>
+    <string name="review_body_error">Review must be at least %1$d characters long. Do not pad your reviews to meet this requirement.</string>
+    <string name="review_summary_error">Summary must be between %1$d and %2$d characters.</string>
+    <string name="review_score_error">Score must be between %1$d and %2$d.</string>
+    <string name="review_guidelines_notice">Please make sure to read the review guidelines before publishing.</string>
+    <string name="review_publish">Publish</string>
 
     <!-- Media upload (settings + composer attach) -->
     <string name="settings_media_upload">Media upload</string>

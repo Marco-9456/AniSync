@@ -135,7 +135,7 @@ query GetMediaDetails($id: Int) {
             notes
             isDisabled
         }
-        recommendations(sort: [RATING_DESC], perPage: 10) {
+        recommendations(sort: [RATING_DESC], perPage: 25) {
             nodes {
                 rating
                 userRating
@@ -176,5 +176,7 @@ query GetMediaDetails($id: Int) {
             }
         }
         isFavourite
+        isRecommendationBlocked
+        isReviewBlocked
     }
 }

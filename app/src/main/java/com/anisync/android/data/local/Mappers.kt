@@ -138,7 +138,9 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     externalLinks = externalLinks,
     recommendations = recommendations,
     reviews = reviews,
-    isFavourite = isFavourite
+    isFavourite = isFavourite,
+    isRecommendationBlocked = isRecommendationBlocked,
+    isReviewBlocked = isReviewBlocked
 )
 
 fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
@@ -189,7 +191,9 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     externalLinks = externalLinks,
     recommendations = recommendations,
     reviews = reviews,
-    isFavourite = isFavourite
+    isFavourite = isFavourite,
+    isRecommendationBlocked = isRecommendationBlocked,
+    isReviewBlocked = isReviewBlocked
 )
 
 // --- UserProfile ---

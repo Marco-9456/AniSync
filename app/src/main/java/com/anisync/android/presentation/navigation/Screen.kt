@@ -151,6 +151,17 @@ data class CharacterMediaGrid(
 )
 
 /**
+ * Grid screen for displaying all recommendations for a media.
+ * @param mediaId The ID of the media
+ * @param mediaTitle The title of the media (for display in app bar)
+ */
+@Serializable
+data class MediaRecommendationsGrid(
+    val mediaId: Int,
+    val mediaTitle: String
+)
+
+/**
  * Statistics screen route for displaying user anime/manga statistics.
  * @param userId The AniList user ID
  */
@@ -207,6 +218,17 @@ object CreateThread
  */
 @Serializable
 data class ReviewDetail(val reviewId: Int)
+
+/**
+ * Review editor — write a new review or edit the viewer's existing one for a media.
+ * @param mediaId The media being reviewed
+ * @param mediaTitle The media title (for display in app bar)
+ */
+@Serializable
+data class WriteReview(
+    val mediaId: Int,
+    val mediaTitle: String = ""
+)
 
 // =============================================================================
 // ACTIVITY ROUTES

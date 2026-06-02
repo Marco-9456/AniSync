@@ -1,0 +1,11 @@
+query GetViewerReview($mediaId: Int!, $userId: Int!) {
+    Page(page: 1, perPage: 1) {
+        reviews(mediaId: $mediaId, userId: $userId) {
+            id
+            summary
+            body(asHtml: false)
+            score
+            private
+        }
+    }
+}

@@ -19,6 +19,11 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v17 (Jun 2026):
+ *   - Added fields to media_details:
+ *     • isRecommendationBlocked - hides the "add recommendation" action when true
+ *     • isReviewBlocked - hides the "write review" action when true
+ *
  * v16 (May 2026):
  *   - Added field to media_details:
  *     • coverColor - average cover hex color, used to tint rich-text link cards
@@ -76,7 +81,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -91,7 +96,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 12, to = 13),
         androidx.room.AutoMigration(from = 13, to = 14),
         androidx.room.AutoMigration(from = 14, to = 15),
-        androidx.room.AutoMigration(from = 15, to = 16)
+        androidx.room.AutoMigration(from = 15, to = 16),
+        androidx.room.AutoMigration(from = 16, to = 17)
     ]
 )
 @TypeConverters(Converters::class)

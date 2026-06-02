@@ -28,6 +28,7 @@ import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaCharactersGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
+import com.anisync.android.presentation.details.MediaRecommendationsGridScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
 import com.anisync.android.presentation.details.MediaStaffGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
@@ -48,6 +49,7 @@ import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.notifications.NotificationsScreen
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
+import com.anisync.android.presentation.review.WriteReviewScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
@@ -594,9 +596,52 @@ fun AniSyncNavHost(
                     onRelatedSeeAllClick = { mediaId, mediaTitle ->
                         navController.navigate(MediaRelationsGrid(mediaId, mediaTitle))
                     },
+                    onRecommendationsSeeAllClick = { mediaId, mediaTitle ->
+                        navController.navigate(MediaRecommendationsGrid(mediaId, mediaTitle))
+                    },
+                    onWriteReviewClick = { mediaId, mediaTitle ->
+                        navController.navigate(WriteReview(mediaId, mediaTitle))
+                    },
                     onUserClick = navigateToUserProfile,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // MEDIA RECOMMENDATIONS GRID - Shared Axis Z (Depth)
+            // =================================================================
+            composable<MediaRecommendationsGrid>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val grid: MediaRecommendationsGrid = backStackEntry.toRoute()
+                MediaRecommendationsGridScreen(
+                    mediaId = grid.mediaId,
+                    mediaTitle = grid.mediaTitle,
+                    onBackClick = { navController.popBackStack() },
+                    onRecommendationClick = { recId ->
+                        navController.navigate(MediaDetails(recId, "recommendations_grid"))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // WRITE REVIEW EDITOR - Shared Axis Z (Depth)
+            // =================================================================
+            composable<WriteReview>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                WriteReviewScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onReviewSaved = { navController.popBackStack() }
                 )
             }
 
