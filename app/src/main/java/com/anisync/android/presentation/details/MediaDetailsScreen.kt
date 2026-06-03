@@ -348,15 +348,24 @@ fun MediaDetailsScreen(
                         // The whole details content Box uses sharedBounds, so during a
                         // transition it renders in the shared-element overlay (on top).
                         // The FAB must be lifted into that same overlay at a higher
-                        // zIndex, otherwise it's drawn behind the page until the
-                        // transition ends — appearing as a square stub poking out from
-                        // under the content. This is needed on a forward enter too, not
-                        // just the return, so gate on the transition being active.
+                        // zIndex while THIS screen is animating in, otherwise it's drawn
+                        // behind the page until the transition ends — a square stub
+                        // poking out from under the content (forward enter included).
+                        //
+                        // Gate on the screen *targeting visible* so the FAB only lifts
+                        // while entering/returning, never while exiting. isTransitionActive
+                        // is scope-global: without the targeting-visible guard, the FAB of
+                        // the screen being navigated AWAY from also lifts into the overlay
+                        // and floats over the destination (another detail page, a cast/
+                        // staff grid, ...) as a stray FAB.
                         val fabOverlayModifier = with(sharedTransitionScope) {
                             Modifier
                                 .renderInSharedTransitionScopeOverlay(
                                     zIndexInOverlay = 1f,
-                                    renderInOverlay = { isSharedTransitionRunning || shouldRenderChromeInOverlay }
+                                    renderInOverlay = {
+                                        (isSharedTransitionRunning && isDetailsTargetingVisible) ||
+                                            shouldRenderChromeInOverlay
+                                    }
                                 )
                                 .graphicsLayer {
                                     alpha =
