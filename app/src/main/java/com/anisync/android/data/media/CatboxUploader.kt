@@ -23,6 +23,9 @@ class CatboxUploader @Inject constructor(
     private val client: OkHttpClient
 ) : MediaUploader {
 
+    /** Set by the factory before each upload — binds the upload to a Catbox account when non-blank. */
+    var userhash: String = ""
+
     override suspend fun upload(
         uri: Uri,
         mime: String,
@@ -34,6 +37,7 @@ class CatboxUploader @Inject constructor(
             val body = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("reqtype", "fileupload")
+                .apply { if (userhash.isNotBlank()) addFormDataPart("userhash", userhash) }
                 .addFormDataPart("fileToUpload", filename, fileBody)
                 .build()
             val request = Request.Builder()

@@ -843,6 +843,13 @@
     <string name="media_upload_intro">AniList does not host uploads. Pick a third-party host to use when attaching media inside threads, replies, status posts, messages, and bios.</string>
     <string name="media_upload_host_catbox">Catbox.moe</string>
     <string name="media_upload_host_catbox_desc">Permanent free hosting, up to 200 MB per file</string>
+    <string name="media_upload_catbox_account">Account userhash</string>
+    <string name="media_upload_catbox_account_connected">Connected · %1$s</string>
+    <string name="media_upload_catbox_account_anonymous">Not connected · uploads are anonymous</string>
+    <string name="media_upload_catbox_dialog_title">Catbox account</string>
+    <string name="media_upload_catbox_userhash">Userhash</string>
+    <string name="media_upload_catbox_userhash_hint">Find it under Manage Account on catbox.moe</string>
+    <string name="media_upload_catbox_userhash_help">Bind uploads to your Catbox account so you can view and delete them later. Leave empty to upload anonymously.</string>
     <string name="media_upload_host_litterbox">Litterbox</string>
     <string name="media_upload_host_litterbox_desc">Temporary hosting on the same network as Catbox</string>
     <string name="media_upload_host_custom">Custom host</string>

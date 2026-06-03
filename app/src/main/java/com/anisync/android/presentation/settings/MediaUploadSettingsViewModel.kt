@@ -18,6 +18,7 @@ class MediaUploadSettingsViewModel @Inject constructor(
     val customHostFileField: StateFlow<String> = settings.customHostFileField
     val customHostAuthHeader: StateFlow<String> = settings.customHostAuthHeader
     val customHostResponseJsonPath: StateFlow<String> = settings.customHostResponseJsonPath
+    val catboxUserHash: StateFlow<String> = settings.catboxUserHash
 
     fun setMediaHost(host: MediaHost) = settings.setMediaHost(host)
     fun setLitterboxDuration(duration: String) = settings.setLitterboxDuration(duration)
@@ -25,4 +26,5 @@ class MediaUploadSettingsViewModel @Inject constructor(
     fun setCustomHostFileField(value: String) = settings.setCustomHostFileField(value)
     fun setCustomHostAuthHeader(value: String) = settings.setCustomHostAuthHeader(value)
     fun setCustomHostResponseJsonPath(value: String) = settings.setCustomHostResponseJsonPath(value)
+    fun setCatboxUserHash(value: String) = settings.setCatboxUserHash(value)
 }

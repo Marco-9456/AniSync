@@ -403,6 +403,11 @@ class AppSettings @Inject constructor(
     )
     val customHostResponseJsonPath: StateFlow<String> = _customHostResponseJsonPath.asStateFlow()
 
+    // Optional Catbox account userhash. When set, uploads are bound to the user's
+    // Catbox account so they can view/manage them at catbox.moe; blank = anonymous.
+    private val _catboxUserHash = MutableStateFlow(prefs.getString(KEY_CATBOX_USERHASH, "").orEmpty())
+    val catboxUserHash: StateFlow<String> = _catboxUserHash.asStateFlow()
+
     private fun readMediaHost(): MediaHost {
         val name = runCatching { prefs.getString(KEY_MEDIA_HOST, null) }.getOrNull()
         return runCatching { MediaHost.valueOf(name ?: MediaHost.CATBOX.name) }
@@ -803,6 +808,11 @@ class AppSettings @Inject constructor(
         prefs.edit().putString(KEY_CUSTOM_HOST_JSON_PATH, value).apply()
     }
 
+    fun setCatboxUserHash(value: String) {
+        _catboxUserHash.value = value
+        prefs.edit().putString(KEY_CATBOX_USERHASH, value).apply()
+    }
+
     /**
      * Get the preferred streaming service directly from SharedPreferences.
      * Use this for widgets to ensure the latest value is always read.
@@ -909,6 +919,7 @@ companion object {
         private const val KEY_CUSTOM_HOST_FIELD = "custom_host_field"
         private const val KEY_CUSTOM_HOST_AUTH = "custom_host_auth"
         private const val KEY_CUSTOM_HOST_JSON_PATH = "custom_host_json_path"
+        private const val KEY_CATBOX_USERHASH = "catbox_userhash"
     }
 }
 

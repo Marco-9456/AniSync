@@ -20,7 +20,9 @@ class MediaUploaderFactory @Inject constructor(
 ) {
     fun current(): MediaUploader {
         return when (settings.mediaHost.value) {
-            MediaHost.CATBOX -> catbox.get()
+            MediaHost.CATBOX -> catbox.get().apply {
+                userhash = settings.catboxUserHash.value.trim()
+            }
             MediaHost.LITTERBOX -> litterbox.get().apply {
                 time = settings.litterboxDuration.value.ifBlank { "1h" }
             }
