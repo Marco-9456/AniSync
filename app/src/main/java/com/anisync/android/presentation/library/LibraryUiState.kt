@@ -24,6 +24,7 @@ data class LibraryUiState(
     val hiddenListNames: Set<String> = emptySet(),
     val tabOrder: List<String> = emptyList(),
     val showPrivateEntries: Boolean = true,
+    val isGridView: Boolean = true,
     val initialTabId: String? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null
@@ -55,6 +56,7 @@ sealed interface LibraryAction {
     data class CreateCustomList(val listName: String, val type: MediaType) : LibraryAction
     data class DeleteCustomList(val listName: String) : LibraryAction
     data class TogglePrivateVisibility(val show: Boolean) : LibraryAction
+    data class SetGridView(val isGrid: Boolean) : LibraryAction
     data class OnTabSelected(val tabId: String) : LibraryAction
     data object ConsumeInitialTab : LibraryAction
 }

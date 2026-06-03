@@ -168,7 +168,6 @@ fun LibraryScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    var isGridView by rememberSaveable { mutableStateOf(true) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
@@ -299,7 +298,7 @@ fun LibraryScreen(
             searchBarState = searchBarState,
             textFieldState = textFieldState,
             isSearchQueryEmpty = isSearchQueryEmpty,
-            isGridView = isGridView,
+            isGridView = uiState.isGridView,
             isAscending = isAscending,
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
@@ -310,7 +309,7 @@ fun LibraryScreen(
             onClearClick = { textFieldState.edit { replace(0, length, "") } },
             onToggleView = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                isGridView = !isGridView
+                viewModel.onAction(LibraryAction.SetGridView(!uiState.isGridView))
             },
             onToggleSort = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -490,7 +489,7 @@ fun LibraryScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    if (isGridView) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
+                    if (uiState.isGridView) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
                 }
 
                 uiState.errorMessage != null -> ErrorState(
@@ -573,7 +572,7 @@ fun LibraryScreen(
                             }
                         } else {
                             AnimatedContent(
-                                targetState = isGridView,
+                                targetState = uiState.isGridView,
                                 transitionSpec = {
                                     (slideInVertically(spatialSpec) { if (targetState) -it / 8 else it / 8 } + fadeIn(
                                         effectsSpec

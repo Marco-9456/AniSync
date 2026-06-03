@@ -10,8 +10,11 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.anisync.android.R
+import com.anisync.android.domain.FeedFilter
+import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.media.MediaHost
+import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.FontAxisOverrides
 import com.anisync.android.ui.theme.TypeCategory
 import com.anisync.android.ui.theme.TypographyOverrides
@@ -314,6 +317,61 @@ class AppSettings @Inject constructor(
         prefs.getString(KEY_LAST_SELECTED_MANGA_TAB, null)
     )
     val lastSelectedMangaTab: StateFlow<String?> = _lastSelectedMangaTab.asStateFlow()
+
+    // Last selected activity-feed scope (Global vs Following). Persisted so the feed
+    // opens on the tab the user actually reads instead of always resetting to Global.
+    private val _lastFeedScope = MutableStateFlow(readFeedScope())
+    val lastFeedScope: StateFlow<FeedScope> = _lastFeedScope.asStateFlow()
+
+    private fun readFeedScope(): FeedScope {
+        val name = runCatching { prefs.getString(KEY_FEED_SCOPE, null) }.getOrNull()
+        return runCatching { FeedScope.valueOf(name ?: FeedScope.GLOBAL.name) }
+            .getOrDefault(FeedScope.GLOBAL)
+    }
+
+    // Library view density: grid of posters (true) vs single-column list (false).
+    // Persisted so the chosen layout survives app restarts instead of resetting to grid.
+    private val _libraryGridView = MutableStateFlow(prefs.getBoolean(KEY_LIBRARY_GRID_VIEW, true))
+    val libraryGridView: StateFlow<Boolean> = _libraryGridView.asStateFlow()
+
+    // Last selected feed content filter (All / Status / List).
+    private val _feedFilter = MutableStateFlow(readFeedFilter())
+    val feedFilter: StateFlow<FeedFilter> = _feedFilter.asStateFlow()
+
+    private fun readFeedFilter(): FeedFilter {
+        val name = runCatching { prefs.getString(KEY_FEED_FILTER, null) }.getOrNull()
+        return runCatching { FeedFilter.valueOf(name ?: FeedFilter.ALL.name) }
+            .getOrDefault(FeedFilter.ALL)
+    }
+
+    // Last selected media type (Anime vs Manga), stored per surface so the Library
+    // and Discover screens each keep their own preference. Encoded as a boolean
+    // (true = Manga) to stay independent of the generated MediaType enum's encoding.
+    private val _libraryMediaType = MutableStateFlow(
+        if (prefs.getBoolean(KEY_LIBRARY_MEDIA_TYPE_MANGA, false)) MediaType.MANGA else MediaType.ANIME
+    )
+    val libraryMediaType: StateFlow<MediaType> = _libraryMediaType.asStateFlow()
+
+    private val _discoverMediaType = MutableStateFlow(
+        if (prefs.getBoolean(KEY_DISCOVER_MEDIA_TYPE_MANGA, false)) MediaType.MANGA else MediaType.ANIME
+    )
+    val discoverMediaType: StateFlow<MediaType> = _discoverMediaType.asStateFlow()
+
+    // Last selected forum feed tab (stored by enum name) and category filter
+    // (stored as the AniList category id, or absent when browsing all categories).
+    private val _forumFeed = MutableStateFlow(prefs.getString(KEY_FORUM_FEED, null))
+    val forumFeed: StateFlow<String?> = _forumFeed.asStateFlow()
+
+    private val _forumCategoryId = MutableStateFlow(
+        prefs.getInt(KEY_FORUM_CATEGORY_ID, -1).takeIf { it >= 0 }
+    )
+    val forumCategoryId: StateFlow<Int?> = _forumCategoryId.asStateFlow()
+
+    // Last visited main bottom-nav tab key ("library" / "discover" / "feed" / "forum").
+    // Restored as the nav-graph start destination on cold launch so the app reopens
+    // on the screen the user left. Profile and Settings are intentionally never stored.
+    private val _lastMainTab = MutableStateFlow(prefs.getString(KEY_LAST_MAIN_TAB, null))
+    val lastMainTab: StateFlow<String?> = _lastMainTab.asStateFlow()
 
     // ==========================================================================
     // MEDIA UPLOAD SETTINGS — third-party host config for in-composer attach
@@ -640,6 +698,75 @@ class AppSettings @Inject constructor(
             else remove(KEY_LAST_SELECTED_MANGA_TAB)
         }.apply()
     }
+
+    /**
+     * Persist the last selected activity-feed scope so the feed reopens on it.
+     */
+    fun setLastFeedScope(scope: FeedScope) {
+        _lastFeedScope.value = scope
+        prefs.edit().putString(KEY_FEED_SCOPE, scope.name).apply()
+    }
+
+    /**
+     * Persist the library view density (grid vs list).
+     */
+    fun setLibraryGridView(isGrid: Boolean) {
+        _libraryGridView.value = isGrid
+        prefs.edit().putBoolean(KEY_LIBRARY_GRID_VIEW, isGrid).apply()
+    }
+
+    /**
+     * Persist the last selected feed content filter.
+     */
+    fun setFeedFilter(filter: FeedFilter) {
+        _feedFilter.value = filter
+        prefs.edit().putString(KEY_FEED_FILTER, filter.name).apply()
+    }
+
+    /**
+     * Persist the last selected Library media type (Anime vs Manga).
+     */
+    fun setLibraryMediaType(type: MediaType) {
+        _libraryMediaType.value = type
+        prefs.edit().putBoolean(KEY_LIBRARY_MEDIA_TYPE_MANGA, type == MediaType.MANGA).apply()
+    }
+
+    /**
+     * Persist the last selected Discover media type (Anime vs Manga).
+     */
+    fun setDiscoverMediaType(type: MediaType) {
+        _discoverMediaType.value = type
+        prefs.edit().putBoolean(KEY_DISCOVER_MEDIA_TYPE_MANGA, type == MediaType.MANGA).apply()
+    }
+
+    /**
+     * Persist the last selected forum feed tab (by [ForumFeed] enum name).
+     */
+    fun setForumFeed(feedName: String) {
+        _forumFeed.value = feedName
+        prefs.edit().putString(KEY_FORUM_FEED, feedName).apply()
+    }
+
+    /**
+     * Persist the last selected forum category filter. Pass null to clear it
+     * (browsing all categories).
+     */
+    fun setForumCategoryId(categoryId: Int?) {
+        _forumCategoryId.value = categoryId
+        prefs.edit().apply {
+            if (categoryId != null) putInt(KEY_FORUM_CATEGORY_ID, categoryId)
+            else remove(KEY_FORUM_CATEGORY_ID)
+        }.apply()
+    }
+
+    /**
+     * Persist the last visited main bottom-nav tab so the app reopens on it.
+     * Only Library/Discover/Feed/Forum are ever stored.
+     */
+    fun setLastMainTab(tabKey: String) {
+        _lastMainTab.value = tabKey
+        prefs.edit().putString(KEY_LAST_MAIN_TAB, tabKey).apply()
+    }
     
     /**
      * Set the media upload host. The new value applies to all subsequent attach
@@ -768,6 +895,14 @@ companion object {
         private const val KEY_DISCOVER_SEARCH_VIEW_MODE = "discover_search_view_mode"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
         private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
+        private const val KEY_FEED_SCOPE = "feed_scope"
+        private const val KEY_FEED_FILTER = "feed_filter"
+        private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
+        private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
+        private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
+        private const val KEY_FORUM_FEED = "forum_feed"
+        private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
+        private const val KEY_LAST_MAIN_TAB = "last_main_tab"
         private const val KEY_MEDIA_HOST = "media_host"
         private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
         private const val KEY_CUSTOM_HOST_URL = "custom_host_url"

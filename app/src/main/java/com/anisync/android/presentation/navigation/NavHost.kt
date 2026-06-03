@@ -100,7 +100,8 @@ private fun isForwardNavigation(fromRoute: String?, toRoute: String?): Boolean {
 fun AniSyncNavHost(
     navController: NavHostController,
     onMediaClick: (mediaId: Int, sourceScreen: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    startDestination: Any = Library
 ) {
     val navigateToUserProfile: (String) -> Unit = { username ->
         username.trim().takeIf { it.isNotEmpty() }?.let { nonEmptyUsername ->
@@ -236,7 +237,7 @@ fun AniSyncNavHost(
         CompositionLocalProvider(LocalAniLinkCallbacks provides aniLinkCallbacks) {
         NavHost(
             navController = navController,
-            startDestination = Library,
+            startDestination = startDestination,
             modifier = Modifier
         ) {
             // =================================================================

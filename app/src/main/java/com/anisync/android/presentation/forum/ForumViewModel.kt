@@ -2,6 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
@@ -23,11 +24,23 @@ import javax.inject.Inject
 @HiltViewModel
 class ForumViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
+    private val appSettings: AppSettings,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ForumUiState())
+    private val _uiState = MutableStateFlow(
+        ForumUiState(
+            selectedFeed = readSavedFeed(),
+            selectedCategoryId = appSettings.forumCategoryId.value
+        )
+    )
     val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
+
+    /** Resolve the persisted forum feed name, falling back to Overview. */
+    private fun readSavedFeed(): ForumFeed =
+        appSettings.forumFeed.value
+            ?.let { name -> runCatching { ForumFeed.valueOf(name) }.getOrNull() }
+            ?: ForumFeed.OVERVIEW
 
     private val _actions = Channel<ForumAction>(Channel.BUFFERED)
     val actions: Flow<ForumAction> = _actions.receiveAsFlow()
@@ -64,6 +77,7 @@ class ForumViewModel @Inject constructor(
 
             is ForumAction.OnFeedChange -> {
                 if (_uiState.value.selectedFeed == action.feed) return
+                appSettings.setForumFeed(action.feed.name)
                 _uiState.update {
                     it.copy(
                         selectedFeed = action.feed,
@@ -75,6 +89,7 @@ class ForumViewModel @Inject constructor(
 
             is ForumAction.OnCategoryChange -> {
                 if (_uiState.value.selectedCategoryId == action.categoryId) return
+                appSettings.setForumCategoryId(action.categoryId)
                 _uiState.update {
                     it.copy(
                         selectedCategoryId = action.categoryId,

@@ -78,7 +78,12 @@ private data class BottomNavItem<T : Any>(
     val route: T,
     val routeClass: KClass<T>,
     val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val unselectedIcon: ImageVector,
+    /**
+     * Stable key persisted as the "last visited tab" for cold-launch restore.
+     * Null for tabs that should never become the launch destination (Profile).
+     */
+    val persistKey: String? = null
 )
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -99,6 +104,18 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     val navBarCornerRadius by viewModel.navBarCornerRadius.collectAsStateWithLifecycle()
     val navBarSuppressor = remember { MainNavBarSuppressor() }
 
+    // Cold-launch restore: open on the tab the user last visited (Library/Discover/
+    // Feed/Forum). Compose Navigation restores its own back stack across process
+    // death, so this only governs a genuinely fresh start.
+    val startDestination: Any = remember(viewModel.startTabKey) {
+        when (viewModel.startTabKey) {
+            "discover" -> Discover
+            "feed" -> Feed
+            "forum" -> Forum
+            else -> Library
+        }
+    }
+
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshNotificationBadge()
     }
@@ -117,7 +134,8 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
                     unreadNotificationCount = unreadNotificationCount,
                     style = NavBarStyle.ANCHORED,
                     showLabels = navBarShowLabels,
-                    cornerRadius = navBarCornerRadius
+                    cornerRadius = navBarCornerRadius,
+                    onTabSelected = viewModel::onMainTabSelected
                 )
             }
         }
@@ -132,6 +150,7 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
             CompositionLocalProvider(LocalMainNavBarInset provides barInset) {
                 AniSyncNavHost(
                     navController = navController,
+                    startDestination = startDestination,
                     onMediaClick = { mediaId, sourceScreen ->
                         navController.navigateSafely(MediaDetails(mediaId, sourceScreen))
                     },
@@ -150,7 +169,8 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
                         unreadNotificationCount = unreadNotificationCount,
                         style = NavBarStyle.FLOATING,
                         showLabels = navBarShowLabels,
-                        cornerRadius = navBarCornerRadius
+                        cornerRadius = navBarCornerRadius,
+                        onTabSelected = viewModel::onMainTabSelected
                     )
                 }
             }
@@ -169,7 +189,8 @@ private fun MainBottomBar(
     unreadNotificationCount: Int,
     style: NavBarStyle,
     showLabels: Boolean,
-    cornerRadius: Float
+    cornerRadius: Float,
+    onTabSelected: (String) -> Unit
 ) {
     val navItems = remember {
         listOf(
@@ -178,28 +199,32 @@ private fun MainBottomBar(
                 Library,
                 Library::class,
                 Icons.Filled.VideoLibrary,
-                Icons.Outlined.VideoLibrary
+                Icons.Outlined.VideoLibrary,
+                persistKey = "library"
             ),
             BottomNavItem(
                 R.string.nav_discover,
                 Discover,
                 Discover::class,
                 Icons.Filled.Explore,
-                Icons.Outlined.Explore
+                Icons.Outlined.Explore,
+                persistKey = "discover"
             ),
             BottomNavItem(
                 R.string.nav_feed,
                 Feed,
                 Feed::class,
                 Icons.Filled.DynamicFeed,
-                Icons.Outlined.DynamicFeed
+                Icons.Outlined.DynamicFeed,
+                persistKey = "feed"
             ),
             BottomNavItem(
                 R.string.nav_forum,
                 Forum,
                 Forum::class,
                 Icons.Filled.Forum,
-                Icons.Outlined.Forum
+                Icons.Outlined.Forum,
+                persistKey = "forum"
             ),
             BottomNavItem(
                 R.string.nav_profile,
@@ -275,6 +300,8 @@ private fun MainBottomBar(
                                 launchSingleTop = true
                                 restoreState = true
                             }
+                            // Remember this tab so the next cold launch reopens on it.
+                            item.persistKey?.let(onTabSelected)
                         }
                     },
                     icon = {

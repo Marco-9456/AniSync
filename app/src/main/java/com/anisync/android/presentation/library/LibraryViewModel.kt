@@ -54,7 +54,12 @@ class LibraryViewModel @Inject constructor(
         )
     }
 
-    private val _uiState = MutableStateFlow(LibraryUiState())
+    private val _uiState = MutableStateFlow(
+        LibraryUiState(
+            mediaType = appSettings.libraryMediaType.value,
+            isGridView = appSettings.libraryGridView.value
+        )
+    )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     private val _actions = MutableSharedFlow<LibraryAction>()
@@ -93,6 +98,7 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.Refresh -> refresh()
             is LibraryAction.OnMediaTypeChange -> {
                 hasRestoredTab = false
+                appSettings.setLibraryMediaType(action.type)
                 _uiState.update {
                     it.copy(
                         mediaType = action.type,
@@ -130,6 +136,10 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
             is LibraryAction.TogglePrivateVisibility -> appSettings.setShowPrivateEntries(action.show)
+            is LibraryAction.SetGridView -> {
+                appSettings.setLibraryGridView(action.isGrid)
+                _uiState.update { it.copy(isGridView = action.isGrid) }
+            }
             is LibraryAction.OnTabSelected -> saveSelectedTab(action.tabId)
             is LibraryAction.ConsumeInitialTab -> _uiState.update { it.copy(initialTabId = null) }
         }

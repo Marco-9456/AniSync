@@ -19,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
-    appSettings: AppSettings,
+    private val appSettings: AppSettings,
     val toastManager: ToastManager
 ) : ViewModel() {
 
@@ -28,6 +28,17 @@ class MainScreenViewModel @Inject constructor(
     val navBarStyle: StateFlow<NavBarStyle> = appSettings.navBarStyle
     val navBarShowLabels: StateFlow<Boolean> = appSettings.navBarShowLabels
     val navBarCornerRadius: StateFlow<Float> = appSettings.navBarCornerRadius
+
+    /**
+     * The main bottom-nav tab the user last visited, captured once at startup so the
+     * NavHost can open on it. Null on first ever launch (falls back to the default tab).
+     */
+    val startTabKey: String? = appSettings.lastMainTab.value
+
+    /** Remember the main tab the user switched to, for the next cold launch. */
+    fun onMainTabSelected(tabKey: String) {
+        appSettings.setLastMainTab(tabKey)
+    }
 
     fun refreshNotificationBadge() {
         viewModelScope.launch { notificationBadgeStore.refresh() }

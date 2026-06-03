@@ -118,6 +118,7 @@ class DiscoverViewModel @Inject constructor(
     private fun onMediaTypeChange(type: MediaType) {
         val currentState = _uiState.value as? DiscoverUiState.Success
         if (currentState?.mediaType != type) {
+            appSettings.setDiscoverMediaType(type)
             if (currentState != null) {
                 _uiState.update {
                     currentState.copy(
@@ -275,7 +276,7 @@ class DiscoverViewModel @Inject constructor(
     private fun loadDiscoveryData(isRefresh: Boolean = false) {
         val currentState = _uiState.value
         val mediaType = (currentState as? DiscoverUiState.Success)?.mediaType
-            ?: MediaType.ANIME
+            ?: appSettings.discoverMediaType.value
 
         viewModelScope.launch {
             val startTime = if (isRefresh) System.currentTimeMillis() else 0L

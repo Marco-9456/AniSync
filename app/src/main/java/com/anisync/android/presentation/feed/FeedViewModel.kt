@@ -2,6 +2,7 @@ package com.anisync.android.presentation.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.FeedRepository
@@ -30,10 +31,16 @@ private const val PAGE_SIZE = 25
 class FeedViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
     private val activityRepository: ActivityRepository,
+    private val appSettings: AppSettings,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FeedUiState())
+    private val _uiState = MutableStateFlow(
+        FeedUiState(
+            scope = appSettings.lastFeedScope.value,
+            filter = appSettings.feedFilter.value
+        )
+    )
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
     private val _actions = Channel<FeedAction>(Channel.BUFFERED)
@@ -71,6 +78,7 @@ class FeedViewModel @Inject constructor(
 
             is FeedAction.OnFilterChange -> {
                 if (_uiState.value.filter == action.filter) return
+                appSettings.setFeedFilter(action.filter)
                 _uiState.update {
                     it.copy(
                         filter = action.filter,
@@ -88,6 +96,7 @@ class FeedViewModel @Inject constructor(
 
             is FeedAction.OnScopeChange -> {
                 if (_uiState.value.scope == action.scope) return
+                appSettings.setLastFeedScope(action.scope)
                 _uiState.update {
                     it.copy(
                         scope = action.scope,
