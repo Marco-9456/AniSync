@@ -48,6 +48,7 @@ import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.notifications.NotificationsScreen
 import com.anisync.android.presentation.profile.ProfileScreen
+import com.anisync.android.presentation.review.RecentReviewsScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.review.WriteReviewScreen
 import com.anisync.android.presentation.settings.AboutScreen
@@ -330,6 +331,12 @@ fun AniSyncNavHost(
                     },
                     onUserClick = navigateToUserProfile,
                     onSectionSeeAllClick = onSectionClick,
+                    onReviewClick = { reviewId ->
+                        navController.navigate(ReviewDetail(reviewId))
+                    },
+                    onRecentReviewsSeeAllClick = { mediaType ->
+                        navController.navigate(RecentReviews(mediaType.name))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -668,6 +675,24 @@ fun AniSyncNavHost(
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "review"))
                     }
+                )
+            }
+
+            // =================================================================
+            // RECENT REVIEWS SCREEN - Shared Axis Z (Depth)
+            // =================================================================
+            composable<RecentReviews>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                RecentReviewsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onReviewClick = { reviewId ->
+                        navController.navigate(ReviewDetail(reviewId))
+                    },
+                    onUserClick = navigateToUserProfile
                 )
             }
 

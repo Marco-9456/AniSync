@@ -290,16 +290,24 @@ class DiscoverViewModel @Inject constructor(
             val trendingDeferred = async { discoverRepository.getTrending(mediaType) }
             val popularDeferred = async { discoverRepository.getPopular(mediaType) }
             val upcomingDeferred = async { discoverRepository.getUpcoming(mediaType) }
+            val newlyAddedDeferred = async { discoverRepository.getNewlyAdded(mediaType) }
             val tbaDeferred = async { discoverRepository.getTBA(mediaType) }
+            // Recent reviews ride alongside the media sections but never gate the
+            // screen — a reviews failure just hides that one section.
+            val recentReviewsDeferred = async { discoverRepository.getRecentReviews(mediaType, 1) }
 
             val trendingResult = trendingDeferred.await()
             val popularResult = popularDeferred.await()
             val upcomingResult = upcomingDeferred.await()
+            val newlyAddedResult = newlyAddedDeferred.await()
             val tbaResult = tbaDeferred.await()
+            val recentReviews =
+                (recentReviewsDeferred.await() as? Result.Success)?.data?.reviews ?: emptyList()
 
             if (trendingResult is Result.Success &&
                 popularResult is Result.Success &&
                 upcomingResult is Result.Success &&
+                newlyAddedResult is Result.Success &&
                 tbaResult is Result.Success
             ) {
 
@@ -311,7 +319,9 @@ class DiscoverViewModel @Inject constructor(
                         trending = trendingResult.data,
                         popular = popularResult.data,
                         upcoming = upcomingResult.data,
+                        newlyAdded = newlyAddedResult.data,
                         tba = tbaResult.data,
+                        recentReviews = recentReviews,
                         mediaType = mediaType,
                         isRefreshing = false
                     )
@@ -321,6 +331,7 @@ class DiscoverViewModel @Inject constructor(
                     trendingResult is Result.Error -> trendingResult.message
                     popularResult is Result.Error -> popularResult.message
                     upcomingResult is Result.Error -> upcomingResult.message
+                    newlyAddedResult is Result.Error -> newlyAddedResult.message
                     tbaResult is Result.Error -> tbaResult.message
                     else -> "Unknown error"
                 }

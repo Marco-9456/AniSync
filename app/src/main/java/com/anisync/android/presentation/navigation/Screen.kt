@@ -220,6 +220,14 @@ object CreateThread
 data class ReviewDetail(val reviewId: Int)
 
 /**
+ * Recent reviews list — AniList's newest reviews, filterable by media type.
+ * Reached from the "Recent Reviews" section on Discover.
+ * @param mediaType Initial filter: "ANIME", "MANGA", or "ALL".
+ */
+@Serializable
+data class RecentReviews(val mediaType: String = "ANIME")
+
+/**
  * Review editor — write a new review or edit the viewer's existing one for a media.
  * @param mediaId The media being reviewed
  * @param mediaTitle The media title (for display in app bar)

@@ -35,6 +35,22 @@ interface DiscoverRepository {
      * @return List of TBA entries or error
      */
     suspend fun getTBA(type: MediaType): Result<List<LibraryEntry>>
+
+    /**
+     * Get newly added media by type — the entries most recently added to AniList
+     * (sorted by descending database id).
+     * @param type Media type (ANIME or MANGA)
+     * @return List of newly added entries or error
+     */
+    suspend fun getNewlyAdded(type: MediaType): Result<List<LibraryEntry>>
+
+    /**
+     * Get the most recently published reviews across AniList, newest first.
+     * @param mediaType Optional filter (ANIME or MANGA); null returns reviews for both
+     * @param page Page number (1-indexed)
+     * @return Paginated reviews or error
+     */
+    suspend fun getRecentReviews(mediaType: MediaType?, page: Int): Result<UserReviewsPage>
     
     /**
      * Fetches paginated media for grid screens with optional format filtering.

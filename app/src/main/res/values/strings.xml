@@ -100,7 +100,12 @@
     <string name="section_trending_now">Trending Now</string>
     <string name="section_all_time_popular">All Time Popular</string>
     <string name="section_upcoming_season">Upcoming Season</string>
+    <string name="section_newly_added">Newly Added</string>
+    <string name="section_recent_reviews">Recent Reviews</string>
     <string name="section_tba">TBA</string>
+    <string name="recent_reviews_title">Recent Reviews</string>
+    <string name="recent_reviews_empty">No reviews found.</string>
+    <string name="reviews_filter_all">All</string>
     <string name="error_failed_to_load">Failed to load content</string>
     <string name="search_no_results">No results found.</string>
 
