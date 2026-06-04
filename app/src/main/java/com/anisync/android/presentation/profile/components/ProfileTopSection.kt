@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -323,13 +324,23 @@ fun ProfileTopSection(
                 .offset(y = BannerHeight - CardOverlap - AvatarHalfSize),
             verticalAlignment = Alignment.Bottom
         ) {
-            UserAvatar(
-                url = profile.avatarUrl,
-                contentDescription = stringResource(R.string.content_description_profile_avatar),
-                size = AvatarSize,
-                borderWidth = 2.dp,
-                framePadding = 3.dp
-            )
+            // Layout slot stays AvatarSize tall (so the name/content below isn't pushed),
+            // but an unshaped "None" avatar that's taller than wide is allowed to overflow
+            // upward into the banner instead of being cropped or covering the name.
+            Box(
+                modifier = Modifier.height(AvatarSize),
+                contentAlignment = Alignment.BottomStart
+            ) {
+                UserAvatar(
+                    url = profile.avatarUrl,
+                    contentDescription = stringResource(R.string.content_description_profile_avatar),
+                    size = AvatarSize,
+                    borderWidth = 2.dp,
+                    framePadding = 3.dp,
+                    isProfileHeader = true,
+                    modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
