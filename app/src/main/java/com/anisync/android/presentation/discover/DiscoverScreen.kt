@@ -87,6 +87,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaTypeSelector
@@ -95,6 +96,7 @@ import com.anisync.android.presentation.components.alert.rememberRateLimitedRefr
 import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
+import com.anisync.android.presentation.discover.components.RecentReviewsRow
 import com.anisync.android.presentation.discover.components.SearchResultItem
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.type.MediaType
@@ -108,6 +110,8 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 private const val TAG = "DiscoverScreen"
 
 private val TrendingIconColor = Color(0xFFFF5722)
+private val NewlyAddedIconColor = Color(0xFF26C6DA)
+private val RecentReviewsIconColor = Color(0xFFAB47BC)
 private val TbaIconColor = Color(0xFF9E9E9E)
 
 @OptIn(
@@ -124,6 +128,8 @@ fun DiscoverScreen(
     onStudioClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
+    onReviewClick: (Int) -> Unit = {},
+    onRecentReviewsSeeAllClick: (MediaType) -> Unit = {},
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -232,6 +238,8 @@ fun DiscoverScreen(
     val trendingTitle = stringResource(R.string.section_trending_now)
     val popularTitle = stringResource(R.string.section_all_time_popular)
     val upcomingTitle = stringResource(R.string.section_upcoming_season)
+    val newlyAddedTitle = stringResource(R.string.section_newly_added)
+    val recentReviewsTitle = stringResource(R.string.section_recent_reviews)
     val tbaTitle = stringResource(R.string.section_tba)
 
     LaunchedEffect(textFieldState) {
@@ -309,7 +317,9 @@ fun DiscoverScreen(
             trending = successState?.trending ?: emptyList(),
             popular = successState?.popular ?: emptyList(),
             upcoming = successState?.upcoming ?: emptyList(),
+            newlyAdded = successState?.newlyAdded ?: emptyList(),
             tba = successState?.tba ?: emptyList(),
+            recentReviews = successState?.recentReviews ?: emptyList(),
             mediaType = currentMediaType,
             titleLanguage = titleLanguage,
             isRefreshing = successState?.isRefreshing ?: false,
@@ -321,10 +331,14 @@ fun DiscoverScreen(
             trendingTitle = trendingTitle,
             popularTitle = popularTitle,
             upcomingTitle = upcomingTitle,
+            newlyAddedTitle = newlyAddedTitle,
+            recentReviewsTitle = recentReviewsTitle,
             tbaTitle = tbaTitle,
             onRefresh = onRefresh,
             onMediaClick = navigateToMediaDetails,
             onSectionSeeAllClick = onSectionSeeAllClick,
+            onReviewClick = onReviewClick,
+            onRecentReviewsSeeAllClick = onRecentReviewsSeeAllClick,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope
         )
@@ -539,7 +553,9 @@ private fun DiscoverContent(
     trending: List<LibraryEntry>,
     popular: List<LibraryEntry>,
     upcoming: List<LibraryEntry>,
+    newlyAdded: List<LibraryEntry>,
     tba: List<LibraryEntry>,
+    recentReviews: List<MediaReview>,
     mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     isRefreshing: Boolean,
@@ -549,10 +565,14 @@ private fun DiscoverContent(
     trendingTitle: String,
     popularTitle: String,
     upcomingTitle: String,
+    newlyAddedTitle: String,
+    recentReviewsTitle: String,
     tbaTitle: String,
     onRefresh: () -> Unit,
     onMediaClick: (Int) -> Unit,
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
+    onReviewClick: (Int) -> Unit,
+    onRecentReviewsSeeAllClick: (MediaType) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -673,6 +693,56 @@ private fun DiscoverContent(
                                 titleLanguage = titleLanguage,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
+                    item(key = "newly_added_header", contentType = "section_header") {
+                        Spacer(modifier = Modifier.height(48.dp))
+                        SectionHeader(
+                            title = newlyAddedTitle,
+                            iconColor = NewlyAddedIconColor,
+                            onActionClick = {
+                                onSectionSeeAllClick(
+                                    newlyAddedTitle,
+                                    "newly_added",
+                                    mediaType
+                                )
+                            },
+                            level = HeaderLevel.Section
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    item(key = "newly_added_list", contentType = "media_list") {
+                        val newlyAddedItems = remember(newlyAdded) { newlyAdded.take(10) }
+                        HorizontalMediaList(
+                            items = newlyAddedItems,
+                            onItemClick = onMediaClick,
+                            titleLanguage = titleLanguage,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    if (recentReviews.isNotEmpty()) {
+                        item(key = "recent_reviews_header", contentType = "section_header") {
+                            Spacer(modifier = Modifier.height(48.dp))
+                            SectionHeader(
+                                title = recentReviewsTitle,
+                                iconColor = RecentReviewsIconColor,
+                                onActionClick = { onRecentReviewsSeeAllClick(mediaType) },
+                                level = HeaderLevel.Section
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        item(key = "recent_reviews_row", contentType = "review_row") {
+                            RecentReviewsRow(
+                                reviews = recentReviews.take(10),
+                                onReviewClick = onReviewClick
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }

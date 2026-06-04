@@ -1,0 +1,39 @@
+query GetRecentReviews($mediaType: MediaType, $page: Int = 1) {
+  Page(page: $page, perPage: 20) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    reviews(mediaType: $mediaType, sort: CREATED_AT_DESC) {
+      id
+      summary
+      body(asHtml: true)
+      rating
+      ratingAmount
+      userRating
+      score
+      createdAt
+      updatedAt
+      media {
+        id
+        title {
+          userPreferred
+        }
+        coverImage {
+          medium
+          large
+          extraLarge
+        }
+        type
+        bannerImage
+      }
+      user {
+        id
+        name
+        avatar {
+          large
+        }
+      }
+    }
+  }
+}

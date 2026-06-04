@@ -4,6 +4,7 @@ import androidx.compose.runtime.Stable
 import com.anisync.android.data.DiscoverViewMode
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.type.MediaType
 
@@ -22,7 +23,10 @@ sealed interface DiscoverUiState {
         val trending: List<LibraryEntry> = emptyList(),
         val popular: List<LibraryEntry> = emptyList(),
         val upcoming: List<LibraryEntry> = emptyList(),
+        val newlyAdded: List<LibraryEntry> = emptyList(),
         val tba: List<LibraryEntry> = emptyList(),
+        // Short "Recent Reviews" strip fetched alongside the media feed.
+        val recentReviews: List<MediaReview> = emptyList(),
         val mediaType: MediaType = MediaType.ANIME,
         val isRefreshing: Boolean = false,
         val searchQuery: String = "",

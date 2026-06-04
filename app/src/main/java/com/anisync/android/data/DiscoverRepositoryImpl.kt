@@ -31,6 +31,58 @@ class DiscoverRepositoryImpl @Inject constructor(
         return fetchMedia(listOf(MediaSort.POPULARITY_DESC), type)
     }
 
+    override suspend fun getNewlyAdded(type: MediaType): Result<List<LibraryEntry>> {
+        return fetchMedia(listOf(MediaSort.ID_DESC), type)
+    }
+
+    override suspend fun getRecentReviews(
+        mediaType: MediaType?,
+        page: Int
+    ): Result<com.anisync.android.domain.UserReviewsPage> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                com.anisync.android.GetRecentReviewsQuery(
+                    mediaType = mediaType?.let { Optional.present(it) } ?: Optional.absent(),
+                    page = Optional.present(page)
+                )
+            )
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .execute()
+
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.first()?.message ?: "Failed to fetch recent reviews")
+            }
+
+            val reviews = response.data?.Page?.reviews?.filterNotNull()?.map { review ->
+                com.anisync.android.domain.MediaReview(
+                    id = review.id,
+                    summary = review.summary ?: "",
+                    body = review.body,
+                    score = review.score ?: 0,
+                    rating = review.rating ?: 0,
+                    ratingAmount = review.ratingAmount ?: 0,
+                    userRating = review.userRating?.name,
+                    userName = review.user?.name ?: "Unknown",
+                    userAvatarUrl = review.user?.avatar?.large,
+                    createdAt = review.createdAt.toLong(),
+                    mediaTitle = review.media?.title?.userPreferred,
+                    mediaCoverUrl = review.media?.coverImage?.large,
+                    mediaCover = com.anisync.android.domain.CoverImage.of(
+                        review.media?.coverImage?.medium,
+                        review.media?.coverImage?.large,
+                        review.media?.coverImage?.extraLarge
+                    ),
+                    mediaBannerUrl = review.media?.bannerImage
+                )
+            } ?: emptyList()
+
+            com.anisync.android.domain.UserReviewsPage(
+                reviews = reviews,
+                hasNextPage = response.data?.Page?.pageInfo?.hasNextPage == true
+            )
+        }
+    }
+
     override suspend fun getUpcoming(type: MediaType): Result<List<LibraryEntry>> {
         return safeApiCall {
             val response = apolloClient.query(
@@ -82,6 +134,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 "popular" -> listOf(MediaSort.POPULARITY_DESC) to null
                 "upcoming" -> listOf(MediaSort.POPULARITY_DESC) to MediaStatus.NOT_YET_RELEASED
                 "tba" -> listOf(MediaSort.POPULARITY_DESC) to MediaStatus.NOT_YET_RELEASED
+                "newly_added" -> listOf(MediaSort.ID_DESC) to null
                 else -> listOf(MediaSort.POPULARITY_DESC) to null
             }
 
