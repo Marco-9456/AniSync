@@ -958,4 +958,9 @@
     <string name="media_upload_catbox_userhash">Hash de usuário</string>
     <string name="media_upload_catbox_userhash_hint">Encontre em \'Gerenciar Conta\' no catbox.moe</string>
     <string name="media_upload_catbox_userhash_help">Vincule os uploads à sua conta do Catbox para poder visualizá-los e excluí-los mais tarde. Deixe vazio para enviar anonimamente.</string>
+    <string name="section_newly_added">Adicionados recentemente</string>
+    <string name="section_recent_reviews">Análises mais recentes</string>
+    <string name="recent_reviews_title">Análises mais recentes</string>
+    <string name="recent_reviews_empty">Nenhuma análise encontrada.</string>
+    <string name="reviews_filter_all">Tudo</string>
 </resources>
