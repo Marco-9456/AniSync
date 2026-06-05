@@ -1,10 +1,7 @@
 package com.anisync.android.presentation.review
 
-import com.anisync.android.domain.url
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,39 +11,45 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.ui.res.stringResource
-import com.anisync.android.R
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.ErrorState
-import java.text.DateFormat
-import java.util.Date
+import com.anisync.android.presentation.components.ReviewAuthorBar
+import com.anisync.android.presentation.components.ReviewScorePill
+import com.anisync.android.presentation.components.ReviewVoteActions
+import com.anisync.android.ui.theme.emphasis
+import com.anisync.android.util.ShareUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +61,7 @@ fun ReviewDetailScreen(
     viewModel: ReviewDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(reviewId) { viewModel.load(reviewId) }
 
@@ -67,7 +71,20 @@ fun ReviewDetailScreen(
         title = stringResource(R.string.label_review),
         onBackClick = onBackClick,
         scrollableState = scrollState,
-        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        actions = {
+            IconButton(
+                onClick = {
+                    ShareUtils.shareText(context, "https://anilist.co/review/$reviewId")
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Share,
+                    contentDescription = stringResource(R.string.cd_share),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     ) { topContentPadding ->
         when {
             uiState.isLoading && uiState.review == null -> {
@@ -95,101 +112,107 @@ fun ReviewDetailScreen(
             uiState.review != null -> {
                 val review = uiState.review!!
                 val mediaId = uiState.mediaId
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .padding(
-                            start = 20.dp,
-                            end = 20.dp,
-                            top = topContentPadding + 16.dp,
-                            bottom = 16.dp
-                        )
+                        .padding(top = topContentPadding)
                 ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            UserAvatar(
-                                url = review.userAvatarUrl,
-                                contentDescription = null,
-                                size = 48.dp,
-                                modifier = Modifier.clickable { onUserClick(review.userName) }
+                    // Inset hero banner with the score pill floating over it.
+                    val bannerUrl = review.mediaBannerUrl ?: review.mediaCoverUrl
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp)
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        if (bannerUrl != null) {
+                            AsyncImage(
+                                model = bannerUrl,
+                                contentDescription = review.mediaTitle,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = review.userName,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.clickable { onUserClick(review.userName) }
-                                )
-                                val dateStr = remember(review.createdAt) {
-                                    if (review.createdAt > 0) DateFormat.getDateInstance().format(Date(review.createdAt * 1000L)) else ""
-                                }
-                                if (dateStr.isNotEmpty()) {
-                                    Text(
-                                        text = dateStr,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            val scoreColor = when {
-                                review.score >= 75 -> Color(0xFF4CAF50)
-                                review.score >= 50 -> Color(0xFFFFC107)
-                                else -> Color(0xFFFF5722)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .background(scoreColor.copy(alpha = 0.15f), MaterialTheme.shapes.small)
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = "${review.score}/100",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = scoreColor
-                                )
-                            }
                         }
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        0.5f to Color.Transparent,
+                                        1f to Color.Black.copy(alpha = 0.45f)
+                                    )
+                                )
+                        )
+                        ReviewScorePill(
+                            score = review.score,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(16.dp)
+                        )
+                    }
 
-                        if (review.mediaTitle != null && mediaId != null) {
-                            Spacer(Modifier.height(16.dp))
+                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        Spacer(Modifier.height(8.dp))
+
+                        // Clickable media title → media details (chevron only when navigable).
+                        if (review.mediaTitle != null) {
+                            val navigable = mediaId != null
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(MaterialTheme.shapes.medium)
-                                    .clickable { onMediaClick(mediaId) }
-                                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                                    .padding(12.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .then(
+                                        if (navigable) Modifier.clickable { onMediaClick(mediaId!!) }
+                                        else Modifier
+                                    )
+                                    .padding(vertical = 4.dp)
                             ) {
-                                AsyncImage(
-                                    model = review.mediaCover.url() ?: review.mediaCoverUrl,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .width(48.dp)
-                                        .height(64.dp)
-                                        .clip(MaterialTheme.shapes.small)
-                                )
                                 Text(
                                     text = review.mediaTitle,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    style = MaterialTheme.typography.headlineSmall.emphasis(),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
                                 )
+                                if (navigable) {
+                                    Spacer(Modifier.size(12.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primaryContainer),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
                             }
+                            Spacer(Modifier.height(16.dp))
                         }
 
+                        ReviewAuthorBar(review = review, onUserClick = onUserClick)
+
                         Spacer(Modifier.height(24.dp))
+
                         Text(
                             text = review.summary,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.titleMedium.emphasis(),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+
                         Spacer(Modifier.height(16.dp))
+
                         if (review.body != null) {
                             AsyncRichTextRenderer(
                                 html = review.body,
@@ -197,10 +220,18 @@ fun ReviewDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                             )
                         }
-                    Spacer(Modifier.height(48.dp))
+
+                        Spacer(Modifier.height(28.dp))
+
+                        ReviewVoteActions(
+                            userRating = review.userRating,
+                            onRate = { viewModel.rateReview(review.id, it) }
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+                    }
                 }
             }
         }
     }
 }
-

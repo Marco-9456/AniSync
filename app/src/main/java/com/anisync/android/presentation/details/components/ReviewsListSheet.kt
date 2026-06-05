@@ -92,7 +92,8 @@ fun ReviewsListSheet(
                     ReviewCard(
                         review = review,
                         onClick = { onReviewClick(review) },
-                        onUserClick = onUserClick
+                        onUserClick = onUserClick,
+                        showBanner = false
                     )
                 }
 

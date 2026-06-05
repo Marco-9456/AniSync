@@ -7,11 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -27,22 +28,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.anisync.android.ui.theme.emphasis
-import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
 
+/**
+ * Single review card shared by the Discover "Recent Reviews" carousel, the profile
+ * reviews tab, the dedicated reviews screen and the media-details reviews list.
+ *
+ * @param showBanner Show the media banner with the score pill overlaid. Media details
+ *   passes `false` (the review is already for the open media); the score then moves
+ *   into the footer next to the likes pill.
+ * @param fixedHeight When set (carousel), the card is exactly this tall and the footer
+ *   is pinned to the bottom; when null (lists), the card wraps its content.
+ * @param summaryMaxLines Defaults to 2 for fixed-height carousel cards, 3 for lists.
+ */
 @Composable
 fun ReviewCard(
     review: MediaReview,
-    onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {}
+    onClick: () -> Unit = {},
+    onUserClick: (String) -> Unit = {},
+    showBanner: Boolean = true,
+    fixedHeight: Dp? = null,
+    summaryMaxLines: Int = if (fixedHeight != null) 2 else 3,
 ) {
     val scoreColor = remember(review.score) {
         when {
@@ -51,12 +64,14 @@ fun ReviewCard(
             else -> Color(0xFFFF5722) // Red-orange
         }
     }
-    val mediaHeaderImageUrl = remember(review.mediaBannerUrl, review.mediaCoverUrl) {
+    val headerImageUrl = remember(review.mediaBannerUrl, review.mediaCoverUrl) {
         review.mediaBannerUrl ?: review.mediaCoverUrl
     }
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.then(
+            if (fixedHeight != null) Modifier.height(fixedHeight) else Modifier.fillMaxWidth()
+        ),
         shape = RoundedCornerShape(16.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(
@@ -64,121 +79,155 @@ fun ReviewCard(
         )
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (fixedHeight != null) Modifier.fillMaxHeight() else Modifier)
         ) {
-            // Optional Media Banner/Title header (Used mainly in Profile Reviews Tab)
-            if (review.mediaTitle != null) {
-                if (mediaHeaderImageUrl != null) {
-                    AsyncImage(
-                        model = mediaHeaderImageUrl,
-                        contentDescription = review.mediaTitle,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(132.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(132.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    )
-                }
-
-                Text(
-                    text = review.mediaTitle,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                )
-            }
-
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-
-                // User info row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+            if (showBanner) {
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onUserClick(review.userName) }
-                        .padding(vertical = 4.dp)
+                        .fillMaxWidth()
+                        .height(130.dp)
                 ) {
-                    // User avatar — shared component so it honors the avatar shape +
-                    // background settings (was hardcoded to a circle).
-                    UserAvatar(
-                        url = review.userAvatarUrl,
-                        contentDescription = null,
-                        size = 32.dp
-                    )
-
-                    Text(
-                        text = review.userName,
-                        style = MaterialTheme.typography.labelLarge.emphasis(),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Score badge
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                scoreColor.copy(alpha = 0.15f),
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "${review.score}/100",
-                            style = MaterialTheme.typography.labelSmall.emphasis(),
-                            color = scoreColor
+                    if (headerImageUrl != null) {
+                        AsyncImage(
+                            model = headerImageUrl,
+                            contentDescription = review.mediaTitle,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
                         )
                     }
+
+                    ScorePill(
+                        score = review.score,
+                        scoreColor = scoreColor,
+                        modifier = Modifier.padding(top = 16.dp, start = 16.dp)
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (fixedHeight != null) Modifier.weight(1f) else Modifier)
+                    .padding(20.dp)
+            ) {
+                if (showBanner && review.mediaTitle != null) {
+                    Text(
+                        text = review.mediaTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 18.sp,
+                        lineHeight = 22.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Review summary
                 Text(
                     text = review.summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
+                    fontWeight = FontWeight.Medium,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = 18.sp
+                    maxLines = summaryMaxLines,
+                    lineHeight = 18.sp,
+                    fontSize = 13.sp
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                if (fixedHeight != null) {
+                    Spacer(modifier = Modifier.weight(1f))
+                } else {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
-                // Rating bar + stats
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Upvote indicator
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = "${review.rating}/${review.ratingAmount}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.found_helpful),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onUserClick(review.userName) }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        UserAvatar(
+                            url = review.userAvatarUrl,
+                            contentDescription = null,
+                            size = 32.dp
+                        )
+                        Text(
+                            text = review.userName,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // No banner means the score has nowhere to sit, so surface it here.
+                        if (!showBanner) {
+                            ScorePill(score = review.score, scoreColor = scoreColor)
+                        }
+                        ReviewVoteCountPill(
+                            rating = review.rating,
+                            ratingAmount = review.ratingAmount
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+/** Score chip: a star + the numeric score on a solid score-coloured pill. */
+@Composable
+private fun ScorePill(
+    score: Int,
+    scoreColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(scoreColor, RoundedCornerShape(percent = 50))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = score.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White,
+            fontSize = 11.sp
+        )
     }
 }

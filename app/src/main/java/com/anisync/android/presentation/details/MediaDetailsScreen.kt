@@ -973,6 +973,7 @@ fun DetailsPageContent(
                         review = review,
                         onClick = { selectedReview = review },
                         onUserClick = onUserClick,
+                        showBanner = false,
                         modifier = Modifier
                             .padding(horizontal = dimensionResource(R.dimen.spacing_large))
                             .padding(bottom = dimensionResource(R.dimen.spacing_normal))

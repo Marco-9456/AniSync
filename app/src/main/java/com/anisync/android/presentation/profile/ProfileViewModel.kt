@@ -59,6 +59,7 @@ private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
 class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val profileRepository: ProfileRepository,
+    private val detailsRepository: com.anisync.android.domain.DetailsRepository,
     private val statisticsRepository: StatisticsRepository,
     private val activityRepository: ActivityRepository,
     private val authRepository: com.anisync.android.data.AuthRepository,
@@ -534,6 +535,8 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
+            is ProfileAction.RateReview -> rateReview(action.reviewId, action.rating)
+
             is ProfileAction.ShowMessageComposer -> {
                 localState.update {
                     it.copy(
@@ -915,6 +918,80 @@ class ProfileViewModel @Inject constructor(
                     reviewsState.update { it.copy(isReviewsPaginating = false) }
                 }
             }
+        }
+    }
+
+    /**
+     * Up/down-vote the review currently open in the detail sheet. Applies an optimistic count
+     * update to both the open sheet and the underlying reviews list, then reconciles with the
+     * authoritative counts the mutation returns (or rolls back on failure).
+     */
+    private fun rateReview(reviewId: Int, rating: com.anisync.android.type.ReviewRating) {
+        val current = localState.value.selectedReview?.takeIf { it.id == reviewId } ?: return
+
+        val oldRating = current.userRating
+        val newRatingStr = if (rating == com.anisync.android.type.ReviewRating.NO_VOTE) null else rating.name
+
+        var updatedRating = current.rating
+        var updatedAmount = current.ratingAmount
+        when (oldRating) {
+            "UP_VOTE" -> updatedRating -= 1
+            "DOWN_VOTE" -> updatedRating += 1
+        }
+        if (oldRating != null && newRatingStr == null) updatedAmount -= 1
+        if (oldRating == null && newRatingStr != null) updatedAmount += 1
+        when (newRatingStr) {
+            "UP_VOTE" -> updatedRating += 1
+            "DOWN_VOTE" -> updatedRating -= 1
+        }
+
+        val optimistic = current.copy(
+            userRating = newRatingStr,
+            rating = updatedRating,
+            ratingAmount = updatedAmount
+        )
+        applyReviewUpdate(reviewId, optimistic)
+
+        viewModelScope.launch {
+            when (val result = detailsRepository.rateReview(reviewId, rating)) {
+                is Result.Success -> {
+                    val server = result.data
+                    applyReviewPatch(reviewId) {
+                        it.copy(
+                            rating = server.rating,
+                            ratingAmount = server.ratingAmount,
+                            userRating = server.userRating
+                        )
+                    }
+                }
+                is Result.Error -> applyReviewUpdate(reviewId, current) // roll back
+            }
+        }
+    }
+
+    /** Replaces the review wherever it currently lives (open sheet + reviews list). */
+    private fun applyReviewUpdate(
+        reviewId: Int,
+        updated: com.anisync.android.domain.MediaReview
+    ) {
+        localState.update {
+            if (it.selectedReview?.id == reviewId) it.copy(selectedReview = updated) else it
+        }
+        reviewsState.update { st ->
+            st.copy(reviews = st.reviews.map { if (it.id == reviewId) updated else it })
+        }
+    }
+
+    private inline fun applyReviewPatch(
+        reviewId: Int,
+        patch: (com.anisync.android.domain.MediaReview) -> com.anisync.android.domain.MediaReview
+    ) {
+        localState.update {
+            val r = it.selectedReview
+            if (r?.id == reviewId) it.copy(selectedReview = patch(r)) else it
+        }
+        reviewsState.update { st ->
+            st.copy(reviews = st.reviews.map { if (it.id == reviewId) patch(it) else it })
         }
     }
 

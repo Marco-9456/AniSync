@@ -204,6 +204,7 @@ data class MediaReview(
     val userName: String,
     val userAvatarUrl: String?,
     val createdAt: Long,    // Unix timestamp
+    val mediaId: Int? = null,
     val mediaTitle: String? = null,
     val mediaCoverUrl: String? = null,
     val mediaCover: CoverImage? = null,

@@ -6,6 +6,7 @@ query ReviewDetails($id: Int) {
         score
         rating
         ratingAmount
+        userRating
         createdAt
         user {
             name
@@ -24,6 +25,7 @@ query ReviewDetails($id: Int) {
               large
               extraLarge
             }
+            bannerImage
         }
     }
 }

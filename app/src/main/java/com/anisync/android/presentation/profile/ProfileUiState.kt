@@ -207,6 +207,10 @@ sealed interface ProfileAction {
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
     data class SelectReview(val review: MediaReview?) : ProfileAction
+    data class RateReview(
+        val reviewId: Int,
+        val rating: com.anisync.android.type.ReviewRating
+    ) : ProfileAction
     data object ShowMessageComposer : ProfileAction
     data object HideMessageComposer : ProfileAction
     data class SendMessage(val text: String, val isPrivate: Boolean) : ProfileAction

@@ -660,6 +660,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     userName = review.user?.name ?: "Unknown",
                     userAvatarUrl = review.user?.avatar?.large,
                     createdAt = review.createdAt.toLong(),
+                    mediaId = review.media?.id,
                     mediaTitle = review.media?.title?.userPreferred,
                     mediaCoverUrl = review.media?.coverImage?.large,
                     mediaCover = com.anisync.android.domain.CoverImage.of(review.media?.coverImage?.medium, review.media?.coverImage?.large, review.media?.coverImage?.extraLarge),

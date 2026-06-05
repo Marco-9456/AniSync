@@ -287,7 +287,14 @@ fun ProfileContent(
     uiState.selectedReview?.let { review ->
         ReviewDetailsSheet(
             review = review,
+            onRateReview = { id, r -> onAction(ProfileAction.RateReview(id, r)) },
             onUserClick = onUserClick,
+            onMediaClick = { mediaId ->
+                // Close the sheet first so the back gesture returns to the profile, not a
+                // lingering sheet, once the media-details screen is popped.
+                onAction(ProfileAction.SelectReview(null))
+                onMediaClick(mediaId)
+            },
             onDismiss = { onAction(ProfileAction.SelectReview(null)) }
         )
     }
