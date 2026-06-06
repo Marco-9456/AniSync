@@ -384,6 +384,18 @@
     <string name="settings_view_on_anilist">View on AniList</string>
     <string name="settings_view_on_anilist_desc">Open your profile on AniList</string>
     <string name="settings_logout_warning">Logging out will remove your session. You can sign in again at any time.</string>
+    <!-- Multiple accounts -->
+    <string name="account_add">Add account</string>
+    <string name="account_add_desc">Sign in to another AniList account</string>
+    <string name="account_active">Active</string>
+    <string name="account_expired">Session expired</string>
+    <string name="account_switch">Switch account</string>
+    <string name="account_remove">Remove account</string>
+    <string name="account_reauthenticate">Re-authenticate</string>
+    <string name="account_sign_in_failed">Couldn\'t sign in. Please try again.</string>
+    <string name="account_remove_dialog_title">Remove account?</string>
+    <string name="account_remove_dialog_message">%1$s will be removed from this device. You can sign in again at any time.</string>
+    <string name="account_switch_to">Switch to %1$s</string>
     <string name="settings_open_source_licenses">Open Source Licenses</string>
     <string name="settings_acknowledgments">Acknowledgments</string>
     <string name="settings_acknowledgments_desc">Thanks to contributors and libraries</string>

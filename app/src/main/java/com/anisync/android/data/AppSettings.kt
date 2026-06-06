@@ -849,6 +849,33 @@ class AppSettings @Inject constructor(
         }
     }
     
+    /**
+     * Resets the per-account view preferences on account switch so one account's custom-list
+     * layout / hidden lists / last-opened tabs don't bleed into another. Account-agnostic
+     * preferences (theme, locale, cover quality, nav bar, etc.) are left untouched.
+     *
+     * Score format is intentionally NOT reset here — it self-heals from the next library load,
+     * which reads the new account's MediaListOptions (see LibraryRepositoryImpl).
+     */
+    fun clearAccountScoped() {
+        _hiddenAnimeLists.value = emptySet()
+        _hiddenMangaLists.value = emptySet()
+        _animeListOrder.value = emptyList()
+        _mangaListOrder.value = emptyList()
+        _lastSelectedAnimeTab.value = null
+        _lastSelectedMangaTab.value = null
+        _showPrivateEntries.value = true
+        prefs.edit()
+            .remove(KEY_HIDDEN_ANIME_LISTS)
+            .remove(KEY_HIDDEN_MANGA_LISTS)
+            .remove(KEY_ANIME_LIST_ORDER)
+            .remove(KEY_MANGA_LIST_ORDER)
+            .remove(KEY_LAST_SELECTED_ANIME_TAB)
+            .remove(KEY_LAST_SELECTED_MANGA_TAB)
+            .remove(KEY_SHOW_PRIVATE_ENTRIES)
+            .apply()
+    }
+
 companion object {
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"

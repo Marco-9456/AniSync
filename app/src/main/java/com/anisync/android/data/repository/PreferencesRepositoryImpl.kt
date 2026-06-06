@@ -119,6 +119,10 @@ class PreferencesRepositoryImpl @Inject constructor(
         prefs.edit().putInt(KEY_LAST_SOCIAL_NOTIFIED_ID, id).apply()
     }
 
+    override suspend fun clearAll() = withContext(Dispatchers.IO) {
+        prefs.edit().clear().apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "anisync_prefs"
         private const val KEY_LAST_NOTIFIED_ID = "last_notified_id"

@@ -116,6 +116,13 @@ interface LibraryDao {
     suspend fun deleteByMediaIds(mediaIds: List<Int>)
 
     /**
+     * Delete every library entry. Used when switching accounts to drop the previous
+     * account's list before the new account's data is fetched.
+     */
+    @Query("DELETE FROM library_entries")
+    suspend fun deleteAll()
+
+    /**
      * Update status and progress for a specific media entry.
      * Used when status is changed from DetailsScreen.
      */

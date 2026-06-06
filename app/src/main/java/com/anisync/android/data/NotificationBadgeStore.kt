@@ -74,6 +74,13 @@ class NotificationBadgeStore @Inject constructor(
         recompute()
     }
 
+    /** Clears all counts when switching accounts so the badge doesn't carry over. */
+    fun reset() {
+        _serverCount.value = 0
+        _debugCount.value = 0
+        recompute()
+    }
+
     /** Debug-only: simulate a new unread notification so the badge can be verified. */
     fun bumpForDebug(by: Int = 1) {
         _debugCount.value = (_debugCount.value + by).coerceAtLeast(0)

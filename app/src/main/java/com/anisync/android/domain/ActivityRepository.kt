@@ -8,6 +8,9 @@ interface ActivityRepository {
     suspend fun deleteActivity(id: Int): Result<Unit>
     suspend fun deleteReply(id: Int): Result<Unit>
     suspend fun getViewerId(): Int?
+
+    /** Drops the in-memory cached viewer id so the next call re-resolves it (used on account switch). */
+    fun clearViewerCache()
     suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit>
     suspend fun saveTextActivity(text: String, id: Int? = null): Result<Unit>
 

@@ -62,4 +62,11 @@ interface PreferencesRepository {
      * Set the highest processed social/forum notification ID.
      */
     suspend fun setLastSocialNotifiedId(id: Int)
+
+    /**
+     * Wipe all notification dedup state. Called on account switch so the new account re-establishes
+     * its own baseline (preventing both a backlog flood and the previous account's high-water marks
+     * silently suppressing the new account's notifications).
+     */
+    suspend fun clearAll()
 }

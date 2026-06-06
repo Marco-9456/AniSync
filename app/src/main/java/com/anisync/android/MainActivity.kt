@@ -6,17 +6,21 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,9 +30,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
@@ -38,6 +44,7 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.ThemeMode
+import com.anisync.android.data.account.AccountManager
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.data.update.UpdateState
 import com.anisync.android.domain.LinkPreviewProvider
@@ -64,6 +71,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var accountManager: AccountManager
 
     @Inject
     lateinit var appSettings: AppSettings
@@ -94,6 +104,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             handleAuthRedirect(intent)
+
+            // Promote a migrated legacy login (provisional account) to its real identity once online.
+            lifecycleScope.launch(Dispatchers.IO) {
+                accountManager.reconcileActiveIfProvisional()
+            }
+
             lifecycleScope.launch(Dispatchers.IO) {
                 combine(
                     appSettings.notificationsEnabled,
@@ -231,13 +247,36 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
 
+                            // Keyed on the account session epoch: switching accounts bumps the
+                            // epoch, which tears down and rebuilds the entire MainScreen subtree
+                            // (fresh NavController + ViewModels) so screens refetch the new account.
+                            val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
                             if (isLoggedIn) {
-                                MainScreen()
+                                key(sessionEpoch) {
+                                    MainScreen()
+                                }
                             } else {
                                 LoginScreen()
                             }
 
                             AppUpdateHandler(updateManager = updateManager)
+
+                            // Blocking loader while an account add/switch/remove is in flight.
+                            val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle(
+                                initialValue = false
+                            )
+                            if (isAccountBusy) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
                 }
@@ -255,40 +294,35 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleAuthRedirect(intent: Intent?) {
         val uri = intent?.data ?: return
+        if (uri.scheme != "anisync" || uri.host != "auth") return
 
-        if (uri.scheme == "anisync" && uri.host == "auth") {
-            val fragment = uri.fragment
-            if (fragment != null) {
-                val startNanos = System.nanoTime()
+        val fragment = uri.fragment ?: return
+        val params = parseFragment(fragment)
+        val accessToken = params["access_token"] ?: return
+        val expiresIn = params["expires_in"]?.toLongOrNull() ?: 0L
 
-                var accessToken: String? = null
-                val tokenKey = "access_token="
-                var tokenIndex = fragment.indexOf(tokenKey)
-
-                while (tokenIndex != -1) {
-                    if (tokenIndex == 0 || fragment[tokenIndex - 1] == '&') {
-                        val valueStart = tokenIndex + tokenKey.length
-                        val valueEnd = fragment.indexOf('&', valueStart)
-
-                        accessToken = if (valueEnd == -1) {
-                            fragment.substring(valueStart)
-                        } else {
-                            fragment.substring(valueStart, valueEnd)
-                        }
-                        break
-                    }
-                    tokenIndex = fragment.indexOf(tokenKey, tokenIndex + 1)
+        // addAccount activates the new account and bumps the session epoch; the keyed MainScreen
+        // subtree rebuilds itself, so no activity recreate is needed here.
+        lifecycleScope.launch {
+            when (accountManager.addAccount(accessToken, expiresIn)) {
+                is AccountManager.AddResult.Success -> Unit
+                AccountManager.AddResult.Failed -> {
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.account_sign_in_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-
-                if (accessToken != null) {
-                    authRepository.saveToken(accessToken)
-                }
-
-                val parseTimeMs = (System.nanoTime() - startNanos) / 1_000_000.0
-                Log.d("PerfMetrics", "Auth token parsing took $parseTimeMs ms")
             }
         }
     }
+
+    /** Parses an OAuth implicit-grant URL fragment (`a=1&b=2`) into a key→value map. */
+    private fun parseFragment(fragment: String): Map<String, String> =
+        fragment.split('&').mapNotNull { part ->
+            val eq = part.indexOf('=')
+            if (eq <= 0) null else part.substring(0, eq) to Uri.decode(part.substring(eq + 1))
+        }.toMap()
 }
 
 @Composable

@@ -2,6 +2,9 @@ query GetViewer {
   Viewer {
     id
     name
+    avatar {
+      large
+    }
     unreadNotificationCount
     mediaListOptions {
       scoreFormat
