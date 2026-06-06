@@ -107,17 +107,12 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     // Cold-launch restore: open on the tab the user last visited (Library/Discover/
     // Feed/Forum). Compose Navigation restores its own back stack across process
     // death, so this only governs a genuinely fresh start.
-    val startDestination: Any = remember(viewModel.startTabKey, viewModel.startOnProfile) {
-        if (viewModel.startOnProfile) {
-            // Just switched accounts — open the new account's profile.
-            Profile
-        } else {
-            when (viewModel.startTabKey) {
-                "discover" -> Discover
-                "feed" -> Feed
-                "forum" -> Forum
-                else -> Library
-            }
+    val startDestination: Any = remember(viewModel.startTabKey) {
+        when (viewModel.startTabKey) {
+            "discover" -> Discover
+            "feed" -> Feed
+            "forum" -> Forum
+            else -> Library
         }
     }
 
