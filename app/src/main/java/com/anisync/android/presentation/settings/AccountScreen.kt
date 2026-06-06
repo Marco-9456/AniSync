@@ -39,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,9 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.account.Account
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.login.AniListAuth
 
 /**
@@ -226,30 +225,11 @@ private fun AccountRow(
             modifier = Modifier.padding(12.dp).fillMaxWidth()
         ) {
             // Avatar
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                val avatarUrl = account.avatarUrl
-                if (avatarUrl != null) {
-                    AsyncImage(
-                        model = avatarUrl,
-                        contentDescription = null,
-                        modifier = Modifier.size(44.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = account.name.firstOrNull()?.uppercase() ?: "?",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
+            UserAvatar(
+                url = account.avatarUrl,
+                contentDescription = null,
+                size = 44.dp
+            )
 
             Column(
                 modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
