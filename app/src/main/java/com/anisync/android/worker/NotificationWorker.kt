@@ -50,8 +50,12 @@ class NotificationWorker @AssistedInject constructor(
     private val libraryDao: LibraryDao,
     private val imageLoader: ImageLoader,
     private val authRepository: AuthRepository,
+    private val accountStore: com.anisync.android.data.account.AccountStore,
     private val notificationPreferences: com.anisync.android.data.NotificationPreferences
 ) : CoroutineWorker(appContext, workerParams) {
+
+    /** Active account's id, used to read only this account's library entries. */
+    private fun ownerId(): Int = accountStore.activeAccount.value?.id ?: -1
 
     companion object {
         private const val TAG = "NotificationWorker"
@@ -185,7 +189,7 @@ class NotificationWorker @AssistedInject constructor(
         }
 
         // 2. Mark all current planning items as "already notified"
-        val planningEntries = libraryDao.getByType(MediaType.ANIME)
+        val planningEntries = libraryDao.getByType(ownerId(), MediaType.ANIME)
             .filter { it.status == LibraryStatus.PLANNING }
         val planningMediaIds = planningEntries.map { it.mediaId }
 
@@ -217,7 +221,7 @@ class NotificationWorker @AssistedInject constructor(
         // Get planning list media IDs to exclude Episode 1 notifications for them
         // (those are handled by checkPlanningFirstEpisodes with "Add to Watching" action)
         val planningMediaIds = if (notificationPreferences.planningEnabled.value) {
-            libraryDao.getByType(MediaType.ANIME)
+            libraryDao.getByType(ownerId(), MediaType.ANIME)
                 .filter { it.status == LibraryStatus.PLANNING }
                 .map { it.mediaId }
                 .toSet()
@@ -570,7 +574,7 @@ class NotificationWorker @AssistedInject constructor(
      * - 2 hours before: "Episode 1 is airing in 2 hours"
      */
     private suspend fun checkUpcomingPlanningEpisodes() {
-        val planningEntries = libraryDao.getByType(MediaType.ANIME)
+        val planningEntries = libraryDao.getByType(ownerId(), MediaType.ANIME)
             .filter { it.status == LibraryStatus.PLANNING }
 
         if (planningEntries.isEmpty()) return
@@ -626,7 +630,7 @@ class NotificationWorker @AssistedInject constructor(
      * to prevent duplicate alerts.
      */
     private suspend fun checkPlanningFirstEpisodes() {
-        val planningEntries = libraryDao.getByType(MediaType.ANIME)
+        val planningEntries = libraryDao.getByType(ownerId(), MediaType.ANIME)
             .filter { it.status == LibraryStatus.PLANNING }
 
         val mediaIds = planningEntries.map { it.mediaId }

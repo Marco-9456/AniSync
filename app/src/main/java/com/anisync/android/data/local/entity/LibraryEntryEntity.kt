@@ -18,6 +18,8 @@ import com.anisync.android.type.MediaType
 @Entity(
     tableName = "library_entries",
     indices = [
+        Index(value = ["ownerId"]),              // Per-account scoping (multi-account)
+        Index(value = ["ownerId", "mediaType"]),
         Index(value = ["mediaType"]),
         Index(value = ["status"]),
         Index(value = ["mediaType", "status"]),
@@ -30,7 +32,10 @@ import com.anisync.android.type.MediaType
     ]
 )
 data class LibraryEntryEntity(
-    @PrimaryKey val id: Int,                   // MediaList ID
+    @PrimaryKey val id: Int,                   // MediaList ID (globally unique per AniList)
+    /** AniList user id this entry belongs to. Lets multiple accounts' libraries coexist. */
+    @androidx.room.ColumnInfo(defaultValue = "0")
+    val ownerId: Int = 0,
     val mediaId: Int,
     val titleRomaji: String?,
     val titleEnglish: String?,

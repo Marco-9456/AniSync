@@ -35,6 +35,7 @@ class MediaDetailsViewModel @Inject constructor(
     private val detailsRepository: DetailsRepository,
     private val libraryRepository: LibraryRepository,
     private val libraryDao: LibraryDao,
+    private val accountStore: com.anisync.android.data.account.AccountStore,
     private val appSettings: AppSettings,
     private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
     savedStateHandle: SavedStateHandle
@@ -156,7 +157,7 @@ class MediaDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
             
-            val existingEntry = libraryDao.getEntry(mediaId)
+            val existingEntry = libraryDao.getEntry(accountStore.activeAccount.value?.id ?: -1, mediaId)
             val draft = existingEntry?.toDomain() ?: LibraryEntry(
                 id = 0,
                 mediaId = details.id,

@@ -19,6 +19,13 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v18 (Jun 2026):
+ *   - Added field to library_entries:
+ *     • ownerId - AniList user id the entry belongs to, so multiple accounts'
+ *       libraries persist side by side (instant switch from cache, no bleed).
+ *       Existing rows default to 0 and are re-tagged to the real id on first
+ *       account reconcile.
+ *
  * v17 (Jun 2026):
  *   - Added fields to media_details:
  *     • isRecommendationBlocked - hides the "add recommendation" action when true
@@ -81,7 +88,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -97,7 +104,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 13, to = 14),
         androidx.room.AutoMigration(from = 14, to = 15),
         androidx.room.AutoMigration(from = 15, to = 16),
-        androidx.room.AutoMigration(from = 16, to = 17)
+        androidx.room.AutoMigration(from = 16, to = 17),
+        androidx.room.AutoMigration(from = 17, to = 18)
     ]
 )
 @TypeConverters(Converters::class)

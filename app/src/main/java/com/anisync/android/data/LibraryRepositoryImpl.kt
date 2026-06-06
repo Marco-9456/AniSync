@@ -14,16 +14,21 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
+import com.anisync.android.data.account.AccountStore
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/** Owner id that matches no rows — used when there is no active account. */
+private const val NO_OWNER = -1
 
 private val SCORE_FORMAT_BY_NAME: Map<String, com.anisync.android.domain.ScoreFormat> = mapOf(
     "POINT_100" to com.anisync.android.domain.ScoreFormat.POINT_100,
@@ -39,15 +44,22 @@ internal fun mapScoreFormat(name: String?): com.anisync.android.domain.ScoreForm
 class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
-    private val appSettings: AppSettings
+    private val appSettings: AppSettings,
+    private val accountStore: AccountStore
 ) : LibraryRepository {
 
+    private fun currentOwnerId(): Int = accountStore.activeAccount.value?.id ?: NO_OWNER
+
     /**
-     * Observe library from local Room database (SSOT).
-     * UI updates automatically when cache changes.
+     * Observe the active account's library from Room (SSOT). Re-subscribes when the active account
+     * changes, so switching accounts immediately shows the new account's cached entries.
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>> {
-        return libraryDao.observeByType(type)
+        return accountStore.activeAccount
+            .flatMapLatest { account ->
+                libraryDao.observeByType(account?.id ?: NO_OWNER, type)
+            }
             .map { entities -> entities.map { it.toDomain() } }
     }
 
@@ -167,9 +179,11 @@ class LibraryRepositoryImpl @Inject constructor(
             }
 
             val entries = entryMap.values.toList()
-            
-            // Smart merge to preserve locally-added entries during API sync delay
-            libraryDao.smartMergeByType(type, entries.map { it.toEntity(type) })
+
+            // Smart merge to preserve locally-added entries during API sync delay.
+            // Tag rows with the active account so each account's library persists independently.
+            val owner = currentOwnerId()
+            libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
         }
     }
 
@@ -190,7 +204,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
         // 2. Need to recalculate completion status for Sync parameters
         // (Refetching entry or duplicating logic - refetching is safer)
-        val entry = libraryDao.getEntry(mediaId) ?: return Result.Error("Entry not found")
+        val entry = libraryDao.getEntry(currentOwnerId(), mediaId) ?: return Result.Error("Entry not found")
         val isCompleted = entry.status == LibraryStatus.COMPLETED
         val now = System.currentTimeMillis()
 
@@ -213,32 +227,35 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateProgressLocal(mediaId: Int, progress: Int): Result<Unit> {
-        val entry = libraryDao.getEntry(mediaId) ?: return Result.Error("Entry not found")
-        
+        val owner = currentOwnerId()
+        val entry = libraryDao.getEntry(owner, mediaId) ?: return Result.Error("Entry not found")
+
         // Determine the total based on media type
         val total = if (entry.mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
-        
+
         // Check if this progress update completes the media
         val isCompleted = total != null && total > 0 && progress >= total
         val now = System.currentTimeMillis()
-        
+
         if (isCompleted) {
             // Auto-set completedAt when finishing
             libraryDao.updateStatusProgressAndCompletedAt(
+                ownerId = owner,
                 mediaId = mediaId,
                 status = LibraryStatus.COMPLETED,
                 progress = progress,
                 completedAt = now
             )
         } else {
-            libraryDao.updateProgress(mediaId, progress)
+            libraryDao.updateProgress(owner, mediaId, progress)
         }
         return Result.Success(Unit)
     }
 
     override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {
+        val owner = currentOwnerId()
         // Get original entry to detect status changes
-        val originalEntry = libraryDao.getEntry(entry.mediaId)
+        val originalEntry = libraryDao.getEntry(owner, entry.mediaId)
         val now = System.currentTimeMillis()
         
         // Auto-fill dates based on status changes
@@ -260,7 +277,7 @@ class LibraryRepositoryImpl @Inject constructor(
         
         // 1. Update local DB
         // We assume media type is present or default to ANIME logic for entity mapping
-        libraryDao.updateEntry(updatedEntry.toEntity(updatedEntry.type ?: MediaType.ANIME))
+        libraryDao.updateEntry(updatedEntry.toEntity(updatedEntry.type ?: MediaType.ANIME).copy(ownerId = owner))
 
         // 2. Sync to network
         return safeApiCall {
@@ -293,7 +310,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun deleteEntry(entryId: Int, mediaId: Int): Result<Unit> {
         // 1. Delete from local DB immediately (optimistic)
-        libraryDao.deleteByMediaId(mediaId)
+        libraryDao.deleteByMediaId(currentOwnerId(), mediaId)
 
         // 2. Delete from network
         return safeApiCall {

@@ -8,7 +8,6 @@ import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.SavedForumThreadDao
-import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.widget.AiringTodayWidget
@@ -48,7 +47,6 @@ class AccountManager @Inject constructor(
     private val accountStore: AccountStore,
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
-    private val userProfileDao: UserProfileDao,
     private val savedForumThreadDao: SavedForumThreadDao,
     private val airingScheduleDao: AiringScheduleDao,
     private val preferencesRepository: PreferencesRepository,
@@ -148,6 +146,8 @@ class AccountManager @Inject constructor(
         if (!active.isProvisional) return
         val resolved = resolveAccount(active.token, expiresInSeconds = 0L) ?: return
         accountStore.reconcileProvisional(resolved)
+        // Promote the migrated legacy library (written under the provisional owner) to the real id.
+        runCatching { libraryDao.reassignOwner(Account.PROVISIONAL_ID, resolved.id) }
     }
 
     private fun bumpEpoch() {
@@ -193,12 +193,15 @@ class AccountManager @Inject constructor(
         }
     }
 
-    /** Clears every account-scoped local store so the rebuilt ViewModels fetch the new account clean. */
+    /**
+     * Clears the cross-account caches on switch. Library and own-profile are NOT wiped — they are
+     * account-scoped in Room (by ownerId / user id) so each account's data persists and shows
+     * instantly on switch-back. The Apollo cache is cleared to avoid the no-variable `GetViewer`
+     * entry bleeding the wrong identity; library/profile read from Room so that's harmless.
+     */
     private suspend fun clearLocalState() {
         withContext(Dispatchers.IO) {
             runCatching { apolloClient.apolloStore.clearAll() }
-            libraryDao.deleteAll()
-            userProfileDao.clear()
             savedForumThreadDao.deleteAll()
             airingScheduleDao.clearAll()
             preferencesRepository.clearAll()

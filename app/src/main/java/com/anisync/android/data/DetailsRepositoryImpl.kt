@@ -74,8 +74,11 @@ class DetailsRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val mediaDetailsDao: MediaDetailsDao,
     private val libraryDao: LibraryDao,
-    private val favouriteOverrideStore: FavouriteOverrideStore
+    private val favouriteOverrideStore: FavouriteOverrideStore,
+    private val accountStore: com.anisync.android.data.account.AccountStore
 ) : DetailsRepository {
+
+    private fun currentOwnerId(): Int = accountStore.activeAccount.value?.id ?: -1
 
     override fun observeMediaDetails(id: Int): Flow<MediaDetails?> {
         return mediaDetailsDao.observeById(id)
@@ -299,10 +302,11 @@ class DetailsRepositoryImpl @Inject constructor(
 
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
                 refreshMediaDetails(mediaId)
-                val existingEntry = libraryDao.getEntry(mediaId)
+                val owner = currentOwnerId()
+                val existingEntry = libraryDao.getEntry(owner, mediaId)
 
                 if (existingEntry != null) {
-                    libraryDao.updateStatusAndProgress(mediaId, status, progress)
+                    libraryDao.updateStatusAndProgress(owner, mediaId, status, progress)
                 } else {
                     val savedEntry = response.data?.SaveMediaListEntry
                     val cachedMedia = mediaDetailsDao.getById(mediaId)
@@ -310,6 +314,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     if (cachedMedia != null) {
                         val newEntry = com.anisync.android.data.local.entity.LibraryEntryEntity(
                             id = savedEntry?.id ?: 0,
+                            ownerId = owner,
                             mediaId = mediaId,
                             titleRomaji = cachedMedia.titleRomaji,
                             titleEnglish = cachedMedia.titleEnglish,
@@ -352,7 +357,7 @@ class DetailsRepositoryImpl @Inject constructor(
             ).execute()
 
             if (response.data?.DeleteMediaListEntry?.deleted == true && !response.hasErrors()) {
-                libraryDao.deleteByMediaId(mediaId)
+                libraryDao.deleteByMediaId(currentOwnerId(), mediaId)
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Delete failed"
                 throw Exception(errorMessage)

@@ -6,6 +6,7 @@ import com.anisync.android.GetUserFavoritesQuery
 import com.anisync.android.GetUserFollowStateQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.ToggleUserFollowMutation
+import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
@@ -25,10 +26,12 @@ import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -41,7 +44,8 @@ import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 class ProfileRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val userProfileDao: UserProfileDao,
-    private val notificationBadgeStore: NotificationBadgeStore
+    private val notificationBadgeStore: NotificationBadgeStore,
+    private val accountStore: AccountStore
 ) : ProfileRepository {
 
     /**
@@ -67,8 +71,14 @@ class ProfileRepositoryImpl @Inject constructor(
         CachePolicy.NetworkFirst -> FetchPolicy.NetworkFirst
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeProfile(): Flow<UserProfile?> {
-        return userProfileDao.observe()
+        // Re-subscribe per active account so the own-profile cache is account-scoped (the row's
+        // primary key is the user id), and switching accounts shows the right cached profile.
+        return accountStore.activeAccount
+            .flatMapLatest { account ->
+                userProfileDao.observe(account?.id ?: -1)
+            }
             .map { entity -> entity?.toDomain() }
     }
 
@@ -97,7 +107,7 @@ class ProfileRepositoryImpl @Inject constructor(
             var knownUserId: Int? = null
             var queryName: String? = null
             if (isOwnProfile) {
-                knownUserId = userProfileDao.get()?.id?.takeIf { it > 0 }
+                knownUserId = accountStore.activeAccount.value?.id?.takeIf { it > 0 }
                 if (knownUserId == null) {
                     val viewerResponse = apolloClient.query(GetViewerQuery())
                         .fetchPolicy(FetchPolicy.NetworkOnly)

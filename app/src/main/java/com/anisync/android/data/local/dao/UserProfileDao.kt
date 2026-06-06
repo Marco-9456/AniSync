@@ -14,17 +14,17 @@ import kotlinx.coroutines.flow.Flow
 interface UserProfileDao {
     
     /**
-     * Observe the cached user profile.
-     * Emits null if not cached.
+     * Observe a specific account's cached profile (the row's primary key is the user id, so this
+     * scopes the own-profile cache per account). Emits null if not cached.
      */
-    @Query("SELECT * FROM user_profile LIMIT 1")
-    fun observe(): Flow<UserProfileEntity?>
+    @Query("SELECT * FROM user_profile WHERE id = :userId LIMIT 1")
+    fun observe(userId: Int): Flow<UserProfileEntity?>
 
     /**
-     * Get the cached user profile (one-time read).
+     * Get a specific account's cached profile (one-time read).
      */
-    @Query("SELECT * FROM user_profile LIMIT 1")
-    suspend fun get(): UserProfileEntity?
+    @Query("SELECT * FROM user_profile WHERE id = :userId LIMIT 1")
+    suspend fun get(userId: Int): UserProfileEntity?
 
     /**
      * Insert or replace user profile.
