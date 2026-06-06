@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import android.content.Intent
+import android.net.Uri
 import android.os.SystemClock
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -16,10 +18,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -28,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
+import com.anisync.android.presentation.login.AniListAuth
+import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -51,6 +58,10 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val accounts by viewModel.accounts.collectAsStateWithLifecycle()
+    val activeAccountId by viewModel.activeAccountId.collectAsStateWithLifecycle()
+    var showAccountSwitcherSheet by remember { mutableStateOf(false) }
 
     // Cooldown-gated ON_RESUME refresh. Notification badge no longer needs a
     // separate refresh — it rides on GetUserProfile via @include directive.
@@ -124,7 +135,9 @@ fun ProfileScreen(
                         onThreadClick = onThreadClick,
                         onCommentClick = onCommentClick,
                         onActivityClick = onActivityClick,
-                        onLastReplyClick = onLastReplyClick
+                        onLastReplyClick = onLastReplyClick,
+                        showAccountSwitcher = isOwnProfile && accounts.size > 1,
+                        onAccountSwitchClick = { showAccountSwitcherSheet = true }
                     )
                 }
 
@@ -159,6 +172,22 @@ fun ProfileScreen(
             onDismiss = {
                 viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
             }
+        )
+    }
+
+    if (showAccountSwitcherSheet) {
+        AccountSwitcherSheet(
+            accounts = accounts,
+            activeAccountId = activeAccountId,
+            onSwitch = { id ->
+                showAccountSwitcherSheet = false
+                viewModel.switchAccount(id)
+            },
+            onAddAccount = {
+                showAccountSwitcherSheet = false
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL)))
+            },
+            onDismiss = { showAccountSwitcherSheet = false }
         )
     }
 }

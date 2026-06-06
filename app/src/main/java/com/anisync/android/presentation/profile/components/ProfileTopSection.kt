@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledTonalIconButton
@@ -103,6 +104,8 @@ fun ProfileTopSection(
     unreadNotificationCount: Int = 0,
     topActionIcon: ImageVector = Icons.Default.Settings,
     onTopActionClick: () -> Unit = onSettingsClick,
+    showAccountSwitcher: Boolean = false,
+    onAccountSwitchClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
 
@@ -350,6 +353,19 @@ fun ProfileTopSection(
                     .padding(bottom = 12.dp)
             ) {
                 if (isOwnProfile) {
+                    if (showAccountSwitcher) {
+                        FilledTonalIconButton(
+                            onClick = onAccountSwitchClick,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz,
+                                contentDescription = stringResource(R.string.account_switch),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                     FilledTonalIconButton(
                         onClick = onEditProfileClick,
                         shape = RoundedCornerShape(16.dp),

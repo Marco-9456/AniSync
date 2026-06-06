@@ -91,6 +91,8 @@ fun ProfileContent(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     onActivityClick: (Int) -> Unit = {},
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
+    showAccountSwitcher: Boolean = false,
+    onAccountSwitchClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -142,7 +144,9 @@ fun ProfileContent(
                             text = "${profile.name}\nhttps://anilist.co/user/${profile.name}"
                         )
                     }
-                }
+                },
+                showAccountSwitcher = showAccountSwitcher,
+                onAccountSwitchClick = onAccountSwitchClick
             )
         }
 
