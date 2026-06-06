@@ -865,7 +865,10 @@ class AppSettings @Inject constructor(
         _lastSelectedAnimeTab.value = null
         _lastSelectedMangaTab.value = null
         _showPrivateEntries.value = true
+        // Land on the default home tab after a switch instead of the other account's last tab.
+        _lastMainTab.value = null
         prefs.edit()
+            .remove(KEY_LAST_MAIN_TAB)
             .remove(KEY_HIDDEN_ANIME_LISTS)
             .remove(KEY_HIDDEN_MANGA_LISTS)
             .remove(KEY_ANIME_LIST_ORDER)
