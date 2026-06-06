@@ -58,10 +58,14 @@ import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.system.measureTimeMillis
@@ -90,6 +94,15 @@ class MainActivity : AppCompatActivity() {
     private val _newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 4)
     val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
+    /**
+     * Account-tagged notification deep link, held until the right account is active and the
+     * (possibly rebuilt) MainScreen consumes it. Retained so it survives the switch's subtree rebuild.
+     */
+    private val _pendingDeepLink = MutableStateFlow<Intent?>(null)
+    val pendingDeepLink: StateFlow<Intent?> = _pendingDeepLink.asStateFlow()
+
+    fun consumePendingDeepLink() { _pendingDeepLink.value = null }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val onCreateTime = measureTimeMillis {
             super.onCreate(savedInstanceState)
@@ -104,6 +117,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             handleAuthRedirect(intent)
+            routeAccountDeepLink(intent)
 
             // Resolve a migrated legacy login + claim its pre-ownerId library rows for the account.
             lifecycleScope.launch(Dispatchers.IO) {
@@ -289,7 +303,48 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthRedirect(intent)
-        _newIntents.tryEmit(intent)
+        if (!routeAccountDeepLink(intent)) {
+            _newIntents.tryEmit(intent)
+        }
+    }
+
+    /**
+     * Routes a notification deep link tagged with an `account` query param: makes that account
+     * active (switching if needed), then hands the cleaned link to [MainScreen] via [pendingDeepLink]
+     * once the switch settles. Returns true if it consumed the intent; non-tagged links fall through.
+     */
+    private fun routeAccountDeepLink(intent: Intent?): Boolean {
+        val data = intent?.data ?: return false
+        if (data.scheme != "anisync" || data.host == "auth") return false
+        if (data.getQueryParameter("account") == null) return false
+
+        val target = data.getQueryParameter("account")?.toIntOrNull()
+        val cleaned = Intent(Intent.ACTION_VIEW, stripAccountParam(data))
+        // Prevent the account-tagged link from being auto-handled in the wrong account on cold start.
+        intent.data = null
+
+        val known = target != null && accountManager.accounts.value.any { it.id == target }
+        val active = accountManager.activeAccount.value?.id
+        if (!known || target == active) {
+            _pendingDeepLink.value = cleaned
+        } else {
+            lifecycleScope.launch {
+                accountManager.switch(target!!)
+                // Deliver only once the switch has settled, so the rebuilt MainScreen handles it.
+                accountManager.activeAccount.first { it?.id == target }
+                _pendingDeepLink.value = cleaned
+            }
+        }
+        return true
+    }
+
+    private fun stripAccountParam(uri: Uri): Uri {
+        val builder = uri.buildUpon().clearQuery()
+        for (name in uri.queryParameterNames) {
+            if (name == "account") continue
+            for (value in uri.getQueryParameters(name)) builder.appendQueryParameter(name, value)
+        }
+        return builder.build()
     }
 
     private fun handleAuthRedirect(intent: Intent?) {

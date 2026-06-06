@@ -54,6 +54,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.filterNotNull
 import com.anisync.android.R
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.presentation.components.alert.ProvideToastManager
@@ -96,6 +97,15 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
         val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
         activity.newIntents.collect { intent ->
             navController.handleDeepLink(intent)
+        }
+    }
+    // Account-tagged notification deep links: delivered after any account switch settles, and
+    // retained across the switch rebuild so this (possibly fresh) NavController handles them.
+    LaunchedEffect(navController) {
+        val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
+        activity.pendingDeepLink.filterNotNull().collect { intent ->
+            navController.handleDeepLink(intent)
+            activity.consumePendingDeepLink()
         }
     }
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
