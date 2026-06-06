@@ -53,6 +53,7 @@ class AccountManager @Inject constructor(
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
     private val activityRepository: ActivityRepository,
+    private val tokenedClientFactory: TokenedApolloClientFactory,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -117,6 +118,7 @@ class AccountManager @Inject constructor(
     fun removeAccount(id: Int) {
         scope.launch {
             busy {
+                val token = accountStore.accounts.value.firstOrNull { it.id == id }?.token
                 if (accountStore.activeAccount.value?.id == id) {
                     val next = accountStore.accounts.value.firstOrNull { it.id != id }
                     clearLocalState()
@@ -127,6 +129,9 @@ class AccountManager @Inject constructor(
                 } else {
                     accountStore.remove(id)
                 }
+                // Drop the removed account's notification dedup state and cached token client.
+                preferencesRepository.clearForAccount(id)
+                token?.let(tokenedClientFactory::evict)
             }
         }
     }
@@ -178,10 +183,7 @@ class AccountManager @Inject constructor(
      * of the active account's cache).
      */
     private suspend fun resolveAccount(token: String, expiresInSeconds: Long): Account? {
-        val client = ApolloClient.Builder()
-            .serverUrl(ANILIST_URL)
-            .addHttpHeader("Authorization", "Bearer $token")
-            .build()
+        val client = tokenedClientFactory.create(token)
         return try {
             val viewer = client.query(GetViewerQuery()).execute().data?.Viewer ?: return null
             Account(
@@ -197,8 +199,6 @@ class AccountManager @Inject constructor(
             )
         } catch (_: Exception) {
             null
-        } finally {
-            client.close()
         }
     }
 
@@ -213,7 +213,7 @@ class AccountManager @Inject constructor(
             runCatching { apolloClient.apolloStore.clearAll() }
             savedForumThreadDao.deleteAll()
             airingScheduleDao.clearAll()
-            preferencesRepository.clearAll()
+            // Notification dedup is per-account now (kept across switches) — not wiped here.
             appSettings.clearAccountScoped()
             activityRepository.clearViewerCache()
             notificationBadgeStore.reset()
@@ -229,7 +229,6 @@ class AccountManager @Inject constructor(
     }
 
     companion object {
-        private const val ANILIST_URL = "https://graphql.anilist.co"
         private const val ONE_DAY_SECONDS = 86_400L
     }
 }

@@ -8,6 +8,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/**
+ * Notification dedup state in plain SharedPreferences, keyed per account (`<base>_<accountId>`) so
+ * each signed-in account tracks its own high-water marks independently.
+ */
 class PreferencesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : PreferencesRepository {
@@ -16,111 +20,124 @@ class PreferencesRepositoryImpl @Inject constructor(
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    override suspend fun getLastNotifiedId(): Int = withContext(Dispatchers.IO) {
-        prefs.getInt(KEY_LAST_NOTIFIED_ID, 0)
+    private fun key(base: String, accountId: Int) = "${base}_$accountId"
+
+    override suspend fun getLastNotifiedId(accountId: Int): Int = withContext(Dispatchers.IO) {
+        prefs.getInt(key(KEY_LAST_NOTIFIED_ID, accountId), 0)
     }
 
-    override suspend fun setLastNotifiedId(id: Int) = withContext(Dispatchers.IO) {
-        prefs.edit().putInt(KEY_LAST_NOTIFIED_ID, id).apply()
+    override suspend fun setLastNotifiedId(accountId: Int, id: Int) = withContext(Dispatchers.IO) {
+        prefs.edit().putInt(key(KEY_LAST_NOTIFIED_ID, accountId), id).apply()
     }
 
-    override suspend fun getNotifiedPlanningMediaIds(): Set<Int> = withContext(Dispatchers.IO) {
-        prefs.getStringSet(KEY_NOTIFIED_PLANNING, emptySet())
+    override suspend fun getNotifiedPlanningMediaIds(accountId: Int): Set<Int> = withContext(Dispatchers.IO) {
+        prefs.getStringSet(key(KEY_NOTIFIED_PLANNING, accountId), emptySet())
             ?.mapNotNull { it.toIntOrNull() }
             ?.toSet() ?: emptySet()
     }
 
-    override suspend fun markPlanningMediaAsNotified(mediaId: Int) = withContext(Dispatchers.IO) {
-        val current = prefs.getStringSet(KEY_NOTIFIED_PLANNING, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+    override suspend fun markPlanningMediaAsNotified(accountId: Int, mediaId: Int) = withContext(Dispatchers.IO) {
+        val k = key(KEY_NOTIFIED_PLANNING, accountId)
+        val current = prefs.getStringSet(k, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         current.add(mediaId.toString())
-        prefs.edit().putStringSet(KEY_NOTIFIED_PLANNING, current).apply()
+        prefs.edit().putStringSet(k, current).apply()
     }
 
-    override suspend fun cleanupOrphanedPlanningIds(currentPlanningIds: Set<Int>) = withContext(Dispatchers.IO) {
-        val notifiedIds = prefs.getStringSet(KEY_NOTIFIED_PLANNING, emptySet())
+    override suspend fun cleanupOrphanedPlanningIds(accountId: Int, currentPlanningIds: Set<Int>) = withContext(Dispatchers.IO) {
+        val k = key(KEY_NOTIFIED_PLANNING, accountId)
+        val notifiedIds = prefs.getStringSet(k, emptySet())
             ?.mapNotNull { it.toIntOrNull() }
             ?.toSet() ?: emptySet()
-        
+
         // Keep only IDs that are still in the planning list
         val validIds = notifiedIds.intersect(currentPlanningIds)
-        
+
         if (validIds.size != notifiedIds.size) {
             prefs.edit()
-                .putStringSet(KEY_NOTIFIED_PLANNING, validIds.map { it.toString() }.toSet())
+                .putStringSet(k, validIds.map { it.toString() }.toSet())
                 .apply()
         }
     }
 
     // ---- Upcoming airing notifications ----
 
-    override suspend fun getNotifiedUpcomingAiringIds(): Set<Int> = withContext(Dispatchers.IO) {
-        prefs.getStringSet(KEY_NOTIFIED_UPCOMING, emptySet())
+    override suspend fun getNotifiedUpcomingAiringIds(accountId: Int): Set<Int> = withContext(Dispatchers.IO) {
+        prefs.getStringSet(key(KEY_NOTIFIED_UPCOMING, accountId), emptySet())
             ?.mapNotNull { it.toIntOrNull() }
             ?.toSet() ?: emptySet()
     }
 
-    override suspend fun markUpcomingAiringNotified(airingId: Int) = withContext(Dispatchers.IO) {
-        val current = prefs.getStringSet(KEY_NOTIFIED_UPCOMING, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+    override suspend fun markUpcomingAiringNotified(accountId: Int, airingId: Int) = withContext(Dispatchers.IO) {
+        val k = key(KEY_NOTIFIED_UPCOMING, accountId)
+        val current = prefs.getStringSet(k, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         current.add(airingId.toString())
-        prefs.edit().putStringSet(KEY_NOTIFIED_UPCOMING, current).apply()
+        prefs.edit().putStringSet(k, current).apply()
     }
 
-    override suspend fun cleanupOldUpcomingAirings(currentValidIds: Set<Int>) = withContext(Dispatchers.IO) {
-        val notifiedIds = prefs.getStringSet(KEY_NOTIFIED_UPCOMING, emptySet())
+    override suspend fun cleanupOldUpcomingAirings(accountId: Int, currentValidIds: Set<Int>) = withContext(Dispatchers.IO) {
+        val k = key(KEY_NOTIFIED_UPCOMING, accountId)
+        val notifiedIds = prefs.getStringSet(k, emptySet())
             ?.mapNotNull { it.toIntOrNull() }
             ?.toSet() ?: emptySet()
-        
+
         // Keep only IDs that are still valid (upcoming)
         val validIds = notifiedIds.intersect(currentValidIds)
-        
+
         if (validIds.size != notifiedIds.size) {
             prefs.edit()
-                .putStringSet(KEY_NOTIFIED_UPCOMING, validIds.map { it.toString() }.toSet())
+                .putStringSet(k, validIds.map { it.toString() }.toSet())
                 .apply()
         }
     }
 
-    override suspend fun hasNotificationsEverRun(): Boolean = withContext(Dispatchers.IO) {
-        prefs.getBoolean(KEY_HAS_EVER_RUN, false)
+    override suspend fun hasNotificationsEverRun(accountId: Int): Boolean = withContext(Dispatchers.IO) {
+        prefs.getBoolean(key(KEY_HAS_EVER_RUN, accountId), false)
     }
 
-    override suspend fun markNotificationsHaveRun() = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean(KEY_HAS_EVER_RUN, true).apply()
+    override suspend fun markNotificationsHaveRun(accountId: Int) = withContext(Dispatchers.IO) {
+        prefs.edit().putBoolean(key(KEY_HAS_EVER_RUN, accountId), true).apply()
     }
 
     // ---- Key-based notification tracking for two-tier system ----
 
-    override suspend fun hasNotifiedWithKey(key: String): Boolean = withContext(Dispatchers.IO) {
-        val keys = prefs.getStringSet(KEY_NOTIFICATION_KEYS, emptySet()) ?: emptySet()
-        key in keys
+    override suspend fun hasNotifiedWithKey(accountId: Int, notificationKey: String): Boolean = withContext(Dispatchers.IO) {
+        val keys = prefs.getStringSet(key(KEY_NOTIFICATION_KEYS, accountId), emptySet()) ?: emptySet()
+        notificationKey in keys
     }
 
-    override suspend fun markNotifiedWithKey(key: String) = withContext(Dispatchers.IO) {
-        val current = prefs.getStringSet(KEY_NOTIFICATION_KEYS, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
-        current.add(key)
-        
+    override suspend fun markNotifiedWithKey(accountId: Int, notificationKey: String) = withContext(Dispatchers.IO) {
+        val storeKey = key(KEY_NOTIFICATION_KEYS, accountId)
+        val current = prefs.getStringSet(storeKey, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        current.add(notificationKey)
+
         // Clean up old keys to prevent unbounded growth
-        // Keep only keys from the last 7 days worth of airings (assuming ~50 per day max)
         if (current.size > MAX_NOTIFICATION_KEYS) {
             val keysToKeep = current.toList().takeLast(MAX_NOTIFICATION_KEYS).toSet()
-            prefs.edit().putStringSet(KEY_NOTIFICATION_KEYS, keysToKeep).apply()
+            prefs.edit().putStringSet(storeKey, keysToKeep).apply()
         } else {
-            prefs.edit().putStringSet(KEY_NOTIFICATION_KEYS, current).apply()
+            prefs.edit().putStringSet(storeKey, current).apply()
         }
     }
 
     // ---- Social/Forum notification tracking ----
 
-    override suspend fun getLastSocialNotifiedId(): Int = withContext(Dispatchers.IO) {
-        prefs.getInt(KEY_LAST_SOCIAL_NOTIFIED_ID, 0)
+    override suspend fun getLastSocialNotifiedId(accountId: Int): Int = withContext(Dispatchers.IO) {
+        prefs.getInt(key(KEY_LAST_SOCIAL_NOTIFIED_ID, accountId), 0)
     }
 
-    override suspend fun setLastSocialNotifiedId(id: Int) = withContext(Dispatchers.IO) {
-        prefs.edit().putInt(KEY_LAST_SOCIAL_NOTIFIED_ID, id).apply()
+    override suspend fun setLastSocialNotifiedId(accountId: Int, id: Int) = withContext(Dispatchers.IO) {
+        prefs.edit().putInt(key(KEY_LAST_SOCIAL_NOTIFIED_ID, accountId), id).apply()
     }
 
-    override suspend fun clearAll() = withContext(Dispatchers.IO) {
-        prefs.edit().clear().apply()
+    override suspend fun clearForAccount(accountId: Int) = withContext(Dispatchers.IO) {
+        prefs.edit().apply {
+            remove(key(KEY_LAST_NOTIFIED_ID, accountId))
+            remove(key(KEY_NOTIFIED_PLANNING, accountId))
+            remove(key(KEY_NOTIFIED_UPCOMING, accountId))
+            remove(key(KEY_HAS_EVER_RUN, accountId))
+            remove(key(KEY_NOTIFICATION_KEYS, accountId))
+            remove(key(KEY_LAST_SOCIAL_NOTIFIED_ID, accountId))
+        }.apply()
     }
 
     companion object {

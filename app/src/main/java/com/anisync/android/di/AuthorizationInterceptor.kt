@@ -95,13 +95,21 @@ class AuthorizationInterceptor @Inject constructor(
         tokenBucket.acquire()
 
         // ── Step 1: Attach Bearer token ─────────────────────────────────
-        val token = authRepository.getToken()
-        val authorizedRequest = if (token != null) {
-            request.newBuilder()
-                .addHeader("Authorization", "Bearer $token")
-                .build()
-        } else {
+        // A request that already carries an Authorization header is a token-scoped call (e.g. a
+        // background poll of a non-active account via TokenedApolloClientFactory). Leave its header
+        // untouched and don't let its 401s trip the global session-expired flow.
+        val hasOwnAuthHeader = request.headers.any { it.name.equals("Authorization", ignoreCase = true) }
+        val authorizedRequest = if (hasOwnAuthHeader) {
             request
+        } else {
+            val token = authRepository.getToken()
+            if (token != null) {
+                request.newBuilder()
+                    .addHeader("Authorization", "Bearer $token")
+                    .build()
+            } else {
+                request
+            }
         }
 
         // ── Step 2: Proactive throttling ────────────────────────────────
@@ -128,7 +136,7 @@ class AuthorizationInterceptor @Inject constructor(
         // ── Step 5: Handle error status codes ───────────────────────────
         return when (response.statusCode) {
             429 -> handleRateLimited(response, authorizedRequest, chain)
-            401 -> handleUnauthorized(response, authorizedRequest)
+            401 -> handleUnauthorized(response, authorizedRequest, isTokenScoped = hasOwnAuthHeader)
             in 500..599 -> handleServerError(response)
             else -> checkBodyForPermissionErrors(response, authorizedRequest)
         }
@@ -254,11 +262,21 @@ class AuthorizationInterceptor @Inject constructor(
      *
      * The UI layer collects `authRepository.sessionExpired` to show the dialog.
      */
-    private fun handleUnauthorized(response: HttpResponse, request: HttpRequest): HttpResponse {
+    private fun handleUnauthorized(
+        response: HttpResponse,
+        request: HttpRequest,
+        isTokenScoped: Boolean
+    ): HttpResponse {
         val operationName = extractOperationName(request)
         if (operationName != null && operationName in permissionGated401Operations) {
             Log.w(TAG, "401 on $operationName — treating as permission denial, not session expiry.")
             throw ApiError.Forbidden()
+        }
+        if (isTokenScoped) {
+            // Per-account background poll — don't disturb the active session; the caller
+            // (NotificationWorker) marks that specific account expired.
+            Log.w(TAG, "Unauthorized (401) on token-scoped request; leaving active session intact.")
+            throw ApiError.Unauthorized()
         }
         Log.w(TAG, "Unauthorized (401). Token expired or revoked.")
         authRepository.onSessionExpired()

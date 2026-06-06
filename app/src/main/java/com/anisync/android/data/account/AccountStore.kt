@@ -90,8 +90,18 @@ class AccountStore @Inject constructor(
     /** Marks the active account's token expired and clears the active slot (used on HTTP 401). */
     fun markActiveExpired() {
         val active = _activeAccount.value ?: return
-        replaceById(active.copy(expiresAt = 1L))
-        switchTo(null)
+        markExpired(active.id)
+    }
+
+    /**
+     * Marks a specific account's token expired. If it is the active account, also clears the active
+     * slot (drops to login/picker). A non-active account is just flagged — the active session is
+     * untouched (used by the background notification worker on a per-account 401).
+     */
+    fun markExpired(id: Int) {
+        val account = _accounts.value.firstOrNull { it.id == id } ?: return
+        replaceById(account.copy(expiresAt = 1L))
+        if (id == activeId) switchTo(null)
     }
 
     /** Updates the cached name/avatar of the active account (e.g. after an Edit Profile save). */
