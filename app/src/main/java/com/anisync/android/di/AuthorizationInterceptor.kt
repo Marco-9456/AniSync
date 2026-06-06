@@ -16,6 +16,7 @@ import okio.Buffer
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * HTTP interceptor for all AniList API requests.
@@ -34,6 +35,7 @@ import javax.inject.Inject
  * - Headers on 429: `Retry-After` (seconds), `X-RateLimit-Reset` (unix timestamp)
  * - Burst limiter also exists (undocumented threshold)
  */
+@Singleton
 class AuthorizationInterceptor @Inject constructor(
     private val authRepository: AuthRepository,
     private val toastManager: ToastManager,
