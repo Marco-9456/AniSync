@@ -264,6 +264,10 @@ fun LibraryScreen(
     }
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
+        // Clear focus up front: the M3 expressive InputField re-expands while it stays
+        // focused during the collapse animation, so the bar reopens itself on some
+        // devices (observed on API 26 / EMUI 8, issue #51) unless focus is dropped first.
+        focusManager.clearFocus()
         keyboardController?.hide()
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
@@ -303,6 +307,7 @@ fun LibraryScreen(
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
             onBackClick = {
+                focusManager.clearFocus()
                 keyboardController?.hide()
                 coroutineScope.launch { searchBarState.animateToCollapsed() }
             },
