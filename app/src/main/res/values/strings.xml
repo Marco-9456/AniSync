@@ -180,6 +180,8 @@
     <string name="action_go_back">Go Back</string>
     <string name="synopsis_show_less">Show less</string>
     <string name="synopsis_read_more">Read more</string>
+    <string name="translate">Translate</string>
+    <string name="no_translation_app_found">No translation app found</string>
     <string name="fab_close_menu">Close menu</string>
     <string name="fab_open_menu">Open menu</string>
     <string name="fab_open_menu_library">Open menu to manage library status</string>

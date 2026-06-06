@@ -2,6 +2,7 @@ package com.anisync.android.presentation.details.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.ReviewAuthorBar
 import com.anisync.android.presentation.components.ReviewVoteActions
+import com.anisync.android.presentation.components.TranslateIconButton
 import com.anisync.android.ui.theme.emphasis
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,11 +117,23 @@ fun ReviewDetailsSheet(
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = review.summary,
-                    style = MaterialTheme.typography.titleMedium.emphasis(),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = review.summary,
+                        style = MaterialTheme.typography.titleMedium.emphasis(),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    TranslateIconButton(
+                        text = review.body,
+                        iconSize = 20.dp,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 Spacer(Modifier.height(16.dp))
 

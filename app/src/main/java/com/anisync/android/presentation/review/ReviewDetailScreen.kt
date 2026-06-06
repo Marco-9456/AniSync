@@ -48,6 +48,7 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.ReviewAuthorBar
 import com.anisync.android.presentation.components.ReviewScorePill
 import com.anisync.android.presentation.components.ReviewVoteActions
+import com.anisync.android.presentation.components.TranslateIconButton
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.ShareUtils
 
@@ -73,6 +74,10 @@ fun ReviewDetailScreen(
         scrollableState = scrollState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         actions = {
+            TranslateIconButton(
+                text = uiState.review?.body,
+                tint = MaterialTheme.colorScheme.onSurface
+            )
             IconButton(
                 onClick = {
                     ShareUtils.shareText(context, "https://anilist.co/review/$reviewId")

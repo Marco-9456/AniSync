@@ -62,6 +62,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.TranslateIconButton
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.rememberCopyToClipboard
@@ -532,12 +533,23 @@ fun ExpandableBiography(html: String) {
             )
     ) {
         Column(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
-            Text(
-                "BIOGRAPHY",
-                style = MaterialTheme.typography.labelSmall.emphasis(),
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "BIOGRAPHY",
+                    style = MaterialTheme.typography.labelSmall.emphasis(),
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
+                )
+                TranslateIconButton(
+                    text = html,
+                    iconSize = 18.dp,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
             Box(
@@ -608,12 +620,23 @@ fun ExpandableSynopsis(text: String) {
             )
     ) {
         Column(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
-            Text(
-                stringResource(R.string.section_synopsis),
-                style = MaterialTheme.typography.labelSmall.emphasis(),
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    stringResource(R.string.section_synopsis),
+                    style = MaterialTheme.typography.labelSmall.emphasis(),
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
+                )
+                TranslateIconButton(
+                    text = text,
+                    iconSize = 18.dp,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
             // Rich renderer so inline AniList links in anime/manga (and character)
