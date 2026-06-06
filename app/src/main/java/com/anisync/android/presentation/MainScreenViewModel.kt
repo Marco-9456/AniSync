@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationBadgeStore
+import com.anisync.android.data.account.AccountManager
 import com.anisync.android.presentation.components.alert.ToastManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -20,8 +21,16 @@ import javax.inject.Inject
 class MainScreenViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
     private val appSettings: AppSettings,
+    accountManager: AccountManager,
     val toastManager: ToastManager
 ) : ViewModel() {
+
+    /**
+     * After an account switch the MainScreen subtree is rebuilt (session epoch > 0) — land on
+     * Profile so the user sees the account they just switched to. A genuinely fresh process
+     * (epoch 0) instead restores [startTabKey].
+     */
+    val startOnProfile: Boolean = accountManager.sessionEpoch.value > 0
 
     val unreadNotificationCount: StateFlow<Int> = notificationBadgeStore.unreadCount
 
