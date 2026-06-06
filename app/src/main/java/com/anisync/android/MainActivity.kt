@@ -105,9 +105,9 @@ class MainActivity : AppCompatActivity() {
 
             handleAuthRedirect(intent)
 
-            // Promote a migrated legacy login (provisional account) to its real identity once online.
+            // Resolve a migrated legacy login + claim its pre-ownerId library rows for the account.
             lifecycleScope.launch(Dispatchers.IO) {
-                accountManager.reconcileActiveIfProvisional()
+                accountManager.reconcileActiveAccount()
             }
 
             lifecycleScope.launch(Dispatchers.IO) {

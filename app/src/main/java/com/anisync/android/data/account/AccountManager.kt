@@ -138,16 +138,25 @@ class AccountManager @Inject constructor(
     }
 
     /**
-     * If the active account is a migrated legacy login (provisional id), resolves its real identity
-     * and promotes it. Same session (same token), so this does NOT bump [sessionEpoch].
+     * Startup reconcile (same session, so it does NOT bump [sessionEpoch]):
+     *  - If the active account is a migrated legacy login (provisional id), resolve its real
+     *    identity and promote it.
+     *  - Claim any legacy library rows written before the per-account `ownerId` existed (they
+     *    default to [Account.PROVISIONAL_ID] after the v18 migration) for the active account, so
+     *    an upgrading user's existing library isn't stranded under owner 0.
      */
-    suspend fun reconcileActiveIfProvisional() {
+    suspend fun reconcileActiveAccount() {
         val active = accountStore.activeAccount.value ?: return
-        if (!active.isProvisional) return
-        val resolved = resolveAccount(active.token, expiresInSeconds = 0L) ?: return
-        accountStore.reconcileProvisional(resolved)
-        // Promote the migrated legacy library (written under the provisional owner) to the real id.
-        runCatching { libraryDao.reassignOwner(Account.PROVISIONAL_ID, resolved.id) }
+        val realId = if (active.isProvisional) {
+            val resolved = resolveAccount(active.token, expiresInSeconds = 0L) ?: return
+            accountStore.reconcileProvisional(resolved)
+            resolved.id
+        } else {
+            active.id
+        }
+        if (realId > 0) {
+            runCatching { libraryDao.reassignOwner(Account.PROVISIONAL_ID, realId) }
+        }
     }
 
     private fun bumpEpoch() {
