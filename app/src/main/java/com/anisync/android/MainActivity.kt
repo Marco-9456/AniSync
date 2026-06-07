@@ -309,31 +309,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Routes a notification deep link tagged with an `account` query param: makes that account
-     * active (switching if needed), then hands the cleaned link to [MainScreen] via [pendingDeepLink]
-     * once the switch settles. Returns true if it consumed the intent; non-tagged links fall through.
+     * Handles a notification deep link tagged with an `account` query param.
+     *
+     * Only **diverts** when a different account must become active first: in that case it switches,
+     * waits for the switch to settle, then replays the cleaned link into the rebuilt [MainScreen] via
+     * [pendingDeepLink], and returns true (consumed).
+     *
+     * When the target account is already active (or unknown), it just strips the `account` param and
+     * returns false, leaving the cleaned `intent.data` for the proven native paths — Compose's
+     * cold-start auto-handle and [onNewIntent]'s `newIntents` — so same-account taps land on the
+     * exact target reliably.
      */
     private fun routeAccountDeepLink(intent: Intent?): Boolean {
         val data = intent?.data ?: return false
         if (data.scheme != "anisync" || data.host == "auth") return false
-        if (data.getQueryParameter("account") == null) return false
+        val target = (data.getQueryParameter("account") ?: return false).toIntOrNull()
 
-        val target = data.getQueryParameter("account")?.toIntOrNull()
-        val cleaned = Intent(Intent.ACTION_VIEW, stripAccountParam(data))
-        // Prevent the account-tagged link from being auto-handled in the wrong account on cold start.
-        intent.data = null
-
+        val cleanedUri = stripAccountParam(data)
         val known = target != null && accountManager.accounts.value.any { it.id == target }
         val active = accountManager.activeAccount.value?.id
+
         if (!known || target == active) {
-            _pendingDeepLink.value = cleaned
-        } else {
-            lifecycleScope.launch {
-                accountManager.switch(target!!)
-                // Deliver only once the switch has settled, so the rebuilt MainScreen handles it.
-                accountManager.activeAccount.first { it?.id == target }
-                _pendingDeepLink.value = cleaned
-            }
+            // Right account already active — let the native deep-link handlers take the cleaned link.
+            intent.data = cleanedUri
+            return false
+        }
+
+        // Cross-account: don't auto-handle in the wrong account; switch, then replay once settled.
+        intent.data = null
+        lifecycleScope.launch {
+            accountManager.switch(target!!)
+            accountManager.activeAccount.first { it?.id == target }
+            _pendingDeepLink.value = Intent(Intent.ACTION_VIEW, cleanedUri)
         }
         return true
     }
