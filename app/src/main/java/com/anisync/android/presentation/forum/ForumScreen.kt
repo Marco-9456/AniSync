@@ -61,8 +61,10 @@ import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -90,6 +92,7 @@ import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -167,9 +170,28 @@ fun ForumScreen(
             .collect { viewModel.onAction(ForumAction.OnSearchQueryChange(it)) }
     }
 
+    // Guard against the M3 expressive search bar reopening itself on slow devices.
+    // As the bar collapses, M3 re-expands it via animateToExpanded() if the collapsed
+    // InputField gets a stray PressInteraction.Release or regains focus while the
+    // full-screen overlay tears down (SearchBar.kt: DetectClickFromInteractionSource /
+    // onFocusChanged) — observed as the bar popping back open on API 26 / EMUI 8 (#51).
+    // clearFocus alone can't stop the click path, so the field is made non-interactive
+    // during the collapse and briefly after, which absorbs the stray event. Only armed
+    // after a real expand so the field stays tappable on first entry.
+    var searchReopenGuard by remember { mutableStateOf(false) }
+    var searchWasExpanded by remember { mutableStateOf(false) }
     LaunchedEffect(searchBarState.currentValue) {
-        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-            focusManager.clearFocus()
+        when (searchBarState.currentValue) {
+            SearchBarValue.Expanded -> searchWasExpanded = true
+            SearchBarValue.Collapsed -> {
+                focusManager.clearFocus()
+                if (searchWasExpanded) {
+                    searchWasExpanded = false
+                    searchReopenGuard = true
+                    delay(400L)
+                    searchReopenGuard = false
+                }
+            }
         }
     }
 
@@ -191,6 +213,9 @@ fun ForumScreen(
 
             SearchBarDefaults.InputField(
                 searchBarState = searchBarState,
+                enabled = !searchReopenGuard &&
+                    !(searchBarState.targetValue == SearchBarValue.Collapsed &&
+                        currentSearchBarValue == SearchBarValue.Expanded),
                 textFieldState = textFieldState,
                 onSearch = { focusManager.clearFocus() },
                 placeholder = {
