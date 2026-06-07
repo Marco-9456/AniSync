@@ -70,6 +70,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.system.measureTimeMillis
 
+/** A notification deep link to be handled by the MainScreen built at [epoch] (post-account-switch). */
+data class PendingDeepLink(val intent: Intent, val epoch: Int)
+
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
@@ -95,11 +98,13 @@ class MainActivity : AppCompatActivity() {
     val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
     /**
-     * Account-tagged notification deep link, held until the right account is active and the
-     * (possibly rebuilt) MainScreen consumes it. Retained so it survives the switch's subtree rebuild.
+     * Cross-account notification deep link, delivered after the switch settles and tagged with the
+     * **session epoch** of the rebuilt MainScreen that should handle it. Retained (StateFlow) so it
+     * survives the switch's subtree rebuild; the epoch tag ensures the pre-switch MainScreen (older
+     * epoch) doesn't consume it first.
      */
-    private val _pendingDeepLink = MutableStateFlow<Intent?>(null)
-    val pendingDeepLink: StateFlow<Intent?> = _pendingDeepLink.asStateFlow()
+    private val _pendingDeepLink = MutableStateFlow<PendingDeepLink?>(null)
+    val pendingDeepLink: StateFlow<PendingDeepLink?> = _pendingDeepLink.asStateFlow()
 
     fun consumePendingDeepLink() { _pendingDeepLink.value = null }
 
@@ -267,7 +272,7 @@ class MainActivity : AppCompatActivity() {
                             val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
                             if (isLoggedIn) {
                                 key(sessionEpoch) {
-                                    MainScreen()
+                                    MainScreen(builtAtEpoch = sessionEpoch)
                                 }
                             } else {
                                 LoginScreen()
@@ -335,12 +340,14 @@ class MainActivity : AppCompatActivity() {
             return false
         }
 
-        // Cross-account: don't auto-handle in the wrong account; switch, then replay once settled.
+        // Cross-account: don't auto-handle in the wrong account; switch, then replay once the
+        // subtree has rebuilt — tagged with the new epoch so only the post-switch MainScreen handles it.
         intent.data = null
+        val epochBefore = accountManager.sessionEpoch.value
         lifecycleScope.launch {
             accountManager.switch(target!!)
-            accountManager.activeAccount.first { it?.id == target }
-            _pendingDeepLink.value = Intent(Intent.ACTION_VIEW, cleanedUri)
+            val newEpoch = accountManager.sessionEpoch.first { it != epochBefore }
+            _pendingDeepLink.value = PendingDeepLink(Intent(Intent.ACTION_VIEW, cleanedUri), newEpoch)
         }
         return true
     }

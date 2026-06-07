@@ -90,7 +90,10 @@ private data class BottomNavItem<T : Any>(
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
+fun MainScreen(
+    builtAtEpoch: Int = 0,
+    viewModel: MainScreenViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     LaunchedEffect(navController) {
@@ -99,13 +102,16 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
             navController.handleDeepLink(intent)
         }
     }
-    // Account-tagged notification deep links: delivered after any account switch settles, and
-    // retained across the switch rebuild so this (possibly fresh) NavController handles them.
+    // Cross-account notification deep links: delivered after the account switch settles, tagged with
+    // the session epoch of the post-switch MainScreen. Only that instance (matching epoch) handles
+    // it, so the pre-switch MainScreen can't consume it first.
     LaunchedEffect(navController) {
         val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
-        activity.pendingDeepLink.filterNotNull().collect { intent ->
-            navController.handleDeepLink(intent)
-            activity.consumePendingDeepLink()
+        activity.pendingDeepLink.filterNotNull().collect { pending ->
+            if (pending.epoch == builtAtEpoch) {
+                navController.handleDeepLink(pending.intent)
+                activity.consumePendingDeepLink()
+            }
         }
     }
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
