@@ -488,6 +488,8 @@ class NotificationWorker @AssistedInject constructor(
             .setContentText(data.content)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setWhen(notification.createdAt.toLong() * 1000L)
+            .setShowWhen(true)
             .setGroup(groupKey(GROUP_KEY_SOCIAL, ctx))
             .setContentIntent(deepLinkIntent(deepLinkUri, ctx, notificationId))
 
@@ -593,6 +595,10 @@ class NotificationWorker @AssistedInject constructor(
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            // Stamp with the airing moment (AniList createdAt) so it's consistent across devices
+            // regardless of when each device's worker polled.
+            .setWhen(notification.createdAt.toLong() * 1000L)
+            .setShowWhen(true)
             .setGroup(groupKey(GROUP_KEY_AIRING, ctx))
             // Body tap opens the in-app inbox so the user lands on the row that fired it.
             .setContentIntent(deepLinkIntent("anisync://notifications", ctx, notificationId))
@@ -696,6 +702,8 @@ class NotificationWorker @AssistedInject constructor(
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setWhen(airing.airingAt * 1000L)
+            .setShowWhen(true)
             .setGroup(groupKey(GROUP_KEY_PLANNING, ctx))
             .setContentIntent(deepLinkIntent("anisync://details/${airing.mediaId}", ctx, notificationId))
             .addAction(
