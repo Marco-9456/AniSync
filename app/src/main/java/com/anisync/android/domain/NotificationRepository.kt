@@ -6,11 +6,12 @@ package com.anisync.android.domain
  */
 interface NotificationRepository {
     /**
-     * Fetch paginated notifications for the current user (background poller).
+     * Fetch paginated notifications (background poller).
      * @param page Page number (1-indexed)
+     * @param token AniList token to poll a specific account; null uses the active account's client.
      * @return List of notifications or error
      */
-    suspend fun getNotifications(page: Int): Result<List<Notification>>
+    suspend fun getNotifications(page: Int, token: String? = null): Result<List<Notification>>
 
     /**
      * Fetch paginated notifications with optional type filtering and pagination metadata.

@@ -9,10 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.R
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
-import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationPreferences
+import com.anisync.android.data.account.AccountManager
 import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.domain.GetProfileUseCase
@@ -56,7 +56,7 @@ class SettingsViewModel @Inject constructor(
     private val notificationPreferences: NotificationPreferences,
     private val notificationScheduler: NotificationScheduler,
     private val notificationDebugService: NotificationDebugService,
-    private val authRepository: AuthRepository,
+    private val accountManager: AccountManager,
     private val updateManager: UpdateManager,
     getProfileUseCase: GetProfileUseCase,
     private val toastManager: ToastManager,
@@ -431,7 +431,7 @@ class SettingsViewModel @Inject constructor(
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
-            authRepository.logout()
+            accountManager.logoutActive()
             onComplete()
         }
     }

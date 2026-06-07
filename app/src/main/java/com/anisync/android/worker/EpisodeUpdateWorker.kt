@@ -15,6 +15,7 @@ class EpisodeUpdateWorker @AssistedInject constructor(
     @Assisted val appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val libraryDao: LibraryDao,
+    private val accountStore: com.anisync.android.data.account.AccountStore,
     private val libraryRepository: com.anisync.android.domain.LibraryRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -24,7 +25,8 @@ class EpisodeUpdateWorker @AssistedInject constructor(
         if (mediaId == -1) return Result.failure()
 
         try {
-            val entry = libraryDao.getEntry(mediaId) ?: return Result.failure()
+            val ownerId = accountStore.activeAccount.value?.id ?: -1
+            val entry = libraryDao.getEntry(ownerId, mediaId) ?: return Result.failure()
             // Update progress
             val newProgress = (entry.progress + amount).coerceAtLeast(0)
             

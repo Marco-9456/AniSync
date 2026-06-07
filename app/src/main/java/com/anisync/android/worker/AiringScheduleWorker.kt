@@ -33,6 +33,7 @@ class AiringScheduleWorker @AssistedInject constructor(
     private val apolloClient: ApolloClient,
     private val airingScheduleDao: AiringScheduleDao,
     private val libraryDao: LibraryDao,
+    private val accountStore: com.anisync.android.data.account.AccountStore,
     private val appSettings: AppSettings
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -97,7 +98,7 @@ class AiringScheduleWorker @AssistedInject constructor(
                     val mId = media.id ?: return@mapNotNull null
 
                     // Check if user is actively watching this anime (only CURRENT status, not PLANNING)
-                    val libraryEntry = libraryDao.getEntry(mId)
+                    val libraryEntry = libraryDao.getEntry(accountStore.activeAccount.value?.id ?: -1, mId)
                     val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
 
                     val streamingSeriesUrl = selectStreamingSeriesUrl(

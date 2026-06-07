@@ -24,4 +24,8 @@ interface SavedForumThreadDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM saved_forum_threads WHERE threadId = :threadId)")
     suspend fun exists(threadId: Int): Boolean
+
+    /** Delete every saved thread. Used when switching accounts (bookmarks are per-account). */
+    @Query("DELETE FROM saved_forum_threads")
+    suspend fun deleteAll()
 }

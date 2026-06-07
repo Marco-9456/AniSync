@@ -65,10 +65,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 
-private const val CLIENT_ID = "32893"
-private const val AUTH_URL =
-    "https://anilist.co/api/v2/oauth/authorize?client_id=$CLIENT_ID&response_type=token"
-
 /**
  * The primary login screen for AniSync.
  *
@@ -132,7 +128,7 @@ fun LoginScreen() {
             ) {
                 BottomActionBar(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AUTH_URL))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL))
                         context.startActivity(intent)
                     }
                 )

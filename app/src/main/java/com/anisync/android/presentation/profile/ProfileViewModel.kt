@@ -62,7 +62,7 @@ class ProfileViewModel @Inject constructor(
     private val detailsRepository: com.anisync.android.domain.DetailsRepository,
     private val statisticsRepository: StatisticsRepository,
     private val activityRepository: ActivityRepository,
-    private val authRepository: com.anisync.android.data.AuthRepository,
+    private val accountManager: com.anisync.android.data.account.AccountManager,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
     private val toastManager: ToastManager,
@@ -110,6 +110,20 @@ class ProfileViewModel @Inject constructor(
 
     // Settings from AppSettings (needed for display in profile)
     val titleLanguage: StateFlow<com.anisync.android.data.TitleLanguage> = appSettings.titleLanguage
+
+    // Multi-account quick-switch (own-profile header).
+    val accounts: StateFlow<List<com.anisync.android.data.account.Account>> = accountManager.accounts
+    val activeAccountId: StateFlow<Int?> = accountManager.activeAccount
+        .map { it?.id }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, accountManager.activeAccount.value?.id)
+
+    /**
+     * Switches the active account. The keyed MainScreen subtree rebuilds on the resulting session
+     * epoch bump, so no explicit screen reload is needed here.
+     */
+    fun switchAccount(id: Int) {
+        accountManager.switch(id)
+    }
 
     private data class ProfileUiLocalState(
         val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
@@ -1385,7 +1399,7 @@ class ProfileViewModel @Inject constructor(
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
-            authRepository.logout()
+            accountManager.logoutActive()
             onComplete()
         }
     }

@@ -6,17 +6,21 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,9 +30,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
@@ -38,6 +44,7 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.ThemeMode
+import com.anisync.android.data.account.AccountManager
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.data.update.UpdateState
 import com.anisync.android.domain.LinkPreviewProvider
@@ -51,19 +58,29 @@ import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.system.measureTimeMillis
+
+/** A notification deep link to be handled by the MainScreen built at [epoch] (post-account-switch). */
+data class PendingDeepLink(val intent: Intent, val epoch: Int)
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
+
+    @Inject
+    lateinit var accountManager: AccountManager
 
     @Inject
     lateinit var appSettings: AppSettings
@@ -80,6 +97,17 @@ class MainActivity : AppCompatActivity() {
     private val _newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 4)
     val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
+    /**
+     * Cross-account notification deep link, delivered after the switch settles and tagged with the
+     * **session epoch** of the rebuilt MainScreen that should handle it. Retained (StateFlow) so it
+     * survives the switch's subtree rebuild; the epoch tag ensures the pre-switch MainScreen (older
+     * epoch) doesn't consume it first.
+     */
+    private val _pendingDeepLink = MutableStateFlow<PendingDeepLink?>(null)
+    val pendingDeepLink: StateFlow<PendingDeepLink?> = _pendingDeepLink.asStateFlow()
+
+    fun consumePendingDeepLink() { _pendingDeepLink.value = null }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val onCreateTime = measureTimeMillis {
             super.onCreate(savedInstanceState)
@@ -94,6 +122,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             handleAuthRedirect(intent)
+            routeAccountDeepLink(intent)
+
+            // Resolve a migrated legacy login + claim its pre-ownerId library rows for the account.
+            lifecycleScope.launch(Dispatchers.IO) {
+                accountManager.reconcileActiveAccount()
+            }
+
             lifecycleScope.launch(Dispatchers.IO) {
                 combine(
                     appSettings.notificationsEnabled,
@@ -231,13 +266,36 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
 
+                            // Keyed on the account session epoch: switching accounts bumps the
+                            // epoch, which tears down and rebuilds the entire MainScreen subtree
+                            // (fresh NavController + ViewModels) so screens refetch the new account.
+                            val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
                             if (isLoggedIn) {
-                                MainScreen()
+                                key(sessionEpoch) {
+                                    MainScreen(builtAtEpoch = sessionEpoch)
+                                }
                             } else {
                                 LoginScreen()
                             }
 
                             AppUpdateHandler(updateManager = updateManager)
+
+                            // Blocking loader while an account add/switch/remove is in flight.
+                            val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle(
+                                initialValue = false
+                            )
+                            if (isAccountBusy) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
                 }
@@ -250,45 +308,90 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthRedirect(intent)
-        _newIntents.tryEmit(intent)
+        if (!routeAccountDeepLink(intent)) {
+            _newIntents.tryEmit(intent)
+        }
+    }
+
+    /**
+     * Handles a notification deep link tagged with an `account` query param.
+     *
+     * Only **diverts** when a different account must become active first: in that case it switches,
+     * waits for the switch to settle, then replays the cleaned link into the rebuilt [MainScreen] via
+     * [pendingDeepLink], and returns true (consumed).
+     *
+     * When the target account is already active (or unknown), it just strips the `account` param and
+     * returns false, leaving the cleaned `intent.data` for the proven native paths — Compose's
+     * cold-start auto-handle and [onNewIntent]'s `newIntents` — so same-account taps land on the
+     * exact target reliably.
+     */
+    private fun routeAccountDeepLink(intent: Intent?): Boolean {
+        val data = intent?.data ?: return false
+        if (data.scheme != "anisync" || data.host == "auth") return false
+        val target = (data.getQueryParameter("account") ?: return false).toIntOrNull()
+
+        val cleanedUri = stripAccountParam(data)
+        val known = target != null && accountManager.accounts.value.any { it.id == target }
+        val active = accountManager.activeAccount.value?.id
+
+        if (!known || target == active) {
+            // Right account already active — let the native deep-link handlers take the cleaned link.
+            intent.data = cleanedUri
+            return false
+        }
+
+        // Cross-account: don't auto-handle in the wrong account; switch, then replay once the
+        // subtree has rebuilt — tagged with the new epoch so only the post-switch MainScreen handles it.
+        intent.data = null
+        val epochBefore = accountManager.sessionEpoch.value
+        lifecycleScope.launch {
+            accountManager.switch(target!!)
+            val newEpoch = accountManager.sessionEpoch.first { it != epochBefore }
+            _pendingDeepLink.value = PendingDeepLink(Intent(Intent.ACTION_VIEW, cleanedUri), newEpoch)
+        }
+        return true
+    }
+
+    private fun stripAccountParam(uri: Uri): Uri {
+        val builder = uri.buildUpon().clearQuery()
+        for (name in uri.queryParameterNames) {
+            if (name == "account") continue
+            for (value in uri.getQueryParameters(name)) builder.appendQueryParameter(name, value)
+        }
+        return builder.build()
     }
 
     private fun handleAuthRedirect(intent: Intent?) {
         val uri = intent?.data ?: return
+        if (uri.scheme != "anisync" || uri.host != "auth") return
 
-        if (uri.scheme == "anisync" && uri.host == "auth") {
-            val fragment = uri.fragment
-            if (fragment != null) {
-                val startNanos = System.nanoTime()
+        val fragment = uri.fragment ?: return
+        val params = parseFragment(fragment)
+        val accessToken = params["access_token"] ?: return
+        val expiresIn = params["expires_in"]?.toLongOrNull() ?: 0L
 
-                var accessToken: String? = null
-                val tokenKey = "access_token="
-                var tokenIndex = fragment.indexOf(tokenKey)
-
-                while (tokenIndex != -1) {
-                    if (tokenIndex == 0 || fragment[tokenIndex - 1] == '&') {
-                        val valueStart = tokenIndex + tokenKey.length
-                        val valueEnd = fragment.indexOf('&', valueStart)
-
-                        accessToken = if (valueEnd == -1) {
-                            fragment.substring(valueStart)
-                        } else {
-                            fragment.substring(valueStart, valueEnd)
-                        }
-                        break
-                    }
-                    tokenIndex = fragment.indexOf(tokenKey, tokenIndex + 1)
+        // addAccount activates the new account and bumps the session epoch; the keyed MainScreen
+        // subtree rebuilds itself, so no activity recreate is needed here.
+        lifecycleScope.launch {
+            when (accountManager.addAccount(accessToken, expiresIn)) {
+                is AccountManager.AddResult.Success -> Unit
+                AccountManager.AddResult.Failed -> {
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.account_sign_in_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-
-                if (accessToken != null) {
-                    authRepository.saveToken(accessToken)
-                }
-
-                val parseTimeMs = (System.nanoTime() - startNanos) / 1_000_000.0
-                Log.d("PerfMetrics", "Auth token parsing took $parseTimeMs ms")
             }
         }
     }
+
+    /** Parses an OAuth implicit-grant URL fragment (`a=1&b=2`) into a key→value map. */
+    private fun parseFragment(fragment: String): Map<String, String> =
+        fragment.split('&').mapNotNull { part ->
+            val eq = part.indexOf('=')
+            if (eq <= 0) null else part.substring(0, eq) to Uri.decode(part.substring(eq + 1))
+        }.toMap()
 }
 
 @Composable

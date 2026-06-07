@@ -12,81 +12,84 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * DAO for library entry operations with reactive Flow support.
+ *
+ * All reads/writes are scoped to an `ownerId` (the AniList user id) so multiple accounts'
+ * libraries coexist in one table — switching accounts shows the right account's entries instantly
+ * from cache instead of wiping and refetching.
  */
 @Dao
 interface LibraryDao {
-    
-    /**
-     * Observe all library entries by media type.
-     * Emits new list whenever data changes.
-     */
-    @Query("SELECT * FROM library_entries WHERE mediaType = :type ORDER BY titleUserPreferred ASC")
-    fun observeByType(type: MediaType): Flow<List<LibraryEntryEntity>>
 
     /**
-     * Get all entries by type (non-reactive, for one-time reads).
+     * Observe an account's library entries by media type.
+     * Emits a new list whenever that account's data changes.
      */
-    @Query("SELECT * FROM library_entries WHERE mediaType = :type")
-    suspend fun getByType(type: MediaType): List<LibraryEntryEntity>
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type ORDER BY titleUserPreferred ASC")
+    fun observeByType(ownerId: Int, type: MediaType): Flow<List<LibraryEntryEntity>>
 
     /**
-     * Get "Up Next" entries: Watching status and not completed.
+     * Get an account's entries by type (non-reactive, for one-time reads).
+     */
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type")
+    suspend fun getByType(ownerId: Int, type: MediaType): List<LibraryEntryEntity>
+
+    /**
+     * Get "Up Next" entries for an account: Watching status and not completed.
      * Sorted by last updated to show most recently watched first.
      */
-    @Query("SELECT * FROM library_entries WHERE status = 'CURRENT' AND (totalEpisodes IS NULL OR progress < totalEpisodes) ORDER BY lastUpdated DESC")
-    suspend fun getUpNext(): List<LibraryEntryEntity>
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND status = 'CURRENT' AND (totalEpisodes IS NULL OR progress < totalEpisodes) ORDER BY lastUpdated DESC")
+    suspend fun getUpNext(ownerId: Int): List<LibraryEntryEntity>
 
-    @Query("SELECT * FROM library_entries WHERE status = 'CURRENT' AND (totalEpisodes IS NULL OR progress < totalEpisodes) ORDER BY lastUpdated DESC LIMIT 1")
-    suspend fun getMostRecentWatching(): LibraryEntryEntity?
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND status = 'CURRENT' AND (totalEpisodes IS NULL OR progress < totalEpisodes) ORDER BY lastUpdated DESC LIMIT 1")
+    suspend fun getMostRecentWatching(ownerId: Int): LibraryEntryEntity?
 
     /**
-     * Get a single entry by mediaId.
+     * Get a single entry by mediaId for a specific account.
      */
-    @Query("SELECT * FROM library_entries WHERE mediaId = :mediaId LIMIT 1")
-    suspend fun getEntry(mediaId: Int): LibraryEntryEntity?
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaId = :mediaId LIMIT 1")
+    suspend fun getEntry(ownerId: Int, mediaId: Int): LibraryEntryEntity?
 
     /**
-     * Insert or replace entries.
+     * Insert or replace entries. The entities carry their own [LibraryEntryEntity.ownerId].
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(entries: List<LibraryEntryEntity>)
 
     /**
-     * Insert or replace a single entry.
+     * Insert or replace a single entry (entity carries its ownerId).
      * Used when adding new media to library from details screen.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplace(entry: LibraryEntryEntity)
 
     /**
-     * Delete all entries by media type.
+     * Delete all entries of a media type for an account.
      */
-    @Query("DELETE FROM library_entries WHERE mediaType = :type")
-    suspend fun deleteByType(type: MediaType)
+    @Query("DELETE FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type")
+    suspend fun deleteByType(ownerId: Int, type: MediaType)
 
     /**
-     * Update progress for a specific media.
+     * Update progress for a specific media in an account.
      */
-    @Query("UPDATE library_entries SET progress = :progress, lastUpdated = :timestamp WHERE mediaId = :mediaId")
-    suspend fun updateProgress(mediaId: Int, progress: Int, timestamp: Long = System.currentTimeMillis())
+    @Query("UPDATE library_entries SET progress = :progress, lastUpdated = :timestamp WHERE ownerId = :ownerId AND mediaId = :mediaId")
+    suspend fun updateProgress(ownerId: Int, mediaId: Int, progress: Int, timestamp: Long = System.currentTimeMillis())
 
     /**
-     * Atomic transaction: delete old entries and insert new ones.
-     * Prevents UI flicker from empty state between delete and insert.
+     * Atomic transaction: delete an account's old entries of a type and insert new ones.
      * @deprecated Use smartMergeByType instead to preserve locally-added entries
      */
     @Transaction
-    suspend fun replaceByType(type: MediaType, entries: List<LibraryEntryEntity>) {
-        deleteByType(type)
+    suspend fun replaceByType(ownerId: Int, type: MediaType, entries: List<LibraryEntryEntity>) {
+        deleteByType(ownerId, type)
         insertAll(entries)
     }
 
     /**
-     * Smart merge: preserves locally-added entries while syncing with API.
+     * Smart merge: preserves locally-added entries while syncing with API, scoped to one account.
      */
     @Transaction
-    suspend fun smartMergeByType(type: MediaType, apiEntries: List<LibraryEntryEntity>) {
-        val localEntries = getByType(type)
+    suspend fun smartMergeByType(ownerId: Int, type: MediaType, apiEntries: List<LibraryEntryEntity>) {
+        val localEntries = getByType(ownerId, type)
         val apiMediaIds = apiEntries.mapTo(HashSet(apiEntries.size)) { it.mediaId }
         val now = System.currentTimeMillis()
         val recentThreshold = 5 * 60 * 1000L
@@ -104,7 +107,7 @@ interface LibraryDao {
         }
 
         if (toDeleteIds.isNotEmpty()) {
-            deleteByMediaIds(toDeleteIds)
+            deleteByMediaIds(ownerId, toDeleteIds)
         }
         insertAll(apiEntries)
         if (toPreserve.isNotEmpty()) {
@@ -112,34 +115,33 @@ interface LibraryDao {
         }
     }
 
-    @Query("DELETE FROM library_entries WHERE mediaId IN (:mediaIds)")
-    suspend fun deleteByMediaIds(mediaIds: List<Int>)
+    @Query("DELETE FROM library_entries WHERE ownerId = :ownerId AND mediaId IN (:mediaIds)")
+    suspend fun deleteByMediaIds(ownerId: Int, mediaIds: List<Int>)
 
     /**
-     * Update status and progress for a specific media entry.
-     * Used when status is changed from DetailsScreen.
+     * Update status and progress for a specific media entry in an account.
      */
-    @Query("UPDATE library_entries SET status = :status, progress = :progress, lastUpdated = :timestamp WHERE mediaId = :mediaId")
-    suspend fun updateStatusAndProgress(mediaId: Int, status: LibraryStatus, progress: Int, timestamp: Long = System.currentTimeMillis())
+    @Query("UPDATE library_entries SET status = :status, progress = :progress, lastUpdated = :timestamp WHERE ownerId = :ownerId AND mediaId = :mediaId")
+    suspend fun updateStatusAndProgress(ownerId: Int, mediaId: Int, status: LibraryStatus, progress: Int, timestamp: Long = System.currentTimeMillis())
 
     /**
-     * Delete a specific entry by mediaId.
-     * Used when an entry is removed from the user's list.
+     * Delete a specific entry by mediaId for an account.
      */
-    @Query("DELETE FROM library_entries WHERE mediaId = :mediaId")
-    suspend fun deleteByMediaId(mediaId: Int)
+    @Query("DELETE FROM library_entries WHERE ownerId = :ownerId AND mediaId = :mediaId")
+    suspend fun deleteByMediaId(ownerId: Int, mediaId: Int)
 
     /**
-     * Update an entire entry.
+     * Update an entire entry (matched by primary key; the entity carries its ownerId).
      */
     @androidx.room.Update
     suspend fun updateEntry(entry: LibraryEntryEntity)
 
     /**
-     * Update status, progress, and completedAt when media is completed.
+     * Update status, progress, and completedAt when media is completed, in an account.
      */
-    @Query("UPDATE library_entries SET status = :status, progress = :progress, completedAt = :completedAt, lastUpdated = :timestamp WHERE mediaId = :mediaId")
+    @Query("UPDATE library_entries SET status = :status, progress = :progress, completedAt = :completedAt, lastUpdated = :timestamp WHERE ownerId = :ownerId AND mediaId = :mediaId")
     suspend fun updateStatusProgressAndCompletedAt(
+        ownerId: Int,
         mediaId: Int,
         status: LibraryStatus,
         progress: Int,
@@ -148,13 +150,27 @@ interface LibraryDao {
     )
 
     /**
-     * Update status and startedAt when starting to watch/read.
+     * Update status and startedAt when starting to watch/read, in an account.
      */
-    @Query("UPDATE library_entries SET status = :status, startedAt = :startedAt, lastUpdated = :timestamp WHERE mediaId = :mediaId")
+    @Query("UPDATE library_entries SET status = :status, startedAt = :startedAt, lastUpdated = :timestamp WHERE ownerId = :ownerId AND mediaId = :mediaId")
     suspend fun updateStatusAndStartedAt(
+        ownerId: Int,
         mediaId: Int,
         status: LibraryStatus,
         startedAt: Long,
         timestamp: Long = System.currentTimeMillis()
     )
+
+    /**
+     * Re-tag entries from one owner to another. Used to promote the migrated legacy library
+     * (owner 0) to the account's real id once it is resolved.
+     */
+    @Query("UPDATE library_entries SET ownerId = :newOwnerId WHERE ownerId = :oldOwnerId")
+    suspend fun reassignOwner(oldOwnerId: Int, newOwnerId: Int)
+
+    /**
+     * Delete every library entry across all accounts (e.g. encrypted-store reset recovery).
+     */
+    @Query("DELETE FROM library_entries")
+    suspend fun deleteAll()
 }

@@ -38,7 +38,8 @@ import com.apollographql.apollo.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
 class NotificationRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val tokenedClientFactory: com.anisync.android.data.account.TokenedApolloClientFactory
 ) : NotificationRepository {
 
     companion object {
@@ -47,9 +48,11 @@ class NotificationRepositoryImpl @Inject constructor(
         private const val SECONDS_PER_DAY = 24 * 60 * 60
     }
 
-    override suspend fun getNotifications(page: Int): Result<List<Notification>> {
+    override suspend fun getNotifications(page: Int, token: String?): Result<List<Notification>> {
         return safeApiCall {
-            val response = apolloClient.query(
+            // token != null polls a specific (possibly non-active) account via its own client.
+            val client = token?.let(tokenedClientFactory::create) ?: apolloClient
+            val response = client.query(
                 GetNotificationsQuery(
                     page = Optional.present(page),
                     perPage = Optional.present(20),

@@ -54,6 +54,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.filterNotNull
 import com.anisync.android.R
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.presentation.components.alert.ProvideToastManager
@@ -89,13 +90,28 @@ private data class BottomNavItem<T : Any>(
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
+fun MainScreen(
+    builtAtEpoch: Int = 0,
+    viewModel: MainScreenViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     LaunchedEffect(navController) {
         val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
         activity.newIntents.collect { intent ->
             navController.handleDeepLink(intent)
+        }
+    }
+    // Cross-account notification deep links: delivered after the account switch settles, tagged with
+    // the session epoch of the post-switch MainScreen. Only that instance (matching epoch) handles
+    // it, so the pre-switch MainScreen can't consume it first.
+    LaunchedEffect(navController) {
+        val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
+        activity.pendingDeepLink.filterNotNull().collect { pending ->
+            if (pending.epoch == builtAtEpoch) {
+                navController.handleDeepLink(pending.intent)
+                activity.consumePendingDeepLink()
+            }
         }
     }
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()

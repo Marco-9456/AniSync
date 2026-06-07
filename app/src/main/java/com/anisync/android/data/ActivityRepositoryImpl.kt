@@ -32,6 +32,10 @@ class ActivityRepositoryImpl @Inject constructor(
 
     @Volatile private var cachedViewerId: Int? = null
 
+    override fun clearViewerCache() {
+        cachedViewerId = null
+    }
+
     override suspend fun getActivity(id: Int): Result<ActivityDetail> = safeApiCall {
         val response = apolloClient
             .query(GetActivityQuery(id))
