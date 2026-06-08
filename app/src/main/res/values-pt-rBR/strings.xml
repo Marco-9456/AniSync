@@ -963,4 +963,17 @@
     <string name="recent_reviews_title">Análises mais recentes</string>
     <string name="recent_reviews_empty">Nenhuma análise encontrada.</string>
     <string name="reviews_filter_all">Tudo</string>
+    <string name="translate">Traduzir</string>
+    <string name="no_translation_app_found">Nenhum aplicativo de tradução encontrado</string>
+    <string name="account_add">Adicionar conta</string>
+    <string name="account_add_desc">Entrar com outra conta AniList</string>
+    <string name="account_active">Ativo</string>
+    <string name="account_expired">Sessão expirada</string>
+    <string name="account_switch">Trocar conta</string>
+    <string name="account_remove">Remover conta</string>
+    <string name="account_reauthenticate">Reautenticar</string>
+    <string name="account_sign_in_failed">Não foi possível entrar. Por favor, tente novamente.</string>
+    <string name="account_remove_dialog_title">Remover a conta?</string>
+    <string name="account_remove_dialog_message">%1$s será removido desse dispositivo. Você poderá entrar novamente a qualquer momento.</string>
+    <string name="account_switch_to">Trocar para %1$s</string>
 </resources>
