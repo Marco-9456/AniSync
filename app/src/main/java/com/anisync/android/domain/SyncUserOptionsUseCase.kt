@@ -9,5 +9,5 @@ import javax.inject.Inject
 class SyncUserOptionsUseCase @Inject constructor(
     private val repository: UserOptionsRepository,
 ) {
-    suspend operator fun invoke(): Result<AniListUserOptions> = repository.fetchOptions()
+    suspend operator fun invoke(): Result<Unit> = repository.pull()
 }

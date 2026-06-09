@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import android.content.Context
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.UpdateUserOptionsMutation
 import com.anisync.android.data.account.AccountManager
@@ -8,23 +9,38 @@ import com.anisync.android.domain.AniListListActivityStatus
 import com.anisync.android.domain.AniListStaffNameLanguage
 import com.anisync.android.domain.AniListTitleLanguage
 import com.anisync.android.domain.AniListUserOptions
+import com.anisync.android.domain.ConflictState
+import com.anisync.android.domain.LocalOptionsState
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.UserOptionField
 import com.anisync.android.domain.UserOptionsPatch
 import com.anisync.android.domain.UserOptionsRepository
+import com.anisync.android.domain.applyPatch
+import com.anisync.android.domain.affectedFields
+import com.anisync.android.domain.differingFields
+import com.anisync.android.domain.patchForFields
+import com.anisync.android.domain.takeFields
+import com.anisync.android.worker.UserOptionsFlushWorker
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.anisync.android.type.MediaListStatus as ApiListStatus
@@ -38,70 +54,159 @@ class UserOptionsRepositoryImpl @Inject constructor(
     private val store: UserOptionsStore,
     private val accountManager: AccountManager,
     private val appSettings: AppSettings,
+    @ApplicationContext private val context: Context,
 ) : UserOptionsRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val flushMutex = Mutex()
+    private var debounceJob: Job? = null
 
-    private val _cachedOptions = MutableStateFlow(currentAccountId()?.let { store.read(it) })
-    override val cachedOptions: StateFlow<AniListUserOptions?> = _cachedOptions.asStateFlow()
+    private val _state = MutableStateFlow(currentAccountId()?.let { store.read(it) })
+
+    override val cachedOptions: StateFlow<AniListUserOptions?> =
+        _state.map { it?.local }.stateIn(scope, SharingStarted.Eagerly, _state.value?.local)
+
+    override val conflict: StateFlow<ConflictState?> =
+        _state.map { it?.conflict }.stateIn(scope, SharingStarted.Eagerly, _state.value?.conflict)
 
     init {
-        // On account switch, instantly surface that account's cached options (offline) and re-mirror,
-        // so effective settings reflect the active account without waiting on the network. A fresh
-        // network pull is driven separately by UserOptionsSyncManager.
+        // On account switch, load that account's cached state (offline) and re-mirror immediately.
+        // A fresh network pull is driven separately by UserOptionsSyncManager.
         scope.launch {
             accountManager.activeAccount
                 .map { it?.id }
                 .distinctUntilChanged()
                 .collect { id ->
-                    val cached = id?.let { store.read(it) }
-                    _cachedOptions.value = cached
-                    if (cached != null) mirrorToLocal(cached)
+                    val loaded = id?.let { store.read(it) }
+                    _state.value = loaded
+                    loaded?.local?.let { mirror(it) }
                 }
         }
     }
 
-    override suspend fun fetchOptions(): Result<AniListUserOptions> = safeApiCall {
+    override suspend fun pull(): Result<Unit> = safeApiCall {
+        val accountId = currentAccountId() ?: throw Exception("Not signed in")
         val response = apolloClient.query(GetViewerQuery())
             .fetchPolicy(FetchPolicy.NetworkFirst)
             .execute()
         if (response.hasErrors()) {
             throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to load account options")
         }
-        val viewer = response.data?.Viewer ?: throw Exception("Not signed in")
-        viewer.toDomain().also { persist(it) }
-    }
-
-    override suspend fun updateOptions(patch: UserOptionsPatch): Result<AniListUserOptions> = safeApiCall {
-        val response = apolloClient.mutation(patch.toMutation()).execute()
-        if (response.hasErrors()) {
-            throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to update account options")
-        }
-        val user = response.data?.UpdateUser ?: throw Exception("Update returned no user")
-        user.toDomain().also { persist(it) }
-    }
-
-    /** Persist to the per-account cache, update the live flow, and mirror behavior-affecting values. */
-    private fun persist(options: AniListUserOptions) {
-        currentAccountId()?.let { store.write(it, options) }
-        _cachedOptions.value = options
-        mirrorToLocal(options)
+        val fresh = response.data?.Viewer?.toDomain() ?: throw Exception("Not signed in")
+        reconcile(accountId, fresh)
     }
 
     /**
-     * Mirror the options that drive local app behavior into [AppSettings], honoring the device
-     * override switches. Adult content and title language are skipped when their override is ON;
-     * staff-name language and score format always follow the account (no local-only counterpart).
+     * Merge a fresh server snapshot into local state. Clean (non-dirty) fields adopt the server value;
+     * a dirty field whose server value changed since our baseline becomes a conflict (local value is
+     * kept until the user resolves it).
      */
-    private fun mirrorToLocal(options: AniListUserOptions) {
-        if (!appSettings.adultContentOverrideEnabled.value) {
-            appSettings.setShowAdultContent(options.displayAdultContent)
+    private fun reconcile(accountId: Int, fresh: AniListUserOptions) {
+        val current = _state.value ?: LocalOptionsState()
+        val allFields = UserOptionField.entries.toSet()
+        val changedOnServer = current.serverSnapshot.differingFields(fresh)
+        val conflictFields = current.dirty intersect changedOnServer
+        val cleanFields = allFields - current.dirty
+
+        commit(
+            accountId,
+            current.copy(
+                local = current.local.takeFields(cleanFields, fresh),
+                // Baseline advances to the server for everything except unresolved conflict fields.
+                serverSnapshot = current.serverSnapshot.takeFields(allFields - conflictFields, fresh),
+                conflict = if (conflictFields.isNotEmpty()) ConflictState(conflictFields, fresh) else current.conflict,
+            ),
+        )
+    }
+
+    override fun applyEdit(patch: UserOptionsPatch) {
+        val accountId = currentAccountId() ?: return
+        val current = _state.value ?: LocalOptionsState()
+        commit(
+            accountId,
+            current.copy(
+                local = current.local.applyPatch(patch),
+                dirty = current.dirty + patch.affectedFields(),
+            ),
+        )
+        scheduleFlush()
+    }
+
+    override suspend fun flush() {
+        flushMutex.withLock {
+            val accountId = currentAccountId() ?: return
+            if ((_state.value?.dirty).isNullOrEmpty()) return
+
+            // Refresh from the server first so a concurrent web change is detected as a conflict
+            // rather than silently overwritten. Offline → keep the pending edits and retry later.
+            if (pull() is Result.Error) return
+
+            val state = _state.value ?: return
+            val pushFields = state.dirty - (state.conflict?.fields ?: emptySet())
+            if (pushFields.isEmpty()) return
+
+            val patch = state.local.patchForFields(pushFields)
+            val response = apolloClient.mutation(patch.toMutation()).execute()
+            if (response.hasErrors()) return // keep dirty; a later flush retries
+            val updated = response.data?.UpdateUser?.toDomain() ?: return
+
+            commit(
+                accountId,
+                state.copy(
+                    serverSnapshot = state.serverSnapshot.takeFields(pushFields, updated),
+                    dirty = state.dirty - pushFields,
+                ),
+            )
         }
-        if (!appSettings.titleLanguageOverrideEnabled.value) {
-            options.titleLanguage?.let { appSettings.setTitleLanguage(it.toLocalTitleLanguage()) }
+    }
+
+    override fun resolveConflict(keepLocal: Boolean) {
+        val accountId = currentAccountId() ?: return
+        val state = _state.value ?: return
+        val conflict = state.conflict ?: return
+
+        val resolved = if (keepLocal) {
+            // Re-baseline the conflicting fields to the server value so the next flush pushes local.
+            state.copy(
+                serverSnapshot = state.serverSnapshot.takeFields(conflict.fields, conflict.serverValues),
+                conflict = null,
+            )
+        } else {
+            // Adopt the website's values and drop the local edits for those fields.
+            state.copy(
+                local = state.local.takeFields(conflict.fields, conflict.serverValues),
+                serverSnapshot = state.serverSnapshot.takeFields(conflict.fields, conflict.serverValues),
+                dirty = state.dirty - conflict.fields,
+                conflict = null,
+            )
         }
-        options.staffNameLanguage?.let { appSettings.setStaffNameLanguage(it.toLocalStaffNameLanguage()) }
-        options.scoreFormat?.let { appSettings.setUserScoreFormat(it) }
+        commit(accountId, resolved)
+        if (keepLocal) scheduleFlush()
+    }
+
+    /** Persist, publish, and mirror behavior-affecting values into [AppSettings]. */
+    private fun commit(accountId: Int, state: LocalOptionsState) {
+        store.write(accountId, state)
+        _state.value = state
+        mirror(state.local)
+    }
+
+    private fun scheduleFlush() {
+        debounceJob?.cancel()
+        debounceJob = scope.launch {
+            delay(FLUSH_DEBOUNCE_MS)
+            flush()
+        }
+        // Safety net: survives process death and waits for connectivity.
+        UserOptionsFlushWorker.enqueue(context)
+    }
+
+    /** The options that drive local app behavior always follow the local working copy. */
+    private fun mirror(local: AniListUserOptions) {
+        appSettings.setShowAdultContent(local.displayAdultContent)
+        local.titleLanguage?.let { appSettings.setTitleLanguage(it.toLocalTitleLanguage()) }
+        local.staffNameLanguage?.let { appSettings.setStaffNameLanguage(it.toLocalStaffNameLanguage()) }
+        local.scoreFormat?.let { appSettings.setUserScoreFormat(it) }
     }
 
     private fun currentAccountId(): Int? = accountManager.activeAccount.value?.id
@@ -177,6 +282,10 @@ class UserOptionsRepositoryImpl @Inject constructor(
             )
         }.toOptional(),
     )
+
+    private companion object {
+        const val FLUSH_DEBOUNCE_MS = 5_000L
+    }
 }
 
 private fun <T : Any> T?.toOptional(): Optional<T> =

@@ -66,15 +66,8 @@ internal fun AniListOptionsContent(
         SwitchSettingsItem(
             title = "Show adult content (18+)",
             subtitle = "Include 18+ anime and manga in search, the activity feed, and lists",
-            checked = uiState.effectiveShowAdult,
+            checked = options?.displayAdultContent == true,
             onCheckedChange = { onAction(AniListOptionsAction.SetAdultContent(it)) },
-            enabled = !uiState.isSaving,
-        )
-        SwitchSettingsItem(
-            title = "Override on this device",
-            subtitle = "Ignore the account setting and use the value above only on this device",
-            checked = uiState.adultOverrideEnabled,
-            onCheckedChange = { onAction(AniListOptionsAction.SetAdultOverrideEnabled(it)) },
         )
 
         var showTitleSheet by remember { mutableStateOf(false) }
@@ -82,7 +75,6 @@ internal fun AniListOptionsContent(
             title = "Title language",
             currentValue = options?.titleLanguage?.toBaseLanguage().label(),
             onClick = { showTitleSheet = true },
-            enabled = !uiState.isSaving,
         )
         if (showTitleSheet) {
             OptionPickerSheet(
@@ -92,7 +84,7 @@ internal fun AniListOptionsContent(
                 label = { it.label() },
                 subtitle = { it.example() },
                 onSelect = {
-                    onAction(AniListOptionsAction.SetTitleLanguageAccount(it))
+                    onAction(AniListOptionsAction.SetTitleLanguage(it))
                     showTitleSheet = false
                 },
                 onDismiss = { showTitleSheet = false },
@@ -104,7 +96,6 @@ internal fun AniListOptionsContent(
             title = "Staff & character names",
             currentValue = options?.staffNameLanguage.label(),
             onClick = { showStaffSheet = true },
-            enabled = !uiState.isSaving,
         )
         if (showStaffSheet) {
             OptionPickerSheet(
@@ -127,7 +118,6 @@ internal fun AniListOptionsContent(
             title = "Scoring system",
             currentValue = options?.scoreFormat.label(),
             onClick = { showScoreSheet = true },
-            enabled = !uiState.isSaving,
         )
         if (showScoreSheet) {
             OptionPickerSheet(
@@ -152,13 +142,11 @@ internal fun AniListOptionsContent(
             subtitle = "Get notified when shows you're watching air",
             checked = options?.airingNotifications == true,
             onCheckedChange = { onAction(AniListOptionsAction.SetAiringNotifications(it)) },
-            enabled = !uiState.isSaving,
         )
         SwitchSettingsItem(
             title = "Only receive messages from people I follow",
             checked = options?.restrictMessagesToFollowing == true,
             onCheckedChange = { onAction(AniListOptionsAction.SetRestrictMessagesToFollowing(it)) },
-            enabled = !uiState.isSaving,
         )
 
         var showMergeSheet by remember { mutableStateOf(false) }
@@ -166,7 +154,6 @@ internal fun AniListOptionsContent(
             title = "Merge consecutive activity",
             currentValue = activityMergeLabel(options?.activityMergeTime),
             onClick = { showMergeSheet = true },
-            enabled = !uiState.isSaving,
         )
         if (showMergeSheet) {
             OptionPickerSheet(
@@ -195,8 +182,7 @@ internal fun AniListOptionsContent(
                 onCheckedChange = { create ->
                     onAction(AniListOptionsAction.SetListActivityDisabled(status, disabled = !create))
                 },
-                enabled = !uiState.isSaving,
-            )
+                )
         }
     }
 
@@ -208,7 +194,6 @@ internal fun AniListOptionsContent(
             title = "Profile color",
             currentValue = options?.profileColor?.replaceFirstChar { it.uppercase() } ?: "Default",
             onClick = { showColorSheet = true },
-            enabled = !uiState.isSaving,
         )
         if (showColorSheet) {
             ProfileColorSheet(

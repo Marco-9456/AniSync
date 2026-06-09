@@ -43,6 +43,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.account.Account
+import com.anisync.android.domain.UserOptionField
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.util.AppLinksUtil
@@ -121,6 +122,40 @@ fun AniListSettingsScreen(
             dismissButton = {
                 TextButton(onClick = { accountToRemove = null }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    optionsState.conflict?.let { conflict ->
+        AlertDialog(
+            // No outside-dismiss: the user must pick a direction to clear the conflict.
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.options_conflict_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.options_conflict_message,
+                        conflict.fields.joinToString(", ") { it.displayName() },
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        optionsViewModel.onAction(AniListOptionsAction.ResolveConflict(keepLocal = true))
+                    }
+                ) {
+                    Text(stringResource(R.string.options_conflict_keep_local))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        optionsViewModel.onAction(AniListOptionsAction.ResolveConflict(keepLocal = false))
+                    }
+                ) {
+                    Text(stringResource(R.string.options_conflict_use_website))
                 }
             }
         )
@@ -298,4 +333,17 @@ private fun AccountRow(
             }
         }
     }
+}
+
+/** Human-readable label for a conflicting option field, shown in the sync-conflict dialog. */
+private fun UserOptionField.displayName(): String = when (this) {
+    UserOptionField.DISPLAY_ADULT_CONTENT -> "Adult content"
+    UserOptionField.TITLE_LANGUAGE -> "Title language"
+    UserOptionField.STAFF_NAME_LANGUAGE -> "Staff & character names"
+    UserOptionField.SCORE_FORMAT -> "Scoring system"
+    UserOptionField.AIRING_NOTIFICATIONS -> "Airing notifications"
+    UserOptionField.RESTRICT_MESSAGES_TO_FOLLOWING -> "Message restriction"
+    UserOptionField.ACTIVITY_MERGE_TIME -> "Activity merge time"
+    UserOptionField.PROFILE_COLOR -> "Profile color"
+    UserOptionField.DISABLED_LIST_ACTIVITY -> "List activity"
 }

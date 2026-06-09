@@ -386,6 +386,10 @@
     <string name="settings_view_on_anilist">View on AniList</string>
     <string name="settings_view_on_anilist_desc">Open your profile on AniList</string>
     <string name="settings_open_in_web">Open in web</string>
+    <string name="options_conflict_title">Settings changed elsewhere</string>
+    <string name="options_conflict_message">These options were changed on the AniList website and differ from this device: %1$s. Keep this device\'s changes, or use the website\'s?</string>
+    <string name="options_conflict_keep_local">Keep this device</string>
+    <string name="options_conflict_use_website">Use website</string>
     <string name="settings_logout_warning">Logging out will remove your session. You can sign in again at any time.</string>
     <!-- Multiple accounts -->
     <string name="account_add">Add account</string>

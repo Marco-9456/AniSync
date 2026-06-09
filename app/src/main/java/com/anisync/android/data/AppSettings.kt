@@ -302,26 +302,12 @@ class AppSettings @Inject constructor(
     )
     val showPrivateEntries: StateFlow<Boolean> = _showPrivateEntries.asStateFlow()
 
-    // Effective "show adult content" flag. Followed by search + the activity feed. By default this
-    // mirrors the AniList account option (UserOptions.displayAdultContent); a user can pin it on this
-    // device via [adultContentOverrideEnabled].
+    // Effective "show adult content" flag, followed by search + the activity feed. Mirrored from the
+    // local-first options state (UserOptions.displayAdultContent); see UserOptionsRepositoryImpl.
     private val _showAdultContent = MutableStateFlow(
         prefs.getBoolean(KEY_SHOW_ADULT_CONTENT, false)
     )
     val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
-
-    // Device-level override switches for the two content prefs that mirror an AniList account option.
-    // OFF (default) = follow the account (pull mirrors the web value); ON = keep the local value and
-    // let account-pull leave it untouched. See UserOptionsRepositoryImpl.mirrorToLocal.
-    private val _adultContentOverrideEnabled = MutableStateFlow(
-        prefs.getBoolean(KEY_ADULT_OVERRIDE_ENABLED, false)
-    )
-    val adultContentOverrideEnabled: StateFlow<Boolean> = _adultContentOverrideEnabled.asStateFlow()
-
-    private val _titleLanguageOverrideEnabled = MutableStateFlow(
-        prefs.getBoolean(KEY_TITLE_LANGUAGE_OVERRIDE_ENABLED, false)
-    )
-    val titleLanguageOverrideEnabled: StateFlow<Boolean> = _titleLanguageOverrideEnabled.asStateFlow()
 
     private val _discoverSearchViewMode = MutableStateFlow(
         DiscoverViewMode.entries.getOrElse(
@@ -708,16 +694,6 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_SHOW_ADULT_CONTENT, show).apply()
     }
 
-    fun setAdultContentOverrideEnabled(enabled: Boolean) {
-        _adultContentOverrideEnabled.value = enabled
-        prefs.edit().putBoolean(KEY_ADULT_OVERRIDE_ENABLED, enabled).apply()
-    }
-
-    fun setTitleLanguageOverrideEnabled(enabled: Boolean) {
-        _titleLanguageOverrideEnabled.value = enabled
-        prefs.edit().putBoolean(KEY_TITLE_LANGUAGE_OVERRIDE_ENABLED, enabled).apply()
-    }
-
     fun setDiscoverSearchViewMode(mode: DiscoverViewMode) {
         _discoverSearchViewMode.value = mode
         prefs.edit().putInt(KEY_DISCOVER_SEARCH_VIEW_MODE, mode.ordinal).apply()
@@ -973,8 +949,6 @@ companion object {
         private const val KEY_USER_SCORE_FORMAT = "user_score_format"
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
         private const val KEY_SHOW_ADULT_CONTENT = "show_adult_content"
-        private const val KEY_ADULT_OVERRIDE_ENABLED = "adult_content_override_enabled"
-        private const val KEY_TITLE_LANGUAGE_OVERRIDE_ENABLED = "title_language_override_enabled"
         private const val KEY_STAFF_NAME_LANGUAGE = "staff_name_language"
         private const val KEY_DISCOVER_SEARCH_VIEW_MODE = "discover_search_view_mode"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
