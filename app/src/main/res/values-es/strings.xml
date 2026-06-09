@@ -982,4 +982,14 @@
     <string name="calendar_empty_title">Nada en emisión</string>
     <string name="calendar_empty_desc">No se emiten episodios en este día.</string>
     <string name="calendar_empty_following_desc">No se emiten series de tu lista en este día.</string>
+    <string name="account_add">Añadir cuenta</string>
+    <string name="account_active">Activa</string>
+    <string name="account_expired">Sesión caducada</string>
+    <string name="account_switch">Cambiar cuenta</string>
+    <string name="account_remove">Eliminar cuenta</string>
+    <string name="account_reauthenticate">Volver a autenticar</string>
+    <string name="account_sign_in_failed">No se pudo iniciar sesión. Inténtelo de nuevo.</string>
+    <string name="account_remove_dialog_title">¿Eliminar cuenta?</string>
+    <string name="account_remove_dialog_message">%1$s se eliminará de este dispositivo. Puede iniciar sesión nuevamente en cualquier momento.</string>
+    <string name="account_switch_to">Cambiar a %1$s</string>
 </resources>
