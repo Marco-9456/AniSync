@@ -317,8 +317,8 @@
     <string name="navigate_back">Go back</string>
     <string name="settings_look_and_feel">Look and Feel</string>
     <string name="settings_look_and_feel_desc">Theme, language, streaming service</string>
-    <string name="settings_anilist_account">AniList Account</string>
-    <string name="settings_anilist_account_desc">Adult content, languages, score format, activity</string>
+    <string name="settings_anilist_account">AniList Settings</string>
+    <string name="settings_anilist_account_desc">Accounts, adult content, languages, score format</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Episode alerts, forum activity</string>
     <string name="settings_storage">Storage</string>

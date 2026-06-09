@@ -269,8 +269,8 @@ object Settings
 object SettingsLookAndFeel
 
 /**
- * AniList account options (adult content, languages, score format, activity, profile color)
- * that sync with the user's AniList account.
+ * AniList settings: account management (add / switch / remove / logout) merged with the AniList
+ * account options (adult content, languages, score format, activity, profile color).
  */
 @Serializable
 object SettingsAniList
@@ -286,12 +286,6 @@ object SettingsNotifications
  */
 @Serializable
 object SettingsStorage
-
-/**
- * Account settings (user info, logout).
- */
-@Serializable
-object SettingsAccount
 
 /**
  * About app (version, licenses, acknowledgments).

@@ -75,7 +75,6 @@ fun SettingsScreen(
     onNavigateToAniList: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToStorage: () -> Unit,
-    onNavigateToAccount: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToSponsors: () -> Unit,
     onNavigateToUpdates: () -> Unit,
@@ -178,13 +177,6 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_media_upload_desc),
                 icon = Icons.Outlined.CloudUpload,
                 onClick = onNavigateToMediaUpload
-            ),
-            CategoryData(
-                key = "account",
-                title = stringResource(R.string.settings_account),
-                subtitle = stringResource(R.string.settings_account_desc),
-                icon = Icons.Outlined.AccountCircle,
-                onClick = onNavigateToAccount
             ),
             CategoryData(
                 key = "links",

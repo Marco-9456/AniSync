@@ -52,12 +52,11 @@ import com.anisync.android.presentation.review.RecentReviewsScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.review.WriteReviewScreen
 import com.anisync.android.presentation.settings.AboutScreen
-import com.anisync.android.presentation.settings.AccountScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LinksScreen
-import com.anisync.android.presentation.settings.AniListOptionsScreen
+import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
@@ -1139,7 +1138,6 @@ fun AniSyncNavHost(
                     onNavigateToAniList = { navController.navigate(SettingsAniList) },
                     onNavigateToNotifications = { navController.navigate(SettingsNotifications) },
                     onNavigateToStorage = { navController.navigate(SettingsStorage) },
-                    onNavigateToAccount = { navController.navigate(SettingsAccount) },
                     onNavigateToAbout = { navController.navigate(SettingsAbout) },
                     onNavigateToSponsors = { navController.navigate(SettingsSponsors) },
                     onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
@@ -1161,14 +1159,19 @@ fun AniSyncNavHost(
                 )
             }
 
-            // AniList Account options (synced with the user's AniList account)
+            // AniList settings (account management + AniList account options)
             composable<SettingsAniList>(
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                AniListOptionsScreen(
+                AniListSettingsScreen(
+                    onLogout = {
+                        navController.navigate(Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -1193,23 +1196,6 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 StorageScreen(
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
-
-            // Account Settings
-            composable<SettingsAccount>(
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                AccountScreen(
-                    onLogout = {
-                        navController.navigate(Login) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
                     onBackClick = { navController.popBackStack() }
                 )
             }

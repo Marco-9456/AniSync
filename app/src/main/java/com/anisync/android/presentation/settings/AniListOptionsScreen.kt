@@ -50,42 +50,13 @@ import com.anisync.android.domain.AniListTitleLanguage
 import com.anisync.android.domain.ScoreFormat
 
 /**
- * AniList Account options — the settings that live on the user's AniList account (UserOptions +
- * score format). Everything here is the account's value and edits push to AniList via UpdateUser,
- * except the two device-override controls for adult content and title language.
+ * The AniList account-options sections (content & titles, social & activity, profile). Hosted by
+ * [AniListSettingsScreen]; renders the cached account values and routes edits to the view model.
+ * Everything here is the account's value and edits push to AniList via UpdateUser, except the two
+ * device-override controls for adult content and title language.
  */
 @Composable
-fun AniListOptionsScreen(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: AniListOptionsViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    SettingsScreenScaffold(
-        title = "AniList Account",
-        onBackClick = onBackClick,
-        modifier = modifier,
-    ) {
-        when {
-            !uiState.isSignedIn -> NoticeCard(
-                "Sign in to an AniList account to view and edit these options."
-            )
-
-            uiState.isLoading && uiState.options == null -> Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
-
-            else -> AniListOptionsContent(uiState, viewModel::onAction)
-        }
-    }
-}
-
-@Composable
-private fun AniListOptionsContent(
+internal fun AniListOptionsContent(
     uiState: AniListOptionsUiState,
     onAction: (AniListOptionsAction) -> Unit,
 ) {
@@ -300,7 +271,7 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+internal fun SectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
@@ -308,19 +279,6 @@ private fun SectionLabel(text: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 2.dp),
     )
-}
-
-@Composable
-private fun NoticeCard(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(20.dp),
-    ) {
-        Text(text = text, style = MaterialTheme.typography.bodyLarge)
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
