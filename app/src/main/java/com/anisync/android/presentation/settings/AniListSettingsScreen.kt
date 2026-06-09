@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.PersonAddAlt
@@ -130,7 +131,27 @@ fun AniListSettingsScreen(
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_anilist_account),
         onBackClick = onBackClick,
-        modifier = modifier
+        modifier = modifier,
+        actions = {
+            val active = activeAccount
+            if (active != null && active.name.isNotBlank()) {
+                IconButton(
+                    onClick = {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://anilist.co/user/${active.name}")
+                            )
+                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = stringResource(R.string.settings_view_on_anilist)
+                    )
+                }
+            }
+        }
     ) {
         // ── Accounts ─────────────────────────────────────────────────────────────────────────────
         SectionLabel(stringResource(R.string.settings_account))
@@ -167,26 +188,6 @@ fun AniListSettingsScreen(
                 ) { CircularProgressIndicator() }
             } else {
                 AniListOptionsContent(optionsState, optionsViewModel::onAction)
-            }
-        }
-
-        // ── Active-account actions ────────────────────────────────────────────────────────────────
-        val active = activeAccount
-        if (active != null && active.name.isNotBlank()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            SettingsGroup {
-                SettingsItem(
-                    title = stringResource(R.string.settings_view_on_anilist),
-                    subtitle = stringResource(R.string.settings_view_on_anilist_desc),
-                    onClick = {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://anilist.co/user/${active.name}")
-                            )
-                        )
-                    }
-                )
             }
         }
 

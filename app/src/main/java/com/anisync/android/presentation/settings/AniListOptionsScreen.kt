@@ -20,9 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,8 +38,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.data.StaffNameLanguage
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.AniListListActivityStatus
@@ -69,8 +65,7 @@ internal fun AniListOptionsContent(
     SettingsGroup {
         SwitchSettingsItem(
             title = "Show adult content (18+)",
-            subtitle = if (uiState.adultOverrideEnabled) "Overridden on this device"
-            else "Synced with your AniList account",
+            subtitle = "Include 18+ anime and manga in search, the activity feed, and lists",
             checked = uiState.effectiveShowAdult,
             onCheckedChange = { onAction(AniListOptionsAction.SetAdultContent(it)) },
             enabled = !uiState.isSaving,
@@ -100,6 +95,7 @@ internal fun AniListOptionsContent(
                     options = TitleLanguage.entries,
                     selected = uiState.localTitleLanguage,
                     label = { it.label() },
+                    subtitle = { it.example() },
                     onSelect = {
                         onAction(AniListOptionsAction.SetLocalTitleLanguage(it))
                         showTitleSheet = false
@@ -112,6 +108,7 @@ internal fun AniListOptionsContent(
                     options = AniListTitleLanguage.entries,
                     selected = options?.titleLanguage,
                     label = { it.label() },
+                    subtitle = { it.example() },
                     onSelect = {
                         onAction(AniListOptionsAction.SetTitleLanguageAccount(it))
                         showTitleSheet = false
@@ -139,12 +136,14 @@ internal fun AniListOptionsContent(
                 options = AniListStaffNameLanguage.entries,
                 selected = options?.staffNameLanguage,
                 label = { it.label() },
+                subtitle = { it.example() },
                 onSelect = {
                     onAction(AniListOptionsAction.SetStaffNameLanguage(it))
                     showStaffSheet = false
                 },
                 onDismiss = { showStaffSheet = false },
             )
+
         }
 
         var showScoreSheet by remember { mutableStateOf(false) }
@@ -246,16 +245,6 @@ internal fun AniListOptionsContent(
             )
         }
     }
-
-    Spacer(Modifier.height(8.dp))
-    SettingsGroup {
-        SettingsItem(
-            title = "Refresh from AniList",
-            icon = Icons.Outlined.Refresh,
-            onClick = { onAction(AniListOptionsAction.Refresh) },
-            enabled = !uiState.isLoading && !uiState.isSaving,
-        )
-    }
 }
 
 // ── Small building blocks ────────────────────────────────────────────────────────────────────────
@@ -290,6 +279,7 @@ private fun <T> OptionPickerSheet(
     label: (T) -> String,
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
+    subtitle: (T) -> String? = { null },
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -308,6 +298,7 @@ private fun <T> OptionPickerSheet(
             LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
                 items(options) { option ->
                     val isSelected = option == selected
+                    val sub = subtitle(option)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -320,13 +311,22 @@ private fun <T> OptionPickerSheet(
                             .padding(vertical = 16.dp, horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = label(option),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
-                            else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = label(option),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                                else MaterialTheme.colorScheme.onSurface,
+                            )
+                            if (sub != null) {
+                                Text(
+                                    text = sub,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                         if (isSelected) {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -416,6 +416,28 @@ private fun StaffNameLanguage.label(): String = when (this) {
     StaffNameLanguage.ROMAJI_WESTERN -> "Romaji, Western order"
     StaffNameLanguage.ROMAJI -> "Romaji"
     StaffNameLanguage.NATIVE -> "Native"
+}
+
+// Worked examples shown under each language option so the choice is concrete.
+
+private fun TitleLanguage.example(): String = when (this) {
+    TitleLanguage.ROMAJI -> "Shingeki no Kyojin"
+    TitleLanguage.ENGLISH -> "Attack on Titan"
+    TitleLanguage.NATIVE -> "進撃の巨人"
+}
+
+private fun AniListTitleLanguage?.example(): String = when (this) {
+    AniListTitleLanguage.ROMAJI, AniListTitleLanguage.ROMAJI_STYLISED -> "Shingeki no Kyojin"
+    AniListTitleLanguage.ENGLISH, AniListTitleLanguage.ENGLISH_STYLISED -> "Attack on Titan"
+    AniListTitleLanguage.NATIVE, AniListTitleLanguage.NATIVE_STYLISED -> "進撃の巨人"
+    null -> "Shingeki no Kyojin"
+}
+
+private fun AniListStaffNameLanguage?.example(): String = when (this) {
+    AniListStaffNameLanguage.ROMAJI_WESTERN -> "Hajime Isayama"
+    AniListStaffNameLanguage.ROMAJI -> "Isayama Hajime"
+    AniListStaffNameLanguage.NATIVE -> "諫山 創"
+    null -> "Hajime Isayama"
 }
 
 private fun ScoreFormat?.label(): String = when (this) {

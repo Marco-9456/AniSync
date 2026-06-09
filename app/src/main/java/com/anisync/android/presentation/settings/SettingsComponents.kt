@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,6 +47,7 @@ fun SettingsScreenScaffold(
     title: String,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable () -> Unit
 ) {
     val lazyListState = rememberLazyListState()
@@ -55,7 +57,8 @@ fun SettingsScreenScaffold(
         onBackClick = onBackClick,
         modifier = modifier,
         scrollableState = lazyListState,
-        enableEnterAnimation = true
+        enableEnterAnimation = true,
+        actions = actions
     ) { topContentPadding ->
         LazyColumn(
             state = lazyListState,
