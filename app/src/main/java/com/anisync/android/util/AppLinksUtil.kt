@@ -1,6 +1,7 @@
 package com.anisync.android.util
 
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -14,6 +15,55 @@ import androidx.core.net.toUri
 object AppLinksUtil {
 
     private const val DOMAIN_ANILIST = "anilist.co"
+
+    /**
+     * Opens [url] in a web browser, never in AniSync. anilist.co is a verified app link, so a plain
+     * ACTION_VIEW is routed straight to AniSync (stable or debug) and skips any chooser — which is
+     * why excluding components doesn't help. Instead we locate an installed browser via a neutral
+     * host AniSync does not handle, then target that package explicitly; an explicit package
+     * overrides app-link verification routing. Falls back to a chooser that excludes AniSync.
+     */
+    fun openInBrowser(context: Context, url: String) {
+        val uri = url.toUri()
+        val pm = context.packageManager
+
+        val probe = Intent(Intent.ACTION_VIEW, "https://www.example.com".toUri())
+            .addCategory(Intent.CATEGORY_BROWSABLE)
+        val browserPackage = pm.queryIntentActivities(probe, PackageManager.MATCH_DEFAULT_ONLY)
+            .map { it.activityInfo.packageName }
+            .firstOrNull { !it.startsWith("com.anisync.android") }
+
+        val view = Intent(Intent.ACTION_VIEW, uri)
+            .addCategory(Intent.CATEGORY_BROWSABLE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        try {
+            if (browserPackage != null) {
+                context.startActivity(view.setPackage(browserPackage))
+            } else {
+                context.startActivity(chooserExcludingAniSync(pm, view))
+            }
+        } catch (_: ActivityNotFoundException) {
+            runCatching {
+                context.startActivity(
+                    chooserExcludingAniSync(pm, Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                )
+            }
+        }
+    }
+
+    /** A chooser for [view] with every AniSync handler stripped out (last-resort when no browser resolves). */
+    private fun chooserExcludingAniSync(pm: PackageManager, view: Intent): Intent {
+        val excluded = pm.queryIntentActivities(view, PackageManager.MATCH_ALL)
+            .map { it.activityInfo }
+            .filter { it.packageName.startsWith("com.anisync.android") }
+            .map { ComponentName(it.packageName, it.name) }
+            .toTypedArray()
+        return Intent.createChooser(view, null).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (excluded.isNotEmpty()) putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, excluded)
+        }
+    }
 
     fun isDomainVerified(context: Context, domain: String = DOMAIN_ANILIST): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

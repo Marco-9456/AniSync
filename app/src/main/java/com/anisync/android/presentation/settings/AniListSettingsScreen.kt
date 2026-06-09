@@ -2,30 +2,27 @@ package com.anisync.android.presentation.settings
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.PersonAddAlt
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +45,7 @@ import com.anisync.android.R
 import com.anisync.android.data.account.Account
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.login.AniListAuth
+import com.anisync.android.util.AppLinksUtil
 
 /**
  * AniList settings: one screen merging account management (add / switch / remove / logout) with the
@@ -137,17 +135,18 @@ fun AniListSettingsScreen(
             if (active != null && active.name.isNotBlank()) {
                 IconButton(
                     onClick = {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://anilist.co/user/${active.name}")
-                            )
-                        )
+                        AppLinksUtil.openInBrowser(context, "https://anilist.co/user/${active.name}")
                     }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                        contentDescription = stringResource(R.string.settings_view_on_anilist)
+                        contentDescription = stringResource(R.string.settings_open_in_web)
+                    )
+                }
+                IconButton(onClick = { showLogoutDialog = true }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = stringResource(R.string.control_log_out)
                     )
                 }
             }
@@ -191,30 +190,6 @@ fun AniListSettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedButton(
-            onClick = { showLogoutDialog = true },
-            enabled = activeAccount != null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-        ) {
-            Text(stringResource(R.string.control_log_out))
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = stringResource(R.string.settings_logout_warning),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
     }
 }
 

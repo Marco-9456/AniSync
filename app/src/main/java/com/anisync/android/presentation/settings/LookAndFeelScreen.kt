@@ -113,7 +113,6 @@ fun LookAndFeelScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val themeMode = uiState.themeMode
-    val titleLanguage = uiState.titleLanguage
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
     val appLocale = uiState.appLocale
@@ -131,7 +130,6 @@ fun LookAndFeelScreen(
 
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
-    var showTitleLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var showAppLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
     var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
@@ -188,16 +186,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    if (showTitleLanguageSheet) {
-        TitleLanguageSelectionSheet(
-            currentLanguage = titleLanguage,
-            onLanguageSelected = {
-                viewModel.onAction(SettingsAction.SetTitleLanguage(it))
-                showTitleLanguageSheet = false
-            },
-            onDismiss = { showTitleLanguageSheet = false }
-        )
-    }
 
     if (showStreamingServiceSheet) {
         StreamingServiceSelectionSheet(
@@ -373,13 +361,6 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.settings_app_language),
                 currentValue = appLocale.displayName,
                 onClick = { showAppLanguageSheet = true }
-            )
-            SettingsDivider()
-            SelectionSettingsItem(
-                icon = Icons.Default.Language,
-                title = stringResource(R.string.settings_title_language),
-                currentValue = getTitleLanguageLabel(titleLanguage),
-                onClick = { showTitleLanguageSheet = true }
             )
             SettingsDivider()
             SelectionSettingsItem(

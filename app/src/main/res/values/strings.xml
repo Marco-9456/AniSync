@@ -385,6 +385,7 @@
     <string name="settings_account_anilist">Signed in with AniList</string>
     <string name="settings_view_on_anilist">View on AniList</string>
     <string name="settings_view_on_anilist_desc">Open your profile on AniList</string>
+    <string name="settings_open_in_web">Open in web</string>
     <string name="settings_logout_warning">Logging out will remove your session. You can sign in again at any time.</string>
     <!-- Multiple accounts -->
     <string name="account_add">Add account</string>

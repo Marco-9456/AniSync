@@ -80,48 +80,24 @@ internal fun AniListOptionsContent(
         var showTitleSheet by remember { mutableStateOf(false) }
         SelectionSettingsItem(
             title = "Title language",
-            currentValue = if (uiState.titleLanguageOverrideEnabled) {
-                uiState.localTitleLanguage.label()
-            } else {
-                options?.titleLanguage.label()
-            },
+            currentValue = options?.titleLanguage?.toBaseLanguage().label(),
             onClick = { showTitleSheet = true },
             enabled = !uiState.isSaving,
         )
         if (showTitleSheet) {
-            if (uiState.titleLanguageOverrideEnabled) {
-                OptionPickerSheet(
-                    title = "Title language",
-                    options = TitleLanguage.entries,
-                    selected = uiState.localTitleLanguage,
-                    label = { it.label() },
-                    subtitle = { it.example() },
-                    onSelect = {
-                        onAction(AniListOptionsAction.SetLocalTitleLanguage(it))
-                        showTitleSheet = false
-                    },
-                    onDismiss = { showTitleSheet = false },
-                )
-            } else {
-                OptionPickerSheet(
-                    title = "Title language",
-                    options = AniListTitleLanguage.entries,
-                    selected = options?.titleLanguage,
-                    label = { it.label() },
-                    subtitle = { it.example() },
-                    onSelect = {
-                        onAction(AniListOptionsAction.SetTitleLanguageAccount(it))
-                        showTitleSheet = false
-                    },
-                    onDismiss = { showTitleSheet = false },
-                )
-            }
+            OptionPickerSheet(
+                title = "Title language",
+                options = TITLE_LANGUAGE_OPTIONS,
+                selected = options?.titleLanguage?.toBaseLanguage(),
+                label = { it.label() },
+                subtitle = { it.example() },
+                onSelect = {
+                    onAction(AniListOptionsAction.SetTitleLanguageAccount(it))
+                    showTitleSheet = false
+                },
+                onDismiss = { showTitleSheet = false },
+            )
         }
-        SwitchSettingsItem(
-            title = "Override title language on this device",
-            checked = uiState.titleLanguageOverrideEnabled,
-            onCheckedChange = { onAction(AniListOptionsAction.SetTitleLanguageOverrideEnabled(it)) },
-        )
 
         var showStaffSheet by remember { mutableStateOf(false) }
         SelectionSettingsItem(
@@ -456,6 +432,23 @@ private fun AniListListActivityStatus.label(): String = when (this) {
     AniListListActivityStatus.DROPPED -> "Dropped"
     AniListListActivityStatus.PAUSED -> "Paused"
     AniListListActivityStatus.REPEATING -> "Rewatching / Rereading"
+}
+
+/**
+ * Title languages offered in the picker. The creator-stylised variants are intentionally excluded —
+ * AniList's own site no longer surfaces them and they render identically to the base option here.
+ */
+private val TITLE_LANGUAGE_OPTIONS = listOf(
+    AniListTitleLanguage.ROMAJI,
+    AniListTitleLanguage.ENGLISH,
+    AniListTitleLanguage.NATIVE,
+)
+
+/** Collapse a (possibly stylised) account title language onto its base for selection/display. */
+private fun AniListTitleLanguage.toBaseLanguage(): AniListTitleLanguage = when (this) {
+    AniListTitleLanguage.ROMAJI, AniListTitleLanguage.ROMAJI_STYLISED -> AniListTitleLanguage.ROMAJI
+    AniListTitleLanguage.ENGLISH, AniListTitleLanguage.ENGLISH_STYLISED -> AniListTitleLanguage.ENGLISH
+    AniListTitleLanguage.NATIVE, AniListTitleLanguage.NATIVE_STYLISED -> AniListTitleLanguage.NATIVE
 }
 
 private val ACTIVITY_MERGE_PRESETS = listOf(0, 30, 60, 120, 360, 720, 1440, 20160)
