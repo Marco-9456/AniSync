@@ -248,34 +248,29 @@ fun DiscoverScreen(
             .collect { viewModel.onAction(DiscoverAction.OnSearchQueryChange(it)) }
     }
 
-    // Guard against the M3 expressive search bar reopening itself on slow devices.
-    // As the bar collapses, M3 re-expands it via animateToExpanded() if the collapsed
-    // InputField gets a stray PressInteraction.Release or regains focus while the
-    // full-screen overlay tears down (SearchBar.kt: DetectClickFromInteractionSource /
-    // onFocusChanged) — observed as the bar popping back open on API 26 / EMUI 8 (#51).
-    // clearFocus alone can't stop the click path, so the field is made non-interactive
-    // during the collapse and briefly after, which absorbs the stray event. Only armed
-    // after a real expand so the field stays tappable on first entry.
-    var searchReopenGuard by remember { mutableStateOf(false) }
-    var searchWasExpanded by remember { mutableStateOf(false) }
-    LaunchedEffect(searchBarState.currentValue) {
-        when (searchBarState.currentValue) {
-            SearchBarValue.Expanded -> searchWasExpanded = true
-            SearchBarValue.Collapsed -> {
-                keyboardController?.hide()
-                focusManager.clearFocus()
-                if (searchWasExpanded) {
-                    searchWasExpanded = false
-                    searchReopenGuard = true
-                    delay(400L)
-                    searchReopenGuard = false
-                }
-            }
+    // Stop the M3 expressive search bar from reopening itself. As it collapses, M3 can
+    // re-expand it via animateToExpanded() when the collapsed InputField catches a stray
+    // PressInteraction.Release (or focus) while the full-screen overlay tears down — the
+    // bar pops back open on slow devices (API 26 / EMUI 8, issue #51). Rather than disable
+    // the field (which kills the keyboard and the close), detect the reopen and undo it:
+    // while a collapse is in flight, treat any re-expansion as the self-reopen and snap
+    // back to collapsed. Leaves focus, keyboard and close untouched.
+    var searchClosing by remember { mutableStateOf(false) }
+    LaunchedEffect(searchBarState.targetValue) {
+        if (searchBarState.targetValue == SearchBarValue.Collapsed) {
+            searchClosing = true
+            delay(400L)
+            searchClosing = false
+        } else if (searchClosing) {
+            searchBarState.animateToCollapsed()
         }
     }
-    val isSearchInteractive = !searchReopenGuard &&
-        !(searchBarState.targetValue == SearchBarValue.Collapsed &&
-            searchBarState.currentValue == SearchBarValue.Expanded)
+    LaunchedEffect(searchBarState.currentValue) {
+        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
+    }
 
     val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, searchBarState, coroutineScope, keyboardController) {
         { id ->
@@ -325,7 +320,6 @@ fun DiscoverScreen(
                     DiscoverTopBar(
                         scrollBehavior = scrollBehavior,
                         searchBarState = searchBarState,
-                        isSearchInteractive = isSearchInteractive,
                         textFieldState = textFieldState,
                         mediaType = currentMediaType,
                         coroutineScope = coroutineScope,
@@ -452,7 +446,6 @@ fun DiscoverScreen(
 private fun DiscoverTopBar(
     scrollBehavior: SearchBarScrollBehavior?,
     searchBarState: SearchBarState,
-    isSearchInteractive: Boolean,
     textFieldState: TextFieldState,
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
@@ -469,7 +462,6 @@ private fun DiscoverTopBar(
             inputField = {
                 SearchInputField(
                     searchBarState = searchBarState,
-                    isInteractive = isSearchInteractive,
                     textFieldState = textFieldState,
                     mediaType = mediaType,
                     coroutineScope = coroutineScope,
@@ -497,7 +489,6 @@ private fun DiscoverTopBar(
 @Composable
 private fun SearchInputField(
     searchBarState: SearchBarState,
-    isInteractive: Boolean = true,
     textFieldState: TextFieldState,
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
@@ -520,7 +511,6 @@ private fun SearchInputField(
 
     SearchBarDefaults.InputField(
         searchBarState = searchBarState,
-        enabled = isInteractive,
         textFieldState = textFieldState,
         onSearch = {
             onSearch()
