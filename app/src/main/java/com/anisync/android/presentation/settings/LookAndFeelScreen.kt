@@ -113,10 +113,8 @@ fun LookAndFeelScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val themeMode = uiState.themeMode
-    val titleLanguage = uiState.titleLanguage
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
-    val showAdultContent = uiState.showAdultContent
     val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
     val navBarStyle = uiState.navBarStyle
@@ -132,7 +130,6 @@ fun LookAndFeelScreen(
 
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
-    var showTitleLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var showAppLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
     var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
@@ -189,16 +186,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    if (showTitleLanguageSheet) {
-        TitleLanguageSelectionSheet(
-            currentLanguage = titleLanguage,
-            onLanguageSelected = {
-                viewModel.onAction(SettingsAction.SetTitleLanguage(it))
-                showTitleLanguageSheet = false
-            },
-            onDismiss = { showTitleLanguageSheet = false }
-        )
-    }
 
     if (showStreamingServiceSheet) {
         StreamingServiceSelectionSheet(
@@ -377,13 +364,6 @@ fun LookAndFeelScreen(
             )
             SettingsDivider()
             SelectionSettingsItem(
-                icon = Icons.Default.Language,
-                title = stringResource(R.string.settings_title_language),
-                currentValue = getTitleLanguageLabel(titleLanguage),
-                onClick = { showTitleLanguageSheet = true }
-            )
-            SettingsDivider()
-            SelectionSettingsItem(
                 icon = Icons.Default.HighQuality,
                 title = stringResource(R.string.settings_cover_quality),
                 currentValue = coverQualityLabel(coverQuality),
@@ -429,13 +409,8 @@ fun LookAndFeelScreen(
                 checked = hapticEnabled,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
             )
-            SettingsDivider()
-            SwitchSettingsItem(
-                icon = Icons.Default.Visibility,
-                title = "Show adult content",
-                checked = showAdultContent,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetShowAdultContent(it)) }
-            )
+            // "Show adult content" now lives under Settings ▸ AniList Account, where it follows the
+            // AniList account option by default and can be overridden per device.
         }
     }
 }

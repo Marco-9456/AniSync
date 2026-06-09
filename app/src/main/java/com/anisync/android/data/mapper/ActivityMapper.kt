@@ -16,6 +16,7 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             mediaTitle = l.media?.title?.userPreferred ?: "Unknown",
             mediaCoverUrl = l.media?.coverImage?.medium,
             mediaCover = com.anisync.android.domain.CoverImage.of(l.media?.coverImage?.medium, l.media?.coverImage?.large, l.media?.coverImage?.extraLarge),
+            mediaIsAdult = l.media?.isAdult == true,
             timestamp = (l.createdAt?.toLong() ?: 0L) * 1000L,
             mediaScore = null,
             userId = l.user?.id,

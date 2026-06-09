@@ -29,8 +29,19 @@ import javax.inject.Singleton
 
 @Singleton
 class SearchRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val appSettings: AppSettings,
 ) : SearchRepository {
+
+    /**
+     * Resolves the `isAdult` query filter. The per-search [AdultMode] chip takes precedence; when it
+     * is [AdultMode.ANY] (the default) the global "show adult content" preference acts as a floor, so
+     * a user with adult content off never sees 18+ results unless they explicitly ask for them via
+     * the chip. This is the fix for the previously-inert toggle.
+     */
+    private fun resolveAdultFilter(mode: com.anisync.android.domain.AdultMode): Optional<Boolean?> =
+        resolveAdultIsAdult(mode, appSettings.showAdultContent.value)
+            ?.let { Optional.present(it) } ?: Optional.absent()
 
     @Volatile private var cachedGenres: List<String>? = null
     @Volatile private var cachedTags: List<MediaTag>? = null
@@ -90,11 +101,7 @@ class SearchRepositoryImpl @Inject constructor(
                     chapters_lesser = filters.chapters.lesser(),
                     countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                         ?: Optional.absent(),
-                    isAdult = when (filters.adultMode) {
-                        com.anisync.android.domain.AdultMode.ANY -> Optional.absent()
-                        com.anisync.android.domain.AdultMode.HIDE -> Optional.present(false)
-                        com.anisync.android.domain.AdultMode.ONLY -> Optional.present(true)
-                    },
+                    isAdult = resolveAdultFilter(filters.adultMode),
                     countOnly = Optional.present(countOnly)
                 )
             )
@@ -219,11 +226,7 @@ class SearchRepositoryImpl @Inject constructor(
                         chapters_lesser = filters.chapters.lesser(),
                         countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                             ?: Optional.absent(),
-                        isAdult = when (filters.adultMode) {
-                            com.anisync.android.domain.AdultMode.ANY -> Optional.absent()
-                            com.anisync.android.domain.AdultMode.HIDE -> Optional.present(false)
-                            com.anisync.android.domain.AdultMode.ONLY -> Optional.present(true)
-                        }
+                        isAdult = resolveAdultFilter(filters.adultMode)
                     )
                 )
                     .fetchPolicy(FetchPolicy.NetworkFirst)

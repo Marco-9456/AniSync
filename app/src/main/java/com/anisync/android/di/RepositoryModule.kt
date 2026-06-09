@@ -12,6 +12,7 @@ import com.anisync.android.data.NotificationRepositoryImpl
 import com.anisync.android.data.ProfileRepositoryImpl
 import com.anisync.android.data.SearchRepositoryImpl
 import com.anisync.android.data.StatisticsRepositoryImpl
+import com.anisync.android.data.UserOptionsRepositoryImpl
 import com.anisync.android.data.repository.PreferencesRepositoryImpl
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.CalendarRepository
@@ -26,6 +27,7 @@ import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.StatisticsRepository
+import com.anisync.android.domain.UserOptionsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -99,4 +101,9 @@ abstract class RepositoryModule {
     abstract fun bindCalendarRepository(
         impl: CalendarRepositoryImpl
     ): CalendarRepository
+
+    @Binds
+    abstract fun bindUserOptionsRepository(
+        impl: UserOptionsRepositoryImpl
+    ): UserOptionsRepository
 }

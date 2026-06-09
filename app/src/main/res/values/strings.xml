@@ -317,6 +317,8 @@
     <string name="navigate_back">Go back</string>
     <string name="settings_look_and_feel">Look and Feel</string>
     <string name="settings_look_and_feel_desc">Theme, language, streaming service</string>
+    <string name="settings_anilist_account">AniList Settings</string>
+    <string name="settings_anilist_account_desc">Accounts, adult content, languages, score format</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Episode alerts, forum activity</string>
     <string name="settings_storage">Storage</string>
@@ -383,6 +385,13 @@
     <string name="settings_account_anilist">Signed in with AniList</string>
     <string name="settings_view_on_anilist">View on AniList</string>
     <string name="settings_view_on_anilist_desc">Open your profile on AniList</string>
+    <string name="settings_open_in_web">Open in web</string>
+    <string name="options_conflict_title">Settings changed elsewhere</string>
+    <string name="options_conflict_intro">These options changed on the AniList website and differ from this device:</string>
+    <string name="options_conflict_field_values">This device: %1$s   ·   Website: %2$s</string>
+    <string name="options_conflict_question">Keep this device\'s changes, or use the website\'s?</string>
+    <string name="options_conflict_keep_local">Keep this device</string>
+    <string name="options_conflict_use_website">Use website</string>
     <string name="settings_logout_warning">Logging out will remove your session. You can sign in again at any time.</string>
     <!-- Multiple accounts -->
     <string name="account_add">Add account</string>
@@ -964,14 +973,14 @@
     <string name="support_anisync">Support %s</string>
     <string name="support_description">AniSync is a passion project built entirely in my free time. If you enjoy using the app, consider sponsoring to help keep development alive.</string>
 
-    <!-- Sponsors screen -->
-    <string name="settings_sponsors">Sponsors</string>
-    <string name="settings_sponsors_desc">People supporting AniSync\'s development</string>
-    <string name="sponsors_title">Sponsors</string>
-    <string name="sponsors_hero_headline">Powered by you</string>
-    <string name="sponsors_hero_body">AniSync is ad-free and open source. If you want to help, please consider becoming a sponsor.</string>
-    <string name="sponsors_become_button">Become a Sponsor</string>
-    <string name="sponsors_github_button">Sponsors</string>
+    <!-- Donate screen -->
+    <string name="settings_sponsors">Donate</string>
+    <string name="settings_sponsors_desc">Buy me a coffee to support AniSync</string>
+    <string name="sponsors_title">Donate</string>
+    <string name="sponsors_hero_headline">Buy me a coffee</string>
+    <string name="sponsors_hero_body">AniSync is free, ad-free, and open source — made in my spare time. If it brightens your day, you can buy me a coffee. Monthly supporters get their name and avatar shown here; share a social (like your AniList) and I\'ll link it too.</string>
+    <string name="sponsors_become_button">Buy a coffee</string>
+    <string name="sponsors_github_button">GitHub</string>
     <string name="sponsors_kofi_button">Ko-fi</string>
     <string name="sponsors_refresh">Refresh</string>
     <string name="sponsors_updated_at">Updated %1$s</string>

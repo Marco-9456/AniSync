@@ -6,8 +6,23 @@ query GetViewer {
       large
     }
     unreadNotificationCount
+    options {
+      titleLanguage
+      displayAdultContent
+      airingNotifications
+      profileColor
+      timezone
+      activityMergeTime
+      staffNameLanguage
+      restrictMessagesToFollowing
+      disabledListActivity {
+        disabled
+        type
+      }
+    }
     mediaListOptions {
       scoreFormat
+      rowOrder
     }
   }
 }

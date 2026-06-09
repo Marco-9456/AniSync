@@ -71,6 +71,9 @@ data class UserActivity(
     val mediaTitle: String = "",
     val mediaCoverUrl: String? = null,
     val mediaCover: CoverImage? = null,
+    /** AniList 18+ flag for the activity's media. Used to hide adult ListActivity from the feed
+     *  when the viewer's account has displayAdultContent off (matches the website). */
+    val mediaIsAdult: Boolean = false,
     val timestamp: Long,
     val mediaScore: Int? = null,
     val text: String? = null,

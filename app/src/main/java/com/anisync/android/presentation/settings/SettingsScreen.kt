@@ -23,6 +23,8 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.VolunteerActivism
@@ -50,12 +52,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.util.launchUrl
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.decorativeAvatarShape
+
+/** AniSync's Weblate project — community translation. Opened from the Settings top bar. */
+private const val WEBLATE_URL = "https://hosted.weblate.org/engage/anisync/"
 
 private data class CategoryData(
     val key: String,
@@ -71,9 +78,9 @@ private data class CategoryData(
 @Composable
 fun SettingsScreen(
     onNavigateToLookAndFeel: () -> Unit,
+    onNavigateToAniList: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToStorage: () -> Unit,
-    onNavigateToAccount: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToSponsors: () -> Unit,
     onNavigateToUpdates: () -> Unit,
@@ -102,7 +109,22 @@ fun SettingsScreen(
     SettingsScreenScaffold(
         title = stringResource(R.string.settings),
         onBackClick = onBackClick,
-        modifier = modifier
+        modifier = modifier,
+        actions = {
+            val context = LocalContext.current
+            IconButton(onClick = onNavigateToSponsors) {
+                Icon(
+                    imageVector = Icons.Rounded.VolunteerActivism,
+                    contentDescription = stringResource(R.string.settings_sponsors)
+                )
+            }
+            IconButton(onClick = { context.launchUrl(WEBLATE_URL) }) {
+                Icon(
+                    imageVector = Icons.Outlined.Translate,
+                    contentDescription = stringResource(R.string.translate)
+                )
+            }
+        }
     ) {
         val isDark = isSystemInDarkTheme() || uiState.themeMode == ThemeMode.DARK
 
@@ -150,6 +172,13 @@ fun SettingsScreen(
                 onClick = onNavigateToLookAndFeel
             ),
             CategoryData(
+                key = "anilist",
+                title = stringResource(R.string.settings_anilist_account),
+                subtitle = stringResource(R.string.settings_anilist_account_desc),
+                icon = Icons.Outlined.Tune,
+                onClick = onNavigateToAniList
+            ),
+            CategoryData(
                 key = "notifications",
                 title = stringResource(R.string.settings_notifications),
                 subtitle = stringResource(R.string.settings_notifications_desc),
@@ -169,13 +198,6 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_media_upload_desc),
                 icon = Icons.Outlined.CloudUpload,
                 onClick = onNavigateToMediaUpload
-            ),
-            CategoryData(
-                key = "account",
-                title = stringResource(R.string.settings_account),
-                subtitle = stringResource(R.string.settings_account_desc),
-                icon = Icons.Outlined.AccountCircle,
-                onClick = onNavigateToAccount
             ),
             CategoryData(
                 key = "links",
@@ -337,6 +359,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
     return if (isDark) {
         when (key) {
             "lookandfeel" -> Color(0xFF7D5260) to Color(0xFFFFD8E4)
+            "anilist" -> Color(0xFF2E4B5F) to Color(0xFFB8E6FF)
             "notifications" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
             "storage" -> Color(0xFF3B4869) to Color(0xFFD9E2FF)
             "media_upload" -> Color(0xFF004F58) to Color(0xFF88FAFF)
@@ -350,6 +373,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
     } else {
         when (key) {
             "lookandfeel" -> Color(0xFFFFD8E4) to Color(0xFF631835)
+            "anilist" -> Color(0xFFB8E6FF) to Color(0xFF0E3346)
             "notifications" -> Color(0xFFD7E3FF) to Color(0xFF253347)
             "storage" -> Color(0xFFD9E2FF) to Color(0xFF27304E)
             "media_upload" -> Color(0xFFCCE8EA) to Color(0xFF004F58)

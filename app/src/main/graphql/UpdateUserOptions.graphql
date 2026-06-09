@@ -1,0 +1,43 @@
+mutation UpdateUserOptions(
+  $displayAdultContent: Boolean,
+  $titleLanguage: UserTitleLanguage,
+  $staffNameLanguage: UserStaffNameLanguage,
+  $scoreFormat: ScoreFormat,
+  $airingNotifications: Boolean,
+  $restrictMessagesToFollowing: Boolean,
+  $activityMergeTime: Int,
+  $profileColor: String,
+  $disabledListActivity: [ListActivityOptionInput]
+) {
+  UpdateUser(
+    displayAdultContent: $displayAdultContent,
+    titleLanguage: $titleLanguage,
+    staffNameLanguage: $staffNameLanguage,
+    scoreFormat: $scoreFormat,
+    airingNotifications: $airingNotifications,
+    restrictMessagesToFollowing: $restrictMessagesToFollowing,
+    activityMergeTime: $activityMergeTime,
+    profileColor: $profileColor,
+    disabledListActivity: $disabledListActivity
+  ) {
+    id
+    options {
+      titleLanguage
+      displayAdultContent
+      airingNotifications
+      profileColor
+      timezone
+      activityMergeTime
+      staffNameLanguage
+      restrictMessagesToFollowing
+      disabledListActivity {
+        disabled
+        type
+      }
+    }
+    mediaListOptions {
+      scoreFormat
+      rowOrder
+    }
+  }
+}
