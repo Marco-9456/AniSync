@@ -269,6 +269,13 @@ object Settings
 object SettingsLookAndFeel
 
 /**
+ * AniList account options (adult content, languages, score format, activity, profile color)
+ * that sync with the user's AniList account.
+ */
+@Serializable
+object SettingsAniList
+
+/**
  * Notification settings with master toggle and granular controls.
  */
 @Serializable

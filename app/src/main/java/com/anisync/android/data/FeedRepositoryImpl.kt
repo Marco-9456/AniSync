@@ -17,7 +17,8 @@ import com.apollographql.apollo.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
 class FeedRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val appSettings: AppSettings,
 ) : FeedRepository {
 
     override suspend fun getFeed(
@@ -57,10 +58,15 @@ class FeedRepositoryImpl @Inject constructor(
             throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to load feed")
         }
 
+        // Respect the viewer's AniList "display adult content" option (mirrored into AppSettings):
+        // hide list activity for 18+ media, matching the website. Text/message activities carry no
+        // media, so mediaIsAdult is false for them and they pass through untouched.
+        val showAdult = appSettings.showAdultContent.value
         val pageData = response.data?.Page
         val items = pageData?.activities
             ?.filterNotNull()
             ?.mapNotNull { it.activityFields.toDomain() }
+            ?.filterAdultActivities(showAdult)
             ?.distinctBy { it.id }
             ?: emptyList()
 

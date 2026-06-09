@@ -273,6 +273,7 @@ fragment ActivityFields on ActivityUnion {
         extraLarge
       }
       type
+      isAdult
     }
   }
   ... on TextActivity {

@@ -197,6 +197,15 @@ class AppSettings @Inject constructor(
     )
     val titleLanguage: StateFlow<TitleLanguage> = _titleLanguage.asStateFlow()
 
+    // Staff & character name language. Mirrored from the AniList account option
+    // (UserOptions.staffNameLanguage); applied client-side when rendering staff/character names.
+    private val _staffNameLanguage = MutableStateFlow(
+        StaffNameLanguage.entries.getOrElse(
+            prefs.getInt(KEY_STAFF_NAME_LANGUAGE, StaffNameLanguage.ROMAJI_WESTERN.ordinal)
+        ) { StaffNameLanguage.ROMAJI_WESTERN }
+    )
+    val staffNameLanguage: StateFlow<StaffNameLanguage> = _staffNameLanguage.asStateFlow()
+
     // Cover image quality setting
     private val _coverQuality = MutableStateFlow(readCoverQuality())
     val coverQuality: StateFlow<CoverQuality> = _coverQuality.asStateFlow()
@@ -293,12 +302,26 @@ class AppSettings @Inject constructor(
     )
     val showPrivateEntries: StateFlow<Boolean> = _showPrivateEntries.asStateFlow()
 
-    // Whether NSFW tags / adult-only filter are exposed in advanced search.
-    // Off by default; user opts in via the toggle inside the advanced search sheet.
+    // Effective "show adult content" flag. Followed by search + the activity feed. By default this
+    // mirrors the AniList account option (UserOptions.displayAdultContent); a user can pin it on this
+    // device via [adultContentOverrideEnabled].
     private val _showAdultContent = MutableStateFlow(
         prefs.getBoolean(KEY_SHOW_ADULT_CONTENT, false)
     )
     val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
+
+    // Device-level override switches for the two content prefs that mirror an AniList account option.
+    // OFF (default) = follow the account (pull mirrors the web value); ON = keep the local value and
+    // let account-pull leave it untouched. See UserOptionsRepositoryImpl.mirrorToLocal.
+    private val _adultContentOverrideEnabled = MutableStateFlow(
+        prefs.getBoolean(KEY_ADULT_OVERRIDE_ENABLED, false)
+    )
+    val adultContentOverrideEnabled: StateFlow<Boolean> = _adultContentOverrideEnabled.asStateFlow()
+
+    private val _titleLanguageOverrideEnabled = MutableStateFlow(
+        prefs.getBoolean(KEY_TITLE_LANGUAGE_OVERRIDE_ENABLED, false)
+    )
+    val titleLanguageOverrideEnabled: StateFlow<Boolean> = _titleLanguageOverrideEnabled.asStateFlow()
 
     private val _discoverSearchViewMode = MutableStateFlow(
         DiscoverViewMode.entries.getOrElse(
@@ -566,6 +589,14 @@ class AppSettings @Inject constructor(
     }
 
     /**
+     * Set the staff/character name language. Normally mirrored from the AniList account option.
+     */
+    fun setStaffNameLanguage(language: StaffNameLanguage) {
+        _staffNameLanguage.value = language
+        prefs.edit().putInt(KEY_STAFF_NAME_LANGUAGE, language.ordinal).apply()
+    }
+
+    /**
      * Set the preferred media cover image quality.
      */
     fun setCoverQuality(quality: CoverQuality) {
@@ -675,6 +706,16 @@ class AppSettings @Inject constructor(
     fun setShowAdultContent(show: Boolean) {
         _showAdultContent.value = show
         prefs.edit().putBoolean(KEY_SHOW_ADULT_CONTENT, show).apply()
+    }
+
+    fun setAdultContentOverrideEnabled(enabled: Boolean) {
+        _adultContentOverrideEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_ADULT_OVERRIDE_ENABLED, enabled).apply()
+    }
+
+    fun setTitleLanguageOverrideEnabled(enabled: Boolean) {
+        _titleLanguageOverrideEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_TITLE_LANGUAGE_OVERRIDE_ENABLED, enabled).apply()
     }
 
     fun setDiscoverSearchViewMode(mode: DiscoverViewMode) {
@@ -932,6 +973,9 @@ companion object {
         private const val KEY_USER_SCORE_FORMAT = "user_score_format"
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
         private const val KEY_SHOW_ADULT_CONTENT = "show_adult_content"
+        private const val KEY_ADULT_OVERRIDE_ENABLED = "adult_content_override_enabled"
+        private const val KEY_TITLE_LANGUAGE_OVERRIDE_ENABLED = "title_language_override_enabled"
+        private const val KEY_STAFF_NAME_LANGUAGE = "staff_name_language"
         private const val KEY_DISCOVER_SEARCH_VIEW_MODE = "discover_search_view_mode"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"
         private const val KEY_LAST_SELECTED_MANGA_TAB = "last_selected_manga_tab"
@@ -959,6 +1003,17 @@ companion object {
 enum class TitleLanguage {
     ROMAJI,
     ENGLISH,
+    NATIVE
+}
+
+/**
+ * Staff & character name language options. Mirrors AniList's `UserStaffNameLanguage`
+ * ([com.anisync.android.domain.AniListStaffNameLanguage]) but kept as a local enum so the
+ * presentation layer doesn't depend on generated GraphQL types.
+ */
+enum class StaffNameLanguage {
+    ROMAJI_WESTERN,
+    ROMAJI,
     NATIVE
 }
 

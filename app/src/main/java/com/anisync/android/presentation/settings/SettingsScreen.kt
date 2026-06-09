@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.VolunteerActivism
@@ -71,6 +72,7 @@ private data class CategoryData(
 @Composable
 fun SettingsScreen(
     onNavigateToLookAndFeel: () -> Unit,
+    onNavigateToAniList: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToStorage: () -> Unit,
     onNavigateToAccount: () -> Unit,
@@ -148,6 +150,13 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_look_and_feel_desc),
                 icon = Icons.Outlined.Palette,
                 onClick = onNavigateToLookAndFeel
+            ),
+            CategoryData(
+                key = "anilist",
+                title = stringResource(R.string.settings_anilist_account),
+                subtitle = stringResource(R.string.settings_anilist_account_desc),
+                icon = Icons.Outlined.Tune,
+                onClick = onNavigateToAniList
             ),
             CategoryData(
                 key = "notifications",
@@ -337,6 +346,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
     return if (isDark) {
         when (key) {
             "lookandfeel" -> Color(0xFF7D5260) to Color(0xFFFFD8E4)
+            "anilist" -> Color(0xFF2E4B5F) to Color(0xFFB8E6FF)
             "notifications" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
             "storage" -> Color(0xFF3B4869) to Color(0xFFD9E2FF)
             "media_upload" -> Color(0xFF004F58) to Color(0xFF88FAFF)
@@ -350,6 +360,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
     } else {
         when (key) {
             "lookandfeel" -> Color(0xFFFFD8E4) to Color(0xFF631835)
+            "anilist" -> Color(0xFFB8E6FF) to Color(0xFF0E3346)
             "notifications" -> Color(0xFFD7E3FF) to Color(0xFF253347)
             "storage" -> Color(0xFFD9E2FF) to Color(0xFF27304E)
             "media_upload" -> Color(0xFFCCE8EA) to Color(0xFF004F58)

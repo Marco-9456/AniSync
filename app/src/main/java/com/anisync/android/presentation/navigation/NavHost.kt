@@ -57,6 +57,7 @@ import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LinksScreen
+import com.anisync.android.presentation.settings.AniListOptionsScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
@@ -1135,6 +1136,7 @@ fun AniSyncNavHost(
             ) {
                 SettingsScreen(
                     onNavigateToLookAndFeel = { navController.navigate(SettingsLookAndFeel) },
+                    onNavigateToAniList = { navController.navigate(SettingsAniList) },
                     onNavigateToNotifications = { navController.navigate(SettingsNotifications) },
                     onNavigateToStorage = { navController.navigate(SettingsStorage) },
                     onNavigateToAccount = { navController.navigate(SettingsAccount) },
@@ -1155,6 +1157,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 LookAndFeelScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // AniList Account options (synced with the user's AniList account)
+            composable<SettingsAniList>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                AniListOptionsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

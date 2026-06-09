@@ -215,7 +215,12 @@ class SettingsViewModel @Inject constructor(
     fun onAction(action: SettingsAction) {
         when (action) {
             is SettingsAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
-            is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
+            is SettingsAction.SetTitleLanguage -> {
+                // A manual pick here is a deliberate device choice, so flip on the local override —
+                // otherwise the next AniList options sync would mirror the account value back over it.
+                appSettings.setTitleLanguage(action.language)
+                appSettings.setTitleLanguageOverrideEnabled(true)
+            }
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)

@@ -116,7 +116,6 @@ fun LookAndFeelScreen(
     val titleLanguage = uiState.titleLanguage
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
-    val showAdultContent = uiState.showAdultContent
     val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
     val navBarStyle = uiState.navBarStyle
@@ -429,13 +428,8 @@ fun LookAndFeelScreen(
                 checked = hapticEnabled,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
             )
-            SettingsDivider()
-            SwitchSettingsItem(
-                icon = Icons.Default.Visibility,
-                title = "Show adult content",
-                checked = showAdultContent,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetShowAdultContent(it)) }
-            )
+            // "Show adult content" now lives under Settings ▸ AniList Account, where it follows the
+            // AniList account option by default and can be overridden per device.
         }
     }
 }

@@ -32,6 +32,9 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     @Inject
     lateinit var imageLoader: ImageLoader
 
+    @Inject
+    lateinit var userOptionsSyncManager: com.anisync.android.data.UserOptionsSyncManager
+
     private val applicationScope = CoroutineScope(
         SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
             Log.e("AniSyncApp", "Unhandled coroutine exception", throwable)
@@ -67,6 +70,10 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
             }
             Log.d("PerfMetrics", "Background Worker scheduling took $backgroundInitTime ms")
         }
+
+        // Keep AniList account options (adult-content, languages, score format, …) in sync with the
+        // web so the app respects them. Off the cold-start critical path.
+        userOptionsSyncManager.start(applicationScope)
     }
 
     private fun currentProcessName(): String = try {
