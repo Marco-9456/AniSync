@@ -36,7 +36,7 @@
     <string name="forum_thread_title">Título</string>
     <string name="forum_thread_title_hint">Sobre o que você quer debater?</string>
     <string name="forum_thread_body">Corpo</string>
-    <string name="forum_thread_body_hint">Escreva sua mensagem aqui…</string>
+    <string name="forum_thread_body_hint">Escreva sua postagem…</string>
     <string name="forum_empty_threads">Nenhum tópico encontrado.</string>
     <string name="forum_thread_locked">Este tópico está travado.</string>
     <string name="forum_view_on_anilist">Ver no AniList</string>
@@ -874,13 +874,13 @@
     <string name="empty_no_staff">Nenhuma equipe encontrada</string>
     <string name="a11y_staff_image">Imagem de %1$s</string>
     <string name="production_roles">Cargos de Produção</string>
-    <string name="settings_sponsors">Patrocinadores</string>
-    <string name="settings_sponsors_desc">Pessoas que apoiam o desenvolvimento de AniSync</string>
-    <string name="sponsors_title">Patrocinadores</string>
-    <string name="sponsors_hero_headline">Mantido por você</string>
-    <string name="sponsors_hero_body">AniSync é livre de anúncios e código aberto. Se você quiser ajudar, por favor considere se tornar um patrocinador.</string>
-    <string name="sponsors_become_button">Se torne um Patrocinador</string>
-    <string name="sponsors_github_button">Sponsors</string>
+    <string name="settings_sponsors">Doar</string>
+    <string name="settings_sponsors_desc">Me compre um café para apoiar o AniSync</string>
+    <string name="sponsors_title">Doar</string>
+    <string name="sponsors_hero_headline">Me compre um café</string>
+    <string name="sponsors_hero_body">AniSync de graça, livre de anúncios e código aberto — feito no meu tempo livre. Se isso alegra o seu dia, você pode me comprar um café. Apoiadores mensais tem seus nomes e avatares expostos aqui; compartilhe uma rede social (como seu AniLIst) e eu colocarei o link aqui também.</string>
+    <string name="sponsors_become_button">Comprar um café</string>
+    <string name="sponsors_github_button">GitHub</string>
     <string name="sponsors_kofi_button">Ko-fi</string>
     <string name="sponsors_refresh">Atualizar</string>
     <string name="sponsors_updated_at">Atualizado em %1$s</string>
@@ -976,4 +976,13 @@
     <string name="account_remove_dialog_title">Remover a conta?</string>
     <string name="account_remove_dialog_message">%1$s será removido desse dispositivo. Você poderá entrar novamente a qualquer momento.</string>
     <string name="account_switch_to">Trocar para %1$s</string>
+    <string name="settings_anilist_account">Configurações do AniList</string>
+    <string name="settings_anilist_account_desc">Contas, conteúdo adulto, idiomas, formato de pontuação</string>
+    <string name="settings_open_in_web">Abrir na web</string>
+    <string name="options_conflict_title">Configurações mudaram em outro lugar</string>
+    <string name="options_conflict_intro">Essas opções mudaram no site do AniList e estão diferentes deste dispositivo:</string>
+    <string name="options_conflict_field_values">Este dispositivo: %1$s · Website: %2$s</string>
+    <string name="options_conflict_question">Manter as informações deste dispositivo, ou usar do Website?</string>
+    <string name="options_conflict_keep_local">Manter deste dispositivo</string>
+    <string name="options_conflict_use_website">Usar do website</string>
 </resources>
