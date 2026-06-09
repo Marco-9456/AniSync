@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -302,7 +304,7 @@ private fun <T> OptionPickerSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileColorSheet(
     selected: String?,
@@ -323,12 +325,16 @@ private fun ProfileColorSheet(
                 modifier = Modifier.padding(vertical = 8.dp),
             )
             Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 PROFILE_COLORS.forEach { (name, color) ->
                     val isSelected = name == selected
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(color)
                             .then(
@@ -356,7 +362,7 @@ private fun TitleLanguage.label(): String = when (this) {
     TitleLanguage.NATIVE -> "Native"
 }
 
-private fun AniListTitleLanguage?.label(): String = when (this) {
+internal fun AniListTitleLanguage?.label(): String = when (this) {
     AniListTitleLanguage.ROMAJI -> "Romaji"
     AniListTitleLanguage.ENGLISH -> "English"
     AniListTitleLanguage.NATIVE -> "Native"
@@ -366,7 +372,7 @@ private fun AniListTitleLanguage?.label(): String = when (this) {
     null -> "Romaji"
 }
 
-private fun AniListStaffNameLanguage?.label(): String = when (this) {
+internal fun AniListStaffNameLanguage?.label(): String = when (this) {
     AniListStaffNameLanguage.ROMAJI_WESTERN -> "Romaji, Western order"
     AniListStaffNameLanguage.ROMAJI -> "Romaji"
     AniListStaffNameLanguage.NATIVE -> "Native"
@@ -401,7 +407,7 @@ private fun AniListStaffNameLanguage?.example(): String = when (this) {
     null -> "Hajime Isayama"
 }
 
-private fun ScoreFormat?.label(): String = when (this) {
+internal fun ScoreFormat?.label(): String = when (this) {
     ScoreFormat.POINT_100 -> "100 Point (5/100)"
     ScoreFormat.POINT_10_DECIMAL -> "10 Point Decimal (5.5/10)"
     ScoreFormat.POINT_10 -> "10 Point (5/10)"
@@ -430,7 +436,7 @@ private val TITLE_LANGUAGE_OPTIONS = listOf(
 )
 
 /** Collapse a (possibly stylised) account title language onto its base for selection/display. */
-private fun AniListTitleLanguage.toBaseLanguage(): AniListTitleLanguage = when (this) {
+internal fun AniListTitleLanguage.toBaseLanguage(): AniListTitleLanguage = when (this) {
     AniListTitleLanguage.ROMAJI, AniListTitleLanguage.ROMAJI_STYLISED -> AniListTitleLanguage.ROMAJI
     AniListTitleLanguage.ENGLISH, AniListTitleLanguage.ENGLISH_STYLISED -> AniListTitleLanguage.ENGLISH
     AniListTitleLanguage.NATIVE, AniListTitleLanguage.NATIVE_STYLISED -> AniListTitleLanguage.NATIVE
@@ -438,7 +444,7 @@ private fun AniListTitleLanguage.toBaseLanguage(): AniListTitleLanguage = when (
 
 private val ACTIVITY_MERGE_PRESETS = listOf(0, 30, 60, 120, 360, 720, 1440, 20160)
 
-private fun activityMergeLabel(minutes: Int?): String = when {
+internal fun activityMergeLabel(minutes: Int?): String = when {
     minutes == null -> "Default"
     minutes <= 0 -> "Never"
     minutes >= 20160 -> "Always"

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.Link
@@ -51,12 +52,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.util.launchUrl
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.decorativeAvatarShape
+
+/** AniSync's Weblate project — community translation. Opened from the Settings top bar. */
+private const val WEBLATE_URL = "https://hosted.weblate.org/engage/anisync/"
 
 private data class CategoryData(
     val key: String,
@@ -103,7 +109,22 @@ fun SettingsScreen(
     SettingsScreenScaffold(
         title = stringResource(R.string.settings),
         onBackClick = onBackClick,
-        modifier = modifier
+        modifier = modifier,
+        actions = {
+            val context = LocalContext.current
+            IconButton(onClick = onNavigateToSponsors) {
+                Icon(
+                    imageVector = Icons.Rounded.VolunteerActivism,
+                    contentDescription = stringResource(R.string.settings_sponsors)
+                )
+            }
+            IconButton(onClick = { context.launchUrl(WEBLATE_URL) }) {
+                Icon(
+                    imageVector = Icons.Outlined.Translate,
+                    contentDescription = stringResource(R.string.translate)
+                )
+            }
+        }
     ) {
         val isDark = isSystemInDarkTheme() || uiState.themeMode == ThemeMode.DARK
 

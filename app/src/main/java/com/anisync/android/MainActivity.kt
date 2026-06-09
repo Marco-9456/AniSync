@@ -94,6 +94,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var linkPreviewProvider: LinkPreviewProvider
 
+    @Inject
+    lateinit var userOptionsRepository: com.anisync.android.domain.UserOptionsRepository
+
     private val _newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 4)
     val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
@@ -279,6 +282,14 @@ class MainActivity : AppCompatActivity() {
                             }
 
                             AppUpdateHandler(updateManager = updateManager)
+
+                            // App-wide options sync-conflict prompt (surfaces right after launch,
+                            // not only on the AniList Settings screen).
+                            if (isLoggedIn) {
+                                com.anisync.android.presentation.settings.UserOptionsConflictHandler(
+                                    repository = userOptionsRepository,
+                                )
+                            }
 
                             // Blocking loader while an account add/switch/remove is in flight.
                             val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle(

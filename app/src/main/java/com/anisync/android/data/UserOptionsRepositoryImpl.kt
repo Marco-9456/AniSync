@@ -103,18 +103,23 @@ class UserOptionsRepositoryImpl @Inject constructor(
      */
     private fun reconcile(accountId: Int, fresh: AniListUserOptions) {
         val current = _state.value ?: LocalOptionsState()
-        val allFields = UserOptionField.entries.toSet()
-        val changedOnServer = current.serverSnapshot.differingFields(fresh)
-        val conflictFields = current.dirty intersect changedOnServer
-        val cleanFields = allFields - current.dirty
+        val all = UserOptionField.entries.toSet()
+        // Dirty edits still genuinely pending: the local value disagrees with the fresh server value.
+        // A dirty field the server already agrees with isn't pending (and isn't a conflict).
+        val pending = current.dirty intersect current.local.differingFields(fresh)
+        // A conflict is a pending edit where the server also moved since our baseline.
+        val conflictFields = pending intersect current.serverSnapshot.differingFields(fresh)
+        // Everything not pending adopts the server value (clean fields + converged dirty edits).
+        val adopt = all - pending
 
         commit(
             accountId,
             current.copy(
-                local = current.local.takeFields(cleanFields, fresh),
-                // Baseline advances to the server for everything except unresolved conflict fields.
-                serverSnapshot = current.serverSnapshot.takeFields(allFields - conflictFields, fresh),
-                conflict = if (conflictFields.isNotEmpty()) ConflictState(conflictFields, fresh) else current.conflict,
+                local = current.local.takeFields(adopt, fresh),
+                // Baseline advances to the server everywhere except unresolved conflicts.
+                serverSnapshot = current.serverSnapshot.takeFields(all - conflictFields, fresh),
+                dirty = pending,
+                conflict = if (conflictFields.isNotEmpty()) ConflictState(conflictFields, fresh) else null,
             ),
         )
     }
