@@ -134,7 +134,12 @@ class NotificationsViewModel @Inject constructor(
                 is Result.Success -> {
                     val page = result.data
                     val state = _uiState.value
-                    val merged = if (reset) page.items else state.items + page.items
+                    // Dedupe by id: new notifications push older ones across page boundaries, so a
+                    // page can re-deliver an item already held. Ungrouped rows key off "single_<id>",
+                    // and a duplicate id crashes the LazyColumn with a duplicate key.
+                    val merged =
+                        if (reset) page.items
+                        else (state.items + page.items).distinctBy { it.id }
                     val grouped = withContext(Dispatchers.Default) { groupNotifications(merged) }
                     _uiState.update {
                         it.copy(

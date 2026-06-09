@@ -39,9 +39,11 @@ class MediaFollowingViewModel @Inject constructor(
     fun fetchNextPage() {
         if (_isLoading.value || !hasNextPage) return
         val mediaId = currentMediaId ?: return
+        // Set synchronously so a fast scroll firing fetchNextPage() again before the
+        // coroutine starts can't re-fetch the same page (double currentPage++ skips a page).
+        _isLoading.value = true
 
         viewModelScope.launch {
-            _isLoading.value = true
             when (val result = detailsRepository.getMediaFollowing(
                 mediaId = mediaId,
                 page = currentPage,
@@ -49,7 +51,9 @@ class MediaFollowingViewModel @Inject constructor(
             )) {
                 is Result.Success -> {
                     val (newEntries, hasNext) = result.data
-                    _entries.value = _entries.value + newEntries
+                    // Dedupe by userId so a user already shown on an earlier page doesn't reappear
+                    // and crash LazyColumn with a duplicate key.
+                    _entries.value = (_entries.value + newEntries).distinctBy { it.userId }
                     hasNextPage = hasNext
                     if (hasNext) currentPage++
                 }

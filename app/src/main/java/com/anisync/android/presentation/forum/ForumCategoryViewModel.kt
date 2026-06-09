@@ -106,7 +106,9 @@ class ForumCategoryViewModel @Inject constructor(
                     _uiState.update { current ->
                         val threads =
                             if (replaceExisting || page == 1) data.items.toPersistentList()
-                            else (current.threads + data.items).toPersistentList()
+                            // Dedupe by id so a thread that shifts between pages doesn't crash the
+                            // list with a duplicate key (matches ForumViewModel).
+                            else (current.threads + data.items).distinctBy { it.id }.toPersistentList()
                         current.copy(
                             isLoading = false,
                             isRefreshing = false,

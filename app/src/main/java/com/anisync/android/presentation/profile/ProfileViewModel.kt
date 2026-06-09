@@ -923,7 +923,9 @@ class ProfileViewModel @Inject constructor(
                         it.copy(
                             isReviewsPaginating = false,
                             reviewsPage = nextPage,
-                            reviews = it.reviews + result.data.reviews,
+                            // Dedupe by id so a review carried over between pages doesn't crash
+                            // the list with a duplicate key.
+                            reviews = (it.reviews + result.data.reviews).distinctBy { r -> r.id },
                             reviewsHasNextPage = result.data.hasNextPage
                         )
                     }
@@ -1371,10 +1373,13 @@ class ProfileViewModel @Inject constructor(
                         it.copy(
                             isSocialPaginating = false,
                             socialPage = nextPage,
-                            socialFollowing = it.socialFollowing + p.data.following,
-                            socialFollowers = it.socialFollowers + p.data.followers,
-                            socialThreads = it.socialThreads + p.data.threads,
-                            socialComments = it.socialComments + p.data.comments,
+                            // Dedupe by id: threads/comments are keyed by id in the list, so a
+                            // carried-over item would crash with a duplicate key; users render in
+                            // index-keyed rows but are deduped too to avoid showing twice.
+                            socialFollowing = (it.socialFollowing + p.data.following).distinctBy { u -> u.id },
+                            socialFollowers = (it.socialFollowers + p.data.followers).distinctBy { u -> u.id },
+                            socialThreads = (it.socialThreads + p.data.threads).distinctBy { t -> t.id },
+                            socialComments = (it.socialComments + p.data.comments).distinctBy { c -> c.id },
                             followingHasNextPage = p.followingHasNextPage,
                             followersHasNextPage = p.followersHasNextPage,
                             threadsHasNextPage = p.threadsHasNextPage,

@@ -39,13 +39,18 @@ class ReviewsViewModel @Inject constructor(
     fun fetchNextPage() {
         if (_isLoading.value || !hasNextPage) return
         val mediaId = currentMediaId ?: return
+        // Set synchronously so a fast scroll firing fetchNextPage() again before the
+        // coroutine starts can't re-fetch the same page (double currentPage++ skips a page).
+        _isLoading.value = true
 
         viewModelScope.launch {
-            _isLoading.value = true
             when (val result = detailsRepository.getMediaReviews(mediaId, currentPage)) {
                 is Result.Success -> {
                     val (newReviews, hasNext) = result.data
-                    _reviews.value = _reviews.value + newReviews
+                    // Reviews can shift between pages as votes/new reviews land; dedupe by id so a
+                    // review fetched on an earlier page doesn't reappear and crash LazyColumn with a
+                    // duplicate key.
+                    _reviews.value = (_reviews.value + newReviews).distinctBy { it.id }
                     hasNextPage = hasNext
                     if (hasNext) {
                         currentPage++
