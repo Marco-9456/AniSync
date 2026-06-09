@@ -25,6 +25,30 @@ class ToastManager @Inject constructor() {
     /** Last time a throttle notice was shown; rate-limits the notice itself. */
     @Volatile private var lastThrottleNoticeAt: Long = 0L
 
+    /**
+     * True while a modal surface (bottom sheet / dialog) is hosting its own
+     * [com.anisync.android.presentation.components.alert.OverlayToastHost]. Those
+     * render in a platform window *above* the app window, so the global
+     * [com.anisync.android.presentation.components.alert.TopToastHost] popup would
+     * land behind their scrim. While this is true the global host stands down and
+     * the modal's own host draws the toast above the scrim.
+     */
+    private val _overlayHostActive = MutableStateFlow(false)
+    val overlayHostActive: StateFlow<Boolean> = _overlayHostActive.asStateFlow()
+    private var overlayHostCount = 0
+
+    @Synchronized
+    fun acquireOverlayHost() {
+        overlayHostCount++
+        _overlayHostActive.value = overlayHostCount > 0
+    }
+
+    @Synchronized
+    fun releaseOverlayHost() {
+        overlayHostCount = (overlayHostCount - 1).coerceAtLeast(0)
+        _overlayHostActive.value = overlayHostCount > 0
+    }
+
     fun showToast(type: ToastType, title: String? = null, message: String, countdownSeconds: Long? = null) {
         _toast.value = ToastMessage(type = type, title = title, message = message, countdownSeconds = countdownSeconds)
     }

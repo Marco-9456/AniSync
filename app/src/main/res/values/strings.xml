@@ -49,7 +49,7 @@
     <string name="forum_thread_title">Title</string>
     <string name="forum_thread_title_hint">What do you want to discuss?</string>
     <string name="forum_thread_body">Body</string>
-    <string name="forum_thread_body_hint">Write your message here…</string>
+    <string name="forum_thread_body_hint">Write your post…</string>
     <string name="forum_empty_threads">No threads found.</string>
     <string name="forum_thread_locked">This thread is locked.</string>
     <string name="forum_view_on_anilist">View on AniList</string>

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.ForumRepository
+import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.presentation.components.alert.ToastManager
@@ -47,16 +48,7 @@ class CreateThreadViewModel @Inject constructor(
             is CreateThreadAction.OnBodyChange -> {
                 _uiState.update { it.copy(body = action.value, bodyError = null) }
             }
-            is CreateThreadAction.ToggleCategory -> {
-                _uiState.update { current ->
-                    val updated = if (action.categoryId in current.selectedCategoryIds) {
-                        current.selectedCategoryIds - action.categoryId
-                    } else {
-                        current.selectedCategoryIds + action.categoryId
-                    }
-                    current.copy(selectedCategoryIds = updated, categoryError = null)
-                }
-            }
+            is CreateThreadAction.ToggleCategory -> toggleCategory(action.categoryId)
             is CreateThreadAction.TogglePreview -> {
                 _uiState.update { it.copy(isPreviewMode = !it.isPreviewMode) }
             }
@@ -66,16 +58,65 @@ class CreateThreadViewModel @Inject constructor(
             }
             is CreateThreadAction.OnMediaSearchQueryChange -> onSearchQueryChange(action.query)
             is CreateThreadAction.OnMediaSearchTypeChange -> onSearchTypeChange(action.type)
-            is CreateThreadAction.AddMediaCategory -> _uiState.update { current ->
-                if (current.selectedMediaCategories.any { it.mediaId == action.entry.mediaId }) current
-                else current.copy(selectedMediaCategories = current.selectedMediaCategories + action.entry)
-            }
+            is CreateThreadAction.AddMediaCategory -> addMediaCategory(action.entry)
             is CreateThreadAction.RemoveMediaCategory -> _uiState.update { current ->
                 current.copy(
                     selectedMediaCategories = current.selectedMediaCategories
                         .filterNot { it.mediaId == action.mediaId }
                 )
             }
+        }
+    }
+
+    /**
+     * Toggles a forum category, enforcing AniList's rules:
+     * - Selecting a standalone category (Misc / AniList Apps / Bug Reports /
+     *   Site Feedback) replaces the whole selection — it can't be combined.
+     *   AniList Apps additionally drops any attached media.
+     * - Otherwise the selection is capped at [MAX_THREAD_CATEGORIES].
+     */
+    private fun toggleCategory(id: Int) {
+        val current = _uiState.value
+        when {
+            id in current.selectedCategoryIds ->
+                _uiState.update {
+                    it.copy(selectedCategoryIds = it.selectedCategoryIds - id, categoryError = null)
+                }
+            id in exclusiveCategoryIds ->
+                _uiState.update {
+                    it.copy(
+                        selectedCategoryIds = setOf(id),
+                        selectedMediaCategories = if (id == ANILIST_APPS_CATEGORY_ID) emptyList()
+                        else it.selectedMediaCategories,
+                        categoryError = null
+                    )
+                }
+            !current.canSelectMoreCategories ->
+                toastManager.showToast(
+                    ToastType.INFO,
+                    message = "You can select up to $MAX_THREAD_CATEGORIES categories"
+                )
+            else ->
+                _uiState.update {
+                    it.copy(selectedCategoryIds = it.selectedCategoryIds + id, categoryError = null)
+                }
+        }
+    }
+
+    /** Attaches a media category, ignoring duplicates and capping at [MAX_THREAD_MEDIA_CATEGORIES]. */
+    private fun addMediaCategory(entry: LibraryEntry) {
+        val current = _uiState.value
+        when {
+            current.selectedMediaCategories.any { it.mediaId == entry.mediaId } -> Unit
+            !current.canAttachMoreMedia ->
+                toastManager.showToast(
+                    ToastType.INFO,
+                    message = "You can attach up to $MAX_THREAD_MEDIA_CATEGORIES media"
+                )
+            else ->
+                _uiState.update {
+                    it.copy(selectedMediaCategories = it.selectedMediaCategories + entry)
+                }
         }
     }
 

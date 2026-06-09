@@ -62,6 +62,8 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.components.alert.LocalToastManager
+import com.anisync.android.presentation.components.alert.OverlayToastHost
 import com.anisync.android.presentation.components.richtext.RichTextScaffold
 import com.anisync.android.presentation.components.richtext.rememberRichTextInsertController
 import com.anisync.android.presentation.forum.components.ForumCategoryChip
@@ -104,8 +106,9 @@ fun ForumThreadInputScreen(
             onSearchQueryChange = { viewModel.onAction(CreateThreadAction.OnMediaSearchQueryChange(it)) },
             onSearchTypeChange = { viewModel.onAction(CreateThreadAction.OnMediaSearchTypeChange(it)) },
             onSelectMedia = { entry ->
+                // Keep the sheet open so the user can attach a second media (cap is
+                // MAX_THREAD_MEDIA_CATEGORIES) without reopening it each time.
                 viewModel.onAction(CreateThreadAction.AddMediaCategory(entry))
-                showCategorySheet = false
             },
             onRemoveMedia = { mediaId ->
                 viewModel.onAction(CreateThreadAction.RemoveMediaCategory(mediaId))
@@ -198,6 +201,14 @@ private fun ThreadMetaHeader(
                 errorIndicatorColor = Color.Transparent
             ),
             modifier = Modifier.fillMaxWidth()
+        )
+
+        Text(
+            text = "${title.trim().length} / ${TitleBounds.max}",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (titleError != null) MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp)
         )
 
         if (titleError != null) {
@@ -304,6 +315,10 @@ private fun CategoriesAndMediaSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
+        // Hosted inside the sheet so limit toasts render above the sheet's scrim
+        // (the global host sits in the app window, behind it).
+        OverlayToastHost(toastManager = LocalToastManager.current)
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -328,29 +343,33 @@ private fun CategoriesAndMediaSheet(
                     ForumCategoryChip(
                         category = category,
                         selected = isSelected,
+                        enabled = uiState.isCategoryEnabled(category.id),
                         onClick = { onToggleCategory(category.id) }
                     )
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
+            // AniList Apps threads don't carry related media — hide the whole picker.
+            if (!uiState.isMediaPickerHidden) {
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
 
-            MediaSearchSection(
-                query = uiState.mediaSearchQuery,
-                searchType = uiState.mediaSearchType,
-                results = uiState.mediaSearchResults,
-                isSearching = uiState.isMediaSearching,
-                error = uiState.mediaSearchError,
-                selectedMediaIds = uiState.selectedMediaCategories.map { it.mediaId }.toSet(),
-                onQueryChange = onSearchQueryChange,
-                onTypeChange = onSearchTypeChange,
-                onResultClick = { entry ->
-                    val isAlreadySelected = uiState.selectedMediaCategories.any { it.mediaId == entry.mediaId }
-                    if (isAlreadySelected) onRemoveMedia(entry.mediaId) else onSelectMedia(entry)
-                }
-            )
+                MediaSearchSection(
+                    query = uiState.mediaSearchQuery,
+                    searchType = uiState.mediaSearchType,
+                    results = uiState.mediaSearchResults,
+                    isSearching = uiState.isMediaSearching,
+                    error = uiState.mediaSearchError,
+                    selectedMediaIds = uiState.selectedMediaCategories.map { it.mediaId }.toSet(),
+                    onQueryChange = onSearchQueryChange,
+                    onTypeChange = onSearchTypeChange,
+                    onResultClick = { entry ->
+                        val isAlreadySelected = uiState.selectedMediaCategories.any { it.mediaId == entry.mediaId }
+                        if (isAlreadySelected) onRemoveMedia(entry.mediaId) else onSelectMedia(entry)
+                    }
+                )
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -38,13 +39,46 @@ fun ProvideToastManager(
 }
 
 /**
- * Renders the active toast in a [Popup] so it always floats above the host
- * content — including full-screen overlays like Material 3's
- * `ExpandedFullScreenSearchBar`, bottom sheets, and dialogs that would
- * otherwise obscure a regular sibling composable.
+ * App-level toast host. Renders the active toast in a [Popup] so it floats above
+ * ordinary host content.
+ *
+ * A Material 3 [androidx.compose.material3.ModalBottomSheet] (and dialogs) render
+ * in their own platform window *above* this app window, so this popup would land
+ * behind their scrim. While such a modal mounts an [OverlayToastHost] this host
+ * stands down (see [ToastManager.overlayHostActive]) and the modal draws the toast
+ * itself — above the scrim.
  */
 @Composable
 fun TopToastHost(
+    toastManager: ToastManager,
+    modifier: Modifier = Modifier
+) {
+    val overlayHostActive by toastManager.overlayHostActive.collectAsStateWithLifecycle()
+    if (overlayHostActive) return
+
+    ToastPopup(toastManager = toastManager, modifier = modifier)
+}
+
+/**
+ * Toast host meant to live *inside* a modal surface (Material 3 `ModalBottomSheet`,
+ * dialogs). Mount it within the modal's content: while mounted it suppresses the
+ * global [TopToastHost] and renders the toast within the modal's own window, so it
+ * appears above the modal's scrim instead of behind it.
+ */
+@Composable
+fun OverlayToastHost(
+    toastManager: ToastManager,
+    modifier: Modifier = Modifier
+) {
+    DisposableEffect(toastManager) {
+        toastManager.acquireOverlayHost()
+        onDispose { toastManager.releaseOverlayHost() }
+    }
+    ToastPopup(toastManager = toastManager, modifier = modifier)
+}
+
+@Composable
+private fun ToastPopup(
     toastManager: ToastManager,
     modifier: Modifier = Modifier
 ) {

@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +31,8 @@ fun ForumCategoryChip(
     category: ForumCategory,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false
+    selected: Boolean = false,
+    enabled: Boolean = true
 ) {
     val haptic = rememberHapticFeedback()
     val backgroundColor by animateColorAsState(
@@ -47,7 +49,8 @@ fun ForumCategoryChip(
         shape = RoundedCornerShape(percent = 50),
         modifier = modifier
             .clip(RoundedCornerShape(percent = 50))
-            .clickable {
+            .alpha(if (enabled) 1f else 0.38f)
+            .clickable(enabled = enabled) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
