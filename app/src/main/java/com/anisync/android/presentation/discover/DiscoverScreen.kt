@@ -71,11 +71,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -104,7 +107,6 @@ import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
@@ -246,30 +248,6 @@ fun DiscoverScreen(
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .collect { viewModel.onAction(DiscoverAction.OnSearchQueryChange(it)) }
-    }
-
-    // Stop the M3 expressive search bar from reopening itself. As it collapses, M3 can
-    // re-expand it via animateToExpanded() when the collapsed InputField catches a stray
-    // PressInteraction.Release (or focus) while the full-screen overlay tears down — the
-    // bar pops back open on slow devices (API 26 / EMUI 8, issue #51). Rather than disable
-    // the field (which kills the keyboard and the close), detect the reopen and undo it:
-    // while a collapse is in flight, treat any re-expansion as the self-reopen and snap
-    // back to collapsed. Leaves focus, keyboard and close untouched.
-    var searchClosing by remember { mutableStateOf(false) }
-    LaunchedEffect(searchBarState.targetValue) {
-        if (searchBarState.targetValue == SearchBarValue.Collapsed) {
-            searchClosing = true
-            delay(400L)
-            searchClosing = false
-        } else if (searchClosing) {
-            searchBarState.animateToCollapsed()
-        }
-    }
-    LaunchedEffect(searchBarState.currentValue) {
-        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-            keyboardController?.hide()
-            focusManager.clearFocus()
-        }
     }
 
     val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, searchBarState, coroutineScope, keyboardController) {
@@ -453,10 +431,21 @@ private fun DiscoverTopBar(
     onSearch: () -> Unit,
     onMediaTypeChange: (MediaType) -> Unit
 ) {
+    val inputModeManager = LocalInputModeManager.current
     Column(
         modifier = Modifier.statusBarsPadding()
     ) {
+        // Keep the collapsed search field unfocusable in touch mode: M3 expands the bar
+        // whenever the field gains focus, and old devices (API 26 / EMUI 8, issue #51)
+        // spuriously re-focus it as the expanded search dialog tears down — popping the
+        // bar back open (and again on tab switches while the stale focus lingers).
+        // Tap-to-open still works via the press path, and the expanded field lives in
+        // its own dialog window, unaffected. Keyboard-mode focus stays allowed;
+        // expansion there is key-driven, not focus-driven.
         AppBarWithSearch(
+            modifier = Modifier.focusProperties {
+                canFocus = inputModeManager.inputMode == InputMode.Keyboard
+            },
             scrollBehavior = scrollBehavior,
             state = searchBarState,
             inputField = {
