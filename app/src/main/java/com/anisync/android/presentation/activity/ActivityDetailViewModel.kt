@@ -2,13 +2,14 @@ package com.anisync.android.presentation.activity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.domain.ActivityEventBus
 import com.anisync.android.domain.ActivityReply
 import com.anisync.android.domain.ActivityRepository
+import com.anisync.android.domain.ActivityUpdate
 import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.parser.RichTextParser
 import com.anisync.android.presentation.components.alert.ToastManager
-import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -27,6 +28,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ActivityDetailViewModel @Inject constructor(
     private val repository: ActivityRepository,
+    private val activityEventBus: ActivityEventBus,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
@@ -46,6 +48,13 @@ class ActivityDetailViewModel @Inject constructor(
                     _uiState.update { st ->
                         st.copy(activity = st.activity?.copy(isLiked = s.isLiked, likeCount = s.likeCount))
                     }
+                    activityEventBus.publish(
+                        ActivityUpdate(
+                            id,
+                            isLiked = s.isLiked,
+                            likeCount = s.likeCount
+                        )
+                    )
                     true
                 }
                 is Result.Error -> {
@@ -76,6 +85,7 @@ class ActivityDetailViewModel @Inject constructor(
                 load(id, refreshing = true)
             }
             is ActivityDetailAction.ToggleActivityLike -> toggleActivityLike()
+            is ActivityDetailAction.ToggleSubscription -> toggleSubscription()
             is ActivityDetailAction.ToggleReplyLike -> toggleReplyLike(action.replyId)
             is ActivityDetailAction.OpenReply -> _uiState.update {
                 it.copy(
@@ -198,7 +208,31 @@ class ActivityDetailViewModel @Inject constructor(
                 )
             )
         }
+        activityEventBus.publish(
+            ActivityUpdate(
+                current.id,
+                isLiked = !wasLiked,
+                likeCount = (if (wasLiked) current.likeCount - 1 else current.likeCount + 1).coerceAtLeast(
+                    0
+                )
+            )
+        )
         activityLikeCoalescer.submit(current.id, !wasLiked)
+    }
+
+    private fun toggleSubscription() {
+        val current = _uiState.value.activity ?: return
+        val wasSubscribed = current.isSubscribed
+        _uiState.update { it.copy(activity = it.activity?.copy(isSubscribed = !wasSubscribed)) }
+        activityEventBus.publish(ActivityUpdate(current.id, isSubscribed = !wasSubscribed))
+        viewModelScope.launch {
+            val result = repository.toggleSubscription(current.id, !wasSubscribed)
+            if (result is Result.Error) {
+                _uiState.update { it.copy(activity = it.activity?.copy(isSubscribed = wasSubscribed)) }
+                activityEventBus.publish(ActivityUpdate(current.id, isSubscribed = wasSubscribed))
+                toastManager.showResultError(result)
+            }
+        }
     }
 
     private fun toggleReplyLike(replyId: Int) {
@@ -268,6 +302,9 @@ class ActivityDetailViewModel @Inject constructor(
                             replyNodes = buildReplyTree(newReplies),
                             scrollToBottom = true
                         )
+                    }
+                    _uiState.value.activity?.let {
+                        activityEventBus.publish(ActivityUpdate(it.id, replyCount = it.replyCount))
                     }
                     refreshSilent(activityId)
                 }
@@ -365,7 +402,10 @@ class ActivityDetailViewModel @Inject constructor(
         val id = _uiState.value.activity?.id ?: return
         viewModelScope.launch {
             when (val result = repository.deleteActivity(id)) {
-                is Result.Success -> _finishedEvents.tryEmit(Unit)
+                is Result.Success -> {
+                    activityEventBus.publish(ActivityUpdate(id, deleted = true))
+                    _finishedEvents.tryEmit(Unit)
+                }
                 is Result.Error -> toastManager.showResultError(result)
             }
         }
@@ -383,6 +423,9 @@ class ActivityDetailViewModel @Inject constructor(
                 ),
                 replyNodes = buildReplyTree(optimisticReplies)
             )
+        }
+        _uiState.value.activity?.let {
+            activityEventBus.publish(ActivityUpdate(it.id, replyCount = it.replyCount))
         }
         viewModelScope.launch {
             when (repository.deleteReply(replyId)) {

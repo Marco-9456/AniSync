@@ -20,19 +20,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
-import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.ui.theme.LocalAvatarShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -43,7 +40,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -60,7 +56,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -68,17 +63,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
-import com.anisync.android.presentation.components.ErrorState
-import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.forum.FlatComment
 import com.anisync.android.presentation.forum.components.ContentStatsBar
 import com.anisync.android.presentation.forum.components.FoldedAncestorStrip
@@ -86,6 +81,7 @@ import com.anisync.android.presentation.forum.components.ThreadBodyItem
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.flattenComments
+import com.anisync.android.ui.theme.LocalAvatarShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -229,6 +225,17 @@ fun ActivityDetailScreen(
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         enableEnterAnimation = true,
         actions = {
+            uiState.activity?.let { act ->
+                IconButton(onClick = { viewModel.onAction(ActivityDetailAction.ToggleSubscription) }) {
+                    Icon(
+                        imageVector = if (act.isSubscribed) Icons.Filled.Notifications
+                        else Icons.Outlined.NotificationsNone,
+                        contentDescription = if (act.isSubscribed) "Unsubscribe" else "Subscribe",
+                        tint = if (act.isSubscribed) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
                     val siteUrl = uiState.activity?.siteUrl
                     if (siteUrl != null) {
                         IconButton(onClick = {

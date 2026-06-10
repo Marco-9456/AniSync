@@ -25,6 +25,7 @@ data class ActivityDetail(
     val siteUrl: String?,
     val isMessage: Boolean,
     val isPrivate: Boolean,
+    val isSubscribed: Boolean = false,
     val authorId: Int,
     val authorName: String,
     val authorAvatarUrl: String?,

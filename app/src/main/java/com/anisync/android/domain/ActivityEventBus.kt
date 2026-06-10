@@ -1,0 +1,39 @@
+package com.anisync.android.domain
+
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * A change to a single activity's engagement state. Only the fields that changed
+ * are non-null; collectors patch matching items and leave the rest untouched.
+ */
+data class ActivityUpdate(
+    val id: Int,
+    val isLiked: Boolean? = null,
+    val likeCount: Int? = null,
+    val isSubscribed: Boolean? = null,
+    val replyCount: Int? = null,
+    val deleted: Boolean = false
+)
+
+/**
+ * App-wide bus that keeps every screen showing the same activity in sync without
+ * a refetch. The activity detail screen and the feed publish their optimistic
+ * mutations here; list screens (feed) collect and patch their cached items so a
+ * like / subscribe / reply / delete is reflected the instant the user returns.
+ *
+ * Process-scoped singleton; uses a buffered [MutableSharedFlow] with no replay so
+ * a newly-subscribed collector doesn't re-apply stale events.
+ */
+@Singleton
+class ActivityEventBus @Inject constructor() {
+    private val _events = MutableSharedFlow<ActivityUpdate>(extraBufferCapacity = 32)
+    val events: SharedFlow<ActivityUpdate> = _events.asSharedFlow()
+
+    fun publish(update: ActivityUpdate) {
+        _events.tryEmit(update)
+    }
+}

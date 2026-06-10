@@ -10,6 +10,7 @@ query GetActivity($id: Int!) {
       likeCount
       isLiked
       replyCount
+      isSubscribed
       siteUrl
       user {
         id
@@ -46,6 +47,7 @@ query GetActivity($id: Int!) {
       isLiked
       replyCount
       isPrivate
+      isSubscribed
       siteUrl
       messenger {
         id

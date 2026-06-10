@@ -30,6 +30,7 @@ sealed interface ActivityDetailAction {
     data class Load(val activityId: Int) : ActivityDetailAction
     data object Refresh : ActivityDetailAction
     data object ToggleActivityLike : ActivityDetailAction
+    data object ToggleSubscription : ActivityDetailAction
     data class ToggleReplyLike(val replyId: Int) : ActivityDetailAction
     data class OpenReply(val replyId: Int?, val authorName: String?) : ActivityDetailAction
     data object CloseReply : ActivityDetailAction
