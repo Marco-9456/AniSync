@@ -3,8 +3,10 @@ package com.anisync.android.presentation.feed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
+import com.anisync.android.domain.ActivityEventBus
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.ActivityUpdate
 import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.Result
@@ -31,6 +33,7 @@ private const val PAGE_SIZE = 25
 class FeedViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
     private val activityRepository: ActivityRepository,
+    private val activityEventBus: ActivityEventBus,
     private val appSettings: AppSettings,
     private val toastManager: ToastManager
 ) : ViewModel() {
@@ -48,6 +51,36 @@ class FeedViewModel @Inject constructor(
 
     private var hasLoadedInitially = false
     private var loadJob: Job? = null
+
+    init {
+        // Reflect like / subscribe / reply / delete made on the activity detail
+        // screen (or elsewhere) back onto the cached feed items without a refetch.
+        viewModelScope.launch {
+            activityEventBus.events.collect { u ->
+                _uiState.update { state ->
+                    if (u.deleted) {
+                        state.copy(items = state.items.filterNot { it.id == u.id }
+                            .toPersistentList())
+                    } else {
+                        state.copy(
+                            items = state.items.map { item ->
+                                if (item.id == u.id) {
+                                    item.copy(
+                                        isLiked = u.isLiked ?: item.isLiked,
+                                        likeCount = u.likeCount ?: item.likeCount,
+                                        isSubscribed = u.isSubscribed ?: item.isSubscribed,
+                                        replyCount = u.replyCount ?: item.replyCount
+                                    )
+                                } else {
+                                    item
+                                }
+                            }.toPersistentList()
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun onScreenVisible() {
         if (!hasLoadedInitially) {
@@ -246,6 +279,13 @@ class FeedViewModel @Inject constructor(
                 pendingLikeIds = (state.pendingLikeIds + activityId).toPersistentSet()
             )
         }
+        activityEventBus.publish(
+            ActivityUpdate(
+                id = activityId,
+                isLiked = !wasLiked,
+                likeCount = (current.likeCount + if (wasLiked) -1 else 1).coerceAtLeast(0)
+            )
+        )
 
         viewModelScope.launch {
             val result = activityRepository.toggleActivityLike(activityId)
@@ -276,8 +316,25 @@ class FeedViewModel @Inject constructor(
                     )
                 }
             }
-            if (result is Result.Error) {
-                showResultError(result)
+            when (result) {
+                is Result.Success -> activityEventBus.publish(
+                    ActivityUpdate(
+                        activityId,
+                        isLiked = result.data.isLiked,
+                        likeCount = result.data.likeCount
+                    )
+                )
+
+                is Result.Error -> {
+                    activityEventBus.publish(
+                        ActivityUpdate(
+                            activityId,
+                            isLiked = wasLiked,
+                            likeCount = current.likeCount
+                        )
+                    )
+                    showResultError(result)
+                }
             }
         }
     }
@@ -300,7 +357,10 @@ class FeedViewModel @Inject constructor(
                 state.copy(pendingDeleteIds = (state.pendingDeleteIds - activityId).toPersistentSet())
             }
             when (result) {
-                is Result.Success -> toastManager.showToast(ToastType.SUCCESS, message = "Activity deleted")
+                is Result.Success -> {
+                    activityEventBus.publish(ActivityUpdate(activityId, deleted = true))
+                    toastManager.showToast(ToastType.SUCCESS, message = "Activity deleted")
+                }
                 is Result.Error -> {
                     // Restore the activity at its previous index
                     _uiState.update { state ->
@@ -328,6 +388,7 @@ class FeedViewModel @Inject constructor(
                 }.toPersistentList()
             )
         }
+        activityEventBus.publish(ActivityUpdate(activityId, isSubscribed = !wasSubscribed))
 
         viewModelScope.launch {
             val result = activityRepository.toggleSubscription(activityId, !wasSubscribed)
@@ -339,6 +400,7 @@ class FeedViewModel @Inject constructor(
                         }.toPersistentList()
                     )
                 }
+                activityEventBus.publish(ActivityUpdate(activityId, isSubscribed = wasSubscribed))
                 showResultError(result)
             }
         }

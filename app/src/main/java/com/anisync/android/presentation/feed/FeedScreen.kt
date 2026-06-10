@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import com.anisync.android.presentation.util.LocalMainNavBarInset
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -30,12 +29,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,15 +48,16 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
-import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.EmptyStateCompact
 import com.anisync.android.presentation.components.EmptyStateConfigs
+import com.anisync.android.presentation.components.ScrollToTopFab
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.feed.components.FeedFilterBar
-import com.anisync.android.presentation.profile.components.RecentUpdateCard
-import com.anisync.android.presentation.profile.components.ActivityPreviewCard
-import kotlinx.coroutines.flow.collectLatest
+import com.anisync.android.presentation.profile.components.ActivityCard
+import com.anisync.android.presentation.util.LocalMainNavBarInset
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -72,6 +73,8 @@ fun FeedScreen(
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
+    val coroutineScope = rememberCoroutineScope()
+    val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
 
     LaunchedEffect(Unit) {
         viewModel.onScreenVisible()
@@ -90,15 +93,24 @@ fun FeedScreen(
                     .navigationBarsPadding()
                     .padding(bottom = LocalMainNavBarInset.current)
             ) {
-                FloatingActionButton(
-                    onClick = { viewModel.onAction(FeedAction.OpenCompose) },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.cd_write_status)
+                    ScrollToTopFab(
+                        visible = showScrollToTop,
+                        onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
                     )
+                    FloatingActionButton(
+                        onClick = { viewModel.onAction(FeedAction.OpenCompose) },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.cd_write_status)
+                        )
+                    }
                 }
             }
         },
@@ -213,30 +225,19 @@ fun FeedScreen(
                                         { viewModel.onAction(FeedAction.EditActivity(activity.id)) }
                                     } else null
 
-                                if (activity.type == ActivityType.MEDIA_LIST) {
-                                    RecentUpdateCard(
-                                        activity = activity,
-                                        onUserClick = onUserClick,
-                                        onActivityClick = onActivityClick,
-                                        onMediaClick = onMediaClick,
-                                        onLastReplyClick = onLastReplyClick,
-                                        onLikeClick = cardLike,
-                                        onDeleteClick = cardDelete
-                                    )
-                                } else {
-                                    ActivityPreviewCard(
-                                        activity = activity,
-                                        onClick = { onActivityClick(activity.id) },
-                                        onSubscribeClick = {
-                                            viewModel.onAction(FeedAction.ToggleSubscribe(activity.id))
-                                        },
-                                        onUserClick = onUserClick,
-                                        onLastReplyClick = onLastReplyClick,
-                                        onLikeClick = cardLike,
-                                        onDeleteClick = cardDelete,
-                                        onEditClick = cardEdit
-                                    )
-                                }
+                                ActivityCard(
+                                    activity = activity,
+                                    onClick = { onActivityClick(activity.id) },
+                                    onUserClick = onUserClick,
+                                    onMediaClick = onMediaClick,
+                                    onLastReplyClick = onLastReplyClick,
+                                    onSubscribeClick = {
+                                        viewModel.onAction(FeedAction.ToggleSubscribe(activity.id))
+                                    },
+                                    onLikeClick = cardLike,
+                                    onDeleteClick = cardDelete,
+                                    onEditClick = cardEdit
+                                )
                             }
                         }
 

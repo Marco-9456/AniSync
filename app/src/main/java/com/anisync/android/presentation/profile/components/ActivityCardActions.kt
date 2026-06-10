@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.profile.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,10 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import com.anisync.android.presentation.components.menu.Menu
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.anisync.android.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,19 +29,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
+import com.anisync.android.presentation.components.menu.Menu
 
 /**
  * Pill-shaped engagement metric (like/comment count) for activity cards.
  *
- * Touch target: M3 requires interactive elements to expose a 48dp hit area
- * even when the visual surface is smaller. We apply `defaultMinSize(48dp)`
- * to the interactive variant so taps near the edge still register.
- *
- * When `onClick` is null the row is non-interactive but still announces its
- * `contentDescription` so TalkBack users can read the value.
+ * Designed using M3 aesthetics, it features an explicit background tint
+ * and bolded content colors.
  */
 @Composable
 internal fun ActivityStatPill(
@@ -51,40 +48,41 @@ internal fun ActivityStatPill(
     value: Int,
     contentDescription: String,
     onClick: (() -> Unit)?,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    containerColor: Color = Color.Transparent
 ) {
     val shape = RoundedCornerShape(50)
-    val base = Modifier.clip(shape)
-    // Width is intentionally intrinsic so the pill does not push the
-    // adjacent "last reply" pill into ellipsis on narrow cards. Height is
-    // pinned to 48dp to keep an M3-compliant touch target.
+    val base = Modifier
+        .clip(shape)
+        .background(containerColor)
+
     val interactive = if (onClick != null) {
         base
             .clickable(role = Role.Button, onClick = onClick)
-            .defaultMinSize(minHeight = 48.dp)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .defaultMinSize(minHeight = 40.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     } else {
         base
             .defaultMinSize(minHeight = 40.dp)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     }
 
     Row(
         modifier = interactive,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = tint,
-            modifier = Modifier.size(20.dp)
+            tint = contentColor,
+            modifier = Modifier.size(18.dp)
         )
         Text(
             text = formatStatPillValue(value),
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+            color = contentColor,
             maxLines = 1
         )
     }
@@ -110,7 +108,7 @@ internal fun ActivityOverflowMenu(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.more_options),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
         Menu(

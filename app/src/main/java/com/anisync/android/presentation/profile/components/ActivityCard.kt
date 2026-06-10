@@ -1,0 +1,433 @@
+package com.anisync.android.presentation.profile.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.anisync.android.R
+import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.UserActivity
+import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.util.shareActivity
+
+/**
+ * Single card for every activity type — status ([ActivityType.TEXT]), message
+ * ([ActivityType.MESSAGE]) and list ([ActivityType.MEDIA_LIST]). They share the
+ * same chrome (author header + subscribe/share/overflow, engagement footer); only
+ * the body differs, so the type switch lives in [ActivityCardBody]:
+ * - MEDIA_LIST → media cover + "Watched episode … of <title>" status line
+ * - TEXT / MESSAGE → inline rich-text body
+ */
+@Composable
+fun ActivityCard(
+    activity: UserActivity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onUserClick: (String) -> Unit = {},
+    onMediaClick: (Int) -> Unit = {},
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
+    onSubscribeClick: (() -> Unit)? = null,
+    onLikeClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null,
+    onEditClick: (() -> Unit)? = null
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ActivityCardHeader(
+                activity = activity,
+                onSubscribeClick = onSubscribeClick,
+                onUserClick = onUserClick,
+                onDeleteClick = onDeleteClick,
+                onEditClick = onEditClick
+            )
+
+            ActivityCardBody(
+                activity = activity,
+                onMediaClick = onMediaClick
+            )
+
+            ActivityCardFooter(
+                activity = activity,
+                onLastReplyClick = onLastReplyClick,
+                onCommentClick = onClick,
+                onLikeClick = onLikeClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityCardHeader(
+    activity: UserActivity,
+    onSubscribeClick: (() -> Unit)?,
+    onUserClick: (String) -> Unit,
+    onDeleteClick: (() -> Unit)? = null,
+    onEditClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        // Sender Avatar Only (Simplified for all cards, including messages)
+        UserAvatar(
+            url = activity.userAvatarUrl,
+            contentDescription = activity.userName,
+            size = 40.dp,
+            modifier = Modifier.clickable { activity.userName?.let { onUserClick(it) } }
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = activity.userName.orEmpty(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clickable { activity.userName?.let { onUserClick(it) } }
+                )
+
+                // Icon-only status markers
+                if (activity.isPinned) {
+                    Icon(
+                        imageVector = Icons.Default.PushPin,
+                        contentDescription = stringResource(R.string.pinned),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                if (activity.isLocked || activity.isPrivate) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = if (activity.isPrivate) "Private" else "Locked",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = formatRelativeTimeSeconds(activity.timestamp / 1000L),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        // Action Buttons Grouped (Notifications, Share, MoreVert)
+        Row(
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (onSubscribeClick != null) {
+                IconButton(onClick = onSubscribeClick, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = if (activity.isSubscribed) Icons.Filled.Notifications
+                        else Icons.Outlined.NotificationsNone,
+                        contentDescription = if (activity.isSubscribed) "Unsubscribe" else "Subscribe",
+                        tint = if (activity.isSubscribed) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            val context = LocalContext.current
+            IconButton(
+                onClick = { shareActivity(context, activity.id) },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Share",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            if (onDeleteClick != null) {
+                ActivityOverflowMenu(
+                    onDeleteClick = onDeleteClick,
+                    onEditClick = onEditClick,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityCardBody(
+    activity: UserActivity,
+    onMediaClick: (Int) -> Unit
+) {
+    when (activity.type) {
+        ActivityType.MEDIA_LIST -> {
+            Spacer(Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(10.dp)
+            ) {
+                val coverModifier = Modifier
+                    .width(64.dp)
+                    .aspectRatio(3f / 4f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .let { base ->
+                        val mediaId = activity.mediaId
+                        if (mediaId != null) base.clickable { onMediaClick(mediaId) } else base
+                    }
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+
+                if (activity.mediaCoverUrl != null) {
+                    AsyncImage(
+                        model = activity.mediaCover.url() ?: activity.mediaCoverUrl,
+                        contentDescription = activity.mediaTitle,
+                        modifier = coverModifier.border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(modifier = coverModifier, contentAlignment = Alignment.Center) {
+                        Text(
+                            text = activity.mediaTitle.take(2).ifBlank { "??" }.uppercase(),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                ActivityListStatusText(
+                    activity = activity,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 4.dp)
+                )
+            }
+        }
+
+        else -> {
+            val rawHtml = activity.text.orEmpty()
+            if (rawHtml.isNotBlank()) {
+                Spacer(Modifier.height(12.dp))
+                AsyncRichTextRenderer(
+                    html = rawHtml,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.25f
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityListStatusText(activity: UserActivity, modifier: Modifier = Modifier) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val styledText =
+        remember(activity.status, activity.progress, activity.mediaTitle, primaryColor) {
+            val statusText = (activity.status ?: "Updated")
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            val progressText = activity.progress.orEmpty()
+            buildAnnotatedString {
+                append("$statusText ")
+                if (progressText.isNotEmpty()) {
+                    withStyle(SpanStyle(color = primaryColor, fontWeight = FontWeight.Bold)) {
+                        append(progressText)
+                    }
+                    append(" of ")
+                }
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append(activity.mediaTitle)
+                }
+            }
+        }
+    Text(
+        text = styledText,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 4,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun ActivityCardFooter(
+    activity: UserActivity,
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
+    onCommentClick: () -> Unit = {},
+    onLikeClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            if (activity.replyUserName != null && activity.repliedAt != null) {
+                Surface(
+                    onClick = {
+                        val replyId = activity.lastReplyId
+                        if (replyId != null) onLastReplyClick(activity.id, replyId)
+                    },
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(
+                            start = 6.dp,
+                            end = 12.dp,
+                            top = 6.dp,
+                            bottom = 6.dp
+                        )
+                    ) {
+                        UserAvatar(
+                            url = activity.replyUserAvatarUrl,
+                            contentDescription = activity.replyUserName,
+                            size = 20.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Last by ${activity.replyUserName} • ${
+                                formatRelativeTimeSeconds(activity.repliedAt)
+                            }",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ActivityStatPill(
+                icon = Icons.Outlined.ChatBubbleOutline,
+                value = activity.replyCount,
+                onClick = onCommentClick,
+                contentDescription = stringResource(R.string.cd_comments),
+                contentColor = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            )
+
+            val isLiked = activity.isLiked
+            ActivityStatPill(
+                icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                value = activity.likeCount,
+                onClick = onLikeClick,
+                contentDescription = if (isLiked) "Unlike" else "Like",
+                contentColor = if (isLiked) Color(0xFFBE123C) else MaterialTheme.colorScheme.primary,
+                containerColor = if (isLiked) Color(0xFFBE123C).copy(alpha = 0.1f) else MaterialTheme.colorScheme.primary.copy(
+                    alpha = 0.1f
+                )
+            )
+        }
+    }
+}
+
+private fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
+    val now = System.currentTimeMillis() / 1000
+    val diff = now - timestampSeconds
+    return when {
+        diff < 60 -> "just now"
+        diff < 3600 -> "${diff / 60}m ago"
+        diff < 86400 -> "${diff / 3600}h ago"
+        diff < 604800 -> "${diff / 86400}d ago"
+        diff < 2592000 -> "${diff / 604800}w ago"
+        diff < 31536000 -> "${diff / 2592000}mo ago"
+        else -> "${diff / 31536000}y ago"
+    }
+}

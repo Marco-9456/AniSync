@@ -27,8 +27,7 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileActivityFilter
-import com.anisync.android.presentation.profile.components.RecentUpdateCard
-import com.anisync.android.presentation.profile.components.ActivityPreviewCard
+import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -115,30 +114,18 @@ fun LazyListScope.profileActivityTab(
                 onEditActivity?.let { cb -> { cb(activity.id) } }
             } else null
 
-            if (activity.type == ActivityType.MEDIA_LIST) {
-                RecentUpdateCard(
-                    activity = activity,
-                    modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    onUserClick = onUserClick,
-                    onActivityClick = onActivityClick,
-                    onMediaClick = onMediaClick,
-                    onLastReplyClick = onLastReplyClick,
-                    onLikeClick = cardLike,
-                    onDeleteClick = cardDelete
-                )
-            } else {
-                ActivityPreviewCard(
-                    activity = activity,
-                    onClick = { onActivityClick(activity.id) },
-                    onSubscribeClick = { onSubscribeClick(activity.id) },
-                    onUserClick = onUserClick,
-                    onLastReplyClick = onLastReplyClick,
-                    onLikeClick = cardLike,
-                    onDeleteClick = cardDelete,
-                    onEditClick = cardEdit,
-                    modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
+            ActivityCard(
+                activity = activity,
+                onClick = { onActivityClick(activity.id) },
+                modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                onUserClick = onUserClick,
+                onMediaClick = onMediaClick,
+                onLastReplyClick = onLastReplyClick,
+                onSubscribeClick = { onSubscribeClick(activity.id) },
+                onLikeClick = cardLike,
+                onDeleteClick = cardDelete,
+                onEditClick = cardEdit
+            )
         }
         
         item(key = "activity_bottom_spacer") {
