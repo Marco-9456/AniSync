@@ -41,6 +41,7 @@ import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
 import com.anisync.android.presentation.feed.FeedScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
+import com.anisync.android.presentation.forum.ForumMediaThreadsScreen
 import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ForumThreadInputScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
@@ -53,10 +54,10 @@ import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.review.WriteReviewScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
+import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LinksScreen
-import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
@@ -532,7 +533,19 @@ fun AniSyncNavHost(
                     }
                 }
                 val onCreateThreadClick = remember(navController) {
-                    { navController.navigate(CreateThread) }
+                    { navController.navigate(CreateThread()) }
+                }
+
+                val onCreateThreadForMedia = remember(navController) {
+                    { mediaId: Int, title: String, coverUrl: String? ->
+                        navController.navigate(
+                            CreateThread(
+                                mediaId = mediaId,
+                                mediaTitle = title,
+                                mediaCoverUrl = coverUrl.orEmpty()
+                            )
+                        )
+                    }
                 }
 
                 val onThreadCommentClick = remember(navController) {
@@ -547,6 +560,7 @@ fun AniSyncNavHost(
                     onThreadClick = onThreadClick,
                     onThreadCommentClick = onThreadCommentClick,
                     onCreateThreadClick = onCreateThreadClick,
+                    onCreateThreadForMedia = onCreateThreadForMedia,
                     onUserClick = navigateToUserProfile
                 )
             }
@@ -609,6 +623,21 @@ fun AniSyncNavHost(
                     },
                     onWriteReviewClick = { mediaId, mediaTitle ->
                         navController.navigate(WriteReview(mediaId, mediaTitle))
+                    },
+                    onDiscussionClick = { threadId, threadTitle ->
+                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    },
+                    onViewAllDiscussions = { mediaId, mediaTitle ->
+                        navController.navigate(ForumMediaThreads(mediaId, mediaTitle))
+                    },
+                    onStartDiscussion = { mediaId, title, coverUrl ->
+                        navController.navigate(
+                            CreateThread(
+                                mediaId = mediaId,
+                                mediaTitle = title,
+                                mediaCoverUrl = coverUrl.orEmpty()
+                            )
+                        )
                     },
                     onUserClick = navigateToUserProfile,
                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -1119,6 +1148,34 @@ fun AniSyncNavHost(
                 ForumThreadInputScreen(
                     onBackClick = { navController.popBackStack() },
                     onThreadCreated = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // FORUM MEDIA THREADS - Shared Axis Z (Depth)
+            // =================================================================
+            composable<ForumMediaThreads>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ForumMediaThreads = backStackEntry.toRoute()
+                ForumMediaThreadsScreen(
+                    mediaTitle = route.mediaTitle,
+                    onBackClick = { navController.popBackStack() },
+                    onThreadClick = { threadId, threadTitle ->
+                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    },
+                    onThreadCommentClick = { threadId, commentId ->
+                        navController.navigate(ForumThreadDetail(threadId, "", commentId))
+                    },
+                    onUserClick = navigateToUserProfile,
+                    onCreateThread = {
+                        navController.navigate(
+                            CreateThread(mediaId = route.mediaId, mediaTitle = route.mediaTitle)
+                        )
+                    }
                 )
             }
 

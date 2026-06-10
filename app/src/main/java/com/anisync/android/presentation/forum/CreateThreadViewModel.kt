@@ -1,10 +1,12 @@
 package com.anisync.android.presentation.forum
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.presentation.components.alert.ToastManager
@@ -29,7 +31,8 @@ private const val MIN_SEARCH_QUERY_LENGTH = 2
 class CreateThreadViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val searchRepository: SearchRepository,
-    private val toastManager: ToastManager
+    private val toastManager: ToastManager,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateThreadUiState())
@@ -39,6 +42,40 @@ class CreateThreadViewModel @Inject constructor(
     val actions: SharedFlow<CreateThreadAction> = _actions.asSharedFlow()
 
     private var searchJob: Job? = null
+
+    init {
+        // Pre-attach the media passed via the CreateThread route (launched from a
+        // media's discussions / the forum search media filter). mediaId == 0 means
+        // the plain FAB entry point — nothing to seed.
+        val mediaId = savedStateHandle.get<Int>("mediaId") ?: 0
+        if (mediaId > 0) {
+            val title = savedStateHandle.get<String>("mediaTitle").orEmpty()
+            val cover = savedStateHandle.get<String>("mediaCoverUrl").orEmpty().ifBlank { null }
+            _uiState.update {
+                it.copy(selectedMediaCategories = listOf(buildPrefillMedia(mediaId, title, cover)))
+            }
+        }
+    }
+
+    /**
+     * Minimal [LibraryEntry] for a pre-attached media. Only [LibraryEntry.mediaId]
+     * is used at submit (mapped to `mediaCategories`); title/cover drive the chip.
+     */
+    private fun buildPrefillMedia(mediaId: Int, title: String, coverUrl: String?) = LibraryEntry(
+        id = mediaId,
+        mediaId = mediaId,
+        titleRomaji = null,
+        titleEnglish = null,
+        titleNative = null,
+        titleUserPreferred = title.ifBlank { "Selected media" },
+        coverUrl = coverUrl,
+        progress = 0,
+        totalEpisodes = null,
+        totalChapters = null,
+        totalVolumes = null,
+        type = null,
+        status = LibraryStatus.UNKNOWN
+    )
 
     fun onAction(action: CreateThreadAction) {
         when (action) {

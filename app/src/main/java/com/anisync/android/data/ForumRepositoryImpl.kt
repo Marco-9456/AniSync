@@ -6,12 +6,12 @@ import com.anisync.android.CreateForumThreadMutation
 import com.anisync.android.DeleteForumCommentMutation
 import com.anisync.android.DeleteForumThreadMutation
 import com.anisync.android.GetForumCommentsQuery
-import com.anisync.android.GetViewerQuery
 import com.anisync.android.GetForumOverviewQuery
 import com.anisync.android.GetForumThreadQuery
 import com.anisync.android.GetForumThreadsQuery
 import com.anisync.android.GetThreadCommentLikesQuery
 import com.anisync.android.GetThreadLikesQuery
+import com.anisync.android.GetViewerQuery
 import com.anisync.android.ToggleLikeThreadCommentMutation
 import com.anisync.android.ToggleLikeThreadMutation
 import com.anisync.android.ToggleThreadSubscriptionMutation
@@ -24,6 +24,7 @@ import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.PaginatedResult
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ThreadSortOption
 import com.anisync.android.domain.UserSummary
 import com.anisync.android.type.ThreadSort
 import com.anisync.android.util.AniListTextEncoder.encodeForAniList
@@ -32,6 +33,8 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
@@ -98,39 +101,85 @@ class ForumRepositoryImpl @Inject constructor(
     }
 
     // =========================================================================
-    // READ: Threads by category / search
+    // READ: Threads by category / media / author / search (advanced)
     // =========================================================================
+
+    /**
+     * In-flight dedup keyed by the full filter tuple. A re-trigger of the same
+     * search (rotation, refocus, rapid identical input that survives the VM
+     * debounce) suspends on the mutex and reuses the first request's result
+     * instead of issuing a duplicate — extra rate-limit safety on top of the
+     * ViewModel-level debounce/distinct/collectLatest pipeline.
+     */
+    private val threadSearchMutexes = ConcurrentHashMap<String, Mutex>()
+
+    private suspend fun <T> dedupeThreadSearch(key: String, block: suspend () -> T): T {
+        val mtx = threadSearchMutexes.computeIfAbsent(key) { Mutex() }
+        return try {
+            mtx.withLock { block() }
+        } finally {
+            if (!mtx.isLocked) threadSearchMutexes.remove(key, mtx)
+        }
+    }
+
+    override suspend fun searchThreads(
+        search: String?,
+        categoryId: Int?,
+        mediaCategoryId: Int?,
+        userId: Int?,
+        subscribed: Boolean?,
+        sort: ThreadSortOption,
+        page: Int
+    ): Result<PaginatedResult<ForumThread>> {
+        val trimmed = search?.trim()?.takeIf { it.isNotBlank() }
+        // SEARCH_MATCH only ranks meaningfully with a query — fall back when blank.
+        val sortList = if (sort == ThreadSortOption.RELEVANCE && trimmed == null) {
+            ThreadSortOption.Default.apiValue
+        } else {
+            sort.apiValue
+        }
+        val key =
+            "threads:$trimmed:$categoryId:$mediaCategoryId:$userId:$subscribed:${sort.name}:$page"
+        return runCatchingApi("load forum threads") {
+            dedupeThreadSearch(key) {
+                val response = apolloClient
+                    .query(
+                        GetForumThreadsQuery(
+                            page = Optional.present(page),
+                            categoryId = Optional.presentIfNotNull(categoryId),
+                            mediaCategoryId = Optional.presentIfNotNull(mediaCategoryId),
+                            userId = Optional.presentIfNotNull(userId),
+                            subscribed = Optional.presentIfNotNull(subscribed),
+                            search = Optional.presentIfNotNull(trimmed),
+                            sort = Optional.present(sortList)
+                        )
+                    )
+                    .fetchPolicy(FetchPolicy.NetworkOnly)
+                    .execute()
+
+                val pageData = response.data?.Page
+                val threads =
+                    pageData?.threads?.filterNotNull()?.map { it.toForumThread() } ?: emptyList()
+
+                PaginatedResult(
+                    items = threads,
+                    hasNextPage = pageData?.pageInfo?.hasNextPage ?: false,
+                    currentPage = pageData?.pageInfo?.currentPage ?: page,
+                    totalPages = 0
+                )
+            }
+        }
+    }
 
     override suspend fun getThreadsByCategory(
         categoryId: Int?,
         search: String?,
         page: Int
-    ): Result<PaginatedResult<ForumThread>> {
-        return runCatchingApi("load forum threads") {
-            val response = apolloClient
-                .query(
-                    GetForumThreadsQuery(
-                        page = Optional.present(page),
-                        categoryId = categoryId?.let { Optional.present(it) } ?: Optional.absent(),
-                        search = search?.takeIf { it.isNotBlank() }?.let { Optional.present(it) }
-                            ?: Optional.absent()
-                    )
-                )
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .execute()
-
-            val pageData = response.data?.Page
-            val threads =
-                pageData?.threads?.filterNotNull()?.map { it.toForumThread() } ?: emptyList()
-
-            PaginatedResult(
-                items = threads,
-                hasNextPage = pageData?.pageInfo?.hasNextPage ?: false,
-                currentPage = pageData?.pageInfo?.currentPage ?: page,
-                totalPages = 0
-            )
-        }
-    }
+    ): Result<PaginatedResult<ForumThread>> = searchThreads(
+        search = search,
+        categoryId = categoryId,
+        page = page
+    )
 
     // =========================================================================
     // READ: Single thread detail

@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -46,7 +47,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -85,6 +87,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -105,6 +108,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaFollowingEntry
@@ -115,6 +119,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.ContentMetadataSection
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
@@ -126,9 +131,9 @@ import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.RecommendMediaSheet
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
-import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.details.components.ReviewsListSheet
+import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
@@ -158,6 +163,9 @@ fun MediaDetailsScreen(
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
+    onDiscussionClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
+    onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
+    onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
     onUserClick: (String) -> Unit = {},
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
@@ -172,6 +180,7 @@ fun MediaDetailsScreen(
     val mangaCustomLists by viewModel.mangaCustomLists.collectAsStateWithLifecycle()
     val following by viewModel.following.collectAsStateWithLifecycle()
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
+    val discussions by viewModel.discussions.collectAsStateWithLifecycle()
 
     LaunchedEffect(mediaId) {
         viewModel.loadMedia(mediaId)
@@ -364,7 +373,7 @@ fun MediaDetailsScreen(
                                     zIndexInOverlay = 1f,
                                     renderInOverlay = {
                                         (isSharedTransitionRunning && isDetailsTargetingVisible) ||
-                                            shouldRenderChromeInOverlay
+                                                shouldRenderChromeInOverlay
                                     }
                                 )
                                 .graphicsLayer {
@@ -543,6 +552,27 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
+                                discussions = discussions,
+                                onDiscussionClick = { threadId, threadTitle ->
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
+                                    onDiscussionClick(threadId, threadTitle)
+                                },
+                                onViewAllDiscussions = {
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
+                                    onViewAllDiscussions(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage)
+                                    )
+                                },
+                                onStartDiscussion = {
+                                    onStartDiscussion(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage),
+                                        state.details.coverUrl
+                                    )
+                                },
                                 onRecommendMedia = viewModel::recommendMedia,
                                 onUserClick = onUserClick,
                                 onFavouriteClick = viewModel::toggleFavourite,
@@ -622,6 +652,97 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
     }
 }
 
+/**
+ * Compact, read-only preview row for a discussion thread in the media-detail
+ * Discussions section. Full thread actions live on the dedicated media-threads
+ * screen (reached via "View all").
+ */
+@Composable
+private fun DiscussionPreviewRow(
+    thread: ForumThread,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = thread.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    UserAvatar(
+                        url = thread.authorAvatarUrl,
+                        contentDescription = thread.authorName,
+                        size = 28.dp
+                    )
+                    Text(
+                        text = thread.authorName,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DiscussionStat(
+                        icon = Icons.Outlined.ChatBubbleOutline,
+                        value = thread.replyCount
+                    )
+                    DiscussionStat(icon = Icons.Outlined.FavoriteBorder, value = thread.likeCount)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscussionStat(icon: ImageVector, value: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsPageContent(
@@ -639,6 +760,10 @@ fun DetailsPageContent(
     onRelatedSeeAllClick: () -> Unit,
     onRecommendationsSeeAllClick: () -> Unit,
     onWriteReviewClick: () -> Unit,
+    discussions: List<ForumThread>,
+    onDiscussionClick: (Int, String) -> Unit,
+    onViewAllDiscussions: () -> Unit,
+    onStartDiscussion: () -> Unit,
     onRecommendMedia: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     onFavouriteClick: () -> Unit,
@@ -980,6 +1105,47 @@ fun DetailsPageContent(
                             .animateItem()
                     )
                 }
+            }
+
+            // 12. Discussions — forum threads with this media as a mediaCategory
+            item(key = "discussions_header") {
+                Column {
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                    SectionHeader(
+                        title = stringResource(R.string.forum_discussions_title),
+                        level = HeaderLevel.Section,
+                        onActionClick = if (discussions.isNotEmpty()) onViewAllDiscussions else null,
+                        trailingContent = {
+                            IconButton(onClick = onStartDiscussion) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(R.string.forum_discussions_start),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                    if (discussions.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.forum_discussions_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                        )
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                    }
+                }
+            }
+            items(items = discussions, key = { "discussion_${it.id}" }) { thread ->
+                DiscussionPreviewRow(
+                    thread = thread,
+                    onClick = { onDiscussionClick(thread.id, thread.title) },
+                    modifier = Modifier
+                        .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                        .padding(bottom = dimensionResource(R.dimen.spacing_normal))
+                        .animateItem()
+                )
             }
         }
     }

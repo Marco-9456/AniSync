@@ -2,11 +2,21 @@ query GetForumThreads(
   $page: Int = 1,
   $perPage: Int = 20,
   $categoryId: Int,
+  $mediaCategoryId: Int,
+  $userId: Int,
+  $subscribed: Boolean,
   $search: String,
   $sort: [ThreadSort] = [REPLIED_AT_DESC]
 ) {
   Page(page: $page, perPage: $perPage) {
-    threads(categoryId: $categoryId, search: $search, sort: $sort) {
+    threads(
+      categoryId: $categoryId,
+      mediaCategoryId: $mediaCategoryId,
+      userId: $userId,
+      subscribed: $subscribed,
+      search: $search,
+      sort: $sort
+    ) {
       id
       title
       body(asHtml: true)

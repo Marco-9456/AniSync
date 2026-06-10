@@ -18,12 +18,29 @@ interface ForumRepository {
 
     /**
      * Fetches threads filtered by [categoryId] and an optional [search] query.
-     * Used on the category browse screen.
+     * Used on the category browse screen. Thin wrapper over [searchThreads].
      */
     suspend fun getThreadsByCategory(
         categoryId: Int?,
         search: String?,
         page: Int
+    ): Result<PaginatedResult<ForumThread>>
+
+    /**
+     * Advanced thread search. Any combination of [search], [categoryId],
+     * [mediaCategoryId] (a related media id), [userId] (thread author id) and
+     * [subscribed] is supported, ordered by [sort]. Backs the forum search
+     * overlay, the media-detail Discussions section, and the per-media thread
+     * list. Pass `null` for any unused filter.
+     */
+    suspend fun searchThreads(
+        search: String? = null,
+        categoryId: Int? = null,
+        mediaCategoryId: Int? = null,
+        userId: Int? = null,
+        subscribed: Boolean? = null,
+        sort: ThreadSortOption = ThreadSortOption.Default,
+        page: Int = 1
     ): Result<PaginatedResult<ForumThread>>
 
     /**

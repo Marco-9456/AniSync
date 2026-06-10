@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import com.anisync.android.presentation.util.LocalMainNavBarInset
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -60,12 +59,13 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,17 +82,23 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
-import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.ScrollToTopFab
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.forum.components.ForumFeedSelector
+import com.anisync.android.presentation.forum.components.ForumFilterId
+import com.anisync.android.presentation.forum.components.ForumMediaFilterHeader
+import com.anisync.android.presentation.forum.components.ForumSearchFilterChipBar
+import com.anisync.android.presentation.forum.components.ForumSearchFilterSheetHost
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -135,6 +141,7 @@ fun ForumScreen(
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
     onThreadCommentClick: (threadId: Int, commentId: Int) -> Unit,
     onCreateThreadClick: () -> Unit,
+    onCreateThreadForMedia: (mediaId: Int, title: String, coverUrl: String?) -> Unit,
     onUserClick: (String) -> Unit,
     viewModel: ForumViewModel = hiltViewModel()
 ) {
@@ -142,13 +149,52 @@ fun ForumScreen(
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
+    val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
 
     val focusManager = LocalFocusManager.current
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
 
     val searchBarState = rememberSearchBarState()
-    val textFieldState = rememberTextFieldState(initialText = uiState.searchQuery)
+    val textFieldState = rememberTextFieldState(initialText = uiState.searchFilters.query)
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+    var openedFilter by remember { mutableStateOf<ForumFilterId?>(null) }
+
+    // Collapse the full-screen search bar (and drop focus) before navigating away
+    // from a result. Leaving the expanded overlay mounted across navigation makes
+    // the M3 search bar re-dispatch the pending click on return, which re-opens the
+    // destination in a loop. Mirrors DiscoverScreen's result-click handling.
+    val onSearchThreadClick: (Int, String) -> Unit =
+        remember(onThreadClick, searchBarState, coroutineScope, focusManager) {
+            { threadId, threadTitle ->
+                focusManager.clearFocus()
+                coroutineScope.launch { searchBarState.animateToCollapsed() }
+                onThreadClick(threadId, threadTitle)
+            }
+        }
+    val onSearchCommentClick: (Int, Int) -> Unit =
+        remember(onThreadCommentClick, searchBarState, coroutineScope, focusManager) {
+            { threadId, commentId ->
+                focusManager.clearFocus()
+                coroutineScope.launch { searchBarState.animateToCollapsed() }
+                onThreadCommentClick(threadId, commentId)
+            }
+        }
+    val onSearchUserClick: (String) -> Unit =
+        remember(onUserClick, searchBarState, coroutineScope, focusManager) {
+            { userName ->
+                focusManager.clearFocus()
+                coroutineScope.launch { searchBarState.animateToCollapsed() }
+                onUserClick(userName)
+            }
+        }
+    val onSearchCreateForMedia: (Int, String, String?) -> Unit =
+        remember(onCreateThreadForMedia, searchBarState, coroutineScope, focusManager) {
+            { mediaId, title, cover ->
+                focusManager.clearFocus()
+                coroutineScope.launch { searchBarState.animateToCollapsed() }
+                onCreateThreadForMedia(mediaId, title, cover)
+            }
+        }
 
     LaunchedEffect(Unit) {
         viewModel.onScreenVisible()
@@ -263,15 +309,24 @@ fun ForumScreen(
                     .navigationBarsPadding()
                     .padding(bottom = LocalMainNavBarInset.current)
             ) {
-                FloatingActionButton(
-                    onClick = onCreateThreadClick,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.forum_create_thread)
+                    ScrollToTopFab(
+                        visible = showScrollToTop,
+                        onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
                     )
+                    FloatingActionButton(
+                        onClick = onCreateThreadClick,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(R.string.forum_create_thread)
+                        )
+                    }
                 }
             }
         },
@@ -440,88 +495,133 @@ fun ForumScreen(
         }
     }
 
-    // Fullscreen search overlay
+    // Fullscreen advanced-search overlay
+    val searchFilters = uiState.searchFilters
+    val searchActive = searchFilters.query.trim().length >= 2 || searchFilters.hasActiveFilters
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         inputField = inputField
     ) {
-        when {
-            uiState.isLoading -> ForumLoadingSkeleton(
-                contentPadding = PaddingValues(
-                    top = 16.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+            ForumSearchFilterChipBar(
+                filters = searchFilters,
+                onChipTap = { openedFilter = it },
+                onToggleSubscribed = { viewModel.onAction(ForumAction.ToggleSubscribedOnly) }
             )
 
-            uiState.threads.isEmpty() && textFieldState.text.isNotEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.search_no_results),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+            searchFilters.media?.let { media ->
+                ForumMediaFilterHeader(
+                    media = media,
+                    onCreateThread = {
+                        onSearchCreateForMedia(
+                            media.mediaId,
+                            media.titleUserPreferred,
+                            media.coverUrl
+                        )
+                    },
+                    onClear = { viewModel.onAction(ForumAction.ClearMediaFilter) }
+                )
             }
 
-            else -> {
-                LazyColumn(
-                    contentPadding = PaddingValues(
-                        top = 16.dp,
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    itemsIndexed(
-                        items = uiState.threads,
-                        key = { _, thread -> "search_${thread.id}" },
-                        contentType = { _, _ -> "ForumThread" }
-                    ) { index, thread ->
+            when {
+                uiState.isSearching && uiState.searchResults.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
 
-                        if (index >= uiState.threads.size - 4 && uiState.hasNextPage && !uiState.isLoading && !uiState.isPaginating) {
-                            LaunchedEffect(index) {
-                                viewModel.onAction(ForumAction.LoadMore)
-                            }
-                        }
-
-                        ForumThreadCard(
-                            thread = thread,
-                            onClick = {
-                                focusManager.clearFocus()
-                                onThreadClick(thread.id, thread.title)
-                            },
-                            onUserClick = onUserClick,
-                            isSaved = thread.id in uiState.savedThreadIds,
-                            onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
-                            isSubscribed = thread.isSubscribed,
-                            onSubscribeClick = {
-                                viewModel.onAction(
-                                    ForumAction.ToggleSubscribeThread(
-                                        thread
-                                    )
-                                )
-                            },
-                            onLastReplyClick = onThreadCommentClick,
-                            modifier = sharedItemModifier
+                uiState.searchError != null && uiState.searchResults.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = uiState.searchError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
                         )
                     }
+                }
 
-                    if (uiState.isPaginating) {
-                        item(key = "search_paginating_indicator") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
+                !searchActive -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = stringResource(R.string.forum_search_prompt),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                    }
+                }
+
+                uiState.searchResults.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = stringResource(R.string.search_no_results),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(
+                            top = 8.dp,
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        itemsIndexed(
+                            items = uiState.searchResults,
+                            key = { _, thread -> "search_${thread.id}" },
+                            contentType = { _, _ -> "ForumThread" }
+                        ) { index, thread ->
+
+                            if (index >= uiState.searchResults.size - 4 && uiState.searchHasNextPage && !uiState.isSearching && !uiState.searchIsPaginating) {
+                                LaunchedEffect(index) {
+                                    viewModel.onAction(ForumAction.LoadMoreSearch)
+                                }
+                            }
+
+                            ForumThreadCard(
+                                thread = thread,
+                                onClick = { onSearchThreadClick(thread.id, thread.title) },
+                                onUserClick = onSearchUserClick,
+                                isSaved = thread.id in uiState.savedThreadIds,
+                                onSaveClick = {
+                                    viewModel.onAction(
+                                        ForumAction.ToggleSaveThread(
+                                            thread
+                                        )
+                                    )
+                                },
+                                isSubscribed = thread.isSubscribed,
+                                onSubscribeClick = {
+                                    viewModel.onAction(
+                                        ForumAction.ToggleSubscribeThread(
+                                            thread
+                                        )
+                                    )
+                                },
+                                onLastReplyClick = onSearchCommentClick,
+                                modifier = sharedItemModifier
+                            )
+                        }
+
+                        if (uiState.searchIsPaginating) {
+                            item(key = "search_paginating_indicator") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
                             }
                         }
                     }
@@ -529,6 +629,29 @@ fun ForumScreen(
             }
         }
     }
+
+    ForumSearchFilterSheetHost(
+        opened = openedFilter,
+        filters = searchFilters,
+        mediaPickerType = uiState.mediaPickerType,
+        mediaPickerQuery = uiState.mediaPickerQuery,
+        mediaPickerResults = uiState.mediaPickerResults,
+        isMediaPickerSearching = uiState.isMediaPickerSearching,
+        authorPickerQuery = uiState.authorPickerQuery,
+        authorPickerResults = uiState.authorPickerResults,
+        isAuthorPickerSearching = uiState.isAuthorPickerSearching,
+        pickerError = uiState.pickerError,
+        onSortChange = { viewModel.onAction(ForumAction.OnSortChange(it)) },
+        onCategoryChange = { viewModel.onAction(ForumAction.OnCategoryFilterChange(it)) },
+        onMediaPickerTypeChange = { viewModel.onAction(ForumAction.OnMediaPickerTypeChange(it)) },
+        onMediaPickerQueryChange = { viewModel.onAction(ForumAction.OnMediaPickerQueryChange(it)) },
+        onSelectMedia = { viewModel.onAction(ForumAction.SelectMediaFilter(it)) },
+        onClearMedia = { viewModel.onAction(ForumAction.ClearMediaFilter) },
+        onAuthorPickerQueryChange = { viewModel.onAction(ForumAction.OnAuthorPickerQueryChange(it)) },
+        onSelectAuthor = { viewModel.onAction(ForumAction.SelectAuthorFilter(it)) },
+        onClearAuthor = { viewModel.onAction(ForumAction.ClearAuthorFilter) },
+        onDismiss = { openedFilter = null }
+    )
 }
 
 @Composable

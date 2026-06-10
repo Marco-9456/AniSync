@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ThreadEventBus
+import com.anisync.android.domain.ThreadUpdate
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +34,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @HiltViewModel
 class ForumCategoryViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
+    private val threadEventBus: ThreadEventBus,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
@@ -52,6 +55,26 @@ class ForumCategoryViewModel @Inject constructor(
             .debounce(400.milliseconds)
             .onEach { load(page = 1, replaceExisting = true) }
             .launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            threadEventBus.events.collect { u ->
+                _uiState.update { state ->
+                    state.copy(
+                        threads = if (u.deleted) {
+                            state.threads.filterNot { it.id == u.id }.toPersistentList()
+                        } else {
+                            state.threads.map { if (it.id == u.id) u.applyTo(it) else it }
+                                .toPersistentList()
+                        },
+                        savedThreadIds = when (u.isSaved) {
+                            true -> (state.savedThreadIds + u.id).toPersistentSet()
+                            false -> (state.savedThreadIds - u.id).toPersistentSet()
+                            null -> state.savedThreadIds
+                        }
+                    )
+                }
+            }
+        }
     }
 
     fun initialize(categoryId: Int, categoryName: String) {
@@ -154,6 +177,7 @@ class ForumCategoryViewModel @Inject constructor(
                 _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds + thread.id).toPersistentSet()) }
                 toastManager.showToast(ToastType.SUCCESS, message = "Thread saved")
             }
+            threadEventBus.publish(ThreadUpdate(thread.id, isSaved = !isSaved))
         }
     }
 
@@ -168,6 +192,7 @@ class ForumCategoryViewModel @Inject constructor(
                     }.toPersistentList()
                 )
             }
+            threadEventBus.publish(ThreadUpdate(thread.id, isSubscribed = newState))
             when (val result = forumRepository.toggleThreadSubscription(thread.id, newState)) {
                 is Result.Success -> {
                     toastManager.showToast(

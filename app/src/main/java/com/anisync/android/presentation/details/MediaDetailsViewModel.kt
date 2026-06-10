@@ -8,6 +8,8 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.domain.DetailsRepository
+import com.anisync.android.domain.ForumRepository
+import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
@@ -38,6 +40,7 @@ class MediaDetailsViewModel @Inject constructor(
     private val accountStore: com.anisync.android.data.account.AccountStore,
     private val appSettings: AppSettings,
     private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
+    private val forumRepository: ForumRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -57,6 +60,13 @@ class MediaDetailsViewModel @Inject constructor(
 
     private val _hasMoreFollowing = MutableStateFlow(false)
     val hasMoreFollowing: StateFlow<Boolean> = _hasMoreFollowing.asStateFlow()
+
+    /** Forum threads that have this media as a `mediaCategory` (Discussions section). */
+    private val _discussions = MutableStateFlow<List<ForumThread>>(emptyList())
+    val discussions: StateFlow<List<ForumThread>> = _discussions.asStateFlow()
+
+    private val _hasMoreDiscussions = MutableStateFlow(false)
+    val hasMoreDiscussions: StateFlow<Boolean> = _hasMoreDiscussions.asStateFlow()
 
     val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
     
@@ -96,6 +106,32 @@ class MediaDetailsViewModel @Inject constructor(
         // Trigger network refresh to get fresh data
         refresh()
         loadFollowingPreview()
+        loadDiscussionsPreview()
+    }
+
+    /**
+     * Loads a small preview of forum threads tagged with this media. Mirrors
+     * [loadFollowingPreview]: a separate StateFlow, silent on failure so the
+     * section just stays hidden. Reuses the rate-limit-safe [ForumRepository.searchThreads].
+     */
+    private fun loadDiscussionsPreview() {
+        viewModelScope.launch {
+            when (val result = forumRepository.searchThreads(
+                mediaCategoryId = mediaId,
+                sort = com.anisync.android.domain.ThreadSortOption.RECENTLY_REPLIED,
+                page = 1
+            )) {
+                is Result.Success -> {
+                    _discussions.value = result.data.items.take(DISCUSSIONS_PREVIEW_LIMIT)
+                    _hasMoreDiscussions.value =
+                        result.data.hasNextPage || result.data.items.size > DISCUSSIONS_PREVIEW_LIMIT
+                }
+
+                is Result.Error -> {
+                    // Silent failure — section just stays empty.
+                }
+            }
+        }
     }
 
     private fun loadFollowingPreview() {
@@ -294,6 +330,7 @@ class MediaDetailsViewModel @Inject constructor(
 
     companion object {
         private const val FOLLOWING_PREVIEW_LIMIT = 10
+        private const val DISCUSSIONS_PREVIEW_LIMIT = 5
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {

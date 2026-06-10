@@ -6,6 +6,8 @@ import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.PaginatedResult
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ThreadEventBus
+import com.anisync.android.domain.ThreadUpdate
 import com.anisync.android.domain.parser.RichTextParser
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
@@ -28,6 +30,7 @@ private const val DEFAULT_PER_PAGE = 25
 @HiltViewModel
 class ThreadDetailViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
+    private val threadEventBus: ThreadEventBus,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
@@ -149,7 +152,10 @@ class ThreadDetailViewModel @Inject constructor(
         val threadId = _uiState.value.thread?.id ?: return
         viewModelScope.launch {
             when (val result = forumRepository.deleteThread(threadId)) {
-                is Result.Success -> _uiState.update { it.copy(threadDeleted = true) }
+                is Result.Success -> {
+                    threadEventBus.publish(ThreadUpdate(threadId, deleted = true))
+                    _uiState.update { it.copy(threadDeleted = true) }
+                }
                 is Result.Error -> showResultError(result)
             }
         }
@@ -158,11 +164,19 @@ class ThreadDetailViewModel @Inject constructor(
     private fun deleteComment(commentId: Int) {
         viewModelScope.launch {
             when (val result = forumRepository.deleteComment(commentId)) {
-                is Result.Success -> _uiState.update { state ->
-                    state.copy(
-                        comments = state.comments.removeComment(commentId),
-                        totalComments = (state.totalComments - 1).coerceAtLeast(0)
-                    )
+                is Result.Success -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            comments = state.comments.removeComment(commentId),
+                            totalComments = (state.totalComments - 1).coerceAtLeast(0),
+                            thread = state.thread?.copy(
+                                replyCount = (state.thread.replyCount - 1).coerceAtLeast(0)
+                            )
+                        )
+                    }
+                    _uiState.value.thread?.let {
+                        threadEventBus.publish(ThreadUpdate(it.id, replyCount = it.replyCount))
+                    }
                 }
                 is Result.Error -> showResultError(result)
             }
@@ -442,6 +456,17 @@ class ThreadDetailViewModel @Inject constructor(
                 state.copy(comments = state.comments.map { it.updateCommentLike(action) })
             }
         }
+        if (action.isThread) {
+            _uiState.value.thread?.let {
+                threadEventBus.publish(
+                    ThreadUpdate(
+                        it.id,
+                        isLiked = it.isLiked,
+                        likeCount = it.likeCount
+                    )
+                )
+            }
+        }
 
         viewModelScope.launch {
             try {
@@ -468,6 +493,17 @@ class ThreadDetailViewModel @Inject constructor(
                             state.copy(comments = state.comments.map { it.updateCommentLike(revertAction) })
                         }
                     }
+                    if (action.isThread) {
+                        _uiState.value.thread?.let {
+                            threadEventBus.publish(
+                                ThreadUpdate(
+                                    it.id,
+                                    isLiked = it.isLiked,
+                                    likeCount = it.likeCount
+                                )
+                            )
+                        }
+                    }
                 }
             } finally {
                 inFlightLikes.remove(likeKey)
@@ -480,6 +516,7 @@ class ThreadDetailViewModel @Inject constructor(
         val wasSaved = _uiState.value.isSaved
 
         _uiState.update { it.copy(isSaved = !wasSaved) }
+        threadEventBus.publish(ThreadUpdate(thread.id, isSaved = !wasSaved))
 
         viewModelScope.launch {
             try {
@@ -490,6 +527,7 @@ class ThreadDetailViewModel @Inject constructor(
                 }
             } catch (_: Exception) {
                 _uiState.update { it.copy(isSaved = wasSaved) }
+                threadEventBus.publish(ThreadUpdate(thread.id, isSaved = wasSaved))
             }
         }
     }
@@ -499,11 +537,13 @@ class ThreadDetailViewModel @Inject constructor(
         val wasSubscribed = thread.isSubscribed
 
         _uiState.update { it.copy(thread = thread.copy(isSubscribed = !wasSubscribed)) }
+        threadEventBus.publish(ThreadUpdate(thread.id, isSubscribed = !wasSubscribed))
 
         viewModelScope.launch {
             val result = forumRepository.toggleThreadSubscription(thread.id, !wasSubscribed)
             if (result is Result.Error) {
                 _uiState.update { it.copy(thread = it.thread?.copy(isSubscribed = wasSubscribed)) }
+                threadEventBus.publish(ThreadUpdate(thread.id, isSubscribed = wasSubscribed))
             }
         }
     }
@@ -542,6 +582,16 @@ class ThreadDetailViewModel @Inject constructor(
                             comments = updatedComments,
                             scrollToBottom = editingId == null && parentId == null
                         )
+                    }
+                    // A new comment (not an edit) bumps the thread's reply count;
+                    // broadcast so forum list cards reflect it on return.
+                    if (editingId == null) {
+                        _uiState.update { st ->
+                            st.copy(thread = st.thread?.copy(replyCount = st.thread.replyCount + 1))
+                        }
+                        _uiState.value.thread?.let {
+                            threadEventBus.publish(ThreadUpdate(it.id, replyCount = it.replyCount))
+                        }
                     }
                 }
 

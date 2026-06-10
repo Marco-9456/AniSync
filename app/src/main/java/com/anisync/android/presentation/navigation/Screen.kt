@@ -205,9 +205,35 @@ data class ForumThreadDetail(
 
 /**
  * Create new thread screen.
+ *
+ * Optionally pre-attaches a media to the thread's `mediaCategories` when launched
+ * from a media's discussions (forum search media filter / detail "Discussions").
+ * Defaults of [mediaId] = 0 / empty strings mean "no pre-attached media" so the
+ * plain FAB entry point still works. Nullable primitives are avoided because
+ * type-safe nav can't represent a nullable `Int` argument without a custom
+ * NavType.
+ * @param mediaId AniList media id to pre-attach, or 0 for none
+ * @param mediaTitle Display title for the pre-attached media chip
+ * @param mediaCoverUrl Cover image URL for the pre-attached media chip
  */
 @Serializable
-object CreateThread
+data class CreateThread(
+    val mediaId: Int = 0,
+    val mediaTitle: String = "",
+    val mediaCoverUrl: String = ""
+)
+
+/**
+ * Per-media discussions list — every thread with [mediaId] as a `mediaCategory`.
+ * Reached from the media detail "Discussions" section ("View all").
+ * @param mediaId The AniList media id
+ * @param mediaTitle Display title for the app bar
+ */
+@Serializable
+data class ForumMediaThreads(
+    val mediaId: Int,
+    val mediaTitle: String = ""
+)
 
 // =============================================================================
 // REVIEW ROUTES

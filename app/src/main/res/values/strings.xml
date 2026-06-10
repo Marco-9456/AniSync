@@ -45,6 +45,12 @@
     <string name="forum_a11y_open_page_jumper">Open page jumper</string>
     <string name="forum_search_threads">Search threads…</string>
     <string name="forum_search_placeholder">Search forum threads</string>
+    <string name="forum_search_prompt">Search discussions, or filter by media, category, author or sort</string>
+    <string name="forum_discussions_title">Discussions</string>
+    <string name="forum_discussions_view_all">View all discussions</string>
+    <string name="forum_discussions_empty">No discussions yet — start one</string>
+    <string name="forum_discussions_start">Start a discussion</string>
+    <string name="cd_scroll_to_top">Scroll to top</string>
     <string name="forum_select_categories">Select categories</string>
     <string name="forum_thread_title">Title</string>
     <string name="forum_thread_title_hint">What do you want to discuss?</string>

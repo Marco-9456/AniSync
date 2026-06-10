@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -34,11 +32,9 @@ import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +54,6 @@ import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.ui.theme.LocalAvatarShape
 
 @Composable
 fun ForumThreadCard(
@@ -75,7 +70,7 @@ fun ForumThreadCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
@@ -97,17 +92,14 @@ fun ForumThreadCard(
                 onUserClick = onUserClick
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 2. BODY: Title, Tags, and Media Cover
             ThreadBody(thread = thread)
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             // 3. FOOTER: Last Reply info & Engagement Stats
             ThreadFooter(
                 thread = thread,
-                onUserClick = onUserClick,
                 onLastReplyClick = onLastReplyClick
             )
         }
@@ -131,7 +123,7 @@ private fun ThreadHeader(
         UserAvatar(
             url = thread.authorAvatarUrl,
             contentDescription = thread.authorName,
-            size = 36.dp,
+            size = 40.dp,
             modifier = Modifier.clickable { onUserClick(thread.authorName) }
         )
 
@@ -146,7 +138,7 @@ private fun ThreadHeader(
                 Text(
                     text = thread.authorName,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -154,21 +146,21 @@ private fun ThreadHeader(
                         .clickable { onUserClick(thread.authorName) }
                 )
 
-                // Contextual Badges
+                // Contextual status icons (pinned / locked)
                 if (thread.isSticky) {
-                    StatusBadge(
-                        icon = Icons.Default.PushPin,
-                        text = stringResource(R.string.pinned),
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    Icon(
+                        imageVector = Icons.Default.PushPin,
+                        contentDescription = stringResource(R.string.pinned),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
                 if (thread.isLocked) {
-                    StatusBadge(
-                        icon = Icons.Default.Lock,
-                        text = stringResource(R.string.locked),
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = stringResource(R.string.locked),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -176,7 +168,8 @@ private fun ThreadHeader(
             Text(
                 text = formatRelativeTimeSeconds(thread.createdAt),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
@@ -220,15 +213,14 @@ private fun ThreadBody(thread: ForumThread) {
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 10.dp)
             )
 
             // Categories / Tags
             if (thread.categories.isNotEmpty()) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 4.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     thread.categories.forEach { category ->
                         CategoryChip(name = category.name)
@@ -239,12 +231,12 @@ private fun ThreadBody(thread: ForumThread) {
 
         // Optional Media Cover Thumbnail
         if (thread.mediaCoverUrl != null) {
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(12.dp))
             AsyncImage(
                 model = thread.mediaCover.url() ?: thread.mediaCoverUrl,
                 contentDescription = thread.mediaTitle ?: "Media cover",
                 modifier = Modifier
-                    .width(84.dp)
+                    .width(72.dp)
                     .aspectRatio(3f / 4f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -262,11 +254,12 @@ private fun ThreadBody(thread: ForumThread) {
 @Composable
 private fun ThreadFooter(
     thread: ForumThread,
-    onUserClick: (String) -> Unit,
     onLastReplyClick: (threadId: Int, commentId: Int) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -282,18 +275,23 @@ private fun ThreadFooter(
                         if (commentId != null) onLastReplyClick(thread.id, commentId)
                     },
                     shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(
+                            start = 6.dp,
+                            end = 12.dp,
+                            top = 6.dp,
+                            bottom = 6.dp
+                        )
                     ) {
                         UserAvatar(
                             url = thread.replyUserAvatarUrl,
                             contentDescription = thread.replyUserName,
-                            size = 18.dp
+                            size = 20.dp
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Last by ${thread.replyUserName} • ${
                                 formatRelativeTimeSeconds(
@@ -301,7 +299,8 @@ private fun ThreadFooter(
                                 )
                             }",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -310,7 +309,7 @@ private fun ThreadFooter(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
         // Engagement Metrics
         Row(
@@ -321,11 +320,13 @@ private fun ThreadFooter(
                 icon = Icons.Outlined.ChatBubbleOutline,
                 value = thread.replyCount
             )
+
             StatItem(
                 icon = if (thread.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 value = thread.likeCount,
                 tint = if (thread.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant
             )
+
             StatItem(
                 icon = Icons.Outlined.RemoveRedEye,
                 value = thread.viewCount
@@ -334,41 +335,7 @@ private fun ThreadFooter(
     }
 }
 
-// ============================================================================
-// --- Reusable Micro-Components ---
-// ============================================================================
-
-@Composable
-private fun StatusBadge(
-    icon: ImageVector,
-    text: String,
-    containerColor: Color,
-    contentColor: Color
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(containerColor)
-            .padding(horizontal = 4.dp, vertical = 2.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(12.dp)
-        )
-        Spacer(modifier = Modifier.width(2.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = contentColor,
-            modifier = Modifier.padding(bottom = 1.dp) // Optical alignment
-        )
-    }
-}
-
+// Reusable Micro-Components
 @Composable
 private fun ActionIconButton(
     icon: ImageVector,
@@ -377,15 +344,18 @@ private fun ActionIconButton(
     activeColor: Color,
     onClick: () -> Unit
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.size(36.dp)
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = if (isActive) activeColor else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -395,12 +365,12 @@ private fun CategoryChip(name: String) {
     Text(
         text = name,
         style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }
 
@@ -422,23 +392,18 @@ private fun StatItem(
             text = formatStatValue(value),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = tint,
             maxLines = 1
         )
     }
 }
 
-// UserAvatar now lives in presentation/components/UserAvatar.kt (shared).
-
-// ============================================================================
-// --- Enhanced Skeleton Loader ---
-// ============================================================================
-
+// Enhanced Skeleton Loader
 @Composable
 fun ForumThreadCardSkeleton(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -447,14 +412,14 @@ fun ForumThreadCardSkeleton(modifier: Modifier = Modifier) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Header Skeleton
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SkeletonBox(width = 36.dp, height = 36.dp, shape = CircleShape)
+                SkeletonBox(width = 40.dp, height = 40.dp, shape = CircleShape)
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     SkeletonBox(width = 100.dp, height = 14.dp)
                     Spacer(Modifier.height(8.dp))
                     SkeletonBox(width = 60.dp, height = 10.dp)
                 }
-                SkeletonBox(width = 32.dp, height = 32.dp, shape = CircleShape)
+                SkeletonBox(width = 36.dp, height = 36.dp, shape = CircleShape)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -481,9 +446,9 @@ fun ForumThreadCardSkeleton(modifier: Modifier = Modifier) {
                     }
                 }
 
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(12.dp))
                 // Thumbnail Skeleton
-                SkeletonBox(width = 84.dp, height = 112.dp, shape = RoundedCornerShape(12.dp))
+                SkeletonBox(width = 72.dp, height = 96.dp, shape = RoundedCornerShape(12.dp))
             }
 
             Spacer(Modifier.height(20.dp))
@@ -495,13 +460,13 @@ fun ForumThreadCardSkeleton(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Last reply skeleton
-                SkeletonBox(width = 160.dp, height = 26.dp, shape = RoundedCornerShape(50))
+                SkeletonBox(width = 140.dp, height = 32.dp, shape = RoundedCornerShape(50))
 
                 // Stats skeleton
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SkeletonBox(width = 36.dp, height = 16.dp)
-                    SkeletonBox(width = 36.dp, height = 16.dp)
-                    SkeletonBox(width = 36.dp, height = 16.dp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SkeletonBox(width = 48.dp, height = 32.dp, shape = RoundedCornerShape(50))
+                    SkeletonBox(width = 48.dp, height = 32.dp, shape = RoundedCornerShape(50))
+                    SkeletonBox(width = 48.dp, height = 32.dp, shape = RoundedCornerShape(50))
                 }
             }
         }
@@ -524,10 +489,8 @@ private fun SkeletonBox(
     )
 }
 
-// ============================================================================
-// --- Domain Mocks & Helpers ---
-// ============================================================================
 
+// Domain Mocks & Helpers
 data class ForumThread(
     val id: Int,
     val title: String,
@@ -540,6 +503,7 @@ data class ForumThread(
     val replyUserName: String? = null,
     val replyUserAvatarUrl: String? = null,
     val repliedAt: Long? = null,
+    val replyCommentId: Int? = null,
     val replyCount: Int,
     val likeCount: Int,
     val viewCount: Int,
@@ -580,10 +544,8 @@ private fun formatStatValue(value: Int): String {
     }
 }
 
-// ============================================================================
-// --- Jetpack Compose Previews ---
-// ============================================================================
 
+// Jetpack Compose Previews
 @Preview(showBackground = true, backgroundColor = 0xFFF3F4F6)
 @Composable
 private fun PreviewForumThreadCard_Normal() {
