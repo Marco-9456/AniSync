@@ -1,10 +1,16 @@
-query GetRecentReviews($mediaType: MediaType, $page: Int = 1) {
+query GetRecentReviews(
+  $mediaType: MediaType,
+  $mediaId: Int,
+  $userId: Int,
+  $sort: [ReviewSort] = [CREATED_AT_DESC],
+  $page: Int = 1
+) {
   Page(page: $page, perPage: 20) {
     pageInfo {
       hasNextPage
       total
     }
-    reviews(mediaType: $mediaType, sort: CREATED_AT_DESC) {
+    reviews(mediaType: $mediaType, mediaId: $mediaId, userId: $userId, sort: $sort) {
       id
       summary
       body(asHtml: true)

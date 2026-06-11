@@ -294,7 +294,8 @@ class DiscoverViewModel @Inject constructor(
             val tbaDeferred = async { discoverRepository.getTBA(mediaType) }
             // Recent reviews ride alongside the media sections but never gate the
             // screen — a reviews failure just hides that one section.
-            val recentReviewsDeferred = async { discoverRepository.getRecentReviews(mediaType, 1) }
+            val recentReviewsDeferred =
+                async { discoverRepository.getRecentReviews(mediaType = mediaType, page = 1) }
 
             val trendingResult = trendingDeferred.await()
             val popularResult = popularDeferred.await()

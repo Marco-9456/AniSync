@@ -37,12 +37,18 @@ class DiscoverRepositoryImpl @Inject constructor(
 
     override suspend fun getRecentReviews(
         mediaType: MediaType?,
+        mediaId: Int?,
+        userId: Int?,
+        sort: com.anisync.android.domain.ReviewSortOption,
         page: Int
     ): Result<com.anisync.android.domain.UserReviewsPage> {
         return safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetRecentReviewsQuery(
                     mediaType = mediaType?.let { Optional.present(it) } ?: Optional.absent(),
+                    mediaId = mediaId?.let { Optional.present(it) } ?: Optional.absent(),
+                    userId = userId?.let { Optional.present(it) } ?: Optional.absent(),
+                    sort = Optional.present(listOf(sort.apiValue)),
                     page = Optional.present(page)
                 )
             )

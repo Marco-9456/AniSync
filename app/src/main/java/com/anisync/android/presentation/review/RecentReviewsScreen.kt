@@ -1,10 +1,8 @@
 package com.anisync.android.presentation.review
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,17 +13,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -45,6 +42,7 @@ fun RecentReviewsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    var openedFilter by remember { mutableStateOf<ReviewFilterId?>(null) }
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -67,12 +65,14 @@ fun RecentReviewsScreen(
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.background,
         belowBar = {
-            ReviewFilterChipRow(
-                selected = uiState.filter,
-                onSelect = { viewModel.onAction(RecentReviewsAction.SetFilter(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+            ReviewSearchFilterChipBar(
+                filter = uiState.filter,
+                sort = uiState.sort,
+                media = uiState.media,
+                author = uiState.author,
+                onTypeSelect = { viewModel.onAction(RecentReviewsAction.SetFilter(it)) },
+                onChipTap = { openedFilter = it },
+                modifier = Modifier.fillMaxWidth()
             )
         }
     ) { topContentPadding ->
@@ -163,42 +163,28 @@ fun RecentReviewsScreen(
             }
         }
     }
-}
 
-/**
- * Media-type filter rendered as the chip row used by the expanded Section grids
- * ([com.anisync.android.presentation.discover.components.SearchFiltersRow]).
- */
-@Composable
-private fun ReviewFilterChipRow(
-    selected: ReviewMediaFilter,
-    onSelect: (ReviewMediaFilter) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val options = remember {
-        listOf(
-            ReviewMediaFilter.ALL to R.string.reviews_filter_all,
-            ReviewMediaFilter.ANIME to R.string.media_type_anime,
-            ReviewMediaFilter.MANGA to R.string.media_type_manga
-        )
-    }
-
-    Row(
-        modifier = modifier
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        options.forEach { (filter, labelRes) ->
-            FilterChip(
-                selected = selected == filter,
-                onClick = { onSelect(filter) },
-                label = { Text(stringResource(labelRes)) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
-    }
+    ReviewSearchFilterSheetHost(
+        opened = openedFilter,
+        sort = uiState.sort,
+        media = uiState.media,
+        author = uiState.author,
+        mediaPickerType = uiState.mediaPickerType,
+        mediaPickerQuery = uiState.mediaPickerQuery,
+        mediaPickerResults = uiState.mediaPickerResults,
+        isMediaPickerSearching = uiState.isMediaPickerSearching,
+        authorPickerQuery = uiState.authorPickerQuery,
+        authorPickerResults = uiState.authorPickerResults,
+        isAuthorPickerSearching = uiState.isAuthorPickerSearching,
+        pickerError = uiState.pickerError,
+        onSortChange = { viewModel.onAction(RecentReviewsAction.SetSort(it)) },
+        onMediaPickerTypeChange = { viewModel.onAction(RecentReviewsAction.OnMediaPickerTypeChange(it)) },
+        onMediaPickerQueryChange = { viewModel.onAction(RecentReviewsAction.OnMediaPickerQueryChange(it)) },
+        onSelectMedia = { viewModel.onAction(RecentReviewsAction.SelectMedia(it)) },
+        onClearMedia = { viewModel.onAction(RecentReviewsAction.ClearMedia) },
+        onAuthorPickerQueryChange = { viewModel.onAction(RecentReviewsAction.OnAuthorPickerQueryChange(it)) },
+        onSelectAuthor = { viewModel.onAction(RecentReviewsAction.SelectAuthor(it)) },
+        onClearAuthor = { viewModel.onAction(RecentReviewsAction.ClearAuthor) },
+        onDismiss = { openedFilter = null }
+    )
 }

@@ -45,12 +45,22 @@ interface DiscoverRepository {
     suspend fun getNewlyAdded(type: MediaType): Result<List<LibraryEntry>>
 
     /**
-     * Get the most recently published reviews across AniList, newest first.
-     * @param mediaType Optional filter (ANIME or MANGA); null returns reviews for both
+     * Get recently published reviews across AniList.
+     * @param mediaType Optional media-type filter (ANIME or MANGA); null returns both.
+     *   Ignored by callers when [mediaId] is set (a specific media already fixes the type).
+     * @param mediaId Optional specific-media filter (only reviews of this media)
+     * @param userId Optional author filter (only reviews written by this user)
+     * @param sort Ordering applied to the results; defaults to newest first
      * @param page Page number (1-indexed)
      * @return Paginated reviews or error
      */
-    suspend fun getRecentReviews(mediaType: MediaType?, page: Int): Result<UserReviewsPage>
+    suspend fun getRecentReviews(
+        mediaType: MediaType?,
+        mediaId: Int? = null,
+        userId: Int? = null,
+        sort: ReviewSortOption = ReviewSortOption.Default,
+        page: Int
+    ): Result<UserReviewsPage>
     
     /**
      * Fetches paginated media for grid screens with optional format filtering.
