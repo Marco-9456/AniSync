@@ -25,6 +25,7 @@ sealed interface SettingsAction {
     data class SetAvatarShape(val shape: AvatarShape) : SettingsAction
     data class SetAvatarBackgroundEnabled(val enabled: Boolean) : SettingsAction
     data class SetDisableAvatarShapeProfile(val disabled: Boolean) : SettingsAction
+    data class SetRespectUserProfileColors(val enabled: Boolean) : SettingsAction
     data class SetShowAdultContent(val enabled: Boolean) : SettingsAction
     data class SetPreferredStreamingService(val service: StreamingService) : SettingsAction
     data class SetAppLocale(val locale: AppLocale) : SettingsAction
@@ -116,6 +117,7 @@ data class SettingsUiState(
     val avatarShape: AvatarShape = AvatarShape.CLOVER_8_LEAF,
     val avatarBackgroundEnabled: Boolean = true,
     val disableAvatarShapeProfile: Boolean = false,
+    val respectUserProfileColors: Boolean = false,
     val showAdultContent: Boolean = false,
     val preferredStreamingService: StreamingService = StreamingService.CRUNCHYROLL,
     

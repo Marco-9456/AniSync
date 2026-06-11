@@ -311,6 +311,7 @@ class ProfileRepositoryImpl @Inject constructor(
             val profile = UserProfile(
                 id = user.id ?: 0,
                 name = user.name ?: "Unknown",
+                profileColor = user.options?.profileColor,
                 avatarUrl = user.avatar?.large,
                 bannerUrl = user.bannerImage,
                 about = user.about,

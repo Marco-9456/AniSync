@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 data class UserProfile(
     val id: Int,
     val name: String,
+    /** AniList profile highlight color: a named color (blue/purple/…) or a donator hex, or null
+     *  for the default. Drives the optional per-visited-profile theme tint. */
+    val profileColor: String? = null,
     val avatarUrl: String?,
     val bannerUrl: String?,
     val about: String?,

@@ -265,6 +265,8 @@
     <string name="avatar_shape_background_desc">Adds a themed background behind the avatar</string>
     <string name="avatar_shape_show_frame">Show frame</string>
     <string name="avatar_shape_show_frame_desc">Draws a ring and background behind avatars</string>
+    <string name="setting_respect_profile_colors">Use profile colors</string>
+    <string name="setting_respect_profile_colors_desc">Tint the app with a user\'s chosen color when you visit their profile. Profiles using the default color keep your theme.</string>
     <string name="avatar_shape_clover">8-Leaf Clover</string>
     <string name="avatar_shape_clover_desc">The default 8-leaf clover shape</string>
     <string name="avatar_shape_circle">Circle</string>

@@ -123,6 +123,7 @@ fun LookAndFeelScreen(
     val avatarShape = uiState.avatarShape
     val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
     val disableAvatarShapeProfile = uiState.disableAvatarShapeProfile
+    val respectUserProfileColors = uiState.respectUserProfileColors
 
     val selectedPaletteId = uiState.selectedPaletteId
     val customSeedColor = uiState.customSeedColor
@@ -390,6 +391,20 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.setting_avatar_shape),
                 currentValue = avatarShapeLabel(avatarShape),
                 onClick = { showAvatarShapeDialog = true }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        SettingsGroup {
+            SwitchSettingsItem(
+                icon = Icons.Default.Palette,
+                title = stringResource(R.string.setting_respect_profile_colors),
+                subtitle = stringResource(R.string.setting_respect_profile_colors_desc),
+                checked = respectUserProfileColors,
+                onCheckedChange = {
+                    viewModel.onAction(SettingsAction.SetRespectUserProfileColors(it))
+                }
             )
         }
 

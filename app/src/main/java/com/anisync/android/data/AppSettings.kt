@@ -156,6 +156,11 @@ class AppSettings @Inject constructor(
     // Disable avatar shape for own profile setting
     private val _disableAvatarShapeProfile = MutableStateFlow(prefs.getBoolean(KEY_DISABLE_AVATAR_SHAPE_PROFILE, false))
     val disableAvatarShapeProfile: StateFlow<Boolean> = _disableAvatarShapeProfile.asStateFlow()
+
+    // When on, visiting another user's profile retints the app (MaterialKolor seed) with their
+    // AniList profile color. Device-local appearance preference; default off (opt-in).
+    private val _respectUserProfileColors = MutableStateFlow(prefs.getBoolean(KEY_RESPECT_PROFILE_COLORS, false))
+    val respectUserProfileColors: StateFlow<Boolean> = _respectUserProfileColors.asStateFlow()
     
     // Haptic feedback setting
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
@@ -524,6 +529,11 @@ class AppSettings @Inject constructor(
     fun setDisableAvatarShapeProfile(disabled: Boolean) {
         _disableAvatarShapeProfile.value = disabled
         prefs.edit().putBoolean(KEY_DISABLE_AVATAR_SHAPE_PROFILE, disabled).apply()
+    }
+
+    fun setRespectUserProfileColors(enabled: Boolean) {
+        _respectUserProfileColors.value = enabled
+        prefs.edit().putBoolean(KEY_RESPECT_PROFILE_COLORS, enabled).apply()
     }
     
     /**
@@ -934,6 +944,7 @@ companion object {
         private const val KEY_TITLE_LANGUAGE = "title_language"
         private const val KEY_AVATAR_BACKGROUND_ENABLED = "avatar_background_enabled"
         private const val KEY_DISABLE_AVATAR_SHAPE_PROFILE = "disable_avatar_shape_profile"
+        private const val KEY_RESPECT_PROFILE_COLORS = "respect_user_profile_colors"
         private const val KEY_COVER_QUALITY = "cover_quality"
         private const val KEY_PREFERRED_STREAMING_SERVICE = "preferred_streaming_service"
         private const val KEY_SELECTED_PALETTE = "selected_palette"

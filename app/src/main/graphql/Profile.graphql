@@ -113,6 +113,9 @@ query GetFullUserProfile(
   User(id: $userId, name: $name) {
     name
     id
+    options {
+      profileColor
+    }
     avatar {
       large
     }

@@ -35,6 +35,11 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.anisync.android.data.ThemeMode
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.ui.theme.AppTheme
+import com.anisync.android.ui.theme.aniListProfileSeedColor
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -80,6 +85,10 @@ fun ProfileScreen(
         lastResumeAtMs.longValue = now
     }
 
+    ProfileColorThemeOverride(
+        isOwnProfile = isOwnProfile,
+        profileColor = uiState.profile?.profileColor,
+    ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -154,6 +163,7 @@ fun ProfileScreen(
             }
         }
     }
+    }
 
     val profile = uiState.profile
     if (profile != null && uiState.isEditProfileDialogVisible && isOwnProfile) {
@@ -190,4 +200,39 @@ fun ProfileScreen(
             onDismiss = { showAccountSwitcherSheet = false }
         )
     }
+}
+
+/**
+ * Wraps a visited user's profile in a MaterialKolor theme seeded from their AniList profile color,
+ * when the "Use profile colors" appearance preference is on. The viewer's own profile, profiles on
+ * the default/unset color, and the toggle being off all fall through to the app's normal theme.
+ * Only the seed hue changes — the viewer's palette style and light/dark choice are preserved.
+ */
+@Composable
+private fun ProfileColorThemeOverride(
+    isOwnProfile: Boolean,
+    profileColor: String?,
+    content: @Composable () -> Unit,
+) {
+    val appSettings = LocalAppSettings.current
+    val respect by appSettings.respectUserProfileColors.collectAsStateWithLifecycle()
+    val seed = if (!isOwnProfile && respect) aniListProfileSeedColor(profileColor) else null
+    if (seed == null) {
+        content()
+        return
+    }
+    val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
+    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+    AppTheme(
+        darkTheme = darkTheme,
+        dynamicColor = false,
+        seedColor = seed,
+        paletteStyle = paletteStyle,
+        content = content,
+    )
 }

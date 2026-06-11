@@ -46,6 +46,7 @@ import com.anisync.android.domain.AniListListActivityStatus
 import com.anisync.android.domain.AniListStaffNameLanguage
 import com.anisync.android.domain.AniListTitleLanguage
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.ui.theme.AniListProfileColors
 
 /**
  * The AniList account-options sections (content & titles, social & activity, profile). Hosted by
@@ -330,7 +331,7 @@ private fun ProfileColorSheet(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                PROFILE_COLORS.forEach { (name, color) ->
+                AniListProfileColors.forEach { (name, color) ->
                     val isSelected = name == selected
                     Box(
                         modifier = Modifier
@@ -452,13 +453,3 @@ internal fun activityMergeLabel(minutes: Int?): String = when {
     minutes < 1440 -> "${minutes / 60} hour${if (minutes >= 120) "s" else ""}"
     else -> "${minutes / 1440} day${if (minutes >= 2880) "s" else ""}"
 }
-
-private val PROFILE_COLORS: List<Pair<String, Color>> = listOf(
-    "blue" to Color(0xFF3DB4F2),
-    "purple" to Color(0xFFC063FF),
-    "pink" to Color(0xFFFC9DD6),
-    "orange" to Color(0xFFEF881A),
-    "red" to Color(0xFFE13333),
-    "green" to Color(0xFF4CCB48),
-    "gray" to Color(0xFF677B94),
-)

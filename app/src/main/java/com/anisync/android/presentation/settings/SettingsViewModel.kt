@@ -94,12 +94,14 @@ class SettingsViewModel @Inject constructor(
             },
             appSettings.avatarShape,
             appSettings.avatarBackgroundEnabled,
-            appSettings.disableAvatarShapeProfile
-        ) { state, avatarShape, bgEnabled, disableProfile ->
+            appSettings.disableAvatarShapeProfile,
+            appSettings.respectUserProfileColors
+        ) { state, avatarShape, bgEnabled, disableProfile, respectColors ->
             state.copy(
-                avatarShape = avatarShape, 
+                avatarShape = avatarShape,
                 avatarBackgroundEnabled = bgEnabled,
-                disableAvatarShapeProfile = disableProfile
+                disableAvatarShapeProfile = disableProfile,
+                respectUserProfileColors = respectColors
             )
         },
         combine(
@@ -224,6 +226,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetAvatarShape -> appSettings.setAvatarShape(action.shape)
             is SettingsAction.SetAvatarBackgroundEnabled -> appSettings.setAvatarBackgroundEnabled(action.enabled)
             is SettingsAction.SetDisableAvatarShapeProfile -> appSettings.setDisableAvatarShapeProfile(action.disabled)
+            is SettingsAction.SetRespectUserProfileColors -> appSettings.setRespectUserProfileColors(action.enabled)
             is SettingsAction.SetShowAdultContent -> appSettings.setShowAdultContent(action.enabled)
             is SettingsAction.SetPreferredStreamingService -> appSettings.setPreferredStreamingService(
                 action.service
