@@ -36,6 +36,7 @@ import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.VoiceActor
 import com.anisync.android.domain.VoicedCharacter
 import com.anisync.android.type.MediaType
+import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.anisync.android.util.stripHtml
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -777,8 +778,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 com.anisync.android.SaveReviewMutation(
                     id = Optional.presentIfNotNull(reviewId),
                     mediaId = Optional.present(mediaId),
-                    body = Optional.present(body),
-                    summary = Optional.present(summary),
+                    body = Optional.present(encodeForAniList(body)),
+                    summary = Optional.present(encodeForAniList(summary)),
                     score = Optional.present(score),
                     private = Optional.present(private)
                 )

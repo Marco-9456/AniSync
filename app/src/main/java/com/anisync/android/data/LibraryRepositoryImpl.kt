@@ -15,6 +15,7 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
 import com.anisync.android.data.account.AccountStore
+import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
@@ -290,7 +291,7 @@ class LibraryRepositoryImpl @Inject constructor(
                     progress = Optional.present(updatedEntry.progress),
                     score = Optional.presentIfNotNull(updatedEntry.score),
                     repeat = Optional.present(updatedEntry.rewatches),
-                    notes = Optional.presentIfNotNull(updatedEntry.notes),
+                    notes = Optional.presentIfNotNull(updatedEntry.notes?.let(::encodeForAniList)),
                     startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
                     completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
                     customLists = Optional.present(updatedEntry.customLists),

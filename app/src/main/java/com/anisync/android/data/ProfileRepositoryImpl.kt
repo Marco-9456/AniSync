@@ -373,7 +373,7 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun updateAbout(about: String): Result<Unit> {
         return safeApiCall {
             val response = apolloClient.mutation(
-                com.anisync.android.UpdateAboutMutation(about = Optional.present(about))
+                com.anisync.android.UpdateAboutMutation(about = Optional.present(encodeForAniList(about)))
             ).execute()
 
             if (response.hasErrors()) {
