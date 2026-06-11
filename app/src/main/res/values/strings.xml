@@ -549,6 +549,10 @@
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_activity">Activity</string>
     <string name="profile_tab_social">Social</string>
+    <!-- Media details section tabs -->
+    <string name="details_tab_overview">Overview</string>
+    <string name="details_tab_characters">Characters</string>
+    <string name="details_tab_social">Social</string>
     <string name="profile_activity_all">All</string>
     <string name="profile_activity_status">Status</string>
     <string name="profile_activity_messages">Messages</string>

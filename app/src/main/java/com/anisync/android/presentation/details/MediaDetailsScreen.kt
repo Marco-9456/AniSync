@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.details
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
@@ -44,11 +45,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -115,6 +119,7 @@ import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.ConnectedToggleButtonGroup
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.ReviewCard
@@ -743,6 +748,41 @@ private fun DiscussionStat(icon: ImageVector, value: Int) {
     }
 }
 
+/**
+ * Top-level grouping of the media-detail page. The header (cover/banner/title) and the
+ * favorite/share row sit above the tab bar; everything else lives under one of these tabs so the
+ * page reads as a few focused screens instead of one long scroll.
+ */
+enum class DetailsTab(@StringRes val titleRes: Int) {
+    OVERVIEW(R.string.details_tab_overview),
+    CHARACTERS(R.string.details_tab_characters),
+    SOCIAL(R.string.details_tab_social)
+}
+
+private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
+    DetailsTab.OVERVIEW -> Icons.Outlined.Info
+    DetailsTab.CHARACTERS -> Icons.Default.Group
+    DetailsTab.SOCIAL -> Icons.Default.Forum
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DetailsTabsButtonGroup(
+    tabs: List<DetailsTab>,
+    selectedTab: DetailsTab,
+    onTabSelected: (DetailsTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ConnectedToggleButtonGroup(
+        options = tabs,
+        selected = selectedTab,
+        onSelect = onTabSelected,
+        label = { stringResource(it.titleRes) },
+        modifier = modifier.padding(vertical = 8.dp),
+        icon = ::detailsTabIcon
+    )
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsPageContent(
@@ -811,13 +851,36 @@ fun DetailsPageContent(
     var showAllFollowingSheet by remember { mutableStateOf(false) }
     var showRecommendSheet by remember { mutableStateOf(false) }
 
+    val displayStaff = remember(details.staff) {
+        details.staff.distinctBy { it.id }.take(10)
+    }
+
+    var selectedTab by rememberSaveable { mutableStateOf(DetailsTab.OVERVIEW) }
+
+    // Only surface tabs that have something to show. Overview is always present; Social always
+    // offers the "start discussion" affordance, so neither ever collapses.
+    val availableTabs = remember(displayCharacters, displayStaff) {
+        buildList {
+            add(DetailsTab.OVERVIEW)
+            if (displayCharacters.isNotEmpty() || displayStaff.isNotEmpty()) {
+                add(DetailsTab.CHARACTERS)
+            }
+            add(DetailsTab.SOCIAL)
+        }
+    }
+
+    // If the active tab disappears (data changed underneath), fall back to Overview.
+    LaunchedEffect(availableTabs) {
+        if (selectedTab !in availableTabs) selectedTab = DetailsTab.OVERVIEW
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 100.dp) // Sufficient padding for FAB
         ) {
-            // 1. Header (Cover, Banner, Title)
+            // Header (Cover, Banner, Title) — always visible above the tabs
             item(key = "header") {
                 PageHeaderSection(
                     details = details,
@@ -829,7 +892,7 @@ fun DetailsPageContent(
                 )
             }
 
-            // 2. Action Row (Buttons)
+            // Action Row (Favorite / Share) — always visible above the tabs
             item(key = "action_buttons") {
                 Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                     Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
@@ -841,311 +904,326 @@ fun DetailsPageContent(
                 }
             }
 
-            // 3. Information (Info Cards)
-            item(key = "info_cards") {
-                Column {
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                    HorizontalInfoCards(details = details, onStudioClick = onStudioClick)
-                }
+            // Section selector — groups the rest of the page into focused tabs
+            item(key = "tabs") {
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                DetailsTabsButtonGroup(
+                    tabs = availableTabs,
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it }
+                )
             }
 
-            // 4. Synopsis
-            item(key = "synopsis") {
-                Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                    ExpandableSynopsis(details.description)
-                }
-            }
-
-            // 5. Categories (Genres & Tags)
-            item(key = "metadata") {
-                if (details.tags.isNotEmpty() || details.genres.isNotEmpty()) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                        ContentMetadataSection(genres = details.genres, tags = details.tags)
+            when (selectedTab) {
+                DetailsTab.OVERVIEW -> {
+                    // Information (Info Cards)
+                    item(key = "info_cards") {
+                        Column {
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                            HorizontalInfoCards(details = details, onStudioClick = onStudioClick)
+                        }
                     }
-                }
-            }
 
-            // 6. External & Streaming Links
-            item(key = "external_links") {
-                if (details.externalLinks.isNotEmpty()) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                        ExternalLinksSection(
-                            externalLinks = details.externalLinks,
-                            mediaType = details.type
-                        )
+                    // Synopsis
+                    item(key = "synopsis") {
+                        Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                            ExpandableSynopsis(details.description)
+                        }
                     }
-                }
-            }
 
-            // 7. Cast
-            item(key = "cast") {
-                if (displayCharacters.isNotEmpty()) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                        SectionHeader(
-                            title = stringResource(R.string.section_cast),
-                            level = HeaderLevel.Section,
-                            onActionClick = if (details.characters.size > 10) onCastSeeAllClick else null
-                        )
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                            modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                        ) {
-                            items(items = displayCharacters, key = { "character_${it.id}" }) { character ->
-                                CharacterItem(
-                                    character = character,
-                                    onClick = { onCharacterClick(character.id) },
-                                    modifier = Modifier.animateItem(), // Expressive motion
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedVisibilityScope = animatedVisibilityScope
+                    // Categories (Genres & Tags)
+                    item(key = "metadata") {
+                        if (details.tags.isNotEmpty() || details.genres.isNotEmpty()) {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                                ContentMetadataSection(genres = details.genres, tags = details.tags)
+                            }
+                        }
+                    }
+
+                    // External & Streaming Links
+                    item(key = "external_links") {
+                        if (details.externalLinks.isNotEmpty()) {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                                ExternalLinksSection(
+                                    externalLinks = details.externalLinks,
+                                    mediaType = details.type
                                 )
                             }
                         }
                     }
-                }
-            }
 
-            // 7b. Staff
-            item(key = "staff") {
-                val displayStaff = remember(details.staff) {
-                    details.staff.distinctBy { it.id }.take(10)
-                }
-                if (displayStaff.isNotEmpty()) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                        SectionHeader(
-                            title = stringResource(R.string.section_staff),
-                            level = HeaderLevel.Section,
-                            onActionClick = if (details.staff.size > 10) onStaffSeeAllClick else null
-                        )
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                            modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                        ) {
-                            items(items = displayStaff, key = { "staff_${it.id}" }) { staff ->
-                                StaffItem(
-                                    staff = staff,
-                                    onClick = { onStaffClick(staff.id) },
-                                    modifier = Modifier.animateItem(),
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedVisibilityScope = animatedVisibilityScope
+                    // Related (Relations)
+                    if (displayRelations.isNotEmpty()) {
+                        item(key = "relations") {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                                SectionHeader(
+                                    title = stringResource(R.string.section_related),
+                                    level = HeaderLevel.Section,
+                                    onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
                                 )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 8. Related (Relations)
-            item(key = "relations") {
-                if (displayRelations.isNotEmpty()) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                        SectionHeader(
-                            title = stringResource(R.string.section_related),
-                            level = HeaderLevel.Section,
-                            onActionClick = if (details.relations.size > 10) onRelatedSeeAllClick else null
-                        )
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
-                            modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                        ) {
-                            items(
-                                items = displayRelations,
-                                key = { "${it.id}_${it.relationType}" }) { relation ->
-                                RelationItem(
-                                    relation = relation,
-                                    onClick = { onRelationClick(relation.id) },
-                                    transitionPrefix = TransitionKeys.MEDIA_DETAILS,
-                                    modifier = Modifier.animateItem(), // Expressive motion
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedVisibilityScope = animatedVisibilityScope
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 9. Recommendations
-            item(key = "recommendations") {
-                val canRecommend = details.isRecommendationBlocked != true
-                val hasMoreRecommendations = remember(details.recommendations) {
-                    details.recommendations.distinctBy { it.id }.size > 10
-                }
-                if (displayRecommendations.isNotEmpty() || canRecommend) {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                        SectionHeader(
-                            title = stringResource(R.string.section_recommendations),
-                            level = HeaderLevel.Section,
-                            onActionClick = if (hasMoreRecommendations) onRecommendationsSeeAllClick else null,
-                            trailingContent = if (canRecommend) {
-                                {
-                                    IconButton(onClick = { showRecommendSheet = true }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = stringResource(R.string.cd_add_recommendation),
-                                            tint = MaterialTheme.colorScheme.primary
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
+                                    modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
+                                ) {
+                                    items(
+                                        items = displayRelations,
+                                        key = { "${it.id}_${it.relationType}" }) { relation ->
+                                        RelationItem(
+                                            relation = relation,
+                                            onClick = { onRelationClick(relation.id) },
+                                            transitionPrefix = TransitionKeys.MEDIA_DETAILS,
+                                            modifier = Modifier.animateItem(), // Expressive motion
+                                            sharedTransitionScope = sharedTransitionScope,
+                                            animatedVisibilityScope = animatedVisibilityScope
                                         )
                                     }
                                 }
-                            } else null
-                        )
-                        if (displayRecommendations.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
-                            modifier = Modifier.height(240.dp)
-                        ) {
-                            items(
-                                items = displayRecommendations,
-                                key = { "rec_${it.id}" }
-                            ) { recommendation ->
-                                RecommendationItem(
-                                    recommendation = recommendation,
-                                    onClick = { onRelationClick(recommendation.id) },
-                                    onRate = { isUpvote ->
-                                        val rating = when {
-                                            isUpvote && recommendation.userRating == "RATE_UP" ->
-                                                com.anisync.android.type.RecommendationRating.NO_RATING
-                                            isUpvote ->
-                                                com.anisync.android.type.RecommendationRating.RATE_UP
-                                            !isUpvote && recommendation.userRating == "RATE_DOWN" ->
-                                                com.anisync.android.type.RecommendationRating.NO_RATING
-                                            else ->
-                                                com.anisync.android.type.RecommendationRating.RATE_DOWN
+                            }
+                        }
+                    }
+
+                    // Recommendations
+                    item(key = "recommendations") {
+                        val canRecommend = details.isRecommendationBlocked != true
+                        val hasMoreRecommendations = remember(details.recommendations) {
+                            details.recommendations.distinctBy { it.id }.size > 10
+                        }
+                        if (displayRecommendations.isNotEmpty() || canRecommend) {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                                SectionHeader(
+                                    title = stringResource(R.string.section_recommendations),
+                                    level = HeaderLevel.Section,
+                                    onActionClick = if (hasMoreRecommendations) onRecommendationsSeeAllClick else null,
+                                    trailingContent = if (canRecommend) {
+                                        {
+                                            IconButton(onClick = { showRecommendSheet = true }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Add,
+                                                    contentDescription = stringResource(R.string.cd_add_recommendation),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
                                         }
-                                        onRateRecommendation(recommendation.id, rating)
-                                    },
-                                    modifier = Modifier.animateItem()
+                                    } else null
                                 )
+                                if (displayRecommendations.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal)),
+                                        modifier = Modifier.height(240.dp)
+                                    ) {
+                                        items(
+                                            items = displayRecommendations,
+                                            key = { "rec_${it.id}" }
+                                        ) { recommendation ->
+                                            RecommendationItem(
+                                                recommendation = recommendation,
+                                                onClick = { onRelationClick(recommendation.id) },
+                                                onRate = { isUpvote ->
+                                                    val rating = when {
+                                                        isUpvote && recommendation.userRating == "RATE_UP" ->
+                                                            com.anisync.android.type.RecommendationRating.NO_RATING
+                                                        isUpvote ->
+                                                            com.anisync.android.type.RecommendationRating.RATE_UP
+                                                        !isUpvote && recommendation.userRating == "RATE_DOWN" ->
+                                                            com.anisync.android.type.RecommendationRating.NO_RATING
+                                                        else ->
+                                                            com.anisync.android.type.RecommendationRating.RATE_DOWN
+                                                    }
+                                                    onRateRecommendation(recommendation.id, rating)
+                                                },
+                                                modifier = Modifier.animateItem()
+                                            )
+                                        }
+                                    }
+                                }
                             }
-                        }
                         }
                     }
                 }
-            }
 
-            // 10. Following — list of followed users' status for this media
-            if (following.isNotEmpty()) {
-                item(key = "following") {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                        SectionHeader(
-                            title = stringResource(R.string.section_following),
-                            level = HeaderLevel.Section,
-                            onActionClick = if (hasMoreFollowing) { { showAllFollowingSheet = true } } else null
-                        )
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
-                        ) {
-                            items(items = following, key = { "follow_${it.userId}" }) { entry ->
-                                FollowingItem(
-                                    entry = entry,
-                                    mediaType = details.type,
-                                    onClick = { onUserClick(entry.userName) },
-                                    modifier = Modifier.animateItem()
+                DetailsTab.CHARACTERS -> {
+                    // Cast
+                    if (displayCharacters.isNotEmpty()) {
+                        item(key = "cast") {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                                SectionHeader(
+                                    title = stringResource(R.string.section_cast),
+                                    level = HeaderLevel.Section,
+                                    onActionClick = if (details.characters.size > 10) onCastSeeAllClick else null
                                 )
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                                    modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
+                                ) {
+                                    items(items = displayCharacters, key = { "character_${it.id}" }) { character ->
+                                        CharacterItem(
+                                            character = character,
+                                            onClick = { onCharacterClick(character.id) },
+                                            modifier = Modifier.animateItem(), // Expressive motion
+                                            sharedTransitionScope = sharedTransitionScope,
+                                            animatedVisibilityScope = animatedVisibilityScope
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Staff
+                    if (displayStaff.isNotEmpty()) {
+                        item(key = "staff") {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                                SectionHeader(
+                                    title = stringResource(R.string.section_staff),
+                                    level = HeaderLevel.Section,
+                                    onActionClick = if (details.staff.size > 10) onStaffSeeAllClick else null
+                                )
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                                    modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
+                                ) {
+                                    items(items = displayStaff, key = { "staff_${it.id}" }) { staff ->
+                                        StaffItem(
+                                            staff = staff,
+                                            onClick = { onStaffClick(staff.id) },
+                                            modifier = Modifier.animateItem(),
+                                            sharedTransitionScope = sharedTransitionScope,
+                                            animatedVisibilityScope = animatedVisibilityScope
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // 11. Reviews
-            val canReview = details.isReviewBlocked != true
-            if (displayReviews.isNotEmpty() || canReview) {
-                item(key = "reviews_header") {
-                    Column {
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                        SectionHeader(
-                            title = stringResource(R.string.section_reviews),
-                            level = HeaderLevel.Section,
-                            onActionClick = if (displayReviews.size >= 5) { { showAllReviewsSheet = true } } else null,
-                            trailingContent = if (canReview) {
-                                {
-                                    IconButton(onClick = onWriteReviewClick) {
+                DetailsTab.SOCIAL -> {
+                    // Following — list of followed users' status for this media
+                    if (following.isNotEmpty()) {
+                        item(key = "following") {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                                SectionHeader(
+                                    title = stringResource(R.string.section_following),
+                                    level = HeaderLevel.Section,
+                                    onActionClick = if (hasMoreFollowing) { { showAllFollowingSheet = true } } else null
+                                )
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+                                ) {
+                                    items(items = following, key = { "follow_${it.userId}" }) { entry ->
+                                        FollowingItem(
+                                            entry = entry,
+                                            mediaType = details.type,
+                                            onClick = { onUserClick(entry.userName) },
+                                            modifier = Modifier.animateItem()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Reviews
+                    val canReview = details.isReviewBlocked != true
+                    if (displayReviews.isNotEmpty() || canReview) {
+                        item(key = "reviews_header") {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                                SectionHeader(
+                                    title = stringResource(R.string.section_reviews),
+                                    level = HeaderLevel.Section,
+                                    onActionClick = if (displayReviews.size >= 5) { { showAllReviewsSheet = true } } else null,
+                                    trailingContent = if (canReview) {
+                                        {
+                                            IconButton(onClick = onWriteReviewClick) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = stringResource(R.string.cd_write_review),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    } else null
+                                )
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                            }
+                        }
+                        items(
+                            items = displayReviews,
+                            key = { "review_${it.id}" }
+                        ) { review ->
+                            ReviewCard(
+                                review = review,
+                                onClick = { selectedReview = review },
+                                onUserClick = onUserClick,
+                                showBanner = false,
+                                modifier = Modifier
+                                    .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                                    .padding(bottom = dimensionResource(R.dimen.spacing_normal))
+                                    .animateItem()
+                            )
+                        }
+                    }
+
+                    // Discussions — forum threads with this media as a mediaCategory
+                    item(key = "discussions_header") {
+                        Column {
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
+                            SectionHeader(
+                                title = stringResource(R.string.forum_discussions_title),
+                                level = HeaderLevel.Section,
+                                onActionClick = if (discussions.isNotEmpty()) onViewAllDiscussions else null,
+                                trailingContent = {
+                                    IconButton(onClick = onStartDiscussion) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = stringResource(R.string.cd_write_review),
+                                            contentDescription = stringResource(R.string.forum_discussions_start),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
-                            } else null
-                        )
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                    }
-                }
-                items(
-                    items = displayReviews,
-                    key = { "review_${it.id}" }
-                ) { review ->
-                    ReviewCard(
-                        review = review,
-                        onClick = { selectedReview = review },
-                        onUserClick = onUserClick,
-                        showBanner = false,
-                        modifier = Modifier
-                            .padding(horizontal = dimensionResource(R.dimen.spacing_large))
-                            .padding(bottom = dimensionResource(R.dimen.spacing_normal))
-                            .animateItem()
-                    )
-                }
-            }
-
-            // 12. Discussions — forum threads with this media as a mediaCategory
-            item(key = "discussions_header") {
-                Column {
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                    SectionHeader(
-                        title = stringResource(R.string.forum_discussions_title),
-                        level = HeaderLevel.Section,
-                        onActionClick = if (discussions.isNotEmpty()) onViewAllDiscussions else null,
-                        trailingContent = {
-                            IconButton(onClick = onStartDiscussion) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = stringResource(R.string.forum_discussions_start),
-                                    tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                            if (discussions.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.forum_discussions_empty),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
                                 )
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                             }
                         }
-                    )
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                    if (discussions.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.forum_discussions_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                    }
+                    items(items = discussions, key = { "discussion_${it.id}" }) { thread ->
+                        DiscussionPreviewRow(
+                            thread = thread,
+                            onClick = { onDiscussionClick(thread.id, thread.title) },
+                            modifier = Modifier
+                                .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                                .padding(bottom = dimensionResource(R.dimen.spacing_normal))
+                                .animateItem()
                         )
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                     }
                 }
-            }
-            items(items = discussions, key = { "discussion_${it.id}" }) { thread ->
-                DiscussionPreviewRow(
-                    thread = thread,
-                    onClick = { onDiscussionClick(thread.id, thread.title) },
-                    modifier = Modifier
-                        .padding(horizontal = dimensionResource(R.dimen.spacing_large))
-                        .padding(bottom = dimensionResource(R.dimen.spacing_normal))
-                        .animateItem()
-                )
             }
         }
     }
