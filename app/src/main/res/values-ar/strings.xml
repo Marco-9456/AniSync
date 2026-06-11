@@ -4,8 +4,8 @@
 
     <!-- Navigation -->
     <string name="nav_library">المكتبة</string>
-    <string name="nav_discover">اكتشف</string>
-    <string name="nav_feed">النشاط</string>
+    <string name="nav_discover">اكتشاف</string>
+    <string name="nav_feed">الموجز</string>
     <string name="nav_profile">الملف الشخصي</string>
     <!-- Common -->
     <string name="back">رجوع</string>
@@ -565,4 +565,6 @@
     <string name="statistics_taste_focused">ذوقك مركّز جداً</string>
     <string name="statistics_taste_balanced">ذوق متوازن</string>
     <string name="statistics_taste_eclectic">ذوق متنوع وواسع</string>
+    <string name="feed_filter_all">الكل</string>
+    <string name="feed_filter_status">الحالة</string>
 </resources>
