@@ -71,7 +71,6 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.anisync.android.R
@@ -123,27 +122,13 @@ fun VideoPlayer(
     var playerState by remember { mutableStateOf(PlayerState.Loading) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Use cached player if available, otherwise create a local one
+    // Use cached player if available, otherwise create a local one. Both routes go through
+    // buildVideoExoPlayer so the OkHttp/browser-UA data source and eager prepare apply
+    // identically (see [buildVideoExoPlayer]).
     val exoPlayer = if (playerCache != null) {
         remember(url) { playerCache.getOrCreate(url) }
     } else {
-        remember(url) {
-            val loadControl = DefaultLoadControl.Builder()
-                .setBufferDurationsMs(1500, 5000, 500, 1500)
-                .setTargetBufferBytes(2 * 1024 * 1024) // 2 MB limit
-                .setPrioritizeTimeOverSizeThresholds(true)
-                .build()
-
-            ExoPlayer.Builder(context)
-                .setLoadControl(loadControl)
-                .build().apply {
-                    setMediaItem(MediaItem.fromUri(url))
-                    repeatMode = Player.REPEAT_MODE_ONE
-                    volume = if (isMuted) 0f else 1f
-                    playWhenReady = false
-                    prepare()
-                }
-        }
+        remember(url) { buildVideoExoPlayer(context, url) }
     }
 
     // Attach listener for state tracking (detach on dispose to avoid leaks)

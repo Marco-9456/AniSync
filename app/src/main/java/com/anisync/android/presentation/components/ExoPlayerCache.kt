@@ -11,8 +11,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.anisync.android.data.media.MediaHttp
 
 /**
  * CompositionLocal providing an [ExoPlayerCache] to composables in the tree.
@@ -47,32 +50,13 @@ class ExoPlayerCache internal constructor(private val context: Context) {
      * Returns an existing [ExoPlayer] for [url] if one is cached, or creates and
      * caches a new one.
      */
-    @OptIn(UnstableApi::class)
     fun getOrCreate(url: String): ExoPlayer {
         return players.getOrPut(url) {
             val start = System.currentTimeMillis()
-            val loadControl = DefaultLoadControl.Builder()
-                .setBufferDurationsMs(
-                    1500, // minBufferMs: Minimum audio/video to buffer before starting playback
-                    5000, // maxBufferMs: Maximum audio/video to buffer
-                    500,  // bufferForPlaybackMs
-                    1500  // bufferForPlaybackAfterRebufferMs
-                )
-                .setTargetBufferBytes(2 * 1024 * 1024) // 2 MB strict memory limit
-                .setPrioritizeTimeOverSizeThresholds(true)
-                .build()
-
-            ExoPlayer.Builder(context)
-                .setLoadControl(loadControl)
-                .build().apply {
-                    setMediaItem(MediaItem.fromUri(url))
-                    repeatMode = Player.REPEAT_MODE_ONE
-                    volume = 0f
-                    playWhenReady = false
-
-                    val initTime = System.currentTimeMillis() - start
-                    Log.d("PerfMetrics", "New ExoPlayer cached for $url in ${initTime}ms")
-                }
+            buildVideoExoPlayer(context, url).also {
+                val initTime = System.currentTimeMillis() - start
+                Log.d("PerfMetrics", "New ExoPlayer cached for $url in ${initTime}ms")
+            }
         }
     }
 
@@ -82,6 +66,50 @@ class ExoPlayerCache internal constructor(private val context: Context) {
         players.clear()
         Log.d("PerfMetrics", "All cached ExoPlayers released.")
     }
+}
+
+/**
+ * Builds a prepared, muted, looping [ExoPlayer] for an inline video [url].
+ *
+ * Single source of truth so the cached ([ExoPlayerCache]) and self-managed ([VideoPlayer])
+ * paths can't drift. Two things make user-embedded clips actually play instead of erroring:
+ *  - **OkHttp data source with a browser UA** ([MediaHttp.videoClient]). Hosts like catbox
+ *    reject ExoPlayer's default User-Agent and answer 403, which surfaces as a "broken"
+ *    video that plays fine in a browser. OkHttp also transparently follows the
+ *    cross-protocol (http↔https) redirects these CDNs use — the platform
+ *    `DefaultHttpDataSource` refuses those by default.
+ *  - **Eager [ExoPlayer.prepare]** so buffering starts the instant the player is created
+ *    (i.e. when scrolled near), not when its surface finally attaches.
+ */
+@OptIn(UnstableApi::class)
+internal fun buildVideoExoPlayer(context: Context, url: String): ExoPlayer {
+    val loadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(
+            1500, // minBufferMs: minimum buffered before playback starts
+            5000, // maxBufferMs: maximum buffered
+            500,  // bufferForPlaybackMs
+            1500  // bufferForPlaybackAfterRebufferMs
+        )
+        // 4 MB cap holds a typical short AniList clip in full, so the REPEAT_MODE_ONE loop
+        // replays from memory instead of re-downloading every pass, while bounding total
+        // memory across the (max 6) cached players.
+        .setTargetBufferBytes(4 * 1024 * 1024)
+        .setPrioritizeTimeOverSizeThresholds(true)
+        .build()
+
+    val dataSourceFactory = OkHttpDataSource.Factory(MediaHttp.videoClient)
+        .setUserAgent(MediaHttp.USER_AGENT)
+
+    return ExoPlayer.Builder(context)
+        .setLoadControl(loadControl)
+        .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+        .build().apply {
+            setMediaItem(MediaItem.fromUri(url))
+            repeatMode = Player.REPEAT_MODE_ONE
+            volume = 0f
+            playWhenReady = false
+            prepare()
+        }
 }
 
 /**
