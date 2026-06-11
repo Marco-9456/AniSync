@@ -1,0 +1,27 @@
+Added:
+- Multi-account support: add, switch, and remove multiple AniList accounts, each with its own cached library and profile.
+- Background notifications now arrive from every signed-in account, tagged per account, and taps switch to the right account.
+- Forum advanced search (by media, category, author, sort) and per-media discussions, with pre-attached create-thread.
+- Translate synopsis, bios, and reviews via an external app (TranslateYou, DeepL, or Google Translate).
+- Media details: recommendations grid, recommend action, and a rich-text review editor.
+- New Discover sections: Newly Added and a Recent Reviews carousel with sort/media/author filters.
+- AniList account options sync (content, title, social, profile color) with a conflict prompt.
+- Resume where you left off: last-used tab plus remembered Library, Feed, Forum, and Discover selections.
+- Subscribe to an activity from its detail screen; optional Catbox account userhash.
+- Large Spanish translation update plus refreshed Portuguese (Brazil) and Arabic.
+
+Changed:
+- New app icon and branding, refreshed notification icon and store graphics.
+- Media details grouped into Overview, Characters, and Social tabs.
+- Redesigned review detail screen, sheet, and cards with inline voting.
+- Rich-text overhaul: redesigned link cards, SVG badge rendering, full-width images, and floating text wrap.
+- Account management merged into one AniList Settings screen; "Open in web" opens a real browser.
+- Visited profiles and list-activity cards tinted with profile and cover colors.
+
+Fixed:
+- Adult media no longer leaks into feed or search when adult content is off.
+- 4-byte emoji no longer truncate reviews, bios, and list notes.
+- Material 3 search bar no longer reopens itself while collapsing.
+- Duplicate-key crash on fast-scrolled paginated lists.
+- Notifications show the event time and route taps to the right target.
+- CDN-hosted images and videos no longer fail to load.

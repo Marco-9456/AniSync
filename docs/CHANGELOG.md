@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-11
+
+### Added
+
+- **Multi-Account Support** - Sign in to multiple AniList accounts and add, switch, or remove them from the profile-header quick-switch sheet or the AniList Settings screen. Each account keeps its own library and profile cached, so switching back is instant; tokens are stored in `EncryptedSharedPreferences`.
+- **All-Account Background Notifications** - The notification worker now polls every signed-in account each cycle, not just the active one. Notifications are tagged per account (showing the account name when more than one is signed in), and tapping one switches to the owning account before opening the target.
+- **Forum Advanced Search & Media Discussions** - A Discover-style filtered thread search (by media, category, author, sort, and subscribed-only), a per-media Discussions section, and a dedicated media-threads screen. Create-thread can be pre-attached to a media, with caps of 3 forum and 2 media categories and a scroll-to-top FAB.
+- **Translate via External Apps** - A translate action on the media synopsis, character and staff bios, and reviews hands the text to an installed translator (TranslateYou, DeepL, or Google Translate).
+- **Recommendations & Review Editor on Details** - A recommendations grid with a "See all" screen, a recommend action, and a rich-text review editor to create, edit, or delete your own review.
+- **New Discover Sections** - Newly Added and a Recent Reviews carousel, each with a "See all" screen; the Recent Reviews list adds sort, media, and author filters.
+- **AniList Account Options Sync** - Read and edit your AniList account options (content, title language, social, activity, profile color) with a local-first model that applies edits instantly and reconciles website changes through a conflict prompt.
+- **Resume Where You Left Off** - Reopens on the last-used bottom-nav tab and remembers the Library type/view, Feed scope/filter, Forum tab/category, and Discover type.
+- **Activity Subscribe** - Subscribe to or unsubscribe from an activity on its detail screen.
+- **Catbox Account Userhash** - An optional userhash binds Catbox uploads to your account so you can view and delete them later.
+- **More Translations** - A large Spanish update plus refreshed Portuguese (Brazil) and Arabic, via Weblate. Thanks to @Minfinity010, @nubesurrealista, and @DiegoLpVn (Spanish), @anicetoclucas (Portuguese, Brazil), and @j-neko (Arabic).
+
+### Changed
+
+- **New App Icon & Branding** - Redesigned adaptive app icon (white background with a blue gradient emblem), refreshed notification icon, README logo, and store graphics.
+- **Media Details in Tabs** - Detail sections are grouped into Overview, Characters, and Social tabs instead of one long scroll; the header and favorite/share row stay pinned, and the Characters tab hides when a title has no cast or staff.
+- **Review Surfaces Redesigned** - Reworked review detail screen, sheet, and cards around one shared component set with a segmented like/dislike pill and inline helpful/score voting.
+- **Rich Text & Link Cards Overhaul** - Redesigned AniList link cards for media, character, staff, and user links (cover-tinted, bounded width, accent border); SVG badges and widgets render through a hardened WebView; full-width images display at their declared width and `img align` floats text beside them.
+- **AniList Settings Consolidated** - Account management merged into a single "AniList Settings" screen with Donate and Translate shortcuts; "Open in web" now opens a real browser instead of looping back into the app.
+- **Profile & Feed Color Tinting** - An opt-in toggle tints a visited profile with that user's AniList profile color, and list-activity feed cards are tinted with the media's cover color.
+- **Unified Activity Cards** - Status, message, and list activities render through one `ActivityCard` with consistent share and subscribe actions across feed and profile.
+- **Following Cards** - Show episode progress alongside the score in one adaptive-width pill.
+
+### Fixed
+
+- **NSFW Leaks** - Adult media no longer appears in the feed or search when the account has "Show adult content" disabled, matching the website. (#53)
+- **4-Byte Emoji Truncation** - Emoji above U+FFFF in reviews, bios, and list notes no longer silently truncate the rest of the field.
+- **Search Bar Self-Reopen** - The Material 3 search bar on Library, Discover, and Forum no longer reopens itself while collapsing on older devices (API 26 / EMUI 8). (#51)
+- **Duplicate-Key Crash** - Paginated review, following, profile, forum, and notification lists are deduped on append to stop the "Key already used" crash. (#56)
+- **Notification Timing & Routing** - Notifications show the event time rather than the poll time; taps route to the intended target instead of the last screen; airing-notification taps now open the app.
+- **Media & Video Loading** - Images and videos hosted on CDNs that bot-filter the default User-Agent (Catbox, Imgur) no longer fail with 403 or IO errors.
+- **Inline AniList Links** - Inline links in posts and descriptions are now reliably clickable and open media details.
+- **FAB Overlay Leak** - The floating action button on an exiting details screen no longer floats over the destination.
+- **Uncropped "None" Avatar** - The profile-header avatar renders at its natural aspect ratio when the avatar shape is set to None.
+
 ## [1.8.0] - 2026-05-30
 
 ### Added
