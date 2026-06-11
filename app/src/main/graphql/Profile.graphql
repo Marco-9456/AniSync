@@ -274,6 +274,7 @@ fragment ActivityFields on ActivityUnion {
         medium
         large
         extraLarge
+        color
       }
       type
       isAdult

@@ -228,17 +228,22 @@ private fun ActivityCardBody(
     when (activity.type) {
         ActivityType.MEDIA_LIST -> {
             Spacer(Modifier.height(12.dp))
+            // Tint the body with the media's cover accent color; fall back to the theme
+            // container when AniList returns no color or an unparseable value.
+            val coverAccent = remember(activity.mediaCoverColor) {
+                activity.mediaCoverColor?.parseHexColor()
+            } ?: MaterialTheme.colorScheme.primaryContainer
             Row(
                 verticalAlignment = Alignment.Top,
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                        color = coverAccent.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(16.dp)
                     )
                     .border(
                         width = 1.dp,
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        color = coverAccent.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(16.dp)
                     )
                     .padding(10.dp)
@@ -417,6 +422,9 @@ private fun ActivityCardFooter(
         }
     }
 }
+
+private fun String.parseHexColor(): Color? =
+    runCatching { Color(android.graphics.Color.parseColor(this)) }.getOrNull()
 
 private fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
     val now = System.currentTimeMillis() / 1000

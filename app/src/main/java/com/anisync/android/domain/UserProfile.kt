@@ -74,6 +74,8 @@ data class UserActivity(
     val mediaTitle: String = "",
     val mediaCoverUrl: String? = null,
     val mediaCover: CoverImage? = null,
+    /** AniList cover-image accent color (hex, e.g. "#e85d75"); tints the list-activity card body. */
+    val mediaCoverColor: String? = null,
     /** AniList 18+ flag for the activity's media. Used to hide adult ListActivity from the feed
      *  when the viewer's account has displayAdultContent off (matches the website). */
     val mediaIsAdult: Boolean = false,
