@@ -436,6 +436,103 @@ class RichTextParserTest {
         assertTrue(code != null && code.code.contains("val x = 1"))
     }
 
+    @Test
+    fun `whole post wrapped in pre-code with a single image is recovered`() = runBlocking {
+        // AniList activity 1088995401: asHtml dumped the entire post into <pre><code>. It carries
+        // only ONE escaped <img> tag, so the >=3-tag heuristic skipped recovery and it rendered as
+        // a literal code block (raw "#[Day 1365…]", "<img …>", "[Source](…)" on screen).
+        val html = """
+            <pre><code>#[Day 1365 of posting ARGONAVIS fanart to convince people to watch it~](https://anilist.co/review/21995)
+
+            &lt;img width='500' src='https://i.ibb.co/m1mBK9H/Day-1365.jpg'&gt;
+
+            [Source](https://x.com/kyoji_46/status/2054215104477229081?s=46) (kyoji)</code></pre>
+        """.trimIndent()
+
+        val parsed = RichTextParser.parse(html)
+        val blocks = parsed.blocks.deepBlocks()
+
+        assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+        assertTrue(parsed.imageUrls.contains("https://i.ibb.co/m1mBK9H/Day-1365.jpg"))
+        val textBlocks = blocks.filterIsInstance<RichTextBlock.Text>()
+        assertTrue(textBlocks.any { it.kind == RichTextTextKind.Heading1 })
+        assertTrue(textBlocks.any { it.hasLink("https://x.com/kyoji_46/status/2054215104477229081?s=46") })
+    }
+
+    @Test
+    fun `wrapped post whose first image is past the heuristic window is recovered`() = runBlocking {
+        // AniList activity 1091109491 (Pokemon challenge): the lone <img> sits well past the first
+        // 500 chars of prose, so the tag-count window saw zero tags. A markdown heading-link and a
+        // markdown_spoiler block must still trigger recovery.
+        val html = """
+            <pre><code>##__[Pokemon 30 days Challenge](https://anilist.co/forum/thread/88876)__
+            by @ evi hameru ampri
+
+            Pokemon series is one of my favourite things in the world, so of course I'm doing this challenge! I definitely won't be posting it daily, but I want to go through it. Salandit. I really don't like Salazzle, so I'd love to have a male one, or an unevolved female. Give him better Sp. Def, and maybe better stats overall so he is worth using on a team.
+
+            &lt;img width='400' src='https://64.media.tumblr.com/eae881da.pnj'&gt;
+            [artist](https://www.tumblr.com/wildragon/770041462033350656/salandit)
+
+            &lt;span class='markdown_spoiler'&gt;&lt;span&gt;
+            &lt;img width='300' src='https://i.postimg.cc/XJcqZ0pX/pokechallenge.png'&gt;
+            &lt;/span&gt;&lt;/span&gt;</code></pre>
+        """.trimIndent()
+
+        val parsed = RichTextParser.parse(html)
+        val blocks = parsed.blocks.deepBlocks()
+
+        assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+        assertTrue(blocks.any { it is RichTextBlock.Spoiler })
+        assertTrue(parsed.imageUrls.contains("https://64.media.tumblr.com/eae881da.pnj"))
+        val textBlocks = blocks.filterIsInstance<RichTextBlock.Text>()
+        assertTrue(textBlocks.any { it.kind == RichTextTextKind.Heading2 })
+        assertTrue(textBlocks.any { it.hasLink("https://anilist.co/forum/thread/88876") })
+    }
+
+    @Test
+    fun `review section wrongly wrapped in pre-code with a spoiler and prose is recovered`() =
+        runBlocking {
+            // AniList review 13751 (Sonny Boy): asHtml emitted a <pre><code> mid-body holding an
+            // escaped markdown_spoiler span followed by long prose — only two escaped tags up front,
+            // so the old heuristic dumped "<span class='markdown_spoiler'><span>" + episodes as code.
+            val html = """
+                <p>intro</p>
+                <pre><code>
+                &lt;span class='markdown_spoiler'&gt;&lt;span&gt;
+
+                Episode 1 is all about the ways in which people respond to crisis. We're abruptly dropped into a weird situation where a school is suspended in limbo. Different characters all react differently to what happened, whilst we take stock of the situation through character introductions over a long stretch of screen time.
+
+                &lt;/span&gt;&lt;/span&gt;
+
+                #**Tl;Dr**:
+
+                &lt;img width='100%' src='https://example.com/tldr.gif'&gt;</code></pre>
+                <p>outro</p>
+            """.trimIndent()
+
+            val parsed = RichTextParser.parse(html)
+            val blocks = parsed.blocks.deepBlocks()
+
+            assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+            assertTrue(blocks.any { it is RichTextBlock.Spoiler })
+            assertTrue(parsed.imageUrls.contains("https://example.com/tldr.gif"))
+            val allText = blocks.filterIsInstance<RichTextBlock.Text>()
+                .joinToString("\n") { it.debugInlineText() }
+            assertTrue(allText.contains("Episode 1 is all about"))
+            assertFalse(allText.contains("markdown_spoiler"))
+        }
+
+    @Test
+    fun `genuine code block with hash comments is not mistaken for a wrapped post`() = runBlocking {
+        // Pure source with markdown-looking "#" comment lines but no images, links, or AniList
+        // markup must stay a literal code block — recovery must not over-trigger.
+        val parsed = RichTextParser.parse(
+            "<pre><code># install deps\npip install requests\nx = [1, 2, 3]  # a list</code></pre>"
+        )
+        val code = parsed.blocks.filterIsInstance<RichTextBlock.CodeBlock>().firstOrNull()
+        assertTrue(code != null && code.code.contains("pip install requests"))
+    }
+
     private fun RichTextBlock.Text.debugInlineText(): String = inlines.toDebugPlainText()
 
     private fun RichTextBlock.Text.hasBold(): Boolean =

@@ -12,6 +12,18 @@ internal data class HtmlParseResult(
 
 private val NON_DIGIT_REGEX = Regex("[^0-9]")
 private val ESCAPED_HTML_TAG_REGEX = Regex("""<[a-zA-Z/][^>]*>""")
+
+// AniList's asHtml endpoint sometimes dumps an entire rich post — or a rich section of a
+// review — into a <pre><code> block instead of rendering it (a markdown misparse, usually
+// triggered by a heading or HTML tag at the very start). looksLikeEscapedHtml only catches
+// HTML-tag-heavy posts (>=3 tags early on); these wrapped posts are mostly markdown/prose with
+// as few as zero HTML tags up front. These patterns spot the AniList-specific rich signals that
+// a genuine source-code block would not carry, so such posts get re-parsed as rich content.
+private val WRAPPED_RICH_HTML_TAG_REGEX =
+    Regex("""<\s*(?:img|video|iframe|center)\b|<\s*a\s""", RegexOption.IGNORE_CASE)
+private val WRAPPED_MARKDOWN_LINK_REGEX = Regex("""!?\[[^\]\n]*]\(\s*https?://""")
+private val WRAPPED_MARKDOWN_IMAGE_REGEX =
+    Regex("""\bimg\d+%?\(\s*https?://""", RegexOption.IGNORE_CASE)
 private val TABLE_CELL_TAGS: Set<String> = setOf("td", "th")
 private val NESTED_LIST_TAGS: Set<String> = setOf("ul", "ol")
 private val BLOCK_TAGS: Set<String> = setOf(
@@ -203,7 +215,7 @@ internal class RichTextHtmlParser(
                             workingCtx.flushText()
                         }
 
-                        looksLikeEscapedHtml(trimmed) -> {
+                        looksLikeWrappedRichText(trimmed) -> {
                             val reparsed = Jsoup.parseBodyFragment(
                                 RichTextNormalizer.normalize(trimmed)
                             ).body()
@@ -731,6 +743,24 @@ internal class RichTextHtmlParser(
         val tagCount = ESCAPED_HTML_TAG_REGEX.findAll(sample).count()
         return tagCount >= 3
     }
+
+    /**
+     * True when a `<pre><code>` block is really an AniList rich post that the asHtml endpoint
+     * wrongly wrapped, rather than a genuine code listing. Broader than [looksLikeEscapedHtml]:
+     * also fires on markdown-heavy posts that carry too few HTML tags for the tag-count
+     * heuristic — a single image, a markdown link/image to a URL, or an AniList spoiler / youtube
+     * / center construct. Pure source code (no images, links, or AniList markup) stays a code block.
+     */
+    private fun looksLikeWrappedRichText(text: String): Boolean =
+        looksLikeEscapedHtml(text) ||
+            WRAPPED_RICH_HTML_TAG_REGEX.containsMatchIn(text) ||
+            WRAPPED_MARKDOWN_LINK_REGEX.containsMatchIn(text) ||
+            WRAPPED_MARKDOWN_IMAGE_REGEX.containsMatchIn(text) ||
+            text.contains("markdown_spoiler") ||
+            text.contains("class='youtube'") ||
+            text.contains("class=\"youtube\"") ||
+            text.contains("~!") ||
+            text.contains("~~~")
 
     /**
      * A `<code class="language-…">` info string normally names a language (e.g. `language-kotlin`).
