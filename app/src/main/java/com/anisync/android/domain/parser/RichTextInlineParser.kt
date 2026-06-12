@@ -297,33 +297,38 @@ internal class RichTextInlineParser(
             }
 
             if (c == '~' && preparedText.startsWith("~~~", index)) {
-                val end = preparedText.indexOf("~~~", index + 3)
-                if (end != -1) {
-                    flushPlain()
-                    ctx.flushText()
+                val paired = preparedText.indexOf("~~~", index + 3)
+                // `~~~` is AniList's centre toggle. A paired `~~~ … ~~~` centres the span between
+                // them; a lone, unclosed `~~~` centres everything to the end of this segment. Either
+                // way the marker is consumed — never rendered as literal tildes (the old code left a
+                // trailing unpaired `~~~` in the text, e.g. "…applies here. ^^~~~").
+                val contentEnd = if (paired != -1) paired else length
+                flushPlain()
+                ctx.flushText()
 
-                    var contentStart = index + 3
-                    val maxCheck = minOf(contentStart + 10, preparedText.length)
-                    val prefix = preparedText.substring(contentStart, maxCheck).lowercase()
-                    if (prefix.startsWith("center")) {
-                        contentStart += 6
-                    } else if (prefix.startsWith(" center")) {
-                        contentStart += 7
-                    }
+                var contentStart = index + 3
+                val maxCheck = minOf(contentStart + 10, contentEnd)
+                val prefix = preparedText.substring(contentStart, maxCheck).lowercase()
+                if (prefix.startsWith("center")) {
+                    contentStart += 6
+                } else if (prefix.startsWith(" center")) {
+                    contentStart += 7
+                }
 
+                if (contentStart < contentEnd) {
                     val centerCtx = ctx.detached(
                         align = RichTextAlignment.Center,
                         currentLinkUrl = ctx.currentLinkUrl,
                         listDepth = ctx.listDepth
                     )
-                    parseInto(preparedText.substring(contentStart, end), centerCtx)
+                    parseInto(preparedText.substring(contentStart, contentEnd), centerCtx)
                     centerCtx.flushText()
                     ctx.blocks.addAll(centerCtx.blocks)
-
-                    index = end + 3
-                    lastAppend = index
-                    continue
                 }
+
+                index = if (paired != -1) paired + 3 else length
+                lastAppend = index
+                continue
             }
 
             if (c == '~') {
@@ -350,6 +355,23 @@ internal class RichTextInlineParser(
                 val marker = c.toString()
                 val marker3 = marker.repeat(3)
                 val marker2 = marker.repeat(2)
+
+                // A run of 4+ identical markers (e.g. `____Hundred day challenge____`) would let the
+                // 3-marker rule below consume only three, leaking the rest as literal underscores.
+                // Pair the whole run instead: bold for any run >= 2, plus italic when its length is
+                // odd — matching how `____x____` collapses to bold on AniList.
+                val longRun = matchLongEmphasisRun(preparedText, index)
+                if (longRun != null) {
+                    flushPlain()
+                    val child = parseInlineOnly(
+                        preparedText.substring(longRun.contentStart, longRun.contentEnd).trim(),
+                        ctx.currentLinkUrl
+                    )
+                    ctx.appendInline(wrapEmphasis(child, longRun.bold, longRun.italic))
+                    index = longRun.after
+                    lastAppend = index
+                    continue
+                }
 
                 if (preparedText.startsWith(marker3, index)) {
                     val end = preparedText.indexOf(marker3, index + 3)
@@ -668,6 +690,21 @@ internal class RichTextInlineParser(
                 val marker3 = marker.repeat(3)
                 val marker2 = marker.repeat(2)
 
+                // See parseInto: pair a 4+ run as one emphasis so no markers leak as literal text.
+                val longRun = matchLongEmphasisRun(text, index)
+                if (longRun != null) {
+                    flushPlain()
+                    val child = parseInlineOnly(
+                        text.substring(longRun.contentStart, longRun.contentEnd).trim(),
+                        currentLinkUrl,
+                        depth + 1
+                    )
+                    result.add(wrapEmphasis(child, longRun.bold, longRun.italic))
+                    index = longRun.after
+                    lastAppend = index
+                    continue
+                }
+
                 if (text.startsWith(marker3, index)) {
                     val end = text.indexOf(marker3, index + 3)
                     if (end > index + 3 &&
@@ -786,6 +823,62 @@ internal class RichTextInlineParser(
 
         flushPlain()
         return result
+    }
+
+    private data class LongEmphasisRun(
+        val contentStart: Int,
+        val contentEnd: Int,
+        val after: Int,
+        val bold: Boolean,
+        val italic: Boolean
+    )
+
+    /**
+     * Matches an over-long emphasis run (4+ identical `*`/`_`) at [index], pairing it with the next
+     * marker run so the whole thing is consumed and nothing leaks as literal markers. A run of N
+     * markers is bold when N >= 2 and italic when N is odd (so `____x____` -> bold, `_____x_____`
+     * -> bold+italic), mirroring how the markers collapse on AniList. Returns null for runs under 4
+     * (left to the existing 1/2/3-marker rules) or when no closing run with content is found.
+     */
+    private fun matchLongEmphasisRun(text: String, index: Int): LongEmphasisRun? {
+        val c = text[index]
+        val length = text.length
+        var openEnd = index
+        while (openEnd < length && text[openEnd] == c) openEnd++
+        val openRun = openEnd - index
+        if (openRun < 4) return null
+
+        var i = openEnd
+        while (i < length) {
+            if (text[i] == c) {
+                var closeEnd = i
+                while (closeEnd < length && text[closeEnd] == c) closeEnd++
+                if (i > openEnd) {
+                    val pair = minOf(openRun, closeEnd - i)
+                    return LongEmphasisRun(
+                        contentStart = openEnd,
+                        contentEnd = i,
+                        after = closeEnd,
+                        bold = pair >= 2,
+                        italic = pair % 2 == 1
+                    )
+                }
+                i = closeEnd
+            } else {
+                i++
+            }
+        }
+        return null
+    }
+
+    private fun wrapEmphasis(
+        children: List<RichTextInline>,
+        bold: Boolean,
+        italic: Boolean
+    ): RichTextInline = when {
+        bold && italic -> RichTextInline.BoldItalic(children)
+        bold -> RichTextInline.Bold(children)
+        else -> RichTextInline.Italic(children)
     }
 
     private fun findBalancedCloseBracket(text: String, openBracketIndex: Int): Int {

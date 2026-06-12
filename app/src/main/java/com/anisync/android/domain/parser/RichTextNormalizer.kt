@@ -3,6 +3,14 @@ package com.anisync.android.domain.parser
 internal object RichTextNormalizer {
     private val CENTER_MARKDOWN_REGEX =
         Regex("""~~~(?:center)?(.*?)~~~""", RegexOption.DOT_MATCHES_ALL)
+    // A `~~~` centre block whose emphasis straddles the closing fence, e.g.
+    // `~~~_Day 90: __title__~~~_` — the italic `_` opens just inside the fence and closes just
+    // outside it. Converting `~~~…~~~` to a block first would split those markers into separate
+    // nodes that can never pair, leaving literal underscores. Capture the overlap up front and emit
+    // proper nesting (`<div><em>…</em></div>`); Jsoup repairs the order and the inner `__…__` is
+    // handled normally. group1 = the leading marker run (1–3 of `_`/`*`), group2 = the centred body.
+    private val CENTER_DANGLING_EMPHASIS_REGEX =
+        Regex("""~~~(?:center)?(_{1,3}|\*{1,3})((?:(?!~~~).)*?)~~~\1""", RegexOption.DOT_MATCHES_ALL)
     private val SPOILER_MARKDOWN_REGEX =
         Regex("""~!(.*?)!~""", RegexOption.DOT_MATCHES_ALL)
     private val YOUTUBE_DIV_REGEX = Regex(
@@ -10,11 +18,20 @@ internal object RichTextNormalizer {
         RegexOption.DOT_MATCHES_ALL
     )
     private val ANY_HTML_TAG_REGEX = Regex("""<[^>]+>""")
+    private val PRE_BLOCK_REGEX =
+        Regex("""<pre\b[^>]*>.*?</pre>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
 
     fun normalize(html: String): String {
         if (html.isEmpty()) return html
 
         var processed = if (html.indexOf('\r') >= 0) html.replace("\r", "") else html
+        // Shield <pre>…</pre> from the markdown→HTML rewrites below. Their content is either genuine
+        // code (must stay verbatim) or a rich post AniList wrongly fenced — which the HTML parser
+        // re-normalizes from the code's own text later. Rewriting it here corrupts that text: e.g. a
+        // ~!spoiler!~ inside the fence would be turned into <spoiler> tags that Jsoup then strips when
+        // the code's wholeText is read, losing the spoiler before it can be recovered.
+        val masked = maskPreBlocks(processed)
+        processed = masked.text
         processed = convertMixedMarkdownLinksToHtml(processed)
         processed = fixMangledMarkdownLinks(processed)
         processed = decodeAniListEscapedParenthesis(processed)
@@ -22,11 +39,35 @@ internal object RichTextNormalizer {
         processed = unwrapEmptyAnchors(processed)
         processed = convertMarkdownSpoilerSpans(processed)
         processed = replaceCenterTags(processed)
+        processed = replaceDanglingCenterEmphasis(processed)
         processed = replaceCenterMarkdownBlocks(processed)
         processed = replaceMarkdownSpoilers(processed)
         processed = preserveYoutubeDivs(processed)
         processed = normalizeMarkdownBlockquotes(processed)
-        return processed
+        return restorePreBlocks(processed, masked.blocks)
+    }
+
+    private class MaskedHtml(val text: String, val blocks: List<String>)
+
+    /** Replaces each `<pre>…</pre>` with an inert placeholder so the normalization steps skip it. */
+    private fun maskPreBlocks(html: String): MaskedHtml {
+        if (!html.contains("<pre", ignoreCase = true)) return MaskedHtml(html, emptyList())
+        val blocks = mutableListOf<String>()
+        val masked = PRE_BLOCK_REGEX.replace(html) { match ->
+            val token = "PRE${blocks.size}"
+            blocks.add(match.value)
+            token
+        }
+        return MaskedHtml(masked, blocks)
+    }
+
+    private fun restorePreBlocks(html: String, blocks: List<String>): String {
+        if (blocks.isEmpty()) return html
+        var result = html
+        for (i in blocks.indices) {
+            result = result.replace("PRE${i}", blocks[i])
+        }
+        return result
     }
 
     /**
@@ -224,6 +265,20 @@ internal object RichTextNormalizer {
         text
             .replace("<center>", "<div align=\"center\">")
             .replace("</center>", "</div>")
+
+    private fun replaceDanglingCenterEmphasis(text: String): String {
+        if (text.indexOf("~~~") < 0) return text
+        return text.replace(CENTER_DANGLING_EMPHASIS_REGEX) { match ->
+            val marker = match.groupValues[1]
+            val body = match.groupValues[2]
+            val (open, close) = when (marker.length) {
+                1 -> "<em>" to "</em>"
+                2 -> "<strong>" to "</strong>"
+                else -> "<em><strong>" to "</strong></em>"
+            }
+            "<div align=\"center\">$open$body$close</div>"
+        }
+    }
 
     private fun replaceCenterMarkdownBlocks(text: String): String {
         if (text.indexOf("~~~") < 0) return text

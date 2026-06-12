@@ -224,6 +224,76 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `unpaired trailing tilde center marker is consumed not rendered literally`() = runBlocking {
+        val parsed = RichTextParser.parse("My rule definitely applies here. ^^~~~")
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+            .first { it.debugInlineText().contains("applies here") }
+        assertTrue(text.debugInlineText().contains("^^"))
+        assertFalse(text.debugInlineText().contains("~~~"))
+    }
+
+    @Test
+    fun `unclosed tilde center marker centers the remainder`() = runBlocking {
+        val parsed = RichTextParser.parse("intro line\n~~~aligned tail")
+        val blocks = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+        val intro = blocks.first { it.debugInlineText().contains("intro line") }
+        val tail = blocks.first { it.debugInlineText().contains("aligned tail") }
+        assertEquals(RichTextAlignment.Start, intro.align)
+        assertEquals(RichTextAlignment.Center, tail.align)
+        assertFalse(tail.debugInlineText().contains("~~~"))
+    }
+
+    @Test
+    fun `four underscore run renders as bold without leaking underscores`() = runBlocking {
+        val parsed = RichTextParser.parse("<center>____Hundred day challenge____</center>")
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals("Hundred day challenge", text.debugInlineText())
+        assertFalse(text.debugInlineText().contains("_"))
+        assertTrue(text.hasBold())
+    }
+
+    @Test
+    fun `four underscore run with inner padding still resolves to clean bold`() = runBlocking {
+        val parsed =
+            RichTextParser.parse("<center>____85.bad music op/ed but good visuals ____</center>")
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>().first()
+        assertEquals("85.bad music op/ed but good visuals", text.debugInlineText())
+        assertFalse(text.debugInlineText().contains("_"))
+        assertTrue(text.hasBold())
+    }
+
+    @Test
+    fun `italic straddling a tilde center fence renders centered italic with nested bold`() =
+        runBlocking {
+            // AniList activity 1092492134 (NotZero): `~~~_Day 90: __title__~~~_` — the italic `_`
+            // opens just inside the centre fence and closes just after it. Must render as one centred
+            // italic span (with the title bold) instead of leaking literal underscores.
+            val parsed =
+                RichTextParser.parse("~~~_Day 90: __Most Inspiring Anime Series__~~~_")
+            val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+                .first { it.debugInlineText().contains("Day 90") }
+
+            assertEquals(RichTextAlignment.Center, text.align)
+            assertEquals("Day 90: Most Inspiring Anime Series", text.debugInlineText())
+            assertFalse(text.debugInlineText().contains("_"))
+            assertTrue(text.inlines.any { it is RichTextInline.Italic })
+            assertTrue(text.hasBold())
+        }
+
+    @Test
+    fun `balanced tilde center block with inner emphasis is unaffected by dangling fix`() =
+        runBlocking {
+            // Regression guard: a normal `~~~ … ~~~` block whose emphasis is fully inside must keep
+            // working (the dangling-overlap rule must not hijack it).
+            val parsed = RichTextParser.parse("~~~__Heading__~~~\nbody")
+            val heading = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+                .first { it.debugInlineText().contains("Heading") }
+            assertEquals(RichTextAlignment.Center, heading.align)
+            assertTrue(heading.hasBold())
+            assertFalse(heading.debugInlineText().contains("~"))
+        }
+
+    @Test
     fun `http image urls are upgraded to https`() = runBlocking {
         val parsed = RichTextParser.parse("<img src='http://i.imgur.com/abc.jpg'>")
         val image = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Image>().first()
@@ -425,6 +495,52 @@ class RichTextParserTest {
             assertTrue(allText.contains("Our Aim Is To Satisfy by Red Snapper"))
             assertTrue(textBlocks.any { it.hasLink("https://1001albumsgenerator.com/") })
             assertTrue(textBlocks.any { it.hasLink("https://anilist.co/activity/1084893698") })
+        }
+
+    @Test
+    fun `tilde-center fence swallowed into language token recovers both cards spoilers and centering`() =
+        runBlocking {
+            // AniList activity 1091931291 (theCaucASIAN): a ~~~ centre block whose first line was a
+            // media URL got fenced into <pre><code class="language-<url>">. The leading ~~~ was eaten
+            // into the language token, leaving the closing ~~~ at the tail. Recover the swallowed
+            // first card, keep both spoilers, and re-centre the whole post like the website.
+            val html =
+                "<pre><code class=\"language-https://anilist.co/anime/186497/Koori-no-Jouheki/\">\n" +
+                    "###__Ep.11__\n" +
+                    "&lt;span class='markdown_spoiler'&gt;&lt;span&gt;Spoiler one body.&lt;/span&gt;&lt;/span&gt; " +
+                    "&lt;img width='300' src='https://media.tenor.com/x/divider-purple.gif'&gt;\n\n" +
+                    "https://anilist.co/anime/182483/Hime-Kishi-wa-Barbaroi-no-Yome/\n" +
+                    "###__Ep.10__\n" +
+                    "~!HAHAHA Well, _that_ was unexpected~ lol!~ ~~~</code></pre>"
+
+            val parsed = RichTextParser.parse(html)
+            val blocks = parsed.blocks.deepBlocks()
+
+            assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+
+            // Both media cards present — the first (186497) was recovered from the language token.
+            val cards = blocks.filterIsInstance<RichTextBlock.AnilistLink>()
+            assertTrue(cards.any { it.id == 186497 })
+            assertTrue(cards.any { it.id == 182483 })
+
+            // Both spoilers survive (Ep.10's ~!…!~ is no longer flattened into visible prose).
+            val spoilers = blocks.filterIsInstance<RichTextBlock.Spoiler>()
+            assertEquals(2, spoilers.size)
+            assertTrue(
+                spoilers.any { s ->
+                    s.children.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+                        .any { it.debugInlineText().contains("HAHAHA") }
+                }
+            )
+
+            // The post is centred: cards, headings and spoilers all carry Center alignment.
+            assertTrue(cards.all { it.align == RichTextAlignment.Center })
+            assertTrue(spoilers.all { it.align == RichTextAlignment.Center })
+            assertTrue(
+                blocks.filterIsInstance<RichTextBlock.Text>()
+                    .filter { it.kind != RichTextTextKind.Paragraph }
+                    .all { it.align == RichTextAlignment.Center }
+            )
         }
 
     @Test

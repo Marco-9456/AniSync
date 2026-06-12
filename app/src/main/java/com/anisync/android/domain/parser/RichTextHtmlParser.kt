@@ -208,8 +208,15 @@ internal class RichTextHtmlParser(
                     val swallowed = codeEl?.let { swallowedLanguageContent(it.attr("class")) }
                     when {
                         swallowed != null -> {
+                            // When the fence was AniList's `~~~` centre toggle, its opening `~~~` got
+                            // eaten into the language token and only the closing `~~~` survives at the
+                            // tail. Re-add a leading `~~~` so the recovered post re-pairs and centres,
+                            // matching AniList's web render (e.g. activity 1091931291's two-card post).
+                            val recovered = "$swallowed\n$trimmed"
+                            val reparseSource =
+                                if (trimmed.endsWith("~~~")) "~~~\n$recovered" else recovered
                             val reparsed = Jsoup.parseBodyFragment(
-                                RichTextNormalizer.normalize("$swallowed\n$trimmed")
+                                RichTextNormalizer.normalize(reparseSource)
                             ).body()
                             walkChildren(reparsed, workingCtx)
                             workingCtx.flushText()
@@ -772,7 +779,10 @@ internal class RichTextHtmlParser(
         val trimmed = codeClass.trim()
         if (!trimmed.startsWith("language-")) return null
         val info = trimmed.removePrefix("language-")
-        return info.takeIf { ESCAPED_HTML_TAG_REGEX.containsMatchIn(it) }
+        // A real language token is a short identifier (kotlin, js, …). AniList's fence misparse
+        // stuffs real post content here instead — an HTML tag, or a bare URL when a `~~~`/``` fence
+        // opened straight onto a link. Recover either so it isn't lost (e.g. the first media card).
+        return info.takeIf { ESCAPED_HTML_TAG_REGEX.containsMatchIn(it) || it.contains("://") }
     }
 
     private fun hasBlockChildren(element: Element): Boolean =
