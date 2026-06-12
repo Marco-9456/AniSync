@@ -44,23 +44,54 @@ import java.util.concurrent.ConcurrentHashMap
  * browser engine and renders all of these correctly.
  *
  * Performance: a live [WebView] per SVG is expensive — instantiating several on screen entry
- * stalls the main thread, and any that animate keep repainting forever. To stay smooth, a
- * **static** SVG is rendered once into an offscreen WebView, captured to a [Bitmap], and then shown
- * as a plain [Image]; the WebView is thrown away. Only SVGs that are actually animated keep a live
- * WebView. If a capture ever fails it falls back to the live WebView, so rendering is never worse
- * than a bare WebView.
+ * stalls the main thread, and any that animate keep repainting forever. So every SVG is rendered
+ * once into a WebView (animations stripped), captured to a [Bitmap], and shown as a plain [Image];
+ * the WebView is thrown away. Only SVGs classified [SvgAnimation.Light] additionally get a live
+ * WebView overlay that plays their animation while the item is settled. [SvgAnimation.Heavy] ones —
+ * animation driving a `<filter>`, e.g. lastfmstats' animated feTurbulence "scribble" — force
+ * Chromium to re-rasterize the filtered region every frame forever; three of those pinned the whole
+ * app, so they stay frozen snapshots (visually the animation's first frame). If a capture ever
+ * fails it falls back to the paused WebView, so rendering is never worse than a bare WebView.
  *
  * The WebView is hardened for untrusted, user-authored content: JavaScript disabled (CSS
  * animations still run without it), file/content access off, and a strict CSP that permits only
  * inline styles plus data:/https: images and fonts — no scripts, objects, or frames.
  */
 
+/** How an SVG animates — decides whether it ever gets a live WebView. */
+internal enum class SvgAnimation {
+    /** No animation. Snapshot only. */
+    None,
+
+    /**
+     * Cheap animation: CSS `@keyframes`, SMIL attribute tweens (marquees, fades), or an embedded
+     * GIF. Plays in a live WebView overlay while the item is settled.
+     */
+    Light,
+
+    /**
+     * SMIL animation inside a `<filter>` (e.g. an animated feTurbulence seed feeding
+     * feDisplacementMap). Chromium re-rasterizes the whole filtered region every frame for the
+     * animation's entire indefinite duration — one such SVG saturates a core, several lag the
+     * whole app. Rendered as a frozen snapshot; never gets a live WebView. (See the note on
+     * [RichSvgResolver.stripSmil] for why a partial strip that keeps marquees live doesn't work.)
+     */
+    Heavy
+}
+
 internal sealed interface RichImgKind {
     data object Loading : RichImgKind
 
-    /** [naturalWidthDp] is the SVG's own px width (≈ dp), used to size+center small badges. */
+    /**
+     * [html] is the live document (original animations) for the [SvgAnimation.Light] overlay;
+     * [staticHtml] has all animation stripped and is what the snapshot WebView loads, so the
+     * capture never races a repaint loop. For non-Light SVGs they are the same instance.
+     * [naturalWidthDp] is the SVG's own px width (≈ dp), used to size+center small badges.
+     */
     data class Svg(
         val html: String,
+        val staticHtml: String,
+        val animation: SvgAnimation,
         val aspectRatio: Float,
         val naturalWidthDp: Float?
     ) : RichImgKind
@@ -114,8 +145,16 @@ internal object RichSvgResolver {
             } else {
                 val text = fetchText(url)
                 if (text != null && text.contains("<svg", ignoreCase = true)) {
+                    val animation = classifyAnimation(text)
+                    val staticHtml = buildSvgHtml(text, freeze = true)
                     RichImgKind.Svg(
-                        html = buildSvgHtml(text),
+                        html = if (animation == SvgAnimation.Light) {
+                            buildSvgHtml(text, freeze = false)
+                        } else {
+                            staticHtml
+                        },
+                        staticHtml = staticHtml,
+                        animation = animation,
                         aspectRatio = svgAspectRatio(text),
                         naturalWidthDp = svgWidthDp(text)
                     )
@@ -188,9 +227,49 @@ internal object RichSvgResolver {
         Regex("""<svg\b[^>]*?\bwidth\s*=\s*["']([\d.]+)(?:px)?["']""", RegexOption.IGNORE_CASE)
             .find(svg)?.groupValues?.get(1)?.toFloatOrNull()?.takeIf { it > 0f }
 
-    private fun buildSvgHtml(svg: String): String {
+    // Longer names first so \b can't reject at the prefix; <set\b avoids matching e.g. <settings.
+    private val SMIL_ELEMENT =
+        Regex("""<(animateMotion|animateTransform|animate|set)\b""", RegexOption.IGNORE_CASE)
+    private val SMIL_SELF_CLOSED =
+        Regex("""(?is)<(?:animateMotion|animateTransform|animate|set)\b[^>]*/>""")
+    private val SMIL_PAIRED =
+        Regex("""(?is)<(animateMotion|animateTransform|animate|set)\b[^>]*>.*?</\1\s*>""")
+    private val FILTER_BLOCK = Regex("""(?is)<filter\b.*?</filter\s*>""")
+    private val GIF_REFERENCE = Regex("""(?i)image/gif|\.gif["'?]""")
+
+    /** See [SvgAnimation]. Heavy wins: one animated filter freezes the whole document. */
+    internal fun classifyAnimation(svg: String): SvgAnimation = when {
+        FILTER_BLOCK.findAll(svg).any { SMIL_ELEMENT.containsMatchIn(it.value) } -> SvgAnimation.Heavy
+        SMIL_ELEMENT.containsMatchIn(svg) ||
+            svg.contains("@keyframes", ignoreCase = true) ||
+            GIF_REFERENCE.containsMatchIn(svg) -> SvgAnimation.Light
+        else -> SvgAnimation.None
+    }
+
+    /**
+     * Removes SMIL elements, leaving each animated attribute at its base value (the animation's
+     * first frame). CSS animations are disabled separately via the frozen document's stylesheet.
+     *
+     * NOTE: a finer "defang" (strip only in-filter SMIL, keep marquees live) was tried and
+     * reverted: animating an element that *has* a `filter=` applied re-rasterizes the filter every
+     * frame even when the filter's own parameters are static — lastfm's widgets wiggle ~10
+     * scribble-filtered `<text>` layers, which burned ~170% CPU. And the filtered shadow layer is
+     * duplicated by an unfiltered top layer, so stripping animation from only the filtered copy
+     * desyncs the two. Heavy therefore always means a full freeze.
+     */
+    internal fun stripSmil(svg: String): String =
+        svg.replace(SMIL_SELF_CLOSED, "").replace(SMIL_PAIRED, "")
+
+    /**
+     * [freeze] builds the static document used for snapshots: SMIL stripped and CSS animation
+     * disabled, so the page paints once instead of looping while the capture is pending — an
+     * animated SVG used to keep software-rasterizing on the main thread until its snapshot landed.
+     */
+    private fun buildSvgHtml(svg: String, freeze: Boolean): String {
         // JS is disabled in the WebView, but strip <script> anyway as defense-in-depth.
         val sanitized = svg.replace(Regex("(?is)<script.*?</script>"), "")
+            .let { if (freeze) stripSmil(it) else it }
+        val freezeCss = if (freeze) "\n  *{animation:none!important;transition:none!important}" else ""
         return """
             <!DOCTYPE html>
             <html><head><meta charset="utf-8">
@@ -199,7 +278,7 @@ internal object RichSvgResolver {
                   content="default-src 'none'; img-src data: https:; style-src 'unsafe-inline' https:; font-src data: https:;">
             <style>
               html,body{margin:0;padding:0;background:transparent;overflow:hidden}
-              svg{display:block;width:100%;height:auto}
+              svg{display:block;width:100%;height:auto}$freezeCss
             </style>
             </head><body>$sanitized</body></html>
         """.trimIndent()
@@ -251,10 +330,12 @@ private const val SVG_SETTLE_DELAY_MS = 320L
  * Renders a resolved SVG with smooth scrolling *and* working animation:
  *  - A cached [Bitmap] snapshot is the always-present base layer. It's cheap to composite, so
  *    flinging past the image — or scrolling back to it — never touches a WebView.
- *  - A live [WebView] is overlaid only while the item is *settled* (its on-screen position has held
- *    still for a beat). CSS/SMIL animations therefore play when you stop on a widget, but a heavily
- *    animated SVG can't invalidate every frame *while you scroll* — which is what pinned the main
- *    thread and dropped frames on Hameru's complex widget (a lighter live SVG never janked).
+ *  - Only an [SvgAnimation.Light] SVG gets a live [WebView], overlaid while the item is *settled*
+ *    (its on-screen position has held still for a beat). CSS/SMIL animations therefore play when
+ *    you stop on a widget, but the WebView can't invalidate every frame *while you scroll* — which
+ *    is what pinned the main thread and dropped frames on Hameru's complex widget.
+ *  - [SvgAnimation.None] and [SvgAnimation.Heavy] never mount a live WebView at all: the snapshot
+ *    is the final render, and none of the settle tracking below runs for them.
  *
  * "Settled" is derived per-image from its own position, so no scroll state has to be threaded down
  * from each screen. [linkUrl] turns the whole image into a link via a transparent overlay.
@@ -266,6 +347,8 @@ internal fun RichSvgView(
     onLinkClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val live = svg.animation == SvgAnimation.Light
+
     var settled by remember(svg.html) { mutableStateOf(false) }
     // Latches true on the first settle. The live WebView is then kept mounted (just paused/resumed)
     // rather than created and destroyed each time scrolling stops — re-creating + re-rendering a
@@ -277,30 +360,36 @@ internal fun RichSvgView(
     // Every scroll frame moves the image and bumps positionTick, which restarts this effect:
     // 'settled' drops to false instantly on movement and only returns to true once the position has
     // been stable for SVG_SETTLE_DELAY_MS.
-    LaunchedEffect(positionTick) {
-        settled = false
-        delay(SVG_SETTLE_DELAY_MS)
-        settled = true
-        everSettled = true
+    if (live) {
+        LaunchedEffect(positionTick) {
+            settled = false
+            delay(SVG_SETTLE_DELAY_MS)
+            settled = true
+            everSettled = true
+        }
     }
 
     Box(
-        modifier = modifier.onGloballyPositioned { coordinates ->
-            val position = coordinates.positionInWindow()
-            if (position != lastPosition) {
-                lastPosition = position
-                positionTick++
+        modifier = if (live) {
+            modifier.onGloballyPositioned { coordinates ->
+                val position = coordinates.positionInWindow()
+                if (position != lastPosition) {
+                    lastPosition = position
+                    positionTick++
+                }
             }
+        } else {
+            modifier
         }
     ) {
         // Base layer: the static snapshot. Also what shows while scrolling and during first load.
-        RichSvgSnapshot(svg.html, Modifier.fillMaxWidth())
+        RichSvgSnapshot(svg.staticHtml, Modifier.fillMaxWidth())
 
         // Animated layer: a live WebView created once the image first settles and then kept mounted.
         // It plays only while settled; the instant a scroll starts it is paused, so it can't redraw
         // mid-scroll (what janked Hameru's complex widget). It sits on the identical snapshot, so
         // pausing/resuming isn't visible beyond the animation itself stopping and starting.
-        if (everSettled) {
+        if (live && everSettled) {
             RichSvgLiveWebView(svg.html, playing = settled, modifier = Modifier.matchParentSize())
         }
 
