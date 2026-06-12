@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -328,12 +329,16 @@ private const val SVG_SETTLE_DELAY_MS = 320L
 
 /**
  * Renders a resolved SVG with smooth scrolling *and* working animation:
- *  - A cached [Bitmap] snapshot is the always-present base layer. It's cheap to composite, so
- *    flinging past the image — or scrolling back to it — never touches a WebView.
+ *  - A cached [Bitmap] snapshot is the base layer. It's cheap to composite, so flinging past the
+ *    image — or scrolling back to it — never touches a WebView.
  *  - Only an [SvgAnimation.Light] SVG gets a live [WebView], overlaid while the item is *settled*
  *    (its on-screen position has held still for a beat). CSS/SMIL animations therefore play when
  *    you stop on a widget, but the WebView can't invalidate every frame *while you scroll* — which
  *    is what pinned the main thread and dropped frames on Hameru's complex widget.
+ *  - Once the live WebView has drawn its first frame the snapshot *leaves the composition*: SVGs
+ *    are often background-transparent, so anything the animation moves would otherwise show
+ *    doubled over the frozen copy underneath (spotify-github-profile's marquee did). A paused
+ *    WebView keeps compositing its last frame, so scrolling stays cheap without the snapshot.
  *  - [SvgAnimation.None] and [SvgAnimation.Heavy] never mount a live WebView at all: the snapshot
  *    is the final render, and none of the settle tracking below runs for them.
  *
@@ -354,6 +359,9 @@ internal fun RichSvgView(
     // rather than created and destroyed each time scrolling stops — re-creating + re-rendering a
     // heavy animated SVG on every settle is itself a big main-thread stall.
     var everSettled by remember(svg.html) { mutableStateOf(false) }
+    // True once the live WebView has actually drawn — only then is the snapshot dropped, so there
+    // is no transparent flash while the live document loads.
+    var liveReady by remember(svg.html) { mutableStateOf(false) }
     var lastPosition by remember(svg.html) { mutableStateOf(Offset.Unspecified) }
     var positionTick by remember(svg.html) { mutableIntStateOf(0) }
 
@@ -382,15 +390,24 @@ internal fun RichSvgView(
             modifier
         }
     ) {
-        // Base layer: the static snapshot. Also what shows while scrolling and during first load.
-        RichSvgSnapshot(svg.staticHtml, Modifier.fillMaxWidth())
+        // Base layer: the static snapshot — what shows during first load, while scrolling before
+        // the live layer exists, and forever for non-Light SVGs. Removed once the live WebView has
+        // drawn, or its frozen content would show through the live document's transparency.
+        if (!liveReady) {
+            RichSvgSnapshot(svg.staticHtml, Modifier.fillMaxWidth())
+        }
 
         // Animated layer: a live WebView created once the image first settles and then kept mounted.
         // It plays only while settled; the instant a scroll starts it is paused, so it can't redraw
-        // mid-scroll (what janked Hameru's complex widget). It sits on the identical snapshot, so
-        // pausing/resuming isn't visible beyond the animation itself stopping and starting.
+        // mid-scroll (what janked Hameru's complex widget). A paused WebView keeps showing its last
+        // frame, so pausing/resuming isn't visible beyond the animation stopping and starting.
         if (live && everSettled) {
-            RichSvgLiveWebView(svg.html, playing = settled, modifier = Modifier.matchParentSize())
+            RichSvgLiveWebView(
+                html = svg.html,
+                playing = settled,
+                onFirstFrame = { liveReady = true },
+                modifier = Modifier.matchParentSize()
+            )
         }
 
         // Display-only content; a transparent overlay handles the link without letting a WebView
@@ -487,15 +504,36 @@ private fun RichSvgSnapshot(html: String, modifier: Modifier = Modifier) {
  * the item is settled and pauses it the moment a scroll starts, so it can't redraw mid-scroll. A
  * paused WebView still shows its last frame (cheap to composite), so scrolling stays smooth. Uses a
  * hardware layer so the animation composites on the render thread.
+ *
+ * [onFirstFrame] fires once the loaded document has actually been drawn (visual-state callback
+ * registered from onPageFinished, so it re-arms on every load) — the caller's cue to drop the
+ * snapshot underneath.
  */
 @Composable
-private fun RichSvgLiveWebView(html: String, playing: Boolean, modifier: Modifier = Modifier) {
+private fun RichSvgLiveWebView(
+    html: String,
+    playing: Boolean,
+    onFirstFrame: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currentOnFirstFrame by rememberUpdatedState(onFirstFrame)
     AndroidView(
         factory = { context ->
             createHardenedWebView(context).apply {
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 tag = html
-                webViewClient = WebViewClient()
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String?) {
+                        view.postVisualStateCallback(
+                            0,
+                            object : WebView.VisualStateCallback() {
+                                override fun onComplete(requestId: Long) {
+                                    currentOnFirstFrame()
+                                }
+                            }
+                        )
+                    }
+                }
                 loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
             }
         },
