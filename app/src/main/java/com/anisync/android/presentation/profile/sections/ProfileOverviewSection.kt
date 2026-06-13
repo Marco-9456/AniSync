@@ -19,9 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,12 +29,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.HeaderLevel
@@ -47,15 +44,15 @@ import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.RecentUpdatesSection
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
+import com.anisync.android.presentation.statistics.ActivityHeatmapSection
 import com.anisync.android.presentation.statistics.GenreCardModern
-import com.anisync.android.presentation.statistics.HeroDashboard
 import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.presentation.util.formatDecimal
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProfileOverviewSection(
     profile: UserProfile,
+    activityHistory: List<ActivityHistoryDay> = emptyList(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onNavigateToTab: (ProfileTab) -> Unit = {},
@@ -88,53 +85,35 @@ fun ProfileOverviewSection(
         return
     }
 
+    val hasLibrary = profile.animeCount > 0 || profile.mangaCount > 0
+
     Column(modifier = modifier) {
-        // Recent Updates
-        if (profile.activities.isNotEmpty()) {
-            RecentUpdatesSection(
-                activities = profile.activities.take(5),
-                modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                onUserClick = onUserClick,
-                onActivityClick = onActivityClick,
-                onMediaClick = onMediaClick,
-                onLastReplyClick = onLastReplyClick,
-                onSubscribeClick = onSubscribeClick,
-                onLikeClick = onLikeActivity,
-                onDeleteClick = onDeleteActivity,
-                onEditClick = onEditActivity,
-                viewerId = viewerId
-            )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Activity heatmap — leads the tab as the most glanceable "what they've been up to".
+        if (activityHistory.isNotEmpty()) {
+            ActivityHeatmapSection(activityHistory)
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Statistics (Hero Dashboard + Top Genres)
-        if (profile.animeCount > 0 || profile.mangaCount > 0) {
+        // Library snapshot — the at-a-glance summary; the header's expand button opens full Stats.
+        if (hasLibrary) {
             SectionHeader(
                 title = stringResource(R.string.statistics_title),
                 level = HeaderLevel.Section,
                 padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 onActionClick = { onNavigateToTab(ProfileTab.STATS) }
             )
-            HeroDashboard(
-                primaryValue = profile.animeCount.toString(),
-                primaryUnit = "anime",
-                primaryLabel = stringResource(R.string.statistics_total_anime),
-                secondaryRow = listOf(
-                    com.anisync.android.presentation.statistics.EditorialStat(
-                        value = formatDecimal(profile.daysWatched),
-                        label = stringResource(R.string.statistics_days_watched),
-                        icon = Icons.Default.Tv
-                    ),
-                    com.anisync.android.presentation.statistics.EditorialStat(
-                        value = formatDecimal(profile.meanScore),
-                        label = stringResource(R.string.statistics_mean_score),
-                        icon = Icons.Default.Star
-                    )
-                )
-            )
+            ProfileLibrarySnapshot(profile = profile)
 
             if (profile.topGenres.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionHeader(
+                    title = stringResource(R.string.statistics_top_genres),
+                    level = HeaderLevel.Section,
+                    padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    onActionClick = { onNavigateToTab(ProfileTab.STATS) }
+                )
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -253,6 +232,26 @@ fun ProfileOverviewSection(
                     }
                 }
             }
+        }
+
+        // Recent activity — a short teaser that opens into the full Activity tab.
+        if (profile.activities.isNotEmpty()) {
+            RecentUpdatesSection(
+                activities = profile.activities,
+                maxItems = 3,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                onActionClick = { onNavigateToTab(ProfileTab.ACTIVITY) },
+                onUserClick = onUserClick,
+                onActivityClick = onActivityClick,
+                onMediaClick = onMediaClick,
+                onLastReplyClick = onLastReplyClick,
+                onSubscribeClick = onSubscribeClick,
+                onLikeClick = onLikeActivity,
+                onDeleteClick = onDeleteActivity,
+                onEditClick = onEditActivity,
+                viewerId = viewerId
+            )
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

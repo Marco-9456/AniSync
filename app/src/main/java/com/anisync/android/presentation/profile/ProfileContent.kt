@@ -162,6 +162,7 @@ fun ProfileContent(
                 item(key = "tab_overview", contentType = "overview") {
                     ProfileOverviewSection(
                         profile = profile,
+                        activityHistory = uiState.statsData?.activityHistory.orEmpty(),
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
                         onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },

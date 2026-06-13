@@ -20,6 +20,8 @@ import com.anisync.android.presentation.profile.components.ActivityCard
 fun RecentUpdatesSection(
     activities: List<UserActivity>,
     modifier: Modifier = Modifier,
+    maxItems: Int = 5,
+    onActionClick: (() -> Unit)? = null,
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
@@ -34,10 +36,11 @@ fun RecentUpdatesSection(
         SectionHeader(
             title = stringResource(R.string.section_recent_updates),
             level = HeaderLevel.Section,
-            padding = PaddingValues(bottom = 20.dp)
+            padding = PaddingValues(bottom = 20.dp),
+            onActionClick = onActionClick
         )
 
-        val displayedActivities = remember(activities) { activities.take(5) }
+        val displayedActivities = remember(activities, maxItems) { activities.take(maxItems) }
 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             displayedActivities.forEach { activity ->

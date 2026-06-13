@@ -478,7 +478,11 @@ class ProfileViewModel @Inject constructor(
                     fetchSocialData()
                 } else if (action.tab == ProfileTab.REVIEWS && !reviewsState.value.hasFetchedReviews) {
                     fetchReviews()
-                } else if (action.tab == ProfileTab.STATS && !statsState.value.hasFetchedStats) {
+                } else if ((action.tab == ProfileTab.STATS || action.tab == ProfileTab.OVERVIEW) &&
+                    !statsState.value.hasFetchedStats
+                ) {
+                    // Overview shows the activity heatmap, which rides on the stats payload, so
+                    // it warms the same cache the Stats tab reuses.
                     fetchStats()
                 } else if (action.tab == ProfileTab.FAVORITES && !favoritesState.value.hasFetched) {
                     fetchFullFavoriteAnime()
@@ -759,6 +763,9 @@ class ProfileViewModel @Inject constructor(
                             ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
                             ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
                             ProfileTab.STATS -> fetchStats(forceRefresh = true)
+                            // Cache-first on cold open (the heatmap rides the stats payload);
+                            // an explicit pull forces the network like the other tabs.
+                            ProfileTab.OVERVIEW -> fetchStats(forceRefresh = forceNetwork)
                             ProfileTab.FAVORITES -> fetchFullFavoriteAnime(forceRefresh = true)
                             ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
                             ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())

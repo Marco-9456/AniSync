@@ -591,6 +591,8 @@
     <string name="stat_manga_read">Manga Read</string>
     <string name="section_anime_status">Anime Status</string>
     <string name="section_recent_updates">Recent Updates</string>
+    <string name="snapshot_days">%1$s days</string>
+    <string name="snapshot_chapters">%1$s chapters</string>
     <string name="status_watching_count">Watching %1$d</string>
     <string name="status_completed_count">Completed %1$d</string>
     <string name="status_on_hold">Paused</string>
