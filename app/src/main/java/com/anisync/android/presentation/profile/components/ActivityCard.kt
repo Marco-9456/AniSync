@@ -48,6 +48,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.domain.ActivityMediaType
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.url
@@ -279,12 +280,17 @@ private fun ActivityCardBody(
                     }
                 }
                 Spacer(Modifier.width(12.dp))
-                ActivityListStatusText(
-                    activity = activity,
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(top = 4.dp)
-                )
+                ) {
+                    ActivityListStatusText(activity = activity)
+                    activity.mediaType?.let { type ->
+                        Spacer(Modifier.height(6.dp))
+                        MediaTypeLabel(type)
+                    }
+                }
             }
         }
 
@@ -333,6 +339,24 @@ private fun ActivityListStatusText(activity: UserActivity, modifier: Modifier = 
         maxLines = 4,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
+    )
+}
+
+/**
+ * Anime/Manga tag for a list activity, mirroring the rendered AniList media link: a plain
+ * accent-colored label in AniList's brand blue (anime) / orange (manga). See [AniListLinkCard].
+ */
+@Composable
+private fun MediaTypeLabel(type: ActivityMediaType) {
+    val (labelRes, color) = when (type) {
+        ActivityMediaType.ANIME -> R.string.media_type_anime to Color(0xFF3DB4F2)
+        ActivityMediaType.MANGA -> R.string.media_type_manga to Color(0xFFF2A33D)
+    }
+    Text(
+        text = stringResource(labelRes),
+        style = MaterialTheme.typography.labelMedium,
+        color = color,
+        fontWeight = FontWeight.Medium
     )
 }
 

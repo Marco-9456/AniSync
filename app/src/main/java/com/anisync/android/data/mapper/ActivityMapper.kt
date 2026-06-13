@@ -1,8 +1,10 @@
 package com.anisync.android.data.mapper
 
+import com.anisync.android.domain.ActivityMediaType
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.fragment.ActivityFields
+import com.anisync.android.type.MediaType
 
 internal fun ActivityFields.toDomain(): UserActivity? {
     onListActivity?.let { l ->
@@ -18,6 +20,7 @@ internal fun ActivityFields.toDomain(): UserActivity? {
             mediaCover = com.anisync.android.domain.CoverImage.of(l.media?.coverImage?.medium, l.media?.coverImage?.large, l.media?.coverImage?.extraLarge),
             mediaCoverColor = l.media?.coverImage?.color,
             mediaIsAdult = l.media?.isAdult == true,
+            mediaType = l.media?.type.toActivityMediaType(),
             timestamp = (l.createdAt?.toLong() ?: 0L) * 1000L,
             mediaScore = null,
             userId = l.user?.id,
@@ -85,4 +88,10 @@ internal fun ActivityFields.toDomain(): UserActivity? {
         )
     }
     return null
+}
+
+private fun MediaType?.toActivityMediaType(): ActivityMediaType? = when (this) {
+    MediaType.ANIME -> ActivityMediaType.ANIME
+    MediaType.MANGA -> ActivityMediaType.MANGA
+    else -> null
 }

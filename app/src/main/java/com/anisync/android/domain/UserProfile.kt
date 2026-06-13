@@ -63,6 +63,10 @@ enum class ActivityType {
     UNKNOWN
 }
 
+/** Media kind behind a MEDIA_LIST activity; drives the card's Anime/Manga type label. */
+@Serializable
+enum class ActivityMediaType { ANIME, MANGA }
+
 @Immutable
 @Serializable
 data class UserActivity(
@@ -79,6 +83,9 @@ data class UserActivity(
     /** AniList 18+ flag for the activity's media. Used to hide adult ListActivity from the feed
      *  when the viewer's account has displayAdultContent off (matches the website). */
     val mediaIsAdult: Boolean = false,
+    /** ANIME or MANGA for MEDIA_LIST activities; null for text/message. Tags the card with a
+     *  type label that mirrors AniList's rendered media links. */
+    val mediaType: ActivityMediaType? = null,
     val timestamp: Long,
     val mediaScore: Int? = null,
     val text: String? = null,
