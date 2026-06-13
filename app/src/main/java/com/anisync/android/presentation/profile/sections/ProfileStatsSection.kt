@@ -32,6 +32,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedTab
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.statistics.ActivityHeatmapSection
 import com.anisync.android.presentation.statistics.CountryDistributionRow
 import com.anisync.android.presentation.statistics.EditorialStat
 import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
@@ -139,6 +140,13 @@ fun LazyListScope.profileStatsTab(
             }
         }
         return
+    }
+
+    if (statsData.activityHistory.isNotEmpty()) {
+        item(key = "activity_heatmap") {
+            ActivityHeatmapSection(statsData.activityHistory)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 
     if (selectedType == ProfileStatsType.ANIME) {

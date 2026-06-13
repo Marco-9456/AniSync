@@ -724,6 +724,17 @@
     <string name="statistics_entries">%d entries</string>
     <string name="statistics_no_data">No statistics data available</string>
 
+    <!-- Activity heatmap -->
+    <string name="statistics_activity_history">Activity History</string>
+    <string name="statistics_activity_summary">%1$d activities across %2$d days</string>
+    <string name="statistics_activity_less">Less</string>
+    <string name="statistics_activity_more">More</string>
+    <string name="statistics_activity_a11y">Activity heatmap with %1$d activities over the past year</string>
+    <plurals name="statistics_activity_count">
+        <item quantity="one">%d activity</item>
+        <item quantity="other">%d activities</item>
+    </plurals>
+
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">Score %1$d: %2$d entries</string>

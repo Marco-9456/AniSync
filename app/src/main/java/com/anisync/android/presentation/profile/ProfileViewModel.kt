@@ -1054,7 +1054,7 @@ class ProfileViewModel @Inject constructor(
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
                         val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats)
                         val mangaUi = result.data.mangaStats?.let { processMangaStats(it, result.data.scoreFormat) }
-                        StatisticsUiModel(animeUi, mangaUi)
+                        StatisticsUiModel(animeUi, mangaUi, activityHistory = result.data.activityHistory)
                     }
 
                     statsState.update {

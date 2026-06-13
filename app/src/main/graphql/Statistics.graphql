@@ -182,5 +182,12 @@ query GetUserStatistics($userId: Int) {
         }
       }
     }
+    stats {
+      activityHistory {
+        date
+        amount
+        level
+      }
+    }
   }
 }

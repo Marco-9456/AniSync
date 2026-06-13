@@ -11,7 +11,19 @@ data class UserStatistics(
     val userName: String,
     val scoreFormat: ScoreFormat? = null,
     val animeStats: AnimeStatistics,
-    val mangaStats: MangaStatistics?
+    val mangaStats: MangaStatistics?,
+    val activityHistory: List<ActivityHistoryDay> = emptyList()
+)
+
+/**
+ * One day in the profile activity heatmap. [date] is the AniList day bucket (Unix
+ * seconds); [level] is AniList's own 1-10 intensity, used directly to color the cell.
+ */
+@Immutable
+data class ActivityHistoryDay(
+    val date: Long,
+    val amount: Int,
+    val level: Int
 )
 
 @Immutable

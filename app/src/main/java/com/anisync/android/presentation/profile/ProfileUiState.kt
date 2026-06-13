@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.R
+import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.CountryStat
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.ForumThread
@@ -75,7 +76,8 @@ data class ProfileUiState(
 
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
-    val mangaStats: MangaStatisticsUi?
+    val mangaStats: MangaStatisticsUi?,
+    val activityHistory: List<ActivityHistoryDay> = emptyList()
 )
 
 data class AnimeStatisticsUi(

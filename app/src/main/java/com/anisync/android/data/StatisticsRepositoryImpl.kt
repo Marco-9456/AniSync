@@ -2,6 +2,7 @@ package com.anisync.android.data
 
 import com.anisync.android.GetUserStatisticsQuery
 import com.anisync.android.data.util.safeApiCall
+import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.CountryStat
 import com.anisync.android.domain.FormatStat
@@ -27,6 +28,7 @@ class StatisticsRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient
 ) : StatisticsRepository {
 
+    @Suppress("DEPRECATION") // User.stats is deprecated but is the only source of activityHistory
     override suspend fun getUserStatistics(userId: Int): Result<UserStatistics> {
         return safeApiCall {
             val response = apolloClient.query(
@@ -57,7 +59,15 @@ class StatisticsRepositoryImpl @Inject constructor(
                 userName = user.name ?: "Unknown",
                 scoreFormat = domainScoreFormat,
                 animeStats = animeApi.toDomain(),
-                mangaStats = mangaApi?.toDomain()
+                mangaStats = mangaApi?.toDomain(),
+                activityHistory = user.stats?.activityHistory.orEmpty().mapNotNull { entry ->
+                    val date = entry?.date ?: return@mapNotNull null
+                    ActivityHistoryDay(
+                        date = date.toLong(),
+                        amount = entry.amount ?: 0,
+                        level = entry.level ?: 0
+                    )
+                }
             )
         }
     }
