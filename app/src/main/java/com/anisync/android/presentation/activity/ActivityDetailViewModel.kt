@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jsoup.Jsoup
 import javax.inject.Inject
 
 @HiltViewModel
@@ -74,8 +73,6 @@ class ActivityDetailViewModel @Inject constructor(
 
     private val _finishedEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val finishedEvents: SharedFlow<Unit> = _finishedEvents.asSharedFlow()
-
-    private val mentionRegex = Regex("^@([A-Za-z0-9_]+)")
 
     fun onAction(action: ActivityDetailAction) {
         when (action) {
@@ -442,71 +439,6 @@ class ActivityDetailViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Emulates threading on AniList's flat reply list by parsing a leading @username mention.
-     * A reply starting with "@Alice" nests under Alice's most recent earlier reply in this activity.
-     */
-    private fun buildReplyTree(replies: List<ActivityReply>): List<CommentNode> {
-        if (replies.isEmpty()) return emptyList()
-        val sorted = replies.sortedBy { it.createdAt }
-        val placeholders = sorted.map { reply ->
-            reply to mutableListOf<CommentNode>()
-        }
-        val byId = placeholders.associateBy { it.first.id }
-
-        val parentOf = HashMap<Int, Int>(sorted.size)
-        val latestByAuthor = HashMap<String, Int>() // lowercase username -> reply id
-
-        for ((reply, _) in placeholders) {
-            val mention = extractLeadingMention(reply.body)
-            if (mention != null) {
-                val parentId = latestByAuthor[mention.lowercase()]
-                if (parentId != null && parentId != reply.id) {
-                    parentOf[reply.id] = parentId
-                }
-            }
-            latestByAuthor[reply.authorName.lowercase()] = reply.id
-        }
-
-        fun toNode(reply: ActivityReply, children: List<CommentNode>) = CommentNode(
-            id = reply.id,
-            body = reply.body,
-            likeCount = reply.likeCount,
-            isLiked = reply.isLiked,
-            authorId = reply.authorId,
-            authorName = reply.authorName,
-            authorAvatarUrl = reply.authorAvatarUrl,
-            createdAt = reply.createdAt,
-            childComments = children
-        )
-
-        // Build bottom-up: accumulate children per parent, then materialize roots
-        val childLists = HashMap<Int, MutableList<ActivityReply>>()
-        for ((reply, _) in placeholders) {
-            val parentId = parentOf[reply.id]
-            if (parentId != null && byId.containsKey(parentId)) {
-                childLists.getOrPut(parentId) { mutableListOf() }.add(reply)
-            }
-        }
-
-        fun build(reply: ActivityReply): CommentNode {
-            val kids = childLists[reply.id].orEmpty().map { build(it) }
-            return toNode(reply, kids)
-        }
-
-        return sorted
-            .filter { parentOf[it.id] == null }
-            .map { build(it) }
-    }
-
-    private fun extractLeadingMention(html: String): String? {
-        if (html.isBlank()) return null
-        val text = try {
-            Jsoup.parse(html).text().trimStart()
-        } catch (_: Exception) {
-            html.trimStart()
-        }
-        val match = mentionRegex.find(text) ?: return null
-        return match.groupValues[1]
-    }
+    private fun buildReplyTree(replies: List<ActivityReply>): List<CommentNode> =
+        ReplyThreader.build(replies)
 }
