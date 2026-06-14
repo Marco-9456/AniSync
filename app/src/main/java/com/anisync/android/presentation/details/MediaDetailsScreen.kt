@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -75,6 +77,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -99,6 +102,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -106,6 +110,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -225,6 +230,33 @@ fun MediaDetailsScreen(
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
+    // How far the content has scrolled under the app bar (0 = top, 1 = app bar fully opaque).
+    // Drives both the status-bar scrim fade and the top-app-bar title cross-fade.
+    val overlappedFraction by remember {
+        derivedStateOf { scrollBehavior.state.overlappedFraction.coerceIn(0f, 1f) }
+    }
+    val isScrolled by remember { derivedStateOf { overlappedFraction > 0.01f } }
+
+    // While the banner is showing behind a transparent app bar (Loading/Success, unscrolled), the
+    // status-bar icons must stay white over the dark scrim regardless of theme — like the Play
+    // Store. Once the app bar fades in (scrolled) or on an error page, revert to the theme default.
+    val bannerVisible = uiState !is DetailsUiState.Error
+    val view = LocalView.current
+    val statusBarController = remember(view) {
+        WindowCompat.getInsetsController((view.context as Activity).window, view)
+    }
+    // Captured at entry, after AppTheme's SideEffect already applied !darkTheme -> theme default.
+    val themeDefaultLightStatusBars = remember { statusBarController.isAppearanceLightStatusBars }
+    LaunchedEffect(isScrolled, bannerVisible) {
+        statusBarController.isAppearanceLightStatusBars =
+            if (bannerVisible && !isScrolled) false else themeDefaultLightStatusBars
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            statusBarController.isAppearanceLightStatusBars = themeDefaultLightStatusBars
+        }
+    }
+
     val isDetailsEnteringFromBackStack by remember {
         derivedStateOf {
             animatedVisibilityScope.transition.currentState == EnterExitState.PreEnter &&
@@ -300,7 +332,6 @@ fun MediaDetailsScreen(
                 contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
                 topBar = {
                     val state = uiState
-                    val isScrolled by remember { derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f } }
 
                     val appBarTitle = remember(state, titleLanguage) {
                         (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
@@ -596,6 +627,16 @@ fun MediaDetailsScreen(
                         )
                     }
                 }
+            }
+
+            // Play-Store-style scrim behind the transparent status bar so the system clock /
+            // battery / back arrow stay legible over a bright banner. Fades out as the opaque
+            // app bar scrolls in, and is suppressed on the error page (no banner there).
+            if (bannerVisible) {
+                StatusBarScrim(
+                    alpha = 1f - overlappedFraction,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             }
         }
 
@@ -1483,6 +1524,26 @@ private fun BannerGradients(themeBackground: Color) {
                 .background(themeBackground)
         )
     }
+}
+
+/**
+ * Dark top-to-transparent gradient pinned behind the status bar, mirroring the Google Play Store
+ * detail page. Keeps the white system icons (and back arrow) readable over a bright banner while
+ * the app bar is transparent; [alpha] is driven to 0 as the opaque app bar scrolls in.
+ */
+@Composable
+private fun StatusBarScrim(alpha: Float, modifier: Modifier = Modifier) {
+    val scrimHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 28.dp
+    val scrimBrush = remember {
+        Brush.verticalGradient(colors = listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))
+    }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(scrimHeight)
+            .graphicsLayer { this.alpha = alpha }
+            .background(scrimBrush)
+    )
 }
 
 @Composable
