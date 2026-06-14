@@ -1669,7 +1669,10 @@ private fun ContentRow(
                 modifier = Modifier
                     .width(115.dp)
                     .height(165.dp)
-                    .sharedElement(
+                    // sharedBounds (not sharedElement) to match the library card's cover, which
+                    // also uses sharedBounds for this key — mixing the two APIs on one key made the
+                    // cover mis-size mid-flight.
+                    .sharedBounds(
                         sharedContentState = rememberSharedContentState(key = coverKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> spatialSpec },

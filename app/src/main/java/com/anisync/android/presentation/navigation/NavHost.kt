@@ -586,10 +586,13 @@ fun AniSyncNavHost(
                     // AniList manga URLs with slug (e.g., https://anilist.co/manga/30002/berserk)
                     navDeepLink { uriPattern = "https://anilist.co/manga/{mediaId}/{slug}" }
                 ),
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
+                // Fade only: the shared cover/title/container morph (card → page) carries the
+                // spatial motion. A horizontal slide here competed with that morph — the page
+                // arrived while the cover was still flying. Let the shared bounds own the movement.
+                enterTransition = { fadeIn(animationSpec = effectsSpec) },
+                exitTransition = { fadeOut(animationSpec = effectsSpec) },
+                popEnterTransition = { fadeIn(animationSpec = effectsSpec) },
+                popExitTransition = { fadeOut(animationSpec = effectsSpec) }
             ) { backStackEntry ->
                 val details: MediaDetails = backStackEntry.toRoute()
 
