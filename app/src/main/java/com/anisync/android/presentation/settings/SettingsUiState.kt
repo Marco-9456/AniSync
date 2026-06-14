@@ -16,6 +16,7 @@ import com.materialkolor.PaletteStyle
 
 sealed interface SettingsAction {
     data class SetThemeMode(val mode: ThemeMode) : SettingsAction
+    data class SetAmoledEnabled(val enabled: Boolean) : SettingsAction
     data class SetTitleLanguage(val language: TitleLanguage) : SettingsAction
     data class SetCoverQuality(val quality: CoverQuality) : SettingsAction
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
@@ -108,6 +109,7 @@ data class SettingsUiState(
 
     // Look & Feel
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val amoledEnabled: Boolean = false,
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val coverQuality: CoverQuality = CoverQuality.LARGE,
     val hapticEnabled: Boolean = true,

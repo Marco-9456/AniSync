@@ -169,6 +169,7 @@ class MainActivity : AppCompatActivity() {
 
             setContent {
                 val themeMode by appSettings.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
+                val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle(initialValue = false)
                 val selectedPaletteId by appSettings.selectedPaletteId.collectAsStateWithLifecycle(
                     initialValue = "dynamic"
                 )
@@ -227,6 +228,7 @@ class MainActivity : AppCompatActivity() {
                     AppTheme(
                         darkTheme = useDarkTheme,
                         dynamicColor = useDynamicColor,
+                        amoled = amoledEnabled,
                         seedColor = seedColor,
                         paletteStyle = paletteStyle,
                         typographyOverrides = typographyOverrides

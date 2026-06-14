@@ -2,7 +2,6 @@ package com.anisync.android.presentation.settings
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,8 +65,7 @@ fun AcknowledgmentsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionHeader(stringResource(R.string.acknowledgments_section_data))
-        Spacer(modifier = Modifier.height(8.dp))
+        SettingsSectionLabel(stringResource(R.string.acknowledgments_section_data))
         SettingsGroup {
             dataProviders.forEach { item ->
                 SettingsItem(
@@ -80,8 +78,7 @@ fun AcknowledgmentsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        SectionHeader(stringResource(R.string.acknowledgments_section_community))
-        Spacer(modifier = Modifier.height(8.dp))
+        SettingsSectionLabel(stringResource(R.string.acknowledgments_section_community))
         SettingsGroup {
             community.forEach { item ->
                 SettingsItem(
@@ -94,14 +91,4 @@ fun AcknowledgmentsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
     }
-}
-
-@Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 4.dp)
-    )
 }

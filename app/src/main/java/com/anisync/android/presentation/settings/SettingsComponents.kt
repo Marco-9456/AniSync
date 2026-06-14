@@ -16,15 +16,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchColors
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
@@ -80,6 +86,23 @@ fun SettingsScreenScaffold(
             }
         }
     }
+}
+
+/**
+ * Small section label shown above a [SettingsGroup] or a bespoke control block. Kept subtle
+ * (labelLarge / primary) so groups still carry the visual weight.
+ */
+@Composable
+fun SettingsSectionLabel(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+    )
 }
 
 /**
@@ -161,6 +184,19 @@ fun SettingsItem(
 }
 
 /**
+ * Shared switch palette so every toggle in Settings reads the same: primary track when on, a muted
+ * container track with an outlined thumb when off.
+ */
+@Composable
+fun appSwitchColors(): SwitchColors = SwitchDefaults.colors(
+    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+    checkedTrackColor = MaterialTheme.colorScheme.primary,
+    uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+)
+
+/**
  * A settings item with a trailing switch toggle.
  */
 @Composable
@@ -184,10 +220,82 @@ fun SwitchSettingsItem(
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                enabled = enabled
+                enabled = enabled,
+                colors = appSwitchColors()
             )
         }
     )
+}
+
+/**
+ * A row that does two things: tapping the label area opens a sub-screen, while a trailing switch
+ * (separated by a vertical pipe) flips a value inline. The pipe hints the row is more than a toggle.
+ */
+@Composable
+fun SplitToggleSettingsItem(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    icon: ImageVector? = null,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp)),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.height(IntrinsicSize.Min),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onClick)
+                    .padding(16.dp),
+            ) {
+                if (icon != null) {
+                    Box(
+                        modifier = Modifier.padding(end = 16.dp).size(24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 14.dp)
+                    .width(1.dp)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.outlineVariant),
+            )
+            Box(
+                modifier = Modifier.padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Switch(checked = checked, onCheckedChange = onCheckedChange, colors = appSwitchColors())
+            }
+        }
+    }
 }
 
 /**
@@ -221,7 +329,9 @@ fun RadioSettingsItem(
 }
 
 /**
- * A clickable settings item that displays a current value on the right.
+ * A clickable settings item showing the current value as its subtitle. Set [showArrow] when the row
+ * opens a sub-screen — only those rows get the trailing chevron. Rows that open a bottom-sheet
+ * picker leave it off, since the sheet (not a screen) is what appears.
  */
 @Composable
 fun SelectionSettingsItem(
@@ -230,24 +340,25 @@ fun SelectionSettingsItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    showArrow: Boolean = false
 ) {
     SettingsItem(
         title = title,
-        subtitle = null,
+        subtitle = currentValue,
         icon = icon,
         enabled = enabled,
         onClick = onClick,
         modifier = modifier,
         trailingContent = {
-            Text(
-                text = currentValue,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 140.dp)
-            )
+            if (showArrow) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                )
+            }
         }
     )
 }

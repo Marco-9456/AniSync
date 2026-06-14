@@ -206,8 +206,9 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = combine(
         coreUiState,
         fontPlaygroundFlow,
-    ) { core, fontPlayground ->
-        core.copy(fontPlayground = fontPlayground)
+        appSettings.amoledEnabled,
+    ) { core, fontPlayground, amoled ->
+        core.copy(fontPlayground = fontPlayground, amoledEnabled = amoled)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -217,6 +218,7 @@ class SettingsViewModel @Inject constructor(
     fun onAction(action: SettingsAction) {
         when (action) {
             is SettingsAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
+            is SettingsAction.SetAmoledEnabled -> appSettings.setAmoledEnabled(action.enabled)
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)

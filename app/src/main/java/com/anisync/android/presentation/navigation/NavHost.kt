@@ -57,6 +57,7 @@ import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
+import com.anisync.android.presentation.settings.LanguageScreen
 import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
@@ -65,6 +66,7 @@ import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsScreen
 import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.StorageScreen
+import com.anisync.android.presentation.settings.ThemeScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
 import com.anisync.android.presentation.util.LocalAniLinkCallbacks
@@ -1215,6 +1217,32 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 LookAndFeelScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToTheme = { navController.navigate(SettingsTheme) },
+                    onNavigateToLanguage = { navController.navigate(SettingsLanguage) }
+                )
+            }
+
+            // Theme picker (light/dark/system + AMOLED)
+            composable<SettingsTheme>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                ThemeScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // App language picker
+            composable<SettingsLanguage>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                LanguageScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

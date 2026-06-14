@@ -115,68 +115,59 @@ fun UpdatesScreen(
                 checked = uiState.isAutoUpdateEnabled,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetAutoUpdateEnabled(it)) }
             )
-            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-            Text(
-                text = stringResource(R.string.update_channel),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 24.dp, bottom = 8.dp)
+        SettingsSectionLabel(stringResource(R.string.update_channel))
+
+        SettingsGroup {
+            RadioSettingsItem(
+                title = stringResource(R.string.channel_stable),
+                subtitle = stringResource(R.string.channel_stable_desc),
+                selected = !uiState.isPrereleaseAllowed,
+                onClick = { viewModel.onAction(SettingsAction.SetPrereleaseAllowed(false)) }
             )
+            RadioSettingsItem(
+                title = stringResource(R.string.channel_prerelease),
+                subtitle = stringResource(R.string.channel_prerelease_desc),
+                selected = uiState.isPrereleaseAllowed,
+                onClick = { viewModel.onAction(SettingsAction.SetPrereleaseAllowed(true)) }
+            )
+        }
 
-            SettingsGroup {
-                RadioSettingsItem(
-                    title = stringResource(R.string.channel_stable),
-                    subtitle = stringResource(R.string.channel_stable_desc),
-                    selected = !uiState.isPrereleaseAllowed,
-                    onClick = { viewModel.onAction(SettingsAction.SetPrereleaseAllowed(false)) }
-                )
-                SettingsDivider()
-                RadioSettingsItem(
-                    title = stringResource(R.string.channel_prerelease),
-                    subtitle = stringResource(R.string.channel_prerelease_desc),
-                    selected = uiState.isPrereleaseAllowed,
-                    onClick = { viewModel.onAction(SettingsAction.SetPrereleaseAllowed(true)) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsGroup {
-                SettingsItem(
-                    title = stringResource(R.string.check_for_updates),
-                    subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-                    icon = Icons.Outlined.Refresh,
-                    onClick = {
-                        if (updateState !is UpdateState.Checking) {
-                            viewModel.onAction(SettingsAction.CheckForUpdate)
-                        }
-                    },
-                    trailingContent = {
-                        if (updateState is UpdateState.Checking) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        }
+        SettingsGroup {
+            SettingsItem(
+                title = stringResource(R.string.check_for_updates),
+                subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                icon = Icons.Outlined.Refresh,
+                onClick = {
+                    if (updateState !is UpdateState.Checking) {
+                        viewModel.onAction(SettingsAction.CheckForUpdate)
                     }
-                )
-            }
+                },
+                trailingContent = {
+                    if (updateState is UpdateState.Checking) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            )
+        }
 
-            val dialogRelease = when (val state = updateState) {
-                is UpdateState.UpdateAvailable -> state.release
-                is UpdateState.Downloading -> state.release
-                is UpdateState.ReadyToInstall -> state.release
-                else -> null
-            }
+        val dialogRelease = when (val state = updateState) {
+            is UpdateState.UpdateAvailable -> state.release
+            is UpdateState.Downloading -> state.release
+            is UpdateState.ReadyToInstall -> state.release
+            else -> null
+        }
 
-            if (dialogRelease != null) {
-                UpdateDialog(
-                    updateState = updateState,
-                    release = dialogRelease,
-                    onDismiss = { viewModel.onAction(SettingsAction.DismissUpdate) },
-                    onDownload = { viewModel.onAction(SettingsAction.StartDownload(dialogRelease)) },
-                    onCancel = { viewModel.onAction(SettingsAction.CancelDownload) },
-                    onInstall = { requestInstall() }
-                )
-            }
+        if (dialogRelease != null) {
+            UpdateDialog(
+                updateState = updateState,
+                release = dialogRelease,
+                onDismiss = { viewModel.onAction(SettingsAction.DismissUpdate) },
+                onDownload = { viewModel.onAction(SettingsAction.StartDownload(dialogRelease)) },
+                onCancel = { viewModel.onAction(SettingsAction.CancelDownload) },
+                onInstall = { requestInstall() }
+            )
         }
     }
 }
