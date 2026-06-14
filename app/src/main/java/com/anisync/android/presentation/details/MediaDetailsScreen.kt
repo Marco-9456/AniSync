@@ -70,6 +70,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
@@ -81,6 +82,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -100,7 +102,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
@@ -800,6 +804,12 @@ enum class DetailsTab(@StringRes val titleRes: Int) {
     SOCIAL(R.string.details_tab_social)
 }
 
+/**
+ * Per-frame placement of the sticky tab strip: how far down it sits ([translationY], px from the
+ * screen top) and how opaque its docked background is ([bgAlpha], 0 at rest → 1 when landed).
+ */
+private data class StickyTabs(val translationY: Float, val bgAlpha: Float)
+
 private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
     DetailsTab.OVERVIEW -> Icons.Outlined.Info
     DetailsTab.CHARACTERS -> Icons.Default.Group
@@ -915,6 +925,35 @@ fun DetailsPageContent(
         if (selectedTab !in availableTabs) selectedTab = DetailsTab.OVERVIEW
     }
 
+    // Sticky tabs — Discover-style smoothness: a single interactive tab strip that tracks the scroll
+    // continuously instead of crossfading a second copy in at a threshold. It rides up with its
+    // in-list slot, then clamps under the app bar (status bar inset + 64dp). The background fades in
+    // only over the last [dockFadePx] so it reads as inline at rest and as a pinned bar once landed.
+    // The interactive strip is the overlay below; the in-list item just reserves its slot.
+    val density = LocalDensity.current
+    val appBarHeightPx = with(density) {
+        (WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp).roundToPx()
+    }
+    val spacerLargePx = with(density) { dimensionResource(R.dimen.spacing_large).roundToPx() }
+    val dockFadePx = with(density) { 24.dp.roundToPx() }
+    var tabStripHeightPx by remember { mutableIntStateOf(0) }
+    val stickyTabs by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo.visibleItemsInfo.find { it.key == "tabs" }
+            if (info == null) {
+                // Slot scrolled above the viewport top → fully docked.
+                StickyTabs(translationY = appBarHeightPx.toFloat(), bgAlpha = 1f)
+            } else {
+                val atRest = info.offset + spacerLargePx
+                StickyTabs(
+                    translationY = maxOf(appBarHeightPx, atRest).toFloat(),
+                    bgAlpha = ((appBarHeightPx + dockFadePx - atRest).toFloat() / dockFadePx)
+                        .coerceIn(0f, 1f)
+                )
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -945,13 +984,14 @@ fun DetailsPageContent(
                 }
             }
 
-            // Section selector — groups the rest of the page into focused tabs
+            // Section selector slot — reserves the tab strip's footprint in the scroll. The strip
+            // itself is the pinned overlay below, positioned to track this slot then dock.
             item(key = "tabs") {
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                DetailsTabsButtonGroup(
-                    tabs = availableTabs,
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
+                Spacer(
+                    modifier = Modifier.height(
+                        dimensionResource(R.dimen.spacing_large) +
+                            with(density) { tabStripHeightPx.toDp() }
+                    )
                 )
             }
 
@@ -1266,6 +1306,24 @@ fun DetailsPageContent(
                     }
                 }
             }
+        }
+
+        // The one interactive tab strip, lifted into an overlay so it can ride the scroll and dock
+        // under the app bar. translationY tracks the in-list slot then clamps; the background fades
+        // in as it lands, so at rest it looks identical to an inline row (Discover-style smoothness).
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = stickyTabs.bgAlpha),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .graphicsLayer { translationY = stickyTabs.translationY }
+                .onSizeChanged { tabStripHeightPx = it.height }
+        ) {
+            DetailsTabsButtonGroup(
+                tabs = availableTabs,
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
         }
     }
 
