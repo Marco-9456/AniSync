@@ -232,6 +232,9 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
+    <string name="theme_light_desc">Always use the light theme</string>
+    <string name="theme_dark_desc">Always use the dark theme</string>
+    <string name="theme_system_desc">Follow the device setting</string>
     <string name="setting_amoled">AMOLED dark theme</string>
     <string name="setting_amoled_desc">Use pure black backgrounds in dark mode to save power on OLED screens</string>
 

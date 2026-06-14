@@ -30,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -145,11 +144,13 @@ fun NotificationsScreen(
         }
 
         SettingsGroup {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth().clickable {
-                    if (!isNotificationsEnabled) {
+            SwitchSettingsItem(
+                icon = Icons.Default.Notifications,
+                title = stringResource(R.string.settings_allow_notifications),
+                subtitle = stringResource(R.string.settings_allow_notifications_desc),
+                checked = isNotificationsEnabled,
+                onCheckedChange = { enabled ->
+                    if (enabled) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
@@ -159,60 +160,13 @@ fun NotificationsScreen(
                         viewModel.onAction(SettingsAction.ToggleNotifications(false))
                     }
                 }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Notifications,
-                            contentDescription = stringResource(R.string.control_notifications),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.settings_allow_notifications),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                stringResource(R.string.settings_allow_notifications_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isNotificationsEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                } else {
-                                    viewModel.onAction(SettingsAction.ToggleNotifications(true))
-                                }
-                            } else {
-                                viewModel.onAction(SettingsAction.ToggleNotifications(false))
-                            }
-                        }
-                    )
-                }
-            }
+            )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            NotificationGroupHeader(
-                title = stringResource(R.string.notification_group_airing)
-            )
+            SettingsSectionLabel(stringResource(R.string.notification_group_airing))
 
             SettingsGroup {
                 SwitchSettingsItem(
@@ -254,9 +208,7 @@ fun NotificationsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            NotificationGroupHeader(
-                title = stringResource(R.string.notification_group_forum)
-            )
+            SettingsSectionLabel(stringResource(R.string.notification_group_forum))
 
             SettingsGroup {
                 SwitchSettingsItem(
@@ -302,9 +254,7 @@ fun NotificationsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            NotificationGroupHeader(
-                title = stringResource(R.string.notification_group_activity)
-            )
+            SettingsSectionLabel(stringResource(R.string.notification_group_activity))
 
             SettingsGroup {
                 SwitchSettingsItem(
@@ -341,19 +291,6 @@ fun NotificationsScreen(
             }
         }
     }
-}
-
-@Composable
-private fun NotificationGroupHeader(
-    title: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-    )
 }
 
 @Composable

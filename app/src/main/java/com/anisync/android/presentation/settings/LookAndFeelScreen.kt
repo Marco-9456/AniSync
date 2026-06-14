@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.settings
 
-import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,21 +25,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Navigation
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.RoundedCorner
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
@@ -54,17 +46,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,29 +67,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
-import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
-import com.anisync.android.data.TitleLanguage
-import com.anisync.android.presentation.settings.components.ColorPickerSheet
-import com.anisync.android.presentation.settings.components.ColorSchemeSelector
-import com.anisync.android.presentation.settings.components.PaletteStyleSelector
-import com.anisync.android.presentation.settings.components.PhonePreview
-import com.anisync.android.ui.theme.PresetPalettes
-import com.anisync.android.ui.theme.ThemePalette
 
-private val TitleLanguages = TitleLanguage.entries
 private val StreamingServices = StreamingService.entries
-private val ThemeModes = ThemeMode.entries
-private val AppLocales = AppLocale.entries
 private val CoverQualities = CoverQuality.entries
 private val NavBarStyles = NavBarStyle.entries
 private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
@@ -109,12 +85,13 @@ private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
 @Composable
 fun LookAndFeelScreen(
     onBackClick: () -> Unit,
+    onNavigateToTheme: () -> Unit,
+    onNavigateToLanguage: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val themeMode = uiState.themeMode
-    val amoledEnabled = uiState.amoledEnabled
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
     val appLocale = uiState.appLocale
@@ -124,16 +101,7 @@ fun LookAndFeelScreen(
     val navBarCornerRadius = uiState.navBarCornerRadius
     val avatarShape = uiState.avatarShape
     val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
-    val disableAvatarShapeProfile = uiState.disableAvatarShapeProfile
-    val respectUserProfileColors = uiState.respectUserProfileColors
 
-    val selectedPaletteId = uiState.selectedPaletteId
-    val customSeedColor = uiState.customSeedColor
-    val paletteStyle = uiState.paletteStyle
-
-    var showColorPicker by rememberSaveable { mutableStateOf(false) }
-    var showThemeModeDialog by rememberSaveable { mutableStateOf(false) }
-    var showAppLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
     var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
@@ -148,48 +116,6 @@ fun LookAndFeelScreen(
         }
     }
 
-    val supportseDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val palettes = remember(customSeedColor, supportseDynamicColor) {
-        val presets = if (supportseDynamicColor) {
-            PresetPalettes.all
-        } else {
-            PresetPalettes.all.filter { !it.isDynamic }
-        }
-        if (customSeedColor != null) {
-            listOf(ThemePalette("custom", "Custom", customSeedColor!!)) + presets
-        } else {
-            presets
-        }
-    }
-
-    LaunchedEffect(selectedPaletteId, palettes, uiState.isLoaded) {
-        if (uiState.isLoaded && palettes.none { it.id == selectedPaletteId }) {
-            viewModel.onAction(SettingsAction.SetSelectedPalette(palettes.firstOrNull()?.id ?: "dynamic"))
-        }
-    }
-
-    val onColorSelected = remember(viewModel) {
-        { color: Color ->
-            viewModel.onAction(SettingsAction.SetCustomSeedColor(color))
-            viewModel.onAction(SettingsAction.SetSelectedPalette("custom"))
-        }
-    }
-    val onPaletteSelected = remember(viewModel) {
-        { palette: ThemePalette -> viewModel.onAction(SettingsAction.SetSelectedPalette(palette.id)) }
-    }
-    val onStyleSelected = remember(viewModel) {
-        { style: com.materialkolor.PaletteStyle -> viewModel.onAction(SettingsAction.SetPaletteStyle(style)) }
-    }
-
-    if (showColorPicker) {
-        ColorPickerSheet(
-            currentColor = customSeedColor,
-            onColorSelected = onColorSelected,
-            onDismiss = { showColorPicker = false }
-        )
-    }
-
-
     if (showStreamingServiceSheet) {
         StreamingServiceSelectionSheet(
             currentService = preferredStreamingService,
@@ -198,28 +124,6 @@ fun LookAndFeelScreen(
                 showStreamingServiceSheet = false
             },
             onDismiss = { showStreamingServiceSheet = false }
-        )
-    }
-
-    if (showThemeModeDialog) {
-        ThemeModeSelectionDialog(
-            currentMode = themeMode,
-            onModeSelected = {
-                viewModel.onAction(SettingsAction.SetThemeMode(it))
-                showThemeModeDialog = false
-            },
-            onDismiss = { showThemeModeDialog = false }
-        )
-    }
-
-    if (showAppLanguageSheet) {
-        AppLanguageSelectionSheet(
-            currentLocale = appLocale,
-            onLocaleSelected = {
-                viewModel.onAction(SettingsAction.SetAppLocale(it))
-                showAppLanguageSheet = false
-            },
-            onDismiss = { showAppLanguageSheet = false }
         )
     }
 
@@ -270,111 +174,36 @@ fun LookAndFeelScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        Text(
-            text = stringResource(R.string.preview),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
-        val selectedPalette = remember(palettes, selectedPaletteId) {
-            palettes.find { it.id == selectedPaletteId }
-        }
-        val seedColor = if (selectedPalette?.isDynamic == true) null else selectedPalette?.seedColor
-
-        if (uiState.isLoaded) {
-            PhonePreview(
-                seedColor = seedColor,
-                isDarkMode = isDarkMode,
-                paletteStyle = paletteStyle,
-                amoled = amoledEnabled,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = stringResource(R.string.color_scheme),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
-        ColorSchemeSelector(
-            palettes = palettes,
-            selectedPaletteId = selectedPaletteId,
-            isDarkMode = isDarkMode,
-            paletteStyle = paletteStyle,
-            onPaletteSelected = onPaletteSelected
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedButton(
-                onClick = { showColorPicker = true },
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Palette,
-                    contentDescription = stringResource(R.string.custom_color),
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.custom_color))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        PaletteStyleSelector(
-            selectedStyle = paletteStyle,
-            onStyleSelected = onStyleSelected,
-            enabled = selectedPaletteId != "dynamic",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
+        // "Dark mode" opens the Theme subscreen (preview, color scheme, mode, AMOLED, profile
+        // colors) and quick-toggles dark on/off via the trailing switch. App language also opens a
+        // subscreen (chevron). The rest are quick choices that open bottom sheets — no chevron.
         SettingsGroup {
-            SelectionSettingsItem(
+            SplitToggleSettingsItem(
                 icon = Icons.Default.DarkMode,
-                title = stringResource(R.string.setting_theme),
-                currentValue = when (themeMode) {
+                title = stringResource(R.string.dark_mode),
+                subtitle = when (themeMode) {
                     ThemeMode.LIGHT -> stringResource(R.string.theme_light)
                     ThemeMode.DARK -> stringResource(R.string.theme_dark)
                     ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
                 },
-                onClick = { showThemeModeDialog = true }
-            )
-            SettingsDivider()
-            SwitchSettingsItem(
-                icon = Icons.Default.Contrast,
-                title = stringResource(R.string.setting_amoled),
-                subtitle = stringResource(R.string.setting_amoled_desc),
-                checked = amoledEnabled,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetAmoledEnabled(it)) }
+                checked = isDarkMode,
+                onCheckedChange = { dark ->
+                    viewModel.onAction(
+                        SettingsAction.SetThemeMode(if (dark) ThemeMode.DARK else ThemeMode.LIGHT)
+                    )
+                },
+                onClick = onNavigateToTheme
             )
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.Translate,
                 title = stringResource(R.string.settings_app_language),
                 currentValue = appLocale.displayName,
-                onClick = { showAppLanguageSheet = true }
+                onClick = onNavigateToLanguage,
+                showArrow = true
             )
-            SettingsDivider()
             SelectionSettingsItem(
                 icon = Icons.Default.HighQuality,
                 title = stringResource(R.string.settings_cover_quality),
@@ -383,8 +212,6 @@ fun LookAndFeelScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.Navigation,
@@ -392,11 +219,6 @@ fun LookAndFeelScreen(
                 currentValue = navBarStyleLabel(navBarStyle),
                 onClick = { showNavBarStyleSheet = true }
             )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.Face,
                 title = stringResource(R.string.setting_avatar_shape),
@@ -405,22 +227,6 @@ fun LookAndFeelScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        SettingsGroup {
-            SwitchSettingsItem(
-                icon = Icons.Default.Palette,
-                title = stringResource(R.string.setting_respect_profile_colors),
-                subtitle = stringResource(R.string.setting_respect_profile_colors_desc),
-                checked = respectUserProfileColors,
-                onCheckedChange = {
-                    viewModel.onAction(SettingsAction.SetRespectUserProfileColors(it))
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         SettingsGroup {
             SelectionSettingsItem(
                 icon = Icons.Default.PlayCircle,
@@ -428,7 +234,6 @@ fun LookAndFeelScreen(
                 currentValue = preferredStreamingService.displayName,
                 onClick = { showStreamingServiceSheet = true }
             )
-            SettingsDivider()
             SwitchSettingsItem(
                 icon = Icons.Default.Vibration,
                 title = stringResource(R.string.setting_haptic_feedback),
@@ -437,160 +242,6 @@ fun LookAndFeelScreen(
             )
             // "Show adult content" now lives under Settings ▸ AniList Account, where it follows the
             // AniList account option by default and can be overridden per device.
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TitleLanguageSelectionSheet(
-    currentLanguage: TitleLanguage,
-    onLanguageSelected: (TitleLanguage) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.settings_title_language),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(
-                    items = TitleLanguages,
-                    key = { it.name },
-                ) { language ->
-                    val isSelected = currentLanguage == language
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onLanguageSelected(language) }
-                            .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else Color.Transparent)
-                            .padding(vertical = 16.dp, horizontal = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = getTitleLanguageLabel(language),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = getTitleLanguageExample(language),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-
-                        if (isSelected) {
-                            Spacer(Modifier.width(16.dp))
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AppLanguageSelectionSheet(
-    currentLocale: AppLocale,
-    onLocaleSelected: (AppLocale) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.settings_app_language),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(
-                    items = AppLocales,
-                    key = { it.name },
-                ) { locale ->
-                    val isSelected = currentLocale == locale
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onLocaleSelected(locale) }
-                            .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else Color.Transparent)
-                            .padding(vertical = 16.dp, horizontal = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = locale.displayName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (locale == AppLocale.SYSTEM) {
-                                Text(
-                                    text = stringResource(R.string.settings_app_language_system_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-
-                        if (isSelected) {
-                            Spacer(Modifier.width(16.dp))
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -736,7 +387,7 @@ fun CoverQualitySelectionSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Central Fixed-Size Preview Image
-            val imageUrl = when(currentQuality) {
+            val imageUrl = when (currentQuality) {
                 CoverQuality.MEDIUM -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/bx105333-GybuoSoOZfpH.jpg"
                 CoverQuality.LARGE -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx105333-GybuoSoOZfpH.jpg"
                 CoverQuality.EXTRA_LARGE -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx105333-GybuoSoOZfpH.jpg"
@@ -819,110 +470,8 @@ private fun rememberBrandColors(): Map<StreamingService, Color?> {
 }
 
 // -----------------------------------------------------------------------------------------
-// Original Dialogs (Theme Mode)
-// -----------------------------------------------------------------------------------------
-
-@Composable
-fun ThemeModeSelectionDialog(
-    currentMode: ThemeMode,
-    onModeSelected: (ThemeMode) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-        ) {
-            LazyColumn(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.theme_mode_dialog_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                items(
-                    items = ThemeModes,
-                    key = { it.name },
-                ) { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onModeSelected(mode) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(
-                            selected = currentMode == mode,
-                            onClick = { onModeSelected(mode) },
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = when (mode) {
-                                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
-                                ThemeMode.DARK -> stringResource(R.string.theme_dark)
-                                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------------------
 // Helper Components
 // -----------------------------------------------------------------------------------------
-
-@Composable
-private fun getTitleLanguageLabel(language: TitleLanguage): String {
-    return when (language) {
-        TitleLanguage.ROMAJI -> stringResource(R.string.title_language_romaji)
-        TitleLanguage.ENGLISH -> stringResource(R.string.title_language_english)
-        TitleLanguage.NATIVE -> stringResource(R.string.title_language_native)
-    }
-}
-
-@Composable
-private fun getTitleLanguageExample(language: TitleLanguage): String {
-    return when (language) {
-        TitleLanguage.ROMAJI -> stringResource(R.string.title_language_romaji_example)
-        TitleLanguage.ENGLISH -> stringResource(R.string.title_language_english_example)
-        TitleLanguage.NATIVE -> stringResource(R.string.title_language_native_example)
-    }
-}
 
 @Composable
 private fun coverQualityLabel(quality: CoverQuality): String = stringResource(
@@ -1158,7 +707,8 @@ fun NavBarStyleSelectionSheet(
                         Spacer(Modifier.width(16.dp))
                         Switch(
                             checked = showLabels,
-                            onCheckedChange = onShowLabelsChange
+                            onCheckedChange = onShowLabelsChange,
+                            colors = appSwitchColors()
                         )
                     }
 
@@ -1342,7 +892,8 @@ fun AvatarShapeSelectionSheet(
                     Spacer(Modifier.width(16.dp))
                     Switch(
                         checked = frameEnabled,
-                        onCheckedChange = onFrameEnabledChange
+                        onCheckedChange = onFrameEnabledChange,
+                        colors = appSwitchColors()
                     )
                 }
             }

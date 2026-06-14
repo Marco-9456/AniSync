@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.data.StaffNameLanguage
 import com.anisync.android.data.TitleLanguage
@@ -46,6 +43,7 @@ import com.anisync.android.domain.AniListListActivityStatus
 import com.anisync.android.domain.AniListStaffNameLanguage
 import com.anisync.android.domain.AniListTitleLanguage
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.ui.theme.AniListProfileColors
 
 /**
@@ -113,7 +111,6 @@ internal fun AniListOptionsContent(
                 },
                 onDismiss = { showStaffSheet = false },
             )
-
         }
 
         var showScoreSheet by remember { mutableStateOf(false) }
@@ -224,17 +221,14 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
-internal fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 2.dp),
-    )
-}
+internal fun SectionLabel(text: String) = SettingsSectionLabel(text)
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ── Pickers (bottom sheets) ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Thin adapter onto the shared [SettingsPickerSheet] so this screen's plain-string pickers read the
+ * same as every other picker in Settings. These are quick choices, so they stay as bottom sheets.
+ */
 @Composable
 private fun <T> OptionPickerSheet(
     title: String,
@@ -245,64 +239,15 @@ private fun <T> OptionPickerSheet(
     onDismiss: () -> Unit,
     subtitle: (T) -> String? = { null },
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-            )
-            Spacer(Modifier.height(8.dp))
-            LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp)) {
-                items(options) { option ->
-                    val isSelected = option == selected
-                    val sub = subtitle(option)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onSelect(option) }
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                                else Color.Transparent
-                            )
-                            .padding(vertical = 16.dp, horizontal = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = label(option),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
-                                else MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (sub != null) {
-                                Text(
-                                    text = sub,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    SettingsPickerSheet(
+        title = title,
+        items = options,
+        selected = selected,
+        itemLabel = { label(it) },
+        itemSubtitle = { subtitle(it) },
+        onSelect = onSelect,
+        onDismiss = onDismiss,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)

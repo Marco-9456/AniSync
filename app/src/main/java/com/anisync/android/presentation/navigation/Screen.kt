@@ -295,6 +295,18 @@ object Settings
 object SettingsLookAndFeel
 
 /**
+ * Theme picker subscreen — light/dark/system mode + AMOLED pure-black toggle.
+ */
+@Serializable
+object SettingsTheme
+
+/**
+ * App language picker subscreen.
+ */
+@Serializable
+object SettingsLanguage
+
+/**
  * AniList settings: account management (add / switch / remove / logout) merged with the AniList
  * account options (adult content, languages, score format, activity, profile color).
  */
