@@ -1,6 +1,7 @@
 package com.anisync.android.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -257,6 +258,28 @@ val unspecified_scheme = ColorFamily(
     Color.Unspecified, Color.Unspecified, Color.Unspecified, Color.Unspecified
 )
 
+/**
+ * Converts a dark [ColorScheme] into an AMOLED ("pure black") one.
+ *
+ * Blackening only `background`/`surface` (what MaterialKolor's own `isAmoled` does) leaves the
+ * `surfaceContainer*` roles at mid-grey, so cards, the search bar and the nav pill float as grey
+ * patches on a pure-black base. Instead — following Seal's high-contrast theme — we also blacken the
+ * lowest container and **shift the whole elevation ladder down one tonal step**. The base goes truly
+ * black while elevated surfaces stay near-black greys that keep their *relative* depth, so the result
+ * reads as one cohesive pitch-black theme rather than grey-on-black.
+ *
+ * The right-hand sides reference the original (receiver) values, so each role is pulled from the step
+ * below it. Only meaningful on a dark scheme.
+ */
+internal fun ColorScheme.toAmoled(): ColorScheme = copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = surfaceContainerLowest,
+    surfaceContainer = surfaceContainerLow,
+    surfaceContainerHigh = surfaceContainerLow,
+    surfaceContainerHighest = surfaceContainer,
+)
 
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -265,6 +288,8 @@ fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    // Pure-black ("AMOLED") backgrounds. Only honored while [darkTheme] is active.
+    amoled: Boolean = false,
     // Custom seed color for MaterialKolor-generated schemes
     seedColor: Color? = null,
     // Palette style for MaterialKolor color generation
@@ -273,25 +298,36 @@ fun AppTheme(
     typographyOverrides: TypographyOverrides = TypographyOverrides.None,
     content: @Composable () -> Unit
 ) {
+    // AMOLED is a dark-only treatment; ignore it in light mode so toggling it can't blacken a
+    // light theme (relevant under SYSTEM mode during the day).
+    val useAmoled = amoled && darkTheme
+
     // Priority order for color scheme selection:
     // 1. Custom seed color (user-selected palette)
     // 2. Android 12+ dynamic colors (wallpaper-based)
     // 3. Static fallback scheme
     val colorScheme = when {
-        // Priority 1: Custom seed color from user selection
-        seedColor != null -> rememberDynamicColorScheme(
-            seedColor = seedColor,
-            isDark = darkTheme,
-            isAmoled = false,
-            style = paletteStyle
-        )
+        // Priority 1: Custom seed color from user selection.
+        // isAmoled is left off here: MaterialKolor's variant only blackens background/surface, which
+        // looks patchy. We apply our own toAmoled() (Seal-style container shift) for a cohesive look
+        // consistent with the other two paths.
+        seedColor != null -> {
+            val base = rememberDynamicColorScheme(
+                seedColor = seedColor,
+                isDark = darkTheme,
+                isAmoled = false,
+                style = paletteStyle
+            )
+            if (useAmoled) base.toAmoled() else base
+        }
         // Priority 2: Dynamic color (Android 12+)
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val base = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (useAmoled) base.toAmoled() else base
         }
         // Priority 3: Static fallback
-        darkTheme -> darkScheme
+        darkTheme -> if (useAmoled) darkScheme.toAmoled() else darkScheme
         else -> lightScheme
     }
 

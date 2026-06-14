@@ -232,6 +232,8 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
+    <string name="setting_amoled">AMOLED dark theme</string>
+    <string name="setting_amoled_desc">Use pure black backgrounds in dark mode to save power on OLED screens</string>
 
     <!-- Theme Palette Selection -->
     <string name="color_and_style">Color &amp; Style</string>

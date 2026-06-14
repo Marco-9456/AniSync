@@ -62,6 +62,7 @@ import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.PreviewTheme
+import com.anisync.android.ui.theme.toAmoled
 import com.materialkolor.PaletteStyle
 
 // OPTIMIZATION: Move constant data structures to top-level to avoid allocation on every recomposition.
@@ -88,7 +89,8 @@ fun PhonePreview(
     seedColor: Color?,
     isDarkMode: Boolean,
     paletteStyle: PaletteStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    amoled: Boolean = false
 ) {
     val context = LocalContext.current
     val appSettings = remember { AppSettings(context) }
@@ -130,16 +132,19 @@ fun PhonePreview(
                 seedColor = seedColor,
                 isDark = isDarkMode,
                 style = paletteStyle,
+                amoled = amoled,
                 content = themeContent
             )
         } else if (dynamicColorScheme != null) {
             // OPTIMIZATION: Use the memoized scheme
-            PreviewTheme(colorScheme = dynamicColorScheme, content = themeContent)
+            val scheme = if (amoled && isDarkMode) dynamicColorScheme.toAmoled() else dynamicColorScheme
+            PreviewTheme(colorScheme = scheme, content = themeContent)
         } else {
             PreviewTheme(
                 seedColor = Color(0xFF6750A4),
                 isDark = isDarkMode,
                 style = paletteStyle,
+                amoled = amoled,
                 content = themeContent
             )
         }

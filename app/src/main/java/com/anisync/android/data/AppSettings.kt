@@ -137,6 +137,11 @@ class AppSettings @Inject constructor(
     )
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
+    // AMOLED ("pure black") dark theme. Only takes effect while the dark theme is active; it forces
+    // background/surface to true black to save power on OLED panels. Device-local; default off.
+    private val _amoledEnabled = MutableStateFlow(prefs.getBoolean(KEY_AMOLED_ENABLED, false))
+    val amoledEnabled: StateFlow<Boolean> = _amoledEnabled.asStateFlow()
+
     // Avatar shape setting
     private val _avatarShape = MutableStateFlow(readAvatarShape())
     val avatarShape: StateFlow<AvatarShape> = _avatarShape.asStateFlow()
@@ -514,6 +519,12 @@ class AppSettings @Inject constructor(
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
         prefs.edit().putInt(KEY_THEME_MODE, mode.ordinal).apply()
+    }
+
+    /** Enable or disable the AMOLED ("pure black") dark theme. */
+    fun setAmoledEnabled(enabled: Boolean) {
+        _amoledEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AMOLED_ENABLED, enabled).apply()
     }
 
     fun setAvatarShape(shape: AvatarShape) {
@@ -909,6 +920,7 @@ class AppSettings @Inject constructor(
 companion object {
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_AMOLED_ENABLED = "amoled_enabled"
         private const val KEY_AVATAR_SHAPE = "avatar_shape"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_NAV_BAR_STYLE = "nav_bar_style"

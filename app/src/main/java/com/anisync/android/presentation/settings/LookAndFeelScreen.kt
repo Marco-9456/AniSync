@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
@@ -113,6 +114,7 @@ fun LookAndFeelScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val themeMode = uiState.themeMode
+    val amoledEnabled = uiState.amoledEnabled
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
     val appLocale = uiState.appLocale
@@ -285,6 +287,7 @@ fun LookAndFeelScreen(
                 seedColor = seedColor,
                 isDarkMode = isDarkMode,
                 paletteStyle = paletteStyle,
+                amoled = amoledEnabled,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
         }
@@ -351,6 +354,14 @@ fun LookAndFeelScreen(
                     ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
                 },
                 onClick = { showThemeModeDialog = true }
+            )
+            SettingsDivider()
+            SwitchSettingsItem(
+                icon = Icons.Default.Contrast,
+                title = stringResource(R.string.setting_amoled),
+                subtitle = stringResource(R.string.setting_amoled_desc),
+                checked = amoledEnabled,
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetAmoledEnabled(it)) }
             )
         }
 

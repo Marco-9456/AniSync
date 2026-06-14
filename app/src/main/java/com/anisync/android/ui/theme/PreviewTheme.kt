@@ -20,6 +20,7 @@ import com.materialkolor.rememberDynamicColorScheme
  * @param seedColor The seed color to generate the color scheme from
  * @param isDark Whether to generate a dark or light color scheme
  * @param style The palette style to use for color generation
+ * @param amoled Whether to use pure-black backgrounds (only applied when [isDark] is true)
  * @param content The content to render with this theme
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -28,15 +29,18 @@ fun PreviewTheme(
     seedColor: Color,
     isDark: Boolean,
     style: PaletteStyle = PaletteStyle.TonalSpot,
+    amoled: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = rememberDynamicColorScheme(
+    val base = rememberDynamicColorScheme(
         seedColor = seedColor,
         isDark = isDark,
         isAmoled = false,
         style = style
     )
-    
+    // Match AppTheme: apply our own cohesive AMOLED transform rather than MaterialKolor's isAmoled.
+    val colorScheme = if (isDark && amoled) base.toAmoled() else base
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = AppTypography,
