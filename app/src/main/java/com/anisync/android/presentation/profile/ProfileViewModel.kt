@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -1049,11 +1050,12 @@ class ProfileViewModel @Inject constructor(
 
         viewModelScope.launch {
             statsState.update { it.copy(isStatsLoading = true, statsErrorMessage = null) }
+            // The Overview tab's cold-open auto-refresh fires this before the profile is
+            // necessarily in uiState (the stats fetch races the profile load). Bailing on a
+            // null id left the activity-history heatmap empty until a manual pull-to-refresh;
+            // instead, await the first non-null id so it populates on its own.
             val userId = uiState.value.profile?.id
-            if (userId == null) {
-                statsState.update { it.copy(isStatsLoading = false) }
-                return@launch
-            }
+                ?: uiState.map { it.profile?.id }.filterNotNull().first()
 
             when (val result = statisticsRepository.getUserStatistics(userId)) {
                 is Result.Success -> {
