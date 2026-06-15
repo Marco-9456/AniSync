@@ -32,13 +32,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -75,14 +85,21 @@ fun ActivityCard(
     onSubscribeClick: (() -> Unit)? = null,
     onLikeClick: (() -> Unit)? = null,
     onDeleteClick: (() -> Unit)? = null,
-    onEditClick: (() -> Unit)? = null
+    onEditClick: (() -> Unit)? = null,
+    /**
+     * When set, the body is capped to roughly this many lines of text and its bottom edge fades
+     * out, turning the card into a compact teaser (used by the profile Overview). The whole card
+     * stays clickable, so a tap opens the full activity. Null renders the body in full.
+     */
+    maxBodyLines: Int? = null
 ) {
+    val containerColor = MaterialTheme.colorScheme.surfaceContainerLow
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = containerColor,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp,
@@ -98,10 +115,19 @@ fun ActivityCard(
                 onEditClick = onEditClick
             )
 
-            ActivityCardBody(
-                activity = activity,
-                onMediaClick = onMediaClick
-            )
+            if (maxBodyLines != null) {
+                ClampedActivityBody(maxLines = maxBodyLines, fadeColor = containerColor) {
+                    ActivityCardBody(
+                        activity = activity,
+                        onMediaClick = onMediaClick
+                    )
+                }
+            } else {
+                ActivityCardBody(
+                    activity = activity,
+                    onMediaClick = onMediaClick
+                )
+            }
 
             ActivityCardFooter(
                 activity = activity,
@@ -110,6 +136,63 @@ fun ActivityCard(
                 onLikeClick = onLikeClick
             )
         }
+    }
+}
+
+/**
+ * Caps [content] (an activity body) to roughly [maxLines] lines of body text and fades its bottom
+ * edge out once the content overflows — turning a long status post into a compact teaser without
+ * touching the block-based rich-text renderer. Sizing is derived from the body line height so it
+ * tracks the user's font scale. Overflow is detected in the [layout] block (it sees the unclamped
+ * height) and the fade is drawn only when actually clipped.
+ */
+@Composable
+private fun ClampedActivityBody(
+    maxLines: Int,
+    fadeColor: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val density = LocalDensity.current
+    val lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+    // Body text renders with 1.25× line spacing (see ActivityCardBody); match it so the clamp maps
+    // to ~maxLines of rendered text rather than tight metric lines.
+    val maxHeightPx = with(density) {
+        val lineDp = if (lineHeight.isSp) lineHeight.toDp() else 20.dp
+        ((lineDp * 1.25f).toPx() * maxLines).toInt()
+    }
+    val fadeHeightPx = with(density) { 28.dp.toPx() }
+    var clipped by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clipToBounds()
+            .drawWithContent {
+                drawContent()
+                if (clipped) {
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, fadeColor),
+                            startY = size.height - fadeHeightPx,
+                            endY = size.height
+                        ),
+                        topLeft = Offset(0f, size.height - fadeHeightPx),
+                        size = Size(size.width, fadeHeightPx)
+                    )
+                }
+            }
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                val overflow = placeable.height > maxHeightPx
+                clipped = overflow
+                val targetHeight = if (overflow) maxHeightPx else placeable.height
+                layout(placeable.width, targetHeight) {
+                    placeable.place(0, 0)
+                }
+            }
+    ) {
+        content()
     }
 }
 

@@ -21,6 +21,8 @@ fun RecentUpdatesSection(
     activities: List<UserActivity>,
     modifier: Modifier = Modifier,
     maxItems: Int = 5,
+    /** When set, each card caps its body to ~this many lines with a fade (compact teaser). */
+    maxBodyLines: Int? = null,
     onActionClick: (() -> Unit)? = null,
     onUserClick: (String) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
@@ -71,7 +73,8 @@ fun RecentUpdatesSection(
                         onSubscribeClick = { onSubscribeClick(activity.id) },
                         onLikeClick = cardLike,
                         onDeleteClick = cardDelete,
-                        onEditClick = cardEdit
+                        onEditClick = cardEdit,
+                        maxBodyLines = maxBodyLines
                     )
                 }
             }

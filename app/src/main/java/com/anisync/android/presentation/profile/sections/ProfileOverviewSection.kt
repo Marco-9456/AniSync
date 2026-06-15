@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +90,32 @@ fun ProfileOverviewSection(
 
     Column(modifier = modifier) {
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Featured activity leads the tab: the pinned status if there is one, otherwise the latest.
+        // The list arrives sorted pinned-first then newest, but pick explicitly so intent survives
+        // any upstream re-sort. Capped to a compact teaser; the header's expand opens full Activity.
+        if (profile.activities.isNotEmpty()) {
+            val featured = remember(profile.activities) {
+                profile.activities.firstOrNull { it.isPinned } ?: profile.activities.first()
+            }
+            RecentUpdatesSection(
+                activities = listOf(featured),
+                maxItems = 1,
+                maxBodyLines = 10,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                onActionClick = { onNavigateToTab(ProfileTab.ACTIVITY) },
+                onUserClick = onUserClick,
+                onActivityClick = onActivityClick,
+                onMediaClick = onMediaClick,
+                onLastReplyClick = onLastReplyClick,
+                onSubscribeClick = onSubscribeClick,
+                onLikeClick = onLikeActivity,
+                onDeleteClick = onDeleteActivity,
+                onEditClick = onEditActivity,
+                viewerId = viewerId
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         // Activity heatmap — leads the tab as the most glanceable "what they've been up to".
         if (activityHistory.isNotEmpty()) {
@@ -234,25 +261,7 @@ fun ProfileOverviewSection(
             }
         }
 
-        // Recent activity — a short teaser that opens into the full Activity tab.
-        if (profile.activities.isNotEmpty()) {
-            RecentUpdatesSection(
-                activities = profile.activities,
-                maxItems = 3,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp),
-                onActionClick = { onNavigateToTab(ProfileTab.ACTIVITY) },
-                onUserClick = onUserClick,
-                onActivityClick = onActivityClick,
-                onMediaClick = onMediaClick,
-                onLastReplyClick = onLastReplyClick,
-                onSubscribeClick = onSubscribeClick,
-                onLikeClick = onLikeActivity,
-                onDeleteClick = onDeleteActivity,
-                onEditClick = onEditActivity,
-                viewerId = viewerId
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
