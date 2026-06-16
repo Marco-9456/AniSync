@@ -51,8 +51,10 @@ import com.anisync.android.domain.LinkPreviewProvider
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.settings.UpdateDialog
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalLinkPreviewProvider
+import com.anisync.android.presentation.util.rememberAdaptiveInfo
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
 import dagger.hilt.android.AndroidEntryPoint
@@ -217,6 +219,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 CompositionLocalProvider(
+                    LocalAdaptiveInfo provides rememberAdaptiveInfo(),
                     LocalAppSettings provides appSettings,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
