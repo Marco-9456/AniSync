@@ -2,11 +2,18 @@ package com.anisync.android.presentation
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -26,6 +33,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,6 +79,7 @@ import com.anisync.android.presentation.navigation.Forum
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
 import com.anisync.android.presentation.util.MainNavBarSuppressor
@@ -86,6 +97,65 @@ private data class BottomNavItem<T : Any>(
      */
     val persistKey: String? = null
 )
+
+/**
+ * The five top-level destinations, shared by every navigation container (bottom bar, rail) so the
+ * destination set, ordering, and badge logic never diverge across form factors.
+ */
+@Composable
+private fun rememberMainNavItems(): List<BottomNavItem<*>> = remember {
+    listOf(
+        BottomNavItem(
+            R.string.nav_library,
+            Library,
+            Library::class,
+            Icons.Filled.VideoLibrary,
+            Icons.Outlined.VideoLibrary,
+            persistKey = "library"
+        ),
+        BottomNavItem(
+            R.string.nav_discover,
+            Discover,
+            Discover::class,
+            Icons.Filled.Explore,
+            Icons.Outlined.Explore,
+            persistKey = "discover"
+        ),
+        BottomNavItem(
+            R.string.nav_feed,
+            Feed,
+            Feed::class,
+            Icons.Filled.DynamicFeed,
+            Icons.Outlined.DynamicFeed,
+            persistKey = "feed"
+        ),
+        BottomNavItem(
+            R.string.nav_forum,
+            Forum,
+            Forum::class,
+            Icons.Filled.Forum,
+            Icons.Outlined.Forum,
+            persistKey = "forum"
+        ),
+        BottomNavItem(
+            R.string.nav_profile,
+            Profile,
+            Profile::class,
+            Icons.Filled.Person,
+            Icons.Outlined.Person
+        )
+    )
+}
+
+/** Shared tab navigation: single-top, save/restore the tab back stack, then persist the tab. */
+private fun NavHostController.navigateToMainTab(route: Any, persistKey: String?, onTabSelected: (String) -> Unit) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+    persistKey?.let(onTabSelected)
+}
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -136,14 +206,75 @@ fun MainScreen(
         viewModel.refreshNotificationBadge()
     }
 
+    // The window width decides the navigation container: a bottom bar on compact (phones), a
+    // navigation rail on medium/expanded (landscape phones, tablets, foldables) per Material 3.
+    val adaptive = LocalAdaptiveInfo.current
+
     ProvideToastManager(toastManager = viewModel.toastManager) {
-    CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
+        CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
+            if (adaptive.isCompact) {
+                CompactNavLayout(
+                    navController = navController,
+                    startDestination = startDestination,
+                    unreadNotificationCount = unreadNotificationCount,
+                    navBarStyle = navBarStyle,
+                    navBarShowLabels = navBarShowLabels,
+                    navBarCornerRadius = navBarCornerRadius,
+                    onTabSelected = viewModel::onMainTabSelected,
+                    toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
+                )
+            } else {
+                RailNavLayout(
+                    navController = navController,
+                    startDestination = startDestination,
+                    unreadNotificationCount = unreadNotificationCount,
+                    navBarShowLabels = navBarShowLabels,
+                    onTabSelected = viewModel::onMainTabSelected,
+                    toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
+                )
+            }
+        }
+    }
+}
+
+/** Shared NavHost wiring used by both the compact and rail layouts. */
+@Composable
+private fun MainNavHost(
+    navController: NavHostController,
+    startDestination: Any,
+    modifier: Modifier = Modifier
+) {
+    AniSyncNavHost(
+        navController = navController,
+        startDestination = startDestination,
+        onMediaClick = { mediaId, sourceScreen ->
+            navController.navigateSafely(MediaDetails(mediaId, sourceScreen))
+        },
+        modifier = modifier
+    )
+}
+
+/**
+ * Compact layout (phones): bottom navigation bar. Anchored bars get a real `bottomBar` slot so
+ * content shrinks above them; floating bars overlay the content so scrollable regions pass through
+ * the empty space beside the pill. Unchanged from the original mobile-first behavior.
+ */
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun CompactNavLayout(
+    navController: NavHostController,
+    startDestination: Any,
+    unreadNotificationCount: Int,
+    navBarStyle: NavBarStyle,
+    navBarShowLabels: Boolean,
+    navBarCornerRadius: Float,
+    onTabSelected: (String) -> Unit,
+    toastHost: @Composable () -> Unit
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            // Anchored bar gets a real bottomBar slot so the content shrinks to fit
-            // above it. Floating bar is rendered as a content overlay (below) instead,
-            // so scrollable content can pass through the empty regions beside the pill.
             if (navBarStyle == NavBarStyle.ANCHORED) {
                 MainBottomBar(
                     navController = navController,
@@ -151,25 +282,22 @@ fun MainScreen(
                     style = NavBarStyle.ANCHORED,
                     showLabels = navBarShowLabels,
                     cornerRadius = navBarCornerRadius,
-                    onTabSelected = viewModel::onMainTabSelected
+                    onTabSelected = onTabSelected
                 )
             }
         }
     ) { _ ->
-        // Bar's occupied bottom space — used by scrollable tab content as bottom
-        // contentPadding so the last item is reachable above the bar.
+        // Bar's occupied bottom space — used by scrollable tab content as bottom contentPadding so
+        // the last item is reachable above the bar.
         val barInset = if (navBarShowLabels) 96.dp else 76.dp
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // Scaffold padding is intentionally ignored to prevent the NavHost from
-            // remeasuring during bottom bar animations. AniSyncNavHost handles its own insets.
+            // Scaffold padding is intentionally ignored to prevent the NavHost from remeasuring
+            // during bottom bar animations. AniSyncNavHost handles its own insets.
             CompositionLocalProvider(LocalMainNavBarInset provides barInset) {
-                AniSyncNavHost(
+                MainNavHost(
                     navController = navController,
                     startDestination = startDestination,
-                    onMediaClick = { mediaId, sourceScreen ->
-                        navController.navigateSafely(MediaDetails(mediaId, sourceScreen))
-                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -186,15 +314,54 @@ fun MainScreen(
                         style = NavBarStyle.FLOATING,
                         showLabels = navBarShowLabels,
                         cornerRadius = navBarCornerRadius,
-                        onTabSelected = viewModel::onMainTabSelected
+                        onTabSelected = onTabSelected
                     )
                 }
             }
 
-            TopToastHost(toastManager = viewModel.toastManager)
+            toastHost()
         }
     }
-    }
+}
+
+/**
+ * Medium / expanded layout (landscape phones, tablets, foldables): a navigation rail pinned to the
+ * start edge, content filling the rest. The rail hides on non-top-level routes (detail/grid pushes)
+ * exactly like the bottom bar, so those screens render full width. There is no bottom bar here, so
+ * tab content uses a zero bottom inset.
+ */
+@Composable
+private fun RailNavLayout(
+    navController: NavHostController,
+    startDestination: Any,
+    unreadNotificationCount: Int,
+    navBarShowLabels: Boolean,
+    onTabSelected: (String) -> Unit,
+    toastHost: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            MainNavigationRail(
+                navController = navController,
+                unreadNotificationCount = unreadNotificationCount,
+                showLabels = navBarShowLabels,
+                onTabSelected = onTabSelected
+            )
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                CompositionLocalProvider(LocalMainNavBarInset provides 0.dp) {
+                    MainNavHost(
+                        navController = navController,
+                        startDestination = startDestination,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+        toastHost()
     }
 }
 
@@ -208,49 +375,7 @@ private fun MainBottomBar(
     cornerRadius: Float,
     onTabSelected: (String) -> Unit
 ) {
-    val navItems = remember {
-        listOf(
-            BottomNavItem(
-                R.string.nav_library,
-                Library,
-                Library::class,
-                Icons.Filled.VideoLibrary,
-                Icons.Outlined.VideoLibrary,
-                persistKey = "library"
-            ),
-            BottomNavItem(
-                R.string.nav_discover,
-                Discover,
-                Discover::class,
-                Icons.Filled.Explore,
-                Icons.Outlined.Explore,
-                persistKey = "discover"
-            ),
-            BottomNavItem(
-                R.string.nav_feed,
-                Feed,
-                Feed::class,
-                Icons.Filled.DynamicFeed,
-                Icons.Outlined.DynamicFeed,
-                persistKey = "feed"
-            ),
-            BottomNavItem(
-                R.string.nav_forum,
-                Forum,
-                Forum::class,
-                Icons.Filled.Forum,
-                Icons.Outlined.Forum,
-                persistKey = "forum"
-            ),
-            BottomNavItem(
-                R.string.nav_profile,
-                Profile,
-                Profile::class,
-                Icons.Filled.Person,
-                Icons.Outlined.Person
-            )
-        )
-    }
+    val navItems = rememberMainNavItems()
 
     val navBackStackEntryState = navController.currentBackStackEntryAsState()
     val navBarSuppressor = LocalMainNavBarSuppressor.current
@@ -309,15 +434,7 @@ private fun MainBottomBar(
                     selected = isSelected,
                     onClick = {
                         if (!isSelected) {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                            // Remember this tab so the next cold launch reopens on it.
-                            item.persistKey?.let(onTabSelected)
+                            navController.navigateToMainTab(item.route, item.persistKey, onTabSelected)
                         }
                     },
                     icon = {
@@ -347,6 +464,97 @@ private fun MainBottomBar(
                             )
                         }
                     } else null
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The navigation rail shown on medium / expanded widths. Mirrors [MainBottomBar]: same destinations,
+ * same selection and badge logic, same suppression on non-top-level routes — only the container and
+ * its enter/exit (horizontal) differ. Labels follow the user's "show labels" preference.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun MainNavigationRail(
+    navController: NavHostController,
+    unreadNotificationCount: Int,
+    showLabels: Boolean,
+    onTabSelected: (String) -> Unit
+) {
+    val navItems = rememberMainNavItems()
+    val navBackStackEntryState = navController.currentBackStackEntryAsState()
+    val navBarSuppressor = LocalMainNavBarSuppressor.current
+
+    val isRailVisible by remember(navBarSuppressor) {
+        derivedStateOf {
+            val dest = navBackStackEntryState.value?.destination
+            val onWhitelistedRoute = dest?.hasRoute<Library>() == true ||
+                    dest?.hasRoute<Discover>() == true ||
+                    dest?.hasRoute<Feed>() == true ||
+                    dest?.hasRoute<Forum>() == true ||
+                    dest?.hasRoute<Profile>() == true
+            onWhitelistedRoute && navBarSuppressor?.isSuppressed != true
+        }
+    }
+
+    AnimatedVisibility(
+        visible = isRailVisible,
+        enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
+        exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
+    ) {
+        NavigationRail(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ) {
+            val currentDestination = navBackStackEntryState.value?.destination
+
+            navItems.forEach { item ->
+                val isSelected = currentDestination?.hasRoute(item.routeClass) == true
+                val isProfile = item.routeClass == Profile::class
+                val showBadge = isProfile && unreadNotificationCount > 0
+                val iconVector = if (isSelected) item.selectedIcon else item.unselectedIcon
+                val itemTitle = stringResource(item.titleResId)
+
+                NavigationRailItem(
+                    selected = isSelected,
+                    onClick = {
+                        if (!isSelected) {
+                            navController.navigateToMainTab(item.route, item.persistKey, onTabSelected)
+                        }
+                    },
+                    icon = {
+                        if (showBadge) {
+                            ProfileNavBarIconWithBadge(
+                                iconVector = iconVector,
+                                title = itemTitle,
+                                unreadCount = unreadNotificationCount,
+                                isSelected = isSelected
+                            )
+                        } else {
+                            Icon(imageVector = iconVector, contentDescription = itemTitle)
+                        }
+                    },
+                    label = if (showLabels) {
+                        {
+                            Text(
+                                text = itemTitle,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else null,
+                    alwaysShowLabel = showLabels,
+                    colors = NavigationRailItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             }
         }
