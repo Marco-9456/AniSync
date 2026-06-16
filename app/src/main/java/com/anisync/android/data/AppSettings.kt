@@ -51,6 +51,20 @@ enum class DiscoverViewMode {
 }
 
 /**
+ * Poster-grid density preference. Drives how many columns poster grids show across the app
+ * (library, discover, detail grids).
+ *
+ *  - [AUTO]: columns scale automatically with the window width (Material 3 adaptive default).
+ *  - [COMFORTABLE]: larger cells, fewer columns.
+ *  - [COMPACT]: smaller cells, more columns.
+ */
+enum class GridDensity {
+    AUTO,
+    COMFORTABLE,
+    COMPACT
+}
+
+/**
  * Visual style of the bottom navigation bar.
  *
  *  - [ANCHORED]: bar pinned to the bottom edge with rounded top corners.
@@ -352,6 +366,16 @@ class AppSettings @Inject constructor(
     // Persisted so the chosen layout survives app restarts instead of resetting to grid.
     private val _libraryGridView = MutableStateFlow(prefs.getBoolean(KEY_LIBRARY_GRID_VIEW, true))
     val libraryGridView: StateFlow<Boolean> = _libraryGridView.asStateFlow()
+
+    // Poster-grid density (Auto / Comfortable / Compact). Applied app-wide via posterGridColumns().
+    private val _gridDensity = MutableStateFlow(readGridDensity())
+    val gridDensity: StateFlow<GridDensity> = _gridDensity.asStateFlow()
+
+    private fun readGridDensity(): GridDensity {
+        val name = runCatching { prefs.getString(KEY_GRID_DENSITY, null) }.getOrNull()
+        return runCatching { GridDensity.valueOf(name ?: GridDensity.AUTO.name) }
+            .getOrDefault(GridDensity.AUTO)
+    }
 
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
@@ -758,6 +782,12 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_LIBRARY_GRID_VIEW, isGrid).apply()
     }
 
+    /** Persist the poster-grid density preference. */
+    fun setGridDensity(density: GridDensity) {
+        _gridDensity.value = density
+        prefs.edit().putString(KEY_GRID_DENSITY, density.name).apply()
+    }
+
     /**
      * Persist the last selected feed content filter.
      */
@@ -979,6 +1009,7 @@ companion object {
         private const val KEY_FEED_SCOPE = "feed_scope"
         private const val KEY_FEED_FILTER = "feed_filter"
         private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
+        private const val KEY_GRID_DENSITY = "grid_density"
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

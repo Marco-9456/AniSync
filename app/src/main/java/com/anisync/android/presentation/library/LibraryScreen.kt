@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -594,7 +595,7 @@ fun LibraryScreen(
                             ) { isGrid ->
                                 if (isGrid) {
                                     LazyVerticalGrid(
-                                        columns = GridCells.Fixed(2),
+                                        columns = posterGridColumns(baseMinSize = 150.dp),
                                         state = gridState,
                                         contentPadding = PaddingValues(
                                             start = 24.dp,

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
@@ -198,7 +199,7 @@ fun MediaRecommendationsGridScreen(
 
                         LazyVerticalGrid(
                             state = listState,
-                            columns = GridCells.Adaptive(minSize = 110.dp),
+                            columns = posterGridColumns(baseMinSize = 110.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 16.dp,

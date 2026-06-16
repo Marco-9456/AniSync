@@ -375,6 +375,11 @@
     <string name="settings_app_language_system_desc">Uses your device language setting</string>
     <string name="settings_cover_quality">Cover image quality</string>
     <string name="settings_cover_quality_desc">Applies to every cover shown in the app. Higher quality looks sharper but uses more data and storage.</string>
+    <string name="settings_grid_layout">Grid layout</string>
+    <string name="settings_grid_layout_desc">How many cards fit per row in grids. Auto adapts to your screen size; pick Comfortable or Compact to override.</string>
+    <string name="grid_density_auto">Auto</string>
+    <string name="grid_density_comfortable">Comfortable</string>
+    <string name="grid_density_compact">Compact</string>
     <string name="cover_quality_extra_large">Extra large</string>
     <string name="cover_quality_extra_large_desc">Maximum sharpness everywhere. Best on Wi-Fi.</string>
     <string name="cover_quality_large">Large</string>

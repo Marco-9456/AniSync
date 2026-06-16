@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -99,7 +100,7 @@ fun MediaGridContent(
                 else -> {
                     LazyVerticalGrid(
                         state = gridState,
-                        columns = GridCells.Adaptive(minSize = 150.dp),
+                        columns = posterGridColumns(baseMinSize = 150.dp),
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             top = topContentPadding + 16.dp,
@@ -320,7 +321,7 @@ fun SectionGridScreen(
                         val fadeSpec = AppMotion.rememberEffectsSpec()
 
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 150.dp),
+                            columns = posterGridColumns(baseMinSize = 150.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 16.dp,

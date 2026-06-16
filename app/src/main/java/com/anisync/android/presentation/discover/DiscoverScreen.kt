@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
@@ -1185,7 +1186,7 @@ private fun SearchResultsGrid(
     val showStudios = showAll || activeCategory == ResultCategory.STUDIOS
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 140.dp),
+        columns = posterGridColumns(baseMinSize = 140.dp),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,

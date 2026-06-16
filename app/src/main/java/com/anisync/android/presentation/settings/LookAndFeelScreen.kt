@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.PlayCircle
@@ -73,12 +74,14 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.GridDensity
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 
 private val StreamingServices = StreamingService.entries
 private val CoverQualities = CoverQuality.entries
+private val GridDensities = GridDensity.entries
 private val NavBarStyles = NavBarStyle.entries
 private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
 
@@ -96,6 +99,7 @@ fun LookAndFeelScreen(
     val hapticEnabled = uiState.hapticEnabled
     val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
+    val gridDensity = uiState.gridDensity
     val navBarStyle = uiState.navBarStyle
     val navBarShowLabels = uiState.navBarShowLabels
     val navBarCornerRadius = uiState.navBarCornerRadius
@@ -104,6 +108,7 @@ fun LookAndFeelScreen(
 
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
     var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
+    var showGridLayoutSheet by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -134,6 +139,16 @@ fun LookAndFeelScreen(
                 viewModel.onAction(SettingsAction.SetCoverQuality(it))
             },
             onDismiss = { showCoverQualitySheet = false }
+        )
+    }
+
+    if (showGridLayoutSheet) {
+        GridDensitySelectionSheet(
+            currentDensity = gridDensity,
+            onDensitySelected = {
+                viewModel.onAction(SettingsAction.SetGridDensity(it))
+            },
+            onDismiss = { showGridLayoutSheet = false }
         )
     }
 
@@ -209,6 +224,12 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.settings_cover_quality),
                 currentValue = coverQualityLabel(coverQuality),
                 onClick = { showCoverQualitySheet = true }
+            )
+            SelectionSettingsItem(
+                icon = Icons.Default.GridView,
+                title = stringResource(R.string.settings_grid_layout),
+                currentValue = gridDensityLabel(gridDensity),
+                onClick = { showGridLayoutSheet = true }
             )
         }
 
@@ -455,6 +476,96 @@ fun CoverQualitySelectionSheet(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GridDensitySelectionSheet(
+    currentDensity: GridDensity,
+    onDensitySelected: (GridDensity) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_grid_layout),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Text(
+                text = stringResource(R.string.settings_grid_layout_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                GridDensities.forEach { density ->
+                    val isSelected = currentDensity == density
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        label = "card_bg"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        label = "card_border"
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(72.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onDensitySelected(density) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(2.dp, borderColor)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = gridDensityLabel(density),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun gridDensityLabel(density: GridDensity): String = stringResource(
+    when (density) {
+        GridDensity.AUTO -> R.string.grid_density_auto
+        GridDensity.COMFORTABLE -> R.string.grid_density_comfortable
+        GridDensity.COMPACT -> R.string.grid_density_compact
+    }
+)
 
 @Composable
 private fun rememberBrandColors(): Map<StreamingService, Color?> {

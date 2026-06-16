@@ -53,6 +53,7 @@ import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.settings.UpdateDialog
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.LocalGridDensity
 import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAdaptiveInfo
 import com.anisync.android.ui.theme.AppTheme
@@ -184,6 +185,9 @@ class MainActivity : AppCompatActivity() {
                 val coverQuality by appSettings.coverQuality.collectAsStateWithLifecycle(
                     initialValue = com.anisync.android.data.CoverQuality.LARGE
                 )
+                val gridDensity by appSettings.gridDensity.collectAsStateWithLifecycle(
+                    initialValue = com.anisync.android.data.GridDensity.AUTO
+                )
                 val typographyOverrides by appSettings.typographyOverrides.collectAsStateWithLifecycle(
                     initialValue = com.anisync.android.ui.theme.TypographyOverrides.None
                 )
@@ -220,6 +224,7 @@ class MainActivity : AppCompatActivity() {
 
                 CompositionLocalProvider(
                     LocalAdaptiveInfo provides rememberAdaptiveInfo(),
+                    LocalGridDensity provides gridDensity,
                     LocalAppSettings provides appSettings,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
