@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.util.adaptiveReadingWidth
 
 /**
  * Scaffold for settings screens. A thin wrapper around the app-wide [CollapsingTopBarScaffold]
@@ -78,7 +79,9 @@ fun SettingsScreenScaffold(
         ) {
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .adaptiveReadingWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     content()

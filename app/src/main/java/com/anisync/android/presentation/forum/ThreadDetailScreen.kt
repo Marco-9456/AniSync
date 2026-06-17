@@ -79,6 +79,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
@@ -424,7 +425,9 @@ fun ThreadDetailScreen(
 
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .adaptiveReadingWidth(),
                             contentPadding = PaddingValues(top = topContentPadding),
                             verticalArrangement = Arrangement.spacedBy(8.dp) // Expressive vertical spacing
                         ) {

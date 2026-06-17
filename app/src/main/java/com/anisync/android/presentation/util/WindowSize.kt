@@ -1,10 +1,16 @@
 package com.anisync.android.presentation.util
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -100,5 +106,25 @@ fun rememberAdaptiveInfo(): AdaptiveInfo {
                 else -> 24.dp
             },
         )
+    }
+}
+
+/**
+ * Caps a single-column reading surface to [AdaptiveInfo.contentMaxWidth] and centers it within the
+ * available width, so prose and list rows don't stretch to unreadable line lengths on wide windows.
+ *
+ * No-op on compact (where [AdaptiveInfo.contentMaxWidth] is [Dp.Unspecified]) — phones keep full
+ * bleed. Apply to the scrollable/content of a reading screen (details body, forum thread, settings,
+ * activity, review), not to individual list items.
+ */
+fun Modifier.adaptiveReadingWidth(): Modifier = composed {
+    val maxWidth = LocalAdaptiveInfo.current.contentMaxWidth
+    if (maxWidth == Dp.Unspecified) {
+        this
+    } else {
+        this
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .widthIn(max = maxWidth)
     }
 }

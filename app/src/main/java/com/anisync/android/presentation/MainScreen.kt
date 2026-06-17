@@ -13,6 +13,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -509,6 +510,9 @@ private fun MainNavigationRail(
         ) {
             val currentDestination = navBackStackEntryState.value?.destination
 
+            // Center the destinations vertically — Material 3 rail with no header/FAB.
+            Spacer(Modifier.weight(1f))
+
             navItems.forEach { item ->
                 val isSelected = currentDestination?.hasRoute(item.routeClass) == true
                 val isProfile = item.routeClass == Profile::class
@@ -557,6 +561,8 @@ private fun MainNavigationRail(
                     )
                 )
             }
+
+            Spacer(Modifier.weight(1f))
         }
     }
 }
