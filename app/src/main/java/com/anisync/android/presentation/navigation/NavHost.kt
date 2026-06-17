@@ -45,6 +45,7 @@ import com.anisync.android.presentation.forum.ForumMediaThreadsScreen
 import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ForumThreadInputScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
+import com.anisync.android.presentation.library.LibraryListDetail
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.notifications.NotificationsScreen
@@ -285,8 +286,9 @@ fun AniSyncNavHost(
                     { mediaId: Int -> onMediaClick(mediaId, "library") } 
                 }
                 
-                LibraryScreen(
-                    onMediaClick = onLibraryMediaClick,
+                LibraryListDetail(
+                    navController = navController,
+                    onMediaClickFullScreen = onLibraryMediaClick,
                     onNavigateToCalendar = { navController.navigate(Calendar) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
