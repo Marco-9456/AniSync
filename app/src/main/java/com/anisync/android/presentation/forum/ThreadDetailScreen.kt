@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -125,6 +126,7 @@ fun ThreadDetailScreen(
     onBackClick: () -> Unit,
     onUserClick: (String) -> Unit,
     targetCommentId: Int? = null,
+    navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

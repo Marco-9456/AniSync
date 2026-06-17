@@ -40,9 +40,11 @@ import com.anisync.android.presentation.discover.DiscoverListDetail
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.feed.FeedListDetail
 import com.anisync.android.presentation.feed.FeedScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
 import com.anisync.android.presentation.forum.ForumMediaThreadsScreen
+import com.anisync.android.presentation.forum.ForumListDetail
 import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ForumThreadInputScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
@@ -356,16 +358,10 @@ fun AniSyncNavHost(
                     }
                 }
 
-                val onFeedMediaClick = remember(onMediaClick) {
-                    { mediaId: Int -> onMediaClick(mediaId, "feed") }
-                }
-
-                FeedScreen(
-                    onActivityClick = navigateToActivity,
-                    onUserClick = navigateToUserProfile,
-                    onMediaClick = onFeedMediaClick,
-                    onLastReplyClick = navigateToActivityReply,
-                    onLoginClick = onLogin
+                FeedListDetail(
+                    navController = navController,
+                    onLoginClick = onLogin,
+                    onActivityClickFullScreen = navigateToActivity,
                 )
             }
 
@@ -515,36 +511,9 @@ fun AniSyncNavHost(
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
                     }
                 }
-                val onCreateThreadClick = remember(navController) {
-                    { navController.navigate(CreateThread()) }
-                }
-
-                val onCreateThreadForMedia = remember(navController) {
-                    { mediaId: Int, title: String, coverUrl: String? ->
-                        navController.navigate(
-                            CreateThread(
-                                mediaId = mediaId,
-                                mediaTitle = title,
-                                mediaCoverUrl = coverUrl.orEmpty()
-                            )
-                        )
-                    }
-                }
-
-                val onThreadCommentClick = remember(navController) {
-                    { threadId: Int, commentId: Int ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, "", commentId)
-                        )
-                    }
-                }
-
-                ForumScreen(
-                    onThreadClick = onThreadClick,
-                    onThreadCommentClick = onThreadCommentClick,
-                    onCreateThreadClick = onCreateThreadClick,
-                    onCreateThreadForMedia = onCreateThreadForMedia,
-                    onUserClick = navigateToUserProfile
+                ForumListDetail(
+                    navController = navController,
+                    onThreadClickFullScreen = onThreadClick,
                 )
             }
 

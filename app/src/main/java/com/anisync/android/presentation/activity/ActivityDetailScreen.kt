@@ -21,7 +21,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
@@ -95,6 +97,7 @@ fun ActivityDetailScreen(
     onBackClick: () -> Unit,
     onUserClick: (String) -> Unit,
     targetReplyId: Int? = null,
+    navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: ActivityDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -221,6 +224,7 @@ fun ActivityDetailScreen(
     CollapsingTopBarScaffold(
         title = stringResource(R.string.activity_detail_title),
         onBackClick = onBackClick,
+        navigationIcon = navigationIcon,
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         enableEnterAnimation = true,

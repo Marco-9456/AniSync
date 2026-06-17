@@ -44,8 +44,9 @@ private const val MIN_LIST_FRACTION = 0.28f
 private const val MAX_LIST_FRACTION = 0.6f
 
 /**
- * Reusable Material 3 two-pane container for media feeds (Library, and later Discover / Feed /
- * Forum). The caller supplies its list/feed via [listPane], receiving an `onMediaClick`.
+ * Reusable Material 3 two-pane container for any feed→detail surface (Library, Discover, Feed,
+ * Forum). The caller supplies its list/feed via [listPane] (receiving an `onItemClick`) and the
+ * detail content via [detailPane] (receiving the selected id and an `onClose`).
  *
  * Behaviour (matching the M3 panes guidance):
  *  - The **list pane is permanent** and fills the full width while nothing is selected.
@@ -54,18 +55,14 @@ private const val MAX_LIST_FRACTION = 0.6f
  *  - Both panes are **flexible** (weight-based) and **user-resizable** via a [VerticalDragHandle];
  *    the chosen split is remembered across configuration changes.
  *
- * The detail pane hosts its own NavHost + [SharedTransitionLayout] so each [MediaDetailsScreen] gets
- * a route-scoped ViewModel (its id is read from the route's SavedStateHandle). Media→media
- * (relations) navigates inside the pane; everything else escalates to the app [navController].
- *
  * Intended to be rendered only on expanded widths; compact/medium use the plain full-screen screen.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MediaListDetailScaffold(
-    navController: NavHostController,
+fun TwoPaneListDetailScaffold(
     modifier: Modifier = Modifier,
-    listPane: @Composable (onMediaClick: (Int) -> Unit) -> Unit,
+    listPane: @Composable (onItemClick: (Int) -> Unit) -> Unit,
+    detailPane: @Composable (id: Int, onClose: () -> Unit) -> Unit,
 ) {
     var selectedId by rememberSaveable { mutableStateOf<Int?>(null) }
     val detailId = selectedId
@@ -119,14 +116,31 @@ fun MediaListDetailScaffold(
                     .fillMaxHeight()
                     .clipToBounds(),
             ) {
-                MediaDetailPane(
-                    mediaId = detailId,
-                    navController = navController,
-                    onClose = { selectedId = null },
-                )
+                detailPane(detailId) { selectedId = null }
             }
         }
     }
+}
+
+/**
+ * Media specialization of [TwoPaneListDetailScaffold]: the detail pane is a [MediaDetailsScreen]
+ * hosted in its own NavHost + [SharedTransitionLayout] so each gets a route-scoped ViewModel (its id
+ * is read from the route's SavedStateHandle). Media→media (relations) navigates inside the pane;
+ * everything else escalates to the app [navController]. Used by Library and Discover.
+ */
+@Composable
+fun MediaListDetailScaffold(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    listPane: @Composable (onMediaClick: (Int) -> Unit) -> Unit,
+) {
+    TwoPaneListDetailScaffold(
+        modifier = modifier,
+        listPane = listPane,
+        detailPane = { id, onClose ->
+            MediaDetailPane(mediaId = id, navController = navController, onClose = onClose)
+        },
+    )
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
