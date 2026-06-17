@@ -4,37 +4,33 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.Dp
-import com.anisync.android.data.GridDensity
+import com.anisync.android.data.AppSettings
 
 /**
- * The user's poster-grid [GridDensity] preference, published app-wide. Provided once at the app
- * root (see MainActivity) from AppSettings; grids read it through [posterGridColumns], so a single
- * setting reflows every poster grid without each screen wiring the preference itself.
+ * Whether poster grids size their columns automatically (adaptive to window width) or use a fixed
+ * [LocalGridColumnCount]. Both are published app-wide from AppSettings (see MainActivity) and chosen
+ * by the user from the Library view bottom sheet; grids read them through [posterGridColumns].
  */
-val LocalGridDensity = compositionLocalOf { GridDensity.AUTO }
+val LocalGridColumnsAuto = compositionLocalOf { true }
+
+/** The manual poster-grid column count used when [LocalGridColumnsAuto] is false. */
+val LocalGridColumnCount = compositionLocalOf { AppSettings.DEFAULT_GRID_COLUMNS }
 
 /**
- * Column strategy for poster grids. Always returns [GridCells.Adaptive] so a grid naturally gains
- * columns as the window widens (the Material 3 adaptive default); [density] then scales the
- * per-cell minimum to honor the user's preference.
+ * Column strategy for poster grids, decided in exactly one place.
  *
- * This replaces the scattered `GridCells.Adaptive(minSize = …)` / `GridCells.Fixed(2)` call sites
- * so density and large-screen behavior are decided in exactly one place.
- *
- * @param baseMinSize the grid's natural minimum cell width at [GridDensity.AUTO] (e.g. ~150dp for
- *   media posters, ~100dp for character/staff portraits). Each call site keeps its own base, so
- *   dense grids stay dense and roomy grids stay roomy while still honoring the preference.
- * @param density the active density; defaults to the app-wide [LocalGridDensity].
+ *  - Automatic: [GridCells.Adaptive] so the grid gains columns as the window widens (the Material 3
+ *    adaptive default); [baseMinSize] is the natural minimum cell width (e.g. ~150dp for media
+ *    posters, ~100dp for character/staff portraits).
+ *  - Manual: [GridCells.Fixed] with the user's chosen [count] (2..8), the same on every width.
  */
 @Composable
 fun posterGridColumns(
     baseMinSize: Dp,
-    density: GridDensity = LocalGridDensity.current,
-): GridCells {
-    val factor = when (density) {
-        GridDensity.AUTO -> 1f
-        GridDensity.COMFORTABLE -> 1.25f // larger cells -> fewer columns
-        GridDensity.COMPACT -> 0.8f      // smaller cells -> more columns
-    }
-    return GridCells.Adaptive(minSize = baseMinSize * factor)
+    auto: Boolean = LocalGridColumnsAuto.current,
+    count: Int = LocalGridColumnCount.current,
+): GridCells = if (auto) {
+    GridCells.Adaptive(minSize = baseMinSize)
+} else {
+    GridCells.Fixed(count.coerceIn(AppSettings.MIN_GRID_COLUMNS, AppSettings.MAX_GRID_COLUMNS))
 }

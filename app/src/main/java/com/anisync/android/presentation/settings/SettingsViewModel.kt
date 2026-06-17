@@ -207,13 +207,8 @@ class SettingsViewModel @Inject constructor(
         coreUiState,
         fontPlaygroundFlow,
         appSettings.amoledEnabled,
-        appSettings.gridDensity,
-    ) { core, fontPlayground, amoled, gridDensity ->
-        core.copy(
-            fontPlayground = fontPlayground,
-            amoledEnabled = amoled,
-            gridDensity = gridDensity,
-        )
+    ) { core, fontPlayground, amoled ->
+        core.copy(fontPlayground = fontPlayground, amoledEnabled = amoled)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -226,7 +221,6 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetAmoledEnabled -> appSettings.setAmoledEnabled(action.enabled)
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
-            is SettingsAction.SetGridDensity -> appSettings.setGridDensity(action.density)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)

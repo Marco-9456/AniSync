@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.LocalGridColumnCount
+import com.anisync.android.presentation.util.LocalGridColumnsAuto
 import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -110,6 +113,7 @@ import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.library.components.EmptyLibraryTabState
 import com.anisync.android.presentation.library.components.LibraryListCard
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
+import com.anisync.android.presentation.library.components.LibraryViewOptionsSheet
 import com.anisync.android.presentation.library.components.ListManagementSheet
 import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
@@ -172,6 +176,7 @@ fun LibraryScreen(
     val focusManager = LocalFocusManager.current
 
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
+    var showViewOptionsSheet by rememberSaveable { mutableStateOf(false) }
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
         uiState.tabOrder.mapNotNull { id ->
@@ -308,7 +313,7 @@ fun LibraryScreen(
             onClearClick = { textFieldState.edit { replace(0, length, "") } },
             onToggleView = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                viewModel.onAction(LibraryAction.SetGridView(!uiState.isGridView))
+                showViewOptionsSheet = true
             },
             onToggleSort = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -756,6 +761,18 @@ fun LibraryScreen(
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
         }
+    )
+
+    val appSettings = LocalAppSettings.current
+    LibraryViewOptionsSheet(
+        visible = showViewOptionsSheet,
+        isGridView = uiState.isGridView,
+        autoColumns = LocalGridColumnsAuto.current,
+        columnCount = LocalGridColumnCount.current,
+        onSetGridView = { viewModel.onAction(LibraryAction.SetGridView(it)) },
+        onSetAutoColumns = { appSettings.setGridColumnsAuto(it) },
+        onSetColumnCount = { appSettings.setGridColumnCount(it) },
+        onDismiss = { showViewOptionsSheet = false }
     )
 
 

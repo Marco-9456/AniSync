@@ -51,20 +51,6 @@ enum class DiscoverViewMode {
 }
 
 /**
- * Poster-grid density preference. Drives how many columns poster grids show across the app
- * (library, discover, detail grids).
- *
- *  - [AUTO]: columns scale automatically with the window width (Material 3 adaptive default).
- *  - [COMFORTABLE]: larger cells, fewer columns.
- *  - [COMPACT]: smaller cells, more columns.
- */
-enum class GridDensity {
-    AUTO,
-    COMFORTABLE,
-    COMPACT
-}
-
-/**
  * Visual style of the bottom navigation bar.
  *
  *  - [ANCHORED]: bar pinned to the bottom edge with rounded top corners.
@@ -367,15 +353,16 @@ class AppSettings @Inject constructor(
     private val _libraryGridView = MutableStateFlow(prefs.getBoolean(KEY_LIBRARY_GRID_VIEW, true))
     val libraryGridView: StateFlow<Boolean> = _libraryGridView.asStateFlow()
 
-    // Poster-grid density (Auto / Comfortable / Compact). Applied app-wide via posterGridColumns().
-    private val _gridDensity = MutableStateFlow(readGridDensity())
-    val gridDensity: StateFlow<GridDensity> = _gridDensity.asStateFlow()
+    // Poster-grid columns: automatic (adaptive to window width) vs a manual fixed count (2..8).
+    // Surfaced via the Library view bottom sheet and applied app-wide via posterGridColumns().
+    private val _gridColumnsAuto = MutableStateFlow(prefs.getBoolean(KEY_GRID_COLUMNS_AUTO, true))
+    val gridColumnsAuto: StateFlow<Boolean> = _gridColumnsAuto.asStateFlow()
 
-    private fun readGridDensity(): GridDensity {
-        val name = runCatching { prefs.getString(KEY_GRID_DENSITY, null) }.getOrNull()
-        return runCatching { GridDensity.valueOf(name ?: GridDensity.AUTO.name) }
-            .getOrDefault(GridDensity.AUTO)
-    }
+    private val _gridColumnCount = MutableStateFlow(
+        prefs.getInt(KEY_GRID_COLUMN_COUNT, DEFAULT_GRID_COLUMNS)
+            .coerceIn(MIN_GRID_COLUMNS, MAX_GRID_COLUMNS)
+    )
+    val gridColumnCount: StateFlow<Int> = _gridColumnCount.asStateFlow()
 
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
@@ -782,10 +769,17 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_LIBRARY_GRID_VIEW, isGrid).apply()
     }
 
-    /** Persist the poster-grid density preference. */
-    fun setGridDensity(density: GridDensity) {
-        _gridDensity.value = density
-        prefs.edit().putString(KEY_GRID_DENSITY, density.name).apply()
+    /** Toggle automatic (width-adaptive) poster-grid columns. */
+    fun setGridColumnsAuto(auto: Boolean) {
+        _gridColumnsAuto.value = auto
+        prefs.edit().putBoolean(KEY_GRID_COLUMNS_AUTO, auto).apply()
+    }
+
+    /** Set the manual poster-grid column count (coerced to [MIN_GRID_COLUMNS]..[MAX_GRID_COLUMNS]). */
+    fun setGridColumnCount(count: Int) {
+        val coerced = count.coerceIn(MIN_GRID_COLUMNS, MAX_GRID_COLUMNS)
+        _gridColumnCount.value = coerced
+        prefs.edit().putInt(KEY_GRID_COLUMN_COUNT, coerced).apply()
     }
 
     /**
@@ -1009,7 +1003,11 @@ companion object {
         private const val KEY_FEED_SCOPE = "feed_scope"
         private const val KEY_FEED_FILTER = "feed_filter"
         private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
-        private const val KEY_GRID_DENSITY = "grid_density"
+        private const val KEY_GRID_COLUMNS_AUTO = "grid_columns_auto"
+        private const val KEY_GRID_COLUMN_COUNT = "grid_column_count"
+        const val MIN_GRID_COLUMNS = 2
+        const val MAX_GRID_COLUMNS = 8
+        const val DEFAULT_GRID_COLUMNS = 3
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

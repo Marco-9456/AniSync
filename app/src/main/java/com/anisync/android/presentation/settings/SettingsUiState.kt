@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AvatarShape
 import com.anisync.android.data.CoverQuality
-import com.anisync.android.data.GridDensity
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
@@ -20,7 +19,6 @@ sealed interface SettingsAction {
     data class SetAmoledEnabled(val enabled: Boolean) : SettingsAction
     data class SetTitleLanguage(val language: TitleLanguage) : SettingsAction
     data class SetCoverQuality(val quality: CoverQuality) : SettingsAction
-    data class SetGridDensity(val density: GridDensity) : SettingsAction
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
     data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
     data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
@@ -114,7 +112,6 @@ data class SettingsUiState(
     val amoledEnabled: Boolean = false,
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val coverQuality: CoverQuality = CoverQuality.LARGE,
-    val gridDensity: GridDensity = GridDensity.AUTO,
     val hapticEnabled: Boolean = true,
     val navBarStyle: NavBarStyle = NavBarStyle.ANCHORED,
     val navBarShowLabels: Boolean = true,
