@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -107,12 +106,10 @@ fun DiscoverHeroCarousel(
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp),
             flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
+            // Cap each hero's width so a wide window shows SEVERAL heroes filling the row (M3) rather
+            // than stretching one item into a cropped strip. On a phone only one fits, as before.
+            maxItemWidth = 400.dp,
             modifier = Modifier
-                // Cap + center on wide screens. A full-width centered-hero carousel on a tablet
-                // stretches each item into a wide strip that crops the portrait cover to a sliver;
-                // capping keeps a phone-like hero proportion with the poster visible.
-                .align(Alignment.CenterHorizontally)
-                .widthIn(max = 460.dp)
                 .fillMaxWidth()
                 .height(420.dp)
         ) { index ->

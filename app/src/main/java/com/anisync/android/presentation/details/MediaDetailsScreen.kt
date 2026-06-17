@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import com.anisync.android.presentation.util.adaptiveReadingWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -955,14 +954,7 @@ fun DetailsPageContent(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            // Cap + center the detail page on wide screens so the banner, tab strip and body don't
-            // stretch to unreadable widths. Caps the whole stack (list + sticky-tab overlay) together
-            // so they stay aligned.
-            .adaptiveReadingWidth()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
