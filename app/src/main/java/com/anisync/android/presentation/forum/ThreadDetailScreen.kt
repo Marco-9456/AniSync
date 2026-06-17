@@ -294,6 +294,7 @@ fun ThreadDetailScreen(
     CollapsingTopBarScaffold(
         title = threadTitle.ifEmpty { stringResource(R.string.forum_thread_appbar) },
         onBackClick = onBackClick,
+        navigationIcon = navigationIcon,
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         enableEnterAnimation = true,
