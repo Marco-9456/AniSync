@@ -1,8 +1,11 @@
 package com.anisync.android.presentation.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -32,7 +35,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.anisync.android.presentation.details.CharacterDetailsScreen
+import com.anisync.android.presentation.details.CharacterMediaGridScreen
+import com.anisync.android.presentation.details.MediaCharactersGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
+import com.anisync.android.presentation.details.MediaRecommendationsGridScreen
+import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.MediaStaffGridScreen
+import com.anisync.android.presentation.details.StaffDetailsScreen
+import com.anisync.android.presentation.details.StaffMediaGridScreen
+import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
+import com.anisync.android.presentation.details.StudioDetailsScreen
+import com.anisync.android.presentation.details.StudioMediaGridScreen
 
 private const val PANE_SOURCE = "list_detail_pane"
 
@@ -153,6 +167,13 @@ private fun MediaDetailPane(
     SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
         val paneNav = rememberNavController()
 
+        // System back inside the pane steps back through the pane's OWN stack first, only closing
+        // the pane once we're back at the root media. Registered here (inside the detail pane) so it
+        // shadows the scaffold's close-the-pane BackHandler while a deeper destination is showing.
+        BackHandler(enabled = true) {
+            if (!paneNav.popBackStack()) onClose()
+        }
+
         // Skip the first id (the NavHost startDestination already shows it with a correctly-scoped
         // ViewModel). On later selections, navigate with a cleared stack so a FRESH entry + ViewModel
         // is created — reusing the entry would keep the ViewModel bound to the previous id.
@@ -167,27 +188,43 @@ private fun MediaDetailPane(
             }
         }
 
+        // The detail pane is a self-contained mini-app: media → character/staff/studio and every
+        // "see all" grid navigate WITHIN the pane (paneNav), so only the list pane stays put. Cross-
+        // feature destinations (forum, review, user profile, the review editor) still escalate to the
+        // app [navController] and open full screen.
         NavHost(
             navController = paneNav,
             startDestination = MediaDetails(mediaId, PANE_SOURCE),
+            enterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start) + fadeIn()
+            },
+            exitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start) + fadeOut()
+            },
+            popEnterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End) + fadeIn()
+            },
+            popExitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End) + fadeOut()
+            },
         ) {
             composable<MediaDetails> { backStackEntry ->
                 val route: MediaDetails = backStackEntry.toRoute()
                 MediaDetailsScreen(
                     mediaId = route.mediaId,
                     sourceScreen = route.sourceScreen,
-                    // Back at the root closes the pane; deeper (relations) pops within the pane.
+                    // Back at the root closes the pane; deeper destinations pop within the pane.
                     onBackClick = { if (!paneNav.popBackStack()) onClose() },
                     navigationIcon = Icons.Default.Close,
                     onRelationClick = { relId -> paneNav.navigate(MediaDetails(relId, PANE_SOURCE)) },
-                    onCharacterClick = { navController.navigate(CharacterDetails(it)) },
-                    onStaffClick = { navController.navigate(StaffDetails(it)) },
-                    onStudioClick = { navController.navigate(StudioDetails(it)) },
-                    onCastSeeAllClick = { mId, t -> navController.navigate(MediaCharactersGrid(mId, t)) },
-                    onStaffSeeAllClick = { mId, t -> navController.navigate(MediaStaffGrid(mId, t)) },
-                    onRelatedSeeAllClick = { mId, t -> navController.navigate(MediaRelationsGrid(mId, t)) },
+                    onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
+                    onStaffClick = { paneNav.navigate(StaffDetails(it)) },
+                    onStudioClick = { paneNav.navigate(StudioDetails(it)) },
+                    onCastSeeAllClick = { mId, t -> paneNav.navigate(MediaCharactersGrid(mId, t)) },
+                    onStaffSeeAllClick = { mId, t -> paneNav.navigate(MediaStaffGrid(mId, t)) },
+                    onRelatedSeeAllClick = { mId, t -> paneNav.navigate(MediaRelationsGrid(mId, t)) },
                     onRecommendationsSeeAllClick = { mId, t ->
-                        navController.navigate(MediaRecommendationsGrid(mId, t))
+                        paneNav.navigate(MediaRecommendationsGrid(mId, t))
                     },
                     onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
                     onDiscussionClick = { tId, tt -> navController.navigate(ForumThreadDetail(tId, tt)) },
@@ -196,6 +233,142 @@ private fun MediaDetailPane(
                         navController.navigate(CreateThread(mId, t, cover.orEmpty()))
                     },
                     onUserClick = { navController.navigateSafely(UserProfile(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<CharacterDetails> { backStackEntry ->
+                val route: CharacterDetails = backStackEntry.toRoute()
+                CharacterDetailsScreen(
+                    characterId = route.characterId,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    onMediaSeeAllClick = { cId, cName -> paneNav.navigate(CharacterMediaGrid(cId, cName)) },
+                    onStaffClick = { paneNav.navigate(StaffDetails(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<StaffDetails> { backStackEntry ->
+                val route: StaffDetails = backStackEntry.toRoute()
+                StaffDetailsScreen(
+                    staffId = route.staffId,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
+                    onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StaffMediaGrid(sId, sName)) },
+                    onProductionSeeAllClick = { sId, sName ->
+                        paneNav.navigate(StaffProductionMediaGrid(sId, sName))
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<StudioDetails> { backStackEntry ->
+                val route: StudioDetails = backStackEntry.toRoute()
+                StudioDetailsScreen(
+                    studioId = route.studioId,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StudioMediaGrid(sId, sName)) },
+                )
+            }
+
+            composable<MediaCharactersGrid> { backStackEntry ->
+                val route: MediaCharactersGrid = backStackEntry.toRoute()
+                MediaCharactersGridScreen(
+                    mediaId = route.mediaId,
+                    mediaTitle = route.mediaTitle,
+                    onBackClick = { paneNav.popBackStack() },
+                    onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<MediaStaffGrid> { backStackEntry ->
+                val route: MediaStaffGrid = backStackEntry.toRoute()
+                MediaStaffGridScreen(
+                    mediaId = route.mediaId,
+                    mediaTitle = route.mediaTitle,
+                    onBackClick = { paneNav.popBackStack() },
+                    onStaffClick = { paneNav.navigate(StaffDetails(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<MediaRelationsGrid> { backStackEntry ->
+                val route: MediaRelationsGrid = backStackEntry.toRoute()
+                MediaRelationsGridScreen(
+                    mediaId = route.mediaId,
+                    mediaTitle = route.mediaTitle,
+                    onBackClick = { paneNav.popBackStack() },
+                    onRelationClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<MediaRecommendationsGrid> { backStackEntry ->
+                val route: MediaRecommendationsGrid = backStackEntry.toRoute()
+                MediaRecommendationsGridScreen(
+                    mediaId = route.mediaId,
+                    mediaTitle = route.mediaTitle,
+                    onBackClick = { paneNav.popBackStack() },
+                    onRecommendationClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<CharacterMediaGrid> { backStackEntry ->
+                val route: CharacterMediaGrid = backStackEntry.toRoute()
+                CharacterMediaGridScreen(
+                    characterId = route.characterId,
+                    characterName = route.characterName,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<StaffMediaGrid> { backStackEntry ->
+                val route: StaffMediaGrid = backStackEntry.toRoute()
+                StaffMediaGridScreen(
+                    staffId = route.staffId,
+                    staffName = route.staffName,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<StaffProductionMediaGrid> { backStackEntry ->
+                val route: StaffProductionMediaGrid = backStackEntry.toRoute()
+                StaffProductionMediaGridScreen(
+                    staffId = route.staffId,
+                    staffName = route.staffName,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<StudioMediaGrid> { backStackEntry ->
+                val route: StudioMediaGrid = backStackEntry.toRoute()
+                StudioMediaGridScreen(
+                    studioId = route.studioId,
+                    studioName = route.studioName,
+                    onBackClick = { paneNav.popBackStack() },
+                    onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
                 )
