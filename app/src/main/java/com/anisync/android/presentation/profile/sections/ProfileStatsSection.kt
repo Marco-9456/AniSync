@@ -51,6 +51,8 @@ import com.anisync.android.presentation.statistics.TagCloudSection
 import com.anisync.android.presentation.statistics.TimeSpentBreakdown
 import com.anisync.android.presentation.statistics.VoiceActorCardModern
 import com.anisync.android.presentation.statistics.YearComparisonSection
+import com.anisync.android.presentation.util.DashboardSection
+import com.anisync.android.presentation.util.StatsDashboardGrid
 import com.anisync.android.presentation.util.formatDecimal
 
 fun LazyListScope.profileStatsTab(
@@ -59,6 +61,7 @@ fun LazyListScope.profileStatsTab(
     onVoiceActorClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
+    statsColumns: Int = 1,
     modifier: Modifier = Modifier
 ) {
     val selectedType = uiState.selectedStatsType
@@ -150,12 +153,13 @@ fun LazyListScope.profileStatsTab(
     }
 
     if (selectedType == ProfileStatsType.ANIME) {
-        animeStatsBranch(
+        val (hero, rest) = animeStatSections(
             statsData.animeStats,
             onVoiceActorClick = onVoiceActorClick,
             onStaffClick = onStaffClick,
             onStudioClick = onStudioClick
         )
+        statsDashboard(hero, rest, statsColumns)
     } else {
         val mangaStats = statsData.mangaStats
         if (mangaStats == null) {
@@ -183,18 +187,50 @@ fun LazyListScope.profileStatsTab(
                 }
             }
         } else {
-            mangaStatsBranch(mangaStats, onStaffClick = onStaffClick)
+            val (hero, rest) = mangaStatSections(mangaStats, onStaffClick = onStaffClick)
+            statsDashboard(hero, rest, statsColumns)
         }
     }
 }
 
-private fun LazyListScope.animeStatsBranch(
+/**
+ * Emits the stats hero + its section cards. On compact ([columns] <= 1) each section is its own lazy
+ * item (full-bleed, lazily composed) exactly as before; on wider windows the hero spans full width
+ * and the remaining sections flow into a [StatsDashboardGrid] inside a single item.
+ */
+private fun LazyListScope.statsDashboard(
+    hero: DashboardSection,
+    sections: List<DashboardSection>,
+    columns: Int
+) {
+    if (columns <= 1) {
+        item(key = hero.key) {
+            hero.content()
+            Spacer(Modifier.height(24.dp))
+        }
+        sections.forEach { section ->
+            item(key = section.key) {
+                section.content()
+                Spacer(Modifier.height(24.dp))
+            }
+        }
+    } else {
+        item(key = "stats_dashboard") {
+            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                hero.content()
+                StatsDashboardGrid(sections = sections, columns = columns)
+            }
+        }
+    }
+}
+
+private fun animeStatSections(
     stats: com.anisync.android.presentation.profile.AnimeStatisticsUi,
     onVoiceActorClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {}
-) {
-    item(key = "anime_hero") {
+): Pair<DashboardSection, List<DashboardSection>> {
+    val hero = DashboardSection("anime_hero") {
         HeroDashboard(
             primaryValue = stats.totalCount.toString(),
             primaryUnit = "anime",
@@ -206,132 +242,89 @@ private fun LazyListScope.animeStatsBranch(
                 EditorialStat(formatDecimal(stats.standardDeviation), stringResource(R.string.statistics_std_dev), Icons.Default.Equalizer)
             )
         )
-        Spacer(Modifier.height(24.dp))
     }
 
-    if (stats.minutesWatched > 0) {
-        item(key = "anime_time") {
-            TimeSpentBreakdown(stats.minutesWatched)
-            Spacer(Modifier.height(24.dp))
+    val sections = buildList {
+        if (stats.minutesWatched > 0) {
+            add(DashboardSection("anime_time") { TimeSpentBreakdown(stats.minutesWatched) })
+        }
+        if (stats.statusDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_status") { StatusDistributionDonut(stats.statusDistribution) })
+        }
+        if (stats.scoreDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_scores") { ScoreHistogramSection(stats.scoreDistribution, stats.meanScore) })
+        }
+        if (stats.genreDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_genres") {
+                HorizontalStatsSection(
+                    title = stringResource(R.string.statistics_top_genres),
+                    items = stats.genreDistribution,
+                    key = { it.genre }
+                ) { GenreCardModern(it) }
+            })
+        }
+        if (stats.tagDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_tags") { TagCloudSection(stats.tagDistribution) })
+        }
+        if (stats.formatDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_formats") { FormatsSection(stats.formatDistribution) })
+        }
+        if (stats.lengthDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_lengths") { EpisodeLengthDistributionSection(stats.lengthDistribution) })
+        }
+        if (stats.releaseYearDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_years") { ReleaseYearsHistogramSection(stats.releaseYearDistribution) })
+        }
+        if (stats.startYearDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_year_compare") {
+                YearComparisonSection(
+                    release = stats.releaseYearDistribution,
+                    start = stats.startYearDistribution
+                )
+            })
+        }
+        if (stats.standardDeviation > 0.0) {
+            add(DashboardSection("anime_stddev") { StandardDeviationCard(stats.standardDeviation, stats.meanScore) })
+        }
+        if (stats.voiceActorDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_voice_actors") {
+                HorizontalStatsSection(
+                    title = stringResource(R.string.statistics_top_voice_actors),
+                    items = stats.voiceActorDistribution,
+                    key = { it.id }
+                ) { VoiceActorCardModern(it, onClick = { onVoiceActorClick(it.id) }) }
+            })
+        }
+        if (stats.staffDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_staff") {
+                HorizontalStatsSection(
+                    title = stringResource(R.string.statistics_top_staff),
+                    items = stats.staffDistribution,
+                    key = { it.id }
+                ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
+            })
+        }
+        if (stats.studioDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_studios") {
+                HorizontalStatsSection(
+                    title = stringResource(R.string.statistics_top_studios),
+                    items = stats.studioDistribution,
+                    key = { it.id }
+                ) { StudioCardModern(it, onClick = { onStudioClick(it.id) }) }
+            })
+        }
+        if (stats.countryDistribution.isNotEmpty()) {
+            add(DashboardSection("anime_countries") { CountryDistributionRow(stats.countryDistribution) })
         }
     }
-
-    if (stats.statusDistribution.isNotEmpty()) {
-        item(key = "anime_status") {
-            StatusDistributionDonut(stats.statusDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.scoreDistribution.isNotEmpty()) {
-        item(key = "anime_scores") {
-            ScoreHistogramSection(stats.scoreDistribution, stats.meanScore)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.genreDistribution.isNotEmpty()) {
-        item(key = "anime_genres") {
-            HorizontalStatsSection(
-                title = stringResource(R.string.statistics_top_genres),
-                items = stats.genreDistribution,
-                key = { it.genre }
-            ) { GenreCardModern(it) }
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.tagDistribution.isNotEmpty()) {
-        item(key = "anime_tags") {
-            TagCloudSection(stats.tagDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.formatDistribution.isNotEmpty()) {
-        item(key = "anime_formats") {
-            FormatsSection(stats.formatDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.lengthDistribution.isNotEmpty()) {
-        item(key = "anime_lengths") {
-            EpisodeLengthDistributionSection(stats.lengthDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.releaseYearDistribution.isNotEmpty()) {
-        item(key = "anime_years") {
-            ReleaseYearsHistogramSection(stats.releaseYearDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.startYearDistribution.isNotEmpty()) {
-        item(key = "anime_year_compare") {
-            YearComparisonSection(
-                release = stats.releaseYearDistribution,
-                start = stats.startYearDistribution
-            )
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.standardDeviation > 0.0) {
-        item(key = "anime_stddev") {
-            StandardDeviationCard(stats.standardDeviation, stats.meanScore)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.voiceActorDistribution.isNotEmpty()) {
-        item(key = "anime_voice_actors") {
-            HorizontalStatsSection(
-                title = stringResource(R.string.statistics_top_voice_actors),
-                items = stats.voiceActorDistribution,
-                key = { it.id }
-            ) { VoiceActorCardModern(it, onClick = { onVoiceActorClick(it.id) }) }
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.staffDistribution.isNotEmpty()) {
-        item(key = "anime_staff") {
-            HorizontalStatsSection(
-                title = stringResource(R.string.statistics_top_staff),
-                items = stats.staffDistribution,
-                key = { it.id }
-            ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.studioDistribution.isNotEmpty()) {
-        item(key = "anime_studios") {
-            HorizontalStatsSection(
-                title = stringResource(R.string.statistics_top_studios),
-                items = stats.studioDistribution,
-                key = { it.id }
-            ) { StudioCardModern(it, onClick = { onStudioClick(it.id) }) }
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.countryDistribution.isNotEmpty()) {
-        item(key = "anime_countries") {
-            CountryDistributionRow(stats.countryDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
+    return hero to sections
 }
 
-private fun LazyListScope.mangaStatsBranch(
+private fun mangaStatSections(
     stats: com.anisync.android.presentation.profile.MangaStatisticsUi,
     onStaffClick: (Int) -> Unit = {}
-) {
-    item(key = "manga_hero") {
+): Pair<DashboardSection, List<DashboardSection>> {
+    val hero = DashboardSection("manga_hero") {
         HeroDashboard(
             primaryValue = stats.totalCount.toString(),
             primaryUnit = "manga",
@@ -342,104 +335,67 @@ private fun LazyListScope.mangaStatsBranch(
                 EditorialStat(formatDecimal(stats.standardDeviation), stringResource(R.string.statistics_std_dev), Icons.Default.Equalizer)
             )
         )
-        Spacer(Modifier.height(24.dp))
     }
 
-    if (stats.chaptersRead > 0 || stats.volumesRead > 0) {
-        item(key = "manga_read") {
-            ReadVolumeBreakdown(stats.chaptersRead, stats.volumesRead)
-            Spacer(Modifier.height(24.dp))
+    val sections = buildList {
+        if (stats.chaptersRead > 0 || stats.volumesRead > 0) {
+            add(DashboardSection("manga_read") { ReadVolumeBreakdown(stats.chaptersRead, stats.volumesRead) })
+        }
+        if (stats.statusDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_status") { StatusDistributionDonut(stats.statusDistribution, isManga = true) })
+        }
+        if (stats.scoreDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_scores") { ScoreHistogramSection(stats.scoreDistribution, stats.meanScore) })
+        }
+        if (stats.genreDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_genres") {
+                HorizontalStatsSection(
+                    title = stringResource(R.string.statistics_top_genres),
+                    items = stats.genreDistribution,
+                    key = { it.genre }
+                ) { GenreCardModern(it) }
+            })
+        }
+        if (stats.tagDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_tags") { TagCloudSection(stats.tagDistribution) })
+        }
+        if (stats.formatDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_formats") { FormatsSection(stats.formatDistribution) })
+        }
+        if (stats.lengthDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_lengths") {
+                EpisodeLengthDistributionSection(
+                    stats.lengthDistribution,
+                    title = stringResource(R.string.statistics_chapter_length_distribution)
+                )
+            })
+        }
+        if (stats.releaseYearDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_years") { ReleaseYearsHistogramSection(stats.releaseYearDistribution) })
+        }
+        if (stats.startYearDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_year_compare") {
+                YearComparisonSection(
+                    release = stats.releaseYearDistribution,
+                    start = stats.startYearDistribution
+                )
+            })
+        }
+        if (stats.standardDeviation > 0.0) {
+            add(DashboardSection("manga_stddev") { StandardDeviationCard(stats.standardDeviation, stats.meanScore) })
+        }
+        if (stats.staffDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_staff") {
+                HorizontalStatsSection(
+                    title = stringResource(R.string.statistics_top_staff),
+                    items = stats.staffDistribution,
+                    key = { it.id }
+                ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
+            })
+        }
+        if (stats.countryDistribution.isNotEmpty()) {
+            add(DashboardSection("manga_countries") { CountryDistributionRow(stats.countryDistribution) })
         }
     }
-
-    if (stats.statusDistribution.isNotEmpty()) {
-        item(key = "manga_status") {
-            StatusDistributionDonut(stats.statusDistribution, isManga = true)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.scoreDistribution.isNotEmpty()) {
-        item(key = "manga_scores") {
-            ScoreHistogramSection(stats.scoreDistribution, stats.meanScore)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.genreDistribution.isNotEmpty()) {
-        item(key = "manga_genres") {
-            HorizontalStatsSection(
-                title = stringResource(R.string.statistics_top_genres),
-                items = stats.genreDistribution,
-                key = { it.genre }
-            ) { GenreCardModern(it) }
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.tagDistribution.isNotEmpty()) {
-        item(key = "manga_tags") {
-            TagCloudSection(stats.tagDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.formatDistribution.isNotEmpty()) {
-        item(key = "manga_formats") {
-            FormatsSection(stats.formatDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.lengthDistribution.isNotEmpty()) {
-        item(key = "manga_lengths") {
-            EpisodeLengthDistributionSection(
-                stats.lengthDistribution,
-                title = stringResource(R.string.statistics_chapter_length_distribution)
-            )
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.releaseYearDistribution.isNotEmpty()) {
-        item(key = "manga_years") {
-            ReleaseYearsHistogramSection(stats.releaseYearDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.startYearDistribution.isNotEmpty()) {
-        item(key = "manga_year_compare") {
-            YearComparisonSection(
-                release = stats.releaseYearDistribution,
-                start = stats.startYearDistribution
-            )
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.standardDeviation > 0.0) {
-        item(key = "manga_stddev") {
-            StandardDeviationCard(stats.standardDeviation, stats.meanScore)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.staffDistribution.isNotEmpty()) {
-        item(key = "manga_staff") {
-            HorizontalStatsSection(
-                title = stringResource(R.string.statistics_top_staff),
-                items = stats.staffDistribution,
-                key = { it.id }
-            ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-
-    if (stats.countryDistribution.isNotEmpty()) {
-        item(key = "manga_countries") {
-            CountryDistributionRow(stats.countryDistribution)
-            Spacer(Modifier.height(24.dp))
-        }
-    }
+    return hero to sections
 }

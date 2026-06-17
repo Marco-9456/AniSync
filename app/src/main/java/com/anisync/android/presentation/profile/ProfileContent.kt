@@ -49,6 +49,8 @@ import com.anisync.android.presentation.profile.components.DirectMessageInputShe
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.dashboardColumns
+import com.anisync.android.presentation.util.profilePosterColumns
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileFavoritesTab
@@ -92,6 +94,8 @@ fun ProfileContent(
 ) {
     val context = LocalContext.current
     val pullToRefreshState = rememberPullToRefreshState()
+    val statsColumns = dashboardColumns()
+    val posterColumns = profilePosterColumns()
 
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
@@ -220,7 +224,8 @@ fun ProfileContent(
                     onMediaClick = onMediaClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
-                    transitionPrefix = "profile_anime"
+                    transitionPrefix = "profile_anime",
+                    posterColumns = posterColumns
                 )
             }
 
@@ -235,7 +240,8 @@ fun ProfileContent(
                     onMediaClick = onMediaClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
-                    transitionPrefix = "profile_manga"
+                    transitionPrefix = "profile_manga",
+                    posterColumns = posterColumns
                 )
             }
 
@@ -268,7 +274,8 @@ fun ProfileContent(
                     onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
                     onVoiceActorClick = onVoiceActorClick,
                     onStaffClick = onStaffClick,
-                    onStudioClick = onStudioClick
+                    onStudioClick = onStudioClick,
+                    statsColumns = statsColumns
                 )
             }
         }

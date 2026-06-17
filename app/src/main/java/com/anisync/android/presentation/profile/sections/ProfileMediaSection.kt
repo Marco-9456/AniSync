@@ -66,6 +66,7 @@ fun LazyListScope.profileMediaTab(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     transitionPrefix: String,
+    posterColumns: Int = 3,
     modifier: Modifier = Modifier
 ) {
     val statuses = buildList {
@@ -117,9 +118,9 @@ fun LazyListScope.profileMediaTab(
             )
         }
     } else {
-        val rowItems = items.chunked(3)
+        val rowItems = items.chunked(posterColumns)
         item(key = "media_top_spacer_${transitionPrefix}") { Spacer(modifier = Modifier.height(16.dp)) }
-        
+
         itemsIndexed(
             items = rowItems,
             key = { index, _ -> "media_row_${transitionPrefix}_${selectedStatus.name}_$index" },
@@ -150,7 +151,7 @@ fun LazyListScope.profileMediaTab(
                         }
                     }
                 }
-                repeat(3 - row.size) {
+                repeat(posterColumns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -167,6 +168,7 @@ fun LazyListScope.profileMediaTab(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     transitionPrefix: String,
+    posterColumns: Int = 3,
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) {
@@ -177,7 +179,7 @@ fun LazyListScope.profileMediaTab(
             )
         }
     } else {
-        val rowItems = items.chunked(3)
+        val rowItems = items.chunked(posterColumns)
         item(key = "media_top_spacer_${transitionPrefix}") { Spacer(modifier = Modifier.height(16.dp)) }
 
         itemsIndexed(
@@ -210,7 +212,7 @@ fun LazyListScope.profileMediaTab(
                         }
                     }
                 }
-                repeat(3 - row.size) {
+                repeat(posterColumns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }

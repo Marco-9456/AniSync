@@ -1,9 +1,12 @@
 package com.anisync.android.presentation.util
 
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.anisync.android.data.AppSettings
 
 /**
@@ -33,4 +36,31 @@ fun posterGridColumns(
     GridCells.Adaptive(minSize = baseMinSize)
 } else {
     GridCells.Fixed(count.coerceIn(AppSettings.MIN_GRID_COLUMNS, AppSettings.MAX_GRID_COLUMNS))
+}
+
+/**
+ * Poster-column **count** (not [GridCells]) for surfaces that lay rows out manually because they
+ * live inside another scrolling list and cannot nest a [androidx.compose.foundation.lazy.grid.LazyVerticalGrid]
+ * — namely the Profile anime/manga tabs, which chunk their library entries into [Row]s.
+ *
+ * Phones keep their existing 3-up density unchanged; wider windows gain columns so posters stay
+ * roughly [baseMinSize] wide (matching the [GridCells.Adaptive] grids elsewhere) instead of being
+ * stretched three-across. [railWidth] is subtracted because the navigation rail occupies the leading
+ * edge on medium+ widths; the result is clamped to a sensible [3, 8].
+ */
+@Composable
+fun profilePosterColumns(
+    baseMinSize: Dp = 150.dp,
+    horizontalPadding: Dp = 16.dp,
+    itemSpacing: Dp = 12.dp,
+    railWidth: Dp = 80.dp,
+): Int {
+    val info = LocalAdaptiveInfo.current
+    if (info.isCompact) return 3
+    val density = LocalDensity.current
+    val windowWidth = with(density) { currentWindowSize().width.toDp() }
+    val content = windowWidth - railWidth - horizontalPadding * 2
+    if (content <= 0.dp) return 3
+    val columns = ((content + itemSpacing) / (baseMinSize + itemSpacing)).toInt()
+    return columns.coerceIn(3, 8)
 }
