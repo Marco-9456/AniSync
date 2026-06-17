@@ -36,6 +36,7 @@ import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
 import com.anisync.android.presentation.details.StudioDetailsScreen
 import com.anisync.android.presentation.details.StudioMediaGridScreen
+import com.anisync.android.presentation.discover.DiscoverListDetail
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
@@ -317,31 +318,9 @@ fun AniSyncNavHost(
                 val onDiscoverMediaClick = remember(onMediaClick) {
                     { mediaId: Int -> onMediaClick(mediaId, "discover") }
                 }
-                val onSectionClick = remember(navController) {
-                    { title: String, sectionType: String, mediaType: com.anisync.android.type.MediaType ->
-                        navController.navigate(SectionGrid(title, sectionType, mediaType.name))
-                    }
-                }
-
-                DiscoverScreen(
-                    onMediaClick = onDiscoverMediaClick,
-                    onCharacterClick = { characterId ->
-                        navController.navigate(CharacterDetails(characterId))
-                    },
-                    onStaffClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    onStudioClick = { studioId ->
-                        navController.navigate(StudioDetails(studioId))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onSectionSeeAllClick = onSectionClick,
-                    onReviewClick = { reviewId ->
-                        navController.navigate(ReviewDetail(reviewId))
-                    },
-                    onRecentReviewsSeeAllClick = { mediaType ->
-                        navController.navigate(RecentReviews(mediaType.name))
-                    },
+                DiscoverListDetail(
+                    navController = navController,
+                    onMediaClickFullScreen = onDiscoverMediaClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

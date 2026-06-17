@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.systemGestureExclusion
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
@@ -162,6 +164,7 @@ private fun MediaDetailPane(
                     sourceScreen = route.sourceScreen,
                     // Back at the root closes the pane; deeper (relations) pops within the pane.
                     onBackClick = { if (!paneNav.popBackStack()) onClose() },
+                    navigationIcon = Icons.Default.Close,
                     onRelationClick = { relId -> paneNav.navigate(MediaDetails(relId, PANE_SOURCE)) },
                     onCharacterClick = { navController.navigate(CharacterDetails(it)) },
                     onStaffClick = { navController.navigate(StaffDetails(it)) },

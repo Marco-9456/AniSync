@@ -181,6 +181,7 @@ fun MediaDetailsScreen(
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
     onUserClick: (String) -> Unit = {},
+    navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -369,7 +370,7 @@ fun MediaDetailsScreen(
                             navigationIcon = {
                                 IconButton(onClick = onBackClick) {
                                     Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        imageVector = navigationIcon,
                                         contentDescription = stringResource(R.string.back),
                                         tint = animateColorAsState(
                                             if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
