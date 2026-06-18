@@ -221,7 +221,8 @@ private fun StudioDetailsContent(
         )
     ) {
         item(key = "header") {
-            val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            // Root insets content below the status bar, so the header only needs its own top room.
+            val statusBarPadding = 0.dp
             StudioHeader(
                 studio = studio,
                 onFavouriteClick = onFavouriteClick,

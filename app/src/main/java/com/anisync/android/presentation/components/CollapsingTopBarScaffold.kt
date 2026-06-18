@@ -106,7 +106,9 @@ fun CollapsingTopBarScaffold(
 ) {
     val density = LocalDensity.current
 
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    // The app root already insets content below the system status bar (and consumes the inset), so
+    // the collapsing bar no longer reserves the status-bar height itself.
+    val statusBarHeight = 0.dp
     val minTopBarHeight = 64.dp + statusBarHeight
     val maxTopBarHeight = if (title.length > 18) 200.dp else 170.dp
 
@@ -295,7 +297,9 @@ fun CollapsibleCommonTopBar(
     collapsedTitleStartPadding: Dp = 68.dp,
 ) {
     val density = LocalDensity.current
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    // The app root already insets content below the system status bar (and consumes the inset), so
+    // the collapsing bar no longer reserves the status-bar height itself.
+    val statusBarHeight = 0.dp
     val backgroundColor = androidx.compose.ui.graphics.lerp(
         containerColor,
         scrolledContainerColor,

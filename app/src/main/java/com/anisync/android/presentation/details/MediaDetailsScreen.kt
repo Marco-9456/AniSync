@@ -373,7 +373,8 @@ fun MediaDetailsScreen(
                                 actionIconContentColor = MaterialTheme.colorScheme.onSurface
                             ),
                             scrollBehavior = scrollBehavior,
-                            windowInsets = WindowInsets.statusBars
+                            // Root already insets below the status bar; don't add it again here.
+                            windowInsets = WindowInsets(0, 0, 0, 0)
                         )
                     }
                 },
@@ -914,9 +915,9 @@ fun DetailsPageContent(
     // docked — no fade, so a fast fling can't catch a half-transparent strip with content showing
     // through.
     val density = LocalDensity.current
-    val appBarHeightPx = with(density) {
-        (WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp).roundToPx()
-    }
+    // Just the app bar height — the root insets content below the status bar, so the sticky tab
+    // strip docks under the 64dp bar without adding the status-bar inset.
+    val appBarHeightPx = with(density) { 64.dp.roundToPx() }
     val spacerLargePx = with(density) { dimensionResource(R.dimen.spacing_large).roundToPx() }
     var tabStripHeightPx by remember { mutableIntStateOf(0) }
     val tabStripTranslationY by remember {
@@ -1568,7 +1569,8 @@ private fun BannerGradients(themeBackground: Color) {
  */
 @Composable
 private fun StatusBarScrim(alpha: Float, modifier: Modifier = Modifier) {
-    val scrimHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 28.dp
+    // Root insets below the status bar, so this banner scrim only needs its own short height.
+    val scrimHeight = 28.dp
     val scrimBrush = remember {
         Brush.verticalGradient(colors = listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))
     }

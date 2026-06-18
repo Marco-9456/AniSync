@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
@@ -256,6 +257,14 @@ class MainActivity : AppCompatActivity() {
                             color = MaterialTheme.colorScheme.background
                         ) {
                           Box(modifier = Modifier.fillMaxSize()) {
+                          // Keep all content out from under the system status bar: pad it down by the
+                          // status-bar inset (which also CONSUMES it, so child screens don't re-apply
+                          // it); the freed strip is filled by the protection Spacer below.
+                          Box(
+                              modifier = Modifier
+                                  .fillMaxSize()
+                                  .windowInsetsPadding(WindowInsets.statusBars)
+                          ) {
                             val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
                                 initialValue = false
                             )
@@ -329,15 +338,17 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
 
-                            // Opaque status-bar scrim — keeps every screen's content from showing
-                            // under the system status bar (no edge-to-edge bleed). Tinted to match the
-                            // navigation rail / two-pane gutter chrome.
+                          }
+
+                            // M3 status-bar protection: an opaque bar filling the status-bar strip
+                            // (surfaceContainer, per the Android system-bars guidance), drawn above the
+                            // padded content so nothing shows under the system status bar.
                             Spacer(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
                                     .fillMaxWidth()
                                     .windowInsetsTopHeight(WindowInsets.statusBars)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
                             )
                           }
                         }
