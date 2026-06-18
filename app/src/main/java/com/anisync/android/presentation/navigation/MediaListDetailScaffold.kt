@@ -155,10 +155,11 @@ fun TwoPaneListDetailScaffold(
     val toggleLabel = stringResource(R.string.pane_resize_toggle)
 
     val twoPane = detailId != null
-    // Panes read as rounded surfaces floating on a slightly tinted gutter (M3 panes). Applied only
-    // while two panes are showing; a lone list keeps its normal full-bleed look. The pane top is left
-    // un-inset so the detail's edge-to-edge banner + status-bar handling stay correct.
-    val gutterColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    // Panes read as rounded surfaces floating on a tinted gutter (M3 panes). The gutter shares the
+    // navigation rail's (and status-bar protection's) surfaceContainer tone, so the rail, gutter and
+    // status bar form one uniform chrome frame with the panes floating within it. Applied only while
+    // two panes show; a lone list keeps its normal full-bleed look.
+    val gutterColor = MaterialTheme.colorScheme.surfaceContainer
     val paneColor = MaterialTheme.colorScheme.surfaceContainerLow
     val paneShape = RoundedCornerShape(24.dp)
     val listMinWidth = with(LocalDensity.current) { (rowWidthPx * LIST_MIN_LAYOUT_FRACTION).toDp() }
