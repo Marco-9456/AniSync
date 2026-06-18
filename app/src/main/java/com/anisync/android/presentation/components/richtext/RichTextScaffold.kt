@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.TextFieldState
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconToggleButton
@@ -288,21 +291,37 @@ fun RichTextScaffold(
         }
     }
 
-    // Expanded editor chrome: bright "document" cards floating on a tinted page (like a doc editor).
+    // Editor chrome: bright "document" cards floating on a tinted page (like a doc editor), the same
+    // on compact (a single card) and expanded (an editor card, optionally beside a live preview).
     val editorPageColor = MaterialTheme.colorScheme.surfaceContainer
     val editorCardColor = MaterialTheme.colorScheme.surface
+    // A single rounded "document" card filling the content area, floating on the tinted page.
+    val documentCard: @Composable (PaddingValues, @Composable () -> Unit) -> Unit = { contentPadding, content ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(16.dp)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = TwoPaneDefaults.PaneShape,
+                color = editorCardColor
+            ) {
+                content()
+            }
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = if (sideBySide) editorPageColor else MaterialTheme.colorScheme.background
+        color = editorPageColor
     ) {
         Scaffold(
-            containerColor = if (sideBySide) editorPageColor else MaterialTheme.colorScheme.background,
+            containerColor = editorPageColor,
             topBar = {
                 Column(
-                    modifier = Modifier.background(
-                        if (sideBySide) editorPageColor else MaterialTheme.colorScheme.surface
-                    )
+                    modifier = Modifier.background(editorPageColor)
                 ) {
                     TopAppBar(
                         title = { Text(text = title, fontWeight = FontWeight.Bold) },
@@ -405,18 +424,34 @@ fun RichTextScaffold(
                 }
             },
             bottomBar = {
-                // Compact only: the bottom docked format bar. On wide screens the toolbar moves up to
-                // the app-bar area (see topBar) so it doesn't fight the IME.
+                // Compact only: the expressive floating format toolbar, docked above the IME (and the
+                // nav bar) within thumb reach. On wide screens the toolbar instead sits below the app
+                // bar (see topBar). Hidden while previewing (no formatting to do there).
                 if (!sideBySide && !isPreviewMode) {
                     val imeUpload = (attachState as? MediaAttachState.Uploading)
                         ?.takeIf { it.source == MediaAttachState.Source.Ime }
-                    RichTextDockedFormatBar(
-                        textFieldState = bodyState,
-                        maxLength = maxLength,
-                        onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
-                        imeUpload = imeUpload,
-                        onImeUploadCancel = { attachViewModel.cancel() }
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // Consume nav-bar/cutout then IME as separate insets so the pill stays
+                            // docked above the keyboard when the activity is `adjustResize`.
+                            .windowInsetsPadding(BottomAppBarDefaults.windowInsets)
+                            .imePadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        if (imeUpload != null) {
+                            ImeUploadStrip(
+                                state = imeUpload,
+                                onCancel = { attachViewModel.cancel() },
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+                        EditorFormatToolbar(
+                            textFieldState = bodyState,
+                            onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
                 }
             }
         ) { padding ->
@@ -452,33 +487,16 @@ fun RichTextScaffold(
                     )
                 } else {
                     // Preview hidden → the document card fills the page.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .padding(16.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            shape = TwoPaneDefaults.PaneShape,
-                            color = editorCardColor
-                        ) {
-                            editorDocBody()
-                        }
-                    }
+                    documentCard(padding) { editorDocBody() }
                 }
             } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                ) {
-                    headerSlot?.invoke(this)
-
+                // Compact: a single document card; the app-bar toggle flips it between the editor and
+                // the same "Preview" panel shown beside the editor on wide screens.
+                documentCard(padding) {
                     if (isPreviewMode) {
-                        bodyPreview(Modifier.fillMaxSize())
+                        previewPanel { isPreviewMode = false }
                     } else {
-                        bodyEditor(Modifier.fillMaxSize())
+                        editorDocBody()
                     }
                 }
             }

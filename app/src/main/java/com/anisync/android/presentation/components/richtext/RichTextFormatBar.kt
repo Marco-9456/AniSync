@@ -5,11 +5,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
@@ -21,8 +19,8 @@ import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.AttachFile
-import androidx.compose.material3.BottomAppBarDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AppBarRow
+import androidx.compose.material3.AppBarScope
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -33,7 +31,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -103,9 +100,12 @@ fun RichTextFormatBar(
 
 /**
  * Expressive Material 3 [HorizontalFloatingToolbar] carrying the same markdown formatting actions as
- * [RichTextFormatBar], styled with the vibrant (primaryContainer) toolbar colors. This is the docked
- * format toolbar of the expanded two-pane editor — it replaces the bottom [RichTextDockedFormatBar]
- * there, sitting below the top app bar like a document editor's toolbar.
+ * [RichTextFormatBar], styled with the vibrant (primaryContainer) toolbar colors. This is the editor's
+ * format toolbar everywhere: docked below the app bar on wide screens, and above the IME on phones.
+ *
+ * Actions that don't fit the available width collapse into an overflow menu via [AppBarRow], so the
+ * pill never overflows a narrow phone (a plain [HorizontalFloatingToolbar] does not scroll its
+ * content).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -115,53 +115,68 @@ fun EditorFormatToolbar(
     onAttachClick: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
+    // The AppBarRow DSL builder lambda is not composable, so the labels (reused as the overflow-menu
+    // item text) are resolved here, in composition, and captured by the builder.
+    val attachLabel = stringResource(R.string.media_attach)
+    val boldLabel = stringResource(R.string.richtext_format_bold)
+    val italicLabel = stringResource(R.string.richtext_format_italic)
+    val strikeLabel = stringResource(R.string.richtext_format_strikethrough)
+    val codeLabel = stringResource(R.string.richtext_format_code)
+    val linkLabel = stringResource(R.string.richtext_format_link)
+    val spoilerLabel = stringResource(R.string.richtext_format_spoiler)
+
     HorizontalFloatingToolbar(
         expanded = true,
         colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
         modifier = modifier
     ) {
-        if (onAttachClick != null) {
-            ToolbarFormatButton(Icons.Outlined.AttachFile, R.string.media_attach) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onAttachClick()
+        AppBarRow {
+            if (onAttachClick != null) {
+                formatItem(Icons.Outlined.AttachFile, attachLabel) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onAttachClick()
+                }
             }
-        }
-        ToolbarFormatButton(Icons.Default.FormatBold, R.string.richtext_format_bold) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            textFieldState.wrapSelection("__", "__")
-        }
-        ToolbarFormatButton(Icons.Default.FormatItalic, R.string.richtext_format_italic) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            textFieldState.wrapSelection("_", "_")
-        }
-        ToolbarFormatButton(Icons.Default.FormatStrikethrough, R.string.richtext_format_strikethrough) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            textFieldState.wrapSelection("~~", "~~")
-        }
-        ToolbarFormatButton(Icons.Default.Code, R.string.richtext_format_code) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            textFieldState.wrapSelection("`", "`")
-        }
-        ToolbarFormatButton(Icons.Default.Link, R.string.richtext_format_link) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            textFieldState.toggleLinkSyntax()
-        }
-        ToolbarFormatButton(Icons.Default.VisibilityOff, R.string.richtext_format_spoiler) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            textFieldState.wrapSelection("~!", "!~")
+            formatItem(Icons.Default.FormatBold, boldLabel) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                textFieldState.wrapSelection("__", "__")
+            }
+            formatItem(Icons.Default.FormatItalic, italicLabel) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                textFieldState.wrapSelection("_", "_")
+            }
+            formatItem(Icons.Default.FormatStrikethrough, strikeLabel) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                textFieldState.wrapSelection("~~", "~~")
+            }
+            formatItem(Icons.Default.Code, codeLabel) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                textFieldState.wrapSelection("`", "`")
+            }
+            formatItem(Icons.Default.Link, linkLabel) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                textFieldState.toggleLinkSyntax()
+            }
+            formatItem(Icons.Default.VisibilityOff, spoilerLabel) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                textFieldState.wrapSelection("~!", "!~")
+            }
         }
     }
 }
 
-@Composable
-private fun ToolbarFormatButton(
+// One markdown action in [EditorFormatToolbar]: an icon button in the pill that collapses to a
+// labeled row in the overflow menu when the row runs out of width.
+private fun AppBarScope.formatItem(
     icon: ImageVector,
-    contentDescriptionRes: Int,
+    label: String,
     onClick: () -> Unit
 ) {
-    IconButton(onClick = onClick) {
-        Icon(imageVector = icon, contentDescription = stringResource(contentDescriptionRes))
-    }
+    clickableItem(
+        onClick = onClick,
+        icon = { Icon(imageVector = icon, contentDescription = label) },
+        label = label
+    )
 }
 
 @Composable
@@ -178,61 +193,6 @@ fun RichTextCharCounter(
         else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
     )
-}
-
-/**
- * Full-screen docked toolbar — Surface wrapper, scrollable buttons, char counter,
- * and `windowInsetsPadding` so it floats above the IME and gesture bar.
- *
- * When [imeUpload] is non-null an [ImeUploadStrip] is rendered above the toolbar
- * row, sharing the same inset-aware Surface so it docks against the IME too.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RichTextDockedFormatBar(
-    textFieldState: TextFieldState,
-    maxLength: Int,
-    modifier: Modifier = Modifier,
-    onAttachClick: (() -> Unit)? = null,
-    imeUpload: MediaAttachState.Uploading? = null,
-    onImeUploadCancel: () -> Unit = {}
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        androidx.compose.foundation.layout.Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                // Pad for nav bar / cutout via BottomAppBar defaults, then add IME
-                // pad as a separate modifier so each consumes only its own inset —
-                // keeps the toolbar docked even when the activity is `adjustResize`
-                // and the system has already shrunk the window for the IME.
-                .windowInsetsPadding(BottomAppBarDefaults.windowInsets)
-                .imePadding()
-        ) {
-            if (imeUpload != null) {
-                ImeUploadStrip(state = imeUpload, onCancel = onImeUploadCancel)
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RichTextFormatBar(
-                    textFieldState = textFieldState,
-                    modifier = Modifier.weight(1f),
-                    onAttachClick = onAttachClick
-                )
-                RichTextCharCounter(
-                    length = textFieldState.text.length,
-                    maxLength = maxLength,
-                    modifier = Modifier.padding(start = 12.dp, end = 8.dp)
-                )
-            }
-        }
-    }
 }
 
 /**

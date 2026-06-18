@@ -246,8 +246,7 @@ fun RichTextInputSheet(
                 }
 
                 // Toolbar + IME upload strip share an inset-aware Surface so they
-                // dock against the IME / nav bar regardless of body length. This
-                // mirrors `RichTextDockedFormatBar` (full-screen variant).
+                // dock against the IME / nav bar regardless of body length.
                 val imeUpload = (attachState as? MediaAttachState.Uploading)
                     ?.takeIf { it.source == MediaAttachState.Source.Ime }
                 Surface(
