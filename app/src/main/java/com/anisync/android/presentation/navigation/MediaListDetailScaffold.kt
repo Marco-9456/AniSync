@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -17,11 +18,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -140,25 +145,45 @@ fun TwoPaneListDetailScaffold(
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
     val toggleLabel = stringResource(R.string.pane_resize_toggle)
 
+    val twoPane = detailId != null
+    // Panes read as rounded surfaces floating on a slightly tinted gutter (M3 panes). Applied only
+    // while two panes are showing; a lone list keeps its normal full-bleed look. The pane top is left
+    // un-inset so the detail's edge-to-edge banner + status-bar handling stay correct.
+    val gutterColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val paneColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val paneShape = RoundedCornerShape(24.dp)
+
     Row(
         modifier = modifier
             .fillMaxSize()
+            .then(
+                if (twoPane) {
+                    Modifier
+                        .background(gutterColor)
+                        .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)
+                } else {
+                    Modifier
+                }
+            )
             .onSizeChanged { rowWidthPx = it.width },
     ) {
-        val isListCollapsed = detailId != null && listFraction <= COLLAPSE_THRESHOLD
+        val isListCollapsed = twoPane && listFraction <= COLLAPSE_THRESHOLD
 
         // List pane — fills the full width on its own, shrinks to [listFraction] when the detail
         // opens, and is kept in the layout at zero width when collapsed so its scroll state survives.
-        Box(
-            modifier = when {
-                detailId == null -> Modifier.weight(1f)
-                isListCollapsed -> Modifier.width(0.dp)
-                else -> Modifier.weight(listFraction)
+        val listModifier = when {
+            !twoPane -> Modifier.weight(1f)
+            isListCollapsed -> Modifier.width(0.dp)
+            else -> Modifier.weight(listFraction)
+        }.fillMaxHeight()
+        if (twoPane) {
+            Surface(modifier = listModifier, shape = paneShape, color = paneColor) {
+                listPane { id -> selectedId = id }
             }
-                .fillMaxHeight()
-                .clipToBounds(),
-        ) {
-            listPane { id -> selectedId = id }
+        } else {
+            Box(modifier = listModifier.clipToBounds()) {
+                listPane { id -> selectedId = id }
+            }
         }
 
         if (detailId != null) {
@@ -203,11 +228,12 @@ fun TwoPaneListDetailScaffold(
 
             // Detail pane — temporary, opened on demand. Fills the remaining width (everything when
             // the list is collapsed).
-            Box(
+            Surface(
                 modifier = Modifier
                     .weight(if (isListCollapsed) 1f else (1f - listFraction))
-                    .fillMaxHeight()
-                    .clipToBounds(),
+                    .fillMaxHeight(),
+                shape = paneShape,
+                color = paneColor,
             ) {
                 detailPane(detailId) { selectedId = null }
             }
