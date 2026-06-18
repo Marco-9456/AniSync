@@ -401,8 +401,8 @@
     <string name="dialog_enable_notifications_title">Habilitar notificações</string>
     <string name="dialog_enable_notifications_message">Por favor, habilite as notificações nas configurações do sistema.</string>
     <string name="section_external_links">Links de Streaming &amp; Externos</string>
-    <string name="subsection_streaming">Assistido em</string>
-    <string name="subsection_reading">Lido em</string>
+    <string name="subsection_streaming">Assistir em</string>
+    <string name="subsection_reading">Ler em</string>
     <string name="subsection_external">Links externos</string>
     <string name="edit_entry">Editar item</string>
     <string name="no_score">Sem nota</string>
@@ -626,7 +626,7 @@
     <string name="featured_media">Mídia em destaque</string>
     <string name="filter_on_my_list">Na minha lista</string>
     <string name="voiced_characters">Personagens dublados</string>
-    <string name="label_custom">Customizado</string>
+    <string name="label_custom">Customizar</string>
     <string name="label_categories">Categorias</string>
     <string name="label_genres">Gêneros</string>
     <string name="label_attributes">Atributos</string>
