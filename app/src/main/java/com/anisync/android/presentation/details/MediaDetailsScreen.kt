@@ -246,21 +246,8 @@ fun MediaDetailsScreen(
     // status-bar icons must stay white over the dark scrim regardless of theme — like the Play
     // Store. Once the app bar fades in (scrolled) or on an error page, revert to the theme default.
     val bannerVisible = uiState !is DetailsUiState.Error
-    val view = LocalView.current
-    val statusBarController = remember(view) {
-        WindowCompat.getInsetsController((view.context as Activity).window, view)
-    }
-    // Captured at entry, after AppTheme's SideEffect already applied !darkTheme -> theme default.
-    val themeDefaultLightStatusBars = remember { statusBarController.isAppearanceLightStatusBars }
-    LaunchedEffect(isScrolled, bannerVisible) {
-        statusBarController.isAppearanceLightStatusBars =
-            if (bannerVisible && !isScrolled) false else themeDefaultLightStatusBars
-    }
-    DisposableEffect(Unit) {
-        onDispose {
-            statusBarController.isAppearanceLightStatusBars = themeDefaultLightStatusBars
-        }
-    }
+    // Status-bar icon appearance follows the app theme (set globally): the banner no longer draws
+    // under the status bar — a root status-bar scrim sits above it — so no per-screen override.
 
     val isDetailsEnteringFromBackStack by remember {
         derivedStateOf {

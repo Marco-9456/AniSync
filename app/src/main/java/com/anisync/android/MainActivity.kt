@@ -16,7 +16,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
@@ -250,6 +255,7 @@ class MainActivity : AppCompatActivity() {
                             modifier = Modifier.fillMaxSize(),
                             color = MaterialTheme.colorScheme.background
                         ) {
+                          Box(modifier = Modifier.fillMaxSize()) {
                             val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
                                 initialValue = false
                             )
@@ -322,6 +328,18 @@ class MainActivity : AppCompatActivity() {
                                     CircularProgressIndicator()
                                 }
                             }
+
+                            // Opaque status-bar scrim — keeps every screen's content from showing
+                            // under the system status bar (no edge-to-edge bleed). Tinted to match the
+                            // navigation rail / two-pane gutter chrome.
+                            Spacer(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .fillMaxWidth()
+                                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            )
+                          }
                         }
                     }
                 }
