@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.components.richtext
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.content.ReceiveContentListener
 import androidx.compose.foundation.content.TransferableContent
@@ -8,7 +9,6 @@ import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,13 +32,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,6 +57,22 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.PaneDragHandle
+import com.anisync.android.presentation.util.TwoPaneRow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+
+// Expanded editor/preview split, as the editor pane's width fraction. Drag snaps to the nearest of
+// these anchors on release (editor : preview = 1:1, 3:2, 2:1) so the editor keeps the majority while
+// writing; bounded so neither pane is squeezed unusably narrow.
+private val EDITOR_SPLIT_ANCHORS = listOf(0.5f, 0.6f, 2f / 3f)
+private const val MIN_EDITOR_FRACTION = 0.4f
+private const val MAX_EDITOR_FRACTION = 0.75f
+
+private fun nearestEditorAnchor(fraction: Float): Float =
+    EDITOR_SPLIT_ANCHORS.minBy { abs(it - fraction) }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -81,6 +101,24 @@ fun RichTextScaffold(
     // is unnecessary; on compact the toggle flips a single pane between writing and preview.
     val sideBySide = LocalAdaptiveInfo.current.isExpandedOrWider
     var isPreviewMode by remember { mutableStateOf(false) }
+
+    // Side-by-side editor/preview split: the editor pane's width fraction, seeded from and persisted
+    // back to AppSettings so a resized split survives app restarts. Drag updates [editorFraction]
+    // directly; release animates it to the nearest anchor and writes it through.
+    val appSettings = LocalAppSettings.current
+    var editorFraction by rememberSaveable { mutableFloatStateOf(appSettings.paneEditorFraction.value) }
+    var paneRowWidthPx by remember { mutableIntStateOf(0) }
+    val paneSplitScope = rememberCoroutineScope()
+    var paneSettleJob by remember { mutableStateOf<Job?>(null) }
+    fun settleEditorSplit(target: Float) {
+        appSettings.setPaneEditorFraction(target)
+        paneSettleJob?.cancel()
+        paneSettleJob = paneSplitScope.launch {
+            animate(initialValue = editorFraction, targetValue = target) { value, _ ->
+                editorFraction = value
+            }
+        }
+    }
     var showDiscardDialog by remember { mutableStateOf(false) }
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
     val attachState by attachViewModel.state.collectAsStateWithLifecycle()
@@ -274,21 +312,36 @@ fun RichTextScaffold(
             }
         ) { padding ->
             if (sideBySide) {
-                // Expanded: editor on the left, a live rich-text preview on the right (SupportingPane
-                // semantics — main = editor, supporting = preview). The header (review meta, etc.)
-                // stays with the editor.
-                Row(
+                // Expanded: editor and a live preview as two rounded panes on a shared gutter
+                // (SupportingPane semantics — main = editor, supporting = preview), split by a
+                // draggable handle. The header (review meta, etc.) stays with the editor.
+                TwoPaneRow(
+                    leadingWeight = editorFraction,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                ) {
-                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        headerSlot?.invoke(this)
-                        bodyEditor(Modifier.weight(1f).fillMaxWidth())
-                    }
-                    VerticalDivider(modifier = Modifier.fillMaxHeight())
-                    bodyPreview(Modifier.weight(1f).fillMaxHeight())
-                }
+                        .onSizeChanged { paneRowWidthPx = it.width },
+                    handle = {
+                        PaneDragHandle(
+                            modifier = Modifier.fillMaxHeight(),
+                            onDelta = { delta ->
+                                if (paneRowWidthPx > 0) {
+                                    editorFraction = (editorFraction + delta / paneRowWidthPx)
+                                        .coerceIn(MIN_EDITOR_FRACTION, MAX_EDITOR_FRACTION)
+                                }
+                            },
+                            onDragStarted = { paneSettleJob?.cancel() },
+                            onDragStopped = { settleEditorSplit(nearestEditorAnchor(editorFraction)) },
+                        )
+                    },
+                    leading = {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            headerSlot?.invoke(this)
+                            bodyEditor(Modifier.weight(1f).fillMaxWidth())
+                        }
+                    },
+                    trailing = { bodyPreview(Modifier.fillMaxSize()) },
+                )
             } else {
                 Column(
                     modifier = Modifier

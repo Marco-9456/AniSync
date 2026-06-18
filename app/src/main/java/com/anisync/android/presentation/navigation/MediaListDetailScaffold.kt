@@ -7,13 +7,7 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,14 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,12 +36,12 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.PaneDragHandle
+import com.anisync.android.presentation.util.TwoPaneDefaults
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -117,7 +107,6 @@ private fun nextSplitAnchor(fraction: Float): Float =
  *
  * Intended to be rendered only on expanded widths; compact/medium use the plain full-screen screen.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TwoPaneListDetailScaffold(
     modifier: Modifier = Modifier,
@@ -149,32 +138,26 @@ fun TwoPaneListDetailScaffold(
         }
     }
 
-    val handleInteraction = remember { MutableInteractionSource() }
     val resizeHandleLabel = stringResource(R.string.pane_resize_handle)
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
     val toggleLabel = stringResource(R.string.pane_resize_toggle)
 
     val twoPane = detailId != null
-    // Panes read as rounded surfaces floating on a tinted gutter (M3 panes). The gutter shares the
-    // navigation rail's (and status-bar protection's) surfaceContainer tone, so the rail, gutter and
-    // status bar form one uniform chrome frame with the panes floating within it. Applied only while
-    // two panes show; a lone list keeps its normal full-bleed look.
-    val gutterColor = MaterialTheme.colorScheme.surfaceContainer
-    val paneColor = MaterialTheme.colorScheme.surfaceContainerLow
-    val paneShape = RoundedCornerShape(24.dp)
     val listMinWidth = with(LocalDensity.current) { (rowWidthPx * LIST_MIN_LAYOUT_FRACTION).toDp() }
 
+    // The two-pane chrome (rounded panes on a surfaceContainer gutter) is the shared [TwoPaneDefaults]
+    // primitive, but this scaffold keeps its own Row rather than [TwoPaneRow]: the list pane is held
+    // in the layout at zero width while collapsed so its scroll state survives, which a generic
+    // weight-based two-pane row can't express. Applied only while two panes show; a lone list keeps
+    // its normal full-bleed look.
     Row(
         modifier = modifier
             .fillMaxSize()
             .then(
                 if (twoPane) {
                     Modifier
-                        .background(gutterColor)
-                        // No start inset: the list pane sits flush against the navigation rail (no gap
-                        // between them). Top/end/bottom keep the gutter margin so the panes still read
-                        // as rounded cards floating on the gutter.
-                        .padding(start = 0.dp, top = 10.dp, end = 10.dp, bottom = 10.dp)
+                        .background(TwoPaneDefaults.gutterColor)
+                        .padding(TwoPaneDefaults.GutterPadding)
                 } else {
                     Modifier
                 }
@@ -191,7 +174,7 @@ fun TwoPaneListDetailScaffold(
             else -> Modifier.weight(listFraction)
         }.fillMaxHeight()
         if (twoPane) {
-            Surface(modifier = listModifier, shape = paneShape, color = paneColor) {
+            Surface(modifier = listModifier, shape = TwoPaneDefaults.PaneShape, color = TwoPaneDefaults.paneColor) {
                 // Hold the content at its open layout width and let the Surface clip it while the pane
                 // shrinks past [LIST_MIN_LAYOUT_FRACTION], so collapsing slides/clips the list out
                 // instead of reflowing its search bar + tab switcher into a squashed column.
@@ -210,42 +193,26 @@ fun TwoPaneListDetailScaffold(
             // [handleModifier] sets its placement: a full-height column between the cards while both
             // panes show, or a short centered pill while the list is collapsed (see below).
             val dragHandle: @Composable (Modifier) -> Unit = { handleModifier ->
-                Box(
-                    modifier = handleModifier
-                        .width(24.dp)
-                        .draggable(
-                            orientation = Orientation.Horizontal,
-                            state = rememberDraggableState { delta ->
-                                if (rowWidthPx > 0) {
-                                    listFraction = (listFraction + delta / rowWidthPx)
-                                        .coerceIn(0f, MAX_LIST_FRACTION)
-                                }
-                            },
-                            interactionSource = handleInteraction,
-                            onDragStarted = { settleJob?.cancel() },
-                            onDragStopped = { settleTo(nearestAnchor(listFraction)) },
-                        )
-                        .combinedClickable(
-                            interactionSource = handleInteraction,
-                            indication = null,
-                            onClickLabel = cycleLabel,
-                            onLongClickLabel = toggleLabel,
-                            onLongClick = {
-                                settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else 0f)
-                            },
-                            onClick = {
-                                settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else nextSplitAnchor(listFraction))
-                            },
-                        )
-                        // Keep the drag from colliding with the system back gesture at the edge.
-                        .systemGestureExclusion(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    VerticalDragHandle(
-                        interactionSource = handleInteraction,
-                        modifier = Modifier.semantics { contentDescription = resizeHandleLabel },
-                    )
-                }
+                PaneDragHandle(
+                    modifier = handleModifier,
+                    onDelta = { delta ->
+                        if (rowWidthPx > 0) {
+                            listFraction = (listFraction + delta / rowWidthPx)
+                                .coerceIn(0f, MAX_LIST_FRACTION)
+                        }
+                    },
+                    onDragStarted = { settleJob?.cancel() },
+                    onDragStopped = { settleTo(nearestAnchor(listFraction)) },
+                    onClick = {
+                        settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else nextSplitAnchor(listFraction))
+                    },
+                    onLongClick = {
+                        settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else 0f)
+                    },
+                    clickLabel = cycleLabel,
+                    longClickLabel = toggleLabel,
+                    resizeLabel = resizeHandleLabel,
+                )
             }
 
             if (isListCollapsed) {
@@ -259,8 +226,8 @@ fun TwoPaneListDetailScaffold(
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        shape = paneShape,
-                        color = paneColor,
+                        shape = TwoPaneDefaults.PaneShape,
+                        color = TwoPaneDefaults.paneColor,
                     ) {
                         detailPane(detailId) { selectedId = null }
                     }
@@ -274,8 +241,8 @@ fun TwoPaneListDetailScaffold(
                     modifier = Modifier
                         .weight(1f - listFraction)
                         .fillMaxHeight(),
-                    shape = paneShape,
-                    color = paneColor,
+                    shape = TwoPaneDefaults.PaneShape,
+                    color = TwoPaneDefaults.paneColor,
                 ) {
                     detailPane(detailId) { selectedId = null }
                 }

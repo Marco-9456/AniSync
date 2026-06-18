@@ -372,6 +372,13 @@ class AppSettings @Inject constructor(
     )
     val paneListFraction: StateFlow<Float> = _paneListFraction.asStateFlow()
 
+    // Two-pane editor/preview split, stored as the editor pane's width fraction so a resized split
+    // survives app restarts. Independent of [paneListFraction] (different context + default ratio).
+    private val _paneEditorFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_EDITOR_FRACTION, DEFAULT_PANE_EDITOR_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneEditorFraction: StateFlow<Float> = _paneEditorFraction.asStateFlow()
+
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
     val feedFilter: StateFlow<FeedFilter> = _feedFilter.asStateFlow()
@@ -797,6 +804,13 @@ class AppSettings @Inject constructor(
         prefs.edit().putFloat(KEY_PANE_LIST_FRACTION, coerced).apply()
     }
 
+    /** Persist the two-pane editor/preview split as the editor pane's width fraction (coerced to 0..1). */
+    fun setPaneEditorFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneEditorFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_EDITOR_FRACTION, coerced).apply()
+    }
+
     /**
      * Persist the last selected feed content filter.
      */
@@ -1025,6 +1039,8 @@ companion object {
         const val DEFAULT_GRID_COLUMNS = 3
         private const val KEY_PANE_LIST_FRACTION = "pane_list_fraction"
         const val DEFAULT_PANE_LIST_FRACTION = 1f / 3f
+        private const val KEY_PANE_EDITOR_FRACTION = "pane_editor_fraction"
+        const val DEFAULT_PANE_EDITOR_FRACTION = 0.6f
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"
