@@ -506,7 +506,8 @@ private fun MainNavigationRail(
         exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
     ) {
         NavigationRail(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            // Match the two-pane gutter tone so the rail reads as part of the same tinted chrome.
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             val currentDestination = navBackStackEntryState.value?.destination
 
