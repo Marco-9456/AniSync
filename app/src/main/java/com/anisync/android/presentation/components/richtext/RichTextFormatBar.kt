@@ -25,6 +25,8 @@ import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -96,6 +98,69 @@ fun RichTextFormatBar(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             textFieldState.wrapSelection("~!", "!~")
         }
+    }
+}
+
+/**
+ * Expressive Material 3 [HorizontalFloatingToolbar] carrying the same markdown formatting actions as
+ * [RichTextFormatBar], styled with the vibrant (primaryContainer) toolbar colors. This is the docked
+ * format toolbar of the expanded two-pane editor — it replaces the bottom [RichTextDockedFormatBar]
+ * there, sitting below the top app bar like a document editor's toolbar.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun EditorFormatToolbar(
+    textFieldState: TextFieldState,
+    modifier: Modifier = Modifier,
+    onAttachClick: (() -> Unit)? = null
+) {
+    val haptic = LocalHapticFeedback.current
+    HorizontalFloatingToolbar(
+        expanded = true,
+        colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+        modifier = modifier
+    ) {
+        if (onAttachClick != null) {
+            ToolbarFormatButton(Icons.Outlined.AttachFile, R.string.media_attach) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onAttachClick()
+            }
+        }
+        ToolbarFormatButton(Icons.Default.FormatBold, R.string.richtext_format_bold) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            textFieldState.wrapSelection("__", "__")
+        }
+        ToolbarFormatButton(Icons.Default.FormatItalic, R.string.richtext_format_italic) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            textFieldState.wrapSelection("_", "_")
+        }
+        ToolbarFormatButton(Icons.Default.FormatStrikethrough, R.string.richtext_format_strikethrough) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            textFieldState.wrapSelection("~~", "~~")
+        }
+        ToolbarFormatButton(Icons.Default.Code, R.string.richtext_format_code) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            textFieldState.wrapSelection("`", "`")
+        }
+        ToolbarFormatButton(Icons.Default.Link, R.string.richtext_format_link) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            textFieldState.toggleLinkSyntax()
+        }
+        ToolbarFormatButton(Icons.Default.VisibilityOff, R.string.richtext_format_spoiler) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            textFieldState.wrapSelection("~!", "!~")
+        }
+    }
+}
+
+@Composable
+private fun ToolbarFormatButton(
+    icon: ImageVector,
+    contentDescriptionRes: Int,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick) {
+        Icon(imageVector = icon, contentDescription = stringResource(contentDescriptionRes))
     }
 }
 

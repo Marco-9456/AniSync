@@ -3,12 +3,15 @@ package com.anisync.android.presentation.components.richtext
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.content.ReceiveContentListener
 import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,11 +23,15 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -45,9 +52,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
@@ -59,17 +68,18 @@ import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.PaneDragHandle
+import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 // Expanded editor/preview split, as the editor pane's width fraction. Drag snaps to the nearest of
-// these anchors on release (editor : preview = 1:1, 3:2, 2:1) so the editor keeps the majority while
+// these anchors on release (editor : preview = 1:1, 2:1, 3:1) so the editor keeps the majority while
 // writing; bounded so neither pane is squeezed unusably narrow.
-private val EDITOR_SPLIT_ANCHORS = listOf(0.5f, 0.6f, 2f / 3f)
+private val EDITOR_SPLIT_ANCHORS = listOf(0.5f, 2f / 3f, 0.75f)
 private const val MIN_EDITOR_FRACTION = 0.4f
-private const val MAX_EDITOR_FRACTION = 0.75f
+private const val MAX_EDITOR_FRACTION = 0.8f
 
 private fun nearestEditorAnchor(fraction: Float): Float =
     EDITOR_SPLIT_ANCHORS.minBy { abs(it - fraction) }
@@ -101,6 +111,9 @@ fun RichTextScaffold(
     // is unnecessary; on compact the toggle flips a single pane between writing and preview.
     val sideBySide = LocalAdaptiveInfo.current.isExpandedOrWider
     var isPreviewMode by remember { mutableStateOf(false) }
+    // Expanded only: whether the live-preview pane is shown beside the editor. Toggled from the app
+    // bar's preview button or the pane's close button. Defaults on; resets each launch.
+    var showPreview by rememberSaveable { mutableStateOf(true) }
 
     // Side-by-side editor/preview split: the editor pane's width fraction, seeded from and persisted
     // back to AppSettings so a resized split survives app restarts. Drag updates [editorFraction]
@@ -233,72 +246,168 @@ fun RichTextScaffold(
         }
     }
 
+    // Expanded "document" card: the header slot + editor field, with an unobtrusive character counter
+    // pinned to the bottom-end corner (the docked toolbar that used to carry it now lives at the top).
+    val editorDocBody: @Composable () -> Unit = {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                headerSlot?.invoke(this)
+                bodyEditor(Modifier.weight(1f).fillMaxWidth())
+            }
+            RichTextCharCounter(
+                length = bodyState.text.length,
+                maxLength = maxLength,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
+            )
+        }
+    }
+    // Preview pane styled like a document editor's side panel: a titled header with a close
+    // affordance, then the live rich-text render.
+    val previewPanel: @Composable (onClose: () -> Unit) -> Unit = { onClose ->
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.preview),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onClose) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.richtext_preview_hide)
+                    )
+                }
+            }
+            bodyPreview(Modifier.fillMaxSize())
+        }
+    }
+
+    // Expanded editor chrome: bright "document" cards floating on a tinted page (like a doc editor).
+    val editorPageColor = MaterialTheme.colorScheme.surfaceContainer
+    val editorCardColor = MaterialTheme.colorScheme.surface
+
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = if (sideBySide) editorPageColor else MaterialTheme.colorScheme.background
     ) {
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = if (sideBySide) editorPageColor else MaterialTheme.colorScheme.background,
             topBar = {
-                TopAppBar(
-                    title = { Text(text = title, fontWeight = FontWeight.Bold) },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            if (hasUnsavedChanges) showDiscardDialog = true else onDismiss()
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
+                Column(
+                    modifier = Modifier.background(
+                        if (sideBySide) editorPageColor else MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    TopAppBar(
+                        title = { Text(text = title, fontWeight = FontWeight.Bold) },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                if (hasUnsavedChanges) showDiscardDialog = true else onDismiss()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back)
+                                )
+                            }
+                        },
+                        actions = {
+                            if (sideBySide) {
+                                // Expanded: a preview toggle (filled when the pane is shown), like a
+                                // document editor's panel toggle. The write/preview text toggle is
+                                // unnecessary since the preview is a permanent side pane.
+                                FilledIconToggleButton(
+                                    checked = showPreview,
+                                    onCheckedChange = { showPreview = it },
+                                    colors = IconButtonDefaults.filledIconToggleButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Visibility,
+                                        contentDescription = stringResource(R.string.richtext_preview_show)
+                                    )
+                                }
+                            } else {
+                                TextButton(
+                                    onClick = { isPreviewMode = !isPreviewMode },
+                                    enabled = !isBlank
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            if (isPreviewMode) R.string.write else R.string.preview
+                                        ),
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isBlank) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                        else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            if (isSubmitting) {
+                                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            } else {
+                                TextButton(
+                                    onClick = { onSubmit(bodyState.text.toString()) },
+                                    enabled = canSubmit
+                                ) {
+                                    Text(
+                                        text = submitLabel,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (!canSubmit) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                        else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent
+                        )
+                    )
+                    if (sideBySide) {
+                        // Expressive floating format toolbar, docked below the app bar like a document
+                        // editor's toolbar (replaces the bottom format bar on wide screens).
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            EditorFormatToolbar(
+                                textFieldState = bodyState,
+                                onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
+                                modifier = Modifier.align(Alignment.CenterStart)
                             )
                         }
-                    },
-                    actions = {
-                        // Side-by-side shows the preview permanently, so the toggle is compact-only.
-                        if (!sideBySide) {
-                            TextButton(
-                                onClick = { isPreviewMode = !isPreviewMode },
-                                enabled = !isBlank
-                            ) {
-                                Text(
-                                    text = stringResource(
-                                        if (isPreviewMode) R.string.write else R.string.preview
-                                    ),
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isBlank) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    else MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        val imeUpload = (attachState as? MediaAttachState.Uploading)
+                            ?.takeIf { it.source == MediaAttachState.Source.Ime }
+                        if (imeUpload != null) {
+                            ImeUploadStrip(
+                                state = imeUpload,
+                                onCancel = { attachViewModel.cancel() },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
                         }
-
-                        if (isSubmitting) {
-                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                        } else {
-                            TextButton(
-                                onClick = { onSubmit(bodyState.text.toString()) },
-                                enabled = canSubmit
-                            ) {
-                                Text(
-                                    text = submitLabel,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (!canSubmit) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    else MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                )
+                    }
+                }
             },
             bottomBar = {
-                if (!isPreviewMode) {
+                // Compact only: the bottom docked format bar. On wide screens the toolbar moves up to
+                // the app-bar area (see topBar) so it doesn't fight the IME.
+                if (!sideBySide && !isPreviewMode) {
                     val imeUpload = (attachState as? MediaAttachState.Uploading)
                         ?.takeIf { it.source == MediaAttachState.Source.Ime }
                     RichTextDockedFormatBar(
@@ -312,36 +421,52 @@ fun RichTextScaffold(
             }
         ) { padding ->
             if (sideBySide) {
-                // Expanded: editor and a live preview as two rounded panes on a shared gutter
-                // (SupportingPane semantics — main = editor, supporting = preview), split by a
-                // draggable handle. The header (review meta, etc.) stays with the editor.
-                TwoPaneRow(
-                    leadingWeight = editorFraction,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .onSizeChanged { paneRowWidthPx = it.width },
-                    handle = {
-                        PaneDragHandle(
-                            modifier = Modifier.fillMaxHeight(),
-                            onDelta = { delta ->
-                                if (paneRowWidthPx > 0) {
-                                    editorFraction = (editorFraction + delta / paneRowWidthPx)
-                                        .coerceIn(MIN_EDITOR_FRACTION, MAX_EDITOR_FRACTION)
-                                }
-                            },
-                            onDragStarted = { paneSettleJob?.cancel() },
-                            onDragStopped = { settleEditorSplit(nearestEditorAnchor(editorFraction)) },
-                        )
-                    },
-                    leading = {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            headerSlot?.invoke(this)
-                            bodyEditor(Modifier.weight(1f).fillMaxWidth())
+                if (showPreview) {
+                    // Expanded: the editor document card and a live preview panel as two cards on a
+                    // tinted page (main = editor, supporting = preview), split by a draggable handle.
+                    TwoPaneRow(
+                        leadingWeight = editorFraction,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .onSizeChanged { paneRowWidthPx = it.width },
+                        gutterColor = editorPageColor,
+                        gutterPadding = PaddingValues(16.dp),
+                        leadingColor = editorCardColor,
+                        trailingColor = editorCardColor,
+                        handle = {
+                            PaneDragHandle(
+                                modifier = Modifier.fillMaxHeight(),
+                                onDelta = { delta ->
+                                    if (paneRowWidthPx > 0) {
+                                        editorFraction = (editorFraction + delta / paneRowWidthPx)
+                                            .coerceIn(MIN_EDITOR_FRACTION, MAX_EDITOR_FRACTION)
+                                    }
+                                },
+                                onDragStarted = { paneSettleJob?.cancel() },
+                                onDragStopped = { settleEditorSplit(nearestEditorAnchor(editorFraction)) }
+                            )
+                        },
+                        leading = { editorDocBody() },
+                        trailing = { previewPanel { showPreview = false } }
+                    )
+                } else {
+                    // Preview hidden → the document card fills the page.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(16.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            shape = TwoPaneDefaults.PaneShape,
+                            color = editorCardColor
+                        ) {
+                            editorDocBody()
                         }
-                    },
-                    trailing = { bodyPreview(Modifier.fillMaxSize()) },
-                )
+                    }
+                }
             } else {
                 Column(
                     modifier = Modifier

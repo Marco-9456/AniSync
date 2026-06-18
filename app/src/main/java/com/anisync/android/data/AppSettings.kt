@@ -1040,7 +1040,7 @@ companion object {
         private const val KEY_PANE_LIST_FRACTION = "pane_list_fraction"
         const val DEFAULT_PANE_LIST_FRACTION = 1f / 3f
         private const val KEY_PANE_EDITOR_FRACTION = "pane_editor_fraction"
-        const val DEFAULT_PANE_EDITOR_FRACTION = 0.6f
+        const val DEFAULT_PANE_EDITOR_FRACTION = 0.667f
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

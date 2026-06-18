@@ -864,6 +864,8 @@
     <string name="more_options">More options</string>
     <string name="write">Write</string>
     <string name="post">Post</string>
+    <string name="richtext_preview_show">Show preview</string>
+    <string name="richtext_preview_hide">Hide preview</string>
     <string name="richtext_format_bold">Bold</string>
     <string name="richtext_format_italic">Italic</string>
     <string name="richtext_format_strikethrough">Strikethrough</string>

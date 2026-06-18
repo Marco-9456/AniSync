@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,33 +73,42 @@ object TwoPaneDefaults {
  * Between the panes sits [handle] (a [PaneDragHandle] for resizable splits) or, when null, a fixed
  * [TwoPaneDefaults.PaneGap] spacer for a non-resizable split. The caller measures the row width (for
  * any drag math) by attaching `Modifier.onSizeChanged { … }` to [modifier].
+ *
+ * The chrome tones default to [TwoPaneDefaults] (the list-detail look), but [gutterColor],
+ * [leadingColor], [trailingColor], [gutterPadding] and [shape] are overridable so a caller can give
+ * its panes a distinct look — e.g. the editor uses bright `surface` document cards on a symmetric
+ * gutter (no flush-against-rail inset, since no navigation rail is shown there).
  */
 @Composable
 fun TwoPaneRow(
     leadingWeight: Float,
     modifier: Modifier = Modifier,
+    gutterColor: Color = TwoPaneDefaults.gutterColor,
     gutterPadding: PaddingValues = TwoPaneDefaults.GutterPadding,
+    leadingColor: Color = TwoPaneDefaults.paneColor,
+    trailingColor: Color = TwoPaneDefaults.paneColor,
+    shape: Shape = TwoPaneDefaults.PaneShape,
     handle: (@Composable () -> Unit)? = null,
     leading: @Composable () -> Unit,
     trailing: @Composable () -> Unit,
 ) {
     Row(
         modifier = modifier
-            .background(TwoPaneDefaults.gutterColor)
+            .background(gutterColor)
             .padding(gutterPadding),
     ) {
         Surface(
             modifier = Modifier.weight(leadingWeight).fillMaxHeight(),
-            shape = TwoPaneDefaults.PaneShape,
-            color = TwoPaneDefaults.paneColor,
+            shape = shape,
+            color = leadingColor,
         ) { leading() }
 
         if (handle != null) handle() else Spacer(Modifier.width(TwoPaneDefaults.PaneGap))
 
         Surface(
             modifier = Modifier.weight(1f - leadingWeight).fillMaxHeight(),
-            shape = TwoPaneDefaults.PaneShape,
-            color = TwoPaneDefaults.paneColor,
+            shape = shape,
+            color = trailingColor,
         ) { trailing() }
     }
 }
