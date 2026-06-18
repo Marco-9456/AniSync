@@ -4,15 +4,20 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -21,16 +26,26 @@ import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.anisync.android.R
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -51,11 +66,25 @@ import com.anisync.android.presentation.details.StudioMediaGridScreen
 private const val PANE_SOURCE = "list_detail_pane"
 
 // Width split between the two panes while the detail is open, as the list pane's fraction. The list
-// stays the smaller "index" pane; the detail gets the majority of the space. User-resizable within
-// [MIN_LIST_FRACTION]..[MAX_LIST_FRACTION] via the drag handle.
-private const val DEFAULT_LIST_FRACTION = 0.4f
-private const val MIN_LIST_FRACTION = 0.28f
-private const val MAX_LIST_FRACTION = 0.6f
+// stays the smaller "index" pane; the detail gets the majority of the space. User-resizable from
+// fully collapsed up to [MAX_LIST_FRACTION] via the drag handle (drag to resize, release to snap to
+// the nearest anchor; tap to cycle the split; long-press to collapse/expand the list pane).
+private const val DEFAULT_LIST_FRACTION = 1f / 3f
+private const val MAX_LIST_FRACTION = 0.7f
+
+// Below this the list pane is treated as fully collapsed (single-pane: detail fills the width).
+private const val COLLAPSE_THRESHOLD = 0.04f
+
+// Drag release snaps to the nearest of these list fractions: collapsed, then the canonical 1/3, 1/2,
+// 2/3 splits (M3 panes guidance). A single tap cycles through the non-collapsed splits.
+private val LIST_FRACTION_ANCHORS = listOf(0f, 1f / 3f, 1f / 2f, 2f / 3f)
+private val LIST_SPLIT_ANCHORS = listOf(1f / 3f, 1f / 2f, 2f / 3f)
+
+private fun nearestAnchor(fraction: Float): Float =
+    LIST_FRACTION_ANCHORS.minBy { abs(it - fraction) }
+
+private fun nextSplitAnchor(fraction: Float): Float =
+    LIST_SPLIT_ANCHORS.firstOrNull { it > fraction + 0.01f } ?: LIST_SPLIT_ANCHORS.first()
 
 /**
  * Reusable Material 3 two-pane container for any feed→detail surface (Library, Discover, Feed,
@@ -66,12 +95,14 @@ private const val MAX_LIST_FRACTION = 0.6f
  *  - The **list pane is permanent** and fills the full width while nothing is selected.
  *  - The **detail pane is temporary / on demand**: it opens when an item is tapped and is dismissed
  *    with the detail's close affordance or the system back gesture.
- *  - Both panes are **flexible** (weight-based) and **user-resizable** via a [VerticalDragHandle];
- *    the chosen split is remembered across configuration changes.
+ *  - Both panes are **flexible** (weight-based) and **user-resizable** via a [VerticalDragHandle]:
+ *    drag to resize (release snaps to the nearest 1/3 · 1/2 · 2/3 split or fully collapsed), **tap**
+ *    to cycle the split, and **long-press** to collapse/expand the list pane (single ↔ two-pane).
+ *    The chosen split is remembered across configuration changes.
  *
  * Intended to be rendered only on expanded widths; compact/medium use the plain full-screen screen.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TwoPaneListDetailScaffold(
     modifier: Modifier = Modifier,
@@ -83,18 +114,42 @@ fun TwoPaneListDetailScaffold(
 
     BackHandler(enabled = detailId != null) { selectedId = null }
 
-    var listFraction by rememberSaveable { mutableStateOf(DEFAULT_LIST_FRACTION) }
+    // List pane fraction. rememberSaveable survives config change; persisted across app restarts in §3.4.
+    var listFraction by rememberSaveable { mutableFloatStateOf(DEFAULT_LIST_FRACTION) }
     var rowWidthPx by remember { mutableIntStateOf(0) }
+
+    val scope = rememberCoroutineScope()
+    var settleJob by remember { mutableStateOf<Job?>(null) }
+    // Smoothly animate the split to [target] (snap / tap / long-press); cancels any running settle.
+    fun settleTo(target: Float) {
+        settleJob?.cancel()
+        settleJob = scope.launch {
+            animate(initialValue = listFraction, targetValue = target) { value, _ ->
+                listFraction = value
+            }
+        }
+    }
+
+    val handleInteraction = remember { MutableInteractionSource() }
+    val resizeHandleLabel = stringResource(R.string.pane_resize_handle)
+    val cycleLabel = stringResource(R.string.pane_resize_cycle)
+    val toggleLabel = stringResource(R.string.pane_resize_toggle)
 
     Row(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { rowWidthPx = it.width },
     ) {
-        // List pane — fills the full width on its own, shrinks to [listFraction] when the detail opens.
+        val isListCollapsed = detailId != null && listFraction <= COLLAPSE_THRESHOLD
+
+        // List pane — fills the full width on its own, shrinks to [listFraction] when the detail
+        // opens, and is kept in the layout at zero width when collapsed so its scroll state survives.
         Box(
-            modifier = Modifier
-                .weight(if (detailId != null) listFraction else 1f)
+            modifier = when {
+                detailId == null -> Modifier.weight(1f)
+                isListCollapsed -> Modifier.width(0.dp)
+                else -> Modifier.weight(listFraction)
+            }
                 .fillMaxHeight()
                 .clipToBounds(),
         ) {
@@ -102,31 +157,50 @@ fun TwoPaneListDetailScaffold(
         }
 
         if (detailId != null) {
-            // Drag handle to resize the two panes.
+            // Drag handle — drag to resize, tap to cycle the split, long-press to collapse/expand.
             Box(
-                modifier = Modifier.fillMaxHeight(),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(24.dp)
+                    .draggable(
+                        orientation = Orientation.Horizontal,
+                        state = rememberDraggableState { delta ->
+                            if (rowWidthPx > 0) {
+                                listFraction = (listFraction + delta / rowWidthPx)
+                                    .coerceIn(0f, MAX_LIST_FRACTION)
+                            }
+                        },
+                        interactionSource = handleInteraction,
+                        onDragStarted = { settleJob?.cancel() },
+                        onDragStopped = { settleTo(nearestAnchor(listFraction)) },
+                    )
+                    .combinedClickable(
+                        interactionSource = handleInteraction,
+                        indication = null,
+                        onClickLabel = cycleLabel,
+                        onLongClickLabel = toggleLabel,
+                        onLongClick = {
+                            settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else 0f)
+                        },
+                        onClick = {
+                            settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else nextSplitAnchor(listFraction))
+                        },
+                    )
+                    // Keep the drag from colliding with the system back gesture at the edge.
+                    .systemGestureExclusion(),
                 contentAlignment = Alignment.Center,
             ) {
                 VerticalDragHandle(
-                    modifier = Modifier
-                        .draggable(
-                            orientation = Orientation.Horizontal,
-                            state = rememberDraggableState { delta ->
-                                if (rowWidthPx > 0) {
-                                    listFraction = (listFraction + delta / rowWidthPx)
-                                        .coerceIn(MIN_LIST_FRACTION, MAX_LIST_FRACTION)
-                                }
-                            },
-                        )
-                        // Keep the drag from colliding with the system back gesture at the edge.
-                        .systemGestureExclusion(),
+                    interactionSource = handleInteraction,
+                    modifier = Modifier.semantics { contentDescription = resizeHandleLabel },
                 )
             }
 
-            // Detail pane — temporary, opened on demand.
+            // Detail pane — temporary, opened on demand. Fills the remaining width (everything when
+            // the list is collapsed).
             Box(
                 modifier = Modifier
-                    .weight(1f - listFraction)
+                    .weight(if (isListCollapsed) 1f else (1f - listFraction))
                     .fillMaxHeight()
                     .clipToBounds(),
             ) {

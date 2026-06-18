@@ -1157,4 +1157,9 @@
     <string name="calendar_empty_title">Nothing airing</string>
     <string name="calendar_empty_desc">No episodes air on this day.</string>
     <string name="calendar_empty_following_desc">No shows from your list air on this day.</string>
+
+    <!-- Two-pane list/detail resize handle -->
+    <string name="pane_resize_handle">Resize panes</string>
+    <string name="pane_resize_cycle">Cycle the list pane width</string>
+    <string name="pane_resize_toggle">Collapse or expand the list pane</string>
 </resources>
