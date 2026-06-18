@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -81,6 +83,12 @@ private const val MAX_LIST_FRACTION = 0.7f
 
 // Below this the list pane is treated as fully collapsed (single-pane: detail fills the width).
 private const val COLLAPSE_THRESHOLD = 0.04f
+
+// The list pane's content is laid out at no less than this fraction of the row width and clipped as
+// the pane shrinks past it, so the list slides/clips out while collapsing instead of reflowing its
+// search bar, tab switcher and grid into a squashed mess. Kept just below the smallest open split
+// (1/3) so an open pane never clips.
+private const val LIST_MIN_LAYOUT_FRACTION = 0.30f
 
 // Drag release snaps to the nearest of these list fractions: collapsed, then the canonical 1/3, 1/2,
 // 2/3 splits (M3 panes guidance). A single tap cycles through the non-collapsed splits.
@@ -153,6 +161,7 @@ fun TwoPaneListDetailScaffold(
     val gutterColor = MaterialTheme.colorScheme.surfaceContainerHigh
     val paneColor = MaterialTheme.colorScheme.surfaceContainerLow
     val paneShape = RoundedCornerShape(24.dp)
+    val listMinWidth = with(LocalDensity.current) { (rowWidthPx * LIST_MIN_LAYOUT_FRACTION).toDp() }
 
     Row(
         modifier = modifier
@@ -179,7 +188,12 @@ fun TwoPaneListDetailScaffold(
         }.fillMaxHeight()
         if (twoPane) {
             Surface(modifier = listModifier, shape = paneShape, color = paneColor) {
-                listPane { id -> selectedId = id }
+                // Hold the content at its open layout width and let the Surface clip it while the pane
+                // shrinks past [LIST_MIN_LAYOUT_FRACTION], so collapsing slides/clips the list out
+                // instead of reflowing its search bar + tab switcher into a squashed column.
+                Box(modifier = Modifier.requiredWidthIn(min = listMinWidth).fillMaxSize()) {
+                    listPane { id -> selectedId = id }
+                }
             }
         } else {
             Box(modifier = listModifier.clipToBounds()) {
