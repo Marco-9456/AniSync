@@ -171,9 +171,10 @@ fun TwoPaneListDetailScaffold(
                 if (twoPane) {
                     Modifier
                         .background(gutterColor)
-                        // Even inset all round so both panes are fully rounded cards (top corners
-                        // included) floating on the gutter — the root keeps them below the status bar.
-                        .padding(10.dp)
+                        // No start inset: the list pane sits flush against the navigation rail (no gap
+                        // between them). Top/end/bottom keep the gutter margin so the panes still read
+                        // as rounded cards floating on the gutter.
+                        .padding(start = 0.dp, top = 10.dp, end = 10.dp, bottom = 10.dp)
                 } else {
                     Modifier
                 }
