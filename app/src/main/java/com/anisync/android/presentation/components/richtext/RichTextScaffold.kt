@@ -8,6 +8,8 @@ import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -49,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -73,6 +77,9 @@ fun RichTextScaffold(
 ) {
     val bodyState = remember { TextFieldState(initialBody) }
     val initialBodySnapshot = remember { initialBody }
+    // On expanded widths the editor and a live preview sit side by side, so the write/preview toggle
+    // is unnecessary; on compact the toggle flips a single pane between writing and preview.
+    val sideBySide = LocalAdaptiveInfo.current.isExpandedOrWider
     var isPreviewMode by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     val attachViewModel: MediaAttachViewModel = hiltViewModel()
@@ -144,6 +151,50 @@ fun RichTextScaffold(
         )
     }
 
+    // The body editor and the live preview, factored out so the layout can place them either in a
+    // single toggled pane (compact) or side by side (expanded).
+    val bodyEditor: @Composable (Modifier) -> Unit = { fieldModifier ->
+        val receiveContentListener = remember {
+            ReceiveContentListener { transferableContent ->
+                handleImeContent(transferableContent, attachViewModel, insertMarkdown)
+            }
+        }
+        BasicTextField(
+            state = bodyState,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            inputTransformation = maxLengthTransform,
+            modifier = fieldModifier
+                .focusRequester(focusRequester)
+                .padding(16.dp)
+                .let { base ->
+                    if (enableMediaAttach) base.contentReceiver(receiveContentListener) else base
+                },
+            decorator = { innerTextField ->
+                if (bodyState.text.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                innerTextField()
+            }
+        )
+    }
+    val bodyPreview: @Composable (Modifier) -> Unit = { previewModifier ->
+        Column(
+            modifier = previewModifier
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            AsyncRichTextRenderer(
+                html = bodyState.text.toString(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -164,18 +215,21 @@ fun RichTextScaffold(
                         }
                     },
                     actions = {
-                        TextButton(
-                            onClick = { isPreviewMode = !isPreviewMode },
-                            enabled = !isBlank
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    if (isPreviewMode) R.string.write else R.string.preview
-                                ),
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (isBlank) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                else MaterialTheme.colorScheme.primary
-                            )
+                        // Side-by-side shows the preview permanently, so the toggle is compact-only.
+                        if (!sideBySide) {
+                            TextButton(
+                                onClick = { isPreviewMode = !isPreviewMode },
+                                enabled = !isBlank
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        if (isPreviewMode) R.string.write else R.string.preview
+                                    ),
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isBlank) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    else MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
 
                         if (isSubmitting) {
@@ -219,55 +273,35 @@ fun RichTextScaffold(
                 }
             }
         ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                headerSlot?.invoke(this)
-
-                if (isPreviewMode) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp)
-                    ) {
-                        AsyncRichTextRenderer(
-                            html = bodyState.text.toString(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                } else {
-                    val receiveContentListener = remember {
-                        ReceiveContentListener { transferableContent -> handleImeContent(transferableContent, attachViewModel, insertMarkdown) }
-                    }
-
-                    val textFieldModifier = Modifier
+            if (sideBySide) {
+                // Expanded: editor on the left, a live rich-text preview on the right (SupportingPane
+                // semantics — main = editor, supporting = preview). The header (review meta, etc.)
+                // stays with the editor.
+                Row(
+                    modifier = Modifier
                         .fillMaxSize()
-                        .focusRequester(focusRequester)
-                        .padding(16.dp)
-                        .let { base ->
-                            if (enableMediaAttach) base.contentReceiver(receiveContentListener) else base
-                        }
+                        .padding(padding)
+                ) {
+                    Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                        headerSlot?.invoke(this)
+                        bodyEditor(Modifier.weight(1f).fillMaxWidth())
+                    }
+                    VerticalDivider(modifier = Modifier.fillMaxHeight())
+                    bodyPreview(Modifier.weight(1f).fillMaxHeight())
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    headerSlot?.invoke(this)
 
-                    BasicTextField(
-                        state = bodyState,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        inputTransformation = maxLengthTransform,
-                        modifier = textFieldModifier,
-                        decorator = { innerTextField ->
-                            if (bodyState.text.isEmpty()) {
-                                Text(
-                                    text = placeholder,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
+                    if (isPreviewMode) {
+                        bodyPreview(Modifier.fillMaxSize())
+                    } else {
+                        bodyEditor(Modifier.fillMaxSize())
+                    }
                 }
             }
         }
