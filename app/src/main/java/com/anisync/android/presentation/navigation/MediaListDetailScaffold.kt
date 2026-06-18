@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.anisync.android.R
+import com.anisync.android.presentation.util.LocalAppSettings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -114,14 +115,18 @@ fun TwoPaneListDetailScaffold(
 
     BackHandler(enabled = detailId != null) { selectedId = null }
 
-    // List pane fraction. rememberSaveable survives config change; persisted across app restarts in §3.4.
-    var listFraction by rememberSaveable { mutableFloatStateOf(DEFAULT_LIST_FRACTION) }
+    // List pane fraction. rememberSaveable survives config change; the initial value is seeded from
+    // (and resized splits are written back to) AppSettings so the chosen split also survives app close.
+    val appSettings = LocalAppSettings.current
+    var listFraction by rememberSaveable { mutableFloatStateOf(appSettings.paneListFraction.value) }
     var rowWidthPx by remember { mutableIntStateOf(0) }
 
     val scope = rememberCoroutineScope()
     var settleJob by remember { mutableStateOf<Job?>(null) }
     // Smoothly animate the split to [target] (snap / tap / long-press); cancels any running settle.
+    // Real split widths are persisted; the fully-collapsed state stays a transient per-session toggle.
     fun settleTo(target: Float) {
+        if (target > COLLAPSE_THRESHOLD) appSettings.setPaneListFraction(target)
         settleJob?.cancel()
         settleJob = scope.launch {
             animate(initialValue = listFraction, targetValue = target) { value, _ ->

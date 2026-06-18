@@ -364,6 +364,14 @@ class AppSettings @Inject constructor(
     )
     val gridColumnCount: StateFlow<Int> = _gridColumnCount.asStateFlow()
 
+    // Two-pane list/detail split, stored as the list pane's width fraction so a resized split
+    // survives app restarts (M3 panes guidance). Only real split widths are written here; the
+    // fully-collapsed state is a transient per-session toggle, not a width preference.
+    private val _paneListFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_LIST_FRACTION, DEFAULT_PANE_LIST_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneListFraction: StateFlow<Float> = _paneListFraction.asStateFlow()
+
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
     val feedFilter: StateFlow<FeedFilter> = _feedFilter.asStateFlow()
@@ -782,6 +790,13 @@ class AppSettings @Inject constructor(
         prefs.edit().putInt(KEY_GRID_COLUMN_COUNT, coerced).apply()
     }
 
+    /** Persist the two-pane list/detail split as the list pane's width fraction (coerced to 0..1). */
+    fun setPaneListFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneListFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_LIST_FRACTION, coerced).apply()
+    }
+
     /**
      * Persist the last selected feed content filter.
      */
@@ -1008,6 +1023,8 @@ companion object {
         const val MIN_GRID_COLUMNS = 2
         const val MAX_GRID_COLUMNS = 8
         const val DEFAULT_GRID_COLUMNS = 3
+        private const val KEY_PANE_LIST_FRACTION = "pane_list_fraction"
+        const val DEFAULT_PANE_LIST_FRACTION = 1f / 3f
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"
