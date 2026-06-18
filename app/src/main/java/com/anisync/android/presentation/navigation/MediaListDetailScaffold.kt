@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -188,54 +189,78 @@ fun TwoPaneListDetailScaffold(
 
         if (detailId != null) {
             // Drag handle — drag to resize, tap to cycle the split, long-press to collapse/expand.
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(24.dp)
-                    .draggable(
-                        orientation = Orientation.Horizontal,
-                        state = rememberDraggableState { delta ->
-                            if (rowWidthPx > 0) {
-                                listFraction = (listFraction + delta / rowWidthPx)
-                                    .coerceIn(0f, MAX_LIST_FRACTION)
-                            }
-                        },
+            // [handleModifier] sets its placement: a full-height column between the cards while both
+            // panes show, or a short centered pill while the list is collapsed (see below).
+            val dragHandle: @Composable (Modifier) -> Unit = { handleModifier ->
+                Box(
+                    modifier = handleModifier
+                        .width(24.dp)
+                        .draggable(
+                            orientation = Orientation.Horizontal,
+                            state = rememberDraggableState { delta ->
+                                if (rowWidthPx > 0) {
+                                    listFraction = (listFraction + delta / rowWidthPx)
+                                        .coerceIn(0f, MAX_LIST_FRACTION)
+                                }
+                            },
+                            interactionSource = handleInteraction,
+                            onDragStarted = { settleJob?.cancel() },
+                            onDragStopped = { settleTo(nearestAnchor(listFraction)) },
+                        )
+                        .combinedClickable(
+                            interactionSource = handleInteraction,
+                            indication = null,
+                            onClickLabel = cycleLabel,
+                            onLongClickLabel = toggleLabel,
+                            onLongClick = {
+                                settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else 0f)
+                            },
+                            onClick = {
+                                settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else nextSplitAnchor(listFraction))
+                            },
+                        )
+                        // Keep the drag from colliding with the system back gesture at the edge.
+                        .systemGestureExclusion(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    VerticalDragHandle(
                         interactionSource = handleInteraction,
-                        onDragStarted = { settleJob?.cancel() },
-                        onDragStopped = { settleTo(nearestAnchor(listFraction)) },
+                        modifier = Modifier.semantics { contentDescription = resizeHandleLabel },
                     )
-                    .combinedClickable(
-                        interactionSource = handleInteraction,
-                        indication = null,
-                        onClickLabel = cycleLabel,
-                        onLongClickLabel = toggleLabel,
-                        onLongClick = {
-                            settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else 0f)
-                        },
-                        onClick = {
-                            settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else nextSplitAnchor(listFraction))
-                        },
-                    )
-                    // Keep the drag from colliding with the system back gesture at the edge.
-                    .systemGestureExclusion(),
-                contentAlignment = Alignment.Center,
-            ) {
-                VerticalDragHandle(
-                    interactionSource = handleInteraction,
-                    modifier = Modifier.semantics { contentDescription = resizeHandleLabel },
-                )
+                }
             }
 
-            // Detail pane — temporary, opened on demand. Fills the remaining width (everything when
-            // the list is collapsed).
-            Surface(
-                modifier = Modifier
-                    .weight(if (isListCollapsed) 1f else (1f - listFraction))
-                    .fillMaxHeight(),
-                shape = paneShape,
-                color = paneColor,
-            ) {
-                detailPane(detailId) { selectedId = null }
+            if (isListCollapsed) {
+                // List collapsed → the detail fills the row and the handle is overlaid on its leading
+                // edge as a short centered pill, so it reads as part of the detail pane (and doesn't
+                // sit orphaned in the gutter or cover the detail's top-left close button).
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        shape = paneShape,
+                        color = paneColor,
+                    ) {
+                        detailPane(detailId) { selectedId = null }
+                    }
+                    dragHandle(Modifier.align(Alignment.CenterStart).height(96.dp))
+                }
+            } else {
+                // Both panes visible → the handle is a full-height column in the gutter between them.
+                dragHandle(Modifier.fillMaxHeight())
+
+                Surface(
+                    modifier = Modifier
+                        .weight(1f - listFraction)
+                        .fillMaxHeight(),
+                    shape = paneShape,
+                    color = paneColor,
+                ) {
+                    detailPane(detailId) { selectedId = null }
+                }
             }
         }
     }
