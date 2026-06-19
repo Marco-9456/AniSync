@@ -379,6 +379,13 @@ class AppSettings @Inject constructor(
     )
     val paneEditorFraction: StateFlow<Float> = _paneEditorFraction.asStateFlow()
 
+    // Two-pane calendar split, stored as the month-grid pane's width fraction. Independent of the
+    // other two splits (the grid + day panes are both permanent, so it has its own default ratio).
+    private val _paneCalendarFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_CALENDAR_FRACTION, DEFAULT_PANE_CALENDAR_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneCalendarFraction: StateFlow<Float> = _paneCalendarFraction.asStateFlow()
+
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
     val feedFilter: StateFlow<FeedFilter> = _feedFilter.asStateFlow()
@@ -811,6 +818,13 @@ class AppSettings @Inject constructor(
         prefs.edit().putFloat(KEY_PANE_EDITOR_FRACTION, coerced).apply()
     }
 
+    /** Persist the two-pane calendar split as the month-grid pane's width fraction (coerced to 0..1). */
+    fun setPaneCalendarFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneCalendarFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_CALENDAR_FRACTION, coerced).apply()
+    }
+
     /**
      * Persist the last selected feed content filter.
      */
@@ -1041,6 +1055,8 @@ companion object {
         const val DEFAULT_PANE_LIST_FRACTION = 1f / 3f
         private const val KEY_PANE_EDITOR_FRACTION = "pane_editor_fraction"
         const val DEFAULT_PANE_EDITOR_FRACTION = 0.667f
+        private const val KEY_PANE_CALENDAR_FRACTION = "pane_calendar_fraction"
+        const val DEFAULT_PANE_CALENDAR_FRACTION = 0.42f
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

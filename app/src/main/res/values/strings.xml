@@ -1151,6 +1151,13 @@
     <string name="calendar_previous_week">Previous week</string>
     <string name="calendar_next_week">Next week</string>
     <string name="calendar_jump_to_today">Jump to this week</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_jump_to_this_month">This month</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="one">%1$d airing</item>
+        <item quantity="other">%1$d airings</item>
+    </plurals>
     <string name="calendar_episode_number">Episode %1$d</string>
     <string name="calendar_aired">Aired</string>
     <string name="calendar_airs_in">in %1$s</string>
