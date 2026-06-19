@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,8 +26,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -469,24 +472,38 @@ private fun MonthGridPane(
             }
         val anchorMonth = YearMonth.from(month.monthAnchor)
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            weeks.forEach { week ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    week.forEach { day ->
-                        MonthDayCell(
-                            day = day,
-                            inMonth = YearMonth.from(day.date) == anchorMonth,
-                            isToday = day.date == today,
-                            selected = day.date == month.selectedDate,
-                            onClick = { onSelectDay(day.date) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                        )
+        // Spread the six rows over the pane height when there's room; on a short pane (a phone in
+        // landscape) the rows would otherwise be squeezed until the day numbers clip — so below a
+        // sensible minimum, give each row a fixed height and let the grid scroll instead.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val minRowHeight = 56.dp
+            val fillHeight = maxHeight >= minRowHeight * GRID_WEEKS
+            val gridModifier = if (fillHeight) {
+                Modifier.fillMaxSize()
+            } else {
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            }
+            Column(modifier = gridModifier) {
+                weeks.forEach { week ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (fillHeight) Modifier.weight(1f) else Modifier.height(minRowHeight))
+                    ) {
+                        week.forEach { day ->
+                            MonthDayCell(
+                                day = day,
+                                inMonth = YearMonth.from(day.date) == anchorMonth,
+                                isToday = day.date == today,
+                                selected = day.date == month.selectedDate,
+                                onClick = { onSelectDay(day.date) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                        }
                     }
                 }
             }
