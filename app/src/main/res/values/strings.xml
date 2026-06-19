@@ -1151,6 +1151,7 @@
     <string name="calendar_previous_week">Previous week</string>
     <string name="calendar_next_week">Next week</string>
     <string name="calendar_jump_to_today">Jump to this week</string>
+    <string name="calendar_today">Today</string>
     <string name="calendar_previous_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
     <string name="calendar_jump_to_this_month">This month</string>

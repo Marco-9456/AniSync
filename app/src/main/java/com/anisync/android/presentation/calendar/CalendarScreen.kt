@@ -1,7 +1,13 @@
 package com.anisync.android.presentation.calendar
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +39,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -300,7 +307,8 @@ private fun DayEpisodeList(
     day: CalendarDay,
     titleLanguage: TitleLanguage,
     nowEpochSec: Long,
-    onMediaClick: (Int) -> Unit
+    onMediaClick: (Int) -> Unit,
+    cardColor: Color = MaterialTheme.colorScheme.surfaceContainerLow
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -312,7 +320,8 @@ private fun DayEpisodeList(
                 episode = episode,
                 titleLanguage = titleLanguage,
                 nowEpochSec = nowEpochSec,
-                onClick = { onMediaClick(episode.mediaId) }
+                onClick = { onMediaClick(episode.mediaId) },
+                containerColor = cardColor
             )
         }
     }
@@ -403,8 +412,12 @@ private fun CalendarMonthTwoPane(
                 followingOnly = followingOnly,
                 titleLanguage = titleLanguage,
                 nowEpochSec = nowEpochSec,
+                today = today,
                 onMediaClick = onMediaClick,
-                onRefresh = onRefresh
+                onRefresh = onRefresh,
+                // Lift the day cards a tone above the pane so they read as floating cards
+                // (the pane is surfaceContainerLow; matching cards would disappear into it).
+                cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         }
     )
@@ -428,6 +441,11 @@ private fun MonthGridPane(
         )
         Spacer(Modifier.height(4.dp))
         WeekdayLabelsRow()
+        Spacer(Modifier.height(4.dp))
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
         Spacer(Modifier.height(2.dp))
 
         // While a month loads its grid is empty; synthesize the 6×7 dates from gridStart so the
@@ -603,11 +621,11 @@ private fun MonthDayCell(
                 color = numberColor,
                 textAlign = TextAlign.Center
             )
-            Spacer(Modifier.height(3.dp))
+            Spacer(Modifier.height(4.dp))
             // Airing marker — always laid out (transparent when none) so every cell keeps one height.
             Box(
                 modifier = Modifier
-                    .size(5.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(if (hasEpisodes) dotColor else Color.Transparent)
             )
@@ -621,13 +639,22 @@ private fun DayDetailPane(
     followingOnly: Boolean,
     titleLanguage: TitleLanguage,
     nowEpochSec: Long,
+    today: LocalDate,
     onMediaClick: (Int) -> Unit,
     onRefresh: () -> Unit,
+    cardColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val selectedDay = month.selectedDay
     Column(modifier = modifier.fillMaxSize()) {
-        DayDetailHeader(date = month.selectedDate, count = selectedDay.episodes.size)
+        DayDetailHeader(
+            date = month.selectedDate,
+            count = month.selectedDay.episodes.size,
+            isToday = month.selectedDate == today
+        )
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
 
         val pullState = rememberPullToRefreshState()
         PullToRefreshBox(
@@ -645,22 +672,35 @@ private fun DayDetailPane(
                 )
             }
         ) {
-            when {
-                month.isLoading -> CalendarDaySkeleton(modifier = Modifier.padding(top = 12.dp))
-                selectedDay.episodes.isEmpty() -> EmptyDay(followingOnly = followingOnly)
-                else -> DayEpisodeList(
-                    day = selectedDay,
-                    titleLanguage = titleLanguage,
-                    nowEpochSec = nowEpochSec,
-                    onMediaClick = onMediaClick
-                )
+            // Cross-fade the day's list as the selection changes; keying on the date also gives each
+            // day a fresh LazyColumn (so the scroll position resets to the top per day).
+            AnimatedContent(
+                targetState = month.selectedDate,
+                transitionSpec = {
+                    (fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 14 }) togetherWith
+                        fadeOut(tween(120))
+                },
+                label = "calendarDaySwitch"
+            ) { date ->
+                val day = month.days.firstOrNull { it.date == date } ?: CalendarDay(date, emptyList())
+                when {
+                    month.isLoading -> CalendarDaySkeleton(modifier = Modifier.padding(top = 12.dp))
+                    day.episodes.isEmpty() -> EmptyDay(followingOnly = followingOnly)
+                    else -> DayEpisodeList(
+                        day = day,
+                        titleLanguage = titleLanguage,
+                        nowEpochSec = nowEpochSec,
+                        onMediaClick = onMediaClick,
+                        cardColor = cardColor
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun DayDetailHeader(date: LocalDate, count: Int) {
+private fun DayDetailHeader(date: LocalDate, count: Int, isToday: Boolean) {
     val locale = Locale.getDefault()
     Column(
         modifier = Modifier
@@ -668,7 +708,11 @@ private fun DayDetailHeader(date: LocalDate, count: Int) {
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp)
     ) {
         Text(
-            text = date.format(DateTimeFormatter.ofPattern("EEEE", locale)),
+            text = if (isToday) {
+                stringResource(R.string.calendar_today)
+            } else {
+                date.format(DateTimeFormatter.ofPattern("EEEE", locale))
+            },
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
