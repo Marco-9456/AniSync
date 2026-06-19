@@ -53,7 +53,7 @@ import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.library.LibraryListDetail
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
-import com.anisync.android.presentation.notifications.NotificationsScreen
+import com.anisync.android.presentation.notifications.NotificationsListDetail
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.review.RecentReviewsScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
@@ -1074,19 +1074,10 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                NotificationsScreen(
+                NotificationsListDetail(
+                    navController = navController,
                     onBackClick = { navController.popBackStack() },
-                    onMediaClick = { mediaId ->
-                        navController.navigate(MediaDetails(mediaId, "notifications"))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onActivityClick = navigateToActivity,
-                    onThreadClick = { threadId, commentId ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, "", commentId ?: 0)
-                        )
-                    },
-                    onSettingsClick = { navController.navigate(SettingsNotifications) }
+                    onSettingsClick = { navController.navigate(SettingsNotifications) },
                 )
             }
 

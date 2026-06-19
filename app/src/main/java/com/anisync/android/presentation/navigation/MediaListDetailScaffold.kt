@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.width
@@ -28,6 +29,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.autoSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -93,8 +96,11 @@ private fun nextSplitAnchor(fraction: Float): Float =
 
 /**
  * Reusable Material 3 two-pane container for any feed→detail surface (Library, Discover, Feed,
- * Forum). The caller supplies its list/feed via [listPane] (receiving an `onItemClick`) and the
- * detail content via [detailPane] (receiving the selected id and an `onClose`).
+ * Forum, Notifications). The caller supplies its list/feed via [listPane] (receiving an
+ * `onItemClick`) and the detail content via [detailPane] (receiving the selected item and an
+ * `onClose`). The selection is generic over [T] — usually the item's `Int` id, but any type works
+ * (Notifications selects a heterogeneous `NotificationTarget`); pass a [selectionSaver] when [T] is
+ * not auto-saveable so the open detail survives configuration changes.
  *
  * Behaviour (matching the M3 panes guidance):
  *  - The **list pane is permanent** and fills the full width while nothing is selected.
@@ -108,15 +114,21 @@ private fun nextSplitAnchor(fraction: Float): Float =
  * Intended to be rendered only on expanded widths; compact/medium use the plain full-screen screen.
  */
 @Composable
-fun TwoPaneListDetailScaffold(
+fun <T : Any> TwoPaneListDetailScaffold(
     modifier: Modifier = Modifier,
-    listPane: @Composable (onItemClick: (Int) -> Unit) -> Unit,
-    detailPane: @Composable (id: Int, onClose: () -> Unit) -> Unit,
+    selectionSaver: Saver<T?, out Any> = autoSaver(),
+    // Gutter inset around the panes while two are shown. Defaults to the rail-flush [TwoPaneDefaults]
+    // padding (start = 0) for the tab surfaces that sit beside the navigation rail; standalone routes
+    // with no rail (e.g. Notifications) should pass a symmetric inset so the list pane isn't flush to
+    // the screen edge.
+    gutterPadding: PaddingValues = TwoPaneDefaults.GutterPadding,
+    listPane: @Composable (onItemClick: (T) -> Unit) -> Unit,
+    detailPane: @Composable (selected: T, onClose: () -> Unit) -> Unit,
 ) {
-    var selectedId by rememberSaveable { mutableStateOf<Int?>(null) }
-    val detailId = selectedId
+    var selected by rememberSaveable(stateSaver = selectionSaver) { mutableStateOf<T?>(null) }
+    val detail = selected
 
-    BackHandler(enabled = detailId != null) { selectedId = null }
+    BackHandler(enabled = detail != null) { selected = null }
 
     // List pane fraction. rememberSaveable survives config change; the initial value is seeded from
     // (and resized splits are written back to) AppSettings so the chosen split also survives app close.
@@ -142,7 +154,7 @@ fun TwoPaneListDetailScaffold(
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
     val toggleLabel = stringResource(R.string.pane_resize_toggle)
 
-    val twoPane = detailId != null
+    val twoPane = detail != null
     val listMinWidth = with(LocalDensity.current) { (rowWidthPx * LIST_MIN_LAYOUT_FRACTION).toDp() }
 
     // The two-pane chrome (rounded panes on a surfaceContainer gutter) is the shared [TwoPaneDefaults]
@@ -157,7 +169,7 @@ fun TwoPaneListDetailScaffold(
                 if (twoPane) {
                     Modifier
                         .background(TwoPaneDefaults.gutterColor)
-                        .padding(TwoPaneDefaults.GutterPadding)
+                        .padding(gutterPadding)
                 } else {
                     Modifier
                 }
@@ -179,16 +191,16 @@ fun TwoPaneListDetailScaffold(
                 // shrinks past [LIST_MIN_LAYOUT_FRACTION], so collapsing slides/clips the list out
                 // instead of reflowing its search bar + tab switcher into a squashed column.
                 Box(modifier = Modifier.requiredWidthIn(min = listMinWidth).fillMaxSize()) {
-                    listPane { id -> selectedId = id }
+                    listPane { item -> selected = item }
                 }
             }
         } else {
             Box(modifier = listModifier.clipToBounds()) {
-                listPane { id -> selectedId = id }
+                listPane { item -> selected = item }
             }
         }
 
-        if (detailId != null) {
+        if (detail != null) {
             // Drag handle — drag to resize, tap to cycle the split, long-press to collapse/expand.
             // [handleModifier] sets its placement: a full-height column between the cards while both
             // panes show, or a short centered pill while the list is collapsed (see below).
@@ -229,7 +241,7 @@ fun TwoPaneListDetailScaffold(
                         shape = TwoPaneDefaults.PaneShape,
                         color = TwoPaneDefaults.paneColor,
                     ) {
-                        detailPane(detailId) { selectedId = null }
+                        detailPane(detail) { selected = null }
                     }
                     dragHandle(Modifier.align(Alignment.CenterStart).height(96.dp))
                 }
@@ -244,7 +256,7 @@ fun TwoPaneListDetailScaffold(
                     shape = TwoPaneDefaults.PaneShape,
                     color = TwoPaneDefaults.paneColor,
                 ) {
-                    detailPane(detailId) { selectedId = null }
+                    detailPane(detail) { selected = null }
                 }
             }
         }
