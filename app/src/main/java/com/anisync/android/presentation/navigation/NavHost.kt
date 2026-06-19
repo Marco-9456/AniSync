@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.activity.ActivityDetailScreen
+import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
@@ -47,6 +48,7 @@ import com.anisync.android.presentation.forum.ForumMediaThreadsScreen
 import com.anisync.android.presentation.forum.ForumListDetail
 import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ForumThreadInputScreen
+import com.anisync.android.presentation.forum.EditThreadBodyScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.library.LibraryListDetail
 import com.anisync.android.presentation.library.LibraryScreen
@@ -1016,7 +1018,8 @@ fun AniSyncNavHost(
                     threadTitle = route.threadTitle,
                     targetCommentId = if (route.commentId != 0) route.commentId else null,
                     onBackClick = { navController.popBackStack() },
-                    onUserClick = navigateToUserProfile
+                    onUserClick = navigateToUserProfile,
+                    onEditThread = { navController.navigate(EditThreadBody(it)) }
                 )
             }
 
@@ -1039,7 +1042,23 @@ fun AniSyncNavHost(
                     activityId = route.activityId,
                     targetReplyId = if (route.targetReplyId != 0) route.targetReplyId else null,
                     onBackClick = { navController.popBackStack() },
-                    onUserClick = navigateToUserProfile
+                    onUserClick = navigateToUserProfile,
+                    onEditActivity = { navController.navigate(EditActivity(it)) }
+                )
+            }
+
+            // =================================================================
+            // EDIT ACTIVITY - Shared Axis Z (Depth)
+            // =================================================================
+            composable<EditActivity>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                EditActivityScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
                 )
             }
 
@@ -1103,6 +1122,21 @@ fun AniSyncNavHost(
                 ForumThreadInputScreen(
                     onBackClick = { navController.popBackStack() },
                     onThreadCreated = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // EDIT THREAD BODY - Shared Axis Z (Depth)
+            // =================================================================
+            composable<EditThreadBody>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                EditThreadBodyScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
                 )
             }
 

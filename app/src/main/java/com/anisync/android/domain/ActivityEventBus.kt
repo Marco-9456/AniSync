@@ -7,8 +7,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * A change to a single activity's engagement state. Only the fields that changed
- * are non-null; collectors patch matching items and leave the rest untouched.
+ * A change to a single activity's engagement state (or, via [bodyHtml] /
+ * [bodyMarkdown], its edited body). Only the fields that changed are non-null;
+ * collectors patch matching items and leave the rest untouched. The body fields
+ * let the full-screen status editor publish an edit back to the open activity
+ * detail without a refetch — [bodyHtml] is the rendered AniList HTML,
+ * [bodyMarkdown] the raw source kept for re-editing.
  */
 data class ActivityUpdate(
     val id: Int,
@@ -16,7 +20,9 @@ data class ActivityUpdate(
     val likeCount: Int? = null,
     val isSubscribed: Boolean? = null,
     val replyCount: Int? = null,
-    val deleted: Boolean = false
+    val deleted: Boolean = false,
+    val bodyHtml: String? = null,
+    val bodyMarkdown: String? = null
 )
 
 /**

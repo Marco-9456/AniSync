@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.navigation.ActivityDetail
+import com.anisync.android.presentation.navigation.EditActivity
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.navigation.UserProfile
@@ -49,6 +50,7 @@ fun FeedListDetail(
                 onBackClick = onClose,
                 onUserClick = { navController.navigateSafely(UserProfile(it)) },
                 navigationIcon = Icons.Default.Close,
+                onEditActivity = { navController.navigate(EditActivity(it)) },
             )
         },
     )

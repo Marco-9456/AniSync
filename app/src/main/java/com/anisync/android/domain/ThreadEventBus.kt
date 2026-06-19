@@ -7,9 +7,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * A change to a single forum thread's engagement state. Only the fields that
- * changed are non-null; collectors patch matching threads and leave the rest
- * untouched. [isSaved] toggles the locally-bookmarked set.
+ * A change to a single forum thread's engagement state (or, via [bodyHtml] /
+ * [bodyMarkdown], its edited body). Only the fields that changed are non-null;
+ * collectors patch matching threads and leave the rest untouched. [isSaved]
+ * toggles the locally-bookmarked set. The body fields let the full-screen
+ * thread-body editor publish an edit back to the open thread detail (and any
+ * list showing a snippet) without a refetch — [bodyHtml] is the rendered AniList
+ * HTML, [bodyMarkdown] the raw source kept for re-editing.
  */
 data class ThreadUpdate(
     val id: Int,
@@ -18,7 +22,9 @@ data class ThreadUpdate(
     val isSubscribed: Boolean? = null,
     val replyCount: Int? = null,
     val isSaved: Boolean? = null,
-    val deleted: Boolean = false
+    val deleted: Boolean = false,
+    val bodyHtml: String? = null,
+    val bodyMarkdown: String? = null
 )
 
 /**

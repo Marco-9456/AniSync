@@ -49,7 +49,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.anisync.android.presentation.components.menu.Menu
-import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -127,6 +126,7 @@ fun ThreadDetailScreen(
     onUserClick: (String) -> Unit,
     targetCommentId: Int? = null,
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
+    onEditThread: (threadId: Int) -> Unit = {},
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -350,7 +350,7 @@ fun ThreadDetailScreen(
                                     leadingIcon = Icons.Default.Edit,
                                     onClick = {
                                         threadOverflow = false
-                                        viewModel.onAction(ThreadDetailAction.EditThread)
+                                        onEditThread(threadId)
                                     }
                                 )
                                 gap()
@@ -774,22 +774,6 @@ fun ThreadDetailScreen(
                 )
             },
             onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) }
-        )
-    }
-
-    if (uiState.pendingThreadEdit && uiState.thread != null) {
-        val thread = uiState.thread!!
-        RichTextInputScreen(
-            title = stringResource(R.string.forum_edit_thread_title),
-            placeholder = stringResource(R.string.forum_thread_body_hint),
-            initialBody = thread.bodyMarkdown ?: thread.body.orEmpty(),
-            isSubmitting = uiState.isSubmittingReply,
-            minLength = com.anisync.android.domain.ContentLimits.ThreadBody.min,
-            maxLength = com.anisync.android.domain.ContentLimits.ThreadBody.max,
-            onSubmit = { body ->
-                viewModel.onAction(ThreadDetailAction.SubmitThreadEdit(body))
-            },
-            onDismiss = { viewModel.onAction(ThreadDetailAction.ConsumeThreadEdit) }
         )
     }
 

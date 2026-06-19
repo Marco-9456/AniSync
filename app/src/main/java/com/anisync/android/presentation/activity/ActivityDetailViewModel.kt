@@ -74,6 +74,30 @@ class ActivityDetailViewModel @Inject constructor(
     private val _finishedEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val finishedEvents: SharedFlow<Unit> = _finishedEvents.asSharedFlow()
 
+    init {
+        // An external full-screen status edit (the EditActivity route) publishes the new body to the
+        // shared bus; patch the open activity in place so returning shows the edit without a refetch.
+        viewModelScope.launch {
+            activityEventBus.events.collect { update ->
+                val current = _uiState.value.activity ?: return@collect
+                if (update.id != current.id) return@collect
+                if (update.bodyHtml == null && update.bodyMarkdown == null) return@collect
+                val newHtml = update.bodyHtml ?: current.body
+                val parsed = withContext(Dispatchers.Default) { RichTextParser.parse(html = newHtml) }
+                _uiState.update { state ->
+                    val activity = state.activity ?: return@update state
+                    state.copy(
+                        activity = activity.copy(
+                            body = update.bodyHtml ?: activity.body,
+                            bodyMarkdown = update.bodyMarkdown ?: activity.bodyMarkdown
+                        ),
+                        parsedBody = parsed
+                    )
+                }
+            }
+        }
+    }
+
     fun onAction(action: ActivityDetailAction) {
         when (action) {
             is ActivityDetailAction.Load -> load(action.activityId, refreshing = false)
@@ -90,8 +114,7 @@ class ActivityDetailViewModel @Inject constructor(
                     replyingToReplyId = action.replyId,
                     replyingToAuthor = action.authorName,
                     replyPrefillBody = action.authorName?.takeIf { action.replyId != null }?.let { "@$it " },
-                    editingReplyId = null,
-                    editingActivity = false
+                    editingReplyId = null
                 )
             }
             is ActivityDetailAction.CloseReply -> _uiState.update {
@@ -100,30 +123,14 @@ class ActivityDetailViewModel @Inject constructor(
                     replyingToReplyId = null,
                     replyingToAuthor = null,
                     replyPrefillBody = null,
-                    editingReplyId = null,
-                    editingActivity = false
+                    editingReplyId = null
                 )
             }
             is ActivityDetailAction.SubmitReply -> submitReply(action.text)
             is ActivityDetailAction.DeleteActivity -> deleteActivity()
             is ActivityDetailAction.DeleteReply -> deleteReply(action.replyId)
             is ActivityDetailAction.ConsumeScrollToBottom -> _uiState.update { it.copy(scrollToBottom = false) }
-            is ActivityDetailAction.EditActivity -> openActivityEdit()
             is ActivityDetailAction.EditReply -> openReplyEdit(action.replyId)
-        }
-    }
-
-    private fun openActivityEdit() {
-        val activity = _uiState.value.activity ?: return
-        _uiState.update {
-            it.copy(
-                isReplySheetVisible = true,
-                editingActivity = true,
-                editingReplyId = null,
-                replyingToReplyId = null,
-                replyingToAuthor = null,
-                replyPrefillBody = activity.bodyMarkdown ?: activity.body
-            )
         }
     }
 
@@ -133,7 +140,6 @@ class ActivityDetailViewModel @Inject constructor(
             it.copy(
                 isReplySheetVisible = true,
                 editingReplyId = replyId,
-                editingActivity = false,
                 replyingToReplyId = null,
                 replyingToAuthor = null,
                 replyPrefillBody = reply.bodyMarkdown ?: reply.body
@@ -272,7 +278,6 @@ class ActivityDetailViewModel @Inject constructor(
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
         when {
-            state.editingActivity -> submitActivityEdit(activityId, trimmed)
             state.editingReplyId != null -> submitReplyEdit(activityId, state.editingReplyId, trimmed)
             else -> submitNewReply(activityId, trimmed)
         }
@@ -333,46 +338,6 @@ class ActivityDetailViewModel @Inject constructor(
                         )
                     }
                     refreshSilent(activityId)
-                }
-                is Result.Error -> _uiState.update {
-                    it.copy(isSubmittingReply = false, errorMessage = result.message)
-                }
-            }
-        }
-    }
-
-    private fun submitActivityEdit(activityId: Int, trimmed: String) {
-        val activity = _uiState.value.activity ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSubmittingReply = true) }
-            val result = if (activity.isMessage) {
-                val recipientId = activity.recipientId
-                if (recipientId == null) {
-                    _uiState.update {
-                        it.copy(isSubmittingReply = false, errorMessage = "Missing recipient")
-                    }
-                    return@launch
-                }
-                repository.saveMessageActivity(
-                    id = activityId,
-                    recipientId = recipientId,
-                    message = trimmed,
-                    isPrivate = activity.isPrivate
-                )
-            } else {
-                repository.saveTextActivity(trimmed, id = activityId)
-            }
-            when (result) {
-                is Result.Success -> {
-                    refreshSilent(activityId)
-                    _uiState.update {
-                        it.copy(
-                            isSubmittingReply = false,
-                            isReplySheetVisible = false,
-                            editingActivity = false,
-                            replyPrefillBody = null
-                        )
-                    }
                 }
                 is Result.Error -> _uiState.update {
                     it.copy(isSubmittingReply = false, errorMessage = result.message)

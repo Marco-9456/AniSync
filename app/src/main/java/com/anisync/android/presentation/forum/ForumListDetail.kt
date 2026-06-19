@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import com.anisync.android.presentation.navigation.CreateThread
+import com.anisync.android.presentation.navigation.EditThreadBody
 import com.anisync.android.presentation.navigation.ForumThreadDetail
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.navigation.UserProfile
@@ -49,6 +50,7 @@ fun ForumListDetail(
                 onBackClick = onClose,
                 onUserClick = { navController.navigateSafely(UserProfile(it)) },
                 navigationIcon = Icons.Default.Close,
+                onEditThread = { navController.navigate(EditThreadBody(it)) },
             )
         },
     )
