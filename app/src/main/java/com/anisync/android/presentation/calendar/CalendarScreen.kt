@@ -44,7 +44,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -147,16 +146,22 @@ fun CalendarScreen(
 
     val isCurrentWeek = uiState.weekStart == weekStartOf(today)
 
+    // Match the document-editor chrome (RichTextScaffold): a flat, page-toned app bar that blends
+    // seamlessly into the surfaceContainer gutter, instead of an elevated surface bar with a shadow.
+    val pageColor = MaterialTheme.colorScheme.surfaceContainer
+
     Scaffold(
         modifier = modifier,
+        containerColor = pageColor,
         topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 3.dp
-            ) {
-                Column {
+            Column(modifier = Modifier.background(pageColor)) {
                     TopAppBar(
-                        title = { Text(stringResource(R.string.calendar_title)) },
+                        title = {
+                            Text(
+                                text = stringResource(R.string.calendar_title),
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
                         navigationIcon = {
                             IconButton(onClick = onBackClick) {
                                 Icon(
@@ -180,7 +185,8 @@ fun CalendarScreen(
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent
                         )
                     )
 
@@ -213,7 +219,6 @@ fun CalendarScreen(
                         }
                     }
                 }
-            }
         }
     ) { innerPadding ->
         Box(
@@ -290,7 +295,9 @@ fun CalendarScreen(
                                         day = day,
                                         titleLanguage = titleLanguage,
                                         nowEpochSec = nowEpochSec,
-                                        onMediaClick = onMediaClick
+                                        onMediaClick = onMediaClick,
+                                        // Lift the cards off the tinted page (matches the wide day pane).
+                                        cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
                                     )
                                 }
                             }
@@ -379,6 +386,10 @@ private fun CalendarMonthTwoPane(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { rowWidthPx = it.width },
+        // Match RichTextScaffold's chrome: a symmetric gutter (no flush-against-rail inset — this is a
+        // standalone route with no nav rail) so the panes float with equal margins on every side.
+        gutterColor = MaterialTheme.colorScheme.surfaceContainer,
+        gutterPadding = PaddingValues(16.dp),
         handle = {
             PaneDragHandle(
                 modifier = Modifier.fillMaxHeight(),
