@@ -86,4 +86,14 @@
     <string name="section_trending_now">Популярно сейчас</string>
     <string name="section_all_time_popular">Популярно за все время</string>
     <string name="search_library_placeholder">Поиск в библиотеке…</string>
+    <string name="status_watching">Смотрю</string>
+    <string name="status_reading">Читаю</string>
+    <string name="status_planning">Запланировано</string>
+    <string name="translate">Перевести</string>
+    <string name="no_translation_app_found">Не найдено приложение для перевода</string>
+    <string name="notification_thread_comment_mention">Упоминания</string>
+    <string name="notification_thread_comment_mention_desc">Когда кто-то упомянул Вас в комментарии</string>
+    <string name="notification_thread_comment_reply">Ответы на комментарий</string>
+    <string name="notification_thread_comment_reply_desc">Когда кто-то ответил на Ваш комментарий</string>
+    <string name="control_notifications">Уведомления</string>
 </resources>
