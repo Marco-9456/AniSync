@@ -293,6 +293,14 @@ data class ActivityDetail(
 data class EditActivity(val activityId: Int)
 
 /**
+ * New-status composer — posts a new text activity to the viewer's feed. A real full-screen
+ * destination (not an inline overlay) so authoring is never confined to the Feed list pane on large
+ * screens (where a detail pane may shrink the list to a sliver).
+ */
+@Serializable
+object CreateStatus
+
+/**
  * Notifications inbox screen for the current viewer.
  */
 @Serializable

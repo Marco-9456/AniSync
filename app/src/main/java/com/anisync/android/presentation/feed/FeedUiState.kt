@@ -26,9 +26,6 @@ data class FeedUiState(
     val errorMessage: String? = null,
     val pendingLikeIds: ImmutableSet<Int> = persistentSetOf(),
     val pendingDeleteIds: ImmutableSet<Int> = persistentSetOf(),
-    val isComposeSheetVisible: Boolean = false,
-    val isPostingStatus: Boolean = false,
-    val composeError: String? = null,
     /**
      * Activity currently being edited via the inline compose sheet, or null if none.
      * Holds the full activity so we know whether it's TEXT or MESSAGE (for the right
@@ -47,9 +44,6 @@ sealed interface FeedAction {
     data class ToggleSubscribe(val activityId: Int) : FeedAction
     data class ToggleLike(val activityId: Int) : FeedAction
     data class DeleteActivity(val activityId: Int) : FeedAction
-    data object OpenCompose : FeedAction
-    data object DismissCompose : FeedAction
-    data class PostStatus(val text: String) : FeedAction
     data class EditActivity(val activityId: Int) : FeedAction
     data object DismissEdit : FeedAction
     data class SubmitEdit(val text: String) : FeedAction

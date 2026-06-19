@@ -52,7 +52,6 @@ import com.anisync.android.presentation.components.EmptyStateCompact
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ScrollToTopFab
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
-import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.feed.components.FeedFilterBar
 import com.anisync.android.presentation.profile.components.ActivityCard
@@ -67,6 +66,7 @@ fun FeedScreen(
     onMediaClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     onLoginClick: () -> Unit,
+    onComposeStatus: () -> Unit,
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -102,7 +102,7 @@ fun FeedScreen(
                         onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
                     )
                     FloatingActionButton(
-                        onClick = { viewModel.onAction(FeedAction.OpenCompose) },
+                        onClick = onComposeStatus,
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ) {
@@ -257,21 +257,6 @@ fun FeedScreen(
                 }
             }
         }
-    }
-
-    if (uiState.isComposeSheetVisible) {
-        val textBounds = ContentLimits.TextActivity
-        RichTextInputScreen(
-            title = stringResource(R.string.feed_compose_title),
-            placeholder = stringResource(R.string.feed_compose_placeholder),
-            initialBody = "",
-            submitLabel = stringResource(R.string.feed_compose_submit),
-            isSubmitting = uiState.isPostingStatus,
-            minLength = textBounds.min,
-            maxLength = textBounds.max,
-            onSubmit = { body -> viewModel.onAction(FeedAction.PostStatus(body)) },
-            onDismiss = { viewModel.onAction(FeedAction.DismissCompose) }
-        )
     }
 
     val editing = uiState.editingActivity

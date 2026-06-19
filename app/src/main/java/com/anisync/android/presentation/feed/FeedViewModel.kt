@@ -57,6 +57,12 @@ class FeedViewModel @Inject constructor(
         // screen (or elsewhere) back onto the cached feed items without a refetch.
         viewModelScope.launch {
             activityEventBus.events.collect { u ->
+                if (u.created) {
+                    // A new status was posted from the full-screen composer; the feed has no
+                    // item to patch, so reload page 1 to pull it in.
+                    load(page = 1, replaceExisting = true)
+                    return@collect
+                }
                 _uiState.update { state ->
                     if (u.deleted) {
                         state.copy(items = state.items.filterNot { it.id == u.id }
@@ -168,19 +174,6 @@ class FeedViewModel @Inject constructor(
 
             is FeedAction.DeleteActivity -> deleteActivity(action.activityId)
 
-            is FeedAction.OpenCompose -> {
-                _uiState.update { it.copy(isComposeSheetVisible = true, composeError = null) }
-            }
-
-            is FeedAction.DismissCompose -> {
-                if (_uiState.value.isPostingStatus) return
-                _uiState.update {
-                    it.copy(isComposeSheetVisible = false, composeError = null)
-                }
-            }
-
-            is FeedAction.PostStatus -> postStatus(action.text)
-
             is FeedAction.EditActivity -> {
                 val target = _uiState.value.items.firstOrNull { it.id == action.activityId } ?: return
                 _uiState.update { it.copy(editingActivity = target) }
@@ -229,32 +222,6 @@ class FeedViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isSavingEdit = false) }
-                    showResultError(result)
-                }
-            }
-        }
-    }
-
-    private fun postStatus(text: String) {
-        if (_uiState.value.isPostingStatus) return
-        _uiState.update { it.copy(isPostingStatus = true, composeError = null) }
-        viewModelScope.launch {
-            when (val result = activityRepository.saveTextActivity(text)) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isPostingStatus = false,
-                            isComposeSheetVisible = false,
-                            composeError = null
-                        )
-                    }
-                    toastManager.showToast(ToastType.SUCCESS, message = "Status posted")
-                    load(page = 1, replaceExisting = true)
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isPostingStatus = false, composeError = result.message)
-                    }
                     showResultError(result)
                 }
             }

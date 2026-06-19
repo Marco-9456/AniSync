@@ -12,7 +12,9 @@ import javax.inject.Singleton
  * collectors patch matching items and leave the rest untouched. The body fields
  * let the full-screen status editor publish an edit back to the open activity
  * detail without a refetch — [bodyHtml] is the rendered AniList HTML,
- * [bodyMarkdown] the raw source kept for re-editing.
+ * [bodyMarkdown] the raw source kept for re-editing. [created] signals that a
+ * brand-new activity was posted (by the full-screen composer); the feed reloads
+ * to pull it in rather than patching an existing item, so [id] is irrelevant then.
  */
 data class ActivityUpdate(
     val id: Int,
@@ -21,6 +23,7 @@ data class ActivityUpdate(
     val isSubscribed: Boolean? = null,
     val replyCount: Int? = null,
     val deleted: Boolean = false,
+    val created: Boolean = false,
     val bodyHtml: String? = null,
     val bodyMarkdown: String? = null
 )

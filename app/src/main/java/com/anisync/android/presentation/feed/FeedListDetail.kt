@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.navigation.ActivityDetail
+import com.anisync.android.presentation.navigation.CreateStatus
 import com.anisync.android.presentation.navigation.EditActivity
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -34,6 +35,7 @@ fun FeedListDetail(
                 navController.navigate(ActivityDetail(activityId, replyId))
             },
             onLoginClick = onLoginClick,
+            onComposeStatus = { navController.navigate(CreateStatus) },
         )
     }
 

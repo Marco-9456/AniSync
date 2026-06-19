@@ -41,6 +41,7 @@ import com.anisync.android.presentation.discover.DiscoverListDetail
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.feed.CreateStatusScreen
 import com.anisync.android.presentation.feed.FeedListDetail
 import com.anisync.android.presentation.feed.FeedScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
@@ -1059,6 +1060,21 @@ fun AniSyncNavHost(
                 EditActivityScreen(
                     onBackClick = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // CREATE STATUS - Shared Axis Z (Depth)
+            // =================================================================
+            composable<CreateStatus>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                CreateStatusScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onPosted = { navController.popBackStack() }
                 )
             }
 
