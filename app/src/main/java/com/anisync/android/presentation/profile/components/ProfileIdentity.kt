@@ -44,8 +44,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -95,12 +98,14 @@ fun ProfileBannerSurface(
     topActionIcon: ImageVector,
     onTopActionClick: () -> Unit,
     height: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (profile.bannerUrl != null) {

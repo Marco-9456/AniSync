@@ -54,16 +54,18 @@ import com.anisync.android.presentation.profile.components.ProfileIdentityInfo
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
+import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
 import com.anisync.android.util.ShareUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-// The wide profile reads as a dashboard: a shorter full-width banner pinned on top, the avatar
-// straddling its lower edge, and below it two resizable panes — identity + bio on the left, the
-// tab-switched content on the right.
+// The wide profile reads as a dashboard: a shorter banner pinned on top (inset to the panes' width
+// and rounded to match them — a floating card), the avatar straddling its lower edge, and below it
+// two resizable panes — identity + bio on the left, the tab-switched content on the right.
 private val WideBannerHeight = 200.dp
+private val WideBannerTopMargin = 12.dp
 
 // Horizontal offset of the overlay avatar = the two-pane gutter start + the identity pane's own
 // horizontal padding, so the avatar's left edge lines up with the name below it.
@@ -136,7 +138,13 @@ fun ProfileWideLayout(
                         )
                     }
                 },
-                height = WideBannerHeight
+                height = WideBannerHeight,
+                modifier = Modifier.padding(
+                    start = WideGutterStart,
+                    top = WideBannerTopMargin,
+                    end = 16.dp
+                ),
+                shape = TwoPaneDefaults.PaneShape
             )
 
             ProfileTwoPane(
@@ -174,7 +182,10 @@ fun ProfileWideLayout(
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .offset(x = WideAvatarStartInset, y = WideBannerHeight - ProfileAvatarHalfSize)
+                .offset(
+                    x = WideAvatarStartInset,
+                    y = WideBannerTopMargin + WideBannerHeight - ProfileAvatarHalfSize
+                )
                 .height(ProfileAvatarSize),
             contentAlignment = Alignment.BottomStart
         ) {
