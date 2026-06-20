@@ -50,6 +50,7 @@ import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
+import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.util.profilePosterColumns
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
@@ -96,6 +97,10 @@ fun ProfileContent(
     val pullToRefreshState = rememberPullToRefreshState()
     val statsColumns = dashboardColumns()
     val posterColumns = profilePosterColumns()
+    // Portrait grids (favorite characters/staff, social following/followers) keep their 3-up phone
+    // density and gain columns on wider windows; studio chips are wider so they start 2-up.
+    val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
+    val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
 
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
@@ -209,7 +214,8 @@ fun ProfileContent(
                     onUserClick = onUserClick,
                     onThreadClick = onThreadClick,
                     onCommentClick = onCommentClick,
-                    onLoadMore = { onAction(ProfileAction.LoadMoreSocial) }
+                    onLoadMore = { onAction(ProfileAction.LoadMoreSocial) },
+                    userColumns = portraitColumns
                 )
             }
 
@@ -255,7 +261,10 @@ fun ProfileContent(
                     onMediaClick = onMediaClick,
                     onCharacterClick = onCharacterClick,
                     onStaffClick = onStaffClick,
-                    onStudioClick = onStudioClick
+                    onStudioClick = onStudioClick,
+                    posterColumns = posterColumns,
+                    portraitColumns = portraitColumns,
+                    studioColumns = studioColumns
                 )
             }
 

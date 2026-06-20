@@ -45,8 +45,7 @@ fun posterGridColumns(
  *
  * Phones keep their existing 3-up density unchanged; wider windows gain columns so posters stay
  * roughly [baseMinSize] wide (matching the [GridCells.Adaptive] grids elsewhere) instead of being
- * stretched three-across. [railWidth] is subtracted because the navigation rail occupies the leading
- * edge on medium+ widths; the result is clamped to a sensible [3, 8].
+ * stretched three-across. Delegates to [profileGridColumns] with a 3-up compact floor.
  */
 @Composable
 fun profilePosterColumns(
@@ -54,13 +53,39 @@ fun profilePosterColumns(
     horizontalPadding: Dp = 16.dp,
     itemSpacing: Dp = 12.dp,
     railWidth: Dp = 80.dp,
+): Int = profileGridColumns(
+    baseMinSize = baseMinSize,
+    compactColumns = 3,
+    horizontalPadding = horizontalPadding,
+    itemSpacing = itemSpacing,
+    railWidth = railWidth,
+)
+
+/**
+ * Generalized column **count** for any profile grid that chunks its items into [Row]s because it
+ * lives inside the profile [androidx.compose.foundation.lazy.LazyColumn] and cannot nest a grid —
+ * the favorites (anime/manga/characters/staff/studios) and social (following/followers) tabs.
+ *
+ * Compact keeps the tab's existing [compactColumns] density unchanged (3 for portraits, 2 for the
+ * wide studio chips); wider windows gain columns so each cell stays roughly [baseMinSize] wide,
+ * matching the [GridCells.Adaptive] grids elsewhere instead of being stretched a fixed few across.
+ * [railWidth] is subtracted because the navigation rail occupies the leading edge on medium+ widths;
+ * the result is clamped to `[compactColumns, 8]` so it never drops below the compact density.
+ */
+@Composable
+fun profileGridColumns(
+    baseMinSize: Dp,
+    compactColumns: Int = 3,
+    horizontalPadding: Dp = 16.dp,
+    itemSpacing: Dp = 12.dp,
+    railWidth: Dp = 80.dp,
 ): Int {
     val info = LocalAdaptiveInfo.current
-    if (info.isCompact) return 3
+    if (info.isCompact) return compactColumns
     val density = LocalDensity.current
     val windowWidth = with(density) { currentWindowSize().width.toDp() }
     val content = windowWidth - railWidth - horizontalPadding * 2
-    if (content <= 0.dp) return 3
+    if (content <= 0.dp) return compactColumns
     val columns = ((content + itemSpacing) / (baseMinSize + itemSpacing)).toInt()
-    return columns.coerceIn(3, 8)
+    return columns.coerceIn(compactColumns, 8)
 }
