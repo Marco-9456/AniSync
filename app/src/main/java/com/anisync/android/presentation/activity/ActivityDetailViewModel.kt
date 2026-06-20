@@ -148,6 +148,14 @@ class ActivityDetailViewModel @Inject constructor(
     }
 
     private fun load(activityId: Int, refreshing: Boolean) {
+        // Offline-first: skip a redundant reload when this activity is already loaded (or loading) —
+        // e.g. a configuration change re-dispatches Load but the ViewModel kept its state. Pull-to-
+        // refresh uses [ActivityDetailAction.Refresh] (refreshing = true) to force a fetch; a retry
+        // after an error still loads because errorMessage is set.
+        val state = _uiState.value
+        if (!refreshing && state.activity?.id == activityId && state.errorMessage == null) {
+            return
+        }
         viewModelScope.launch {
             _uiState.update {
                 it.copy(

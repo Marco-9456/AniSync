@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -48,6 +49,11 @@ class MediaDetailsViewModel @Inject constructor(
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
+    // True only while an explicit pull-to-refresh network fetch is in flight (drives the PTR spinner).
+    // The silent initial fetch for an uncached entry doesn't set it — DetailsUiState.Loading covers it.
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     private val _showEditSheet = MutableStateFlow(false)
     val showEditSheet: StateFlow<Boolean> = _showEditSheet.asStateFlow()
@@ -103,10 +109,21 @@ class MediaDetailsViewModel @Inject constructor(
         )
 
     init {
-        // Trigger network refresh to get fresh data
-        refresh()
+        // Offline-first: only hit the network when nothing is cached for this entry. A configuration
+        // change (rotation) or re-entry keeps the cached copy — the ViewModel and the Room-backed
+        // uiState flow both survive — so no redundant refetch. Pull-to-refresh still forces [refresh].
+        loadIfNotCached()
         loadFollowingPreview()
         loadDiscussionsPreview()
+    }
+
+    /** Fetches from the network only when there is no cached [MediaDetails] row for this id yet. */
+    private fun loadIfNotCached() {
+        viewModelScope.launch {
+            if (getMediaDetailsUseCase(mediaId).first() == null) {
+                detailsRepository.refreshMediaDetails(mediaId)
+            }
+        }
     }
 
     /**
@@ -156,19 +173,16 @@ class MediaDetailsViewModel @Inject constructor(
     /**
      * Refresh from network (called on init and can be called for pull-to-refresh).
      */
+    /** Explicit user-driven refresh (pull-to-refresh) — always hits the network. */
     fun refresh() {
         viewModelScope.launch {
-            detailsRepository.refreshMediaDetails(mediaId)
-            // Result errors could be handled with a snackbar if needed
-        }
-    }
-
-    // Kept for compatibility with DetailsScreen's LaunchedEffect
-    fun loadMedia(id: Int) {
-        // Since we use stateIn with mediaId from constructor,
-        // this is mostly a no-op but can trigger a refresh
-        if (id == mediaId) {
-            refresh()
+            _isRefreshing.value = true
+            try {
+                detailsRepository.refreshMediaDetails(mediaId)
+                // Result errors could be handled with a snackbar if needed
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 

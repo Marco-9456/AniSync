@@ -68,7 +68,7 @@ class ThreadDetailViewModel @Inject constructor(
 
     fun onAction(action: ThreadDetailAction) {
         when (action) {
-            is ThreadDetailAction.Load -> load(action.threadId, action.targetCommentId)
+            is ThreadDetailAction.Load -> load(action.threadId, action.targetCommentId, action.forceRefresh)
             is ThreadDetailAction.LoadMoreComments -> loadMoreComments()
             is ThreadDetailAction.LoadEarlierComments -> loadEarlierComments()
             is ThreadDetailAction.JumpToPage -> jumpToPage(action.page)
@@ -168,7 +168,15 @@ class ThreadDetailViewModel @Inject constructor(
         }
     }
 
-    private fun load(threadId: Int, targetCommentId: Int?) {
+    private fun load(threadId: Int, targetCommentId: Int?, forceRefresh: Boolean = false) {
+        // Offline-first: skip a redundant reload when this thread is already loaded (or loading) —
+        // e.g. a configuration change re-dispatches Load but the ViewModel kept its state. Pull-to-
+        // refresh forces a fetch; a new deep-link comment target reloads to that comment's page.
+        val state = _uiState.value
+        val wantsNewAnchor = targetCommentId != null && targetCommentId != state.anchorCommentId
+        if (!forceRefresh && !wantsNewAnchor && state.thread?.id == threadId && state.errorMessage == null) {
+            return
+        }
         viewModelScope.launch {
             _uiState.update {
                 it.copy(

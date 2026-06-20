@@ -392,7 +392,9 @@ fun ThreadDetailScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isLoading && uiState.thread != null,
             state = pullToRefreshState,
-            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ThreadDetailAction.Load(threadId)) },
+            onRefresh = rememberRateLimitedRefresh {
+                viewModel.onAction(ThreadDetailAction.Load(threadId, forceRefresh = true))
+            },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isLoading && uiState.thread != null,

@@ -41,7 +41,11 @@ data class ThreadDetailUiState(
 )
 
 sealed interface ThreadDetailAction {
-    data class Load(val threadId: Int, val targetCommentId: Int? = null) : ThreadDetailAction
+    data class Load(
+        val threadId: Int,
+        val targetCommentId: Int? = null,
+        val forceRefresh: Boolean = false,
+    ) : ThreadDetailAction
     data object LoadMoreComments : ThreadDetailAction
     data object LoadEarlierComments : ThreadDetailAction
     data class JumpToPage(val page: Int) : ThreadDetailAction

@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -70,6 +71,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -128,6 +131,8 @@ import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ConnectedToggleButtonGroup
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
@@ -196,10 +201,8 @@ fun MediaDetailsScreen(
     val following by viewModel.following.collectAsStateWithLifecycle()
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
-
-    LaunchedEffect(mediaId) {
-        viewModel.loadMedia(mediaId)
-    }
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
@@ -516,21 +519,37 @@ fun MediaDetailsScreen(
                     }
                 }
             ) { paddingValues ->
-                Box(
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    state = pullToRefreshState,
+                    onRefresh = rememberRateLimitedRefresh { viewModel.refresh() },
+                    indicator = {
+                        CustomPullToRefreshIndicator(
+                            isRefreshing = isRefreshing,
+                            state = pullToRefreshState,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .windowInsetsPadding(WindowInsets.statusBars)
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = paddingValues.calculateBottomPadding())
-                        // Note: We intentionally IGNORE top padding here to let the content
-                        // (specifically the header image) draw behind the transparent status bar.
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = containerKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
-                        )
                 ) {
-                    when (val state = uiState) {
-                        is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            // Note: We intentionally IGNORE top padding here to let the content
+                            // (specifically the header image) draw behind the transparent status bar.
+                            .sharedBounds(
+                                sharedContentState = rememberSharedContentState(key = containerKey),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ -> spatialSpec },
+                                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
+                            )
+                    ) {
+                        when (val state = uiState) {
+                            is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
                         is DetailsUiState.Success -> {
                             val context = LocalContext.current
                             DetailsPageContent(
@@ -618,6 +637,7 @@ fun MediaDetailsScreen(
                             message = state.message,
                             onBackClick = onBackClick
                         )
+                        }
                     }
                 }
             }
