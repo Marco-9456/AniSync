@@ -70,7 +70,7 @@ import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
-import com.anisync.android.presentation.settings.SettingsScreen
+import com.anisync.android.presentation.settings.SettingsListDetail
 import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.ThemeScreen
@@ -1186,16 +1186,8 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                SettingsScreen(
-                    onNavigateToLookAndFeel = { navController.navigate(SettingsLookAndFeel) },
-                    onNavigateToAniList = { navController.navigate(SettingsAniList) },
-                    onNavigateToNotifications = { navController.navigate(SettingsNotifications) },
-                    onNavigateToStorage = { navController.navigate(SettingsStorage) },
-                    onNavigateToAbout = { navController.navigate(SettingsAbout) },
-                    onNavigateToSponsors = { navController.navigate(SettingsSponsors) },
-                    onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
-                    onNavigateToDeveloperTools = { navController.navigate(SettingsDeveloperTools) },
-                    onNavigateToMediaUpload = { navController.navigate(SettingsMediaUpload) },
+                SettingsListDetail(
+                    navController = navController,
                     onBackClick = { navController.popBackStack() }
                 )
             }

@@ -77,15 +77,7 @@ private data class CategoryData(
  */
 @Composable
 fun SettingsScreen(
-    onNavigateToLookAndFeel: () -> Unit,
-    onNavigateToAniList: () -> Unit,
-    onNavigateToNotifications: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToAbout: () -> Unit,
-    onNavigateToSponsors: () -> Unit,
-    onNavigateToUpdates: () -> Unit,
-    onNavigateToDeveloperTools: () -> Unit,
-    onNavigateToMediaUpload: () -> Unit,
+    onCategorySelected: (SettingsCategory) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
@@ -112,7 +104,7 @@ fun SettingsScreen(
         modifier = modifier,
         actions = {
             val context = LocalContext.current
-            IconButton(onClick = onNavigateToSponsors) {
+            IconButton(onClick = { onCategorySelected(SettingsCategory.Sponsors) }) {
                 Icon(
                     imageVector = Icons.Rounded.VolunteerActivism,
                     contentDescription = stringResource(R.string.settings_sponsors)
@@ -169,35 +161,35 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_look_and_feel),
                 subtitle = stringResource(R.string.settings_look_and_feel_desc),
                 icon = Icons.Outlined.Palette,
-                onClick = onNavigateToLookAndFeel
+                onClick = { onCategorySelected(SettingsCategory.LookAndFeel) }
             ),
             CategoryData(
                 key = "anilist",
                 title = stringResource(R.string.settings_anilist_account),
                 subtitle = stringResource(R.string.settings_anilist_account_desc),
                 icon = Icons.Outlined.Tune,
-                onClick = onNavigateToAniList
+                onClick = { onCategorySelected(SettingsCategory.AniList) }
             ),
             CategoryData(
                 key = "notifications",
                 title = stringResource(R.string.settings_notifications),
                 subtitle = stringResource(R.string.settings_notifications_desc),
                 icon = Icons.Outlined.Notifications,
-                onClick = onNavigateToNotifications
+                onClick = { onCategorySelected(SettingsCategory.Notifications) }
             ),
             CategoryData(
                 key = "storage",
                 title = stringResource(R.string.settings_storage),
                 subtitle = stringResource(R.string.settings_storage_subtitle, uiState.cacheSize),
                 icon = Icons.Outlined.Storage,
-                onClick = onNavigateToStorage
+                onClick = { onCategorySelected(SettingsCategory.Storage) }
             ),
             CategoryData(
                 key = "media_upload",
                 title = stringResource(R.string.settings_media_upload),
                 subtitle = stringResource(R.string.settings_media_upload_desc),
                 icon = Icons.Outlined.CloudUpload,
-                onClick = onNavigateToMediaUpload
+                onClick = { onCategorySelected(SettingsCategory.MediaUpload) }
             ),
             CategoryData(
                 key = "links",
@@ -211,21 +203,21 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_updates),
                 subtitle = stringResource(R.string.settings_updates_desc),
                 icon = Icons.Outlined.Update,
-                onClick = onNavigateToUpdates
+                onClick = { onCategorySelected(SettingsCategory.Updates) }
             ),
             CategoryData(
                 key = "sponsors",
                 title = stringResource(R.string.settings_sponsors),
                 subtitle = stringResource(R.string.settings_sponsors_desc),
                 icon = Icons.Rounded.VolunteerActivism,
-                onClick = onNavigateToSponsors
+                onClick = { onCategorySelected(SettingsCategory.Sponsors) }
             ),
             CategoryData(
                 key = "about",
                 title = stringResource(R.string.settings_about),
                 subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                 icon = Icons.Outlined.Info,
-                onClick = onNavigateToAbout
+                onClick = { onCategorySelected(SettingsCategory.About) }
             ),
             if (BuildConfig.DEBUG || devToolsUnlocked) {
                 CategoryData(
@@ -233,7 +225,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_developer_tools),
                     subtitle = stringResource(R.string.settings_developer_tools_desc),
                     icon = Icons.Outlined.Build,
-                    onClick = onNavigateToDeveloperTools
+                    onClick = { onCategorySelected(SettingsCategory.DeveloperTools) }
                 )
             } else null
         )

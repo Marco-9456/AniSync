@@ -1178,6 +1178,7 @@
     <string name="pane_placeholder_thread">Select a thread to read it here</string>
     <string name="pane_placeholder_activity">Select a status to view it here</string>
     <string name="pane_placeholder_notification">Select a notification to open it here</string>
+    <string name="pane_placeholder_settings">Select a setting to adjust it here</string>
 
     <!-- Collapsible wide navigation rail (rail layouts) -->
     <string name="rail_expand">Expand navigation</string>
