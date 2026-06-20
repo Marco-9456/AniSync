@@ -386,6 +386,13 @@ class AppSettings @Inject constructor(
     )
     val paneCalendarFraction: StateFlow<Float> = _paneCalendarFraction.asStateFlow()
 
+    // Two-pane profile split, stored as the identity pane's width fraction. Independent of the other
+    // splits (the identity + tabbed-content panes are both permanent, so it has its own ratio).
+    private val _paneProfileFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_PROFILE_FRACTION, DEFAULT_PANE_PROFILE_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneProfileFraction: StateFlow<Float> = _paneProfileFraction.asStateFlow()
+
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
     val feedFilter: StateFlow<FeedFilter> = _feedFilter.asStateFlow()
@@ -825,6 +832,13 @@ class AppSettings @Inject constructor(
         prefs.edit().putFloat(KEY_PANE_CALENDAR_FRACTION, coerced).apply()
     }
 
+    /** Persist the two-pane profile split as the identity pane's width fraction (coerced to 0..1). */
+    fun setPaneProfileFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneProfileFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_PROFILE_FRACTION, coerced).apply()
+    }
+
     /**
      * Persist the last selected feed content filter.
      */
@@ -1057,6 +1071,8 @@ companion object {
         const val DEFAULT_PANE_EDITOR_FRACTION = 0.667f
         private const val KEY_PANE_CALENDAR_FRACTION = "pane_calendar_fraction"
         const val DEFAULT_PANE_CALENDAR_FRACTION = 0.42f
+        private const val KEY_PANE_PROFILE_FRACTION = "pane_profile_fraction"
+        const val DEFAULT_PANE_PROFILE_FRACTION = 0.32f
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.BarChart
@@ -48,6 +49,7 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
 import com.anisync.android.presentation.util.profileGridColumns
@@ -102,6 +104,36 @@ fun ProfileContent(
     val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
     val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
 
+    if (LocalAdaptiveInfo.current.isExpandedOrWider) {
+        ProfileWideLayout(
+            profile = profile,
+            uiState = uiState,
+            isOwnProfile = isOwnProfile,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            onAction = onAction,
+            onSettingsClick = onSettingsClick,
+            onNotificationsClick = onNotificationsClick,
+            unreadNotificationCount = unreadNotificationCount,
+            onMediaClick = onMediaClick,
+            onCharacterClick = onCharacterClick,
+            onStaffClick = onStaffClick,
+            onVoiceActorClick = onVoiceActorClick,
+            onStudioClick = onStudioClick,
+            onUserClick = onUserClick,
+            onThreadClick = onThreadClick,
+            onCommentClick = onCommentClick,
+            onActivityClick = onActivityClick,
+            onLastReplyClick = onLastReplyClick,
+            showAccountSwitcher = showAccountSwitcher,
+            onAccountSwitchClick = onAccountSwitchClick,
+            posterColumns = posterColumns,
+            portraitColumns = portraitColumns,
+            studioColumns = studioColumns,
+            statsColumns = statsColumns,
+            modifier = modifier
+        )
+    } else {
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
@@ -166,128 +198,28 @@ fun ProfileContent(
             }
         }
 
-        when (uiState.selectedTab) {
-            ProfileTab.OVERVIEW -> {
-                item(key = "tab_overview", contentType = "overview") {
-                    ProfileOverviewSection(
-                        profile = profile,
-                        activityHistory = uiState.statsData?.activityHistory.orEmpty(),
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
-                        onMediaClick = onMediaClick,
-                        onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick,
-                        onUserClick = onUserClick,
-                        onActivityClick = onActivityClick,
-                        onLastReplyClick = onLastReplyClick,
-                        onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
-                        onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
-                        onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
-                        onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
-                        viewerId = uiState.viewerId
-                    )
-                }
-            }
-
-            ProfileTab.ACTIVITY -> {
-                profileActivityTab(
-                    profile = profile,
-                    selectedFilter = uiState.selectedActivityFilter,
-                    onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
-                    onUserClick = onUserClick,
-                    onActivityClick = onActivityClick,
-                    onMediaClick = onMediaClick,
-                    onLastReplyClick = onLastReplyClick,
-                    onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
-                    onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
-                    onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
-                    onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
-                    viewerId = uiState.viewerId
-                )
-            }
-
-            ProfileTab.SOCIAL -> {
-                profileSocialTab(
-                    uiState = uiState,
-                    onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
-                    onUserClick = onUserClick,
-                    onThreadClick = onThreadClick,
-                    onCommentClick = onCommentClick,
-                    onLoadMore = { onAction(ProfileAction.LoadMoreSocial) },
-                    userColumns = portraitColumns
-                )
-            }
-
-            ProfileTab.ANIME -> {
-                profileMediaTab(
-                    itemsByStatus = uiState.userAnimeListByStatus,
-                    selectedStatus = uiState.selectedAnimeStatus,
-                    onStatusSelected = { onAction(ProfileAction.SelectAnimeStatus(it)) },
-                    isLoading = uiState.isUserAnimeListLoading,
-                    mediaType = MediaType.ANIME,
-                    emptyMessageRes = R.string.profile_placeholder_anime,
-                    onMediaClick = onMediaClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    transitionPrefix = "profile_anime",
-                    posterColumns = posterColumns
-                )
-            }
-
-            ProfileTab.MANGA -> {
-                profileMediaTab(
-                    itemsByStatus = uiState.userMangaListByStatus,
-                    selectedStatus = uiState.selectedMangaStatus,
-                    onStatusSelected = { onAction(ProfileAction.SelectMangaStatus(it)) },
-                    isLoading = uiState.isUserMangaListLoading,
-                    mediaType = MediaType.MANGA,
-                    emptyMessageRes = R.string.profile_placeholder_manga,
-                    onMediaClick = onMediaClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    transitionPrefix = "profile_manga",
-                    posterColumns = posterColumns
-                )
-            }
-
-            ProfileTab.FAVORITES -> {
-                profileFavoritesTab(
-                    profile = profile,
-                    selectedFilter = uiState.selectedFavoritesFilter,
-                    onFilterSelected = { onAction(ProfileAction.SelectFavoritesFilter(it)) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    onMediaClick = onMediaClick,
-                    onCharacterClick = onCharacterClick,
-                    onStaffClick = onStaffClick,
-                    onStudioClick = onStudioClick,
-                    posterColumns = posterColumns,
-                    portraitColumns = portraitColumns,
-                    studioColumns = studioColumns
-                )
-            }
-
-            ProfileTab.REVIEWS -> {
-                profileReviewsTab(
-                    uiState = uiState,
-                    onUserClick = onUserClick,
-                    onReviewClick = { onAction(ProfileAction.SelectReview(it)) },
-                    onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
-                )
-            }
-
-            ProfileTab.STATS -> {
-                profileStatsTab(
-                    uiState = uiState,
-                    onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
-                    onVoiceActorClick = onVoiceActorClick,
-                    onStaffClick = onStaffClick,
-                    onStudioClick = onStudioClick,
-                    statsColumns = statsColumns
-                )
-            }
-        }
+        profileSelectedTabContent(
+            profile = profile,
+            uiState = uiState,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            onAction = onAction,
+            onMediaClick = onMediaClick,
+            onCharacterClick = onCharacterClick,
+            onStaffClick = onStaffClick,
+            onVoiceActorClick = onVoiceActorClick,
+            onStudioClick = onStudioClick,
+            onUserClick = onUserClick,
+            onThreadClick = onThreadClick,
+            onCommentClick = onCommentClick,
+            onActivityClick = onActivityClick,
+            onLastReplyClick = onLastReplyClick,
+            posterColumns = posterColumns,
+            portraitColumns = portraitColumns,
+            studioColumns = studioColumns,
+            statsColumns = statsColumns
+        )
+    }
     }
     }
 
@@ -349,6 +281,157 @@ fun ProfileContent(
     }
 }
 
+/**
+ * Emits the currently-selected profile tab's content into a [LazyColumn]. Shared by the compact
+ * single-column profile and the expanded layout's right pane (`ProfileTabPane`) so the per-tab
+ * sections are defined once. The adaptive column counts are computed by the caller and threaded in.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+internal fun LazyListScope.profileSelectedTabContent(
+    profile: UserProfile,
+    uiState: ProfileUiState,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    onAction: (ProfileAction) -> Unit,
+    onMediaClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onVoiceActorClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit,
+    onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
+    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
+    onActivityClick: (Int) -> Unit,
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
+    posterColumns: Int,
+    portraitColumns: Int,
+    studioColumns: Int,
+    statsColumns: Int
+) {
+    when (uiState.selectedTab) {
+        ProfileTab.OVERVIEW -> {
+            item(key = "tab_overview", contentType = "overview") {
+                ProfileOverviewSection(
+                    profile = profile,
+                    activityHistory = uiState.statsData?.activityHistory.orEmpty(),
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
+                    onMediaClick = onMediaClick,
+                    onCharacterClick = onCharacterClick,
+                    onStaffClick = onStaffClick,
+                    onUserClick = onUserClick,
+                    onActivityClick = onActivityClick,
+                    onLastReplyClick = onLastReplyClick,
+                    onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
+                    onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
+                    onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
+                    onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
+                    viewerId = uiState.viewerId
+                )
+            }
+        }
+
+        ProfileTab.ACTIVITY -> {
+            profileActivityTab(
+                profile = profile,
+                selectedFilter = uiState.selectedActivityFilter,
+                onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
+                onUserClick = onUserClick,
+                onActivityClick = onActivityClick,
+                onMediaClick = onMediaClick,
+                onLastReplyClick = onLastReplyClick,
+                onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
+                onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
+                onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
+                onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
+                viewerId = uiState.viewerId
+            )
+        }
+
+        ProfileTab.SOCIAL -> {
+            profileSocialTab(
+                uiState = uiState,
+                onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
+                onUserClick = onUserClick,
+                onThreadClick = onThreadClick,
+                onCommentClick = onCommentClick,
+                onLoadMore = { onAction(ProfileAction.LoadMoreSocial) },
+                userColumns = portraitColumns
+            )
+        }
+
+        ProfileTab.ANIME -> {
+            profileMediaTab(
+                itemsByStatus = uiState.userAnimeListByStatus,
+                selectedStatus = uiState.selectedAnimeStatus,
+                onStatusSelected = { onAction(ProfileAction.SelectAnimeStatus(it)) },
+                isLoading = uiState.isUserAnimeListLoading,
+                mediaType = MediaType.ANIME,
+                emptyMessageRes = R.string.profile_placeholder_anime,
+                onMediaClick = onMediaClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                transitionPrefix = "profile_anime",
+                posterColumns = posterColumns
+            )
+        }
+
+        ProfileTab.MANGA -> {
+            profileMediaTab(
+                itemsByStatus = uiState.userMangaListByStatus,
+                selectedStatus = uiState.selectedMangaStatus,
+                onStatusSelected = { onAction(ProfileAction.SelectMangaStatus(it)) },
+                isLoading = uiState.isUserMangaListLoading,
+                mediaType = MediaType.MANGA,
+                emptyMessageRes = R.string.profile_placeholder_manga,
+                onMediaClick = onMediaClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                transitionPrefix = "profile_manga",
+                posterColumns = posterColumns
+            )
+        }
+
+        ProfileTab.FAVORITES -> {
+            profileFavoritesTab(
+                profile = profile,
+                selectedFilter = uiState.selectedFavoritesFilter,
+                onFilterSelected = { onAction(ProfileAction.SelectFavoritesFilter(it)) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                onMediaClick = onMediaClick,
+                onCharacterClick = onCharacterClick,
+                onStaffClick = onStaffClick,
+                onStudioClick = onStudioClick,
+                posterColumns = posterColumns,
+                portraitColumns = portraitColumns,
+                studioColumns = studioColumns
+            )
+        }
+
+        ProfileTab.REVIEWS -> {
+            profileReviewsTab(
+                uiState = uiState,
+                onUserClick = onUserClick,
+                onReviewClick = { onAction(ProfileAction.SelectReview(it)) },
+                onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
+            )
+        }
+
+        ProfileTab.STATS -> {
+            profileStatsTab(
+                uiState = uiState,
+                onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                onVoiceActorClick = onVoiceActorClick,
+                onStaffClick = onStaffClick,
+                onStudioClick = onStudioClick,
+                statsColumns = statsColumns
+            )
+        }
+    }
+}
+
 private fun profileTabIcon(tab: ProfileTab): ImageVector {
     return when (tab) {
         ProfileTab.OVERVIEW -> Icons.Default.Person
@@ -363,7 +446,7 @@ private fun profileTabIcon(tab: ProfileTab): ImageVector {
 }
 
 @Composable
-private fun ProfileTabsButtonGroup(
+internal fun ProfileTabsButtonGroup(
     selectedTab: ProfileTab,
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
