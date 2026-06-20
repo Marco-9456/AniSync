@@ -56,6 +56,8 @@ import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.feed.components.FeedFilterBar
 import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.LocalRailFabState
+import com.anisync.android.presentation.util.SetRailFab
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -75,6 +77,11 @@ fun FeedScreen(
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
     val coroutineScope = rememberCoroutineScope()
     val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
+
+    // On rail layouts the compose action lives in the rail header (Material 3); on compact it stays a
+    // floating action button below. SetRailFab is a no-op when there is no rail.
+    val hasRail = LocalRailFabState.current != null
+    SetRailFab(Icons.Default.Edit, stringResource(R.string.cd_write_status), onComposeStatus)
 
     LaunchedEffect(Unit) {
         viewModel.onScreenVisible()
@@ -101,15 +108,17 @@ fun FeedScreen(
                         visible = showScrollToTop,
                         onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
                     )
-                    FloatingActionButton(
-                        onClick = onComposeStatus,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.cd_write_status)
-                        )
+                    if (!hasRail) {
+                        FloatingActionButton(
+                            onClick = onComposeStatus,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.cd_write_status)
+                            )
+                        }
                     }
                 }
             }

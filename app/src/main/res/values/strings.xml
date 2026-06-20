@@ -1173,4 +1173,15 @@
     <string name="pane_resize_cycle">Cycle the list pane width</string>
     <string name="pane_resize_toggle">Collapse or expand the list pane</string>
     <string name="pane_close">Close</string>
+
+    <!-- Two-pane empty/placeholder detail panes (shown on wide screens before a selection) -->
+    <string name="pane_placeholder_thread">Select a thread to read it here</string>
+    <string name="pane_placeholder_activity">Select a status to view it here</string>
+    <string name="pane_placeholder_notification">Select a notification to open it here</string>
+
+    <!-- Collapsible wide navigation rail (rail layouts) -->
+    <string name="rail_expand">Expand navigation</string>
+    <string name="rail_collapse">Collapse navigation</string>
+    <string name="rail_expanded">Navigation expanded</string>
+    <string name="rail_collapsed">Navigation collapsed</string>
 </resources>

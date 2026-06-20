@@ -11,13 +11,17 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuOpen
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Forum
@@ -34,9 +38,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.WideNavigationRail
+import androidx.compose.material3.WideNavigationRailDefaults
+import androidx.compose.material3.WideNavigationRailItem
+import androidx.compose.material3.WideNavigationRailValue
+import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +62,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -83,7 +93,11 @@ import com.anisync.android.presentation.navigation.Profile
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
+import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.MainNavBarSuppressor
+import com.anisync.android.presentation.util.RailFab
+import com.anisync.android.presentation.util.RailFabState
+import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
 private data class BottomNavItem<T : Any>(
@@ -229,7 +243,6 @@ fun MainScreen(
                     navController = navController,
                     startDestination = startDestination,
                     unreadNotificationCount = unreadNotificationCount,
-                    navBarShowLabels = navBarShowLabels,
                     onTabSelected = viewModel::onMainTabSelected,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
                 )
@@ -336,29 +349,34 @@ private fun RailNavLayout(
     navController: NavHostController,
     startDestination: Any,
     unreadNotificationCount: Int,
-    navBarShowLabels: Boolean,
     onTabSelected: (String) -> Unit,
     toastHost: @Composable () -> Unit
 ) {
+    // Bridges a tab's contextual primary action into the rail header (Material 3 hosts the FAB in the
+    // rail rather than floating it bottom-end). Provided above both the rail and the NavHost so the
+    // active tab can publish into it and the rail can render it.
+    val railFabState = remember { RailFabState() }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            MainNavigationRail(
-                navController = navController,
-                unreadNotificationCount = unreadNotificationCount,
-                showLabels = navBarShowLabels,
-                onTabSelected = onTabSelected
-            )
-            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                CompositionLocalProvider(LocalMainNavBarInset provides 0.dp) {
-                    MainNavHost(
-                        navController = navController,
-                        startDestination = startDestination,
-                        modifier = Modifier.fillMaxSize()
-                    )
+        CompositionLocalProvider(LocalRailFabState provides railFabState) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                MainWideNavigationRail(
+                    navController = navController,
+                    unreadNotificationCount = unreadNotificationCount,
+                    onTabSelected = onTabSelected
+                )
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    CompositionLocalProvider(LocalMainNavBarInset provides 0.dp) {
+                        MainNavHost(
+                            navController = navController,
+                            startDestination = startDestination,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
@@ -472,21 +490,53 @@ private fun MainBottomBar(
 }
 
 /**
- * The navigation rail shown on medium / expanded widths. Mirrors [MainBottomBar]: same destinations,
- * same selection and badge logic, same suppression on non-top-level routes — only the container and
- * its enter/exit (horizontal) differ. Labels follow the user's "show labels" preference.
+ * The contextual primary action in a rail's header (Material 3). Like the destination items, it
+ * follows the rail's expansion: an icon-only FAB when collapsed, animating to an **extended FAB** with
+ * a text label (the action's description) when the rail is [expanded].
+ */
+@Composable
+private fun RailHeaderFab(fab: RailFab, expanded: Boolean, modifier: Modifier = Modifier) {
+    ExtendedFloatingActionButton(
+        onClick = fab.onClick,
+        expanded = expanded,
+        icon = {
+            Icon(
+                imageVector = fab.icon,
+                // When expanded the visible text carries the label; null here avoids a double read.
+                contentDescription = if (expanded) null else fab.contentDescription
+            )
+        },
+        text = { Text(fab.contentDescription) },
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = modifier
+    )
+}
+
+/**
+ * The collapsible Material 3 wide navigation rail used on all rail widths (medium / expanded).
+ *
+ * **Starts collapsed** (icon + label below, ~96dp) so it never eats horizontal space by default; the
+ * header menu button expands it to labels-beside-icons on demand (a default-expanded rail read as too
+ * wide). Mirrors [MainNavigationRail]'s destinations, selection, badge and route-suppression logic.
+ *
+ * Header alignment follows the M3 `WideNavigationRail` sample: the content is start-indented rather
+ * than width-filled (the rail measures its header with an unbounded width, so a `fillMaxWidth` child
+ * collapses to nothing). A 24dp start inset centers the 48dp menu button in the 96dp collapsed rail —
+ * aligning it with the centered destination items — and matches the start inset of the expanded
+ * items; the 56dp FAB uses a 20dp inset so its center lands on the same axis.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MainNavigationRail(
+private fun MainWideNavigationRail(
     navController: NavHostController,
     unreadNotificationCount: Int,
-    showLabels: Boolean,
     onTabSelected: (String) -> Unit
 ) {
     val navItems = rememberMainNavItems()
     val navBackStackEntryState = navController.currentBackStackEntryAsState()
     val navBarSuppressor = LocalMainNavBarSuppressor.current
+    val railFab = LocalRailFabState.current?.fab
 
     val isRailVisible by remember(navBarSuppressor) {
         derivedStateOf {
@@ -500,21 +550,57 @@ private fun MainNavigationRail(
         }
     }
 
+    val railState = rememberWideNavigationRailState()
+    val scope = rememberCoroutineScope()
+    val expanded = railState.targetValue == WideNavigationRailValue.Expanded
+
+    val expandLabel = stringResource(R.string.rail_expand)
+    val collapseLabel = stringResource(R.string.rail_collapse)
+    val expandedStateDesc = stringResource(R.string.rail_expanded)
+    val collapsedStateDesc = stringResource(R.string.rail_collapsed)
+
     AnimatedVisibility(
         visible = isRailVisible,
         enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
         exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
     ) {
-        NavigationRail(
-            // One step below the two-pane gutter (surfaceContainerHigh) so the rail keeps a defined
-            // right edge instead of bleeding into the gutter and looking like it extends past its
-            // items. Also matches the status-bar protection tone for a consistent frame.
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        WideNavigationRail(
+            state = railState,
+            // Match the status-bar protection / two-pane gutter tone for a consistent frame.
+            colors = WideNavigationRailDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            header = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                if (expanded) railState.collapse() else railState.expand()
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(start = 24.dp)
+                            .semantics {
+                                stateDescription =
+                                    if (expanded) expandedStateDesc else collapsedStateDesc
+                            }
+                    ) {
+                        Icon(
+                            imageVector = if (expanded) {
+                                Icons.AutoMirrored.Filled.MenuOpen
+                            } else {
+                                Icons.Filled.Menu
+                            },
+                            contentDescription = if (expanded) collapseLabel else expandLabel
+                        )
+                    }
+                    if (railFab != null) {
+                        RailHeaderFab(railFab, expanded, Modifier.padding(start = 20.dp))
+                    }
+                }
+            }
         ) {
             val currentDestination = navBackStackEntryState.value?.destination
-
-            // Center the destinations vertically — Material 3 rail with no header/FAB.
-            Spacer(Modifier.weight(1f))
 
             navItems.forEach { item ->
                 val isSelected = currentDestination?.hasRoute(item.routeClass) == true
@@ -523,7 +609,8 @@ private fun MainNavigationRail(
                 val iconVector = if (isSelected) item.selectedIcon else item.unselectedIcon
                 val itemTitle = stringResource(item.titleResId)
 
-                NavigationRailItem(
+                WideNavigationRailItem(
+                    railExpanded = expanded,
                     selected = isSelected,
                     onClick = {
                         if (!isSelected) {
@@ -542,30 +629,17 @@ private fun MainNavigationRail(
                             Icon(imageVector = iconVector, contentDescription = itemTitle)
                         }
                     },
-                    label = if (showLabels) {
-                        {
-                            Text(
-                                text = itemTitle,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    } else null,
-                    alwaysShowLabel = showLabels,
-                    colors = NavigationRailItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    label = {
+                        Text(
+                            text = itemTitle,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 )
             }
-
-            Spacer(Modifier.weight(1f))
         }
     }
 }
