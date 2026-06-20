@@ -66,14 +66,11 @@ fun StatusDistributionDonut(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                BoxWithConstraints(
+            // The ring (fixed) and its legend, arranged side by side when the card is wide enough,
+            // or stacked (ring above a full-width legend) when narrow — so the legend labels never
+            // get crushed into a sliver (which made "Completed" wrap one character per line).
+            val ring = @Composable {
+                Box(
                     modifier = Modifier.size(160.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -114,8 +111,10 @@ fun StatusDistributionDonut(
                         )
                     }
                 }
+            }
+            val legend = @Composable { legendModifier: Modifier ->
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = legendModifier,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     statuses.forEachIndexed { idx, s ->
@@ -138,6 +137,32 @@ fun StatusDistributionDonut(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+                }
+            }
+
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                if (maxWidth < 380.dp) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ring()
+                        legend(Modifier.fillMaxWidth())
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        ring()
+                        legend(Modifier.weight(1f))
                     }
                 }
             }

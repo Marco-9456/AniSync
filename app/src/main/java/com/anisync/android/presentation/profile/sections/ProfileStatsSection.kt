@@ -194,9 +194,12 @@ fun LazyListScope.profileStatsTab(
 }
 
 /**
- * Emits the stats hero + its section cards. On compact ([columns] <= 1) each section is its own lazy
- * item (full-bleed, lazily composed) exactly as before; on wider windows the hero spans full width
- * and the remaining sections flow into a [StatsDashboardGrid] inside a single item.
+ * Emits the stats hero + its section cards. On compact ([columns] <= 1, i.e. a compact window) each
+ * section is its own lazy item (full-bleed, lazily composed) exactly as before; otherwise the hero
+ * spans full width and the sections go into a [StatsDashboardGrid] inside one item. [columns] only
+ * gates compact-vs-flow — the grid itself measures its container and flows the cards across as many
+ * columns as fit, so it adapts to the real width (notably the narrower two-pane right pane) rather
+ * than the window class.
  */
 private fun LazyListScope.statsDashboard(
     hero: DashboardSection,
@@ -218,7 +221,7 @@ private fun LazyListScope.statsDashboard(
         item(key = "stats_dashboard") {
             Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 hero.content()
-                StatsDashboardGrid(sections = sections, columns = columns)
+                StatsDashboardGrid(sections = sections)
             }
         }
     }

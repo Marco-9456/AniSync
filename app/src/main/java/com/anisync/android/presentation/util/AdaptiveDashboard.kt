@@ -1,9 +1,12 @@
 package com.anisync.android.presentation.util
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -34,38 +37,43 @@ fun dashboardColumns(): Int = when (LocalAdaptiveInfo.current.widthClass) {
 }
 
 /**
- * Lays [sections] out as a multi-column dashboard: sections are distributed round-robin across
- * [columns] equal-weight columns, each an independently-packed vertical stack. Round-robin keeps
- * column heights roughly balanced without measuring (true masonry) and preserves a stable mapping.
- *
- * Sections keep their own internal 16.dp horizontal padding, which becomes the inter-column gutter
- * (32.dp) and outer margin (16.dp) — no extra arrangement spacing is added. Collapses to a plain
- * vertical stack when [columns] <= 1.
+ * Minimum width for one dashboard stat card, used by [StatsDashboardGrid] to decide how many cards
+ * flow across each row. The cards themselves reflow internally for narrower widths (e.g. the status
+ * donut stacks its legend under the ring), so this only needs to keep charts comfortably legible.
  */
+private val DashboardMinCardWidth = 360.dp
+
+/**
+ * Lays [sections] out as a responsive **flow grid** that reacts to the available width: each card is
+ * at least [minCardWidth] wide, and as many equal-width cards as fit flow across each row, wrapping to
+ * the next row when they don't — so the column count is derived from the **measured** width and is
+ * never fixed (resize the pane and the cards reflow). Cards are uniform width and the final row is
+ * start-aligned (no stretching). Sections keep their own internal 16.dp horizontal padding, which
+ * becomes the inter-card gutter (32.dp) and outer margin (16.dp); [verticalSpacing] separates rows.
+ * The hero card is laid out by the caller, full-width above this grid.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StatsDashboardGrid(
     sections: List<DashboardSection>,
-    columns: Int,
     modifier: Modifier = Modifier,
+    minCardWidth: Dp = DashboardMinCardWidth,
     verticalSpacing: Dp = 24.dp,
 ) {
-    if (columns <= 1) {
-        Column(
-            modifier = modifier.fillMaxWidth(),
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val columns = (maxWidth / minCardWidth).toInt().coerceAtLeast(1)
+        // Subtract a hair before dividing so `columns * cardWidth` never rounds a sub-pixel past the
+        // row width — otherwise the exact-fit case (e.g. 2 × 417.5dp on an 835dp row) rounds each card
+        // up and wraps the last one to its own row, collapsing the grid back to a single column.
+        val cardWidth = (maxWidth - 2.dp) / columns
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            maxItemsInEachRow = columns,
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
         ) {
-            sections.forEach { it.content() }
-        }
-        return
-    }
-    Row(modifier = modifier.fillMaxWidth()) {
-        for (col in 0 until columns) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-            ) {
-                sections.forEachIndexed { index, section ->
-                    if (index % columns == col) section.content()
+            sections.forEach { section ->
+                Box(modifier = Modifier.width(cardWidth)) {
+                    section.content()
                 }
             }
         }
