@@ -2,11 +2,15 @@ package com.anisync.android.presentation.feed
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
+import com.anisync.android.R
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.navigation.ActivityDetail
 import com.anisync.android.presentation.navigation.CreateStatus
+import com.anisync.android.presentation.navigation.DetailPanePlaceholder
 import com.anisync.android.presentation.navigation.EditActivity
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -45,6 +49,12 @@ fun FeedListDetail(
     }
 
     TwoPaneListDetailScaffold(
+        placeholderPane = {
+            DetailPanePlaceholder(
+                icon = Icons.Outlined.DynamicFeed,
+                text = stringResource(R.string.pane_placeholder_activity),
+            )
+        },
         listPane = { onItemClick -> feed(onItemClick) },
         detailPane = { activityId, onClose ->
             ActivityDetailScreen(

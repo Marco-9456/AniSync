@@ -8,19 +8,26 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,9 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.anisync.android.R
@@ -122,6 +131,11 @@ fun <T : Any> TwoPaneListDetailScaffold(
     // with no rail (e.g. Notifications) should pass a symmetric inset so the list pane isn't flush to
     // the screen edge.
     gutterPadding: PaddingValues = TwoPaneDefaults.GutterPadding,
+    // Optional Material 3 list-detail placeholder: when provided and nothing is selected, the detail
+    // slot shows this empty state beside the list (at the persisted split) instead of letting the list
+    // fill the full width. Pass it for list-style surfaces (Forum / Feed / Notifications); leave null
+    // for grid feeds (Library / Discover) that should browse full-width until a selection.
+    placeholderPane: (@Composable () -> Unit)? = null,
     listPane: @Composable (onItemClick: (T) -> Unit) -> Unit,
     detailPane: @Composable (selected: T, onClose: () -> Unit) -> Unit,
 ) {
@@ -154,7 +168,11 @@ fun <T : Any> TwoPaneListDetailScaffold(
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
     val toggleLabel = stringResource(R.string.pane_resize_toggle)
 
-    val twoPane = detail != null
+    val hasDetail = detail != null
+    // On expanded widths a list-style caller shows an empty detail pane before a selection; grid
+    // feeds (no placeholder) keep the list full-width instead.
+    val showPlaceholder = !hasDetail && placeholderPane != null
+    val twoPane = hasDetail || showPlaceholder
     val listMinWidth = with(LocalDensity.current) { (rowWidthPx * LIST_MIN_LAYOUT_FRACTION).toDp() }
 
     // The two-pane chrome (rounded panes on a surfaceContainer gutter) is the shared [TwoPaneDefaults]
@@ -176,7 +194,7 @@ fun <T : Any> TwoPaneListDetailScaffold(
             )
             .onSizeChanged { rowWidthPx = it.width },
     ) {
-        val isListCollapsed = twoPane && listFraction <= COLLAPSE_THRESHOLD
+        val isListCollapsed = hasDetail && listFraction <= COLLAPSE_THRESHOLD
 
         // List pane — fills the full width on its own, shrinks to [listFraction] when the detail
         // opens, and is kept in the layout at zero width when collapsed so its scroll state survives.
@@ -258,6 +276,19 @@ fun <T : Any> TwoPaneListDetailScaffold(
                 ) {
                     detailPane(detail) { selected = null }
                 }
+            }
+        } else if (showPlaceholder) {
+            // Material 3 list-detail placeholder: list at the persisted split + an empty detail pane.
+            // No drag handle here — resizing is a detail-mode affordance; the split returns on select.
+            Spacer(Modifier.width(TwoPaneDefaults.PaneGap))
+            Surface(
+                modifier = Modifier
+                    .weight(1f - listFraction)
+                    .fillMaxHeight(),
+                shape = TwoPaneDefaults.PaneShape,
+                color = TwoPaneDefaults.paneColor,
+            ) {
+                placeholderPane!!()
             }
         }
     }
@@ -500,6 +531,34 @@ private fun MediaDetailPane(
                     animatedVisibilityScope = this,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The empty state shown in a two-pane detail slot before anything is selected (Material 3 list-detail
+ * placeholder). Supplied by list-style callers via [TwoPaneListDetailScaffold]'s `placeholderPane`.
+ */
+@Composable
+fun DetailPanePlaceholder(icon: ImageVector, text: String, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

@@ -2,9 +2,13 @@ package com.anisync.android.presentation.forum
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
+import com.anisync.android.R
 import com.anisync.android.presentation.navigation.CreateThread
+import com.anisync.android.presentation.navigation.DetailPanePlaceholder
 import com.anisync.android.presentation.navigation.EditThreadBody
 import com.anisync.android.presentation.navigation.ForumThreadDetail
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -42,6 +46,12 @@ fun ForumListDetail(
     }
 
     TwoPaneListDetailScaffold(
+        placeholderPane = {
+            DetailPanePlaceholder(
+                icon = Icons.Outlined.Forum,
+                text = stringResource(R.string.pane_placeholder_thread),
+            )
+        },
         listPane = { onItemClick -> forum { threadId, _ -> onItemClick(threadId) } },
         detailPane = { threadId, onClose ->
             ThreadDetailScreen(

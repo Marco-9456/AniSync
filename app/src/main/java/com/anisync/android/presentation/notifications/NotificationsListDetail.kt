@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -40,6 +41,7 @@ import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.navigation.ActivityDetail
 import com.anisync.android.presentation.navigation.CharacterDetails
 import com.anisync.android.presentation.navigation.CreateThread
+import com.anisync.android.presentation.navigation.DetailPanePlaceholder
 import com.anisync.android.presentation.navigation.EditActivity
 import com.anisync.android.presentation.navigation.EditThreadBody
 import com.anisync.android.presentation.navigation.ForumMediaThreads
@@ -103,6 +105,12 @@ fun NotificationsListDetail(
         modifier = modifier,
         selectionSaver = NotificationTargetSaver,
         gutterPadding = PaddingValues(16.dp),
+        placeholderPane = {
+            DetailPanePlaceholder(
+                icon = Icons.Outlined.Notifications,
+                text = stringResource(R.string.pane_placeholder_notification),
+            )
+        },
         listPane = { onSelect ->
             NotificationsScreen(
                 onBackClick = onBackClick,
