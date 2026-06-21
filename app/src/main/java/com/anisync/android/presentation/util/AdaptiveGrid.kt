@@ -89,3 +89,28 @@ fun profileGridColumns(
     val columns = ((content + itemSpacing) / (baseMinSize + itemSpacing)).toInt()
     return columns.coerceIn(compactColumns, 8)
 }
+
+/**
+ * Column **count** for the full-screen SEARCH result lists (Discover list view, Forum, Library).
+ *
+ * Their results are horizontal *list-item* cards (a small cover/avatar + title + meta) rather than
+ * posters, so they tile cleanly a few across. Phones stay a single column — identical to the prior
+ * full-width `LazyColumn`; wider windows flow the cards into 2..[maxColumns] so they don't stretch the
+ * whole window width. These are full-screen search overlays (no navigation rail), so the entire window
+ * width is available — unlike [profileGridColumns], nothing is subtracted for a rail.
+ */
+@Composable
+fun searchResultColumns(
+    minCardWidth: Dp = 360.dp,
+    horizontalPadding: Dp = 16.dp,
+    itemSpacing: Dp = 12.dp,
+    maxColumns: Int = 3,
+): Int {
+    if (LocalAdaptiveInfo.current.isCompact) return 1
+    val density = LocalDensity.current
+    val windowWidth = with(density) { currentWindowSize().width.toDp() }
+    val content = windowWidth - horizontalPadding * 2
+    if (content <= 0.dp) return 1
+    val columns = ((content + itemSpacing) / (minCardWidth + itemSpacing)).toInt()
+    return columns.coerceIn(1, maxColumns)
+}

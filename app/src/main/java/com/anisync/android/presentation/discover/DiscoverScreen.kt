@@ -29,7 +29,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import com.anisync.android.presentation.util.posterGridColumns
+import com.anisync.android.presentation.util.searchResultColumns
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -162,7 +165,7 @@ fun DiscoverScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
-    val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val listState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
 
     val currentMediaType = (uiState as? DiscoverUiState.Success)?.mediaType ?: MediaType.ANIME
 
@@ -824,7 +827,7 @@ private fun DiscoverSearchOverlay(
     showAdultContent: Boolean,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
-    listState: LazyListState,
+    listState: LazyGridState,
     searchQuery: String,
     searchAnime: List<LibraryEntry>,
     searchManga: List<LibraryEntry>,
@@ -912,7 +915,7 @@ private fun SearchResultsContent(
     searchQuery: String,
     searchError: String?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    listState: LazyListState,
+    listState: LazyGridState,
     viewMode: com.anisync.android.data.DiscoverViewMode,
     activeCategory: ResultCategory,
     onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
@@ -1018,7 +1021,7 @@ private fun SearchResultsList(
     groupedResults: com.anisync.android.domain.GroupedSearchResults,
     activeCategory: ResultCategory,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    listState: LazyListState,
+    listState: LazyGridState,
     onSearchItemClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
@@ -1033,7 +1036,10 @@ private fun SearchResultsList(
     val showUsers = showAll || activeCategory == ResultCategory.USERS
     val showStudios = showAll || activeCategory == ResultCategory.STUDIOS
 
-    LazyColumn(
+    val headerSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(searchResultColumns()),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
@@ -1042,16 +1048,17 @@ private fun SearchResultsList(
                 .calculateBottomPadding() + 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxSize(),
         state = listState
     ) {
         if (showAnime && searchAnime.isNotEmpty()) {
             if (showAll) {
-                item(key = "header_anime") {
+                item(key = "header_anime", span = headerSpan) {
                     SearchSectionHeader(title = "Anime")
                 }
             }
-            items(
+            gridItems(
                 items = searchAnime,
                 key = { "anime_${it.mediaId}" },
                 contentType = { "search_result" }
@@ -1064,11 +1071,11 @@ private fun SearchResultsList(
         }
         if (showManga && searchManga.isNotEmpty()) {
             if (showAll) {
-                item(key = "header_manga") {
+                item(key = "header_manga", span = headerSpan) {
                     SearchSectionHeader(title = "Manga")
                 }
             }
-            items(
+            gridItems(
                 items = searchManga,
                 key = { "manga_${it.mediaId}" },
                 contentType = { "search_result" }
@@ -1081,11 +1088,11 @@ private fun SearchResultsList(
         }
         if (showCharacters && groupedResults.characters.isNotEmpty()) {
             if (showAll) {
-                item(key = "header_characters") {
+                item(key = "header_characters", span = headerSpan) {
                     SearchSectionHeader(title = stringResource(R.string.search_header_characters))
                 }
             }
-            items(
+            gridItems(
                 items = groupedResults.characters,
                 key = { "char_${it.id}" },
                 contentType = { "character_result" }
@@ -1100,11 +1107,11 @@ private fun SearchResultsList(
         }
         if (showStaff && groupedResults.staff.isNotEmpty()) {
             if (showAll) {
-                item(key = "header_staff") {
+                item(key = "header_staff", span = headerSpan) {
                     SearchSectionHeader(title = stringResource(R.string.search_header_staff))
                 }
             }
-            items(
+            gridItems(
                 items = groupedResults.staff,
                 key = { "staff_${it.id}" },
                 contentType = { "staff_result" }
@@ -1119,11 +1126,11 @@ private fun SearchResultsList(
         }
         if (showUsers && groupedResults.users.isNotEmpty()) {
             if (showAll) {
-                item(key = "header_users") {
+                item(key = "header_users", span = headerSpan) {
                     SearchSectionHeader(title = stringResource(R.string.search_header_users))
                 }
             }
-            items(
+            gridItems(
                 items = groupedResults.users,
                 key = { "user_${it.id}" },
                 contentType = { "user_result" }
@@ -1138,11 +1145,11 @@ private fun SearchResultsList(
         }
         if (showStudios && groupedResults.studios.isNotEmpty()) {
             if (showAll) {
-                item(key = "header_studios") {
+                item(key = "header_studios", span = headerSpan) {
                     SearchSectionHeader(title = stringResource(R.string.search_header_studios))
                 }
             }
-            items(
+            gridItems(
                 items = groupedResults.studios,
                 key = { "studio_${it.id}" },
                 contentType = { "studio_result" }
@@ -1159,10 +1166,17 @@ private fun SearchResultsList(
 }
 
 /**
- * Grid layout for search results. Media takes adaptive grid cells with
- * poster-style cards; non-media (characters/staff/users/studios) stays as
- * full-width list rows even in grid mode — their data is name + (sometimes)
- * avatar, which doesn't fill a card meaningfully.
+ * Span (in poster cells) for non-media search results (character/staff/user/studio) inside the
+ * poster grid. They are horizontal cards (avatar + name), so they span ~3 poster cells (~360dp+) to
+ * flow a few across on wide windows instead of one per row — yet stay full-width on phones, where the
+ * poster grid is only ~2 columns (`minOf(2, 3) == 2`).
+ */
+private const val GenericResultGridSpan = 3
+
+/**
+ * Grid layout for search results. Media takes adaptive grid cells with poster-style cards; non-media
+ * (characters/staff/users/studios) are horizontal avatar+name cards that span [GenericResultGridSpan]
+ * poster cells so a few flow across on wide windows while staying full-width on phones.
  */
 @Composable
 private fun SearchResultsGrid(
@@ -1263,7 +1277,7 @@ private fun SearchResultsGrid(
                 items = groupedResults.characters,
                 key = { "char_${it.id}" },
                 contentType = { "character_result_grid" },
-                span = { GridItemSpan(maxLineSpan) }
+                span = { GridItemSpan(minOf(maxLineSpan, GenericResultGridSpan)) }
             ) { character ->
                 GenericSearchResultItem(
                     name = character.displayName,
@@ -1286,7 +1300,7 @@ private fun SearchResultsGrid(
                 items = groupedResults.staff,
                 key = { "staff_${it.id}" },
                 contentType = { "staff_result_grid" },
-                span = { GridItemSpan(maxLineSpan) }
+                span = { GridItemSpan(minOf(maxLineSpan, GenericResultGridSpan)) }
             ) { staff ->
                 GenericSearchResultItem(
                     name = staff.displayName,
@@ -1309,7 +1323,7 @@ private fun SearchResultsGrid(
                 items = groupedResults.users,
                 key = { "user_${it.id}" },
                 contentType = { "user_result_grid" },
-                span = { GridItemSpan(maxLineSpan) }
+                span = { GridItemSpan(minOf(maxLineSpan, GenericResultGridSpan)) }
             ) { user ->
                 GenericSearchResultItem(
                     name = user.displayName,
@@ -1332,7 +1346,7 @@ private fun SearchResultsGrid(
                 items = groupedResults.studios,
                 key = { "studio_${it.id}" },
                 contentType = { "studio_result_grid" },
-                span = { GridItemSpan(maxLineSpan) }
+                span = { GridItemSpan(minOf(maxLineSpan, GenericResultGridSpan)) }
             ) { studio ->
                 GenericSearchResultItem(
                     name = studio.displayName,
