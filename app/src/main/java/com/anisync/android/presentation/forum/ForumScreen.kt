@@ -18,10 +18,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Announcement
@@ -103,7 +99,6 @@ import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalRailFabState
-import com.anisync.android.presentation.util.searchResultColumns
 import com.anisync.android.presentation.util.SetRailFab
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
@@ -570,8 +565,7 @@ fun ForumScreen(
                 }
 
                 else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(searchResultColumns()),
+                    LazyColumn(
                         contentPadding = PaddingValues(
                             top = 8.dp,
                             start = 16.dp,
@@ -579,10 +573,9 @@ fun ForumScreen(
                             bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        gridItemsIndexed(
+                        itemsIndexed(
                             items = uiState.searchResults,
                             key = { _, thread -> "search_${thread.id}" },
                             contentType = { _, _ -> "ForumThread" }
@@ -620,10 +613,7 @@ fun ForumScreen(
                         }
 
                         if (uiState.searchIsPaginating) {
-                            item(
-                                key = "search_paginating_indicator",
-                                span = { GridItemSpan(maxLineSpan) }
-                            ) {
+                            item(key = "search_paginating_indicator") {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()

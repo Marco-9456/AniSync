@@ -967,6 +967,7 @@
     <string name="search_header_staff">Staff</string>
     <string name="search_header_users">Users</string>
     <string name="search_header_studios">Studios</string>
+    <string name="search_view_all_results">View all %1$d results</string>
     <string name="search_favourites_count">%d favourites</string>
     <string name="empty_no_items">No items found</string>
     <string name="filter_show_results">Show Results</string>

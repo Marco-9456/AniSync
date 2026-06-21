@@ -31,6 +31,7 @@ fun DiscoverListDetail(
 ) {
     val feed: @Composable (onMediaClick: (Int) -> Unit) -> Unit = { onMediaClick ->
         DiscoverScreen(
+            navController = navController,
             onMediaClick = onMediaClick,
             onCharacterClick = { navController.navigate(CharacterDetails(it)) },
             onStaffClick = { navController.navigate(StaffDetails(it)) },
