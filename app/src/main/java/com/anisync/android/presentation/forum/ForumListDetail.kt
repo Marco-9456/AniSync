@@ -40,7 +40,7 @@ fun ForumListDetail(
         )
     }
 
-    if (!LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
         forum(onThreadClickFullScreen)
         return
     }
@@ -61,6 +61,9 @@ fun ForumListDetail(
                 onUserClick = { navController.navigateSafely(UserProfile(it)) },
                 navigationIcon = Icons.Default.Close,
                 onEditThread = { navController.navigate(EditThreadBody(it)) },
+                // Fill the resizable pane instead of the centered reading column, so collapsing the
+                // list gives the thread the gained width (§6.4 follow-up).
+                capContentWidth = false,
             )
         },
     )

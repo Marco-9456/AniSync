@@ -127,6 +127,10 @@ fun ThreadDetailScreen(
     targetCommentId: Int? = null,
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     onEditThread: (threadId: Int) -> Unit = {},
+    // Full-screen caps long-form thread text to a readable centered column. In a resizable two-pane
+    // detail the pane width is already the constraint, so the caller passes false to let the thread
+    // fill the pane (and use the room gained by collapsing the list) instead of staying centered.
+    capContentWidth: Boolean = true,
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -432,7 +436,7 @@ fun ThreadDetailScreen(
                             state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .adaptiveReadingWidth(),
+                                .then(if (capContentWidth) Modifier.adaptiveReadingWidth() else Modifier),
                             contentPadding = PaddingValues(top = topContentPadding),
                             verticalArrangement = Arrangement.spacedBy(8.dp) // Expressive vertical spacing
                         ) {

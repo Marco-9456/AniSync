@@ -86,7 +86,7 @@ fun NotificationsListDetail(
         username.trim().takeIf { it.isNotEmpty() }?.let { navController.navigate(UserProfile(it)) }
     }
 
-    if (!LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
         NotificationsScreen(
             onBackClick = onBackClick,
             onMediaClick = { navController.navigate(MediaDetails(it, SOURCE)) },
@@ -264,6 +264,7 @@ private fun NotificationDetailPane(
                     targetCommentId = route.commentId.takeIf { it != 0 },
                     navigationIcon = Icons.Default.Close,
                     onEditThread = { navController.navigate(EditThreadBody(it)) },
+                    capContentWidth = false,
                 )
             }
 

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
@@ -102,6 +101,11 @@ private val LIST_SPLIT_ANCHORS = listOf(1f / 3f, 1f / 2f, 2f / 3f)
 private fun nearestAnchor(fraction: Float): Float =
     LIST_FRACTION_ANCHORS.minBy { abs(it - fraction) }
 
+// Nearest of the *open* splits only (never collapsed) — used when reopening a collapsed list so a
+// small drag-right settles to a real split instead of snapping back shut.
+private fun nearestSplitAnchor(fraction: Float): Float =
+    LIST_SPLIT_ANCHORS.minBy { abs(it - fraction) }
+
 private fun nextSplitAnchor(fraction: Float): Float =
     LIST_SPLIT_ANCHORS.firstOrNull { it > fraction + 0.01f } ?: LIST_SPLIT_ANCHORS.first()
 
@@ -144,8 +148,6 @@ fun <T : Any> TwoPaneListDetailScaffold(
     var selected by rememberSaveable(stateSaver = selectionSaver) { mutableStateOf<T?>(null) }
     val detail = selected
 
-    BackHandler(enabled = detail != null) { selected = null }
-
     // List pane fraction. rememberSaveable survives config change; the initial value is seeded from
     // (and resized splits are written back to) AppSettings so the chosen split also survives app close.
     val appSettings = LocalAppSettings.current
@@ -154,6 +156,9 @@ fun <T : Any> TwoPaneListDetailScaffold(
 
     val scope = rememberCoroutineScope()
     var settleJob by remember { mutableStateOf<Job?>(null) }
+    // The split at the moment a drag began, so release can tell "reopening from collapsed" apart from
+    // a normal resize and avoid snapping a re-open attempt back shut.
+    var dragStartFraction by remember { mutableFloatStateOf(0f) }
     // Smoothly animate the split to [target] (snap / tap / long-press); cancels any running settle.
     // Real split widths are persisted; the fully-collapsed state stays a transient per-session toggle.
     fun settleTo(target: Float) {
@@ -165,6 +170,20 @@ fun <T : Any> TwoPaneListDetailScaffold(
             }
         }
     }
+
+    // Closing the detail returns to the list. If the list was collapsed for detail viewing, restore
+    // the persisted split so it reappears — and so its modifier never falls to weight(0) once the
+    // placeholder/list takes the detail's place (RowScope.weight(0f) throws "invalid weight").
+    fun closeDetail() {
+        if (listFraction <= COLLAPSE_THRESHOLD) {
+            settleJob?.cancel()
+            val restored = appSettings.paneListFraction.value
+            listFraction = if (restored > COLLAPSE_THRESHOLD) restored else DEFAULT_LIST_FRACTION
+        }
+        selected = null
+    }
+
+    BackHandler(enabled = detail != null) { closeDetail() }
 
     val resizeHandleLabel = stringResource(R.string.pane_resize_handle)
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
@@ -196,7 +215,9 @@ fun <T : Any> TwoPaneListDetailScaffold(
             )
             .onSizeChanged { rowWidthPx = it.width },
     ) {
-        val isListCollapsed = hasDetail && listFraction <= COLLAPSE_THRESHOLD
+        // Collapsed by fraction alone (a just-closed detail can momentarily leave it at ~0): the list
+        // renders at width(0), never weight(0) — RowScope rejects a zero/negative weight.
+        val isListCollapsed = listFraction <= COLLAPSE_THRESHOLD
 
         // List pane — fills the full width on its own, shrinks to [listFraction] when the detail
         // opens, and is kept in the layout at zero width when collapsed so its scroll state survives.
@@ -233,8 +254,20 @@ fun <T : Any> TwoPaneListDetailScaffold(
                                 .coerceIn(0f, MAX_LIST_FRACTION)
                         }
                     },
-                    onDragStarted = { settleJob?.cancel() },
-                    onDragStopped = { settleTo(nearestAnchor(listFraction)) },
+                    onDragStarted = {
+                        settleJob?.cancel()
+                        dragStartFraction = listFraction
+                    },
+                    onDragStopped = {
+                        // Reopening from (near) collapsed snaps to the nearest open split so a small
+                        // drag-right reliably reveals the list; a normal resize may still settle to 0.
+                        val reopening = dragStartFraction <= COLLAPSE_THRESHOLD &&
+                            listFraction > COLLAPSE_THRESHOLD
+                        settleTo(
+                            if (reopening) nearestSplitAnchor(listFraction)
+                            else nearestAnchor(listFraction)
+                        )
+                    },
                     onClick = {
                         settleTo(if (isListCollapsed) DEFAULT_LIST_FRACTION else nextSplitAnchor(listFraction))
                     },
@@ -247,37 +280,22 @@ fun <T : Any> TwoPaneListDetailScaffold(
                 )
             }
 
-            if (isListCollapsed) {
-                // List collapsed → the detail fills the row and the handle is overlaid on its leading
-                // edge as a short centered pill, so it reads as part of the detail pane (and doesn't
-                // sit orphaned in the gutter or cover the detail's top-left close button).
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                ) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        shape = TwoPaneDefaults.PaneShape,
-                        color = TwoPaneDefaults.paneColor,
-                    ) {
-                        detailPane(detail) { selected = null }
-                    }
-                    dragHandle(Modifier.align(Alignment.CenterStart).height(96.dp))
-                }
-            } else {
-                // Both panes visible → the handle is a full-height column in the gutter between them.
-                dragHandle(Modifier.fillMaxHeight())
+            // One drag handle, always a full-height column in the gutter at the detail's leading edge.
+            // Keeping it at a single stable position (rather than swapping between an overlaid pill when
+            // collapsed and a gutter column when open) means an in-progress resize is never interrupted
+            // as the list crosses the collapse boundary — the swap used to dispose the handle mid-drag
+            // and drop the gesture, so re-opening felt stuck. While collapsed the list holds at zero
+            // width, so the detail still fills the row (minus the thin handle column).
+            dragHandle(Modifier.fillMaxHeight())
 
-                Surface(
-                    modifier = Modifier
-                        .weight(1f - listFraction)
-                        .fillMaxHeight(),
-                    shape = TwoPaneDefaults.PaneShape,
-                    color = TwoPaneDefaults.paneColor,
-                ) {
-                    detailPane(detail) { selected = null }
-                }
+            Surface(
+                modifier = Modifier
+                    .weight(1f - listFraction)
+                    .fillMaxHeight(),
+                shape = TwoPaneDefaults.PaneShape,
+                color = TwoPaneDefaults.paneColor,
+            ) {
+                detailPane(detail) { closeDetail() }
             }
         } else if (showPlaceholder) {
             // Material 3 list-detail placeholder: list at the persisted split + an empty detail pane.
