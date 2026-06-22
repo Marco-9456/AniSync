@@ -113,6 +113,9 @@ fun ProfileBannerSurface(
                 model = profile.bannerUrl,
                 contentDescription = stringResource(R.string.content_description_cover, profile.name),
                 contentScale = ContentScale.Crop,
+                // Anchor the crop to the top so the banner shows from above — banners often carry the
+                // details the user put up top, which center-cropping would hide.
+                alignment = Alignment.TopCenter,
                 modifier = Modifier.fillMaxSize()
             )
 
