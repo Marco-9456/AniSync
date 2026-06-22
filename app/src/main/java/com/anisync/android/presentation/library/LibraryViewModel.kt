@@ -57,7 +57,10 @@ class LibraryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             mediaType = appSettings.libraryMediaType.value,
-            isGridView = appSettings.libraryGridView.value
+            isGridView = appSettings.libraryGridView.value,
+            sortOption = runCatching { LibrarySort.valueOf(appSettings.librarySortOption.value) }
+                .getOrDefault(LibrarySort.AIRING_SOON),
+            isAscending = appSettings.librarySortAscending.value
         )
     )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -111,6 +114,7 @@ class LibraryViewModel @Inject constructor(
             }
 
             is LibraryAction.OnSortOptionChange -> {
+                appSettings.setLibrarySort(action.sort.name, action.ascending)
                 _uiState.update {
                     it.copy(
                         sortOption = action.sort,
