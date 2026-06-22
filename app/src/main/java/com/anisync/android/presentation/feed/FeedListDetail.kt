@@ -43,7 +43,7 @@ fun FeedListDetail(
         )
     }
 
-    if (!LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
         feed(onActivityClickFullScreen)
         return
     }

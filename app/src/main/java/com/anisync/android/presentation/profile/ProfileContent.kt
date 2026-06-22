@@ -104,7 +104,7 @@ fun ProfileContent(
     val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
     val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
 
-    if (LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (LocalAdaptiveInfo.current.supportsTwoPane) {
         ProfileWideLayout(
             profile = profile,
             uiState = uiState,

@@ -112,7 +112,7 @@ fun RichTextScaffold(
     val initialBodySnapshot = remember { initialBody }
     // On expanded widths the editor and a live preview sit side by side, so the write/preview toggle
     // is unnecessary; on compact the toggle flips a single pane between writing and preview.
-    val sideBySide = LocalAdaptiveInfo.current.isExpandedOrWider
+    val sideBySide = LocalAdaptiveInfo.current.supportsTwoPane
     var isPreviewMode by remember { mutableStateOf(false) }
     // Expanded only: whether the live-preview pane is shown beside the editor. Toggled from the app
     // bar's preview button or the pane's close button. Defaults on; resets each launch.

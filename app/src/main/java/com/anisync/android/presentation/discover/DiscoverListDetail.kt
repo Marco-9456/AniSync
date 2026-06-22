@@ -49,7 +49,7 @@ fun DiscoverListDetail(
         )
     }
 
-    if (!LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
         feed(onMediaClickFullScreen)
         return
     }

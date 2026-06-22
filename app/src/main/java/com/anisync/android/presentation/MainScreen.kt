@@ -221,13 +221,17 @@ fun MainScreen(
         viewModel.refreshNotificationBadge()
     }
 
-    // The window width decides the navigation container: a bottom bar on compact (phones), a
-    // navigation rail on medium/expanded (landscape phones, tablets, foldables) per Material 3.
+    // Navigation container per Material 3: a navigation bar on compact width (phone portrait) AND on
+    // compact height (< 480dp, e.g. a phone in landscape) where a vertical rail's destinations can't
+    // fit and would overflow; the navigation rail only when the window has room in both axes (tablets
+    // / foldables). M3: "use a Navigation Bar for compact screen dimensions, especially in landscape,
+    // as the rail may result in a compact height." Rail destinations must stay fixed/visible (no
+    // scroll), so a too-short window must fall back to the bar rather than clip items off-screen.
     val adaptive = LocalAdaptiveInfo.current
 
     ProvideToastManager(toastManager = viewModel.toastManager) {
         CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
-            if (adaptive.isCompact) {
+            if (adaptive.isCompact || adaptive.isCompactHeight) {
                 CompactNavLayout(
                     navController = navController,
                     startDestination = startDestination,

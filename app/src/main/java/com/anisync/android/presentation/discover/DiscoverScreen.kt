@@ -967,7 +967,7 @@ private fun SearchResultsContent(
             // The same panel board on every width (phone and tablet read identically). Expanded widths
             // wrap it in the two-pane list-detail (tap → on-demand detail pane); compact/medium render it
             // directly and push the detail full screen on tap.
-            val isWideSearch = LocalAdaptiveInfo.current.isExpandedOrWider && navController != null
+            val isWideSearch = LocalAdaptiveInfo.current.supportsTwoPane && navController != null
             Column(modifier = Modifier.fillMaxSize()) {
                 com.anisync.android.presentation.discover.components.SearchResultsHeader(
                     activeCategory = activeCategory,

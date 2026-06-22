@@ -23,7 +23,7 @@ fun LibraryListDetail(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    if (!LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
         LibraryScreen(
             onMediaClick = onMediaClickFullScreen,
             onNavigateToCalendar = onNavigateToCalendar,

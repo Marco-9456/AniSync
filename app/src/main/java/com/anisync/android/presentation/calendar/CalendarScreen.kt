@@ -122,7 +122,7 @@ fun CalendarScreen(
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     // On expanded widths the calendar becomes a two-pane month grid + selected-day list instead of
     // the one-day pager; the week selector / day strip (both week-based) give way to the month nav.
-    val isWide = LocalAdaptiveInfo.current.isExpandedOrWider
+    val isWide = LocalAdaptiveInfo.current.supportsTwoPane
 
     val haptic = rememberHapticFeedback()
     val coroutineScope = rememberCoroutineScope()

@@ -63,7 +63,7 @@ fun SettingsListDetail(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!LocalAdaptiveInfo.current.isExpandedOrWider) {
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
         SettingsScreen(
             onCategorySelected = { navController.navigate(it.toPaneRoute()) },
             onBackClick = onBackClick,
