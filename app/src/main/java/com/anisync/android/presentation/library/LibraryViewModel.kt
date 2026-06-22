@@ -199,8 +199,14 @@ class LibraryViewModel @Inject constructor(
 
                     class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
 
+                    // Guard against any duplicate-media rows still cached locally (e.g. a stale id=0
+                    // optimistic-add row not yet reconciled by a sync): render one card per media,
+                    // otherwise the lazy grid crashes on the colliding key.
+                    val dedupedEntries = entries
+                        .groupBy { it.mediaId }
+                        .map { (_, dups) -> dups.maxByOrNull { it.updatedAt ?: 0L } ?: dups.first() }
                     val sortableEntries =
-                        entries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
+                        dedupedEntries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
 
                     val titleDir = if (ascending) 1 else -1
                     val keyDir = -titleDir
