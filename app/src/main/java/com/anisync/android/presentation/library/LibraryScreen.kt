@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalGridColumnCount
@@ -560,12 +559,15 @@ fun LibraryScreen(
                             isAscending,
                             saver = LazyGridState.Saver
                         ) { LazyGridState() }
+                        // The list view is a single-column grid on compact and a
+                        // multi-column grid of list cards once the window/pane is wide
+                        // enough (§6.4), so its scroll state is a LazyGridState too.
                         val listState = rememberSaveable(
                             tabLabel,
                             sortOption,
                             isAscending,
-                            saver = LazyListState.Saver
-                        ) { LazyListState() }
+                            saver = LazyGridState.Saver
+                        ) { LazyGridState() }
 
                         val cardConfig =
                             if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
@@ -641,7 +643,11 @@ fun LibraryScreen(
                                         }
                                     }
                                 } else {
-                                    LazyColumn(
+                                    LazyVerticalGrid(
+                                        // Wide list cards (~360dp) flow into as many
+                                        // columns as fit; compact / a narrow detail pane
+                                        // collapse to the single column (unchanged look).
+                                        columns = GridCells.Adaptive(minSize = 360.dp),
                                         state = listState,
                                         contentPadding = PaddingValues(
                                             start = 24.dp,
@@ -649,6 +655,7 @@ fun LibraryScreen(
                                             top = 24.dp,
                                             bottom = 24.dp + LocalMainNavBarInset.current
                                         ),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                                         verticalArrangement = Arrangement.spacedBy(12.dp),
                                         modifier = Modifier.fillMaxSize()
                                     ) {
