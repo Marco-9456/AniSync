@@ -26,7 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -89,11 +89,11 @@ fun HorizontalMediaList(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(
-            items = items,
-            key = { it.mediaId },
-            contentType = { "media_card" }
-        ) { item ->
+        itemsIndexed(
+            items,
+            key = { index, item -> "horiz_${item.mediaId}_$index" },
+            contentType = { _, _ -> "media_card" }
+        ) { _, item ->
             val onClick = remember(item.mediaId) { { onItemClick(item.mediaId) } }
             DiscoverMediaCard(
                 item = item,

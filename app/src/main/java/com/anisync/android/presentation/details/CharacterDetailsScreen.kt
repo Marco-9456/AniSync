@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -458,10 +458,10 @@ private fun CharacterTabContent(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(
-                        items = previewMedia,
-                        key = { it.id }
-                    ) { media ->
+                    itemsIndexed(
+                        previewMedia,
+                        key = { index, media -> "char_preview_${media.id}_$index" }
+                    ) { _, media ->
                         FeaturedMediaItem(
                             mediaId = media.id,
                             coverUrl = media.coverUrl,
