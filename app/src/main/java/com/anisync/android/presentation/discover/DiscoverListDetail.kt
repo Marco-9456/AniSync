@@ -54,7 +54,8 @@ fun DiscoverListDetail(
         return
     }
 
-    MediaListDetailScaffold(navController = navController) { onMediaClick ->
+    // Discover section items don't show a selected state, so the pane's selected id is ignored here.
+    MediaListDetailScaffold(navController = navController) { _, onMediaClick ->
         feed(onMediaClick)
     }
 }

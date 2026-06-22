@@ -983,7 +983,7 @@ private fun SearchResultsContent(
                         modifier = Modifier.weight(1f),
                         selectionSaver = SearchTargetSaver,
                         gutterPadding = PaddingValues(16.dp),
-                        listPane = { onSelect ->
+                        listPane = { selectedTarget, onSelect ->
                             com.anisync.android.presentation.discover.components.SearchResultsPanels(
                                 activeCategory = activeCategory,
                                 searchAnime = searchAnime,
@@ -996,7 +996,8 @@ private fun SearchResultsContent(
                                 onCharacterClick = { onSelect(SearchTarget.Character(it)) },
                                 onStaffClick = { onSelect(SearchTarget.Staff(it)) },
                                 onStudioClick = { onSelect(SearchTarget.Studio(it)) },
-                                onUserClick = onUserClick
+                                onUserClick = onUserClick,
+                                selectedTarget = selectedTarget
                             )
                         },
                         detailPane = { target, onClose ->

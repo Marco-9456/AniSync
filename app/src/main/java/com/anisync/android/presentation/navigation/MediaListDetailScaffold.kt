@@ -21,14 +21,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -53,6 +52,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import kotlinx.coroutines.Job
@@ -60,6 +60,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.details.CharacterDetailsScreen
@@ -142,7 +143,9 @@ fun <T : Any> TwoPaneListDetailScaffold(
     // fill the full width. Pass it for list-style surfaces (Forum / Feed / Notifications); leave null
     // for grid feeds (Library / Discover) that should browse full-width until a selection.
     placeholderPane: (@Composable () -> Unit)? = null,
-    listPane: @Composable (onItemClick: (T) -> Unit) -> Unit,
+    // Receives the currently-open item (or null) so the list pane can show the Material 3 selected
+    // state on it (two-pane only), plus the click callback that opens an item in the detail pane.
+    listPane: @Composable (selected: T?, onItemClick: (T) -> Unit) -> Unit,
     detailPane: @Composable (selected: T, onClose: () -> Unit) -> Unit,
 ) {
     var selected by rememberSaveable(stateSaver = selectionSaver) { mutableStateOf<T?>(null) }
@@ -232,12 +235,12 @@ fun <T : Any> TwoPaneListDetailScaffold(
                 // shrinks past [LIST_MIN_LAYOUT_FRACTION], so collapsing slides/clips the list out
                 // instead of reflowing its search bar + tab switcher into a squashed column.
                 Box(modifier = Modifier.requiredWidthIn(min = listMinWidth).fillMaxSize()) {
-                    listPane { item -> selected = item }
+                    listPane(selected) { item -> selected = item }
                 }
             }
         } else {
             Box(modifier = listModifier.clipToBounds()) {
-                listPane { item -> selected = item }
+                listPane(selected) { item -> selected = item }
             }
         }
 
@@ -324,7 +327,7 @@ fun <T : Any> TwoPaneListDetailScaffold(
 fun MediaListDetailScaffold(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    listPane: @Composable (onMediaClick: (Int) -> Unit) -> Unit,
+    listPane: @Composable (selectedMediaId: Int?, onMediaClick: (Int) -> Unit) -> Unit,
 ) {
     TwoPaneListDetailScaffold(
         modifier = modifier,
@@ -362,6 +365,12 @@ internal fun PaneDetailHost(
     SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
         val paneNav = rememberNavController()
 
+        // Material 3: a two-pane detail's ROOT shows a trailing close (✕), not a leading back arrow;
+        // only an entry drilled into within the pane keeps its back arrow. The pane is at its root
+        // while the nested nav sits at its start destination (nothing pushed on top).
+        val currentPaneEntry by paneNav.currentBackStackEntryAsState()
+        val paneIsRoot = currentPaneEntry == null || paneNav.previousBackStackEntry == null
+
         BackHandler(enabled = true) {
             if (!paneNav.popBackStack()) onClose()
         }
@@ -377,6 +386,7 @@ internal fun PaneDetailHost(
             }
         }
 
+        CompositionLocalProvider(LocalPaneIsRoot provides paneIsRoot) {
         NavHost(
             navController = paneNav,
             startDestination = remember { startRoute },
@@ -401,6 +411,7 @@ internal fun PaneDetailHost(
             )
             extraGraph(paneNav, this@SharedTransitionLayout)
         }
+        }
     }
 }
 
@@ -422,9 +433,9 @@ internal fun NavGraphBuilder.mediaPaneGraph(
         MediaDetailsScreen(
             mediaId = route.mediaId,
             sourceScreen = route.sourceScreen,
-            // Back at the root closes the pane; deeper destinations pop within the pane.
+            // Back at the root closes the pane; deeper destinations pop within the pane. The nav icon
+            // (✕ at the pane root, ← when drilled) comes from LocalPaneNavIcon, provided by the host.
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
-            navigationIcon = Icons.Default.Close,
             onRelationClick = { relId -> paneNav.navigate(MediaDetails(relId, PANE_SOURCE)) },
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.anisync.android.R
 import com.anisync.android.presentation.navigation.DetailPanePlaceholder
@@ -41,6 +43,7 @@ import com.anisync.android.presentation.navigation.SettingsTheme
 import com.anisync.android.presentation.navigation.SettingsUpdates
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 
 /**
  * The Settings hub. Compact/medium widths show the plain [SettingsScreen] and push each chosen
@@ -82,10 +85,11 @@ fun SettingsListDetail(
                 text = stringResource(R.string.pane_placeholder_settings),
             )
         },
-        listPane = { onSelect ->
+        listPane = { selectedCategory, onSelect ->
             SettingsScreen(
                 onCategorySelected = onSelect,
                 onBackClick = onBackClick,
+                selectedCategory = selectedCategory,
             )
         },
         detailPane = { category, onClose ->
@@ -140,6 +144,12 @@ private fun SettingsDetailPane(
     val paneNav = rememberNavController()
     val popOrClose: () -> Unit = { if (!paneNav.popBackStack()) onClose() }
 
+    // Material 3: the root category subscreen shows the pane's trailing close (✕), a drilled-into
+    // subscreen (Look & Feel → Theme, About → Licenses …) keeps its leading back arrow. Provided via
+    // LocalPaneIsRoot, which the shared CollapsingTopBarScaffold reads — no per-subscreen parameter.
+    val currentPaneEntry by paneNav.currentBackStackEntryAsState()
+    val paneIsRoot = currentPaneEntry == null || paneNav.previousBackStackEntry == null
+
     BackHandler(enabled = true) { popOrClose() }
 
     var isFirstSelection by remember { mutableStateOf(true) }
@@ -151,6 +161,7 @@ private fun SettingsDetailPane(
         }
     }
 
+    CompositionLocalProvider(LocalPaneIsRoot provides paneIsRoot) {
     NavHost(
         navController = paneNav,
         startDestination = remember { category.toPaneRoute() },
@@ -205,5 +216,6 @@ private fun SettingsDetailPane(
             )
         }
         composable<SettingsFontPlayground> { FontSettingsScreen(onBackClick = popOrClose) }
+    }
     }
 }

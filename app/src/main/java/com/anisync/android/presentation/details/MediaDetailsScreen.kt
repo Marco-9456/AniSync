@@ -154,6 +154,7 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.rememberCopyToClipboard
@@ -358,15 +359,33 @@ fun MediaDetailsScreen(
                                 }
                             },
                             navigationIcon = {
-                                IconButton(onClick = onBackClick) {
-                                    Icon(
-                                        imageVector = navigationIcon,
-                                        contentDescription = stringResource(R.string.back),
-                                        tint = animateColorAsState(
-                                            if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                            label = "navIconTint"
-                                        ).value
-                                    )
+                                if (!LocalPaneIsRoot.current) {
+                                    IconButton(onClick = onBackClick) {
+                                        Icon(
+                                            imageVector = navigationIcon,
+                                            contentDescription = stringResource(R.string.back),
+                                            tint = animateColorAsState(
+                                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                                label = "navIconTint"
+                                            ).value
+                                        )
+                                    }
+                                }
+                            },
+                            actions = {
+                                // At a two-pane detail root the close (✕) sits on the trailing edge
+                                // (easy right-thumb reach) instead of a leading back arrow.
+                                if (LocalPaneIsRoot.current) {
+                                    IconButton(onClick = onBackClick) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.pane_close),
+                                            tint = animateColorAsState(
+                                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                                label = "closeIconTint"
+                                            ).value
+                                        )
+                                    }
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(

@@ -28,6 +28,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
@@ -129,15 +131,17 @@ fun CharacterDetailsScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = androidx.compose.animation.animateColorAsState(
-                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                label = "navIconTint"
-                            ).value
-                        )
+                    if (!LocalPaneIsRoot.current) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                                tint = androidx.compose.animation.animateColorAsState(
+                                    if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                    label = "navIconTint"
+                                ).value
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -150,6 +154,20 @@ fun CharacterDetailsScreen(
                                 label = "actionIconTint"
                             ).value
                         )
+                    }
+                    // At a two-pane detail root the close (✕) is the trailing-most action (right-thumb
+                    // reach) in place of a leading back arrow.
+                    if (LocalPaneIsRoot.current) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.pane_close),
+                                tint = androidx.compose.animation.animateColorAsState(
+                                    if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                    label = "closeIconTint"
+                                ).value
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

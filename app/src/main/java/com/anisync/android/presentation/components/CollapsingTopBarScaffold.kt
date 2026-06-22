@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 
@@ -309,6 +311,11 @@ fun CollapsibleCommonTopBar(
     var actionsWidthPx by remember { mutableIntStateOf(0) }
     val actionsWidthDp = with(density) { actionsWidthPx.toDp() }
 
+    // At a two-pane detail ROOT the leading back arrow is replaced by a trailing close (✕), so closing
+    // is within easy right-thumb reach (Material 3: a two-pane detail has no back button). Drilled
+    // entries / full-screen routes keep the normal leading back arrow.
+    val paneIsRoot = LocalPaneIsRoot.current
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -316,7 +323,7 @@ fun CollapsibleCommonTopBar(
         color = backgroundColor
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (onBackClick != null) {
+            if (onBackClick != null && !paneIsRoot) {
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
@@ -337,12 +344,24 @@ fun CollapsibleCommonTopBar(
                     .align(Alignment.TopEnd)
                     .onSizeChanged { actionsWidthPx = it.width },
                 verticalAlignment = Alignment.CenterVertically,
-                content = actions
-            )
+            ) {
+                actions()
+                if (paneIsRoot && onBackClick != null) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.pane_close),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
 
-            // When there is no back button the title keeps its expanded inset even once collapsed.
+            // When there is no leading back button (none supplied, or a pane root where it moved to a
+            // trailing ✕) the title keeps its expanded start inset even once collapsed.
             val collapsedStart =
-                if (onBackClick != null) collapsedTitleStartPadding else expandedTitleStartPadding
+                if (onBackClick != null && !paneIsRoot) collapsedTitleStartPadding
+                else expandedTitleStartPadding
             val titleStartPadding = androidx.compose.ui.unit.lerp(
                 expandedTitleStartPadding,
                 collapsedStart,

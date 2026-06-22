@@ -54,12 +54,16 @@ import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.util.selectedPaneItem
 
 @Composable
 fun ForumThreadCard(
     thread: ForumThread,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // When this thread is the one open in the two-pane detail, the card shows the Material 3
+    // selection ring (two-pane only; null/false elsewhere).
+    selected: Boolean = false,
     isSaved: Boolean = false,
     onSaveClick: (() -> Unit)? = null,
     isSubscribed: Boolean = false,
@@ -69,7 +73,9 @@ fun ForumThreadCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .selectedPaneItem(selected, RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,

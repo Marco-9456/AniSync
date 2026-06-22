@@ -147,6 +147,8 @@ fun ForumScreen(
     onCreateThreadClick: () -> Unit,
     onCreateThreadForMedia: (mediaId: Int, title: String, coverUrl: String?) -> Unit,
     onUserClick: (String) -> Unit,
+    // The thread id open in the two-pane detail (or null); its card shows the selection ring.
+    selectedThreadId: Int? = null,
     viewModel: ForumViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -448,6 +450,7 @@ fun ForumScreen(
 
                                 ForumThreadCard(
                                     thread = thread,
+                                    selected = thread.id == selectedThreadId,
                                     onClick = {
                                         focusManager.clearFocus(); onThreadClick(
                                         thread.id,

@@ -69,6 +69,8 @@ fun FeedScreen(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     onLoginClick: () -> Unit,
     onComposeStatus: () -> Unit,
+    // The activity id open in the two-pane detail (or null); its card shows the selection ring.
+    selectedActivityId: Int? = null,
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -236,6 +238,7 @@ fun FeedScreen(
 
                                 ActivityCard(
                                     activity = activity,
+                                    selected = activity.id == selectedActivityId,
                                     onClick = { onActivityClick(activity.id) },
                                     onUserClick = onUserClick,
                                     onMediaClick = onMediaClick,

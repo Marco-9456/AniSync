@@ -2,6 +2,7 @@ package com.anisync.android.presentation.util
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -22,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +45,24 @@ import com.anisync.android.R
  * the caller owns that and supplies the split via [leadingWeight] (and, when resizable, a [handle]
  * built from [PaneDragHandle]).
  */
+/**
+ * True when a detail screen is the **root** of a two-pane detail pane (the item selected from the
+ * list), as opposed to a full-screen route or an entry the user drilled INTO within the pane.
+ *
+ * Per the Material 3 list-detail guidance a two-pane detail ROOT has **no back button** — selecting
+ * another list item swaps it. So at the root each detail screen hides its leading back arrow and
+ * instead shows a close (✕) action on the **trailing (right) edge** of its top bar, within easy
+ * right-thumb reach. A DRILLED entry keeps its normal leading back arrow (to pop the pane's own
+ * stack); a full-screen route is unaffected (default `false`).
+ *
+ * A drilling pane host (media browse/search, settings) provides `true` only while its nested nav is
+ * at its start destination, `false` once something is pushed on top; a single-screen pane (feed /
+ * forum / notifications) provides `true` around its always-root detail. One CompositionLocal drives
+ * the close placement everywhere without threading a parameter through every detail screen + the 15
+ * settings subscreens.
+ */
+val LocalPaneIsRoot = staticCompositionLocalOf { false }
+
 object TwoPaneDefaults {
     /** Rounded corners shared by both panes (all four corners). */
     val PaneShape = RoundedCornerShape(24.dp)
@@ -169,4 +189,29 @@ fun PaneDragHandle(
             modifier = Modifier.semantics { contentDescription = resizeLabel },
         )
     }
+}
+
+/**
+ * Selection treatment for a list item in a two-pane list-detail layout: an outline ring in the
+ * primary color tracing the item's [shape]. Per the Material 3 list-detail guidance the selected
+ * state is shown **only** in the list pane of a two-pane layout — callers thread the open item's id
+ * down from `TwoPaneListDetailScaffold` and pass `selected = (id == selectedId)`. On compact widths
+ * the scaffold isn't composed, so the list renders with no selection and this is a no-op; likewise
+ * non-pane callers (default `selected = false`) are unaffected.
+ *
+ * Applied via each card's existing `modifier`, so the ring traces the card's outer bounds without
+ * touching its internals or its shared-element treatment.
+ */
+@Composable
+fun Modifier.selectedPaneItem(
+    selected: Boolean,
+    shape: Shape = RoundedCornerShape(16.dp),
+): Modifier = if (!selected) {
+    this
+} else {
+    this.border(
+        width = 2.dp,
+        color = MaterialTheme.colorScheme.primary,
+        shape = shape,
+    )
 }

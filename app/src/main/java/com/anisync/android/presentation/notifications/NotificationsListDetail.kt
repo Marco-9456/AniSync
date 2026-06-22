@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +59,7 @@ import com.anisync.android.presentation.navigation.UserProfile
 import com.anisync.android.presentation.navigation.WriteReview
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 
 private const val SOURCE = "notifications"
 
@@ -111,7 +113,7 @@ fun NotificationsListDetail(
                 text = stringResource(R.string.pane_placeholder_notification),
             )
         },
-        listPane = { onSelect ->
+        listPane = { selectedTarget, onSelect ->
             NotificationsScreen(
                 onBackClick = onBackClick,
                 onMediaClick = { onSelect(NotificationTarget.Media(it)) },
@@ -121,6 +123,7 @@ fun NotificationsListDetail(
                     onSelect(NotificationTarget.Thread(threadId, commentId))
                 },
                 onSettingsClick = onSettingsClick,
+                selectedTarget = selectedTarget,
             )
         },
         detailPane = { target, onClose ->
@@ -197,6 +200,9 @@ private fun NotificationDetailPane(
             }
         }
 
+        // A notification target never drills WITHIN the pane (onward taps escalate full-screen), so the
+        // detail is always the root → trailing close (✕) via LocalPaneIsRoot.
+        CompositionLocalProvider(LocalPaneIsRoot provides true) {
         NavHost(
             navController = paneNav,
             startDestination = remember { target.toPaneRoute() },
@@ -218,9 +224,7 @@ private fun NotificationDetailPane(
                 MediaDetailsScreen(
                     mediaId = route.mediaId,
                     sourceScreen = route.sourceScreen,
-                    onBackClick = { if (!paneNav.popBackStack()) onClose() },
-                    navigationIcon = Icons.Default.Close,
-                    onRelationClick = { navController.navigate(MediaDetails(it, SOURCE)) },
+                    onBackClick = { if (!paneNav.popBackStack()) onClose() },                    onRelationClick = { navController.navigate(MediaDetails(it, SOURCE)) },
                     onCharacterClick = { navController.navigate(CharacterDetails(it)) },
                     onStaffClick = { navController.navigate(StaffDetails(it)) },
                     onStudioClick = { navController.navigate(StudioDetails(it)) },
@@ -248,9 +252,7 @@ private fun NotificationDetailPane(
                     activityId = route.activityId,
                     onBackClick = { if (!paneNav.popBackStack()) onClose() },
                     onUserClick = navigateUser,
-                    targetReplyId = route.targetReplyId.takeIf { it != 0 },
-                    navigationIcon = Icons.Default.Close,
-                    onEditActivity = { navController.navigate(EditActivity(it)) },
+                    targetReplyId = route.targetReplyId.takeIf { it != 0 },                    onEditActivity = { navController.navigate(EditActivity(it)) },
                 )
             }
 
@@ -261,9 +263,7 @@ private fun NotificationDetailPane(
                     threadTitle = route.threadTitle,
                     onBackClick = { if (!paneNav.popBackStack()) onClose() },
                     onUserClick = navigateUser,
-                    targetCommentId = route.commentId.takeIf { it != 0 },
-                    navigationIcon = Icons.Default.Close,
-                    onEditThread = { navController.navigate(EditThreadBody(it)) },
+                    targetCommentId = route.commentId.takeIf { it != 0 },                    onEditThread = { navController.navigate(EditThreadBody(it)) },
                     capContentWidth = false,
                 )
             }
@@ -296,7 +296,7 @@ private fun NotificationDetailPane(
                     FilledTonalIconButton(
                         onClick = { if (!paneNav.popBackStack()) onClose() },
                         modifier = Modifier
-                            .align(Alignment.TopStart)
+                            .align(Alignment.TopEnd)
                             .windowInsetsPadding(WindowInsets.statusBars)
                             .padding(12.dp),
                     ) {
@@ -307,6 +307,7 @@ private fun NotificationDetailPane(
                     }
                 }
             }
+        }
         }
     }
 }

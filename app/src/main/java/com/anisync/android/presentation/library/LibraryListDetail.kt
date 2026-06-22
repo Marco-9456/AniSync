@@ -33,7 +33,8 @@ fun LibraryListDetail(
         return
     }
 
-    MediaListDetailScaffold(navController = navController) { onMediaClick ->
+    // Library list items don't show a selected state, so the pane's selected id is ignored here.
+    MediaListDetailScaffold(navController = navController) { _, onMediaClick ->
         LibraryScreen(
             onMediaClick = onMediaClick,
             onNavigateToCalendar = onNavigateToCalendar,

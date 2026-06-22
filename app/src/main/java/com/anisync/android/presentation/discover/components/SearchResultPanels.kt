@@ -45,6 +45,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.discover.ResultCategory
+import com.anisync.android.presentation.discover.SearchTarget
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.util.getTitle
@@ -76,16 +77,20 @@ fun SearchResultsPanels(
     onStudioClick: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    // The result open in the two-pane detail (or null); its row shows the Material 3 selected state.
+    selectedTarget: SearchTarget? = null,
 ) {
     if (activeCategory == ResultCategory.ALL) {
         SearchOverviewPanels(
             searchAnime, searchManga, groupedResults, titleLanguage,
             onShowAll, onMediaClick, onCharacterClick, onStaffClick, onStudioClick, onUserClick, modifier,
+            selectedTarget,
         )
     } else {
         SearchCategoryResults(
             activeCategory, searchAnime, searchManga, groupedResults, titleLanguage,
             onMediaClick, onCharacterClick, onStaffClick, onStudioClick, onUserClick, modifier,
+            selectedTarget,
         )
     }
 }
@@ -110,6 +115,7 @@ fun SearchOverviewPanels(
     onStudioClick: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    selectedTarget: SearchTarget? = null,
 ) {
     val avatarShape = LocalAvatarShape.current
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -126,14 +132,18 @@ fun SearchOverviewPanels(
             if (searchAnime.isNotEmpty()) {
                 item(key = "panel_anime") {
                     SearchCategoryPanel(title = "Anime", total = searchAnime.size, onViewAll = { onShowAll(ResultCategory.ANIME) }) {
-                        searchAnime.take(PanelItemCap).forEach { entry -> MediaResultRow(entry, titleLanguage) { onMediaClick(entry.mediaId) } }
+                        searchAnime.take(PanelItemCap).forEach { entry ->
+                            MediaResultRow(entry, titleLanguage, selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId) { onMediaClick(entry.mediaId) }
+                        }
                     }
                 }
             }
             if (searchManga.isNotEmpty()) {
                 item(key = "panel_manga") {
                     SearchCategoryPanel(title = "Manga", total = searchManga.size, onViewAll = { onShowAll(ResultCategory.MANGA) }) {
-                        searchManga.take(PanelItemCap).forEach { entry -> MediaResultRow(entry, titleLanguage) { onMediaClick(entry.mediaId) } }
+                        searchManga.take(PanelItemCap).forEach { entry ->
+                            MediaResultRow(entry, titleLanguage, selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId) { onMediaClick(entry.mediaId) }
+                        }
                     }
                 }
             }
@@ -151,6 +161,7 @@ fun SearchOverviewPanels(
                                 imageUrl = character.imageUrl,
                                 imageShape = avatarShape,
                                 fallbackIcon = Icons.Outlined.Person,
+                                selected = selectedTarget is SearchTarget.Character && selectedTarget.id == character.id,
                                 onClick = { onCharacterClick(character.id) },
                             )
                         }
@@ -171,6 +182,7 @@ fun SearchOverviewPanels(
                                 imageUrl = staff.imageUrl,
                                 imageShape = avatarShape,
                                 fallbackIcon = Icons.Outlined.Person,
+                                selected = selectedTarget is SearchTarget.Staff && selectedTarget.id == staff.id,
                                 onClick = { onStaffClick(staff.id) },
                             )
                         }
@@ -191,6 +203,7 @@ fun SearchOverviewPanels(
                                 imageUrl = null,
                                 imageShape = RoundedCornerShape(10.dp),
                                 fallbackIcon = Icons.Outlined.Apartment,
+                                selected = selectedTarget is SearchTarget.Studio && selectedTarget.id == studio.id,
                                 onClick = { onStudioClick(studio.id) },
                             )
                         }
@@ -239,6 +252,7 @@ fun SearchCategoryResults(
     onStudioClick: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    selectedTarget: SearchTarget? = null,
 ) {
     val avatarShape = LocalAvatarShape.current
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -254,28 +268,28 @@ fun SearchCategoryResults(
         ) {
             when (activeCategory) {
                 ResultCategory.ANIME -> items(searchAnime, key = { "a_${it.mediaId}" }) { entry ->
-                    PanelCardRow { MediaResultRow(entry, titleLanguage) { onMediaClick(entry.mediaId) } }
+                    PanelCardRow { MediaResultRow(entry, titleLanguage, selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId) { onMediaClick(entry.mediaId) } }
                 }
                 ResultCategory.MANGA -> items(searchManga, key = { "m_${it.mediaId}" }) { entry ->
-                    PanelCardRow { MediaResultRow(entry, titleLanguage) { onMediaClick(entry.mediaId) } }
+                    PanelCardRow { MediaResultRow(entry, titleLanguage, selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId) { onMediaClick(entry.mediaId) } }
                 }
                 ResultCategory.CHARACTERS -> items(groupedResults.characters, key = { "c_${it.id}" }) { c ->
                     PanelCardRow {
-                        SearchResultRow(c.displayName, c.nativeName, c.imageUrl, avatarShape, Icons.Outlined.Person) {
+                        SearchResultRow(c.displayName, c.nativeName, c.imageUrl, avatarShape, Icons.Outlined.Person, selected = selectedTarget is SearchTarget.Character && selectedTarget.id == c.id) {
                             onCharacterClick(c.id)
                         }
                     }
                 }
                 ResultCategory.STAFF -> items(groupedResults.staff, key = { "s_${it.id}" }) { s ->
                     PanelCardRow {
-                        SearchResultRow(s.displayName, s.primaryOccupations.firstOrNull() ?: s.nativeName, s.imageUrl, avatarShape, Icons.Outlined.Person) {
+                        SearchResultRow(s.displayName, s.primaryOccupations.firstOrNull() ?: s.nativeName, s.imageUrl, avatarShape, Icons.Outlined.Person, selected = selectedTarget is SearchTarget.Staff && selectedTarget.id == s.id) {
                             onStaffClick(s.id)
                         }
                     }
                 }
                 ResultCategory.STUDIOS -> items(groupedResults.studios, key = { "st_${it.id}" }) { st ->
                     PanelCardRow {
-                        SearchResultRow(st.displayName, st.favourites?.let { stringResource(R.string.search_favourites_count, it) }, null, RoundedCornerShape(10.dp), Icons.Outlined.Apartment) {
+                        SearchResultRow(st.displayName, st.favourites?.let { stringResource(R.string.search_favourites_count, it) }, null, RoundedCornerShape(10.dp), Icons.Outlined.Apartment, selected = selectedTarget is SearchTarget.Studio && selectedTarget.id == st.id) {
                             onStudioClick(st.id)
                         }
                     }
@@ -357,6 +371,7 @@ private fun PanelCardRow(content: @Composable () -> Unit) {
 private fun MediaResultRow(
     entry: LibraryEntry,
     titleLanguage: TitleLanguage,
+    selected: Boolean = false,
     onClick: () -> Unit,
 ) {
     SearchResultRow(
@@ -365,6 +380,7 @@ private fun MediaResultRow(
         imageUrl = entry.coverUrl,
         imageShape = RoundedCornerShape(6.dp),
         fallbackIcon = Icons.Outlined.Movie,
+        selected = selected,
         imageWidth = 38.dp,
         imageHeight = 52.dp,
         onClick = onClick,
@@ -383,6 +399,9 @@ private fun SearchResultRow(
     imageUrl: String?,
     imageShape: Shape,
     fallbackIcon: ImageVector,
+    // True when this row is the result open in the two-pane detail; it gets a filled selection
+    // background (Material 3 selected list item; two-pane only).
+    selected: Boolean = false,
     imageWidth: Dp = 44.dp,
     imageHeight: Dp = 44.dp,
     onClick: () -> Unit,
@@ -390,6 +409,10 @@ private fun SearchResultRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer)
+                else Modifier
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

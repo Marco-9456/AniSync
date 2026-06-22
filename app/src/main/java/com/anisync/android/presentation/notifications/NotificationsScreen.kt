@@ -54,6 +54,8 @@ fun NotificationsScreen(
     onThreadClick: (threadId: Int, commentId: Int?) -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // The target open in the two-pane detail (or null); the matching notification card shows the ring.
+    selectedTarget: NotificationTarget? = null,
     viewModel: NotificationsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -156,7 +158,8 @@ fun NotificationsScreen(
                                 onMediaClick = onMediaClick,
                                 onUserClick = onUserClick,
                                 onActivityClick = onActivityClick,
-                                onThreadClick = onThreadClick
+                                onThreadClick = onThreadClick,
+                                selectedTarget = selectedTarget
                             )
                         }
                         if (uiState.isPaginating) {

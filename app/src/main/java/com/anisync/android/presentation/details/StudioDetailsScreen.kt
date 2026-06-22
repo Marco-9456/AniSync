@@ -28,6 +28,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Share
@@ -118,11 +120,13 @@ fun StudioDetailsScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
+                    if (!LocalPaneIsRoot.current) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -135,6 +139,16 @@ fun StudioDetailsScreen(
                             imageVector = Icons.Default.Share,
                             contentDescription = stringResource(R.string.cd_share)
                         )
+                    }
+                    // At a two-pane detail root the close (✕) is the trailing-most action (right-thumb
+                    // reach) in place of a leading back arrow.
+                    if (LocalPaneIsRoot.current) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.pane_close)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

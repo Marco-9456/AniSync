@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -80,6 +81,9 @@ fun SettingsScreen(
     onCategorySelected: (SettingsCategory) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // The category open in the two-pane detail (expanded list-detail), or null on compact / before a
+    // selection. Its card shows the Material 3 selected state.
+    selectedCategory: SettingsCategory? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -278,6 +282,7 @@ fun SettingsScreen(
                         icon = category.icon,
                         customColors = getCategoryColors(category.key, isDark),
                         onClick = category.onClick,
+                        selected = selectedCategory != null && category.key == selectedCategory.cardKey(),
                         shape = shape
                     )
                 }
@@ -293,12 +298,25 @@ fun ExpressiveCategoryItem(
     icon: ImageVector,
     customColors: Pair<Color, Color>,
     onClick: () -> Unit,
-    shape: androidx.compose.ui.graphics.Shape
+    shape: androidx.compose.ui.graphics.Shape,
+    selected: Boolean = false
 ) {
     Surface(
         onClick = onClick,
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        // The settings cards are a connected group, so the open category is shown with a filled tonal
+        // container (Material 3 selected list item) rather than an outline ring, which would look wrong
+        // tracing one segment of the joined block.
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
         modifier = Modifier
             .fillMaxWidth()
             .height(88.dp)
@@ -332,19 +350,34 @@ fun ExpressiveCategoryItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = LocalContentColor.current,
                     maxLines = 1
                 )
                 Text(
                     text = subtitle,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                    color = LocalContentColor.current.copy(alpha = 0.65f),
                     maxLines = 2
                 )
             }
         }
     }
+}
+
+/** Maps a [SettingsCategory] to the [CategoryData.key] of its card, so the open category's card can
+ *  show the selected state in the two-pane list-detail layout. (App Links has no category — never
+ *  selected.) */
+private fun SettingsCategory.cardKey(): String = when (this) {
+    SettingsCategory.LookAndFeel -> "lookandfeel"
+    SettingsCategory.AniList -> "anilist"
+    SettingsCategory.Notifications -> "notifications"
+    SettingsCategory.Storage -> "storage"
+    SettingsCategory.MediaUpload -> "media_upload"
+    SettingsCategory.Updates -> "updates"
+    SettingsCategory.Sponsors -> "sponsors"
+    SettingsCategory.About -> "about"
+    SettingsCategory.DeveloperTools -> "dev_tools"
 }
 
 private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> {
