@@ -94,6 +94,22 @@ import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAniLinkRouter
 import com.anisync.android.presentation.util.shimmerEffect
 
+/**
+ * Process-wide LRU cache (keyed by raw HTML) of parsed rich text. A status/message body re-enters
+ * composition every time its card is recycled back into view in a lazy list; without caching, each
+ * re-entry re-parses the HTML and flashes the estimate→content height change — which the card's
+ * animateContentSize then replays as a "settling" wiggle on every scroll-back. Seeding from here
+ * lets a revisited body render at full height on the first frame, so nothing animates, and skips the
+ * repeat parse. Bounded to 200 entries; android.util.LruCache is internally synchronized.
+ */
+private object RichTextParseCache {
+    private val cache = android.util.LruCache<String, ParsedRichText>(200)
+    fun get(html: String): ParsedRichText? = cache.get(html)
+    fun put(html: String, parsed: ParsedRichText) {
+        cache.put(html, parsed)
+    }
+}
+
 @Composable
 fun AsyncRichTextRenderer(
     html: String,
@@ -104,10 +120,18 @@ fun AsyncRichTextRenderer(
     codeBackground: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    var parsedText by remember(html) { mutableStateOf<ParsedRichText?>(null) }
+    // Seed from the parse cache so a body re-entering composition (its card recycled back into view)
+    // renders at full height immediately instead of re-parsing through the estimate→content height
+    // change — which would otherwise replay the card's resize animation on every scroll-back. A cold
+    // body still parses once, then populates the cache for next time.
+    var parsedText by remember(html) { mutableStateOf(RichTextParseCache.get(html)) }
 
     LaunchedEffect(html) {
-        parsedText = RichTextParser.parse(html, ParserConfig())
+        if (parsedText == null) {
+            val result = RichTextParser.parse(html, ParserConfig())
+            RichTextParseCache.put(html, result)
+            parsedText = result
+        }
     }
 
     val estimatedMinHeight = remember(html) {
