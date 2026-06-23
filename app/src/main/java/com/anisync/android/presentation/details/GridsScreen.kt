@@ -18,8 +18,9 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapVert
@@ -273,7 +274,10 @@ fun CharacterMediaGridScreen(
                                 }
                             }
 
-                            items(sortedMedia, key = { it.id }) { mediaItem ->
+                            itemsIndexed(
+                                sortedMedia,
+                                key = { index, mediaItem -> "char_${mediaItem.id}_$index" }
+                            ) { _, mediaItem ->
                                 FeaturedMediaItem(
                                     mediaId = mediaItem.id,
                                     coverUrl = mediaItem.coverUrl,
@@ -551,7 +555,10 @@ fun StaffMediaGridScreen(
                                 }
                             }
 
-                            items(sortedAppearances, key = { it.characterId }) { vc ->
+                            itemsIndexed(
+                                sortedAppearances,
+                                key = { index, vc -> "staff_media_${vc.characterId}_$index" }
+                            ) { _, vc ->
                                 VoicedCharacterItem(
                                     voicedCharacter = vc,
                                     titleLanguage = titleLanguage,
@@ -1207,7 +1214,10 @@ fun StudioMediaGridScreen(
                                 }
                             }
 
-                            items(sortedMedia, key = { it.mediaId }) { media ->
+                            itemsIndexed(
+                                sortedMedia,
+                                key = { index, media -> "studio_${media.mediaId}_$index" }
+                            ) { _, media ->
                                 FeaturedMediaItem(
                                     mediaId = media.mediaId,
                                     coverUrl = media.coverUrl,
@@ -1472,7 +1482,10 @@ fun StaffProductionMediaGridScreen(
                                 }
                             }
 
-                            items(sortedMedia, key = { "${it.mediaId}_${it.staffRole.orEmpty()}" }) { media ->
+                            itemsIndexed(
+                                sortedMedia,
+                                key = { index, media -> "staff_prod_grid_${media.mediaId}_${media.staffRole.orEmpty()}_$index" }
+                            ) { _, media ->
                                 FeaturedMediaItem(
                                     mediaId = media.mediaId,
                                     coverUrl = media.coverUrl,

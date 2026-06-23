@@ -90,25 +90,35 @@ interface LibraryDao {
     @Transaction
     suspend fun smartMergeByType(ownerId: Int, type: MediaType, apiEntries: List<LibraryEntryEntity>) {
         val localEntries = getByType(ownerId, type)
-        val apiMediaIds = apiEntries.mapTo(HashSet(apiEntries.size)) { it.mediaId }
+        // The API list holds one canonical entry id per media (it's deduped by media upstream).
+        val apiIdByMedia = HashMap<Int, Int>(apiEntries.size)
+        for (e in apiEntries) apiIdByMedia[e.mediaId] = e.id
         val now = System.currentTimeMillis()
         val recentThreshold = 5 * 60 * 1000L
 
         val toPreserve = ArrayList<LibraryEntryEntity>()
-        val toDeleteIds = ArrayList<Int>()
+        val toDeleteMediaIds = ArrayList<Int>()
+        val staleDuplicateIds = ArrayList<Int>()
         for (local in localEntries) {
-            if (local.mediaId in apiMediaIds) continue
+            val canonicalId = apiIdByMedia[local.mediaId]
+            if (canonicalId != null) {
+                // Media is on the server → the API row wins. A local row for the same media with a
+                // different entry id is a stale duplicate (e.g. an id=0 optimistic-add row that never
+                // got swapped for the real id) — drop it so the media isn't cached/rendered twice.
+                if (local.id != canonicalId) staleDuplicateIds.add(local.id)
+                continue
+            }
+            // Media not on the server: keep a just-added entry through the sync delay, else it's stale.
             val created = local.createdAt
             if (created != null && (now - created) <= recentThreshold) {
                 toPreserve.add(local)
             } else {
-                toDeleteIds.add(local.mediaId)
+                toDeleteMediaIds.add(local.mediaId)
             }
         }
 
-        if (toDeleteIds.isNotEmpty()) {
-            deleteByMediaIds(ownerId, toDeleteIds)
-        }
+        if (staleDuplicateIds.isNotEmpty()) deleteByIds(ownerId, staleDuplicateIds)
+        if (toDeleteMediaIds.isNotEmpty()) deleteByMediaIds(ownerId, toDeleteMediaIds)
         insertAll(apiEntries)
         if (toPreserve.isNotEmpty()) {
             insertAll(toPreserve)
@@ -117,6 +127,10 @@ interface LibraryDao {
 
     @Query("DELETE FROM library_entries WHERE ownerId = :ownerId AND mediaId IN (:mediaIds)")
     suspend fun deleteByMediaIds(ownerId: Int, mediaIds: List<Int>)
+
+    /** Delete specific entries by their MediaList (entry) id. Used to drop stale duplicate rows. */
+    @Query("DELETE FROM library_entries WHERE ownerId = :ownerId AND id IN (:ids)")
+    suspend fun deleteByIds(ownerId: Int, ids: List<Int>)
 
     /**
      * Update status and progress for a specific media entry in an account.

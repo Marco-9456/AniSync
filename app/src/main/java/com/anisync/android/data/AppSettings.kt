@@ -393,6 +393,14 @@ class AppSettings @Inject constructor(
     )
     val paneProfileFraction: StateFlow<Float> = _paneProfileFraction.asStateFlow()
 
+    // Library sort option + direction, stored by LibrarySort enum name. Persisted so the chosen sort
+    // survives app restarts instead of resetting to the default (Airing Soon) on every launch.
+    private val _librarySortOption =
+        MutableStateFlow(prefs.getString(KEY_LIBRARY_SORT_OPTION, DEFAULT_LIBRARY_SORT) ?: DEFAULT_LIBRARY_SORT)
+    val librarySortOption: StateFlow<String> = _librarySortOption.asStateFlow()
+    private val _librarySortAscending = MutableStateFlow(prefs.getBoolean(KEY_LIBRARY_SORT_ASCENDING, true))
+    val librarySortAscending: StateFlow<Boolean> = _librarySortAscending.asStateFlow()
+
     // Last selected feed content filter (All / Status / List).
     private val _feedFilter = MutableStateFlow(readFeedFilter())
     val feedFilter: StateFlow<FeedFilter> = _feedFilter.asStateFlow()
@@ -840,6 +848,18 @@ class AppSettings @Inject constructor(
     }
 
     /**
+     * Persist the library sort option (by [LibrarySort] enum name) and direction.
+     */
+    fun setLibrarySort(optionName: String, ascending: Boolean) {
+        _librarySortOption.value = optionName
+        _librarySortAscending.value = ascending
+        prefs.edit()
+            .putString(KEY_LIBRARY_SORT_OPTION, optionName)
+            .putBoolean(KEY_LIBRARY_SORT_ASCENDING, ascending)
+            .apply()
+    }
+
+    /**
      * Persist the last selected feed content filter.
      */
     fun setFeedFilter(filter: FeedFilter) {
@@ -1073,6 +1093,9 @@ companion object {
         const val DEFAULT_PANE_CALENDAR_FRACTION = 0.42f
         private const val KEY_PANE_PROFILE_FRACTION = "pane_profile_fraction"
         const val DEFAULT_PANE_PROFILE_FRACTION = 0.32f
+        private const val KEY_LIBRARY_SORT_OPTION = "library_sort_option"
+        private const val KEY_LIBRARY_SORT_ASCENDING = "library_sort_ascending"
+        private const val DEFAULT_LIBRARY_SORT = "AIRING_SOON"
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

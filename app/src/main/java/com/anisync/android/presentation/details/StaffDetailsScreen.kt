@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -329,7 +329,10 @@ private fun StaffDetailsContent(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(previewProduction, key = { it.mediaId }) { media ->
+                    itemsIndexed(
+                        previewProduction,
+                        key = { index, media -> "staff_prod_${media.mediaId}_$index" }
+                    ) { _, media ->
                         FeaturedMediaItem(
                             mediaId = media.mediaId,
                             coverUrl = media.coverUrl,

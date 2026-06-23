@@ -143,6 +143,14 @@ class AccountManager @Inject constructor(
     }
 
     /**
+     * Syncs the active account's cached name/avatar to fresh values (e.g. whenever the user's own
+     * profile loads), so the account switcher and AniList settings reflect the current picture even
+     * after it's changed on AniList. No-ops if unchanged.
+     */
+    fun updateActiveDetails(name: String, avatarUrl: String?) =
+        accountStore.updateActiveDetails(name, avatarUrl)
+
+    /**
      * Startup reconcile (same session, so it does NOT bump [sessionEpoch]):
      *  - If the active account is a migrated legacy login (provisional id), resolve its real
      *    identity and promote it.

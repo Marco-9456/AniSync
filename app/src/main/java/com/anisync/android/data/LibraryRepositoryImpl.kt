@@ -179,7 +179,20 @@ class LibraryRepositoryImpl @Inject constructor(
                 }
             }
 
-            val entries = entryMap.values.toList()
+            // Collapse any rows that resolve to the same media into one (AniList media merges, or a
+            // duplicate written by an external sync tool, can produce two list entries for one media).
+            // Keep the most recently updated, carrying over every custom-list membership, so the cache
+            // holds a single row per media and the grid never gets two cards with the same key.
+            val entries = entryMap.values
+                .groupBy { it.mediaId }
+                .map { (_, dups) ->
+                    if (dups.size == 1) {
+                        dups[0]
+                    } else {
+                        val keep = dups.maxByOrNull { it.updatedAt ?: 0L } ?: dups[0]
+                        keep.copy(customLists = dups.flatMap { it.customLists }.distinct())
+                    }
+                }
 
             // Smart merge to preserve locally-added entries during API sync delay.
             // Tag rows with the active account so each account's library persists independently.

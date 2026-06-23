@@ -57,7 +57,10 @@ class LibraryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             mediaType = appSettings.libraryMediaType.value,
-            isGridView = appSettings.libraryGridView.value
+            isGridView = appSettings.libraryGridView.value,
+            sortOption = runCatching { LibrarySort.valueOf(appSettings.librarySortOption.value) }
+                .getOrDefault(LibrarySort.AIRING_SOON),
+            isAscending = appSettings.librarySortAscending.value
         )
     )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -111,6 +114,7 @@ class LibraryViewModel @Inject constructor(
             }
 
             is LibraryAction.OnSortOptionChange -> {
+                appSettings.setLibrarySort(action.sort.name, action.ascending)
                 _uiState.update {
                     it.copy(
                         sortOption = action.sort,
@@ -199,8 +203,14 @@ class LibraryViewModel @Inject constructor(
 
                     class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
 
+                    // Guard against any duplicate-media rows still cached locally (e.g. a stale id=0
+                    // optimistic-add row not yet reconciled by a sync): render one card per media,
+                    // otherwise the lazy grid crashes on the colliding key.
+                    val dedupedEntries = entries
+                        .groupBy { it.mediaId }
+                        .map { (_, dups) -> dups.maxByOrNull { it.updatedAt ?: 0L } ?: dups.first() }
                     val sortableEntries =
-                        entries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
+                        dedupedEntries.map { SortableEntry(it, it.getTitle(titleLang).lowercase()) }
 
                     val titleDir = if (ascending) 1 else -1
                     val keyDir = -titleDir

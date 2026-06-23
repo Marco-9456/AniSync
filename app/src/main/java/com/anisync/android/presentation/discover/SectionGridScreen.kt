@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -111,7 +111,10 @@ fun MediaGridContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(items, key = { it.mediaId }) { item ->
+                        itemsIndexed(
+                            items,
+                            key = { index, item -> "grid_${item.mediaId}_$index" }
+                        ) { _, item ->
                             PosterCard(
                                 item = item,
                                 titleLanguage = titleLanguage,
@@ -333,7 +336,10 @@ fun SectionGridScreen(
                             modifier = Modifier.fillMaxSize(),
                             state = gridState
                         ) {
-                            items(uiState.items, key = { it.mediaId }) { item ->
+                            itemsIndexed(
+                                uiState.items,
+                                key = { index, item -> "grid_${item.mediaId}_$index" }
+                            ) { _, item ->
                                 PosterCard(
                                     item = item,
                                     titleLanguage = titleLanguage,
