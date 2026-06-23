@@ -48,3 +48,10 @@ data class UserReviewsPage(
     val reviews: List<MediaReview>,
     val hasNextPage: Boolean
 )
+
+@Immutable
+data class UserActivitiesPage(
+    val activities: List<UserActivity>,
+    val hasNextPage: Boolean,
+    val currentPage: Int
+)

@@ -345,7 +345,10 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
                 onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
                 onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
-                viewerId = uiState.viewerId
+                viewerId = uiState.viewerId,
+                activitiesHasNextPage = uiState.activitiesHasNextPage,
+                isActivitiesPaginating = uiState.isActivitiesPaginating,
+                onLoadMore = { onAction(ProfileAction.LoadMoreActivities) }
             )
         }
 

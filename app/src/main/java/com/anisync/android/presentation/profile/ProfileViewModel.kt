@@ -219,6 +219,22 @@ class ProfileViewModel @Inject constructor(
 
     private val favoritesState = MutableStateFlow(FavoritesState())
 
+    /**
+     * Older activity pages loaded on demand as the user scrolls the Activity tab past
+     * the initial batch the profile fetch carries. Starts empty with [hasNextPage] true
+     * (optimistic — the profile fetch returns no activity pageInfo, so the first
+     * load-more authoritatively sets it). [loadMoreActivities] appends pages; the
+     * uiState combine merges them into the profile feed (deduped, newest-first).
+     */
+    private data class ActivityPaginationState(
+        val appended: List<com.anisync.android.domain.UserActivity> = emptyList(),
+        val page: Int = 1,
+        val hasNextPage: Boolean = true,
+        val isPaginating: Boolean = false
+    )
+
+    private val activityPaginationState = MutableStateFlow(ActivityPaginationState())
+
     // Overlay for optimistic activity subscription toggles: activityId -> isSubscribed
     private val activitySubscriptionOverrides = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
 
@@ -335,7 +351,8 @@ class ProfileViewModel @Inject constructor(
         deletedActivityIds,
         viewerIdFlow,
         notificationBadgeStore.unreadCount,
-        favoritesState
+        favoritesState,
+        activityPaginationState
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -352,13 +369,30 @@ class ProfileViewModel @Inject constructor(
         val viewerId = params[9] as Int?
         val unreadCount = params[10] as Int
         val favoritesOverlay = params[11] as FavoritesState
+        val pagination = params[12] as ActivityPaginationState
 
-        val needsOverlay = remote.profile != null &&
+        // Fold lazily-loaded older activity pages into the profile's initial feed
+        // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
+        // also patches an appended item. No-op until the user paginates.
+        val mergedRemote = if (remote.profile != null && pagination.appended.isNotEmpty()) {
+            val p = remote.profile
+            val merged = (p.activities + pagination.appended)
+                .distinctBy { it.id }
+                .sortedWith(
+                    compareByDescending<com.anisync.android.domain.UserActivity> { it.isPinned }
+                        .thenByDescending { it.timestamp }
+                )
+            remote.copy(profile = p.copy(activities = merged))
+        } else {
+            remote
+        }
+
+        val needsOverlay = mergedRemote.profile != null &&
             (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty())
         val remoteWithOverrides = if (!needsOverlay) {
-            remote
+            mergedRemote
         } else {
-            val profile = remote.profile!!
+            val profile = mergedRemote.profile!!
             val patched = profile.activities
                 .asSequence()
                 .filterNot { deletedIds.contains(it.id) }
@@ -371,7 +405,7 @@ class ProfileViewModel @Inject constructor(
                     next
                 }
                 .toList()
-            remote.copy(profile = profile.copy(activities = patched))
+            mergedRemote.copy(profile = profile.copy(activities = patched))
         }
 
         // Swap in the lazily-loaded full favourite-anime list once available;
@@ -428,7 +462,9 @@ class ProfileViewModel @Inject constructor(
             userMangaListByStatus = mediaLists.userMangaListByStatus,
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
             viewerId = viewerId,
-            unreadNotificationCount = unreadCount
+            unreadNotificationCount = unreadCount,
+            activitiesHasNextPage = pagination.hasNextPage,
+            isActivitiesPaginating = pagination.isPaginating
         )
     }.stateIn(
         scope = viewModelScope,
@@ -443,15 +479,18 @@ class ProfileViewModel @Inject constructor(
             viewerIdFlow.value = activityRepository.getViewerId()
         }
 
-        // Defer the network refresh past the first frame so the Room-cached
-        // profile paints first. The cooldown gate prevents back-to-back VM
-        // constructions (rapid screen back-then-in) from re-firing the burst.
-        // Notification badge is now folded into GetUserProfile via @include —
-        // no separate GetViewer round-trip needed on the own-profile path.
+        // Stale-while-revalidate: the cached profile (Apollo normalized cache for a
+        // visited user, Room for the own profile) paints instantly via the cache-first
+        // initial load, then this deferred pass forces the network so the activity feed
+        // and stats reflect reality — without the user having to pull-to-refresh.
+        // Previously this revalidation was also cache-first, so a revisited profile kept
+        // showing the last visit's snapshot (looked inactive) until a manual refresh.
+        // The deferred timing keeps the first frame instant; the cooldown gate prevents
+        // back-to-back VM constructions (rapid screen back-then-in) from re-firing it.
         viewModelScope.launch {
             delay(500)
             if (profileCooldown.shouldFetch(userInitiated = false)) {
-                refresh(forceNetwork = false)
+                refresh(forceNetwork = true)
             }
         }
     }
@@ -586,6 +625,7 @@ class ProfileViewModel @Inject constructor(
                 localState.update { it.copy(messageSentEvent = null) }
             }
 
+            is ProfileAction.LoadMoreActivities -> loadMoreActivities()
             is ProfileAction.LoadMoreSocial -> loadMoreSocial()
             is ProfileAction.LoadMoreReviews -> loadMoreReviews()
             is ProfileAction.ToggleActivitySubscription -> toggleActivitySubscription(action.activityId)
@@ -733,6 +773,9 @@ class ProfileViewModel @Inject constructor(
         // queuing in the first place.
         if (!refreshMutex.tryLock()) return
         localState.update { it.copy(isRefreshing = true) }
+        // A refresh replaces the activity seed with a fresh page 1, so drop any
+        // lazily-loaded older pages — they'd misalign or duplicate atop the new seed.
+        activityPaginationState.value = ActivityPaginationState()
 
         viewModelScope.launch {
             Trace.beginSection("AniSync.Profile.Refresh.Total")
@@ -947,6 +990,33 @@ class ProfileViewModel @Inject constructor(
                 is Result.Error -> {
                     reviewsState.update { it.copy(isReviewsPaginating = false) }
                 }
+            }
+        }
+    }
+
+    /**
+     * Loads the next older page of the user's activity feed and appends it. Triggered by
+     * the Activity tab's infinite scroll. The combine merges/dedupes the appended pages
+     * into the profile feed, so this only tracks the cursor and in-flight/has-more flags.
+     */
+    private fun loadMoreActivities() {
+        val current = activityPaginationState.value
+        if (current.isPaginating || !current.hasNextPage) return
+        val userId = uiState.value.profile?.id?.takeIf { it > 0 } ?: return
+
+        viewModelScope.launch {
+            activityPaginationState.update { it.copy(isPaginating = true) }
+            val nextPage = current.page + 1
+            when (val result = profileRepository.getUserActivitiesPage(userId, nextPage)) {
+                is Result.Success -> activityPaginationState.update {
+                    it.copy(
+                        isPaginating = false,
+                        page = nextPage,
+                        appended = it.appended + result.data.activities,
+                        hasNextPage = result.data.hasNextPage
+                    )
+                }
+                is Result.Error -> activityPaginationState.update { it.copy(isPaginating = false) }
             }
         }
     }

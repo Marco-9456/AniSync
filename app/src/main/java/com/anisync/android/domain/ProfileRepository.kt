@@ -91,6 +91,17 @@ interface ProfileRepository {
     ): Result<UserReviewsPage>
 
     /**
+     * Fetch one page of the user's combined activity feed (newest-first). Used to
+     * load older activities past the initial batch the profile fetch carries — the
+     * caller dedupes page 1's overlap by id.
+     */
+    suspend fun getUserActivitiesPage(
+        userId: Int,
+        page: Int,
+        policy: CachePolicy = CachePolicy.NetworkOnly
+    ): Result<UserActivitiesPage>
+
+    /**
      * Fetch the user's full favourite-anime list (all pages). Loaded lazily when
      * the Favorites tab opens; the profile fetch itself only carries page 1, so
      * a normal profile load/refresh no longer fans out across favourite pages.

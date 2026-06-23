@@ -686,6 +686,43 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUserActivitiesPage(
+        userId: Int,
+        page: Int,
+        policy: CachePolicy
+    ): Result<com.anisync.android.domain.UserActivitiesPage> =
+        dedupe("activitiesPage:$userId:$page:$policy") {
+            safeApiCall {
+                val response = apolloClient.query(
+                    com.anisync.android.GetUserActivitiesPageQuery(
+                        userId = Optional.present(userId),
+                        page = page
+                    )
+                )
+                    .fetchPolicy(policy.toFetchPolicy())
+                    .execute()
+
+                if (response.hasErrors()) {
+                    throw Exception(
+                        response.errors?.firstOrNull()?.message ?: "Failed to load activities"
+                    )
+                }
+
+                val pageData = response.data?.Page
+                val activities = pageData?.activities
+                    ?.filterNotNull()
+                    ?.mapNotNull { it.activityFields.activityFieldsToDomain() }
+                    ?.distinctBy { it.id }
+                    ?: emptyList()
+
+                com.anisync.android.domain.UserActivitiesPage(
+                    activities = activities,
+                    hasNextPage = pageData?.pageInfo?.hasNextPage == true,
+                    currentPage = pageData?.pageInfo?.currentPage ?: page
+                )
+            }
+        }
+
     override suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>> =
         dedupe("animeList:$username") {
             fetchUserList(username, com.anisync.android.type.MediaType.ANIME)

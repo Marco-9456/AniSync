@@ -69,6 +69,10 @@ data class ProfileUiState(
     val statsErrorMessage: String? = null,
     val viewerId: Int? = null,
     val unreadNotificationCount: Int = 0,
+    /** Whether older activities remain to be loaded into the Activity tab. */
+    val activitiesHasNextPage: Boolean = false,
+    /** True while an older activity page is being fetched (drives the inline spinner). */
+    val isActivitiesPaginating: Boolean = false,
     /** Activity currently being edited via the inline compose sheet, or null if none. */
     val editingActivity: com.anisync.android.domain.UserActivity? = null,
     val isSavingActivityEdit: Boolean = false
@@ -217,6 +221,7 @@ sealed interface ProfileAction {
     data object HideMessageComposer : ProfileAction
     data class SendMessage(val text: String, val isPrivate: Boolean) : ProfileAction
     data object ConsumeMessageSentEvent : ProfileAction
+    data object LoadMoreActivities : ProfileAction
     data object LoadMoreSocial : ProfileAction
     data object LoadMoreReviews : ProfileAction
     data class ToggleActivitySubscription(val activityId: Int) : ProfileAction

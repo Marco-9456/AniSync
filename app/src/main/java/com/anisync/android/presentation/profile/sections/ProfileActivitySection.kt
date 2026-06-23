@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.profile.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -9,15 +10,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -44,6 +47,9 @@ fun LazyListScope.profileActivityTab(
     onDeleteActivity: ((Int) -> Unit)? = null,
     onEditActivity: ((Int) -> Unit)? = null,
     viewerId: Int? = null,
+    activitiesHasNextPage: Boolean = false,
+    isActivitiesPaginating: Boolean = false,
+    onLoadMore: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     item(key = "activity_filters", contentType = "filters") {
@@ -93,11 +99,22 @@ fun LazyListScope.profileActivityTab(
             )
         }
     } else {
-        items(
+        itemsIndexed(
             items = filteredActivities,
-            key = { "activity_${it.id}" },
-            contentType = { "activity_item" }
-        ) { activity ->
+            key = { _, activity -> "activity_${activity.id}" },
+            contentType = { _, _ -> "activity_item" }
+        ) { index, activity ->
+            // Infinite scroll: as the user nears the end of the loaded activities, pull
+            // the next older page. Keyed on index (like the reviews tab) so it fires once
+            // per newly-revealed tail item — and, since the key only advances when the
+            // filtered list grows, it can't run away on a sparse filter.
+            if (index >= filteredActivities.size - 4 &&
+                activitiesHasNextPage &&
+                !isActivitiesPaginating
+            ) {
+                LaunchedEffect(index) { onLoadMore() }
+            }
+
             val canDelete = viewerId != null && (
                 activity.userId == viewerId ||
                     (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
@@ -127,7 +144,20 @@ fun LazyListScope.profileActivityTab(
                 onEditClick = cardEdit
             )
         }
-        
+
+        if (isActivitiesPaginating) {
+            item(key = "activity_paginating", contentType = "paginating") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularWavyProgressIndicator(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
+
         item(key = "activity_bottom_spacer") {
             Spacer(modifier = Modifier.height(16.dp))
         }

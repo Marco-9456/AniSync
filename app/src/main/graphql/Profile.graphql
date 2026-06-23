@@ -373,6 +373,25 @@ query GetUserActivities($userId: Int) {
   }
 }
 
+"""
+One page of a user's combined activity feed (list + text + received messages),
+newest-first. Drives "load older activities" on the profile Activity tab past the
+initial batch GetFullUserProfile/GetUserActivities carries. Page 1 overlaps that
+batch; the caller dedupes by id. AniList exposes no id cursor for activities, so
+this pages by number with pageInfo.hasNextPage as the stop signal.
+"""
+query GetUserActivitiesPage($userId: Int, $page: Int!, $perPage: Int = 50) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo {
+      hasNextPage
+      currentPage
+    }
+    activities(userId: $userId, sort: [ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
+      ...ActivityFields
+    }
+  }
+}
+
 mutation UpdateAbout($about: String) {
   UpdateUser(about: $about) {
     id
