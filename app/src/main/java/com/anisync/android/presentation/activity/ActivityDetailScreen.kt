@@ -21,7 +21,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
@@ -72,7 +74,6 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.menu.Menu
-import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.forum.FlatComment
 import com.anisync.android.presentation.forum.components.ContentStatsBar
@@ -95,6 +96,8 @@ fun ActivityDetailScreen(
     onBackClick: () -> Unit,
     onUserClick: (String) -> Unit,
     targetReplyId: Int? = null,
+    navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
+    onEditActivity: (activityId: Int) -> Unit = {},
     viewModel: ActivityDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -221,6 +224,7 @@ fun ActivityDetailScreen(
     CollapsingTopBarScaffold(
         title = stringResource(R.string.activity_detail_title),
         onBackClick = onBackClick,
+        navigationIcon = navigationIcon,
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         enableEnterAnimation = true,
@@ -284,7 +288,7 @@ fun ActivityDetailScreen(
                                         leadingIcon = Icons.Default.Edit,
                                         onClick = {
                                             showOverflow = false
-                                            viewModel.onAction(ActivityDetailAction.EditActivity)
+                                            onEditActivity(activityId)
                                         }
                                     )
                                 }
@@ -527,7 +531,7 @@ fun ActivityDetailScreen(
     // Replies (new or edit) and message-style activities use the bottom sheet —
     // matches replies' compact UX. Editing the root TextActivity opens a full-screen
     // editor instead because it's a longer-form post.
-    if (uiState.isReplySheetVisible && !uiState.editingActivity) {
+    if (uiState.isReplySheetVisible) {
         val sheetTitle = if (uiState.editingReplyId != null) {
             stringResource(R.string.activity_edit_reply_title)
         } else {
@@ -552,26 +556,6 @@ fun ActivityDetailScreen(
             onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
             onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) },
             prefillBody = uiState.replyPrefillBody
-        )
-    }
-
-    if (uiState.editingActivity && uiState.activity != null) {
-        val activity = uiState.activity!!
-        val isMessage = activity.isMessage
-        val bounds = if (isMessage) {
-            com.anisync.android.domain.ContentLimits.MessageActivity
-        } else {
-            com.anisync.android.domain.ContentLimits.TextActivity
-        }
-        RichTextInputScreen(
-            title = stringResource(R.string.activity_edit_status_title),
-            placeholder = stringResource(R.string.feed_compose_placeholder),
-            initialBody = uiState.replyPrefillBody.orEmpty(),
-            isSubmitting = uiState.isSubmittingReply,
-            minLength = bounds.min,
-            maxLength = bounds.max,
-            onSubmit = { body -> viewModel.onAction(ActivityDetailAction.SubmitReply(body)) },
-            onDismiss = { viewModel.onAction(ActivityDetailAction.CloseReply) }
         )
     }
 

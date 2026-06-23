@@ -209,8 +209,7 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.settings_cover_quality),
                 currentValue = coverQualityLabel(coverQuality),
                 onClick = { showCoverQualitySheet = true }
-            )
-        }
+            )        }
 
         SettingsGroup {
             SelectionSettingsItem(

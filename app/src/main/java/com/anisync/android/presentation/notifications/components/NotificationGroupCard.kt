@@ -64,6 +64,8 @@ import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.UnknownNotification
 import com.anisync.android.domain.User
 import com.anisync.android.presentation.notifications.NotificationEntry
+import com.anisync.android.presentation.notifications.NotificationTarget
+import com.anisync.android.presentation.util.selectedPaneItem
 import org.jsoup.Jsoup
 
 @Composable
@@ -73,14 +75,19 @@ fun NotificationGroupCard(
     onUserClick: (String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onThreadClick: (threadId: Int, commentId: Int?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // The target open in the two-pane detail (or null). When this card resolves to that target it
+    // shows the Material 3 selection ring (two-pane only).
+    selectedTarget: NotificationTarget? = null
 ) {
     val payload = entry.toPayload()
     Card(
         onClick = {
             payload.handleClick(onMediaClick, onUserClick, onActivityClick, onThreadClick)
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .selectedPaneItem(payload.isSelectedBy(selectedTarget), MaterialTheme.shapes.large),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -343,6 +350,19 @@ private data class GroupPayload(
             mediaId != null -> onMediaClick(mediaId)
             userName != null -> onUserClick(userName)
         }
+    }
+
+    /** True when this card's click target equals [target] — mirrors [handleClick]'s priority so the
+     *  open notification's card shows the selected state in the two-pane list-detail layout. */
+    fun isSelectedBy(target: NotificationTarget?): Boolean = when {
+        target == null -> false
+        activityId != null -> target is NotificationTarget.Activity && target.activityId == activityId
+        threadId != null ->
+            target is NotificationTarget.Thread &&
+                target.threadId == threadId && target.commentId == threadCommentId
+        mediaId != null -> target is NotificationTarget.Media && target.mediaId == mediaId
+        userName != null -> target is NotificationTarget.Profile && target.username == userName
+        else -> false
     }
 }
 

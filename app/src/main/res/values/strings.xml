@@ -375,6 +375,14 @@
     <string name="settings_app_language_system_desc">Uses your device language setting</string>
     <string name="settings_cover_quality">Cover image quality</string>
     <string name="settings_cover_quality_desc">Applies to every cover shown in the app. Higher quality looks sharper but uses more data and storage.</string>
+    <string name="library_view_title">View</string>
+    <string name="library_view_list">List</string>
+    <string name="library_view_grid">Grid</string>
+    <string name="library_view_automatic">Automatic</string>
+    <string name="library_view_automatic_desc">Fit the number of columns to the screen size</string>
+    <string name="library_view_columns">Columns</string>
+    <string name="library_view_columns_value">%1$d columns</string>
+    <string name="list_detail_select_prompt">Select a title to see details</string>
     <string name="cover_quality_extra_large">Extra large</string>
     <string name="cover_quality_extra_large_desc">Maximum sharpness everywhere. Best on Wi-Fi.</string>
     <string name="cover_quality_large">Large</string>
@@ -856,6 +864,8 @@
     <string name="more_options">More options</string>
     <string name="write">Write</string>
     <string name="post">Post</string>
+    <string name="richtext_preview_show">Show preview</string>
+    <string name="richtext_preview_hide">Hide preview</string>
     <string name="richtext_format_bold">Bold</string>
     <string name="richtext_format_italic">Italic</string>
     <string name="richtext_format_strikethrough">Strikethrough</string>
@@ -957,6 +967,7 @@
     <string name="search_header_staff">Staff</string>
     <string name="search_header_users">Users</string>
     <string name="search_header_studios">Studios</string>
+    <string name="search_view_all_results">View all %1$d results</string>
     <string name="search_favourites_count">%d favourites</string>
     <string name="empty_no_items">No items found</string>
     <string name="filter_show_results">Show Results</string>
@@ -1141,6 +1152,14 @@
     <string name="calendar_previous_week">Previous week</string>
     <string name="calendar_next_week">Next week</string>
     <string name="calendar_jump_to_today">Jump to this week</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_jump_to_this_month">This month</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="one">%1$d airing</item>
+        <item quantity="other">%1$d airings</item>
+    </plurals>
     <string name="calendar_episode_number">Episode %1$d</string>
     <string name="calendar_aired">Aired</string>
     <string name="calendar_airs_in">in %1$s</string>
@@ -1149,4 +1168,22 @@
     <string name="calendar_empty_title">Nothing airing</string>
     <string name="calendar_empty_desc">No episodes air on this day.</string>
     <string name="calendar_empty_following_desc">No shows from your list air on this day.</string>
+
+    <!-- Two-pane list/detail resize handle -->
+    <string name="pane_resize_handle">Resize panes</string>
+    <string name="pane_resize_cycle">Cycle the list pane width</string>
+    <string name="pane_resize_toggle">Collapse or expand the list pane</string>
+    <string name="pane_close">Close</string>
+
+    <!-- Two-pane empty/placeholder detail panes (shown on wide screens before a selection) -->
+    <string name="pane_placeholder_thread">Select a thread to read it here</string>
+    <string name="pane_placeholder_activity">Select a status to view it here</string>
+    <string name="pane_placeholder_notification">Select a notification to open it here</string>
+    <string name="pane_placeholder_settings">Select a setting to adjust it here</string>
+
+    <!-- Collapsible wide navigation rail (rail layouts) -->
+    <string name="rail_expand">Expand navigation</string>
+    <string name="rail_collapse">Collapse navigation</string>
+    <string name="rail_expanded">Navigation expanded</string>
+    <string name="rail_collapsed">Navigation collapsed</string>
 </resources>

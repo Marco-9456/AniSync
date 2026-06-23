@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -252,7 +253,7 @@ fun CharacterMediaGridScreen(
                     } else {
                         LazyVerticalGrid(
                             state = listState,
-                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            columns = posterGridColumns(baseMinSize = 100.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 8.dp,
@@ -768,7 +769,7 @@ fun MediaCharactersGridScreen(
 
                         LazyVerticalGrid(
                             state = listState,
-                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            columns = posterGridColumns(baseMinSize = 100.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 16.dp,
@@ -959,7 +960,7 @@ fun MediaRelationsGridScreen(
 
                         LazyVerticalGrid(
                             state = listState,
-                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            columns = posterGridColumns(baseMinSize = 100.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 16.dp,
@@ -1184,7 +1185,7 @@ fun StudioMediaGridScreen(
                         val mainStudioChipLabel = stringResource(R.string.studio_main_studio_chip)
                         LazyVerticalGrid(
                             state = listState,
-                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            columns = posterGridColumns(baseMinSize = 100.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 8.dp,
@@ -1460,7 +1461,7 @@ fun StaffProductionMediaGridScreen(
                     } else {
                         LazyVerticalGrid(
                             state = listState,
-                            columns = GridCells.Adaptive(minSize = 100.dp),
+                            columns = posterGridColumns(baseMinSize = 100.dp),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 top = topContentPadding + 8.dp,

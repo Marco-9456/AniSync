@@ -28,8 +28,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.LocalGridColumnCount
+import com.anisync.android.presentation.util.LocalGridColumnsAuto
+import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -112,6 +115,7 @@ import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.library.components.EmptyLibraryTabState
 import com.anisync.android.presentation.library.components.LibraryListCard
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
+import com.anisync.android.presentation.library.components.LibraryViewOptionsSheet
 import com.anisync.android.presentation.library.components.ListManagementSheet
 import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
@@ -174,6 +178,7 @@ fun LibraryScreen(
     val focusManager = LocalFocusManager.current
 
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
+    var showViewOptionsSheet by rememberSaveable { mutableStateOf(false) }
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
         uiState.tabOrder.mapNotNull { id ->
@@ -313,7 +318,7 @@ fun LibraryScreen(
             onClearClick = { textFieldState.edit { replace(0, length, "") } },
             onToggleView = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                viewModel.onAction(LibraryAction.SetGridView(!uiState.isGridView))
+                showViewOptionsSheet = true
             },
             onToggleSort = {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -560,12 +565,15 @@ fun LibraryScreen(
                             isAscending,
                             saver = LazyGridState.Saver
                         ) { LazyGridState() }
+                        // The list view is a single-column grid on compact and a
+                        // multi-column grid of list cards once the window/pane is wide
+                        // enough (§6.4), so its scroll state is a LazyGridState too.
                         val listState = rememberSaveable(
                             tabLabel,
                             sortOption,
                             isAscending,
-                            saver = LazyListState.Saver
-                        ) { LazyListState() }
+                            saver = LazyGridState.Saver
+                        ) { LazyGridState() }
 
                         val cardConfig =
                             if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
@@ -600,7 +608,7 @@ fun LibraryScreen(
                             ) { isGrid ->
                                 if (isGrid) {
                                     LazyVerticalGrid(
-                                        columns = GridCells.Fixed(2),
+                                        columns = posterGridColumns(baseMinSize = 150.dp),
                                         state = gridState,
                                         contentPadding = PaddingValues(
                                             start = 24.dp,
@@ -641,7 +649,11 @@ fun LibraryScreen(
                                         }
                                     }
                                 } else {
-                                    LazyColumn(
+                                    LazyVerticalGrid(
+                                        // Wide list cards (~360dp) flow into as many
+                                        // columns as fit; compact / a narrow detail pane
+                                        // collapse to the single column (unchanged look).
+                                        columns = GridCells.Adaptive(minSize = 360.dp),
                                         state = listState,
                                         contentPadding = PaddingValues(
                                             start = 24.dp,
@@ -649,6 +661,7 @@ fun LibraryScreen(
                                             top = 24.dp,
                                             bottom = 24.dp + LocalMainNavBarInset.current
                                         ),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                                         verticalArrangement = Arrangement.spacedBy(12.dp),
                                         modifier = Modifier.fillMaxSize()
                                     ) {
@@ -761,6 +774,18 @@ fun LibraryScreen(
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
         }
+    )
+
+    val appSettings = LocalAppSettings.current
+    LibraryViewOptionsSheet(
+        visible = showViewOptionsSheet,
+        isGridView = uiState.isGridView,
+        autoColumns = LocalGridColumnsAuto.current,
+        columnCount = LocalGridColumnCount.current,
+        onSetGridView = { viewModel.onAction(LibraryAction.SetGridView(it)) },
+        onSetAutoColumns = { appSettings.setGridColumnsAuto(it) },
+        onSetColumnCount = { appSettings.setGridColumnCount(it) },
+        onDismiss = { showViewOptionsSheet = false }
     )
 
 

@@ -106,6 +106,9 @@ fun DiscoverHeroCarousel(
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp),
             flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
+            // Cap each hero's width so a wide window shows SEVERAL heroes filling the row (M3) rather
+            // than stretching one item into a cropped strip. On a phone only one fits, as before.
+            maxItemWidth = 400.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(420.dp)

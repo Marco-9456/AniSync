@@ -64,7 +64,8 @@ fun LazyListScope.profileSocialTab(
     onUserClick: (String) -> Unit = {},
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
-    onLoadMore: () -> Unit = {}
+    onLoadMore: () -> Unit = {},
+    userColumns: Int = 3
 ) {
     val selectedTab = uiState.selectedSocialTab
     val tabs = ProfileSocialTab.entries
@@ -132,8 +133,8 @@ fun LazyListScope.profileSocialTab(
     }
 
     when (selectedTab) {
-        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore)
-        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore)
+        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns)
+        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns)
         ProfileSocialTab.FORUM_THREADS -> {
             if (uiState.socialThreads.isEmpty()) {
                 item(key = "social_threads_empty") {
@@ -225,7 +226,8 @@ private fun LazyListScope.renderSocialUsers(
     onUserClick: (String) -> Unit,
     hasNextPage: Boolean,
     isPaginating: Boolean,
-    onLoadMore: () -> Unit
+    onLoadMore: () -> Unit,
+    userColumns: Int
 ) {
     if (users.isEmpty()) {
         item(key = "social_users_empty") {
@@ -236,7 +238,7 @@ private fun LazyListScope.renderSocialUsers(
             )
         }
     } else {
-        val rowItems = users.chunked(3)
+        val rowItems = users.chunked(userColumns)
         item(key = "social_top_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
 
         itemsIndexed(
@@ -262,7 +264,7 @@ private fun LazyListScope.renderSocialUsers(
                         )
                     }
                 }
-                repeat(3 - row.size) {
+                repeat(userColumns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }

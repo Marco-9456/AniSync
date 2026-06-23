@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -77,17 +78,12 @@ private data class CategoryData(
  */
 @Composable
 fun SettingsScreen(
-    onNavigateToLookAndFeel: () -> Unit,
-    onNavigateToAniList: () -> Unit,
-    onNavigateToNotifications: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToAbout: () -> Unit,
-    onNavigateToSponsors: () -> Unit,
-    onNavigateToUpdates: () -> Unit,
-    onNavigateToDeveloperTools: () -> Unit,
-    onNavigateToMediaUpload: () -> Unit,
+    onCategorySelected: (SettingsCategory) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // The category open in the two-pane detail (expanded list-detail), or null on compact / before a
+    // selection. Its card shows the Material 3 selected state.
+    selectedCategory: SettingsCategory? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -112,7 +108,7 @@ fun SettingsScreen(
         modifier = modifier,
         actions = {
             val context = LocalContext.current
-            IconButton(onClick = onNavigateToSponsors) {
+            IconButton(onClick = { onCategorySelected(SettingsCategory.Sponsors) }) {
                 Icon(
                     imageVector = Icons.Rounded.VolunteerActivism,
                     contentDescription = stringResource(R.string.settings_sponsors)
@@ -169,35 +165,35 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_look_and_feel),
                 subtitle = stringResource(R.string.settings_look_and_feel_desc),
                 icon = Icons.Outlined.Palette,
-                onClick = onNavigateToLookAndFeel
+                onClick = { onCategorySelected(SettingsCategory.LookAndFeel) }
             ),
             CategoryData(
                 key = "anilist",
                 title = stringResource(R.string.settings_anilist_account),
                 subtitle = stringResource(R.string.settings_anilist_account_desc),
                 icon = Icons.Outlined.Tune,
-                onClick = onNavigateToAniList
+                onClick = { onCategorySelected(SettingsCategory.AniList) }
             ),
             CategoryData(
                 key = "notifications",
                 title = stringResource(R.string.settings_notifications),
                 subtitle = stringResource(R.string.settings_notifications_desc),
                 icon = Icons.Outlined.Notifications,
-                onClick = onNavigateToNotifications
+                onClick = { onCategorySelected(SettingsCategory.Notifications) }
             ),
             CategoryData(
                 key = "storage",
                 title = stringResource(R.string.settings_storage),
                 subtitle = stringResource(R.string.settings_storage_subtitle, uiState.cacheSize),
                 icon = Icons.Outlined.Storage,
-                onClick = onNavigateToStorage
+                onClick = { onCategorySelected(SettingsCategory.Storage) }
             ),
             CategoryData(
                 key = "media_upload",
                 title = stringResource(R.string.settings_media_upload),
                 subtitle = stringResource(R.string.settings_media_upload_desc),
                 icon = Icons.Outlined.CloudUpload,
-                onClick = onNavigateToMediaUpload
+                onClick = { onCategorySelected(SettingsCategory.MediaUpload) }
             ),
             CategoryData(
                 key = "links",
@@ -211,21 +207,21 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_updates),
                 subtitle = stringResource(R.string.settings_updates_desc),
                 icon = Icons.Outlined.Update,
-                onClick = onNavigateToUpdates
+                onClick = { onCategorySelected(SettingsCategory.Updates) }
             ),
             CategoryData(
                 key = "sponsors",
                 title = stringResource(R.string.settings_sponsors),
                 subtitle = stringResource(R.string.settings_sponsors_desc),
                 icon = Icons.Rounded.VolunteerActivism,
-                onClick = onNavigateToSponsors
+                onClick = { onCategorySelected(SettingsCategory.Sponsors) }
             ),
             CategoryData(
                 key = "about",
                 title = stringResource(R.string.settings_about),
                 subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                 icon = Icons.Outlined.Info,
-                onClick = onNavigateToAbout
+                onClick = { onCategorySelected(SettingsCategory.About) }
             ),
             if (BuildConfig.DEBUG || devToolsUnlocked) {
                 CategoryData(
@@ -233,7 +229,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_developer_tools),
                     subtitle = stringResource(R.string.settings_developer_tools_desc),
                     icon = Icons.Outlined.Build,
-                    onClick = onNavigateToDeveloperTools
+                    onClick = { onCategorySelected(SettingsCategory.DeveloperTools) }
                 )
             } else null
         )
@@ -286,6 +282,7 @@ fun SettingsScreen(
                         icon = category.icon,
                         customColors = getCategoryColors(category.key, isDark),
                         onClick = category.onClick,
+                        selected = selectedCategory != null && category.key == selectedCategory.cardKey(),
                         shape = shape
                     )
                 }
@@ -301,12 +298,25 @@ fun ExpressiveCategoryItem(
     icon: ImageVector,
     customColors: Pair<Color, Color>,
     onClick: () -> Unit,
-    shape: androidx.compose.ui.graphics.Shape
+    shape: androidx.compose.ui.graphics.Shape,
+    selected: Boolean = false
 ) {
     Surface(
         onClick = onClick,
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        // The settings cards are a connected group, so the open category is shown with a filled tonal
+        // container (Material 3 selected list item) rather than an outline ring, which would look wrong
+        // tracing one segment of the joined block.
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
         modifier = Modifier
             .fillMaxWidth()
             .height(88.dp)
@@ -340,19 +350,34 @@ fun ExpressiveCategoryItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = LocalContentColor.current,
                     maxLines = 1
                 )
                 Text(
                     text = subtitle,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                    color = LocalContentColor.current.copy(alpha = 0.65f),
                     maxLines = 2
                 )
             }
         }
     }
+}
+
+/** Maps a [SettingsCategory] to the [CategoryData.key] of its card, so the open category's card can
+ *  show the selected state in the two-pane list-detail layout. (App Links has no category — never
+ *  selected.) */
+private fun SettingsCategory.cardKey(): String = when (this) {
+    SettingsCategory.LookAndFeel -> "lookandfeel"
+    SettingsCategory.AniList -> "anilist"
+    SettingsCategory.Notifications -> "notifications"
+    SettingsCategory.Storage -> "storage"
+    SettingsCategory.MediaUpload -> "media_upload"
+    SettingsCategory.Updates -> "updates"
+    SettingsCategory.Sponsors -> "sponsors"
+    SettingsCategory.About -> "about"
+    SettingsCategory.DeveloperTools -> "dev_tools"
 }
 
 private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> {

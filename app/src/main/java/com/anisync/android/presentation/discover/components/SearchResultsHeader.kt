@@ -31,7 +31,8 @@ fun SearchResultsHeader(
     viewMode: DiscoverViewMode,
     onCategoryChange: (ResultCategory) -> Unit,
     onViewModeChange: (DiscoverViewMode) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showViewToggle: Boolean = true
 ) {
     val orderedCategories = listOf(
         ResultCategory.ALL,
@@ -63,10 +64,12 @@ fun SearchResultsHeader(
                 )
             }
         }
-        ViewModeToggle(
-            viewMode = viewMode,
-            onViewModeChange = onViewModeChange
-        )
+        if (showViewToggle) {
+            ViewModeToggle(
+                viewMode = viewMode,
+                onViewModeChange = onViewModeChange
+            )
+        }
     }
 }
 

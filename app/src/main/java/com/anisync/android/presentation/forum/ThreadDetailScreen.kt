@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -48,7 +49,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.anisync.android.presentation.components.menu.Menu
-import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -79,6 +79,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
@@ -124,6 +125,12 @@ fun ThreadDetailScreen(
     onBackClick: () -> Unit,
     onUserClick: (String) -> Unit,
     targetCommentId: Int? = null,
+    navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
+    onEditThread: (threadId: Int) -> Unit = {},
+    // Full-screen caps long-form thread text to a readable centered column. In a resizable two-pane
+    // detail the pane width is already the constraint, so the caller passes false to let the thread
+    // fill the pane (and use the room gained by collapsing the list) instead of staying centered.
+    capContentWidth: Boolean = true,
     viewModel: ThreadDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -291,6 +298,7 @@ fun ThreadDetailScreen(
     CollapsingTopBarScaffold(
         title = threadTitle.ifEmpty { stringResource(R.string.forum_thread_appbar) },
         onBackClick = onBackClick,
+        navigationIcon = navigationIcon,
         scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         enableEnterAnimation = true,
@@ -346,7 +354,7 @@ fun ThreadDetailScreen(
                                     leadingIcon = Icons.Default.Edit,
                                     onClick = {
                                         threadOverflow = false
-                                        viewModel.onAction(ThreadDetailAction.EditThread)
+                                        onEditThread(threadId)
                                     }
                                 )
                                 gap()
@@ -388,7 +396,9 @@ fun ThreadDetailScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isLoading && uiState.thread != null,
             state = pullToRefreshState,
-            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ThreadDetailAction.Load(threadId)) },
+            onRefresh = rememberRateLimitedRefresh {
+                viewModel.onAction(ThreadDetailAction.Load(threadId, forceRefresh = true))
+            },
             indicator = {
                 CustomPullToRefreshIndicator(
                     isRefreshing = uiState.isLoading && uiState.thread != null,
@@ -424,7 +434,9 @@ fun ThreadDetailScreen(
 
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (capContentWidth) Modifier.adaptiveReadingWidth() else Modifier),
                             contentPadding = PaddingValues(top = topContentPadding),
                             verticalArrangement = Arrangement.spacedBy(8.dp) // Expressive vertical spacing
                         ) {
@@ -768,22 +780,6 @@ fun ThreadDetailScreen(
                 )
             },
             onDismiss = { viewModel.onAction(ThreadDetailAction.CloseReply) }
-        )
-    }
-
-    if (uiState.pendingThreadEdit && uiState.thread != null) {
-        val thread = uiState.thread!!
-        RichTextInputScreen(
-            title = stringResource(R.string.forum_edit_thread_title),
-            placeholder = stringResource(R.string.forum_thread_body_hint),
-            initialBody = thread.bodyMarkdown ?: thread.body.orEmpty(),
-            isSubmitting = uiState.isSubmittingReply,
-            minLength = com.anisync.android.domain.ContentLimits.ThreadBody.min,
-            maxLength = com.anisync.android.domain.ContentLimits.ThreadBody.max,
-            onSubmit = { body ->
-                viewModel.onAction(ThreadDetailAction.SubmitThreadEdit(body))
-            },
-            onDismiss = { viewModel.onAction(ThreadDetailAction.ConsumeThreadEdit) }
         )
     }
 

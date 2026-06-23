@@ -23,6 +23,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -114,15 +116,17 @@ fun StaffDetailsScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = animateColorAsState(
-                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                label = "navIconTint"
-                            ).value
-                        )
+                    if (!LocalPaneIsRoot.current) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                                tint = animateColorAsState(
+                                    if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                    label = "navIconTint"
+                                ).value
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -135,6 +139,20 @@ fun StaffDetailsScreen(
                                 label = "actionIconTint"
                             ).value
                         )
+                    }
+                    // At a two-pane detail root the close (✕) is the trailing-most action (right-thumb
+                    // reach) in place of a leading back arrow.
+                    if (LocalPaneIsRoot.current) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.pane_close),
+                                tint = animateColorAsState(
+                                    if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                    label = "closeIconTint"
+                                ).value
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

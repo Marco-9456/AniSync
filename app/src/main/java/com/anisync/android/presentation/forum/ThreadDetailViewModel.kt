@@ -40,9 +40,35 @@ class ThreadDetailViewModel @Inject constructor(
     private val _actions = MutableSharedFlow<ThreadDetailAction>()
     val actions: SharedFlow<ThreadDetailAction> = _actions.asSharedFlow()
 
+    init {
+        // An external full-screen body edit (the EditThreadBody route) publishes the new body to the
+        // shared bus; patch the open thread in place so returning shows the edit without a refetch.
+        viewModelScope.launch {
+            threadEventBus.events.collect { update ->
+                val current = _uiState.value.thread ?: return@collect
+                if (update.id != current.id) return@collect
+                if (update.bodyHtml == null && update.bodyMarkdown == null) return@collect
+                val newHtml = update.bodyHtml ?: current.body
+                val parsed = newHtml?.let {
+                    withContext(Dispatchers.Default) { RichTextParser.parse(it) }
+                }
+                _uiState.update { state ->
+                    val thread = state.thread ?: return@update state
+                    state.copy(
+                        thread = thread.copy(
+                            body = update.bodyHtml ?: thread.body,
+                            bodyMarkdown = update.bodyMarkdown ?: thread.bodyMarkdown
+                        ),
+                        parsedBody = parsed ?: state.parsedBody
+                    )
+                }
+            }
+        }
+    }
+
     fun onAction(action: ThreadDetailAction) {
         when (action) {
-            is ThreadDetailAction.Load -> load(action.threadId, action.targetCommentId)
+            is ThreadDetailAction.Load -> load(action.threadId, action.targetCommentId, action.forceRefresh)
             is ThreadDetailAction.LoadMoreComments -> loadMoreComments()
             is ThreadDetailAction.LoadEarlierComments -> loadEarlierComments()
             is ThreadDetailAction.JumpToPage -> jumpToPage(action.page)
@@ -88,50 +114,9 @@ class ThreadDetailViewModel @Inject constructor(
             is ThreadDetailAction.ToggleSave -> toggleSave()
             is ThreadDetailAction.ToggleSubscribe -> toggleSubscribe()
             is ThreadDetailAction.ChangeCommentSort -> changeCommentSort(action)
-            is ThreadDetailAction.EditThread -> _uiState.update { it.copy(pendingThreadEdit = true) }
-            is ThreadDetailAction.ConsumeThreadEdit -> _uiState.update { it.copy(pendingThreadEdit = false) }
-            is ThreadDetailAction.SubmitThreadEdit -> submitThreadEdit(action.body)
             is ThreadDetailAction.DeleteThread -> deleteThread()
             is ThreadDetailAction.EditComment -> openCommentEdit(action.commentId)
             is ThreadDetailAction.DeleteComment -> deleteComment(action.commentId)
-        }
-    }
-
-    private fun submitThreadEdit(body: String) {
-        val thread = _uiState.value.thread ?: return
-        val trimmed = body.trim()
-        if (trimmed.isEmpty()) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSubmittingReply = true) }
-            val result = forumRepository.createThread(
-                title = thread.title,
-                body = trimmed,
-                categoryIds = thread.categories.map { it.id },
-                id = thread.id
-            )
-            when (result) {
-                is Result.Success -> {
-                    val updated = thread.copy(
-                        body = result.data.body,
-                        bodyMarkdown = trimmed
-                    )
-                    val parsed = result.data.body?.let { html ->
-                        withContext(Dispatchers.Default) { RichTextParser.parse(html) }
-                    }
-                    _uiState.update {
-                        it.copy(
-                            isSubmittingReply = false,
-                            pendingThreadEdit = false,
-                            thread = updated,
-                            parsedBody = parsed
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _uiState.update { it.copy(isSubmittingReply = false) }
-                    showResultError(result)
-                }
-            }
         }
     }
 
@@ -183,7 +168,15 @@ class ThreadDetailViewModel @Inject constructor(
         }
     }
 
-    private fun load(threadId: Int, targetCommentId: Int?) {
+    private fun load(threadId: Int, targetCommentId: Int?, forceRefresh: Boolean = false) {
+        // Offline-first: skip a redundant reload when this thread is already loaded (or loading) —
+        // e.g. a configuration change re-dispatches Load but the ViewModel kept its state. Pull-to-
+        // refresh forces a fetch; a new deep-link comment target reloads to that comment's page.
+        val state = _uiState.value
+        val wantsNewAnchor = targetCommentId != null && targetCommentId != state.anchorCommentId
+        if (!forceRefresh && !wantsNewAnchor && state.thread?.id == threadId && state.errorMessage == null) {
+            return
+        }
         viewModelScope.launch {
             _uiState.update {
                 it.copy(

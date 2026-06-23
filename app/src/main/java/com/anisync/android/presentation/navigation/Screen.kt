@@ -204,6 +204,15 @@ data class ForumThreadDetail(
 )
 
 /**
+ * Thread-body editor — edits the body of an existing thread the viewer owns. A real full-screen
+ * destination (not an inline overlay) so authoring is never confined to a list-detail pane on large
+ * screens. Title and categories are preserved; only the body is editable here.
+ * @param threadId The AniList thread id being edited
+ */
+@Serializable
+data class EditThreadBody(val threadId: Int)
+
+/**
  * Create new thread screen.
  *
  * Optionally pre-attaches a media to the thread's `mediaCategories` when launched
@@ -273,6 +282,23 @@ data class ActivityDetail(
     val activityId: Int,
     val targetReplyId: Int = 0
 )
+
+/**
+ * Status editor — edits the body of the viewer's own text or message activity. A real full-screen
+ * destination (not an inline overlay) so authoring is never confined to a list-detail pane on large
+ * screens.
+ * @param activityId The AniList activity id being edited
+ */
+@Serializable
+data class EditActivity(val activityId: Int)
+
+/**
+ * New-status composer — posts a new text activity to the viewer's feed. A real full-screen
+ * destination (not an inline overlay) so authoring is never confined to the Feed list pane on large
+ * screens (where a detail pane may shrink the list to a sliver).
+ */
+@Serializable
+object CreateStatus
 
 /**
  * Notifications inbox screen for the current viewer.

@@ -353,6 +353,46 @@ class AppSettings @Inject constructor(
     private val _libraryGridView = MutableStateFlow(prefs.getBoolean(KEY_LIBRARY_GRID_VIEW, true))
     val libraryGridView: StateFlow<Boolean> = _libraryGridView.asStateFlow()
 
+    // Poster-grid columns: automatic (adaptive to window width) vs a manual fixed count (2..8).
+    // Surfaced via the Library view bottom sheet and applied app-wide via posterGridColumns().
+    private val _gridColumnsAuto = MutableStateFlow(prefs.getBoolean(KEY_GRID_COLUMNS_AUTO, true))
+    val gridColumnsAuto: StateFlow<Boolean> = _gridColumnsAuto.asStateFlow()
+
+    private val _gridColumnCount = MutableStateFlow(
+        prefs.getInt(KEY_GRID_COLUMN_COUNT, DEFAULT_GRID_COLUMNS)
+            .coerceIn(MIN_GRID_COLUMNS, MAX_GRID_COLUMNS)
+    )
+    val gridColumnCount: StateFlow<Int> = _gridColumnCount.asStateFlow()
+
+    // Two-pane list/detail split, stored as the list pane's width fraction so a resized split
+    // survives app restarts (M3 panes guidance). Only real split widths are written here; the
+    // fully-collapsed state is a transient per-session toggle, not a width preference.
+    private val _paneListFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_LIST_FRACTION, DEFAULT_PANE_LIST_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneListFraction: StateFlow<Float> = _paneListFraction.asStateFlow()
+
+    // Two-pane editor/preview split, stored as the editor pane's width fraction so a resized split
+    // survives app restarts. Independent of [paneListFraction] (different context + default ratio).
+    private val _paneEditorFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_EDITOR_FRACTION, DEFAULT_PANE_EDITOR_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneEditorFraction: StateFlow<Float> = _paneEditorFraction.asStateFlow()
+
+    // Two-pane calendar split, stored as the month-grid pane's width fraction. Independent of the
+    // other two splits (the grid + day panes are both permanent, so it has its own default ratio).
+    private val _paneCalendarFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_CALENDAR_FRACTION, DEFAULT_PANE_CALENDAR_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneCalendarFraction: StateFlow<Float> = _paneCalendarFraction.asStateFlow()
+
+    // Two-pane profile split, stored as the identity pane's width fraction. Independent of the other
+    // splits (the identity + tabbed-content panes are both permanent, so it has its own ratio).
+    private val _paneProfileFraction = MutableStateFlow(
+        prefs.getFloat(KEY_PANE_PROFILE_FRACTION, DEFAULT_PANE_PROFILE_FRACTION).coerceIn(0f, 1f)
+    )
+    val paneProfileFraction: StateFlow<Float> = _paneProfileFraction.asStateFlow()
+
     // Library sort option + direction, stored by LibrarySort enum name. Persisted so the chosen sort
     // survives app restarts instead of resetting to the default (Airing Soon) on every launch.
     private val _librarySortOption =
@@ -766,6 +806,47 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_LIBRARY_GRID_VIEW, isGrid).apply()
     }
 
+    /** Toggle automatic (width-adaptive) poster-grid columns. */
+    fun setGridColumnsAuto(auto: Boolean) {
+        _gridColumnsAuto.value = auto
+        prefs.edit().putBoolean(KEY_GRID_COLUMNS_AUTO, auto).apply()
+    }
+
+    /** Set the manual poster-grid column count (coerced to [MIN_GRID_COLUMNS]..[MAX_GRID_COLUMNS]). */
+    fun setGridColumnCount(count: Int) {
+        val coerced = count.coerceIn(MIN_GRID_COLUMNS, MAX_GRID_COLUMNS)
+        _gridColumnCount.value = coerced
+        prefs.edit().putInt(KEY_GRID_COLUMN_COUNT, coerced).apply()
+    }
+
+    /** Persist the two-pane list/detail split as the list pane's width fraction (coerced to 0..1). */
+    fun setPaneListFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneListFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_LIST_FRACTION, coerced).apply()
+    }
+
+    /** Persist the two-pane editor/preview split as the editor pane's width fraction (coerced to 0..1). */
+    fun setPaneEditorFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneEditorFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_EDITOR_FRACTION, coerced).apply()
+    }
+
+    /** Persist the two-pane calendar split as the month-grid pane's width fraction (coerced to 0..1). */
+    fun setPaneCalendarFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneCalendarFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_CALENDAR_FRACTION, coerced).apply()
+    }
+
+    /** Persist the two-pane profile split as the identity pane's width fraction (coerced to 0..1). */
+    fun setPaneProfileFraction(fraction: Float) {
+        val coerced = fraction.coerceIn(0f, 1f)
+        _paneProfileFraction.value = coerced
+        prefs.edit().putFloat(KEY_PANE_PROFILE_FRACTION, coerced).apply()
+    }
+
     /**
      * Persist the library sort option (by [LibrarySort] enum name) and direction.
      */
@@ -999,6 +1080,19 @@ companion object {
         private const val KEY_FEED_SCOPE = "feed_scope"
         private const val KEY_FEED_FILTER = "feed_filter"
         private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
+        private const val KEY_GRID_COLUMNS_AUTO = "grid_columns_auto"
+        private const val KEY_GRID_COLUMN_COUNT = "grid_column_count"
+        const val MIN_GRID_COLUMNS = 2
+        const val MAX_GRID_COLUMNS = 8
+        const val DEFAULT_GRID_COLUMNS = 3
+        private const val KEY_PANE_LIST_FRACTION = "pane_list_fraction"
+        const val DEFAULT_PANE_LIST_FRACTION = 1f / 3f
+        private const val KEY_PANE_EDITOR_FRACTION = "pane_editor_fraction"
+        const val DEFAULT_PANE_EDITOR_FRACTION = 0.667f
+        private const val KEY_PANE_CALENDAR_FRACTION = "pane_calendar_fraction"
+        const val DEFAULT_PANE_CALENDAR_FRACTION = 0.42f
+        private const val KEY_PANE_PROFILE_FRACTION = "pane_profile_fraction"
+        const val DEFAULT_PANE_PROFILE_FRACTION = 0.32f
         private const val KEY_LIBRARY_SORT_OPTION = "library_sort_option"
         private const val KEY_LIBRARY_SORT_ASCENDING = "library_sort_ascending"
         private const val DEFAULT_LIBRARY_SORT = "AIRING_SOON"

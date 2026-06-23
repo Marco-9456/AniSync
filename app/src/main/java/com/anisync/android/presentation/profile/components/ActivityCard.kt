@@ -64,6 +64,7 @@ import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.util.selectedPaneItem
 import com.anisync.android.presentation.util.shareActivity
 
 /**
@@ -86,6 +87,9 @@ fun ActivityCard(
     onLikeClick: (() -> Unit)? = null,
     onDeleteClick: (() -> Unit)? = null,
     onEditClick: (() -> Unit)? = null,
+    // When this activity is the one open in the two-pane detail (Feed), the card shows the Material 3
+    // selection ring (two-pane only; null/false in the profile feed and on compact).
+    selected: Boolean = false,
     /**
      * When set, the body is capped to roughly this many lines of text and its bottom edge fades
      * out, turning the card into a compact teaser (used by the profile Overview). The whole card
@@ -96,7 +100,9 @@ fun ActivityCard(
     val containerColor = MaterialTheme.colorScheme.surfaceContainerLow
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .selectedPaneItem(selected, RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = containerColor,

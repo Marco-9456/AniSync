@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -70,6 +71,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -128,6 +131,8 @@ import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ConnectedToggleButtonGroup
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
@@ -149,6 +154,7 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.rememberCopyToClipboard
@@ -181,6 +187,7 @@ fun MediaDetailsScreen(
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
     onUserClick: (String) -> Unit = {},
+    navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -195,10 +202,8 @@ fun MediaDetailsScreen(
     val following by viewModel.following.collectAsStateWithLifecycle()
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
-
-    LaunchedEffect(mediaId) {
-        viewModel.loadMedia(mediaId)
-    }
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
@@ -245,21 +250,8 @@ fun MediaDetailsScreen(
     // status-bar icons must stay white over the dark scrim regardless of theme — like the Play
     // Store. Once the app bar fades in (scrolled) or on an error page, revert to the theme default.
     val bannerVisible = uiState !is DetailsUiState.Error
-    val view = LocalView.current
-    val statusBarController = remember(view) {
-        WindowCompat.getInsetsController((view.context as Activity).window, view)
-    }
-    // Captured at entry, after AppTheme's SideEffect already applied !darkTheme -> theme default.
-    val themeDefaultLightStatusBars = remember { statusBarController.isAppearanceLightStatusBars }
-    LaunchedEffect(isScrolled, bannerVisible) {
-        statusBarController.isAppearanceLightStatusBars =
-            if (bannerVisible && !isScrolled) false else themeDefaultLightStatusBars
-    }
-    DisposableEffect(Unit) {
-        onDispose {
-            statusBarController.isAppearanceLightStatusBars = themeDefaultLightStatusBars
-        }
-    }
+    // Status-bar icon appearance follows the app theme (set globally): the banner no longer draws
+    // under the status bar — a root status-bar scrim sits above it — so no per-screen override.
 
     val isDetailsEnteringFromBackStack by remember {
         derivedStateOf {
@@ -367,15 +359,33 @@ fun MediaDetailsScreen(
                                 }
                             },
                             navigationIcon = {
-                                IconButton(onClick = onBackClick) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(R.string.back),
-                                        tint = animateColorAsState(
-                                            if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                            label = "navIconTint"
-                                        ).value
-                                    )
+                                if (!LocalPaneIsRoot.current) {
+                                    IconButton(onClick = onBackClick) {
+                                        Icon(
+                                            imageVector = navigationIcon,
+                                            contentDescription = stringResource(R.string.back),
+                                            tint = animateColorAsState(
+                                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                                label = "navIconTint"
+                                            ).value
+                                        )
+                                    }
+                                }
+                            },
+                            actions = {
+                                // At a two-pane detail root the close (✕) sits on the trailing edge
+                                // (easy right-thumb reach) instead of a leading back arrow.
+                                if (LocalPaneIsRoot.current) {
+                                    IconButton(onClick = onBackClick) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.pane_close),
+                                            tint = animateColorAsState(
+                                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                                label = "closeIconTint"
+                                            ).value
+                                        )
+                                    }
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
@@ -385,7 +395,8 @@ fun MediaDetailsScreen(
                                 actionIconContentColor = MaterialTheme.colorScheme.onSurface
                             ),
                             scrollBehavior = scrollBehavior,
-                            windowInsets = WindowInsets.statusBars
+                            // Root already insets below the status bar; don't add it again here.
+                            windowInsets = WindowInsets(0, 0, 0, 0)
                         )
                     }
                 },
@@ -527,21 +538,37 @@ fun MediaDetailsScreen(
                     }
                 }
             ) { paddingValues ->
-                Box(
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    state = pullToRefreshState,
+                    onRefresh = rememberRateLimitedRefresh { viewModel.refresh() },
+                    indicator = {
+                        CustomPullToRefreshIndicator(
+                            isRefreshing = isRefreshing,
+                            state = pullToRefreshState,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .windowInsetsPadding(WindowInsets.statusBars)
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = paddingValues.calculateBottomPadding())
-                        // Note: We intentionally IGNORE top padding here to let the content
-                        // (specifically the header image) draw behind the transparent status bar.
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = containerKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spatialSpec },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
-                        )
                 ) {
-                    when (val state = uiState) {
-                        is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            // Note: We intentionally IGNORE top padding here to let the content
+                            // (specifically the header image) draw behind the transparent status bar.
+                            .sharedBounds(
+                                sharedContentState = rememberSharedContentState(key = containerKey),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ -> spatialSpec },
+                                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
+                            )
+                    ) {
+                        when (val state = uiState) {
+                            is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
                         is DetailsUiState.Success -> {
                             val context = LocalContext.current
                             DetailsPageContent(
@@ -629,6 +656,7 @@ fun MediaDetailsScreen(
                             message = state.message,
                             onBackClick = onBackClick
                         )
+                        }
                     }
                 }
             }
@@ -804,12 +832,6 @@ enum class DetailsTab(@StringRes val titleRes: Int) {
     SOCIAL(R.string.details_tab_social)
 }
 
-/**
- * Per-frame placement of the sticky tab strip: how far down it sits ([translationY], px from the
- * screen top) and how opaque its docked background is ([bgAlpha], 0 at rest → 1 when landed).
- */
-private data class StickyTabs(val translationY: Float, val bgAlpha: Float)
-
 private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
     DetailsTab.OVERVIEW -> Icons.Outlined.Info
     DetailsTab.CHARACTERS -> Icons.Default.Group
@@ -925,31 +947,26 @@ fun DetailsPageContent(
         if (selectedTab !in availableTabs) selectedTab = DetailsTab.OVERVIEW
     }
 
-    // Sticky tabs — Discover-style smoothness: a single interactive tab strip that tracks the scroll
-    // continuously instead of crossfading a second copy in at a threshold. It rides up with its
-    // in-list slot, then clamps under the app bar (status bar inset + 64dp). The background fades in
-    // only over the last [dockFadePx] so it reads as inline at rest and as a pinned bar once landed.
-    // The interactive strip is the overlay below; the in-list item just reserves its slot.
+    // Sticky tabs — a single interactive tab strip that tracks the scroll continuously: it rides up
+    // with its in-list slot, then clamps under the app bar (status bar inset + 64dp). The strip is an
+    // overlay (below); the in-list item just reserves its slot. The background is the opaque page
+    // colour (like the Profile tab bar) so it blends in inline at rest and cleanly covers content once
+    // docked — no fade, so a fast fling can't catch a half-transparent strip with content showing
+    // through.
     val density = LocalDensity.current
-    val appBarHeightPx = with(density) {
-        (WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp).roundToPx()
-    }
+    // Just the app bar height — the root insets content below the status bar, so the sticky tab
+    // strip docks under the 64dp bar without adding the status-bar inset.
+    val appBarHeightPx = with(density) { 64.dp.roundToPx() }
     val spacerLargePx = with(density) { dimensionResource(R.dimen.spacing_large).roundToPx() }
-    val dockFadePx = with(density) { 24.dp.roundToPx() }
     var tabStripHeightPx by remember { mutableIntStateOf(0) }
-    val stickyTabs by remember {
+    val tabStripTranslationY by remember {
         derivedStateOf {
             val info = listState.layoutInfo.visibleItemsInfo.find { it.key == "tabs" }
             if (info == null) {
-                // Slot scrolled above the viewport top → fully docked.
-                StickyTabs(translationY = appBarHeightPx.toFloat(), bgAlpha = 1f)
+                // Slot scrolled above the viewport top → fully docked under the app bar.
+                appBarHeightPx.toFloat()
             } else {
-                val atRest = info.offset + spacerLargePx
-                StickyTabs(
-                    translationY = maxOf(appBarHeightPx, atRest).toFloat(),
-                    bgAlpha = ((appBarHeightPx + dockFadePx - atRest).toFloat() / dockFadePx)
-                        .coerceIn(0f, 1f)
-                )
+                maxOf(appBarHeightPx, info.offset + spacerLargePx).toFloat()
             }
         }
     }
@@ -1309,14 +1326,14 @@ fun DetailsPageContent(
         }
 
         // The one interactive tab strip, lifted into an overlay so it can ride the scroll and dock
-        // under the app bar. translationY tracks the in-list slot then clamps; the background fades
-        // in as it lands, so at rest it looks identical to an inline row (Discover-style smoothness).
+        // under the app bar. translationY tracks the in-list slot then clamps under the app bar. The
+        // background is the opaque page colour so content scrolls cleanly underneath while docked.
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = stickyTabs.bgAlpha),
+            color = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .graphicsLayer { translationY = stickyTabs.translationY }
+                .graphicsLayer { translationY = tabStripTranslationY }
                 .onSizeChanged { tabStripHeightPx = it.height }
         ) {
             DetailsTabsButtonGroup(
@@ -1591,7 +1608,8 @@ private fun BannerGradients(themeBackground: Color) {
  */
 @Composable
 private fun StatusBarScrim(alpha: Float, modifier: Modifier = Modifier) {
-    val scrimHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 28.dp
+    // Root insets below the status bar, so this banner scrim only needs its own short height.
+    val scrimHeight = 28.dp
     val scrimBrush = remember {
         Brush.verticalGradient(colors = listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))
     }

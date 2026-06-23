@@ -62,6 +62,9 @@ fun LazyListScope.profileFavoritesTab(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
+    posterColumns: Int = 3,
+    portraitColumns: Int = 3,
+    studioColumns: Int = 2,
     modifier: Modifier = Modifier
 ) {
     item(key = "favorites_filters", contentType = "filters") {
@@ -99,7 +102,8 @@ fun LazyListScope.profileFavoritesTab(
                 onMediaClick = onMediaClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "fav_anime"
+                transitionPrefix = "fav_anime",
+                posterColumns = posterColumns
             )
         }
 
@@ -110,7 +114,8 @@ fun LazyListScope.profileFavoritesTab(
                 onMediaClick = onMediaClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "fav_manga"
+                transitionPrefix = "fav_manga",
+                posterColumns = posterColumns
             )
         }
 
@@ -124,7 +129,7 @@ fun LazyListScope.profileFavoritesTab(
                     )
                 }
             } else {
-                val rowItems = profile.favoriteCharactersOverview.chunked(3)
+                val rowItems = profile.favoriteCharactersOverview.chunked(portraitColumns)
                 item(key = "fav_top_spacer_characters") { Spacer(modifier = Modifier.height(16.dp)) }
 
                 itemsIndexed(
@@ -149,7 +154,7 @@ fun LazyListScope.profileFavoritesTab(
                                 )
                             }
                         }
-                        repeat(3 - row.size) {
+                        repeat(portraitColumns - row.size) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }
@@ -168,7 +173,7 @@ fun LazyListScope.profileFavoritesTab(
                     )
                 }
             } else {
-                val rowItems = profile.favoriteStaffOverview.chunked(3)
+                val rowItems = profile.favoriteStaffOverview.chunked(portraitColumns)
                 item(key = "fav_top_spacer_staff") { Spacer(modifier = Modifier.height(16.dp)) }
 
                 itemsIndexed(
@@ -191,7 +196,7 @@ fun LazyListScope.profileFavoritesTab(
                                 )
                             }
                         }
-                        repeat(3 - row.size) {
+                        repeat(portraitColumns - row.size) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }
@@ -210,7 +215,7 @@ fun LazyListScope.profileFavoritesTab(
                     )
                 }
             } else {
-                val rowItems = profile.favoriteStudiosOverview.chunked(2)
+                val rowItems = profile.favoriteStudiosOverview.chunked(studioColumns)
                 item(key = "fav_top_spacer_studios") { Spacer(modifier = Modifier.height(16.dp)) }
 
                 itemsIndexed(
@@ -233,7 +238,7 @@ fun LazyListScope.profileFavoritesTab(
                                 )
                             }
                         }
-                        repeat(2 - row.size) {
+                        repeat(studioColumns - row.size) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
                     }

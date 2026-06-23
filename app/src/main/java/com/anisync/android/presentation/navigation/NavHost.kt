@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.activity.ActivityDetailScreen
+import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
@@ -36,18 +37,24 @@ import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
 import com.anisync.android.presentation.details.StudioDetailsScreen
 import com.anisync.android.presentation.details.StudioMediaGridScreen
+import com.anisync.android.presentation.discover.DiscoverListDetail
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.feed.CreateStatusScreen
+import com.anisync.android.presentation.feed.FeedListDetail
 import com.anisync.android.presentation.feed.FeedScreen
 import com.anisync.android.presentation.forum.ForumCategoryScreen
 import com.anisync.android.presentation.forum.ForumMediaThreadsScreen
+import com.anisync.android.presentation.forum.ForumListDetail
 import com.anisync.android.presentation.forum.ForumScreen
 import com.anisync.android.presentation.forum.ForumThreadInputScreen
+import com.anisync.android.presentation.forum.EditThreadBodyScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
+import com.anisync.android.presentation.library.LibraryListDetail
 import com.anisync.android.presentation.library.LibraryScreen
 import com.anisync.android.presentation.login.LoginScreen
-import com.anisync.android.presentation.notifications.NotificationsScreen
+import com.anisync.android.presentation.notifications.NotificationsListDetail
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.review.RecentReviewsScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
@@ -63,7 +70,7 @@ import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
-import com.anisync.android.presentation.settings.SettingsScreen
+import com.anisync.android.presentation.settings.SettingsListDetail
 import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.ThemeScreen
@@ -285,8 +292,9 @@ fun AniSyncNavHost(
                     { mediaId: Int -> onMediaClick(mediaId, "library") } 
                 }
                 
-                LibraryScreen(
-                    onMediaClick = onLibraryMediaClick,
+                LibraryListDetail(
+                    navController = navController,
+                    onMediaClickFullScreen = onLibraryMediaClick,
                     onNavigateToCalendar = { navController.navigate(Calendar) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
@@ -315,31 +323,9 @@ fun AniSyncNavHost(
                 val onDiscoverMediaClick = remember(onMediaClick) {
                     { mediaId: Int -> onMediaClick(mediaId, "discover") }
                 }
-                val onSectionClick = remember(navController) {
-                    { title: String, sectionType: String, mediaType: com.anisync.android.type.MediaType ->
-                        navController.navigate(SectionGrid(title, sectionType, mediaType.name))
-                    }
-                }
-
-                DiscoverScreen(
-                    onMediaClick = onDiscoverMediaClick,
-                    onCharacterClick = { characterId ->
-                        navController.navigate(CharacterDetails(characterId))
-                    },
-                    onStaffClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    onStudioClick = { studioId ->
-                        navController.navigate(StudioDetails(studioId))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onSectionSeeAllClick = onSectionClick,
-                    onReviewClick = { reviewId ->
-                        navController.navigate(ReviewDetail(reviewId))
-                    },
-                    onRecentReviewsSeeAllClick = { mediaType ->
-                        navController.navigate(RecentReviews(mediaType.name))
-                    },
+                DiscoverListDetail(
+                    navController = navController,
+                    onMediaClickFullScreen = onDiscoverMediaClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -375,16 +361,10 @@ fun AniSyncNavHost(
                     }
                 }
 
-                val onFeedMediaClick = remember(onMediaClick) {
-                    { mediaId: Int -> onMediaClick(mediaId, "feed") }
-                }
-
-                FeedScreen(
-                    onActivityClick = navigateToActivity,
-                    onUserClick = navigateToUserProfile,
-                    onMediaClick = onFeedMediaClick,
-                    onLastReplyClick = navigateToActivityReply,
-                    onLoginClick = onLogin
+                FeedListDetail(
+                    navController = navController,
+                    onLoginClick = onLogin,
+                    onActivityClickFullScreen = navigateToActivity,
                 )
             }
 
@@ -534,36 +514,9 @@ fun AniSyncNavHost(
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
                     }
                 }
-                val onCreateThreadClick = remember(navController) {
-                    { navController.navigate(CreateThread()) }
-                }
-
-                val onCreateThreadForMedia = remember(navController) {
-                    { mediaId: Int, title: String, coverUrl: String? ->
-                        navController.navigate(
-                            CreateThread(
-                                mediaId = mediaId,
-                                mediaTitle = title,
-                                mediaCoverUrl = coverUrl.orEmpty()
-                            )
-                        )
-                    }
-                }
-
-                val onThreadCommentClick = remember(navController) {
-                    { threadId: Int, commentId: Int ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, "", commentId)
-                        )
-                    }
-                }
-
-                ForumScreen(
-                    onThreadClick = onThreadClick,
-                    onThreadCommentClick = onThreadCommentClick,
-                    onCreateThreadClick = onCreateThreadClick,
-                    onCreateThreadForMedia = onCreateThreadForMedia,
-                    onUserClick = navigateToUserProfile
+                ForumListDetail(
+                    navController = navController,
+                    onThreadClickFullScreen = onThreadClick,
                 )
             }
 
@@ -1066,7 +1019,8 @@ fun AniSyncNavHost(
                     threadTitle = route.threadTitle,
                     targetCommentId = if (route.commentId != 0) route.commentId else null,
                     onBackClick = { navController.popBackStack() },
-                    onUserClick = navigateToUserProfile
+                    onUserClick = navigateToUserProfile,
+                    onEditThread = { navController.navigate(EditThreadBody(it)) }
                 )
             }
 
@@ -1089,7 +1043,38 @@ fun AniSyncNavHost(
                     activityId = route.activityId,
                     targetReplyId = if (route.targetReplyId != 0) route.targetReplyId else null,
                     onBackClick = { navController.popBackStack() },
-                    onUserClick = navigateToUserProfile
+                    onUserClick = navigateToUserProfile,
+                    onEditActivity = { navController.navigate(EditActivity(it)) }
+                )
+            }
+
+            // =================================================================
+            // EDIT ACTIVITY - Shared Axis Z (Depth)
+            // =================================================================
+            composable<EditActivity>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                EditActivityScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // CREATE STATUS - Shared Axis Z (Depth)
+            // =================================================================
+            composable<CreateStatus>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                CreateStatusScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onPosted = { navController.popBackStack() }
                 )
             }
 
@@ -1105,19 +1090,10 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                NotificationsScreen(
+                NotificationsListDetail(
+                    navController = navController,
                     onBackClick = { navController.popBackStack() },
-                    onMediaClick = { mediaId ->
-                        navController.navigate(MediaDetails(mediaId, "notifications"))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onActivityClick = navigateToActivity,
-                    onThreadClick = { threadId, commentId ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, "", commentId ?: 0)
-                        )
-                    },
-                    onSettingsClick = { navController.navigate(SettingsNotifications) }
+                    onSettingsClick = { navController.navigate(SettingsNotifications) },
                 )
             }
 
@@ -1153,6 +1129,21 @@ fun AniSyncNavHost(
                 ForumThreadInputScreen(
                     onBackClick = { navController.popBackStack() },
                     onThreadCreated = { navController.popBackStack() }
+                )
+            }
+
+            // =================================================================
+            // EDIT THREAD BODY - Shared Axis Z (Depth)
+            // =================================================================
+            composable<EditThreadBody>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                EditThreadBodyScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
                 )
             }
 
@@ -1195,16 +1186,8 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                SettingsScreen(
-                    onNavigateToLookAndFeel = { navController.navigate(SettingsLookAndFeel) },
-                    onNavigateToAniList = { navController.navigate(SettingsAniList) },
-                    onNavigateToNotifications = { navController.navigate(SettingsNotifications) },
-                    onNavigateToStorage = { navController.navigate(SettingsStorage) },
-                    onNavigateToAbout = { navController.navigate(SettingsAbout) },
-                    onNavigateToSponsors = { navController.navigate(SettingsSponsors) },
-                    onNavigateToUpdates = { navController.navigate(SettingsUpdates) },
-                    onNavigateToDeveloperTools = { navController.navigate(SettingsDeveloperTools) },
-                    onNavigateToMediaUpload = { navController.navigate(SettingsMediaUpload) },
+                SettingsListDetail(
+                    navController = navController,
                     onBackClick = { navController.popBackStack() }
                 )
             }

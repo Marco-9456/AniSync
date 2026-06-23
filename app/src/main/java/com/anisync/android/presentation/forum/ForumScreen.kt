@@ -98,6 +98,8 @@ import com.anisync.android.presentation.forum.components.ForumSearchFilterSheetH
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.LocalRailFabState
+import com.anisync.android.presentation.util.SetRailFab
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -145,6 +147,8 @@ fun ForumScreen(
     onCreateThreadClick: () -> Unit,
     onCreateThreadForMedia: (mediaId: Int, title: String, coverUrl: String?) -> Unit,
     onUserClick: (String) -> Unit,
+    // The thread id open in the two-pane detail (or null); its card shows the selection ring.
+    selectedThreadId: Int? = null,
     viewModel: ForumViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -152,6 +156,11 @@ fun ForumScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
+
+    // On rail layouts the create-thread action lives in the rail header (Material 3); on compact it
+    // stays a floating action button below. SetRailFab is a no-op when there is no rail.
+    val hasRail = LocalRailFabState.current != null
+    SetRailFab(Icons.Default.Add, stringResource(R.string.forum_create_thread), onCreateThreadClick)
 
     val focusManager = LocalFocusManager.current
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
@@ -297,15 +306,17 @@ fun ForumScreen(
                         visible = showScrollToTop,
                         onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
                     )
-                    FloatingActionButton(
-                        onClick = onCreateThreadClick,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(R.string.forum_create_thread)
-                        )
+                    if (!hasRail) {
+                        FloatingActionButton(
+                            onClick = onCreateThreadClick,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = stringResource(R.string.forum_create_thread)
+                            )
+                        }
                     }
                 }
             }
@@ -439,6 +450,7 @@ fun ForumScreen(
 
                                 ForumThreadCard(
                                     thread = thread,
+                                    selected = thread.id == selectedThreadId,
                                     onClick = {
                                         focusManager.clearFocus(); onThreadClick(
                                         thread.id,

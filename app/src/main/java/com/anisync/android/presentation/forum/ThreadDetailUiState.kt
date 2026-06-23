@@ -36,14 +36,16 @@ data class ThreadDetailUiState(
     val viewerId: Int? = null,
     /** Set when the user opened the compose sheet to edit an existing comment. */
     val editingCommentId: Int? = null,
-    /** True when the full editor should open with the current thread body for editing. */
-    val pendingThreadEdit: Boolean = false,
     /** Emits once after a successful thread deletion so the screen can pop. */
     val threadDeleted: Boolean = false
 )
 
 sealed interface ThreadDetailAction {
-    data class Load(val threadId: Int, val targetCommentId: Int? = null) : ThreadDetailAction
+    data class Load(
+        val threadId: Int,
+        val targetCommentId: Int? = null,
+        val forceRefresh: Boolean = false,
+    ) : ThreadDetailAction
     data object LoadMoreComments : ThreadDetailAction
     data object LoadEarlierComments : ThreadDetailAction
     data class JumpToPage(val page: Int) : ThreadDetailAction
@@ -64,9 +66,6 @@ sealed interface ThreadDetailAction {
     data object ToggleSave : ThreadDetailAction
     data object ToggleSubscribe : ThreadDetailAction
     data class ChangeCommentSort(val sort: String, val label: String) : ThreadDetailAction
-    data object EditThread : ThreadDetailAction
-    data object ConsumeThreadEdit : ThreadDetailAction
-    data class SubmitThreadEdit(val body: String) : ThreadDetailAction
     data object DeleteThread : ThreadDetailAction
     data class EditComment(val commentId: Int) : ThreadDetailAction
     data class DeleteComment(val commentId: Int) : ThreadDetailAction
