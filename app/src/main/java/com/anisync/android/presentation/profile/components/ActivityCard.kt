@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.profile.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -35,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +59,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
@@ -112,7 +117,14 @@ fun ActivityCard(
             pressedElevation = 4.dp
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        // Smoothly animate any height change — an embedded image/video finishing load, or an
+        // expand/collapse — so the card grows/shrinks gracefully instead of snapping, which is what
+        // made the lazy list lurch between posts mid-scroll. Collapsed cards are already a fixed
+        // height, so this only animates the residual (sub-cap images, the Read more toggle).
+        Column(modifier = Modifier
+            .animateContentSize()
+            .padding(16.dp)
+        ) {
             ActivityCardHeader(
                 activity = activity,
                 onSubscribeClick = onSubscribeClick,
@@ -121,18 +133,42 @@ fun ActivityCard(
                 onEditClick = onEditClick
             )
 
-            if (maxBodyLines != null) {
-                ClampedActivityBody(maxLines = maxBodyLines, fadeColor = containerColor) {
+            val isTextual = activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE
+            when {
+                // Overview teaser: a fixed line cap that opens the full activity on tap (non-interactive).
+                maxBodyLines != null -> {
+                    ClampedActivityBody(maxLines = maxBodyLines, fadeColor = containerColor) {
+                        ActivityCardBody(
+                            activity = activity,
+                            onMediaClick = onMediaClick
+                        )
+                    }
+                }
+                // Full feed: cap long status/message bodies to a readable height with inline expand.
+                // Bounding the height also keeps the card from re-growing as embedded images/videos
+                // load, which is what made the list snap between posts mid-scroll.
+                isTextual -> {
+                    CollapsibleActivityBody(
+                        collapsedMaxHeight = ACTIVITY_BODY_COLLAPSED_MAX,
+                        fadeColor = containerColor,
+                        // While collapsed, the visible preview is a teaser: a tap anywhere in it
+                        // (including on a peeking image or embedded link) opens the activity rather
+                        // than firing the image viewer / following the link.
+                        onBodyClick = onClick
+                    ) {
+                        ActivityCardBody(
+                            activity = activity,
+                            onMediaClick = onMediaClick
+                        )
+                    }
+                }
+                // List activity: already compact (cover + status line), render in full.
+                else -> {
                     ActivityCardBody(
                         activity = activity,
                         onMediaClick = onMediaClick
                     )
                 }
-            } else {
-                ActivityCardBody(
-                    activity = activity,
-                    onMediaClick = onMediaClick
-                )
             }
 
             ActivityCardFooter(
@@ -199,6 +235,108 @@ private fun ClampedActivityBody(
             }
     ) {
         content()
+    }
+}
+
+/**
+ * Collapsed height for a status/message body in the full feed. ~15 lines of body text, or a peek of
+ * an embedded image — enough to judge the post without letting one long post dominate the scroll.
+ * Bodies taller than this collapse behind a "Read more" toggle; shorter ones render in full.
+ */
+private val ACTIVITY_BODY_COLLAPSED_MAX = 340.dp
+
+/**
+ * Caps a status/message body to [collapsedMaxHeight] with an inline "Read more"/"Show less" toggle,
+ * fading the clipped edge. Two wins: long posts no longer dominate the feed, and — because the
+ * collapsed height is fixed — the card stops re-growing as embedded images/videos finish loading,
+ * which is what made the lazy list snap from one post to another mid-scroll. Short bodies that fit
+ * under the cap render in full with no toggle. Expand state is keyed by the lazy item, so it
+ * survives scrolling the card off and back on.
+ */
+@Composable
+private fun CollapsibleActivityBody(
+    collapsedMaxHeight: Dp,
+    fadeColor: Color,
+    onBodyClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    var overflow by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val maxHeightPx = with(density) { collapsedMaxHeight.toPx() }
+    val fadeHeightPx = with(density) { 36.dp.toPx() }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clipToBounds()
+                .drawWithContent {
+                    drawContent()
+                    if (overflow && !expanded) {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, fadeColor),
+                                startY = size.height - fadeHeightPx,
+                                endY = size.height
+                            ),
+                            topLeft = Offset(0f, size.height - fadeHeightPx),
+                            size = Size(size.width, fadeHeightPx)
+                        )
+                    }
+                }
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    val isOver = placeable.height > maxHeightPx
+                    if (isOver != overflow) overflow = isOver
+                    val targetHeight =
+                        if (isOver && !expanded) maxHeightPx.toInt() else placeable.height
+                    layout(placeable.width, targetHeight) {
+                        placeable.place(0, 0)
+                    }
+                }
+        ) {
+            content()
+            // Collapsed teaser: a transparent layer over the visible preview swallows taps on
+            // peeking images / links and routes them to the card (open the activity). Drawn after
+            // the content so it sits on top; clipped to the collapsed bounds, so hidden content
+            // below the cut is untouched. Removed once expanded, restoring normal image/link taps.
+            if (overflow && !expanded) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { onBodyClick() }
+                )
+            }
+        }
+
+        if (overflow) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 4.dp, horizontal = 6.dp)
+            ) {
+                Text(
+                    text = stringResource(
+                        if (expanded) R.string.synopsis_show_less else R.string.synopsis_read_more
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
     }
 }
 
