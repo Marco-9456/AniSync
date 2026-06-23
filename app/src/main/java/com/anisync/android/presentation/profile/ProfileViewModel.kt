@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -277,6 +278,11 @@ class ProfileViewModel @Inject constructor(
                 } else {
                     ProfileUiState(isLoading = true)
                 }
+            }
+            // Keep the cached account name/avatar (account switcher + AniList settings) in sync with
+            // the freshly-loaded own profile, so a picture changed on AniList shows up here too.
+            .onEach { state ->
+                state.profile?.let { accountManager.updateActiveDetails(it.name, it.avatarUrl) }
             }
             .onStart { emit(ProfileUiState(isLoading = true)) }
             .catch { e -> emit(ProfileUiState(isLoading = false, errorMessage = e.message ?: "Unknown error")) }
