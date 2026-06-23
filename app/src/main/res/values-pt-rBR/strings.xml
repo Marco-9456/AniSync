@@ -167,7 +167,7 @@
     <string name="custom_color_description">Selecione uma cor inicial para gerar seu tema único.</string>
     <string name="quick_pick">Seleção rápida</string>
     <string name="hue_slider">Ajuste fino</string>
-    <string name="preview">Visualização</string>
+    <string name="preview">Pré-visualização</string>
     <string name="color_scheme">Esquema de cores</string>
     <string name="apply">Aplicar</string>
     <string name="dark_mode">Modo escuro</string>
@@ -299,7 +299,7 @@
     <string name="logout_dialog_confirm">Desconectar</string>
     <string name="a11y_settings_search">Buscar em configurações</string>
     <string name="a11y_settings_clear_search">Limpar pesquisa</string>
-    <string name="a11y_settings_theme_preview">Visualizar tema</string>
+    <string name="a11y_settings_theme_preview">Pré-visualizar tema</string>
     <string name="a11y_settings_color_selected">Esquema de cores selecionado</string>
     <string name="a11y_settings_cache_clear">Limpar cache</string>
     <string name="a11y_settings_notification_warning">Aviso de configurações de notificação</string>
@@ -1031,4 +1031,36 @@
         <item quantity="many">%d atividades</item>
         <item quantity="other">%d atividades</item>
     </plurals>
+    <string name="library_view_title">Visualização</string>
+    <string name="library_view_list">Lista</string>
+    <string name="library_view_grid">Grade</string>
+    <string name="library_view_automatic">Automático</string>
+    <string name="library_view_automatic_desc">Encaixa o número de colunas para o tamanho da tela</string>
+    <string name="library_view_columns">Colunas</string>
+    <string name="library_view_columns_value">%1$d colunas</string>
+    <string name="list_detail_select_prompt">Selecione um título para ver detalhes</string>
+    <string name="richtext_preview_show">Mostrar pré-visualização</string>
+    <string name="richtext_preview_hide">Esconder pré-visualização</string>
+    <string name="search_view_all_results">Ver todos os %1$d resultados</string>
+    <string name="calendar_today">Hoje</string>
+    <string name="calendar_previous_month">Mês anterior</string>
+    <string name="calendar_next_month">Próximo mês</string>
+    <string name="calendar_jump_to_this_month">Este mês</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="one">%1$d em exibição</item>
+        <item quantity="many">%1$d em exibição</item>
+        <item quantity="other">%1$d em exibição</item>
+    </plurals>
+    <string name="pane_resize_handle">Redimensionar painéis</string>
+    <string name="pane_resize_toggle">Recolher ou expandir o painel da lista</string>
+    <string name="pane_close">Fechar</string>
+    <string name="pane_resize_cycle">Alternar largura do painel da lista</string>
+    <string name="pane_placeholder_thread">Selecione um tópico para ler aqui</string>
+    <string name="pane_placeholder_activity">Selecione um status para ver aqui</string>
+    <string name="pane_placeholder_notification">Selecione uma notificação para abrir aqui</string>
+    <string name="pane_placeholder_settings">Selecione uma configuração para ajustar por aqui</string>
+    <string name="rail_expand">Expandir navegação</string>
+    <string name="rail_collapse">Recolher navegação</string>
+    <string name="rail_expanded">Navegação expandida</string>
+    <string name="rail_collapsed">Navegação recolhida</string>
 </resources>
