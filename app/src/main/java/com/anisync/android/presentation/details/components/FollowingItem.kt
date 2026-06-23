@@ -83,7 +83,7 @@ private fun rememberFollowingCardWidth(entry: MediaFollowingEntry, mediaType: Me
     val statusStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium)
 
     val scoreText = entry.score?.let { formatScore(it, entry.scoreFormat) }
-    val epText = entry.progress?.takeIf { it > 0 }?.let { "Ep $it" }
+    val epText = entry.progress?.takeIf { it > 0 }?.let { episodeOrChapterLabel(it, mediaType) }
     val statusLabel = entry.status.toLabel(mediaType)
 
     return remember(scoreText, epText, statusLabel, statsStyle, statusStyle, density) {
@@ -102,6 +102,10 @@ private fun rememberFollowingCardWidth(entry: MediaFollowingEntry, mediaType: Me
             .coerceIn(FollowingCardWidth, FollowingCardWidthMax)
     }
 }
+
+/** Progress label for a following entry: "Ep N" for anime, "Ch N" for manga. */
+private fun episodeOrChapterLabel(progress: Int, mediaType: MediaType?): String =
+    if (mediaType == MediaType.MANGA) "Ch $progress" else "Ep $progress"
 
 private fun formatScore(score: Double, format: ScoreFormat?): String {
     val numeric = if (score % 1.0 == 0.0) score.toInt().toString() else String.format("%.1f", score)
@@ -179,7 +183,8 @@ fun FollowingItem(
             StatsPill(
                 score = entry.score,
                 format = entry.scoreFormat,
-                progress = entry.progress
+                progress = entry.progress,
+                mediaType = mediaType
             )
         }
     }
@@ -252,7 +257,7 @@ fun FollowingRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatusPill(label = statusLabel, icon = statusIcon, color = statusColor)
-                StatsPill(score = entry.score, format = entry.scoreFormat, progress = entry.progress)
+                StatsPill(score = entry.score, format = entry.scoreFormat, progress = entry.progress, mediaType = mediaType)
             }
         }
     }
@@ -293,6 +298,7 @@ private fun StatsPill(
     score: Double?,
     format: ScoreFormat?,
     progress: Int?,
+    mediaType: MediaType?,
     modifier: Modifier = Modifier
 ) {
     if (score == null && (progress == null || progress <= 0)) return
@@ -336,7 +342,7 @@ private fun StatsPill(
 
         if (progress != null && progress > 0) {
             Text(
-                text = "Ep $progress",
+                text = episodeOrChapterLabel(progress, mediaType),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
