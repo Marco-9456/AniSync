@@ -12,6 +12,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -297,6 +300,9 @@ fun LibraryScreen(
             isSearchQueryEmpty = isSearchQueryEmpty,
             isGridView = uiState.isGridView,
             isAscending = isAscending,
+            // Highlight the sort affordance whenever the active sort differs from the default
+            // (Airing Soon, ascending), so it's obvious the list isn't in its default order.
+            isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending,
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
             onBackClick = {
@@ -815,6 +821,7 @@ private fun LibrarySearchBarInputField(
     isSearchQueryEmpty: Boolean,
     isGridView: Boolean,
     isAscending: Boolean,
+    isNonDefaultSort: Boolean,
     showListManagement: Boolean,
     onSearch: () -> Unit,
     onBackClick: () -> Unit,
@@ -874,7 +881,30 @@ private fun LibrarySearchBarInputField(
                     }
 
                     IconButton(onClick = onToggleSort) {
-                        SortIcon(isAscending = isAscending)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .then(
+                                    if (isNonDefaultSort) {
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.tertiaryContainer,
+                                            CircleShape
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        ) {
+                            SortIcon(
+                                isAscending = isAscending,
+                                activeColor = if (isNonDefaultSort) {
+                                    MaterialTheme.colorScheme.onTertiaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
                     }
                 }
             }
