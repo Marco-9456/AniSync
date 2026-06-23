@@ -7,7 +7,6 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,13 +26,10 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -62,6 +58,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.ReadMoreToggle
 import com.anisync.android.presentation.components.TranslateIconButton
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
@@ -513,14 +510,6 @@ fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
 fun ExpandableBiography(html: String) {
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = effectsSpec,
-        label = "ArrowRotation"
-    )
-
     val cardShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
     Surface(
         shape = cardShape,
@@ -566,31 +555,10 @@ fun ExpandableBiography(html: String) {
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 4.dp)
-            ) {
-                Text(
-                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
-                        R.string.synopsis_read_more
-                    ),
-                    style = MaterialTheme.typography.labelMedium.emphasis(),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(dimensionResource(R.dimen.icon_size_tiny))
-                        .graphicsLayer { rotationZ = arrowRotation }
-                )
-            }
+            ReadMoreToggle(
+                expanded = expanded,
+                onToggle = { expanded = !expanded }
+            )
         }
     }
 }
@@ -599,14 +567,6 @@ fun ExpandableBiography(html: String) {
 @Composable
 fun ExpandableSynopsis(text: String) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = effectsSpec,
-        label = "ArrowRotation"
-    )
 
     val cardShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large))
     Surface(
@@ -658,31 +618,10 @@ fun ExpandableSynopsis(text: String) {
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 4.dp)
-            ) {
-                Text(
-                    text = if (expanded) stringResource(R.string.synopsis_show_less) else stringResource(
-                        R.string.synopsis_read_more
-                    ),
-                    style = MaterialTheme.typography.labelMedium.emphasis(),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacing_tiny)))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(dimensionResource(R.dimen.icon_size_tiny))
-                        .graphicsLayer { rotationZ = arrowRotation }
-                )
-            }
+            ReadMoreToggle(
+                expanded = expanded,
+                onToggle = { expanded = !expanded }
+            )
         }
     }
 }

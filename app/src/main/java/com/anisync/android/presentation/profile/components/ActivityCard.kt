@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -68,6 +66,7 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.components.ReadMoreToggle
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.util.selectedPaneItem
 import com.anisync.android.presentation.util.shareActivity
@@ -312,30 +311,11 @@ private fun CollapsibleActivityBody(
         }
 
         if (overflow) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 4.dp, horizontal = 6.dp)
-            ) {
-                Text(
-                    text = stringResource(
-                        if (expanded) R.string.synopsis_show_less else R.string.synopsis_read_more
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            ReadMoreToggle(
+                expanded = expanded,
+                onToggle = { expanded = !expanded },
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
