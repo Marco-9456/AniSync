@@ -145,7 +145,13 @@ fun LazyListScope.profileActivityTab(
             )
         }
 
-        if (isActivitiesPaginating) {
+        // Persistent footer loader while more pages remain. Keyed off hasNextPage (not the
+        // per-fetch paginating flag) so the item isn't added/removed between back-to-back page
+        // loads — that churn disposed and re-created the indicator, restarting its animation and
+        // making it look like it never completed. Bare default size, exactly like the full-screen
+        // wavy loaders (ActivityDetailScreen, ProfileReviewsSection): a height/size constraint
+        // squishes the wave into a malformed, never-completing arc.
+        if (activitiesHasNextPage) {
             item(key = "activity_paginating", contentType = "paginating") {
                 Box(
                     modifier = Modifier
@@ -153,7 +159,7 @@ fun LazyListScope.profileActivityTab(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularWavyProgressIndicator(modifier = Modifier.height(24.dp))
+                    CircularWavyProgressIndicator()
                 }
             }
         }
