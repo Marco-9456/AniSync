@@ -38,7 +38,7 @@ import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -146,7 +146,7 @@ fun UpdatesScreen(
                 },
                 trailingContent = {
                     if (updateState is UpdateState.Checking) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        AppCircularProgressIndicator(modifier = Modifier.size(24.dp))
                     }
                 }
             )

@@ -28,7 +28,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,7 +102,7 @@ fun SponsorsScreen(
                         .padding(top = topPadding),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    AppCircularProgressIndicator()
                 }
             }
 

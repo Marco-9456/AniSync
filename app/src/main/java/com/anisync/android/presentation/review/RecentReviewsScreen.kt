@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -85,7 +85,7 @@ fun RecentReviewsScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -151,7 +151,7 @@ fun RecentReviewsScreen(
                                         .padding(16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator(
+                                    AppCircularProgressIndicator(
                                         modifier = Modifier.width(24.dp),
                                         strokeWidth = 2.dp
                                     )

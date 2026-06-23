@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -100,7 +100,7 @@ fun LazyListScope.profileSocialTab(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                AppCircularProgressIndicator()
             }
         }
         return
@@ -215,7 +215,7 @@ private fun PaginatingSpinner() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(modifier = Modifier.height(24.dp))
+        AppCircularProgressIndicator(modifier = Modifier.height(24.dp))
     }
 }
 

@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.CircularWavyProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +36,7 @@ fun LazyListScope.profileReviewsTab(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularWavyProgressIndicator()
+                AppCircularProgressIndicator()
             }
         }
         return
@@ -114,6 +113,6 @@ private fun ReviewsPaginatingSpinner() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularWavyProgressIndicator(modifier = Modifier.height(24.dp))
+        AppCircularProgressIndicator(modifier = Modifier.height(24.dp))
     }
 }

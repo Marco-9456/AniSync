@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -106,7 +106,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 

@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -117,7 +117,7 @@ fun NotificationsScreen(
                             .fillMaxSize()
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
+                    ) { AppCircularProgressIndicator() }
                 }
                 uiState.errorMessage != null && uiState.entries.isEmpty() -> {
                     Box(
@@ -170,7 +170,7 @@ fun NotificationsScreen(
                                         .padding(vertical = 16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                    AppCircularProgressIndicator(modifier = Modifier.size(28.dp))
                                 }
                             }
                         }

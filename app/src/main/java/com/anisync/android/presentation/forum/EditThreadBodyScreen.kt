@@ -2,7 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -46,7 +46,7 @@ fun EditThreadBodyScreen(
             color = MaterialTheme.colorScheme.surfaceContainer
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                AppCircularProgressIndicator()
             }
         }
     } else {

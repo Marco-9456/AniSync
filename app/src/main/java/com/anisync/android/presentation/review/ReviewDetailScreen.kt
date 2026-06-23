@@ -18,7 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -98,7 +98,7 @@ fun ReviewDetailScreen(
                         .fillMaxSize()
                         .padding(top = topContentPadding),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+                ) { AppCircularProgressIndicator() }
             }
 
             uiState.errorMessage != null && uiState.review == null -> {

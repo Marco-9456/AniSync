@@ -17,7 +17,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.PersonAddAlt
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -185,7 +185,7 @@ fun AniListSettingsScreen(
                         .fillMaxWidth()
                         .height(160.dp),
                     contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator() }
+                ) { AppCircularProgressIndicator() }
             } else {
                 AniListOptionsContent(optionsState, optionsViewModel::onAction)
             }

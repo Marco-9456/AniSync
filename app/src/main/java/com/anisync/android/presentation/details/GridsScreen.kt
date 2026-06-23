@@ -24,7 +24,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -212,7 +212,7 @@ fun CharacterMediaGridScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -488,7 +488,7 @@ fun StaffMediaGridScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -734,7 +734,7 @@ fun MediaCharactersGridScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -925,7 +925,7 @@ fun MediaRelationsGridScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -1145,7 +1145,7 @@ fun StudioMediaGridScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -1420,7 +1420,7 @@ fun StaffProductionMediaGridScreen(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 

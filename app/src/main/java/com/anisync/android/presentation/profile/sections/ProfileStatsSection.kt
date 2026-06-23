@@ -19,7 +19,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -102,7 +102,7 @@ fun LazyListScope.profileStatsTab(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                AppCircularProgressIndicator()
             }
         }
         return

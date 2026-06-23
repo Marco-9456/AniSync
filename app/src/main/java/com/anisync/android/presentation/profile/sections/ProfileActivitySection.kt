@@ -16,8 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,7 +32,6 @@ import com.anisync.android.presentation.profile.ProfileActivityFilter
 import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LazyListScope.profileActivityTab(
     profile: UserProfile,
     selectedFilter: ProfileActivityFilter,
@@ -159,7 +157,7 @@ fun LazyListScope.profileActivityTab(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularWavyProgressIndicator()
+                    AppCircularProgressIndicator()
                 }
             }
         }

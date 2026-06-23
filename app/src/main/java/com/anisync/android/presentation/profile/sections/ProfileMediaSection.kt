@@ -21,7 +21,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,7 +107,7 @@ fun LazyListScope.profileMediaTab(
                     .padding(vertical = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                AppCircularProgressIndicator()
             }
         }
     } else if (items.isEmpty()) {

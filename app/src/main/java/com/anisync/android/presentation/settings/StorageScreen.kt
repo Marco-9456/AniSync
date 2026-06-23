@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,7 +56,7 @@ fun StorageScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (isCacheLoading) {
-                    CircularProgressIndicator(
+                    AppCircularProgressIndicator(
                         modifier = Modifier.size(48.dp),
                         color = MaterialTheme.colorScheme.primary
                     )

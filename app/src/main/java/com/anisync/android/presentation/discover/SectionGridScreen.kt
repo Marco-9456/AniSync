@@ -18,7 +18,7 @@ import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -82,7 +82,7 @@ fun MediaGridContent(
                             .padding(top = topContentPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -287,7 +287,7 @@ fun SectionGridScreen(
                                 .padding(top = topContentPadding),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            AppCircularProgressIndicator()
                         }
                     }
 
@@ -363,7 +363,7 @@ fun SectionGridScreen(
                                             .padding(16.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        CircularProgressIndicator(
+                                        AppCircularProgressIndicator(
                                             modifier = Modifier.size(24.dp),
                                             strokeWidth = 2.dp
                                         )

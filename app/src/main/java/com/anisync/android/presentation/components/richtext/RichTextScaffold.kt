@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBarDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
@@ -373,7 +373,7 @@ fun RichTextScaffold(
 
                             if (isSubmitting) {
                                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                    CircularProgressIndicator(
+                                    AppCircularProgressIndicator(
                                         modifier = Modifier.size(20.dp),
                                         strokeWidth = 2.dp
                                     )

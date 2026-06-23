@@ -41,7 +41,7 @@ import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -488,7 +488,7 @@ fun ForumScreen(
                                         .padding(16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator()
+                                    AppCircularProgressIndicator()
                                 }
                             }
                         }
@@ -529,7 +529,7 @@ fun ForumScreen(
             when {
                 uiState.isSearching && uiState.searchResults.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        AppCircularProgressIndicator()
                     }
                 }
 
@@ -623,7 +623,7 @@ fun ForumScreen(
                                         .padding(16.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator()
+                                    AppCircularProgressIndicator()
                                 }
                             }
                         }

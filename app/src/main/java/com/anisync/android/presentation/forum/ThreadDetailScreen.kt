@@ -36,7 +36,7 @@ import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
@@ -580,7 +580,7 @@ fun ThreadDetailScreen(
                                             .padding(vertical = 12.dp, horizontal = 24.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        if (uiState.isLoadingEarlierComments) CircularProgressIndicator()
+                                        if (uiState.isLoadingEarlierComments) AppCircularProgressIndicator()
                                         else {
                                             FilledTonalButton(
                                                 onClick = { viewModel.onAction(ThreadDetailAction.LoadEarlierComments) },
@@ -715,7 +715,7 @@ fun ThreadDetailScreen(
                                             .padding(vertical = 32.dp, horizontal = 24.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        if (uiState.isLoadingMoreComments) CircularProgressIndicator()
+                                        if (uiState.isLoadingMoreComments) AppCircularProgressIndicator()
                                         else {
                                             FilledTonalButton(
                                                 onClick = { viewModel.onAction(ThreadDetailAction.LoadMoreComments) },
