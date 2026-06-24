@@ -57,5 +57,10 @@ data class UserProfileEntity(
     val moderatorRoles: List<String> = emptyList(),
 
     @ColumnInfo(defaultValue = "0")
-    val createdAt: Long? = null
+    val createdAt: Long? = null,
+
+    // Raw markdown form of the bio (about asHtml:false), cached alongside the rendered HTML so the
+    // bio editor loads clean source instead of falling back to the asHtml-wrapped HTML.
+    @ColumnInfo(defaultValue = "")
+    val aboutMarkdown: String? = null
 )

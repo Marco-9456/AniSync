@@ -553,6 +553,75 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `tilde-center fence with a markdown title swallowed into language token recovers centred title`() =
+        runBlocking {
+            // AniList activity 1094838111 (Jennifer2005x): `~~~_Cute Clothes~_` opened a centre fence
+            // straight onto an italic title, so asHtml fenced the post into
+            // <pre><code class="language-_Cute Clothes~_"> — dropping the title and leaving a dangling
+            // closing `~~~`. Recover the title, centre everything, and drop the stray tildes.
+            val html =
+                "<pre><code class=\"language-_Cute Clothes~_\">\n\n" +
+                    "&lt;span class='markdown_spoiler'&gt;&lt;span&gt;&lt;video muted loop autoplay controls&gt;" +
+                    "&lt;source src='https://files.catbox.moe/cflqd0.mp4' type='video/webm'&gt;" +
+                    "Your browser does not support the video tag.&lt;/video&gt;&lt;/span&gt;&lt;/span&gt;\n\n" +
+                    "https://anilist.co/anime/180929/Ruri-no-Houseki~~~</code></pre>"
+
+            val parsed = RichTextParser.parse(html)
+            val blocks = parsed.blocks.deepBlocks()
+
+            assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+
+            // The centred italic title is recovered (it was silently dropped before).
+            val title = blocks.filterIsInstance<RichTextBlock.Text>()
+                .first { it.debugInlineText().contains("Cute Clothes") }
+            assertEquals(RichTextAlignment.Center, title.align)
+            assertTrue(title.inlines.any { it is RichTextInline.Italic })
+
+            // Spoiler (the video) and the media card both survive and stay centred.
+            val spoilers = blocks.filterIsInstance<RichTextBlock.Spoiler>()
+            assertEquals(1, spoilers.size)
+            assertEquals(RichTextAlignment.Center, spoilers.first().align)
+            val card = blocks.filterIsInstance<RichTextBlock.AnilistLink>().first()
+            assertEquals(180929, card.id)
+            assertEquals(RichTextAlignment.Center, card.align)
+
+            // The dangling closing fence does not leak as literal tildes.
+            assertTrue(
+                blocks.filterIsInstance<RichTextBlock.Text>()
+                    .none { it.debugInlineText().contains("~~~") }
+            )
+        }
+
+    @Test
+    fun `bio fenced into pre-code with a dangling tilde fence renders centred`() = runBlocking {
+        // AniList user bio (issue #66): a `~~~ … ~~~` centred bio was fenced into <pre><code> by
+        // asHtml — the opening `~~~` eaten, only the closing one left at the tail. The whole bio must
+        // re-pair and render centred (not left-aligned), with the spoiler kept and no stray `~~~`.
+        val html =
+            "<pre><code>\n" +
+                "「 __Just a person who loves anime__ 」\n\n" +
+                "Linux Girl • [Stranger](https://www.youtube.com/watch?v=-RcPZdihrp4) Person\n\n" +
+                "&lt;span class='markdown_spoiler'&gt;&lt;span&gt;Send me a message&lt;/span&gt;&lt;/span&gt;\n\n" +
+                "**In this amazing community since &lt;a&gt;11/4/2024&lt;/a&gt;**~~~</code></pre>"
+
+        val parsed = RichTextParser.parse(html)
+        val blocks = parsed.blocks.deepBlocks()
+
+        assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+
+        val textBlocks = blocks.filterIsInstance<RichTextBlock.Text>()
+        val intro = textBlocks.first { it.debugInlineText().contains("Just a person") }
+        assertEquals(RichTextAlignment.Center, intro.align)
+        val footer = textBlocks.first { it.debugInlineText().contains("amazing community") }
+        assertEquals(RichTextAlignment.Center, footer.align)
+
+        // Spoiler survives, the empty <a> date unwraps to plain text, no fence leaks.
+        assertTrue(blocks.any { it is RichTextBlock.Spoiler })
+        assertTrue(footer.debugInlineText().contains("11/4/2024"))
+        assertTrue(textBlocks.none { it.debugInlineText().contains("~~~") })
+    }
+
+    @Test
     fun `whole post wrapped in pre-code with a single image is recovered`() = runBlocking {
         // AniList activity 1088995401: asHtml dumped the entire post into <pre><code>. It carries
         // only ONE escaped <img> tag, so the >=3-tag heuristic skipped recovery and it rendered as

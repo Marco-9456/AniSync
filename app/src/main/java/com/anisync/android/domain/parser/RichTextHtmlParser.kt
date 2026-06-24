@@ -13,6 +13,12 @@ internal data class HtmlParseResult(
 private val NON_DIGIT_REGEX = Regex("[^0-9]")
 private val ESCAPED_HTML_TAG_REGEX = Regex("""<[a-zA-Z/][^>]*>""")
 
+// A genuine `<code class="language-…">` token is a short language identifier (kotlin, c++,
+// objective-c, asp.net). Any character outside this set in the token means AniList's fence misparse
+// swallowed real post content there instead, so it must be recovered rather than dropped.
+private val LANGUAGE_TOKEN_REGEX = Regex("""[A-Za-z0-9#+.-]+""")
+private val TRIPLE_TILDE_REGEX = Regex("~~~")
+
 // AniList's asHtml endpoint sometimes dumps an entire rich post — or a rich section of a
 // review — into a <pre><code> block instead of rendering it (a markdown misparse, usually
 // triggered by a heading or HTML tag at the very start). looksLikeEscapedHtml only catches
@@ -200,44 +206,32 @@ internal class RichTextHtmlParser(
                 val code = codeEl?.wholeText() ?: element.wholeText()
                 if (code.isNotBlank()) {
                     val trimmed = code.trim()
-                    // AniList misparse: a fenced ``` opened with no space before its info string
-                    // (e.g. ```<img ...>) makes the server swallow real content into the code
-                    // "language" and wrap the WHOLE post in <pre><code class="language-<img ...>">.
-                    // Recover the swallowed markup and re-parse everything as rich content instead
-                    // of dumping the post as a literal code block.
+                    // AniList's asHtml endpoint sometimes fences an entire rich post/bio into
+                    // <pre><code> (a markdown misparse). Two recoverable, often combined, signatures:
+                    //  • content swallowed into the `language-…` info string — a space-less ``` or
+                    //    `~~~` fence that opened straight onto an <img>, a URL, or a centred title
+                    //    (e.g. `~~~_Cute Clothes~_`); the swallowed text used to be silently dropped.
+                    //  • a `~~~` centre block whose opening fence was eaten, leaving only the closing
+                    //    `~~~` at the tail — re-add a leading `~~~` so it re-pairs and centres, like
+                    //    AniList's web render (e.g. activity 1091931291 / 1094838111, centred bios).
+                    // Recover both and re-parse as rich content instead of dumping a literal code block.
                     val swallowed = codeEl?.let { swallowedLanguageContent(it.attr("class")) }
-                    when {
-                        swallowed != null -> {
-                            // When the fence was AniList's `~~~` centre toggle, its opening `~~~` got
-                            // eaten into the language token and only the closing `~~~` survives at the
-                            // tail. Re-add a leading `~~~` so the recovered post re-pairs and centres,
-                            // matching AniList's web render (e.g. activity 1091931291's two-card post).
-                            val recovered = "$swallowed\n$trimmed"
-                            val reparseSource =
-                                if (trimmed.endsWith("~~~")) "~~~\n$recovered" else recovered
-                            val reparsed = Jsoup.parseBodyFragment(
-                                RichTextNormalizer.normalize(reparseSource)
-                            ).body()
-                            walkChildren(reparsed, workingCtx)
-                            workingCtx.flushText()
-                        }
-
-                        looksLikeWrappedRichText(trimmed) -> {
-                            val reparsed = Jsoup.parseBodyFragment(
-                                RichTextNormalizer.normalize(trimmed)
-                            ).body()
-                            walkChildren(reparsed, workingCtx)
-                            workingCtx.flushText()
-                        }
-
-                        else -> {
-                            workingCtx.emitBlock(
-                                RichTextBlock.CodeBlock(
-                                    code = trimmed,
-                                    align = workingCtx.align
-                                )
+                    if (swallowed != null || looksLikeWrappedRichText(trimmed)) {
+                        val withSwallowed = if (swallowed != null) "$swallowed\n$trimmed" else trimmed
+                        val reparseSource =
+                            if (needsCenterFenceRepair(trimmed)) "~~~\n$withSwallowed" else withSwallowed
+                        val reparsed = Jsoup.parseBodyFragment(
+                            RichTextNormalizer.normalize(reparseSource)
+                        ).body()
+                        walkChildren(reparsed, workingCtx)
+                        workingCtx.flushText()
+                    } else {
+                        workingCtx.emitBlock(
+                            RichTextBlock.CodeBlock(
+                                code = trimmed,
+                                align = workingCtx.align
                             )
-                        }
+                        )
                     }
                 }
             }
@@ -771,19 +765,32 @@ internal class RichTextHtmlParser(
 
     /**
      * A `<code class="language-…">` info string normally names a language (e.g. `language-kotlin`).
-     * When AniList's fence parser swallows post content into it (an unclosed/space-less ```` ```<img …> ````),
-     * the info string carries real markup instead. Returns that swallowed markup so the caller can
-     * re-parse it as content, or null for a normal/empty language token.
+     * When AniList's fence parser swallows post content into it (an unclosed/space-less ```` ```<img …> ````
+     * or a `~~~` centre fence opened straight onto its first line), the info string carries real
+     * markup, a URL, or a centred title instead. Returns that swallowed content so the caller can
+     * re-parse it, or null for a genuine language token.
      */
     private fun swallowedLanguageContent(codeClass: String): String? {
         val trimmed = codeClass.trim()
         if (!trimmed.startsWith("language-")) return null
         val info = trimmed.removePrefix("language-")
-        // A real language token is a short identifier (kotlin, js, …). AniList's fence misparse
-        // stuffs real post content here instead — an HTML tag, or a bare URL when a `~~~`/``` fence
-        // opened straight onto a link. Recover either so it isn't lost (e.g. the first media card).
-        return info.takeIf { ESCAPED_HTML_TAG_REGEX.containsMatchIn(it) || it.contains("://") }
+        if (info.isBlank()) return null
+        // A real language token is a short identifier (kotlin, c++, objective-c). AniList's fence
+        // misparse stuffs real post content here instead — an HTML tag, a bare URL, or markdown/prose
+        // such as a centred italic title (`_Cute Clothes~_`). Anything that isn't a plain language
+        // identifier is recovered so it isn't silently dropped (the centred title used to vanish).
+        return info.takeUnless { LANGUAGE_TOKEN_REGEX.matches(it) }
     }
+
+    /**
+     * True when [trimmed] carries a single dangling `~~~` centre fence at its tail. AniList's asHtml
+     * misparse eats the opening `~~~` (into the fence / language token) but leaves the closing one,
+     * so an odd `~~~` count ending in `~~~` means exactly one unpaired closer — a leading `~~~` can
+     * be re-added to re-pair and centre the post. An even (balanced) count is left untouched so a
+     * genuine inline `~~~ … ~~~` span isn't hijacked.
+     */
+    private fun needsCenterFenceRepair(trimmed: String): Boolean =
+        trimmed.endsWith("~~~") && TRIPLE_TILDE_REGEX.findAll(trimmed).count() % 2 == 1
 
     private fun hasBlockChildren(element: Element): Boolean =
         element.children().any { it.tagName().lowercase() in blockTags }

@@ -19,6 +19,12 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v19 (Jun 2026):
+ *   - Added field to user_profile:
+ *     • aboutMarkdown - raw markdown bio (about asHtml:false), cached next to the
+ *       rendered HTML so the bio editor loads clean source instead of falling back
+ *       to the asHtml-wrapped HTML (which saved corrupted markup back to AniList).
+ *
  * v18 (Jun 2026):
  *   - Added field to library_entries:
  *     • ownerId - AniList user id the entry belongs to, so multiple accounts'
@@ -88,7 +94,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -105,7 +111,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 14, to = 15),
         androidx.room.AutoMigration(from = 15, to = 16),
         androidx.room.AutoMigration(from = 16, to = 17),
-        androidx.room.AutoMigration(from = 17, to = 18)
+        androidx.room.AutoMigration(from = 17, to = 18),
+        androidx.room.AutoMigration(from = 18, to = 19)
     ]
 )
 @TypeConverters(Converters::class)

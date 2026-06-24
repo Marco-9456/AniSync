@@ -170,7 +170,10 @@ fun ProfileScreen(
         RichTextInputScreen(
             title = stringResource(R.string.edit_profile_title),
             placeholder = stringResource(R.string.edit_profile_about_label),
-            initialBody = profile.aboutMarkdown ?: profile.about.orEmpty(),
+            // Edit the raw markdown source; only fall back to the rendered HTML when no raw bio is
+            // cached yet (e.g. a pre-v19 row before its first refresh) so we never save HTML back.
+            initialBody = profile.aboutMarkdown?.takeUnless { it.isBlank() }
+                ?: profile.about.orEmpty(),
             isSubmitting = false,
             submitLabel = stringResource(R.string.save),
             minLength = 1,
