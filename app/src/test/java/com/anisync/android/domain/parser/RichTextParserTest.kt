@@ -687,6 +687,45 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `multiline bold straddling a mention inside center renders as one centred bold run`() =
+        runBlocking {
+            // AniList activity 1099651631 (nillybilay): a `<center>__…__</center>` bold block that
+            // spans newlines and an @mention anchor, with a space before the closing `__` (`ever __`).
+            // Must render centred, bold, keeping the mention link, with no literal underscores.
+            val html =
+                "<hr />\n<center>__100 days challenge\n" +
+                    "(doing this with my cute junior " +
+                    "<a target='_blank' href='https://anilist.co/user/YveltalGuy'>@YveltalGuy</a>)\n" +
+                    "Day 19: most epic scene ever __</center>\n<hr />"
+            val parsed = RichTextParser.parse(html)
+            val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+                .first { it.debugInlineText().contains("100 days challenge") }
+
+            assertEquals(RichTextAlignment.Center, text.align)
+            assertTrue(text.hasBold())
+            assertTrue(text.hasLink("https://anilist.co/user/YveltalGuy"))
+            assertTrue(text.debugInlineText().contains("Day 19: most epic scene ever"))
+            assertFalse(text.debugInlineText().contains("__"))
+        }
+
+    @Test
+    fun `plain bold pairs around a tag between them are not swallowed`() = runBlocking {
+        // Guard for the pairing scan: a tag sitting *between* two separate pure-text bold runs must
+        // stay un-bolded — only a run that actually straddles a tag becomes <strong>.
+        val parsed = RichTextParser.parse("__one__ <a href='https://x.test/'>mid</a> __two__")
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>().first()
+        // "mid" link is present but NOT inside a bold run.
+        assertTrue(text.hasLink("https://x.test/"))
+        assertFalse(text.debugInlineText().contains("_"))
+        val midNotBold = text.inlines.none { inline ->
+            inline is RichTextInline.Bold && inline.children.any {
+                it is RichTextInline.Link && it.url == "https://x.test/"
+            }
+        }
+        assertTrue(midNotBold)
+    }
+
+    @Test
     fun `whole post wrapped in pre-code with a single image is recovered`() = runBlocking {
         // AniList activity 1088995401: asHtml dumped the entire post into <pre><code>. It carries
         // only ONE escaped <img> tag, so the >=3-tag heuristic skipped recovery and it rendered as

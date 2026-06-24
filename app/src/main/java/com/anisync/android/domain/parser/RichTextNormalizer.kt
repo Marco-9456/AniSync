@@ -262,28 +262,65 @@ internal object RichTextNormalizer {
         return text.replace(EMPTY_ANCHOR_REGEX) { it.groupValues[1] }
     }
 
-    // Markdown bold (`**…**` / `__…__`) whose run straddles HTML tags, e.g. a mention line like
-    // `__by <a href='…'>@ampri</a> <a href='…'>@Evi</a> & me!__`. Jsoup splits that across the
-    // anchors into separate text nodes, so the inline parser (which pairs markers per text node)
-    // never closes the run and leaks literal underscores/asterisks. Convert tag-spanning bold to
-    // <strong> up front. The run must wrap at least one HTML tag and hold no inner marker, so
-    // emphasis living inside a single text node is left to the inline parser's AniList rules.
-    private val BOLD_STAR_SPANNING_TAG_REGEX = Regex(
-        """(?<!\*)\*\*(?=\S)((?:(?!\*\*)[\s\S])*?<[a-zA-Z/][^>]*>(?:(?!\*\*)[\s\S])*?)(?<=\S)\*\*(?!\*)"""
-    )
-    private val BOLD_UNDERSCORE_SPANNING_TAG_REGEX = Regex(
-        """(?<!_)__(?=\S)((?:(?!__)[\s\S])*?<[a-zA-Z/][^>]*>(?:(?!__)[\s\S])*?)(?<=\S)__(?!_)"""
-    )
+    // Markdown bold (`**…**` / `__…__`) whose run straddles HTML tags or newlines, e.g. a centred
+    // mention block like `__100 days challenge\n…<a>@YveltalGuy</a>…\nDay 19: most epic scene ever __`.
+    // Jsoup splits that across the anchor/lines into separate text nodes, so the inline parser (which
+    // pairs markers per text node) never closes the run and leaks literal underscores/asterisks.
+    // Pre-pair bold here exactly the way the inline parser does — adjacent marker to adjacent marker
+    // (AniList pairs `**`/`__` regardless of surrounding spaces) — and rewrite a pair to <strong>
+    // ONLY when its span straddles a tag. Pure-text bold is left verbatim for the inline parser's
+    // AniList rules; pairing rather than lone matching keeps a tag sitting *between* two unrelated
+    // bold runs from being wrongly swallowed.
+    private val HTML_TAG_REGEX = Regex("""<[a-zA-Z/][^>]*>""")
 
     private fun convertBoldSpanningTags(text: String): String {
+        if (!text.contains('<')) return text
         var result = text
-        if (result.contains("**")) {
-            result = result.replace(BOLD_STAR_SPANNING_TAG_REGEX) { "<strong>${it.groupValues[1]}</strong>" }
-        }
-        if (result.contains("__")) {
-            result = result.replace(BOLD_UNDERSCORE_SPANNING_TAG_REGEX) { "<strong>${it.groupValues[1]}</strong>" }
-        }
+        if (result.contains("**")) result = pairBoldSpanningTags(result, "**")
+        if (result.contains("__")) result = pairBoldSpanningTags(result, "__")
         return result
+    }
+
+    private fun pairBoldSpanningTags(text: String, marker: String): String {
+        val markerChar = marker[0]
+        val m = marker.length
+        val n = text.length
+        val sb = StringBuilder(n)
+        var i = 0
+        while (i < n) {
+            if (isDoubleMarker(text, i, markerChar, m)) {
+                val close = nextDoubleMarker(text, i + m, markerChar, m)
+                if (close != -1) {
+                    val inner = text.substring(i + m, close)
+                    if (HTML_TAG_REGEX.containsMatchIn(inner)) {
+                        sb.append("<strong>").append(inner).append("</strong>")
+                    } else {
+                        sb.append(marker).append(inner).append(marker)
+                    }
+                    i = close + m
+                    continue
+                }
+            }
+            sb.append(text[i])
+            i++
+        }
+        return sb.toString()
+    }
+
+    /** A run of exactly two [markerChar] at [i] (not part of a 3+ run), i.e. a real `**`/`__`. */
+    private fun isDoubleMarker(text: String, i: Int, markerChar: Char, m: Int): Boolean =
+        i + m <= text.length &&
+            text[i] == markerChar && text[i + 1] == markerChar &&
+            (i == 0 || text[i - 1] != markerChar) &&
+            (i + m >= text.length || text[i + m] != markerChar)
+
+    private fun nextDoubleMarker(text: String, from: Int, markerChar: Char, m: Int): Int {
+        var j = from
+        while (j <= text.length - m) {
+            if (isDoubleMarker(text, j, markerChar, m)) return j
+            j++
+        }
+        return -1
     }
 
     private fun replaceCenterTags(text: String): String =
