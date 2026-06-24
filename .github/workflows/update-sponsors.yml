@@ -31,7 +31,7 @@ jobs:
           marker: 'sponsors-generous'
           minimum: 2000
           template: '<a href="{{{ websiteUrl }}}" title="{{{ name }}}"><img src="{{{ avatarUrl }}}&s=80" width="64" height="64" alt="{{{ login }}}" /></a>'
-          fallback: '_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">Become a Generous Supporter</a>_'
+          fallback: '_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">support AniSync with a tip</a>_'
 
       - name: Update Backers block
         uses: JamesIves/github-sponsors-readme-action@v1
@@ -42,7 +42,7 @@ jobs:
           minimum: 1000
           maximum: 1999
           template: '<a href="{{{ websiteUrl }}}" title="{{{ name }}}"><img src="{{{ avatarUrl }}}&s=64" width="56" height="56" alt="{{{ login }}}" /></a>'
-          fallback: '_<a href="https://github.com/sponsors/Marco-9456">Become a Backer</a>_'
+          fallback: '_<a href="https://github.com/sponsors/Marco-9456">Support AniSync with a tip</a>_'
 
       - name: Update Sponsors block
         uses: JamesIves/github-sponsors-readme-action@v1
@@ -53,7 +53,7 @@ jobs:
           minimum: 500
           maximum: 999
           template: '<a href="{{{ websiteUrl }}}" title="{{{ name }}}"><img src="{{{ avatarUrl }}}&s=48" width="48" height="48" alt="{{{ login }}}" /></a>'
-          fallback: '_<a href="https://github.com/sponsors/Marco-9456">Become a Sponsor</a>_'
+          fallback: '_<a href="https://github.com/sponsors/Marco-9456">Support AniSync with a tip</a>_'
 
       # --- JSON asset for in-app screen ---
 

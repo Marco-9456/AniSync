@@ -40,18 +40,18 @@
   <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
 
-## :heart: Sponsors
+## :heart: Supporters
 
-Thanks to everyone who supports AniSync. [Become a sponsor →](https://github.com/sponsors/Marco-9456)
+Thanks to everyone who chips in to support AniSync. [Support the project →](https://github.com/sponsors/Marco-9456)
 
 ### Generous Supporters
-<!-- sponsors-generous -->_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">Become a Generous Supporter</a>_<!-- sponsors-generous -->
+<!-- sponsors-generous -->_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">support AniSync with a tip</a>_<!-- sponsors-generous -->
 
-### Backers
-<!-- sponsors-backer -->_<a href="https://github.com/sponsors/Marco-9456">Become a Backer</a>_<!-- sponsors-backer -->
+### Supporters
+<!-- sponsors-backer -->_<a href="https://github.com/sponsors/Marco-9456">Support AniSync with a tip</a>_<!-- sponsors-backer -->
 
-### Sponsors
-<!-- sponsors-sponsor -->_<a href="https://github.com/sponsors/Marco-9456">Become a Sponsor</a>_<!-- sponsors-sponsor -->
+### Coffee Supporters
+<!-- sponsors-sponsor -->_<a href="https://github.com/sponsors/Marco-9456">Support AniSync with a tip</a>_<!-- sponsors-sponsor -->
 
 ---
 

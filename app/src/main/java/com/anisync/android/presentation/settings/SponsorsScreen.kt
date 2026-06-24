@@ -308,7 +308,7 @@ private fun TierBlock(
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
         )
         if (sponsors.isEmpty()) {
-            EmptyTierCta(tier = tier, onClick = onBecomeSponsor)
+            EmptyTierCta(onClick = onBecomeSponsor)
         } else {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
@@ -383,7 +383,6 @@ private fun SponsorRow(
 
 @Composable
 private fun EmptyTierCta(
-    tier: SponsorTier,
     onClick: () -> Unit
 ) {
     Surface(
@@ -394,7 +393,7 @@ private fun EmptyTierCta(
             .clickable(onClick = onClick)
     ) {
         Text(
-            text = stringResource(R.string.sponsors_empty_tier_cta, tier.minDollars),
+            text = stringResource(R.string.sponsors_empty_tier_cta),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
