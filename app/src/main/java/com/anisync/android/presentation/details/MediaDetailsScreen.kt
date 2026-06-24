@@ -85,7 +85,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -105,7 +105,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -133,7 +134,7 @@ import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
-import com.anisync.android.presentation.components.ConnectedToggleButtonGroup
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.ReviewCard
@@ -846,7 +847,7 @@ private fun DetailsTabsButtonGroup(
     onTabSelected: (DetailsTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ConnectedToggleButtonGroup(
+    SegmentedTabGroup(
         options = tabs,
         selected = selectedTab,
         onSelect = onTabSelected,
@@ -947,31 +948,26 @@ fun DetailsPageContent(
         if (selectedTab !in availableTabs) selectedTab = DetailsTab.OVERVIEW
     }
 
-    // Sticky tabs — a single interactive tab strip that tracks the scroll continuously: it rides up
-    // with its in-list slot, then clamps under the app bar (status bar inset + 64dp). The strip is an
-    // overlay (below); the in-list item just reserves its slot. The background is the opaque page
-    // colour (like the Profile tab bar) so it blends in inline at rest and cleanly covers content once
-    // docked — no fade, so a fast fling can't catch a half-transparent strip with content showing
-    // through.
+    // Sticky tabs. The strip is a real in-list item that rides with the scroll, so it can never
+    // desync from the content — the old overlay tracked listState item offsets and drifted while the
+    // two-pane splitter was being dragged (a continuous resize), pinning the strip mid-content. A
+    // second, *pinned* copy is drawn under the app bar and shown only once the in-list strip's
+    // measured top reaches the dock line; by then the in-list copy has scrolled under the (opaque)
+    // app bar, so the two never read as duplicates. Both positions come from real measurements, not
+    // a scroll-offset lookup, so a resize can't make them drift.
     val density = LocalDensity.current
-    // Just the app bar height — the root insets content below the status bar, so the sticky tab
-    // strip docks under the 64dp bar without adding the status-bar inset.
-    val appBarHeightPx = with(density) { 64.dp.roundToPx() }
-    val spacerLargePx = with(density) { dimensionResource(R.dimen.spacing_large).roundToPx() }
-    var tabStripHeightPx by remember { mutableIntStateOf(0) }
-    val tabStripTranslationY by remember {
-        derivedStateOf {
-            val info = listState.layoutInfo.visibleItemsInfo.find { it.key == "tabs" }
-            if (info == null) {
-                // Slot scrolled above the viewport top → fully docked under the app bar.
-                appBarHeightPx.toFloat()
-            } else {
-                maxOf(appBarHeightPx, info.offset + spacerLargePx).toFloat()
-            }
-        }
+    val dockPx = with(density) { 64.dp.roundToPx() }.toFloat()
+    var contentTopWindow by remember { mutableFloatStateOf(0f) }
+    var inlineTabsTopWindow by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    val tabsDocked by remember {
+        derivedStateOf { inlineTabsTopWindow <= contentTopWindow + dockPx }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { contentTopWindow = it.boundsInWindow().top }
+    ) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -998,18 +994,27 @@ fun DetailsPageContent(
                         onFavoriteClick = onFavouriteClick,
                         onShareClick = onShareClick
                     )
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
                 }
             }
 
-            // Section selector slot — reserves the tab strip's footprint in the scroll. The strip
-            // itself is the pinned overlay below, positioned to track this slot then dock.
+            // Section selector — a real in-list item so it rides with the scroll exactly (no offset
+            // tracking that could desync). It reports its window top so the pinned copy below knows
+            // when it has reached the dock line. Opaque page background so content doesn't show
+            // through it at rest.
             item(key = "tabs") {
-                Spacer(
-                    modifier = Modifier.height(
-                        dimensionResource(R.dimen.spacing_large) +
-                            with(density) { tabStripHeightPx.toDp() }
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { inlineTabsTopWindow = it.boundsInWindow().top }
+                ) {
+                    DetailsTabsButtonGroup(
+                        tabs = availableTabs,
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
                     )
-                )
+                }
             }
 
             when (selectedTab) {
@@ -1325,22 +1330,24 @@ fun DetailsPageContent(
             }
         }
 
-        // The one interactive tab strip, lifted into an overlay so it can ride the scroll and dock
-        // under the app bar. translationY tracks the in-list slot then clamps under the app bar. The
-        // background is the opaque page colour so content scrolls cleanly underneath while docked.
-        Surface(
-            color = MaterialTheme.colorScheme.background,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .graphicsLayer { translationY = tabStripTranslationY }
-                .onSizeChanged { tabStripHeightPx = it.height }
-        ) {
-            DetailsTabsButtonGroup(
-                tabs = availableTabs,
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
-            )
+        // Pinned copy of the strip, docked under the app bar. Shown only once the in-list strip has
+        // reached the dock line (it is then scrolled under the opaque app bar, so they don't read as
+        // two). Its position is a fixed translationY — no scroll/offset tracking — so dragging the
+        // splitter to resize the pane can't make it drift.
+        if (tabsDocked) {
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .graphicsLayer { translationY = dockPx }
+            ) {
+                DetailsTabsButtonGroup(
+                    tabs = availableTabs,
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it }
+                )
+            }
         }
     }
 
