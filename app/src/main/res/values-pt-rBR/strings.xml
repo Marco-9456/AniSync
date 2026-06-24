@@ -878,7 +878,7 @@
     <string name="settings_sponsors_desc">Me compre um café para apoiar o AniSync</string>
     <string name="sponsors_title">Doar</string>
     <string name="sponsors_hero_headline">Me compre um café</string>
-    <string name="sponsors_hero_body">AniSync é de graça, livre de anúncios e código aberto — feito no meu tempo livre. Se isso alegra o seu dia, você pode me comprar um café. Apoiadores mensais tem seus nomes e avatares expostos aqui; compartilhe uma rede social (como seu AniLIst) e eu colocarei o link aqui também.</string>
+    <string name="sponsors_hero_body">O AniSync é gratuito, livre de anúncios e de código aberto — feito no meu tempo livre. Se ele melhora o seu dia, você pode deixar uma contribuição para apoiar o desenvolvimento. As contribuições são totalmente opcionais — não há nada para comprar e nenhum benefício extra incluso. Os nomes abaixo são apenas o meu muito obrigado a todos que ajudaram.</string>
     <string name="sponsors_become_button">Comprar um café</string>
     <string name="sponsors_github_button">GitHub</string>
     <string name="sponsors_kofi_button">Ko-fi</string>
@@ -887,7 +887,7 @@
     <string name="sponsor_tier_generous">Generoso</string>
     <string name="sponsor_tier_backer">Apoiador</string>
     <string name="sponsor_tier_count">%1$s · %2$d</string>
-    <string name="sponsors_empty_tier_cta">Seja o primeiro — Se torne um apoiador por $%1$d</string>
+    <string name="sponsors_empty_tier_cta">Ninguém por aqui ainda — seja o primeiro a contribuir</string>
     <string name="sponsors_load_error">Não foi possível carregar os patrocinadores. Arraste para baixo para tentar novamente.</string>
     <string name="sponsors_open_external">Abrir no GitHub</string>
     <string name="a11y_sponsor_avatar">Avatar de %1$s</string>
@@ -1063,4 +1063,10 @@
     <string name="rail_collapse">Recolher navegação</string>
     <string name="rail_expanded">Navegação expandida</string>
     <string name="rail_collapsed">Navegação recolhida</string>
+    <string name="details_label_titles">Títulos</string>
+    <string name="details_label_romaji">Romaji</string>
+    <string name="details_label_english">Inglês</string>
+    <string name="details_label_native">Nativo</string>
+    <string name="details_label_synonyms">Sinônimos</string>
+    <string name="details_label_producers">Produtores</string>
 </resources>
