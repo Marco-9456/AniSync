@@ -622,6 +622,71 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `bold markdown straddling anchor mentions renders as one bold run with links`() =
+        runBlocking {
+            // AniList activity 1071265105 (Hameru): `__by <a …>@ampri</a> <a …>@Evi</a> & me!__` —
+            // the bold run straddles the mention anchors, so jsoup split it and the markers leaked as
+            // literal underscores. Must render as a single bold run that keeps both links.
+            val html =
+                "__by <a target='_blank' href='https://anilist.co/user/ampri'>@ampri</a> " +
+                    "<a target='_blank' href='https://anilist.co/user/Evi'>@Evi</a> & me!__"
+            val parsed = RichTextParser.parse(html)
+            val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+                .first { it.debugInlineText().contains("@ampri") }
+
+            assertEquals("by @ampri @Evi & me!", text.debugInlineText())
+            assertFalse(text.debugInlineText().contains("_"))
+            assertTrue(text.hasBold())
+            assertTrue(text.hasLink("https://anilist.co/user/ampri"))
+            assertTrue(text.hasLink("https://anilist.co/user/Evi"))
+        }
+
+    @Test
+    fun `tilde-center post with both fences eaten still centres via swallowed token`() = runBlocking {
+        // AniList activity 1071265105 (Hameru): a `~~~` centred challenge post whose opening fence
+        // was eaten into the language token (a linked banner image) and whose closing fence was
+        // consumed on its own line — so no dangling `~~~` survives. The swallowed rich token is the
+        // signal it was a centre block, so the whole recovered post must centre like the web.
+        val html =
+            "<pre><code class=\"language-[&lt;img width='500' src='https://i.ibb.co/x/header.gif'&gt;]" +
+                "(https://anilist.co/forum/thread/88876 )\">" +
+                "__by &lt;a href='https://anilist.co/user/ampri'&gt;@ampri&lt;/a&gt; &amp; me!__\n\n" +
+                "# __23. A Pokémon That Describes Your Personality__\n\n" +
+                "Yeah... despite Mimikyu being cute.\n\n" +
+                "&lt;span class='markdown_spoiler'&gt;&lt;span&gt;&lt;img width='420' " +
+                "src='https://i.ibb.co/y/spoiler.png'&gt;&lt;/span&gt;&lt;/span&gt;</code></pre>"
+
+        val parsed = RichTextParser.parse(html)
+        val blocks = parsed.blocks.deepBlocks()
+
+        assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+
+        // Heading, body and spoiler all centred like AniList's web render.
+        val heading = blocks.filterIsInstance<RichTextBlock.Text>()
+            .first { it.debugInlineText().contains("Describes Your Personality") }
+        assertEquals(RichTextAlignment.Center, heading.align)
+        val body = blocks.filterIsInstance<RichTextBlock.Text>()
+            .first { it.debugInlineText().contains("despite Mimikyu") }
+        assertEquals(RichTextAlignment.Center, body.align)
+        val spoiler = blocks.filterIsInstance<RichTextBlock.Spoiler>().first()
+        assertEquals(RichTextAlignment.Center, spoiler.align)
+
+        // The recovered banner (swallowed token) renders as an image, no fence leaks.
+        assertTrue(parsed.imageUrls.contains("https://i.ibb.co/x/header.gif"))
+        assertTrue(
+            blocks.filterIsInstance<RichTextBlock.Text>()
+                .none { it.debugInlineText().contains("~~~") }
+        )
+
+        // Bold mention line keeps its bold + link, no literal underscores leak.
+        val byLine = blocks.filterIsInstance<RichTextBlock.Text>()
+            .first { it.debugInlineText().contains("@ampri") }
+        assertTrue(byLine.hasBold())
+        assertTrue(byLine.hasLink("https://anilist.co/user/ampri"))
+        assertFalse(byLine.debugInlineText().contains("__"))
+    }
+
+    @Test
     fun `whole post wrapped in pre-code with a single image is recovered`() = runBlocking {
         // AniList activity 1088995401: asHtml dumped the entire post into <pre><code>. It carries
         // only ONE escaped <img> tag, so the >=3-tag heuristic skipped recovery and it rendered as

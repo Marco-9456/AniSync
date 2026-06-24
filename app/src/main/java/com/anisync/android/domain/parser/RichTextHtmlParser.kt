@@ -218,8 +218,16 @@ internal class RichTextHtmlParser(
                     val swallowed = codeEl?.let { swallowedLanguageContent(it.attr("class")) }
                     if (swallowed != null || looksLikeWrappedRichText(trimmed)) {
                         val withSwallowed = if (swallowed != null) "$swallowed\n$trimmed" else trimmed
-                        val reparseSource =
-                            if (needsCenterFenceRepair(trimmed)) "~~~\n$withSwallowed" else withSwallowed
+                        // A swallowed rich token (img/link/markdown stuffed into `language-…`) or a
+                        // dangling tail `~~~` both mean the post was a `~~~` centre block whose
+                        // fence(s) the misparse ate. Re-wrap so it centres like AniList's web render:
+                        // a survived closer needs only the opener re-added; a fully-eaten pair (the
+                        // closer was on its own line, so nothing survives) needs both fences re-added.
+                        val reparseSource = when {
+                            needsCenterFenceRepair(trimmed) -> "~~~\n$withSwallowed"
+                            swallowed != null -> "~~~\n$withSwallowed\n~~~"
+                            else -> withSwallowed
+                        }
                         val reparsed = Jsoup.parseBodyFragment(
                             RichTextNormalizer.normalize(reparseSource)
                         ).body()

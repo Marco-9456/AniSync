@@ -37,6 +37,7 @@ internal object RichTextNormalizer {
         processed = decodeAniListEscapedParenthesis(processed)
         processed = convertLinkedImages(processed)
         processed = unwrapEmptyAnchors(processed)
+        processed = convertBoldSpanningTags(processed)
         processed = convertMarkdownSpoilerSpans(processed)
         processed = replaceCenterTags(processed)
         processed = replaceDanglingCenterEmphasis(processed)
@@ -259,6 +260,30 @@ internal object RichTextNormalizer {
     private fun unwrapEmptyAnchors(text: String): String {
         if (!text.contains("<a")) return text
         return text.replace(EMPTY_ANCHOR_REGEX) { it.groupValues[1] }
+    }
+
+    // Markdown bold (`**…**` / `__…__`) whose run straddles HTML tags, e.g. a mention line like
+    // `__by <a href='…'>@ampri</a> <a href='…'>@Evi</a> & me!__`. Jsoup splits that across the
+    // anchors into separate text nodes, so the inline parser (which pairs markers per text node)
+    // never closes the run and leaks literal underscores/asterisks. Convert tag-spanning bold to
+    // <strong> up front. The run must wrap at least one HTML tag and hold no inner marker, so
+    // emphasis living inside a single text node is left to the inline parser's AniList rules.
+    private val BOLD_STAR_SPANNING_TAG_REGEX = Regex(
+        """(?<!\*)\*\*(?=\S)((?:(?!\*\*)[\s\S])*?<[a-zA-Z/][^>]*>(?:(?!\*\*)[\s\S])*?)(?<=\S)\*\*(?!\*)"""
+    )
+    private val BOLD_UNDERSCORE_SPANNING_TAG_REGEX = Regex(
+        """(?<!_)__(?=\S)((?:(?!__)[\s\S])*?<[a-zA-Z/][^>]*>(?:(?!__)[\s\S])*?)(?<=\S)__(?!_)"""
+    )
+
+    private fun convertBoldSpanningTags(text: String): String {
+        var result = text
+        if (result.contains("**")) {
+            result = result.replace(BOLD_STAR_SPANNING_TAG_REGEX) { "<strong>${it.groupValues[1]}</strong>" }
+        }
+        if (result.contains("__")) {
+            result = result.replace(BOLD_UNDERSCORE_SPANNING_TAG_REGEX) { "<strong>${it.groupValues[1]}</strong>" }
+        }
+        return result
     }
 
     private fun replaceCenterTags(text: String): String =
