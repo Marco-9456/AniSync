@@ -42,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.presentation.components.ConnectedToggleButtonGroup
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
@@ -454,7 +454,7 @@ internal fun ProfileTabsButtonGroup(
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ConnectedToggleButtonGroup(
+    SegmentedTabGroup(
         options = ProfileTab.entries,
         selected = selectedTab,
         onSelect = onTabSelected,

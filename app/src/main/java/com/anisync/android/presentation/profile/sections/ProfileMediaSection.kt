@@ -37,7 +37,7 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.util.bouncyClickable
@@ -86,7 +86,7 @@ fun LazyListScope.profileMediaTab(
             modifier = Modifier.padding(top = 16.dp)
         ) {
             itemsIndexed(statuses) { index, status ->
-                AnimatedTab(
+                SegmentedTabItem(
                     index = index,
                     selectedIndex = selectedIndex,
                     selected = status == selectedStatus,

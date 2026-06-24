@@ -42,6 +42,10 @@ import kotlin.math.abs
 
 /**
  * Animated tab with horizontal stretch effect and neighbor displacement.
+ *
+ * The scrollable-row sibling of [SegmentedTabGroup] in the app's segmented-tab family: a single
+ * animated pill the caller loops inside a `ScrollableTabRow`/`LazyRow`, whereas [SegmentedTabGroup]
+ * renders a whole connected segmented group on its own. Shared naming, not a composition.
  * 
  * Based on PixelPlayer's TabAnimation implementation:
  * - Selected tab stretches horizontally (scaleX 1.0 → 1.15 → 1.0)
@@ -56,7 +60,7 @@ import kotlin.math.abs
  * @param label The text label to display
  */
 @Composable
-fun AnimatedTab(
+fun SegmentedTabItem(
     modifier: Modifier = Modifier,
     index: Int = 0,
     selectedIndex: Int = 0,

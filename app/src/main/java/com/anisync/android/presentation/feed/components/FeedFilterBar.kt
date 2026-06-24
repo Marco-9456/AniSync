@@ -37,7 +37,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.FeedFilter
 import com.anisync.android.domain.FeedMediaType
 import com.anisync.android.domain.FeedScope
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
 private sealed interface FilterRowEntry {
@@ -144,7 +144,7 @@ fun FeedFilterBar(
                 when (entry) {
                     is FilterRowEntry.Filter -> {
                         val idx = FeedFilter.entries.indexOf(entry.value)
-                        AnimatedTab(
+                        SegmentedTabItem(
                             index = idx,
                             selectedIndex = filterIndex,
                             selected = entry.value == filter,
@@ -163,7 +163,7 @@ fun FeedFilterBar(
                     }
                     is FilterRowEntry.Media -> {
                         val idx = FeedMediaType.entries.indexOf(entry.value)
-                        AnimatedTab(
+                        SegmentedTabItem(
                             index = idx,
                             selectedIndex = mediaIndex,
                             selected = entry.value == mediaType,

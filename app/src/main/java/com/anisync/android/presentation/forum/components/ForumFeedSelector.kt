@@ -9,12 +9,12 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.anisync.android.presentation.components.ConnectedToggleButtonGroup
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.forum.ForumFeed
 
 /**
  * Forum feed switcher (Overview / Recent / New / Subscribed / Saved). Thin wrapper over the
- * shared [ConnectedToggleButtonGroup] that maps each [ForumFeed] to its icon and label.
+ * shared [SegmentedTabGroup] that maps each [ForumFeed] to its icon and label.
  */
 @Composable
 fun ForumFeedSelector(
@@ -22,7 +22,7 @@ fun ForumFeedSelector(
     onSelect: (ForumFeed) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ConnectedToggleButtonGroup(
+    SegmentedTabGroup(
         options = ForumFeed.entries,
         selected = selected,
         onSelect = onSelect,

@@ -46,7 +46,7 @@ import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.SocialUser
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
@@ -80,7 +80,7 @@ fun LazyListScope.profileSocialTab(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             itemsIndexed(tabs) { index, tab ->
-                AnimatedTab(
+                SegmentedTabItem(
                     index = index,
                     selectedIndex = selectedIndex,
                     selected = selectedTab == tab,

@@ -82,7 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.ErrorState
@@ -363,7 +363,7 @@ fun ForumScreen(
                     divider = {}
                 ) {
                     categoryTabs.forEachIndexed { index, tab ->
-                        AnimatedTab(
+                        SegmentedTabItem(
                             index = index,
                             selectedIndex = selectedCategoryIndex,
                             selected = selectedCategoryIndex == index,

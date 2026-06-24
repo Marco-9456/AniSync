@@ -20,7 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaCard
@@ -104,13 +104,13 @@ class AccessibilityTests {
         assert(retryClicked) { "Retry button should be clickable" }
     }
 
-    // ==================== AnimatedTab Tests ====================
+    // ==================== SegmentedTabItem Tests ====================
 
     @Test
     fun animatedTab_hasTabRole() {
         composeTestRule.setContent {
             MaterialTheme {
-                AnimatedTab(
+                SegmentedTabItem(
                     index = 0,
                     selectedIndex = 0,
                     selected = true,
@@ -131,7 +131,7 @@ class AccessibilityTests {
     fun animatedTab_selectedState_includesSelectedInDescription() {
         composeTestRule.setContent {
             MaterialTheme {
-                AnimatedTab(
+                SegmentedTabItem(
                     index = 0,
                     selectedIndex = 0,
                     selected = true,
@@ -152,7 +152,7 @@ class AccessibilityTests {
     fun animatedTab_unselectedState_hasLabelOnlyDescription() {
         composeTestRule.setContent {
             MaterialTheme {
-                AnimatedTab(
+                SegmentedTabItem(
                     index = 1,
                     selectedIndex = 0,
                     selected = false,
@@ -174,7 +174,7 @@ class AccessibilityTests {
         composeTestRule.setContent {
             MaterialTheme {
                 Column {
-                    AnimatedTab(
+                    SegmentedTabItem(
                         index = 0,
                         selectedIndex = 0,
                         selected = true,
@@ -182,7 +182,7 @@ class AccessibilityTests {
                         icon = Icons.Default.Home,
                         label = "Home"
                     )
-                    AnimatedTab(
+                    SegmentedTabItem(
                         index = 1,
                         selectedIndex = 0,
                         selected = false,
@@ -372,7 +372,7 @@ class AccessibilityTests {
         composeTestRule.setContent {
             MaterialTheme {
                 Column {
-                    AnimatedTab(
+                    SegmentedTabItem(
                         index = 0,
                         selectedIndex = 0,
                         selected = true,
@@ -404,7 +404,7 @@ class AccessibilityTests {
             
             MaterialTheme {
                 Column {
-                    AnimatedTab(
+                    SegmentedTabItem(
                         index = 0,
                         selectedIndex = selectedIndex,
                         selected = selectedIndex == 0,
@@ -412,7 +412,7 @@ class AccessibilityTests {
                         icon = Icons.Default.Home,
                         label = "Home"
                     )
-                    AnimatedTab(
+                    SegmentedTabItem(
                         index = 1,
                         selectedIndex = selectedIndex,
                         selected = selectedIndex == 1,

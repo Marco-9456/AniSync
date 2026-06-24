@@ -54,7 +54,7 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.CompletedCardConfig
 import com.anisync.android.presentation.components.LibraryMediaCard
 import com.anisync.android.presentation.components.WatchingCardConfig
@@ -191,7 +191,7 @@ private fun ComponentPreviewContent() {
                 items = Statuses,
                 key = { _, (status, _) -> status }
             ) { index, (status, icon) ->
-                AnimatedTab(
+                SegmentedTabItem(
                     index = index,
                     selectedIndex = selectedTabIndex,
                     selected = selectedTabIndex == index,

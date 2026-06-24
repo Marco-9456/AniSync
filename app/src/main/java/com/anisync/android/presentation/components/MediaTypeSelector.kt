@@ -12,7 +12,7 @@ import com.anisync.android.R
 import com.anisync.android.type.MediaType
 
 /**
- * Shared Anime/Manga toggle — a thin wrapper over [ConnectedToggleButtonGroup] using its
+ * Shared Anime/Manga toggle — a thin wrapper over [SegmentedTabGroup] using its
  * equal-width, two-option layout.
  *
  * Follows state hoisting: events go up (onSelect), state comes down (selected).
@@ -27,7 +27,7 @@ fun MediaTypeSelector(
     onSelect: (MediaType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ConnectedToggleButtonGroup(
+    SegmentedTabGroup(
         options = remember { listOf(MediaType.ANIME, MediaType.MANGA) },
         selected = selected,
         onSelect = onSelect,

@@ -26,6 +26,10 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 /**
  * The app's single connected-[ToggleButton] segmented selector.
  *
+ * Sibling of [SegmentedTabItem] in the app's segmented-tab family: this renders the *whole*
+ * connected group itself, while [SegmentedTabItem] is a single animated pill the caller lays out in
+ * a scrollable row. They share the naming, not a parent/child composition — neither uses the other.
+ *
  * One Material 3 Expressive button group, parameterised over an arbitrary option type, so every
  * screen-level switcher (Anime/Manga, forum feeds, profile tabs, …) shares one implementation
  * instead of re-deriving the same Row + shapes + haptics boilerplate. Each screen keeps a thin
@@ -50,7 +54,7 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun <T> ConnectedToggleButtonGroup(
+fun <T> SegmentedTabGroup(
     options: List<T>,
     selected: T,
     onSelect: (T) -> Unit,

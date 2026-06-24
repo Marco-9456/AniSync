@@ -103,7 +103,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.CompletedCardConfig
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
@@ -471,7 +471,7 @@ fun LibraryScreen(
                                         is LibraryTab.Custom -> Icons.AutoMirrored.Filled.List
                                     }
 
-                                    AnimatedTab(
+                                    SegmentedTabItem(
                                         index = index,
                                         selectedIndex = pagerState.currentPage,
                                         selected = pagerState.currentPage == index,

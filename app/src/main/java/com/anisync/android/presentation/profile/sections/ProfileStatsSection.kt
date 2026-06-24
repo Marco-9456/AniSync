@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.statistics.ActivityHeatmapSection
@@ -81,7 +81,7 @@ fun LazyListScope.profileStatsTab(
                     ProfileStatsType.ANIME -> Icons.Default.Tv
                     ProfileStatsType.MANGA -> Icons.AutoMirrored.Filled.MenuBook
                 }
-                AnimatedTab(
+                SegmentedTabItem(
                     index = index,
                     selectedIndex = selectedIndex,
                     selected = selectedType == type,

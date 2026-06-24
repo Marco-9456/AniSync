@@ -45,7 +45,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.presentation.components.AnimatedTab
+import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
@@ -81,7 +81,7 @@ fun LazyListScope.profileFavoritesTab(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 itemsIndexed(filters) { index, filter ->
-                    AnimatedTab(
+                    SegmentedTabItem(
                         index = index,
                         selectedIndex = selectedIndex,
                         selected = selectedFilter == filter,
