@@ -217,6 +217,14 @@
     <string name="chapters_suffix">Chs</string>
     <string name="minutes_suffix">mins</string>
 
+    <!-- Media details: expandable "array" info pills (Titles / Synonyms / Producers) and their sheets -->
+    <string name="details_label_titles">Titles</string>
+    <string name="details_label_romaji">Romaji</string>
+    <string name="details_label_english">English</string>
+    <string name="details_label_native">Native</string>
+    <string name="details_label_synonyms">Synonyms</string>
+    <string name="details_label_producers">Producers</string>
+
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>
     <string name="stat_time_watched">Time Watched</string>

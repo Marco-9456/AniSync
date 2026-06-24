@@ -225,6 +225,23 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
+            // AniList returns animation studios (isMain) and producers/distributors
+            // (non-main) in one studio connection; split them here.
+            val studioEdges = media.studios?.edges?.filterNotNull().orEmpty()
+            val mainStudios = studioEdges
+                .filter { it.isMain }
+                .mapNotNull { edge -> edge.node?.let { com.anisync.android.domain.StudioRef(it.id, it.name) } }
+            val producers = studioEdges
+                .filter { !it.isMain }
+                .mapNotNull { edge -> edge.node?.let { com.anisync.android.domain.StudioRef(it.id, it.name) } }
+            val synonyms = media.synonyms?.filterNotNull().orEmpty()
+            // AniList stores hashtags as a single space-separated string (e.g. "#rezero #リゼロ").
+            val hashtags = media.hashtag
+                ?.split(" ")
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                .orEmpty()
+
             val details = MediaDetails(
                 id = media.id ?: 0,
                 titleRomaji = titleRomaji,
@@ -237,6 +254,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 bannerUrl = media.bannerImage,
                 description = media.description?.stripHtml() ?: "",
                 score = media.averageScore,
+                meanScore = media.meanScore,
                 popularity = media.popularity,
                 favourites = media.favourites,
                 episodes = media.episodes,
@@ -253,10 +271,12 @@ class DetailsRepositoryImpl @Inject constructor(
                 status = media.status?.name ?: "UNKNOWN",
                 format = media.format?.name,
                 genres = media.genres?.filterNotNull() ?: emptyList(),
+                synonyms = synonyms,
+                hashtags = hashtags,
                 source = media.source?.name,
-                studio = media.studios?.nodes?.firstOrNull()?.let { node ->
-                    com.anisync.android.domain.StudioRef(id = node.id, name = node.name)
-                },
+                studio = mainStudios.firstOrNull(),
+                studios = mainStudios,
+                producers = producers,
                 year = media.startDate?.year,
                 startDate = formattedDate,
                 endDate = formattedEndDate,

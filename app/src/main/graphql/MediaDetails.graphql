@@ -15,7 +15,10 @@ query GetMediaDetails($id: Int) {
         }
         bannerImage
         description(asHtml: true)
+        synonyms
+        hashtag
         averageScore
+        meanScore
         popularity
         favourites
         episodes
@@ -32,10 +35,13 @@ query GetMediaDetails($id: Int) {
         format
         source
         genres
-        studios(isMain: true) {
-            nodes {
-                id
-                name
+        studios(sort: [FAVOURITES_DESC]) {
+            edges {
+                isMain
+                node {
+                    id
+                    name
+                }
             }
         }
         season

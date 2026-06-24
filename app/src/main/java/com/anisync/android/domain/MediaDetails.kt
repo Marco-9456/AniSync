@@ -63,6 +63,7 @@ data class MediaDetails(
     val bannerUrl: String?,
     val description: String,
     val score: Int?,
+    val meanScore: Int? = null,
     val popularity: Int? = null,
     val favourites: Int? = null,
     val episodes: Int?,
@@ -73,8 +74,14 @@ data class MediaDetails(
     val status: String,
     val format: String?,
     val genres: List<String>,
+    val synonyms: List<String> = emptyList(),
+    val hashtags: List<String> = emptyList(),
     val source: String?,
     val studio: StudioRef?,
+    /** Main animation studios (isMain = true on the AniList studio edge). */
+    val studios: List<StudioRef> = emptyList(),
+    /** Non-main studios — producers, distributors, etc. (isMain = false). */
+    val producers: List<StudioRef> = emptyList(),
     val year: Int?,
     val startDate: String?,
     val endDate: String?,

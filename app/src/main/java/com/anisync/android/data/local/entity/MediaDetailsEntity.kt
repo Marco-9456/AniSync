@@ -9,6 +9,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
+import com.anisync.android.domain.StudioRef
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
 import com.anisync.android.type.MediaType
@@ -36,6 +37,8 @@ data class MediaDetailsEntity(
     val description: String,
     val score: Int?,
     @ColumnInfo(defaultValue = "NULL")
+    val meanScore: Int? = null,
+    @ColumnInfo(defaultValue = "NULL")
     val popularity: Int? = null,
     @ColumnInfo(defaultValue = "NULL")
     val favourites: Int? = null,
@@ -50,10 +53,18 @@ data class MediaDetailsEntity(
     val status: String,
     val format: String?,
     val genres: List<String>,
+    @ColumnInfo(defaultValue = "[]")
+    val synonyms: List<String> = emptyList(),
+    @ColumnInfo(defaultValue = "[]")
+    val hashtags: List<String> = emptyList(),
     val source: String?,
     val studio: String?,
     @ColumnInfo(defaultValue = "NULL")
     val studioId: Int? = null,
+    @ColumnInfo(defaultValue = "[]")
+    val studios: List<StudioRef> = emptyList(),
+    @ColumnInfo(defaultValue = "[]")
+    val producers: List<StudioRef> = emptyList(),
     val year: Int?,
     val startDate: String?,
     val endDate: String?,

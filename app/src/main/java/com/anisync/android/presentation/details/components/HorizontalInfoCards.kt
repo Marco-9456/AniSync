@@ -1,9 +1,13 @@
 package com.anisync.android.presentation.details.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,24 +15,33 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.HourglassBottom
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.StudioRef
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 
@@ -60,9 +74,15 @@ fun HorizontalInfoCards(
     modifier: Modifier = Modifier,
     onStudioClick: (Int) -> Unit = {}
 ) {
-    val infoItems = buildInfoItems(details, onStudioClick)
+    var activeSheet by remember { mutableStateOf<InfoSheetKind?>(null) }
 
-    if (infoItems.isEmpty()) return
+    // Scalar facts (Status, Episodes, ...) followed by tappable "expand" pills (Titles,
+    // Synonyms, Producers) whose array contents open in a bottom sheet.
+    val infoItems = buildInfoItems(details, onStudioClick)
+    val expandableItems = buildExpandableInfoItems(details) { activeSheet = it }
+    val allItems = infoItems + expandableItems
+
+    if (allItems.isEmpty()) return
 
     Column(modifier = modifier) {
         SectionHeader(
@@ -72,22 +92,45 @@ fun HorizontalInfoCards(
 
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(infoItems, key = { it.label }) { item ->
-                InfoPill(
-                    icon = item.icon,
-                    iconResId = item.iconResId,
-                    label = item.label,
-                    value = item.value,
-                    iconTint = item.iconTint,
-                    isStatus = item.isStatus,
-                    onClick = item.onClick
-                )
+        // Pills wrap across up to three stacked rows.
+        val perRow = (allItems.size + 2) / 3
+        allItems.chunked(perRow).forEachIndexed { index, rowItems ->
+            if (index > 0) {
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
             }
+            InfoPillsRow(rowItems = rowItems)
+        }
+    }
+
+    activeSheet?.let { kind ->
+        InfoExpandSheet(
+            kind = kind,
+            details = details,
+            onStudioClick = onStudioClick,
+            onDismiss = { activeSheet = null }
+        )
+    }
+}
+
+@Composable
+private fun InfoPillsRow(rowItems: List<InfoItem>) {
+    if (rowItems.isEmpty()) return
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        items(rowItems, key = { it.label }) { item ->
+            InfoPill(
+                icon = item.icon,
+                iconResId = item.iconResId,
+                label = item.label,
+                value = item.value,
+                iconTint = item.iconTint,
+                isStatus = item.isStatus,
+                showChevron = item.showChevron,
+                onClick = item.onClick
+            )
         }
     }
 }
@@ -99,6 +142,7 @@ private data class InfoItem(
     val value: String,
     val iconTint: Color,
     val isStatus: Boolean = false,
+    val showChevron: Boolean = false,
     val onClick: (() -> Unit)? = null
 )
 
@@ -266,6 +310,7 @@ private fun InfoPill(
     value: String,
     iconTint: Color,
     isStatus: Boolean = false,
+    showChevron: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
     val cardModifier = Modifier.height(56.dp) // Slightly taller for better touch target
@@ -280,7 +325,7 @@ private fun InfoPill(
             shape = cardShape,
             colors = cardColors
         ) {
-            InfoPillContent(icon, iconResId, label, value, iconTint)
+            InfoPillContent(icon, iconResId, label, value, iconTint, showChevron)
         }
         return
     }
@@ -289,7 +334,7 @@ private fun InfoPill(
         shape = cardShape,
         colors = cardColors
     ) {
-        InfoPillContent(icon, iconResId, label, value, iconTint)
+        InfoPillContent(icon, iconResId, label, value, iconTint, showChevron)
     }
 }
 
@@ -299,7 +344,8 @@ private fun InfoPillContent(
     iconResId: Int?,
     label: String,
     value: String,
-    iconTint: Color
+    iconTint: Color,
+    showChevron: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -334,22 +380,38 @@ private fun InfoPillContent(
             }
         }
 
-        Column(
-            verticalArrangement = Arrangement.Center
-        ) {
+        if (showChevron) {
+            // Single-line "expand" pill: bold label (+ optional count) and a trailing chevron.
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
+                text = if (value.isBlank()) label else "$label · $value",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+        } else {
+            Column(
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
@@ -397,5 +459,170 @@ private fun getSourceDisplayName(source: String): String {
         "PICTURE_BOOK" -> stringResource(R.string.source_picture_book)
         else -> source.replace("_", " ").lowercase()
             .replaceFirstChar { it.uppercase() }
+    }
+}
+
+// --- Expandable "array" pills (Titles / Synonyms / Producers) ---------------------------------
+
+private enum class InfoSheetKind { TITLES, SYNONYMS, PRODUCERS }
+
+/**
+ * Builds the tappable "expand" pills that trail the scalar info pills. Each opens a bottom
+ * sheet ([onOpen]) holding data that doesn't fit a one-line pill: the alternative titles,
+ * the synonym list, and the producer studios. Only pills with data are emitted.
+ */
+@Composable
+private fun buildExpandableInfoItems(
+    details: MediaDetails,
+    onOpen: (InfoSheetKind) -> Unit
+): List<InfoItem> {
+    val items = mutableListOf<InfoItem>()
+
+    val hasTitles = listOfNotNull(
+        details.titleRomaji, details.titleEnglish, details.titleNative
+    ).isNotEmpty()
+    if (hasTitles) {
+        items.add(
+            InfoItem(
+                icon = Icons.Default.Translate,
+                label = stringResource(R.string.details_label_titles),
+                value = "",
+                iconTint = MaterialTheme.colorScheme.primary,
+                showChevron = true,
+                onClick = { onOpen(InfoSheetKind.TITLES) }
+            )
+        )
+    }
+    if (details.synonyms.isNotEmpty()) {
+        items.add(
+            InfoItem(
+                icon = Icons.Default.Label,
+                label = stringResource(R.string.details_label_synonyms),
+                value = details.synonyms.size.toString(),
+                iconTint = MaterialTheme.colorScheme.secondary,
+                showChevron = true,
+                onClick = { onOpen(InfoSheetKind.SYNONYMS) }
+            )
+        )
+    }
+    if (details.producers.isNotEmpty()) {
+        items.add(
+            InfoItem(
+                icon = Icons.Default.Factory,
+                label = stringResource(R.string.details_label_producers),
+                value = details.producers.size.toString(),
+                iconTint = Color(0xFFFF9800), // Orange, matching the Studio pill
+                showChevron = true,
+                onClick = { onOpen(InfoSheetKind.PRODUCERS) }
+            )
+        )
+    }
+    return items
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun InfoExpandSheet(
+    kind: InfoSheetKind,
+    details: MediaDetails,
+    onStudioClick: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                .padding(bottom = 32.dp)
+        ) {
+            val title = when (kind) {
+                InfoSheetKind.TITLES -> stringResource(R.string.details_label_titles)
+                InfoSheetKind.SYNONYMS -> stringResource(R.string.details_label_synonyms)
+                InfoSheetKind.PRODUCERS -> stringResource(R.string.details_label_producers)
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+
+            when (kind) {
+                InfoSheetKind.TITLES -> {
+                    SheetLabelValueRow(stringResource(R.string.details_label_romaji), details.titleRomaji)
+                    SheetLabelValueRow(stringResource(R.string.details_label_english), details.titleEnglish)
+                    SheetLabelValueRow(stringResource(R.string.details_label_native), details.titleNative)
+                }
+                InfoSheetKind.SYNONYMS -> {
+                    details.synonyms.forEachIndexed { index, synonym ->
+                        if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = synonym,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                InfoSheetKind.PRODUCERS -> {
+                    ProducerChips(details.producers, onStudioClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetLabelValueRow(label: String, value: String?) {
+    if (value.isNullOrBlank()) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(96.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ProducerChips(producers: List<StudioRef>, onStudioClick: (Int) -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        producers.forEach { studio ->
+            Surface(
+                modifier = Modifier.height(32.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clickable { onStudioClick(studio.id) }
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = studio.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
     }
 }
