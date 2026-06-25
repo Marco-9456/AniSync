@@ -302,7 +302,10 @@ fun EditLibraryEntrySheet(
                                 status = status,
                                 progress = progress,
                                 score = score.takeIf { it > 0 },
-                                notes = notes.takeIf { it.isNotBlank() },
+                                // Send the raw text (empty string included) so clearing a note
+                                // reaches AniList as notes:"" — which clears it. Collapsing to null
+                                // here makes the repo send Optional.absent(), so the old note stays.
+                                notes = notes,
                                 startedAt = startedAt,
                                 completedAt = completedAt,
                                 rewatches = rewatches,
