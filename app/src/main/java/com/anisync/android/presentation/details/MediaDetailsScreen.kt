@@ -148,6 +148,7 @@ import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.FollowingItem
 import com.anisync.android.presentation.details.components.FollowingListSheet
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
+import com.anisync.android.presentation.details.components.UserNotesCard
 import com.anisync.android.presentation.details.components.RecommendMediaSheet
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
@@ -620,6 +621,7 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
+                                onEditNotes = viewModel::openEditSheet,
                                 discussions = discussions,
                                 onDiscussionClick = { threadId, threadTitle ->
                                     shouldKeepChromeOverlayForReturn = true
@@ -874,6 +876,7 @@ fun DetailsPageContent(
     onRelatedSeeAllClick: () -> Unit,
     onRecommendationsSeeAllClick: () -> Unit,
     onWriteReviewClick: () -> Unit,
+    onEditNotes: () -> Unit,
     discussions: List<ForumThread>,
     onDiscussionClick: (Int, String) -> Unit,
     onViewAllDiscussions: () -> Unit,
@@ -1019,6 +1022,21 @@ fun DetailsPageContent(
 
             when (selectedTab) {
                 DetailsTab.OVERVIEW -> {
+                    // Your notes — surfaced read-first so the viewer can re-read their own note
+                    // without opening the edit sheet (#75). Only shown when a note exists.
+                    val viewerNotes = details.listNotes
+                    if (!viewerNotes.isNullOrBlank()) {
+                        item(key = "user_notes") {
+                            Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                                UserNotesCard(
+                                    notes = viewerNotes,
+                                    onEditClick = onEditNotes
+                                )
+                            }
+                        }
+                    }
+
                     // Information (Info Cards)
                     item(key = "info_cards") {
                         Column {

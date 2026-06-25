@@ -644,6 +644,16 @@
     <string name="times_reread">Times Reread</string>
     <string name="notes">Notes</string>
     <string name="notes_placeholder">Add your notes here…</string>
+    <string name="your_notes">Your notes</string>
+    <string name="a11y_edit_notes">Edit notes</string>
+    <string name="a11y_has_notes">Has notes</string>
+    <!-- Notes journal -->
+    <string name="notes_journal_title">Notes</string>
+    <string name="a11y_open_notes_journal">Open notes</string>
+    <string name="notes_journal_search_hint">Search notes</string>
+    <string name="notes_journal_empty_title">No notes yet</string>
+    <string name="notes_journal_empty_subtitle">Notes you add to entries in your library show up here.</string>
+    <string name="notes_journal_no_results">No notes match your search.</string>
     <string name="save">Save</string>
     <string name="delete_entry_confirm">Remove this entry from your library?</string>
     <string name="entry_saved">Entry saved</string>

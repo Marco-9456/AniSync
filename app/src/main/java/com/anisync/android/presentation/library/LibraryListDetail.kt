@@ -20,6 +20,7 @@ fun LibraryListDetail(
     navController: NavHostController,
     onMediaClickFullScreen: (Int) -> Unit,
     onNavigateToCalendar: () -> Unit,
+    onNavigateToNotes: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -27,6 +28,7 @@ fun LibraryListDetail(
         LibraryScreen(
             onMediaClick = onMediaClickFullScreen,
             onNavigateToCalendar = onNavigateToCalendar,
+            onNavigateToNotes = onNavigateToNotes,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
@@ -38,6 +40,7 @@ fun LibraryListDetail(
         LibraryScreen(
             onMediaClick = onMediaClick,
             onNavigateToCalendar = onNavigateToCalendar,
+            onNavigateToNotes = onNavigateToNotes,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )

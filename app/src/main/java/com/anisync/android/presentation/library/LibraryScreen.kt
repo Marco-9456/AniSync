@@ -45,6 +45,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
@@ -162,6 +164,7 @@ sealed class LibraryTab {
 fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
     onNavigateToCalendar: () -> Unit,
+    onNavigateToNotes: () -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope
@@ -324,7 +327,8 @@ fun LibraryScreen(
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 showSortMenu = true
             },
-            onNavigateToCalendar = onNavigateToCalendar
+            onNavigateToCalendar = onNavigateToCalendar,
+            onNavigateToNotes = onNavigateToNotes
         )
     }
     val isLibraryEnteringFromBackStack by remember {
@@ -853,7 +857,8 @@ private fun LibrarySearchBarInputField(
     onClearClick: () -> Unit,
     onToggleView: () -> Unit,
     onToggleSort: () -> Unit,
-    onNavigateToCalendar: () -> Unit
+    onNavigateToCalendar: () -> Unit,
+    onNavigateToNotes: () -> Unit
 ) {
     SearchBarDefaults.InputField(
         enabled = !showListManagement,
@@ -895,6 +900,13 @@ private fun LibrarySearchBarInputField(
                         Icon(
                             imageVector = Icons.Default.CalendarMonth,
                             contentDescription = stringResource(R.string.calendar_open)
+                        )
+                    }
+
+                    IconButton(onClick = onNavigateToNotes) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_note_stack_24px),
+                            contentDescription = stringResource(R.string.a11y_open_notes_journal)
                         )
                     }
 

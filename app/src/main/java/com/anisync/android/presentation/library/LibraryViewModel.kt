@@ -278,7 +278,15 @@ class LibraryViewModel @Inject constructor(
                     } else {
                         val lowerQuery = query.lowercase()
                         ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
-                            for (s in visibilityFiltered) if (s.sortTitle.contains(lowerQuery)) out.add(s.entry)
+                            // Match title or the entry's note text, so search also finds a title by
+                            // something the user wrote about it (#75).
+                            for (s in visibilityFiltered) {
+                                if (s.sortTitle.contains(lowerQuery) ||
+                                    s.entry.notes?.lowercase()?.contains(lowerQuery) == true
+                                ) {
+                                    out.add(s.entry)
+                                }
+                            }
                         }
                     }
 

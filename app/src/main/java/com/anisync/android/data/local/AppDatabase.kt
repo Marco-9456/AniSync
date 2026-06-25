@@ -94,7 +94,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -113,7 +113,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 16, to = 17),
         androidx.room.AutoMigration(from = 17, to = 18),
         androidx.room.AutoMigration(from = 18, to = 19),
-        androidx.room.AutoMigration(from = 19, to = 20)
+        androidx.room.AutoMigration(from = 19, to = 20),
+        androidx.room.AutoMigration(from = 20, to = 21)
     ]
 )
 @TypeConverters(Converters::class)

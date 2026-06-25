@@ -94,6 +94,8 @@ data class MediaDetails(
     val listEntryId: Int?,
     val listStatus: LibraryStatus?,
     val listProgress: Int?,
+    /** The viewer's private freeform note on this entry (null/blank if none). */
+    val listNotes: String? = null,
     val listEntryPrivate: Boolean? = null,
     val listEntryHiddenFromStatusLists: Boolean? = null,
     // Characters

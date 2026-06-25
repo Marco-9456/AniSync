@@ -25,6 +25,7 @@ import androidx.navigation.toRoute
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
+import com.anisync.android.presentation.notes.NotesJournalScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaCharactersGridScreen
@@ -296,6 +297,7 @@ fun AniSyncNavHost(
                     navController = navController,
                     onMediaClickFullScreen = onLibraryMediaClick,
                     onNavigateToCalendar = { navController.navigate(Calendar) },
+                    onNavigateToNotes = { navController.navigate(Notes) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -1113,6 +1115,23 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "calendar"))
+                    }
+                )
+            }
+
+            // =================================================================
+            // NOTES JOURNAL - Shared Axis Z (Depth)
+            // =================================================================
+            composable<Notes>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                NotesJournalScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { mediaId ->
+                        navController.navigate(MediaDetails(mediaId, "notes"))
                     }
                 )
             }

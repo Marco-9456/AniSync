@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
@@ -198,6 +200,26 @@ fun LibraryListCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // "Has notes" indicator — lets you spot annotated entries while scanning the list
+                // without opening anything (#75). Read the note itself on the detail page or in the
+                // Notes journal.
+                if (!entry.notes.isNullOrBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(bottomEnd = 8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_note_stack_24px),
+                            contentDescription = stringResource(R.string.a11y_has_notes),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .size(14.dp)
+                        )
+                    }
+                }
             }
 
             // Right Side: Content

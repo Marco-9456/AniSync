@@ -73,6 +73,7 @@ query GetMediaDetails($id: Int) {
             status
             progress
             score
+            notes
             private
             hiddenFromStatusLists
         }

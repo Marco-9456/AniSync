@@ -23,6 +23,13 @@ object Discover
 @Serializable
 object Calendar
 
+/**
+ * Notes journal — every library entry the viewer has written a note on, searchable. Reached from the
+ * Library top bar. Surfaces notes that were otherwise only visible inside the edit sheet.
+ */
+@Serializable
+object Notes
+
 @Serializable
 object Feed
 
