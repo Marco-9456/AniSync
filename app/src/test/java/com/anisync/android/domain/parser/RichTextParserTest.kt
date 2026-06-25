@@ -726,6 +726,28 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `anilist-mangled bold around a mention renders clean bold with the link`() = runBlocking {
+        // AniList activity 1100319902 (Full11): asHtml mangled `__…@Devoxita…__` into broken HTML —
+        // `_<strong>_X__</strong>`, a stray underscore before the content and the closing markers
+        // landing literally inside the tag. Must render as one clean bold run keeping the mention.
+        val html =
+            "<p>_<strong>_I went shopping with " +
+                "<a target='_blank' href='https://anilist.co/user/Devoxita'>@Devoxita</a> " +
+                "and finally completed the collection (still missing volume 1)__</strong></p>"
+        val parsed = RichTextParser.parse(html)
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+            .first { it.debugInlineText().contains("went shopping") }
+
+        assertEquals(
+            "I went shopping with @Devoxita and finally completed the collection (still missing volume 1)",
+            text.debugInlineText()
+        )
+        assertTrue(text.hasBold())
+        assertTrue(text.hasLink("https://anilist.co/user/Devoxita"))
+        assertFalse(text.debugInlineText().contains("_"))
+    }
+
+    @Test
     fun `whole post wrapped in pre-code with a single image is recovered`() = runBlocking {
         // AniList activity 1088995401: asHtml dumped the entire post into <pre><code>. It carries
         // only ONE escaped <img> tag, so the >=3-tag heuristic skipped recovery and it rendered as

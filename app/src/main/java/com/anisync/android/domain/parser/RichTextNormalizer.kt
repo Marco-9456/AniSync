@@ -20,6 +20,13 @@ internal object RichTextNormalizer {
     private val ANY_HTML_TAG_REGEX = Regex("""<[^>]+>""")
     private val PRE_BLOCK_REGEX =
         Regex("""<pre\b[^>]*>.*?</pre>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+    // AniList's asHtml sometimes mangles `__bold__` into broken HTML when the run wraps an
+    // auto-linked @mention: `__X__` comes back as `_<strong>_X__</strong>` — a stray underscore
+    // leaks before the content and the closing markers land literally inside the tag. The signature
+    // is the `_<strong>_` opener with stray `_`(s) before `</strong>`; rebuild it as a clean
+    // <strong> so the bold renders without leftover underscores.
+    private val MANGLED_BOLD_REGEX =
+        Regex("""_<strong>_(.*?)_+</strong>""", RegexOption.DOT_MATCHES_ALL)
 
     fun normalize(html: String): String {
         if (html.isEmpty()) return html
@@ -34,6 +41,7 @@ internal object RichTextNormalizer {
         processed = masked.text
         processed = convertMixedMarkdownLinksToHtml(processed)
         processed = fixMangledMarkdownLinks(processed)
+        processed = fixMangledBold(processed)
         processed = decodeAniListEscapedParenthesis(processed)
         processed = convertLinkedImages(processed)
         processed = unwrapEmptyAnchors(processed)
@@ -198,6 +206,11 @@ internal object RichTextNormalizer {
             i++
         }
         return -1
+    }
+
+    private fun fixMangledBold(text: String): String {
+        if (!text.contains("_<strong>")) return text
+        return text.replace(MANGLED_BOLD_REGEX) { "<strong>${it.groupValues[1]}</strong>" }
     }
 
     /**
