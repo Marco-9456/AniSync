@@ -42,6 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,6 +60,7 @@ import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
 import com.anisync.android.presentation.settings.UpdateDialog
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalStatusBarColor
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalGridColumnCount
 import com.anisync.android.presentation.util.LocalGridColumnsAuto
@@ -256,6 +259,11 @@ class MainActivity : AppCompatActivity() {
                             modifier = Modifier.fillMaxSize(),
                             color = MaterialTheme.colorScheme.background
                         ) {
+                          // Holder for the status-bar protection color: the active layer (MainScreen)
+                          // publishes a tone, the protection Spacer below reads it. The Spacer is a
+                          // sibling of the content, so a CompositionLocal bridges the two subtrees.
+                          val statusBarColor = remember { mutableStateOf(Color.Unspecified) }
+                          CompositionLocalProvider(LocalStatusBarColor provides statusBarColor) {
                           Box(modifier = Modifier.fillMaxSize()) {
                           // Keep all content out from under the system status bar: pad it down by the
                           // status-bar inset (which also CONSUMES it, so child screens don't re-apply
@@ -348,8 +356,13 @@ class MainActivity : AppCompatActivity() {
                                     .align(Alignment.TopCenter)
                                     .fillMaxWidth()
                                     .windowInsetsTopHeight(WindowInsets.statusBars)
-                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .background(
+                                        statusBarColor.value.takeOrElse {
+                                            MaterialTheme.colorScheme.surfaceContainer
+                                        }
+                                    )
                             )
+                          }
                           }
                         }
                     }

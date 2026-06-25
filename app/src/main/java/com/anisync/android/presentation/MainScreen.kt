@@ -57,6 +57,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -92,6 +93,7 @@ import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.LocalStatusBarColor
 import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.MainNavBarSuppressor
@@ -228,6 +230,29 @@ fun MainScreen(
     // as the rail may result in a compact height." Rail destinations must stay fixed/visible (no
     // scroll), so a too-short window must fall back to the bar rather than clip items off-screen.
     val adaptive = LocalAdaptiveInfo.current
+
+    // Drive the global status-bar protection scrim (painted in MainActivity). The tab roots whose
+    // top edge is the plain page background (Library/Discover/Feed/Forum) get a background-colored
+    // strip so the status bar blends into the page; everything else keeps the default
+    // surfaceContainer tone (matches top app bars). Only on the bottom-bar layouts — the rail layout
+    // keeps surfaceContainer so the single full-width strip matches the rail frame.
+    val statusBarColorHolder = LocalStatusBarColor.current
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val usesBottomBar = adaptive.isCompact || adaptive.isCompactHeight
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val isBackgroundRoot by remember(usesBottomBar) {
+        derivedStateOf {
+            if (!usesBottomBar) return@derivedStateOf false
+            val dest = currentBackStackEntry?.destination
+            dest?.hasRoute<Library>() == true ||
+                dest?.hasRoute<Discover>() == true ||
+                dest?.hasRoute<Feed>() == true ||
+                dest?.hasRoute<Forum>() == true
+        }
+    }
+    LaunchedEffect(isBackgroundRoot, backgroundColor) {
+        statusBarColorHolder.value = if (isBackgroundRoot) backgroundColor else Color.Unspecified
+    }
 
     ProvideToastManager(toastManager = viewModel.toastManager) {
         CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
