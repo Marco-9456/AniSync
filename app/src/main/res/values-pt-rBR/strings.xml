@@ -1069,4 +1069,13 @@
     <string name="details_label_native">Nativo</string>
     <string name="details_label_synonyms">Sinônimos</string>
     <string name="details_label_producers">Produtores</string>
+    <string name="your_notes">Suas notas</string>
+    <string name="a11y_edit_notes">Editar notas</string>
+    <string name="a11y_has_notes">Possui notas</string>
+    <string name="notes_journal_title">Notas</string>
+    <string name="a11y_open_notes_journal">Abrir notas</string>
+    <string name="notes_journal_search_hint">Procurar notas</string>
+    <string name="notes_journal_empty_title">Sem notas ainda</string>
+    <string name="notes_journal_empty_subtitle">Notas que você adicionar aos itens da sua biblioteca aparecerão aqui.</string>
+    <string name="notes_journal_no_results">Nenhuma nota corresponde à sua pesquisa.</string>
 </resources>
