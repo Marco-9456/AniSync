@@ -50,6 +50,14 @@ interface LibraryDao {
     suspend fun getEntry(ownerId: Int, mediaId: Int): LibraryEntryEntity?
 
     /**
+     * Observe a single entry by mediaId for a specific account. Emits whenever that row changes —
+     * used by the details screen to reflect the viewer's note straight from the library (the
+     * source of truth) instead of the separately-cached media_details row, which can lag.
+     */
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaId = :mediaId LIMIT 1")
+    fun observeEntry(ownerId: Int, mediaId: Int): Flow<LibraryEntryEntity?>
+
+    /**
      * Insert or replace entries. The entities carry their own [LibraryEntryEntity.ownerId].
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

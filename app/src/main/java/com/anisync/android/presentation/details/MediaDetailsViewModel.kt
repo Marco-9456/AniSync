@@ -20,12 +20,15 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -89,17 +92,29 @@ class MediaDetailsViewModel @Inject constructor(
     }
 
     /**
-     * Observe media details from local cache via Flow.
+     * Observe media details from local cache, with the viewer's note overlaid from their library
+     * entry. The library row is the source of truth for notes (it's what the editor writes and what
+     * sync keeps fresh), whereas the separately-cached media_details row can predate the note or lag
+     * an edit — so reading the note from there would leave it blank until a manual refresh. Pulling it
+     * from the library makes it appear immediately and update the instant it's edited.
      */
-    val uiState: StateFlow<DetailsUiState> = getMediaDetailsUseCase(mediaId)
-        .map<MediaDetails?, DetailsUiState> { details ->
-            if (details != null) {
-                DetailsUiState.Success(details)
-            } else {
-                // No cached data yet, still loading
-                DetailsUiState.Loading
-            }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState: StateFlow<DetailsUiState> = combine(
+        getMediaDetailsUseCase(mediaId),
+        accountStore.activeAccount.flatMapLatest { account ->
+            libraryDao.observeEntry(account?.id ?: -1, mediaId)
         }
+    ) { details, libraryEntry ->
+        when {
+            details == null -> DetailsUiState.Loading // No cached data yet, still loading
+            // In the library → the library note is authoritative (blank/null means no note). Only
+            // fall back to the media_details copy when the entry isn't cached for this account.
+            libraryEntry != null -> DetailsUiState.Success(
+                details.copy(listNotes = libraryEntry.notes?.takeIf { it.isNotBlank() })
+            )
+            else -> DetailsUiState.Success(details)
+        }
+    }
         .onStart { emit(DetailsUiState.Loading) }
         .catch { e -> emit(DetailsUiState.Error(e.message ?: "Unknown error")) }
         .stateIn(
