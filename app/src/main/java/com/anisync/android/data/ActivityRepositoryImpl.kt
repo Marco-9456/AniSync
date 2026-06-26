@@ -262,6 +262,7 @@ class ActivityRepositoryImpl @Inject constructor(
 
     private fun GetActivityQuery.Activity.toDomain(): ActivityDetail? {
         onListActivity?.let { l ->
+            if (l.user?.isBlocked == true) return null
             val mediaTitle = l.media?.title?.userPreferred ?: "media"
             val mediaUrl = l.media?.siteUrl
             val statusText = (l.status ?: "Updated").trim()
@@ -289,7 +290,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 recipientId = null,
                 recipientName = null,
                 recipientAvatarUrl = null,
-                replies = l.replies?.filterNotNull()?.map { r ->
+                replies = l.replies?.filterNotNull()?.filterNot { it.user?.isBlocked == true }?.map { r ->
                     ActivityReply(
                         id = r.id,
                         body = r.text.orEmpty(),
@@ -305,6 +306,7 @@ class ActivityRepositoryImpl @Inject constructor(
             )
         }
         onTextActivity?.let { t ->
+            if (t.user?.isBlocked == true) return null
             return ActivityDetail(
                 id = t.id,
                 body = t.text.orEmpty(),
@@ -323,7 +325,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 recipientId = null,
                 recipientName = null,
                 recipientAvatarUrl = null,
-                replies = t.replies?.filterNotNull()?.map { r ->
+                replies = t.replies?.filterNotNull()?.filterNot { it.user?.isBlocked == true }?.map { r ->
                     ActivityReply(
                         id = r.id,
                         body = r.text.orEmpty(),
@@ -339,6 +341,7 @@ class ActivityRepositoryImpl @Inject constructor(
             )
         }
         onMessageActivity?.let { m ->
+            if (m.messenger?.isBlocked == true || m.recipient?.isBlocked == true) return null
             return ActivityDetail(
                 id = m.id,
                 body = m.message.orEmpty(),
@@ -357,7 +360,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 recipientName = m.recipient?.name,
                 recipientAvatarUrl = m.recipient?.avatar?.large,
                 isAuthorMod = !m.messenger?.moderatorRoles.isNullOrEmpty(),
-                replies = m.replies?.filterNotNull()?.map { r ->
+                replies = m.replies?.filterNotNull()?.filterNot { it.user?.isBlocked == true }?.map { r ->
                     ActivityReply(
                         id = r.id,
                         body = r.text.orEmpty(),

@@ -17,6 +17,7 @@ query GetForumThread($id: Int!) {
         siteUrl
         user {
             id
+            isBlocked
             name
             avatar {
                 large
@@ -63,6 +64,7 @@ query GetForumComments(
             childComments
             user {
                 id
+                isBlocked
                 name
                 avatar {
                     large

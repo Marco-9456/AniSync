@@ -37,6 +37,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -51,6 +52,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -92,6 +94,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -133,6 +136,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -174,6 +178,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -215,6 +220,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -256,6 +262,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -273,6 +280,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -294,6 +302,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -315,6 +324,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -336,6 +346,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large
@@ -353,6 +364,7 @@ query GetNotifications(
         createdAt
         user {
           id
+          isBlocked
           name
           avatar {
             large

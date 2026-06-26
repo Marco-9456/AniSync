@@ -65,6 +65,14 @@ class FeedRepositoryImpl @Inject constructor(
         val pageData = response.data?.Page
         val items = pageData?.activities
             ?.filterNotNull()
+            // Hide activity from users the viewer has blocked on AniList (issue #76). isBlocked is
+            // selected inline on the feed query (not the shared ActivityFields fragment) — see Feed.graphql.
+            ?.filterNot { activity ->
+                activity.onListActivity?.user?.isBlocked == true ||
+                    activity.onTextActivity?.user?.isBlocked == true ||
+                    activity.onMessageActivity?.messenger?.isBlocked == true ||
+                    activity.onMessageActivity?.recipient?.isBlocked == true
+            }
             ?.mapNotNull { it.activityFields.toDomain() }
             ?.filterAdultActivities(showAdult)
             ?.distinctBy { it.id }

@@ -89,7 +89,7 @@ class ForumRepositoryImpl @Inject constructor(
 
             val pageData = response.data?.Page
             val threads =
-                pageData?.threads?.filterNotNull()?.map { it.toForumThread() } ?: emptyList()
+                pageData?.threads?.filterNotNull()?.filterNot { it.user?.isBlocked == true }?.map { it.toForumThread() } ?: emptyList()
 
             PaginatedResult(
                 items = threads,
@@ -159,7 +159,7 @@ class ForumRepositoryImpl @Inject constructor(
 
                 val pageData = response.data?.Page
                 val threads =
-                    pageData?.threads?.filterNotNull()?.map { it.toForumThread() } ?: emptyList()
+                    pageData?.threads?.filterNotNull()?.filterNot { it.user?.isBlocked == true }?.map { it.toForumThread() } ?: emptyList()
 
                 PaginatedResult(
                     items = threads,
@@ -362,13 +362,18 @@ class ForumRepositoryImpl @Inject constructor(
 
     /**
      * Handles recursive conversion of both Apollo types and nested Map types
-     * resulting from the Json scalar Any-mapping.
+     * resulting from the Json scalar Any-mapping. Comments authored by a blocked user are
+     * dropped along with their reply subtree (issue #76); non-blocked replies nested under a
+     * non-blocked comment are kept and filtered at their own level. (Top-level comments carry a
+     * typed `isBlocked`; for `childComments`, served as an opaque JSON scalar, we read `isBlocked`
+     * from the map when AniList includes it.)
      */
     private fun mapToForumComment(node: Any?): ForumComment? {
         if (node == null) return null
 
         return when (node) {
             is GetForumCommentsQuery.ThreadComment -> {
+                if (node.user?.isBlocked == true) return null
                 val children =
                     (node.childComments as? List<*>)?.mapNotNull { mapToForumComment(it) }
                         ?: emptyList()
@@ -390,6 +395,7 @@ class ForumRepositoryImpl @Inject constructor(
             is Map<*, *> -> {
                 val userMap = node["user"] as? Map<*, *>
                 val avatarMap = userMap?.get("avatar") as? Map<*, *>
+                if (userMap?.get("isBlocked") == true) return null
                 val children =
                     (node["childComments"] as? List<*>)?.mapNotNull { mapToForumComment(it) }
                         ?: emptyList()
@@ -578,7 +584,9 @@ class ForumRepositoryImpl @Inject constructor(
                     subscribed = Optional.present(true)
                 )
             ).fetchPolicy(FetchPolicy.NetworkOnly).execute()
-            val threads = response.data?.Page?.threads?.filterNotNull()?.map { it.toForumThread() }
+            val threads = response.data?.Page?.threads?.filterNotNull()
+                ?.filterNot { it.user?.isBlocked == true }
+                ?.map { it.toForumThread() }
                 ?: emptyList()
             PaginatedResult(
                 items = threads,

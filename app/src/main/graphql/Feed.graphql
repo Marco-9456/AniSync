@@ -19,6 +19,13 @@ query GetActivityFeed(
       hasRepliesOrTypeText: $hasRepliesOrTypeText
     ) {
       ...ActivityFields
+      # isBlocked lives here (not in the shared ActivityFields fragment): the fragment is also
+      # embedded in the folded GetFullUserProfile across 4 activity lists, where adding the per-user
+      # isBlocked lookup pushes that query past AniList's limit (returns null). The feed is a single
+      # list, so it can carry it. Used to hide blocked users' activities (issue #76).
+      ... on ListActivity { user { isBlocked } }
+      ... on TextActivity { user { isBlocked } }
+      ... on MessageActivity { messenger { isBlocked } recipient { isBlocked } }
     }
   }
 }
