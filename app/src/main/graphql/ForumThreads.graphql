@@ -32,6 +32,7 @@ query GetForumThreads(
       createdAt
       user {
         id
+        isBlocked
         name
         avatar {
           large

@@ -94,7 +94,7 @@ class NotificationRepositoryImpl @Inject constructor(
             .execute()
 
             val pageData = response.data?.Page
-            val items = pageData?.notifications?.filterNotNull()?.mapNotNull { mapNotification(it) } ?: emptyList()
+            val items = pageData?.notifications?.filterNotNull()?.filterNot { it.actorIsBlocked() }?.mapNotNull { mapNotification(it) } ?: emptyList()
             val info = pageData?.pageInfo
             NotificationPage(
                 items = items,
@@ -140,6 +140,25 @@ class NotificationRepositoryImpl @Inject constructor(
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
+    /**
+     * True when this notification was triggered by a user the viewer has blocked on AniList, so it
+     * can be hidden (issue #76). Driven by the per-actor `User.isBlocked` flag; media/airing
+     * notifications have no actor and are never blocked.
+     */
+    private fun GetNotificationsQuery.Notification.actorIsBlocked(): Boolean =
+        onFollowingNotification?.user?.isBlocked == true ||
+            onActivityLikeNotification?.user?.isBlocked == true ||
+            onActivityReplyNotification?.user?.isBlocked == true ||
+            onActivityReplySubscribedNotification?.user?.isBlocked == true ||
+            onActivityReplyLikeNotification?.user?.isBlocked == true ||
+            onActivityMentionNotification?.user?.isBlocked == true ||
+            onActivityMessageNotification?.user?.isBlocked == true ||
+            onThreadCommentReplyNotification?.user?.isBlocked == true ||
+            onThreadCommentSubscribedNotification?.user?.isBlocked == true ||
+            onThreadCommentMentionNotification?.user?.isBlocked == true ||
+            onThreadLikeNotification?.user?.isBlocked == true ||
+            onThreadCommentLikeNotification?.user?.isBlocked == true
+
     private fun mapNotification(notification: GetNotificationsQuery.Notification): Notification? {
         return when {
             notification.onAiringNotification != null -> {
