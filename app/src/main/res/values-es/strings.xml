@@ -992,4 +992,9 @@
     <string name="account_remove_dialog_title">¿Eliminar cuenta?</string>
     <string name="account_remove_dialog_message">%1$s se eliminará de este dispositivo. Puede iniciar sesión nuevamente en cualquier momento.</string>
     <string name="account_switch_to">Cambiar a %1$s</string>
+    <string name="forum_search_prompt">Busca debates, o filtra por medio, categoría, autor u orden</string>
+    <string name="forum_discussions_title">Debates</string>
+    <string name="forum_discussions_view_all">Ver todos los debates</string>
+    <string name="forum_discussions_empty">Sin debates actualmente — Inicia uno</string>
+    <string name="forum_discussions_start">Iniciar un debate</string>
 </resources>
