@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-06-27
+
+### Added
+
+- **Adaptive Large-Screen UI** - On tablets, foldables, and wide windows, AniSync reflows into a two-pane list-detail layout across Library, Discover/Search, Feed, Forum, Notifications, Settings, and Profile, with a collapsible navigation rail and a contextual FAB. The split is resizable and persists across restarts, with snap/collapse drag behavior and nested navigation inside the media-detail pane. Wide windows also gain multi-column poster, favorites, and social grids, a profile statistics dashboard, and a two-pane month calendar. Phones stay single-pane with the bottom bar per Material 3 window size classes.
+- **AMOLED Theme** - A pure-black dark theme that shifts the whole surface ladder down for OLED screens.
+- **Library Notes & Journal** - Your list notes now surface on the media-details screen and in the Library, alongside a dedicated searchable notes journal.
+- **Document-Editor Composer** - The post and review composer is redesigned as a full-screen document editor (on phones too), with a live preview alongside the editor on wide windows.
+- **Expandable Details Info** - Alternative titles, synonyms, and producers are shown as expandable info pills on media details.
+- **Profile Overview Overhaul** - The Overview tab now leads with a snapshot card and an activity heatmap.
+- **Friends' Notes** - See other users' list notes on their profiles and in the Following section.
+- **More Translations** - New Russian and Tamil translations, plus refreshed Spanish and Portuguese (Brazil), via Weblate. Thanks to @Minfinity010 (Spanish), @anicetoclucas (Portuguese, Brazil), DarkOperation (Russian), and தமிழ்நேரம் (Tamil).
+
+### Changed
+
+- **Settings Redesign** - Settings are restructured into a cleaner, card-based design system with shared components and a consistent settings vocabulary.
+- **Status Bar Matches Screen** - The status bar tint now matches the content below it on every screen, and content is inset below the system status bar app-wide.
+- **Sticky Detail Tabs** - The media-details section tabs stick to the top and track scroll.
+- **Hide Blocked Users** - Blocked users are hidden from the feed, forum, and notifications. (#77)
+- **Capped Activity Cards** - Long status and message cards cap with an expand toggle and scroll more steadily.
+- **Donate Reframed** - Support is reframed as no-reward tips for payment-processor compliance.
+
+### Fixed
+
+- **Duplicate-Key Crashes** - Library entries are deduped by media id (#72) and duplicate lazy-layout keys are fixed across multiple screens (#69, thanks @GoldRift) to stop the "Key already used" crash.
+- **Rotation Refetch** - Media details, threads, and status screens serve cached entries on a configuration change instead of refetching. (#73 sort persistence included)
+- **Library Sort & Manga Label** - The chosen Library sort persists across restarts (#73), and the Social tab shows "Ch" instead of "Ep" for manga progress. (#74)
+- **Notes Accuracy** - The detail-page note reads from the library rather than the media cache, and clearing a note empties it instead of keeping the old text.
+- **Profile Activity** - The activity feed paginates and revalidates on open, the heatmap loads on entry without a pull-to-refresh, the pagination loader renders at its default size, replies thread into the correct branch, and the cached account avatar refreshes from the own profile.
+- **Rich Text** - Bold renders correctly around mentions and across tags with boundary spaces preserved, fully-fenced AniList posts and bios stay centered, and the bio editor no longer corrupts markup. Parsed rich text is cached so it no longer re-settles on scroll-back.
+- **SVG Rendering** - The SVG snapshot is dropped once the live WebView has drawn, and live SVG WebViews are gated by animation cost.
+- **Shared-Element Transition** - The Library-to-Details shared-element transition is smoother.
+- **Library Badges** - The behind badge and airing time rotate so both stay visible.
+
 ## [2.0.0] - 2026-06-11
 
 ### Added

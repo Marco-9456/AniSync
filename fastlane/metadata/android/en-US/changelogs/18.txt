@@ -1,0 +1,24 @@
+Added:
+- Adaptive large-screen UI: two-pane list-detail across Library, Discover, Feed, Forum, Notifications, Settings, and Profile, with a collapsible navigation rail, a resizable/persistent split, multi-column grids, and a two-pane month calendar. Phones stay single-pane.
+- AMOLED pure-black dark theme.
+- Library notes on the details screen and Library list, plus a searchable notes journal.
+- Full-screen document-editor composer for posts and reviews, with live preview on wide windows.
+- Alternative titles, synonyms, and producers as expandable info pills on media details.
+- Profile Overview led by a snapshot card and an activity heatmap.
+- See other users' list notes on their profiles and in the Following section.
+- New Russian and Tamil translations; refreshed Spanish and Portuguese (Brazil).
+
+Changed:
+- Settings restructured into a cleaner, card-based design system.
+- The status bar tint now matches the screen below it, with content inset below the system bar app-wide.
+- Sticky media-details section tabs that track scroll.
+- Blocked users are hidden from the feed, forum, and notifications.
+- Long status and message cards cap with an expand toggle.
+- Support reframed as no-reward tips.
+
+Fixed:
+- Library entries deduped by media id and duplicate lazy-layout keys fixed to stop crashes.
+- Media details, threads, and status no longer refetch on rotation.
+- Library sort and notes now persist correctly; "Ch" shows instead of "Ep" for manga progress.
+- Profile activity paginates and revalidates, the heatmap loads on entry, and replies thread into the right branch.
+- Rich text: bold around mentions and across tags, centered AniList posts and bios, and the bio editor no longer corrupts markup.
