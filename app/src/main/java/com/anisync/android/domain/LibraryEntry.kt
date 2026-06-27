@@ -43,6 +43,12 @@ data class LibraryEntry(
     val completedAt: Long? = null,
     val rewatches: Int = 0,
     val notes: String? = null,
+    /**
+     * The owning user's score display format. Carried in-memory for read-only views of another
+     * user's list (profile media list, #78) so their score renders in their own format; null for
+     * the local library, where score isn't shown on cards.
+     */
+    val scoreFormat: ScoreFormat? = null,
     val updatedAt: Long? = null,
     val createdAt: Long? = null,
     val mediaStartDate: Long? = null,

@@ -145,8 +145,8 @@ import com.anisync.android.presentation.details.components.ContentMetadataSectio
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
-import com.anisync.android.presentation.details.components.FollowingItem
 import com.anisync.android.presentation.details.components.FollowingListSheet
+import com.anisync.android.presentation.details.components.FollowingRow
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.UserNotesCard
 import com.anisync.android.presentation.details.components.RecommendMediaSheet
@@ -1245,17 +1245,39 @@ fun DetailsPageContent(
                                     onActionClick = if (hasMoreFollowing) { { showAllFollowingSheet = true } } else null
                                 )
                                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                                // Fixed row height so every page is identical — the strip never
+                                // changes height as it scrolls, regardless of which rows carry a note.
+                                val followingRowHeight = 104.dp
                                 LazyRow(
                                     contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
                                     horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
                                 ) {
-                                    items(items = following, key = { "follow_${it.userId}" }) { entry ->
-                                        FollowingItem(
-                                            entry = entry,
-                                            mediaType = details.type,
-                                            onClick = { onUserClick(entry.userName) },
-                                            modifier = Modifier.animateItem()
-                                        )
+                                    // Two stacked rows per horizontal page — the row design carries more
+                                    // (chips + note) than the old card, and pairing them keeps the strip
+                                    // compact while the next page peeks in.
+                                    items(
+                                        items = following.chunked(2),
+                                        key = { pair -> "follow_${pair.first().userId}" }
+                                    ) { pair ->
+                                        Column(
+                                            modifier = Modifier
+                                                .fillParentMaxWidth(0.88f)
+                                                .animateItem(),
+                                            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+                                        ) {
+                                            pair.forEach { entry ->
+                                                FollowingRow(
+                                                    entry = entry,
+                                                    mediaType = details.type,
+                                                    onClick = { onUserClick(entry.userName) },
+                                                    modifier = Modifier.height(followingRowHeight)
+                                                )
+                                            }
+                                            // Pad a lone trailing entry so its page matches the others.
+                                            if (pair.size == 1) {
+                                                Spacer(modifier = Modifier.height(followingRowHeight))
+                                            }
+                                        }
                                     }
                                 }
                             }

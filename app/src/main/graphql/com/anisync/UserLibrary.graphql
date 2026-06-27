@@ -3,6 +3,7 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
     user {
       id
       mediaListOptions {
+        scoreFormat
         animeList { customLists }
         mangaList { customLists }
       }
@@ -29,6 +30,7 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
           chapters
           volumes
           type
+          format
           status
           nextAiringEpisode {
             episode

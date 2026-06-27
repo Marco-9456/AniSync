@@ -376,7 +376,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "profile_anime",
-                posterColumns = posterColumns
+                // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
+                listColumns = statsColumns.coerceAtMost(2)
             )
         }
 
@@ -392,7 +393,7 @@ internal fun LazyListScope.profileSelectedTabContent(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "profile_manga",
-                posterColumns = posterColumns
+                listColumns = statsColumns.coerceAtMost(2)
             )
         }
 

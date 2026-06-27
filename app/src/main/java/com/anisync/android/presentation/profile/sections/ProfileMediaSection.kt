@@ -39,6 +39,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.PosterCard
+import com.anisync.android.presentation.profile.components.ProfileMediaListCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.toIcon
@@ -66,7 +67,7 @@ fun LazyListScope.profileMediaTab(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     transitionPrefix: String,
-    posterColumns: Int = 3,
+    listColumns: Int = 1,
     modifier: Modifier = Modifier
 ) {
     val statuses = buildList {
@@ -118,13 +119,16 @@ fun LazyListScope.profileMediaTab(
             )
         }
     } else {
-        val rowItems = items.chunked(posterColumns)
+        // Read-only list rows (#78): denser than a poster grid and roomy enough to carry each
+        // entry's score/progress/format/rewatches plus the user's note. Chunked into [listColumns]
+        // so wide windows fill the width instead of stretching one column.
+        val rowItems = items.chunked(listColumns)
         item(key = "media_top_spacer_${transitionPrefix}") { Spacer(modifier = Modifier.height(16.dp)) }
 
         itemsIndexed(
             items = rowItems,
             key = { index, _ -> "media_row_${transitionPrefix}_${selectedStatus.name}_$index" },
-            contentType = { _, _ -> "media_row" }
+            contentType = { _, _ -> "media_list_row" }
         ) { _, row ->
             Row(
                 modifier = Modifier
@@ -134,28 +138,21 @@ fun LazyListScope.profileMediaTab(
             ) {
                 row.forEach { item ->
                     Box(modifier = Modifier.weight(1f)) {
-                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                            PosterCard(
-                                item = item,
-                                onClick = { onMediaClick(item.mediaId) },
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                transitionPrefix = transitionPrefix
-                            )
-                        } else {
-                            PosterCardFallback(
-                                coverUrl = item.coverUrl,
-                                title = item.titleUserPreferred,
-                                onClick = { onMediaClick(item.mediaId) }
-                            )
-                        }
+                        ProfileMediaListCard(
+                            entry = item,
+                            mediaType = mediaType,
+                            onClick = { onMediaClick(item.mediaId) },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            transitionPrefix = transitionPrefix
+                        )
                     }
                 }
-                repeat(posterColumns - row.size) {
+                repeat(listColumns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }

@@ -13,6 +13,7 @@ query GetMediaFollowing($mediaId: Int!, $page: Int!, $perPage: Int!) {
       status
       score
       progress
+      notes
       user {
         id
         name

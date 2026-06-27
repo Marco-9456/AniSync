@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
@@ -30,6 +31,17 @@ fun LibraryStatus.toLabel(type: MediaType?): String {
         LibraryStatus.REPEATING -> if (isManga) stringResource(R.string.status_rereading) else stringResource(R.string.status_rewatching)
         LibraryStatus.UNKNOWN -> stringResource(R.string.unknown)
     }
+}
+
+/** Status accent color, shared by the Following cards and the profile list rows. */
+fun LibraryStatus.toColor(): Color = when (this) {
+    LibraryStatus.CURRENT -> Color(0xFF4CAF50)
+    LibraryStatus.COMPLETED -> Color(0xFF2196F3)
+    LibraryStatus.PLANNING -> Color(0xFF9C27B0)
+    LibraryStatus.PAUSED -> Color(0xFFFF9800)
+    LibraryStatus.DROPPED -> Color(0xFFF44336)
+    LibraryStatus.REPEATING -> Color(0xFF009688)
+    LibraryStatus.UNKNOWN -> Color(0xFF9E9E9E)
 }
 
 fun LibraryStatus.toIcon(type: MediaType?): ImageVector {

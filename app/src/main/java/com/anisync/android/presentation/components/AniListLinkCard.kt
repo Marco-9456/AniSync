@@ -71,7 +71,7 @@ private fun typeLabel(type: String): String = type.replaceFirstChar { it.upperca
 /**
  * Renders an AniList deep link as a rich preview card. Three shapes:
  * - anime/manga: a bounded horizontal card with a 2:3 cover, title and `format · year`.
- * - character/staff/user: a compact vertical card (poster/avatar over the name), à la FollowingItem.
+ * - character/staff/user: a compact vertical card (poster/avatar over the name).
  * - activity: a compact chip — activities are heterogeneous (status/text/message) and have no clean
  *   title/cover, so a small "View activity" affordance reads better than an empty poster card.
  */

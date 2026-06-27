@@ -746,6 +746,9 @@ class ProfileRepositoryImpl @Inject constructor(
                     .execute()
 
             val lists = response.data?.MediaListCollection?.lists?.filterNotNull() ?: emptyList()
+            // The owner's global score format, so their scores render in their own units (#78).
+            val scoreFormat = response.data?.MediaListCollection?.user?.mediaListOptions?.scoreFormat
+                ?.let { mapScoreFormat(it.name) }
             val entryMap = HashMap<Int, LibraryEntry>(lists.sumOf { it.entries?.size ?: 0 })
 
             lists.forEach { group ->
@@ -774,6 +777,7 @@ class ProfileRepositoryImpl @Inject constructor(
                             totalChapters = media?.chapters,
                             totalVolumes = media?.volumes,
                             type = media?.type,
+                            format = media?.format,
                             status = status,
                             nextAiringEpisode = media?.nextAiringEpisode?.episode,
                             timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
@@ -782,6 +786,7 @@ class ProfileRepositoryImpl @Inject constructor(
                             score = entry.score,
                             rewatches = entry.repeat ?: 0,
                             notes = entry.notes,
+                            scoreFormat = scoreFormat,
                             updatedAt = entry.updatedAt?.toLong()?.times(1000L),
                             createdAt = entry.createdAt?.toLong()?.times(1000L),
                             customLists = if (isCustom) listOf(listName) else emptyList(),

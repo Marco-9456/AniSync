@@ -676,7 +676,8 @@ class DetailsRepositoryImpl @Inject constructor(
                         ?: com.anisync.android.domain.LibraryStatus.UNKNOWN,
                     score = node.score?.takeIf { it > 0.0 },
                     progress = node.progress,
-                    scoreFormat = mapScoreFormat(user.mediaListOptions?.scoreFormat?.name)
+                    scoreFormat = mapScoreFormat(user.mediaListOptions?.scoreFormat?.name),
+                    notes = node.notes?.takeIf { it.isNotBlank() }
                 )
             }
 

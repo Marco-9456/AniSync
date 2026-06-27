@@ -195,7 +195,9 @@ data class MediaFollowingEntry(
     val status: LibraryStatus,
     val score: Double?,
     val progress: Int?,
-    val scoreFormat: ScoreFormat? = null
+    val scoreFormat: ScoreFormat? = null,
+    /** The user's freeform note on this entry, read-only. Null/blank when they left none (#78). */
+    val notes: String? = null
 )
 
 /**
