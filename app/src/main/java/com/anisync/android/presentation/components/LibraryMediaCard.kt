@@ -2,10 +2,18 @@ package com.anisync.android.presentation.components
 
 import com.anisync.android.domain.url
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +43,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlinx.coroutines.delay
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.TitleLanguage
@@ -101,6 +114,18 @@ val CompletedCardConfig = LibraryCardConfig(
     showBehindBadge = false,
     showMetadata = false
 )
+
+private const val STATUS_ROTATE_INTERVAL_MS = 3000L
+
+/**
+ * One rotating status chip shown under the cover: either the "episodes behind" badge or the
+ * next-airing countdown. On a narrow grid card both can't sit side by side without squeezing the
+ * airing time out of view, so we cross-fade between them instead.
+ */
+private sealed interface CardStatusSlot {
+    data class Behind(val text: String) : CardStatusSlot
+    data class Airing(val text: String) : CardStatusSlot
+}
 
 /**
  * A reusable media card for library screens.
@@ -281,37 +306,76 @@ fun LibraryMediaCard(
             ) {
                 // Badges and airing info
                 if (config.showBehindBadge || config.showAiringInfo) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    val behindText: String? = if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
+                        val nextAiring = entry.nextAiringEpisode
+                        val latest: Int? = if (nextAiring != null) nextAiring - 1 else total
+                        if (latest != null && entry.progress < latest) {
+                            formatEpisodesBehind(latest - entry.progress)
+                        } else null
+                    } else null
+
+                    val airingText: String? =
+                        if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
+                            stringResource(
+                                R.string.airing_episode_in,
+                                entry.nextAiringEpisode ?: 0, // safe fallback for preview
+                                formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
+                            )
+                        } else null
+
+                    // Both pieces would overflow a narrow grid card and push the airing time out of
+                    // view, so when both are present rotate between them with a cross-fade.
+                    val slots = remember(behindText, airingText) {
+                        buildList {
+                            behindText?.let { add(CardStatusSlot.Behind(it)) }
+                            airingText?.let { add(CardStatusSlot.Airing(it)) }
+                        }
+                    }
+
+                    var slotIndex by remember { mutableIntStateOf(0) }
+                    LaunchedEffect(slots.size) {
+                        slotIndex = 0
+                        if (slots.size > 1) {
+                            while (true) {
+                                delay(STATUS_ROTATE_INTERVAL_MS)
+                                slotIndex = (slotIndex + 1) % slots.size
+                            }
+                        }
+                    }
+
+                    Box(
+                        contentAlignment = Alignment.CenterStart,
                         modifier = Modifier.height(20.dp) // Reserve fixed height matching badge/text
                     ) {
-                        if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
-                            val nextAiring = entry.nextAiringEpisode
-                            val latest: Int? = if (nextAiring != null) nextAiring - 1 else total
-
-                            if (latest != null && entry.progress < latest) {
-                                StatusBadge(
-                                    formatEpisodesBehind(latest - entry.progress),
+                        val current = if (slots.isEmpty()) null else slots[slotIndex % slots.size]
+                        AnimatedContent(
+                            targetState = current,
+                            // Only animate when the kind of chip changes, not when the airing label ticks.
+                            contentKey = { it?.let { slot -> slot::class } },
+                            transitionSpec = {
+                                val anim = tween<Float>(durationMillis = 320)
+                                (fadeIn(anim) + slideInVertically(tween(320)) { it / 2 }) togetherWith
+                                    (fadeOut(anim) + slideOutVertically(tween(320)) { -it / 2 }) using
+                                    SizeTransform(clip = false)
+                            },
+                            label = "StatusRotator"
+                        ) { slot ->
+                            when (slot) {
+                                is CardStatusSlot.Behind -> StatusBadge(
+                                    slot.text,
                                     MaterialTheme.colorScheme.error,
                                     MaterialTheme.colorScheme.onError
                                 )
+                                is CardStatusSlot.Airing -> Text(
+                                    text = slot.text,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                null -> Spacer(Modifier.size(0.dp))
                             }
-                        }
-
-                        if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
-                            Text(
-                                text = stringResource(
-                                    R.string.airing_episode_in,
-                                    entry.nextAiringEpisode ?: 0, // safe fallback for preview
-                                    formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
