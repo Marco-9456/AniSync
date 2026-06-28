@@ -126,6 +126,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Immersive, rotatable fullscreen video player. Handles its own config changes so the
+             forced orientation flip doesn't recreate it (and drop the playing surface). -->
+        <activity
+            android:name=".presentation.components.FullscreenPlayerActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+
         <activity
             android:name=".CrashReportActivity"
             android:exported="false"
