@@ -579,8 +579,12 @@ fun LibraryScreen(
                             saver = LazyGridState.Saver
                         ) { LazyGridState() }
 
+                        // Rewatching/rereading (REPEATING) gets the same progress
+                        // card + quick +/- adjusters as the watching list (#80).
+                        val hasQuickProgress = tab is LibraryTab.Standard &&
+                            (tab.status == LibraryStatus.CURRENT || tab.status == LibraryStatus.REPEATING)
                         val cardConfig =
-                            if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) WatchingCardConfig else CompletedCardConfig
+                            if (hasQuickProgress) WatchingCardConfig else CompletedCardConfig
 
                         if (entries.isEmpty()) {
                             val emptyStatus = if (tab is LibraryTab.Standard) tab.status else null
@@ -633,10 +637,10 @@ fun LibraryScreen(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { navigateToMediaDetails(entry.mediaId) },
-                                                onIncrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
+                                                onIncrement = if (hasQuickProgress) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
-                                                onDecrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
+                                                onDecrement = if (hasQuickProgress) {
                                                     { handleDecrement(entry.mediaId) }
                                                 } else null,
                                                 onEdit = { handleEdit(entry) },
@@ -678,10 +682,10 @@ fun LibraryScreen(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { navigateToMediaDetails(entry.mediaId) },
-                                                onIncrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
+                                                onIncrement = if (hasQuickProgress) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
-                                                onDecrement = if (tab is LibraryTab.Standard && tab.status == LibraryStatus.CURRENT) {
+                                                onDecrement = if (hasQuickProgress) {
                                                     { handleDecrement(entry.mediaId) }
                                                 } else null,
                                                 onEdit = { handleEdit(entry) },
