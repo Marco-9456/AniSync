@@ -54,6 +54,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.PaneDragHandle
+import com.anisync.android.presentation.util.PaneSheetHost
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -74,7 +75,10 @@ import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
 import com.anisync.android.presentation.details.StudioDetailsScreen
 import com.anisync.android.presentation.details.StudioMediaGridScreen
 
-private const val PANE_SOURCE = "list_detail_pane"
+// Shared-element source tag for detail screens hosted in a two-pane detail slot. No cross-pane
+// morph partner exists under this tag, so pane-hosted details fade in instead of morphing.
+// Internal so sibling list-detail hosts (e.g. Discover's review target) reuse the same tag.
+internal const val LIST_DETAIL_PANE_SOURCE = "list_detail_pane"
 
 // Width split between the two panes while the detail is open, as the list pane's fraction. The list
 // stays the smaller "index" pane; the detail gets the majority of the space. User-resizable from
@@ -232,8 +236,10 @@ fun <T : Any> TwoPaneListDetailScaffold(
                 // Hold the content at its open layout width and let the Surface clip it while the pane
                 // shrinks past [LIST_MIN_LAYOUT_FRACTION], so collapsing slides/clips the list out
                 // instead of reflowing its search bar + tab switcher into a squashed column.
-                Box(modifier = Modifier.requiredWidthIn(min = listMinWidth).fillMaxSize()) {
-                    listPane(selected) { item -> selected = item }
+                PaneSheetHost {
+                    Box(modifier = Modifier.requiredWidthIn(min = listMinWidth).fillMaxSize()) {
+                        listPane(selected) { item -> selected = item }
+                    }
                 }
             }
         } else {
@@ -296,7 +302,9 @@ fun <T : Any> TwoPaneListDetailScaffold(
                 shape = TwoPaneDefaults.PaneShape,
                 color = TwoPaneDefaults.paneColor,
             ) {
-                detailPane(detail) { closeDetail() }
+                PaneSheetHost {
+                    detailPane(detail) { closeDetail() }
+                }
             }
         } else if (showPlaceholder) {
             // Material 3 list-detail placeholder: list at the persisted split + an empty detail pane.
@@ -332,7 +340,7 @@ fun MediaListDetailScaffold(
         listPane = listPane,
         detailPane = { id, onClose ->
             PaneDetailHost(
-                startRoute = MediaDetails(id, PANE_SOURCE),
+                startRoute = MediaDetails(id, LIST_DETAIL_PANE_SOURCE),
                 navController = navController,
                 onClose = onClose,
             )
@@ -434,7 +442,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             // Back at the root closes the pane; deeper destinations pop within the pane. The nav icon
             // (✕ at the pane root, ← when drilled) comes from LocalPaneNavIcon, provided by the host.
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
-            onRelationClick = { relId -> paneNav.navigate(MediaDetails(relId, PANE_SOURCE)) },
+            onRelationClick = { relId -> paneNav.navigate(MediaDetails(relId, LIST_DETAIL_PANE_SOURCE)) },
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },
             onStudioClick = { paneNav.navigate(StudioDetails(it)) },
@@ -459,7 +467,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
         CharacterDetailsScreen(
             characterId = route.characterId,
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onMediaSeeAllClick = { cId, cName -> paneNav.navigate(CharacterMediaGrid(cId, cName)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },
             sharedTransitionScope = sharedScope,
@@ -472,7 +480,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
         StaffDetailsScreen(
             staffId = route.staffId,
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
             onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StaffMediaGrid(sId, sName)) },
             onProductionSeeAllClick = { sId, sName ->
@@ -488,7 +496,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
         StudioDetailsScreen(
             studioId = route.studioId,
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StudioMediaGrid(sId, sName)) },
         )
     }
@@ -499,7 +507,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             mediaId = route.mediaId,
             mediaTitle = route.mediaTitle,
             onBackClick = { paneNav.popBackStack() },
-            onRelationClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onRelationClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -511,7 +519,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             mediaId = route.mediaId,
             mediaTitle = route.mediaTitle,
             onBackClick = { paneNav.popBackStack() },
-            onRecommendationClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onRecommendationClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -523,7 +531,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             characterId = route.characterId,
             characterName = route.characterName,
             onBackClick = { paneNav.popBackStack() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -535,7 +543,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             staffId = route.staffId,
             staffName = route.staffName,
             onBackClick = { paneNav.popBackStack() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
@@ -548,7 +556,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             staffId = route.staffId,
             staffName = route.staffName,
             onBackClick = { paneNav.popBackStack() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -560,7 +568,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             studioId = route.studioId,
             studioName = route.studioName,
             onBackClick = { paneNav.popBackStack() },
-            onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
+            onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )

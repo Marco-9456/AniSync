@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
@@ -109,12 +110,15 @@ fun ReviewAuthorBar(
                 contentDescription = null,
                 size = 40.dp
             )
+            // Ellipsize instead of wrapping: in a narrow detail pane the vote pill squeezes this
+            // column, and an unconstrained date used to wrap one character per line.
             Column {
                 Text(
                     text = review.userName,
                     style = MaterialTheme.typography.titleSmall.emphasis(),
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 val dateStr = remember(review.createdAt) {
                     if (review.createdAt > 0) {
@@ -125,7 +129,9 @@ fun ReviewAuthorBar(
                     Text(
                         text = dateStr,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

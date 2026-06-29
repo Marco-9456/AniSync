@@ -32,7 +32,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
@@ -59,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.libraryTabLabel
 import com.anisync.android.presentation.util.toIcon
@@ -88,7 +88,7 @@ fun ListManagementSheet(
     val focusRequester = remember { FocusRequester() }
 
     if (visible) {
-        ModalBottomSheet(
+        AppModalBottomSheet(
             onDismissRequest = {
                 // Reset state when sheet is closed
                 isCreatingList = false

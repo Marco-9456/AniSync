@@ -24,7 +24,6 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import com.anisync.android.domain.AniListListActivityStatus
 import com.anisync.android.domain.AniListStaffNameLanguage
 import com.anisync.android.domain.AniListTitleLanguage
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.ui.theme.AniListProfileColors
 
@@ -258,7 +258,7 @@ private fun ProfileColorSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,

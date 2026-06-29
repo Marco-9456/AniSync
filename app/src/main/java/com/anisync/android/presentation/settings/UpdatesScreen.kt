@@ -43,7 +43,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -69,6 +68,7 @@ import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.data.update.Release
 import com.anisync.android.data.update.UpdateState
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 
 @Composable
@@ -193,14 +193,16 @@ fun UpdateDialog(
         }
     )
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = {
             if (!isDownloading) onDismiss()
         },
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = modifier
+        modifier = modifier,
+        // Pane-anchored counterpart of the confirmValueChange guard above.
+        confirmDismiss = { !isDownloadingState }
     ) {
         Column(
             modifier = Modifier

@@ -119,7 +119,11 @@ fun WriteReviewScreen(
 
     val summaryValid = SummaryBounds.isValid(uiState.summary.trim().length)
     val scoreValid = uiState.score in 0..100
-    val externalUnsaved = uiState.summary.isNotBlank() || uiState.isPrivate || uiState.score != 50
+    // Dirty = differs from the loaded values, so opening an existing review and backing out
+    // untouched doesn't trip the discard prompt.
+    val externalUnsaved = uiState.summary != uiState.initialSummary ||
+        uiState.isPrivate != uiState.initialIsPrivate ||
+        uiState.score != uiState.initialScore
 
     RichTextScaffold(
         title = stringResource(

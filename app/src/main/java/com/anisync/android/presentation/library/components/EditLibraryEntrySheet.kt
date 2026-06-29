@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.library.components
 
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
@@ -55,7 +56,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SheetState
@@ -187,7 +187,7 @@ fun EditLibraryEntrySheet(
         hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
     }
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },

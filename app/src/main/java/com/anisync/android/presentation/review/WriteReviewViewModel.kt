@@ -57,6 +57,9 @@ class WriteReviewViewModel @Inject constructor(
                                 initialBody = review.body,
                                 score = review.score,
                                 isPrivate = review.isPrivate,
+                                initialSummary = review.summary,
+                                initialScore = review.score,
+                                initialIsPrivate = review.isPrivate,
                                 isLoading = false
                             )
                         }

@@ -930,16 +930,21 @@ private fun DiscoverSearchOverlay(
         }
     }
 
-    com.anisync.android.presentation.discover.components.SearchFilterSheetHost(
-        openedFilter = openedFilter,
-        filters = searchFilters,
-        mediaType = mediaType,
-        genres = taxonomy.genres,
-        tags = taxonomy.tags,
-        showAdultContent = showAdultContent,
-        onFiltersChange = onFiltersChange,
-        onDismiss = { openedFilter = null }
-    )
+    // The filter sheets scope to the whole search overlay (which covers both panes on expanded
+    // widths), and this host sits OUTSIDE the overlay popup — never anchor them to the feed pane
+    // hidden behind it.
+    com.anisync.android.presentation.util.WindowModalSheetScope {
+        com.anisync.android.presentation.discover.components.SearchFilterSheetHost(
+            openedFilter = openedFilter,
+            filters = searchFilters,
+            mediaType = mediaType,
+            genres = taxonomy.genres,
+            tags = taxonomy.tags,
+            showAdultContent = showAdultContent,
+            onFiltersChange = onFiltersChange,
+            onDismiss = { openedFilter = null }
+        )
+    }
 }
 
 @Composable

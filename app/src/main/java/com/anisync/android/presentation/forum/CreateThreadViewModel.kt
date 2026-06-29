@@ -52,7 +52,10 @@ class CreateThreadViewModel @Inject constructor(
             val title = savedStateHandle.get<String>("mediaTitle").orEmpty()
             val cover = savedStateHandle.get<String>("mediaCoverUrl").orEmpty().ifBlank { null }
             _uiState.update {
-                it.copy(selectedMediaCategories = listOf(buildPrefillMedia(mediaId, title, cover)))
+                it.copy(
+                    selectedMediaCategories = listOf(buildPrefillMedia(mediaId, title, cover)),
+                    prefilledMediaCategoryIds = listOf(mediaId),
+                )
             }
         }
     }

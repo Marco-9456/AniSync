@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,12 +23,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.VerticalDragHandle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +69,45 @@ import com.anisync.android.R
  * settings subscreens.
  */
 val LocalPaneIsRoot = staticCompositionLocalOf { false }
+
+/**
+ * Window-relative bounds of the pane the reading composable lives in, or `null` outside any pane
+ * (compact widths, full-screen routes, a full-width list). Published by [PaneSheetHost] inside each
+ * pane of the two-pane surfaces and read by `AppModalBottomSheet`: a sheet whose actions affect only
+ * one pane opens **inside that pane** instead of centring over the whole window, which would read as
+ * acting on both panes. The state's value updates live as the pane is resized via its drag handle.
+ *
+ * Deliberately a [State] holder (not a plain Rect) so only readers of `.value` recompose on resize.
+ */
+val LocalPaneSheetBounds = staticCompositionLocalOf<State<Rect?>?> { null }
+
+/**
+ * Forces any `AppModalBottomSheet` composed within [content] onto the window-modal path by clearing
+ * [LocalPaneSheetBounds], regardless of the pane the caller lives in. For sheets whose scope is the
+ * whole window despite a pane call site: focused writing flows (the comment composer and its attach
+ * sheet) and the search overlay's filters (the overlay covers both panes).
+ */
+@Composable
+fun WindowModalSheetScope(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalPaneSheetBounds provides null) { content() }
+}
+
+/**
+ * Marks [content] as living inside a pane: measures the pane's window bounds and publishes them via
+ * [LocalPaneSheetBounds] so pane-aware overlays (`AppModalBottomSheet`) can anchor to this pane.
+ * Insert as the direct child of a pane surface — it fills the pane and adds no visuals.
+ */
+@Composable
+fun PaneSheetHost(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val bounds = remember { mutableStateOf<Rect?>(null) }
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .onGloballyPositioned { bounds.value = it.boundsInWindow() },
+    ) {
+        CompositionLocalProvider(LocalPaneSheetBounds provides bounds) { content() }
+    }
+}
 
 object TwoPaneDefaults {
     /** Rounded corners shared by both panes (all four corners). */
@@ -121,7 +167,7 @@ fun TwoPaneRow(
             modifier = Modifier.weight(leadingWeight).fillMaxHeight(),
             shape = shape,
             color = leadingColor,
-        ) { leading() }
+        ) { PaneSheetHost { leading() } }
 
         if (handle != null) handle() else Spacer(Modifier.width(TwoPaneDefaults.PaneGap))
 
@@ -129,7 +175,7 @@ fun TwoPaneRow(
             modifier = Modifier.weight(1f - leadingWeight).fillMaxHeight(),
             shape = shape,
             color = trailingColor,
-        ) { trailing() }
+        ) { PaneSheetHost { trailing() } }
     }
 }
 

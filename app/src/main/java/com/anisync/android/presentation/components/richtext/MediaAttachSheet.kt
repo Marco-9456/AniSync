@@ -35,7 +35,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProgressIndicatorDefaults
@@ -64,6 +63,7 @@ import com.anisync.android.domain.media.MediaKind
 import com.anisync.android.domain.media.MediaSizeChoice
 import com.anisync.android.domain.media.toImageMarkdown
 import com.anisync.android.domain.media.videoMarkdown
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import kotlinx.coroutines.launch
 
 /**
@@ -101,7 +101,7 @@ fun MediaAttachSheet(
         if (uri != null) viewModel.pick(uri)
     }
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = close,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },

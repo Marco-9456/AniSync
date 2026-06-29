@@ -17,6 +17,11 @@ data class CreateThreadUiState(
      * "what media is this thread about" rather than "which forum bucket."
      */
     val selectedMediaCategories: List<LibraryEntry> = emptyList(),
+    /**
+     * Media ids pre-attached on entry ("start discussion" from a media page). Dirty tracking
+     * compares against these so an untouched prefilled form doesn't trip the discard prompt.
+     */
+    val prefilledMediaCategoryIds: List<Int> = emptyList(),
     val isSubmitting: Boolean = false,
     val isPreviewMode: Boolean = false,
     val titleError: String? = null,
@@ -29,9 +34,6 @@ data class CreateThreadUiState(
     val mediaSearchError: String? = null
 ) {
     val isValid: Boolean get() = title.isNotBlank() && body.isNotBlank() && selectedCategoryIds.isNotEmpty()
-    val hasUnsavedChanges: Boolean
-        get() = title.isNotBlank() || body.isNotBlank() ||
-            selectedCategoryIds.isNotEmpty() || selectedMediaCategories.isNotEmpty()
 
     /**
      * The standalone category currently selected (Misc / AniList Apps /

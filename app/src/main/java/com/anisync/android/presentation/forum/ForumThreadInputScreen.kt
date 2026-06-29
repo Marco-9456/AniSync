@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.forum
 
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
@@ -33,7 +34,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -117,9 +117,11 @@ fun ForumThreadInputScreen(
         )
     }
 
+    // Dirty = differs from the as-opened form: a media pre-attached by the "start discussion"
+    // entry point doesn't count, so backing out untouched skips the discard prompt.
     val externalUnsaved = uiState.title.isNotBlank() ||
         uiState.selectedCategoryIds.isNotEmpty() ||
-        uiState.selectedMediaCategories.isNotEmpty()
+        uiState.selectedMediaCategories.map { it.mediaId } != uiState.prefilledMediaCategoryIds
     val externallyValid = TitleBounds.isValid(uiState.title.trim().length) &&
         uiState.selectedCategoryIds.isNotEmpty()
 
@@ -311,7 +313,7 @@ private fun CategoriesAndMediaSheet(
     onRemoveMedia: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {

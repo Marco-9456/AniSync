@@ -20,7 +20,6 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -43,6 +42,7 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.details.RecommendMediaViewModel
 import com.anisync.android.type.MediaType
 
@@ -67,7 +67,7 @@ fun RecommendMediaSheet(
         viewModel.configure(mediaType, sourceMediaId)
     }
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {

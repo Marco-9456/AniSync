@@ -144,6 +144,8 @@ fun RichTextScaffold(
         bodyState.insertAtCursor(if (bodyState.text.isEmpty()) md else "\n$md\n")
     }
 
+    // Composed at scaffold level (outside the editor/preview pane slots), so on every width this is
+    // a window-modal sheet — writing is a focused task and the attach flow stays centred with it.
     if (enableMediaAttach && showAttachSheet) {
         MediaAttachSheet(
             viewModel = attachViewModel,

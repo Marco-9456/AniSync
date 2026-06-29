@@ -35,7 +35,6 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,7 +60,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.util.WindowModalSheetScope
 import kotlinx.coroutines.flow.first
 
 private const val DEFAULT_MAX_LENGTH = 10_000
@@ -120,11 +121,13 @@ fun RichTextInputSheet(
     }
 
     if (enableMediaAttach && showAttachSheet) {
-        MediaAttachSheet(
-            viewModel = attachViewModel,
-            onDismiss = { showAttachSheet = false },
-            onMarkdownReady = insertMarkdown
-        )
+        WindowModalSheetScope {
+            MediaAttachSheet(
+                viewModel = attachViewModel,
+                onDismiss = { showAttachSheet = false },
+                onMarkdownReady = insertMarkdown
+            )
+        }
     }
 
     LaunchedEffect(sheetState) {
@@ -156,7 +159,11 @@ fun RichTextInputSheet(
         )
     }
 
-    ModalBottomSheet(
+    // Writing is a focused task: even when launched from a pane, the composer (and the attach sheet
+    // stacked over it) stays a WINDOW-modal sheet — the user's attention is on the text, not on
+    // pane ownership, and the IME needs the full window anyway.
+    WindowModalSheetScope {
+    AppModalBottomSheet(
         onDismissRequest = dismissWithCheck,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() },
@@ -287,7 +294,9 @@ fun RichTextInputSheet(
             }
         }
     }
+    }
 }
+
 
 @Composable
 private fun HeaderRow(

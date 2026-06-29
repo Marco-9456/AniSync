@@ -18,6 +18,12 @@ data class WriteReviewUiState(
     val summary: String = "",
     val score: Int = 50,
     val isPrivate: Boolean = false,
+    // The as-loaded meta values (create-mode defaults until an existing review loads), so "unsaved
+    // changes" means "differs from what was loaded" — not "differs from a blank form", which used to
+    // flag every untouched edit session as dirty.
+    val initialSummary: String = "",
+    val initialScore: Int = 50,
+    val initialIsPrivate: Boolean = false,
     val summaryError: String? = null,
     val scoreError: String? = null,
     val bodyError: String? = null

@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -44,6 +43,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.UserSummary
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.emphasis
@@ -63,7 +63,7 @@ fun LikesSheet(
 
     LaunchedEffect(target) { viewModel.load(target) }
 
-    ModalBottomSheet(
+    AppModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface
