@@ -1499,8 +1499,10 @@ fun PageHeaderSection(
     val coverKey = remember(details.id) { TransitionKeys.cover(sourceScreen, details.id) }
     val titleKey = remember(details.id) { TransitionKeys.title(sourceScreen, details.id) }
     val coverQuality = com.anisync.android.domain.LocalCoverQuality.current
-    val cacheKey = remember(details.id, coverQuality) {
-        TransitionKeys.imageCacheKey(sourceScreen, details.id) + "-" + coverQuality.name
+    val headerCoverData = details.cover.url() ?: details.coverUrl
+    val cacheKey = remember(details.id, coverQuality, headerCoverData) {
+        TransitionKeys.imageCacheKey(sourceScreen, details.id) + "-" + coverQuality.name +
+            TransitionKeys.coverVersion(headerCoverData)
     }
 
     // --- UI Constants ---
@@ -1713,12 +1715,11 @@ private fun ContentRow(
         ImageRequest.Builder(context)
             .data(coverData)
             .crossfade(true)
-            // Reuse the source card's bitmap as the transition placeholder (keyed by media id) so
-            // the container morph stays seamless — but DON'T key the result by id. The result keeps
-            // Coil's default URL-based key, so when AniList changes the cover the new URL misses the
-            // cache and loads fresh. Pinning memoryCacheKey to the id made a changed cover URL
-            // un-bustable: the old poster stuck in memory even after a refresh updated the URL.
+            // cacheKey carries a cover-URL token (TransitionKeys.coverVersion), so it matches the
+            // source card's key for the shared-element morph yet changes when AniList swaps the
+            // cover — busting the old bitmap instead of leaving it pinned under the media-id key.
             .placeholderMemoryCacheKey(cacheKey.toString())
+            .memoryCacheKey(cacheKey.toString())
             .build()
     }
     val copyToClipboard = rememberCopyToClipboard()

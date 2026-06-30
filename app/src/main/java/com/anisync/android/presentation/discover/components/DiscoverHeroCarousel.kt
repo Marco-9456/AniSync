@@ -115,11 +115,11 @@ fun DiscoverHeroCarousel(
         ) { index ->
             val item = items[index]
             val coverData = item.cover.url() ?: item.coverUrl
-            val cacheKey = remember(item.mediaId, coverQuality) {
+            val cacheKey = remember(item.mediaId, coverQuality, coverData) {
                 TransitionKeys.imageCacheKey(
                     TransitionKeys.DISCOVER,
                     item.mediaId
-                ) + "-" + coverQuality.name
+                ) + "-" + coverQuality.name + TransitionKeys.coverVersion(coverData)
             }
             val imageRequest = remember(coverData, cacheKey) {
                 ImageRequest.Builder(context)

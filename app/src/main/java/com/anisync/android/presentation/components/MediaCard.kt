@@ -77,7 +77,7 @@ fun MediaCard(
     // Use TransitionKeys for consistent key generation
     val coverKey = TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId)
     val titleKey = TransitionKeys.title(TransitionKeys.DISCOVER, item.mediaId)
-    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
+    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name + TransitionKeys.coverVersion(item.cover.url() ?: item.coverUrl))
 
     with(sharedTransitionScope) {
         Card(

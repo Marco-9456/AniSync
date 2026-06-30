@@ -294,13 +294,16 @@ private fun ImmersiveCardContent(
     Box(modifier = Modifier.fillMaxSize()) {
         val context = LocalContext.current
         val coverData = item.cover.url() ?: item.coverUrl
-        val imageRequest = remember(coverData, cacheKey) {
+        // Append a cover-URL token so a changed cover busts the cache (see TransitionKeys.coverVersion);
+        // the media-id key alone never changes, leaving the old poster pinned in memory.
+        val versionedKey = cacheKey + TransitionKeys.coverVersion(coverData)
+        val imageRequest = remember(coverData, versionedKey) {
             ImageRequest.Builder(context)
                 .data(coverData)
                 .crossfade(200)
                 .memoryCachePolicy(CachePolicy.ENABLED)
-                .placeholderMemoryCacheKey(cacheKey)
-                .memoryCacheKey(cacheKey)
+                .placeholderMemoryCacheKey(versionedKey)
+                .memoryCacheKey(versionedKey)
                 .build()
         }
 

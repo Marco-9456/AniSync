@@ -144,6 +144,23 @@ object TransitionKeys {
      * @return Key in format: "{prefix}_cover_{mediaId}"
      */
     fun imageCacheKey(prefix: String, mediaId: Int): String = "${prefix}_cover_$mediaId"
+
+    /**
+     * A short, stable token identifying a *specific* cover image, derived from its URL
+     * filename (resolution-independent on the AniList CDN, e.g. `bx21459-hash.jpg`).
+     *
+     * Append to [imageCacheKey] when building a Coil cache key for a cover. The id-based key
+     * alone never changes, so when AniList swaps a media's cover the new URL can't evict the
+     * old bitmap and the stale poster stays pinned in memory. Adding this token makes a
+     * changed cover bust the cache, while an unchanged cover yields the same token on both the
+     * source card and the detail screen — so the shared-element transition still reuses the
+     * bitmap. Returns "" for a null/blank URL (key unchanged).
+     */
+    fun coverVersion(url: String?): String {
+        if (url.isNullOrBlank()) return ""
+        val file = url.substringAfterLast('/').substringBefore('?')
+        return "-v" + Integer.toHexString(file.hashCode())
+    }
     
     /**
      * Creates a shared element key for relation/related media covers.

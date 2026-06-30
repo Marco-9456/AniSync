@@ -87,7 +87,8 @@ fun ProfileMediaListCard(
     val title = entry.getTitle(titleLanguage)
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val cacheKey = TransitionKeys.imageCacheKey(transitionPrefix, entry.mediaId) +
-        "-" + com.anisync.android.domain.LocalCoverQuality.current.name
+        "-" + com.anisync.android.domain.LocalCoverQuality.current.name +
+        TransitionKeys.coverVersion(entry.cover.url() ?: entry.coverUrl)
 
     var showNoteSheet by remember(entry.id) { mutableStateOf(false) }
 

@@ -96,7 +96,7 @@ fun LibraryListCard(
     val containerKey = TransitionKeys.container(TransitionKeys.LIBRARY, entry.mediaId)
     val coverKey = TransitionKeys.cover(TransitionKeys.LIBRARY, entry.mediaId)
     val titleKey = TransitionKeys.title(TransitionKeys.LIBRARY, entry.mediaId)
-    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
+    val cacheKey = (TransitionKeys.imageCacheKey(TransitionKeys.LIBRARY, entry.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name + TransitionKeys.coverVersion(entry.cover.url() ?: entry.coverUrl))
 
     val total: Int? = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val progressPercent = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f

@@ -81,7 +81,7 @@ fun PosterCard(
     val coverKey = TransitionKeys.cover(transitionPrefix, item.mediaId)
     val gradientKey = TransitionKeys.gradient(transitionPrefix, item.mediaId)
     val titleKey = TransitionKeys.title(transitionPrefix, item.mediaId)
-    val cacheKey = (TransitionKeys.imageCacheKey(transitionPrefix, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name)
+    val cacheKey = (TransitionKeys.imageCacheKey(transitionPrefix, item.mediaId) + "-" + com.anisync.android.domain.LocalCoverQuality.current.name + TransitionKeys.coverVersion(item.cover.url() ?: item.coverUrl))
 
     with(sharedTransitionScope) {
         Card(
