@@ -726,6 +726,49 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `code wrapping a link and image keeps them instead of flattening to inline code`() =
+        runBlocking {
+            // AniList bios/activities (Narumi 503446) wrap styled sections in <code> for its
+            // monospace look, and the wrapper routinely holds links and images. wholeText() used to
+            // flatten the whole thing into one literal inline-code run, dropping the image and link.
+            val html = "<code><a href='https://anilist.co/user/x'>profile</a> " +
+                "<img src='https://i.imgur.com/AVRnHed.gif' width='80'></code>"
+            val parsed = RichTextParser.parse(html)
+            val blocks = parsed.blocks.deepBlocks()
+
+            assertTrue(blocks.any { it is RichTextBlock.Image })
+            assertTrue(
+                blocks.filterIsInstance<RichTextBlock.Text>()
+                    .any { it.hasLink("https://anilist.co/user/x") }
+            )
+            assertTrue(
+                blocks.filterIsInstance<RichTextBlock.Text>()
+                    .none { it.inlines.any { i -> i is RichTextInline.InlineCode } }
+            )
+        }
+
+    @Test
+    fun `spoiler wrapped in a styling code block still collapses`() = runBlocking {
+        // Narumi activity 87904511: the spoiler lived inside a monospace <code> wrapper, which
+        // previously flattened it (and the whole section) into one literal code run.
+        val html = "<p><code><span class='markdown_spoiler'><span>hidden " +
+            "<a href='https://x.test/'>link</a></span></span></code></p>"
+        val parsed = RichTextParser.parse(html)
+        val blocks = parsed.blocks.deepBlocks()
+
+        assertTrue(blocks.any { it is RichTextBlock.Spoiler })
+        assertTrue(blocks.none { it is RichTextBlock.CodeBlock })
+    }
+
+    @Test
+    fun `plain inline code without child elements stays inline code`() = runBlocking {
+        // Guard: a real inline code span (no element children) must still render as inline code.
+        val parsed = RichTextParser.parse("text <code>val x = 1</code> more")
+        val text = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>().first()
+        assertTrue(text.hasInlineCode("val x = 1"))
+    }
+
+    @Test
     fun `anilist-mangled bold around a mention renders clean bold with the link`() = runBlocking {
         // AniList activity 1100319902 (Full11): asHtml mangled `__…@Devoxita…__` into broken HTML —
         // `_<strong>_X__</strong>`, a stray underscore before the content and the closing markers

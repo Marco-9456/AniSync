@@ -265,12 +265,7 @@ internal class RichTextHtmlParser(
             }
 
             "a" -> handleAnchor(element, workingCtx)
-            "code" -> {
-                val code = element.wholeText()
-                if (code.isNotBlank()) {
-                    workingCtx.appendInline(RichTextInline.InlineCode(code))
-                }
-            }
+            "code" -> handleStyledCode(element, workingCtx)
 
             "iframe" -> handleIframe(element, workingCtx)
             "style", "head", "script" -> { /* strip CSS/JS blocks entirely */
@@ -314,12 +309,7 @@ internal class RichTextHtmlParser(
             ) { RichTextInline.Strikethrough(it) }
 
             "a" -> handleAnchor(element, ctx)
-            "code" -> {
-                val code = element.wholeText()
-                if (code.isNotBlank()) {
-                    ctx.appendInline(RichTextInline.InlineCode(code))
-                }
-            }
+            "code" -> handleStyledCode(element, ctx)
 
             "br" -> ctx.appendInline(RichTextInline.LineBreak)
             "span" -> handleSpan(element, ctx)
@@ -604,6 +594,30 @@ internal class RichTextHtmlParser(
             return
         }
 
+        if (hasBlockChildren(element)) {
+            walkChildren(element, ctx)
+        } else {
+            walkInlineChildren(element, ctx)
+        }
+    }
+
+    /**
+     * AniList users wrap styled sections in `<code>` purely for its monospace look, and such a
+     * `<code>` routinely holds rich content — links, images, `<br>`, even whole `~!spoiler!~`
+     * blocks. `wholeText()` would flatten all of that into one literal string (destroying the
+     * spoiler, images and links), which is how an entire bio/activity section collapsed into a
+     * single code-styled text run. So only a `<code>` with no element children is treated as real
+     * inline code; otherwise parse its children as rich content (monospace styling is dropped, but
+     * the structure survives — the same trade-off AniList's own renderer makes).
+     */
+    private fun handleStyledCode(element: Element, ctx: ParseContext) {
+        if (element.children().isEmpty()) {
+            val code = element.wholeText()
+            if (code.isNotBlank()) {
+                ctx.appendInline(RichTextInline.InlineCode(code))
+            }
+            return
+        }
         if (hasBlockChildren(element)) {
             walkChildren(element, ctx)
         } else {
