@@ -114,28 +114,6 @@ data class SectionGrid(
 )
 
 /**
- * Grid screen for displaying all characters from a media's cast.
- * @param mediaId The ID of the media
- * @param mediaTitle The title of the media (for display in app bar)
- */
-@Serializable
-data class MediaCharactersGrid(
-    val mediaId: Int,
-    val mediaTitle: String
-)
-
-/**
- * Grid screen for displaying all staff for a media.
- * @param mediaId The ID of the media
- * @param mediaTitle The title of the media (for display in app bar)
- */
-@Serializable
-data class MediaStaffGrid(
-    val mediaId: Int,
-    val mediaTitle: String
-)
-
-/**
  * Grid screen for displaying all related media.
  * @param mediaId The ID of the media
  * @param mediaTitle The title of the media (for display in app bar)

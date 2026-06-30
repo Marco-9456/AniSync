@@ -28,11 +28,9 @@ import com.anisync.android.presentation.calendar.CalendarScreen
 import com.anisync.android.presentation.notes.NotesJournalScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
-import com.anisync.android.presentation.details.MediaCharactersGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRecommendationsGridScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
-import com.anisync.android.presentation.details.MediaStaffGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
@@ -569,12 +567,6 @@ fun AniSyncNavHost(
                     onStudioClick = { studioId ->
                         navController.navigate(StudioDetails(studioId))
                     },
-                    onCastSeeAllClick = { mediaId, mediaTitle ->
-                        navController.navigate(MediaCharactersGrid(mediaId, mediaTitle))
-                    },
-                    onStaffSeeAllClick = { mediaId, mediaTitle ->
-                        navController.navigate(MediaStaffGrid(mediaId, mediaTitle))
-                    },
                     onRelatedSeeAllClick = { mediaId, mediaTitle ->
                         navController.navigate(MediaRelationsGrid(mediaId, mediaTitle))
                     },
@@ -881,50 +873,6 @@ fun AniSyncNavHost(
                         animatedVisibilityScope = this
                     )
                 }
-            }
-
-            // =================================================================
-            // MEDIA CHARACTERS GRID - Shared Axis Z (Depth)
-            // =================================================================
-            composable<MediaCharactersGrid>(
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
-            ) { backStackEntry ->
-                val grid: MediaCharactersGrid = backStackEntry.toRoute()
-                MediaCharactersGridScreen(
-                    mediaId = grid.mediaId,
-                    mediaTitle = grid.mediaTitle,
-                    onBackClick = { navController.popBackStack() },
-                    onCharacterClick = { characterId ->
-                        navController.navigate(CharacterDetails(characterId))
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
-            }
-
-            // =================================================================
-            // MEDIA STAFF GRID - Shared Axis Z (Depth)
-            // =================================================================
-            composable<MediaStaffGrid>(
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
-            ) { backStackEntry ->
-                val grid: MediaStaffGrid = backStackEntry.toRoute()
-                MediaStaffGridScreen(
-                    mediaId = grid.mediaId,
-                    mediaTitle = grid.mediaTitle,
-                    onBackClick = { navController.popBackStack() },
-                    onStaffClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
             }
 
             // =================================================================

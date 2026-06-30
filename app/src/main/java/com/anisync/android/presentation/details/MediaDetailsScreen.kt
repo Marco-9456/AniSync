@@ -184,8 +184,6 @@ fun MediaDetailsScreen(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
-    onCastSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    onStaffSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
@@ -596,22 +594,6 @@ fun MediaDetailsScreen(
                                 onStaffClick = navigateToStaffDetails,
                                 onVoiceActorClick = navigateToStaffDetails,
                                 onStudioClick = onStudioClick,
-                                onCastSeeAllClick = {
-                                    shouldKeepChromeOverlayForReturn = true
-                                    hasObservedDetailsReEnter = false
-                                    onCastSeeAllClick(
-                                        state.details.id,
-                                        state.details.getTitle(titleLanguage)
-                                    )
-                                },
-                                onStaffSeeAllClick = {
-                                    shouldKeepChromeOverlayForReturn = true
-                                    hasObservedDetailsReEnter = false
-                                    onStaffSeeAllClick(
-                                        state.details.id,
-                                        state.details.getTitle(titleLanguage)
-                                    )
-                                },
                                 onRelatedSeeAllClick = {
                                     shouldKeepChromeOverlayForReturn = true
                                     hasObservedDetailsReEnter = false
@@ -893,8 +875,6 @@ fun DetailsPageContent(
     onStaffClick: (Int) -> Unit,
     onVoiceActorClick: (Int) -> Unit,
     onStudioClick: (Int) -> Unit,
-    onCastSeeAllClick: () -> Unit,
-    onStaffSeeAllClick: () -> Unit,
     onRelatedSeeAllClick: () -> Unit,
     onRecommendationsSeeAllClick: () -> Unit,
     onWriteReviewClick: () -> Unit,

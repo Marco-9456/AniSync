@@ -47,11 +47,9 @@ import com.anisync.android.presentation.navigation.EditActivity
 import com.anisync.android.presentation.navigation.EditThreadBody
 import com.anisync.android.presentation.navigation.ForumMediaThreads
 import com.anisync.android.presentation.navigation.ForumThreadDetail
-import com.anisync.android.presentation.navigation.MediaCharactersGrid
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.MediaRecommendationsGrid
 import com.anisync.android.presentation.navigation.MediaRelationsGrid
-import com.anisync.android.presentation.navigation.MediaStaffGrid
 import com.anisync.android.presentation.navigation.StaffDetails
 import com.anisync.android.presentation.navigation.StudioDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -228,8 +226,6 @@ private fun NotificationDetailPane(
                     onCharacterClick = { navController.navigate(CharacterDetails(it)) },
                     onStaffClick = { navController.navigate(StaffDetails(it)) },
                     onStudioClick = { navController.navigate(StudioDetails(it)) },
-                    onCastSeeAllClick = { mId, t -> navController.navigate(MediaCharactersGrid(mId, t)) },
-                    onStaffSeeAllClick = { mId, t -> navController.navigate(MediaStaffGrid(mId, t)) },
                     onRelatedSeeAllClick = { mId, t -> navController.navigate(MediaRelationsGrid(mId, t)) },
                     onRecommendationsSeeAllClick = { mId, t ->
                         navController.navigate(MediaRecommendationsGrid(mId, t))

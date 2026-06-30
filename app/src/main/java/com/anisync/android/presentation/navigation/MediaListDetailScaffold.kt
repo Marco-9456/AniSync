@@ -65,11 +65,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
-import com.anisync.android.presentation.details.MediaCharactersGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRecommendationsGridScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
-import com.anisync.android.presentation.details.MediaStaffGridScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
@@ -440,8 +438,6 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },
             onStudioClick = { paneNav.navigate(StudioDetails(it)) },
-            onCastSeeAllClick = { mId, t -> paneNav.navigate(MediaCharactersGrid(mId, t)) },
-            onStaffSeeAllClick = { mId, t -> paneNav.navigate(MediaStaffGrid(mId, t)) },
             onRelatedSeeAllClick = { mId, t -> paneNav.navigate(MediaRelationsGrid(mId, t)) },
             onRecommendationsSeeAllClick = { mId, t ->
                 paneNav.navigate(MediaRecommendationsGrid(mId, t))
@@ -494,30 +490,6 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, PANE_SOURCE)) },
             onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StudioMediaGrid(sId, sName)) },
-        )
-    }
-
-    composable<MediaCharactersGrid> { backStackEntry ->
-        val route: MediaCharactersGrid = backStackEntry.toRoute()
-        MediaCharactersGridScreen(
-            mediaId = route.mediaId,
-            mediaTitle = route.mediaTitle,
-            onBackClick = { paneNav.popBackStack() },
-            onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
-            sharedTransitionScope = sharedScope,
-            animatedVisibilityScope = this,
-        )
-    }
-
-    composable<MediaStaffGrid> { backStackEntry ->
-        val route: MediaStaffGrid = backStackEntry.toRoute()
-        MediaStaffGridScreen(
-            mediaId = route.mediaId,
-            mediaTitle = route.mediaTitle,
-            onBackClick = { paneNav.popBackStack() },
-            onStaffClick = { paneNav.navigate(StaffDetails(it)) },
-            sharedTransitionScope = sharedScope,
-            animatedVisibilityScope = this,
         )
     }
 
