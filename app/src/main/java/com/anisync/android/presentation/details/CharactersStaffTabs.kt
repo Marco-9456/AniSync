@@ -545,7 +545,8 @@ private fun CastListCard(
                     contentDescription = voiceActor.nameUserPreferred,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(56.dp)
+                        .width(56.dp)
+                        .aspectRatio(PORTRAIT_ASPECT)
                         .clip(thumbShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .bouncyClickable(onClick = { onVoiceActorClick(voiceActor.id) }, clipShape = thumbShape)
