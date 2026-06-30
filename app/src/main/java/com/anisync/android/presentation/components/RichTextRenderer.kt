@@ -347,10 +347,15 @@ private fun RenderSingleBlock(
                         headingKind = block.kind,
                         linkListener = linkListener
                     )
+                    val textStyle = block.kind.withHeadingLineHeight(style).copy(color = color)
                     Text(
                         text = render.text,
                         inlineContent = render.inlineContent,
-                        style = block.kind.withHeadingLineHeight(style).copy(color = color),
+                        style = if (block.monospace) {
+                            textStyle.copy(fontFamily = FontFamily.Monospace)
+                        } else {
+                            textStyle
+                        },
                         textAlign = block.align.toTextAlign(),
                         modifier = Modifier.fillMaxWidth()
                     )

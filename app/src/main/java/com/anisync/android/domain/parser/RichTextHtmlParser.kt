@@ -131,7 +131,12 @@ internal class RichTextHtmlParser(
         }
 
         for (node in parent.childNodes()) {
-            val isBlockNode = node is Element && node.tagName().lowercase() in blockTags
+            // An inline element that wraps block-level children (e.g. a styling `<code>`/`<span>`
+            // around `<p>`/`<div>` sections, as AniList emits) is effectively block-level: treat it
+            // as a block node so its blocks land in the block flow instead of being swept into the
+            // inline-grouping pass (which would flow separate paragraphs side by side).
+            val isBlockNode = node is Element &&
+                (node.tagName().lowercase() in blockTags || hasBlockChildren(node))
 
             if (isBlockNode) {
                 flushInlineCtx()
@@ -618,11 +623,31 @@ internal class RichTextHtmlParser(
             }
             return
         }
+        // Parse the children into a detached context, then flag every text block monospace so the
+        // wrapper's look survives (AniList renders these sections in a monospace font).
+        ctx.flushText()
+        val codeCtx = ctx.detached()
         if (hasBlockChildren(element)) {
-            walkChildren(element, ctx)
+            walkChildren(element, codeCtx)
         } else {
-            walkInlineChildren(element, ctx)
+            walkInlineChildren(element, codeCtx)
         }
+        codeCtx.flushText()
+        for (block in codeCtx.blocks) {
+            ctx.emitBlock(markMonospace(block))
+        }
+    }
+
+    private fun markMonospace(block: RichTextBlock): RichTextBlock = when (block) {
+        is RichTextBlock.Text -> block.copy(monospace = true)
+        is RichTextBlock.Spoiler -> block.copy(children = block.children.map(::markMonospace))
+        is RichTextBlock.Blockquote -> block.copy(children = block.children.map(::markMonospace))
+        is RichTextBlock.InlineGroup -> block.copy(children = block.children.map(::markMonospace))
+        is RichTextBlock.ListBlock -> block.copy(
+            items = block.items.map { it.copy(children = it.children.map(::markMonospace)) }
+        )
+
+        else -> block
     }
 
     private fun handleVideoElement(element: Element, ctx: ParseContext) {

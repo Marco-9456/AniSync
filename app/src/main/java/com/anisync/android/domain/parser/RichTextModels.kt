@@ -57,7 +57,9 @@ sealed interface RichTextBlock {
     data class Text(
         val inlines: List<RichTextInline>,
         val kind: RichTextTextKind = RichTextTextKind.Paragraph,
-        override val align: RichTextAlignment = RichTextAlignment.Start
+        override val align: RichTextAlignment = RichTextAlignment.Start,
+        /** Rendered in a monospace font — set for text inside a `<code>` styling wrapper. */
+        val monospace: Boolean = false
     ) : RichTextBlock
 
     data class InlineGroup(

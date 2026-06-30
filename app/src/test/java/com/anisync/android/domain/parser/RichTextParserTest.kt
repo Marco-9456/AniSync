@@ -761,6 +761,21 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `code wrapping paragraph sections keeps them stacked and monospace`() = runBlocking {
+        // Narumi activity 87904511: jsoup reconstructs an inline <code> wrapping the whole centred
+        // post. Its paragraph sections (a divider, then "ANIME") must stay stacked vertically — not
+        // swept into an inline group that flows them side by side — and render monospace.
+        val html = "<code><p>divider line</p><p>ANIME</p></code>"
+        val parsed = RichTextParser.parse(html)
+
+        assertTrue(parsed.blocks.none { it is RichTextBlock.InlineGroup })
+        val texts = parsed.blocks.deepBlocks().filterIsInstance<RichTextBlock.Text>()
+        assertTrue(texts.any { it.debugInlineText().contains("divider line") })
+        assertTrue(texts.any { it.debugInlineText().contains("ANIME") })
+        assertTrue(texts.isNotEmpty() && texts.all { it.monospace })
+    }
+
+    @Test
     fun `plain inline code without child elements stays inline code`() = runBlocking {
         // Guard: a real inline code span (no element children) must still render as inline code.
         val parsed = RichTextParser.parse("text <code>val x = 1</code> more")
