@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import com.anisync.android.presentation.util.posterGridColumns
 import androidx.compose.foundation.lazy.grid.items
@@ -27,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -147,6 +150,20 @@ fun MediaStaffGridScreen(
         Modifier
     }
 
+    val staffPaging by viewModel.staff.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.ensureStaffLoaded() }
+
+    LaunchedEffect(listState, staffPaging.hasNextPage, staffPaging.initialized) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex != null && staffPaging.initialized && staffPaging.hasNextPage) {
+                    val totalItems = listState.layoutInfo.totalItemsCount
+                    if (lastIndex >= totalItems - 6) viewModel.loadMoreStaff()
+                }
+            }
+    }
+
     CollapsingTopBarScaffold(
         title = stringResource(R.string.section_staff),
         onBackClick = onBackClick,
@@ -180,7 +197,9 @@ fun MediaStaffGridScreen(
                 }
 
                 is DetailsUiState.Success -> {
-                    val staff = state.details.staff
+                    // Paged full staff list once loading has begun, falling back to the
+                    // cached preview list (page 1) for an instant first paint (#83).
+                    val staff = staffPaging.items.ifEmpty { state.details.staff }
                     if (staff.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -214,6 +233,7 @@ fun MediaStaffGridScreen(
                                 StaffItem(
                                     staff = member,
                                     onClick = { navigateToStaffDetails(member.id) },
+                                    fillCell = true,
                                     modifier = Modifier.animateItem(
                                         fadeInSpec = fadeSpec,
                                         fadeOutSpec = fadeSpec,
@@ -222,6 +242,19 @@ fun MediaStaffGridScreen(
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
+                            }
+
+                            if (staffPaging.isLoading && staff.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AppCircularProgressIndicator()
+                                    }
+                                }
                             }
                         }
                     }

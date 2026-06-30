@@ -380,6 +380,7 @@ fun FeaturedMediaItem(
     type: String? = null,
     onClick: () -> Unit,
     transitionPrefix: String = TransitionKeys.CHARACTER,
+    fillCell: Boolean = false,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier
@@ -393,6 +394,19 @@ fun FeaturedMediaItem(
     val coverKey = TransitionKeys.cover(transitionPrefix, mediaId)
     val titleKey = TransitionKeys.title(transitionPrefix, mediaId)
 
+    // Fill the grid cell at a uniform 3:4 cover ratio in a See-all grid; keep the natural
+    // fixed width in the horizontal preview rail so cards scroll side by side.
+    val widthModifier = if (fillCell) Modifier.fillMaxWidth() else Modifier.width(120.dp)
+    val coverSizeModifier = if (fillCell) {
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(3f / 4f)
+    } else {
+        Modifier
+            .height(160.dp)
+            .fillMaxWidth()
+    }
+
     val cardModifier = if (
         sharedTransitionScope != null &&
         animatedVisibilityScope != null &&
@@ -400,7 +414,7 @@ fun FeaturedMediaItem(
     ) {
         with(sharedTransitionScope) {
             modifier
-                .width(120.dp)
+                .then(widthModifier)
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = coverKey),
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -412,7 +426,7 @@ fun FeaturedMediaItem(
         }
     } else {
         modifier
-            .width(120.dp)
+            .then(widthModifier)
             .clip(cardShape)
             .clickable(onClick = onClick)
     }
@@ -441,9 +455,7 @@ fun FeaturedMediaItem(
             model = cover.url() ?: coverUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(160.dp)
-                .fillMaxWidth()
+            modifier = coverSizeModifier
                 .clip(cardShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )

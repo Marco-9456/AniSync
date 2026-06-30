@@ -61,6 +61,28 @@ interface DetailsRepository {
     suspend fun getStudioDetails(id: Int, page: Int = 1): Result<StudioDetails>
 
     /**
+     * Fetch a page of this media's full character (Cast) list. The base
+     * [MediaDetails] only carries the first page (perPage 25) for the preview rail,
+     * so the See-all grid pages through this to show the complete cast (#83).
+     * Returns the page's characters and whether a further page exists.
+     */
+    suspend fun getMediaCharacters(
+        mediaId: Int,
+        page: Int,
+        perPage: Int = 25
+    ): Result<Pair<List<CharacterInfo>, Boolean>>
+
+    /**
+     * Fetch a page of this media's full staff list. Mirrors [getMediaCharacters];
+     * the base [MediaDetails] only carries the first page for the preview rail.
+     */
+    suspend fun getMediaStaff(
+        mediaId: Int,
+        page: Int,
+        perPage: Int = 25
+    ): Result<Pair<List<StaffInfo>, Boolean>>
+
+    /**
      * Rate a media review.
      */
     suspend fun rateReview(

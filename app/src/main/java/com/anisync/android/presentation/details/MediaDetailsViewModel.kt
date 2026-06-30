@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -75,6 +76,19 @@ class MediaDetailsViewModel @Inject constructor(
 
     private val _hasMoreDiscussions = MutableStateFlow(false)
     val hasMoreDiscussions: StateFlow<Boolean> = _hasMoreDiscussions.asStateFlow()
+
+    // ---- Full Cast / Staff paging for the See-all grids (#83) ----
+    // GetMediaDetails only carries page 1 (perPage 25) of characters/staff for the
+    // preview rails; the grids page through these to show the complete list.
+    private val _cast = MutableStateFlow(PagedPeople<com.anisync.android.domain.CharacterInfo>())
+    val cast: StateFlow<PagedPeople<com.anisync.android.domain.CharacterInfo>> = _cast.asStateFlow()
+    private var castPage = 0
+    private var castLoading = false
+
+    private val _staff = MutableStateFlow(PagedPeople<com.anisync.android.domain.StaffInfo>())
+    val staff: StateFlow<PagedPeople<com.anisync.android.domain.StaffInfo>> = _staff.asStateFlow()
+    private var staffPage = 0
+    private var staffLoading = false
 
     val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
     
@@ -362,6 +376,9 @@ class MediaDetailsViewModel @Inject constructor(
     companion object {
         private const val FOLLOWING_PREVIEW_LIMIT = 10
         private const val DISCUSSIONS_PREVIEW_LIMIT = 5
+
+        // AniList caps nested character/staff connections at 25 per page.
+        private const val PEOPLE_PAGE_SIZE = 25
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
@@ -391,4 +408,87 @@ class MediaDetailsViewModel @Inject constructor(
             }
         }
     }
+
+    /** Kick off the first page of the full cast list when the See-all grid opens. */
+    fun ensureCastLoaded() {
+        if (castPage == 0 && !castLoading) loadMoreCast()
+    }
+
+    /** Append the next page of the full cast list; no-op while one is in flight or exhausted. */
+    fun loadMoreCast() {
+        if (castLoading) return
+        if (castPage > 0 && !_cast.value.hasNextPage) return
+        castLoading = true
+        _cast.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            val next = castPage + 1
+            when (val result = detailsRepository.getMediaCharacters(mediaId, next, PEOPLE_PAGE_SIZE)) {
+                is Result.Success -> {
+                    val (items, hasNext) = result.data
+                    castPage = next
+                    _cast.update { cur ->
+                        cur.copy(
+                            items = (cur.items + items).distinctBy { "${it.id}_${it.role}" },
+                            hasNextPage = hasNext,
+                            isLoading = false,
+                            initialized = true
+                        )
+                    }
+                }
+
+                is Result.Error -> _cast.update {
+                    it.copy(isLoading = false, initialized = true)
+                }
+            }
+            castLoading = false
+        }
+    }
+
+    /** Kick off the first page of the full staff list when the See-all grid opens. */
+    fun ensureStaffLoaded() {
+        if (staffPage == 0 && !staffLoading) loadMoreStaff()
+    }
+
+    /** Append the next page of the full staff list; no-op while one is in flight or exhausted. */
+    fun loadMoreStaff() {
+        if (staffLoading) return
+        if (staffPage > 0 && !_staff.value.hasNextPage) return
+        staffLoading = true
+        _staff.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            val next = staffPage + 1
+            when (val result = detailsRepository.getMediaStaff(mediaId, next, PEOPLE_PAGE_SIZE)) {
+                is Result.Success -> {
+                    val (items, hasNext) = result.data
+                    staffPage = next
+                    _staff.update { cur ->
+                        cur.copy(
+                            items = (cur.items + items).distinctBy { "${it.id}_${it.role}" },
+                            hasNextPage = hasNext,
+                            isLoading = false,
+                            initialized = true
+                        )
+                    }
+                }
+
+                is Result.Error -> _staff.update {
+                    it.copy(isLoading = false, initialized = true)
+                }
+            }
+            staffLoading = false
+        }
+    }
 }
+
+/**
+ * Paging state for the full Cast / Staff See-all grids. [items] is the running,
+ * de-duplicated list across all loaded pages; [initialized] flips true once the
+ * first page settles (so the grid can fall back to the cached preview list until
+ * then); [hasNextPage] gates further loads.
+ */
+data class PagedPeople<T>(
+    val items: List<T> = emptyList(),
+    val hasNextPage: Boolean = true,
+    val isLoading: Boolean = false,
+    val initialized: Boolean = false
+)

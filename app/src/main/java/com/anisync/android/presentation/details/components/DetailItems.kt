@@ -14,6 +14,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,12 +73,20 @@ import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
 
+/**
+ * Portrait aspect for character/staff cards (matches the 100×140 fixed-cell dimens).
+ * Used by the See-all grids so cells fill their column at a uniform ratio instead of
+ * a fixed width that floats inside a wider adaptive cell (#83).
+ */
+private const val PERSON_PORTRAIT_ASPECT = 5f / 7f
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterItem(
     character: CharacterInfo,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    fillCell: Boolean = false,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -87,10 +96,27 @@ fun CharacterItem(
     val nameClipLabel = stringResource(R.string.clip_label_character_name)
     val copiedNameMessage = stringResource(R.string.copied_name)
 
+    // In a grid cell, fill the column width and hold a uniform portrait aspect; in the
+    // horizontal preview rail, keep the natural fixed width so items scroll side by side.
+    val widthModifier = if (fillCell) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier.width(dimensionResource(R.dimen.character_item_width))
+    }
+    val imageSizeModifier = if (fillCell) {
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(PERSON_PORTRAIT_ASPECT)
+    } else {
+        Modifier
+            .height(dimensionResource(R.dimen.character_image_height))
+            .fillMaxWidth()
+    }
+
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
-            .width(dimensionResource(R.dimen.character_item_width))
+            .then(widthModifier)
             .clip(imageShape)
             .bouncyCombinedClickable(
                 onClick = onClick,
@@ -109,9 +135,7 @@ fun CharacterItem(
         val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
             val spatialSpec = AppMotion.rememberSpatialSpec()
             with(sharedTransitionScope) {
-                Modifier
-                    .height(dimensionResource(R.dimen.character_image_height))
-                    .fillMaxWidth()
+                imageSizeModifier
                     .sharedBounds(
                         sharedContentState = rememberSharedContentState(
                             key = TransitionKeys.characterImage(
@@ -126,9 +150,7 @@ fun CharacterItem(
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             }
         } else {
-            Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
+            imageSizeModifier
                 .clip(imageShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         }
@@ -166,6 +188,7 @@ fun StaffItem(
     staff: StaffInfo,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    fillCell: Boolean = false,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -178,10 +201,27 @@ fun StaffItem(
     val roleText = staff.role.takeIf { it.isNotBlank() }
         ?: staff.primaryOccupations.firstOrNull().orEmpty()
 
+    // In a grid cell, fill the column width and hold a uniform portrait aspect; in the
+    // horizontal preview rail, keep the natural fixed width so items scroll side by side.
+    val widthModifier = if (fillCell) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier.width(dimensionResource(R.dimen.character_item_width))
+    }
+    val imageSizeModifier = if (fillCell) {
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(PERSON_PORTRAIT_ASPECT)
+    } else {
+        Modifier
+            .height(dimensionResource(R.dimen.character_image_height))
+            .fillMaxWidth()
+    }
+
     Column(
         horizontalAlignment = Alignment.Start,
         modifier = modifier
-            .width(dimensionResource(R.dimen.character_item_width))
+            .then(widthModifier)
             .clip(imageShape)
             .bouncyCombinedClickable(
                 onClick = onClick,
@@ -200,9 +240,7 @@ fun StaffItem(
         val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
             val spatialSpec = AppMotion.rememberSpatialSpec()
             with(sharedTransitionScope) {
-                Modifier
-                    .height(dimensionResource(R.dimen.character_image_height))
-                    .fillMaxWidth()
+                imageSizeModifier
                     .sharedBounds(
                         sharedContentState = rememberSharedContentState(
                             key = TransitionKeys.staffImage(staff.id)
@@ -215,9 +253,7 @@ fun StaffItem(
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             }
         } else {
-            Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
+            imageSizeModifier
                 .clip(imageShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         }
@@ -322,14 +358,30 @@ fun RelationItem(
     onClick: () -> Unit,
     transitionPrefix: String = TransitionKeys.MEDIA_DETAILS,
     modifier: Modifier = Modifier,
+    fillCell: Boolean = false,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
 
+    val widthModifier = if (fillCell) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier.width(dimensionResource(R.dimen.character_item_width))
+    }
+    val imageSizeModifier = if (fillCell) {
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(PERSON_PORTRAIT_ASPECT)
+    } else {
+        Modifier
+            .height(dimensionResource(R.dimen.character_image_height))
+            .fillMaxWidth()
+    }
+
     Column(
         modifier = modifier
-            .width(dimensionResource(R.dimen.character_item_width))
+            .then(widthModifier)
             .clip(imageShape)
             .clickable(onClick = onClick)
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
@@ -337,9 +389,7 @@ fun RelationItem(
         val imageModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
             val spatialSpec = AppMotion.rememberSpatialSpec()
             with(sharedTransitionScope) {
-                Modifier
-                    .height(dimensionResource(R.dimen.character_image_height))
-                    .fillMaxWidth()
+                imageSizeModifier
                     .sharedBounds(
                         sharedContentState = rememberSharedContentState(
                             key = TransitionKeys.cover(transitionPrefix, relation.id)
@@ -352,9 +402,7 @@ fun RelationItem(
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             }
         } else {
-            Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
+            imageSizeModifier
                 .clip(imageShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         }
@@ -386,15 +434,31 @@ fun RecommendationItem(
     recommendation: RecommendedMedia,
     onClick: () -> Unit,
     onRate: (isUpvote: Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fillCell: Boolean = false
 ) {
     val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
     val isUpvoted = recommendation.userRating == "RATE_UP"
     val isDownvoted = recommendation.userRating == "RATE_DOWN"
 
+    val widthModifier = if (fillCell) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier.width(dimensionResource(R.dimen.character_item_width))
+    }
+    val imageSizeModifier = if (fillCell) {
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(PERSON_PORTRAIT_ASPECT)
+    } else {
+        Modifier
+            .height(dimensionResource(R.dimen.character_image_height))
+            .fillMaxWidth()
+    }
+
     Column(
         modifier = modifier
-            .width(dimensionResource(R.dimen.character_item_width))
+            .then(widthModifier)
             .clip(imageShape)
             .bouncyClickable(
                 onClick = onClick,
@@ -404,9 +468,7 @@ fun RecommendationItem(
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
     ) {
         Box(
-            modifier = Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
+            modifier = imageSizeModifier
                 .clip(imageShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {

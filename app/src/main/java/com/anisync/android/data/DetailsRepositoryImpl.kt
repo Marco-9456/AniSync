@@ -2,7 +2,9 @@ package com.anisync.android.data
 
 import com.anisync.android.DeleteMediaListEntryMutation
 import com.anisync.android.GetCharacterDetailsQuery
+import com.anisync.android.GetMediaCharactersQuery
 import com.anisync.android.GetMediaDetailsQuery
+import com.anisync.android.GetMediaStaffQuery
 import com.anisync.android.GetStaffDetailsQuery
 import com.anisync.android.GetStudioDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
@@ -1056,6 +1058,76 @@ class DetailsRepositoryImpl @Inject constructor(
                 media = mediaList,
                 hasNextPage = hasNextPage
             )
+        }
+    }
+
+    override suspend fun getMediaCharacters(
+        mediaId: Int,
+        page: Int,
+        perPage: Int
+    ): Result<Pair<List<CharacterInfo>, Boolean>> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                GetMediaCharactersQuery(
+                    id = Optional.present(mediaId),
+                    page = Optional.present(page),
+                    perPage = Optional.present(perPage)
+                )
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val connection = response.data?.Media?.characters
+                ?: throw Exception("Media not found")
+
+            val characters = connection.edges?.filterNotNull()?.map { edge ->
+                CharacterInfo(
+                    id = edge.node?.id ?: 0,
+                    nameFull = edge.node?.name?.full ?: "Unknown",
+                    nameNative = edge.node?.name?.native,
+                    nameUserPreferred = edge.node?.name?.userPreferred ?: "Unknown",
+                    imageUrl = edge.node?.image?.large,
+                    role = edge.role?.name ?: "UNKNOWN"
+                )
+            }?.distinctBy { "${it.id}_${it.role}" } ?: emptyList()
+
+            characters to (connection.pageInfo?.hasNextPage ?: false)
+        }
+    }
+
+    override suspend fun getMediaStaff(
+        mediaId: Int,
+        page: Int,
+        perPage: Int
+    ): Result<Pair<List<com.anisync.android.domain.StaffInfo>, Boolean>> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                GetMediaStaffQuery(
+                    id = Optional.present(mediaId),
+                    page = Optional.present(page),
+                    perPage = Optional.present(perPage)
+                )
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val connection = response.data?.Media?.staff
+                ?: throw Exception("Media not found")
+
+            val staff = connection.edges?.filterNotNull()?.mapNotNull { edge ->
+                val node = edge.node ?: return@mapNotNull null
+                com.anisync.android.domain.StaffInfo(
+                    id = node.id,
+                    nameFull = node.name?.full ?: "Unknown",
+                    nameNative = node.name?.native,
+                    nameUserPreferred = node.name?.userPreferred ?: node.name?.full ?: "Unknown",
+                    imageUrl = node.image?.large,
+                    role = edge.role.orEmpty(),
+                    primaryOccupations = node.primaryOccupations?.filterNotNull().orEmpty()
+                )
+            }?.distinctBy { "${it.id}_${it.role}" } ?: emptyList()
+
+            staff to (connection.pageInfo?.hasNextPage ?: false)
         }
     }
 }

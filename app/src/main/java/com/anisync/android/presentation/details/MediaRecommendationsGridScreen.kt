@@ -213,6 +213,7 @@ fun MediaRecommendationsGridScreen(
                             items(recommendations, key = { "rec_${it.id}" }) { recommendation ->
                                 RecommendationItem(
                                     recommendation = recommendation,
+                                    fillCell = true,
                                     onClick = { navigateToRecommendation(recommendation.id) },
                                     onRate = { isUpvote ->
                                         val rating = when {

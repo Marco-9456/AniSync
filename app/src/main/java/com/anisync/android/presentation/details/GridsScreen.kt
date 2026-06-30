@@ -286,6 +286,7 @@ fun CharacterMediaGridScreen(
                                     role = mediaItem.characterRole,
                                     year = mediaItem.startYear,
                                     onClick = { navigateToMediaDetails(mediaItem.id) },
+                                    fillCell = true,
                                     transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.CHARACTER_GRID,
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
@@ -717,6 +718,20 @@ fun MediaCharactersGridScreen(
         Modifier
     }
 
+    val cast by viewModel.cast.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.ensureCastLoaded() }
+
+    LaunchedEffect(listState, cast.hasNextPage, cast.initialized) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex != null && cast.initialized && cast.hasNextPage) {
+                    val totalItems = listState.layoutInfo.totalItemsCount
+                    if (lastIndex >= totalItems - 6) viewModel.loadMoreCast()
+                }
+            }
+    }
+
     CollapsingTopBarScaffold(
         title = stringResource(R.string.section_cast),
         onBackClick = onBackClick,
@@ -750,7 +765,9 @@ fun MediaCharactersGridScreen(
                 }
 
                 is DetailsUiState.Success -> {
-                    val characters = state.details.characters
+                    // Render the paged full cast once it has started loading, falling back to
+                    // the cached preview list (page 1) for an instant first paint (#83).
+                    val characters = cast.items.ifEmpty { state.details.characters }
                     if (characters.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -784,6 +801,7 @@ fun MediaCharactersGridScreen(
                                 CharacterItem(
                                     character = character,
                                     onClick = { navigateToCharacterDetails(character.id) },
+                                    fillCell = true,
                                     modifier = Modifier.animateItem(
                                         fadeInSpec = fadeSpec,
                                         fadeOutSpec = fadeSpec,
@@ -792,6 +810,19 @@ fun MediaCharactersGridScreen(
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
+                            }
+
+                            if (cast.isLoading && characters.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AppCircularProgressIndicator()
+                                    }
+                                }
                             }
                         }
                     }
@@ -975,6 +1006,7 @@ fun MediaRelationsGridScreen(
                                 RelationItem(
                                     relation = relation,
                                     onClick = { navigateToRelationDetails(relation.id) },
+                                    fillCell = true,
                                     transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.RELATIONS_GRID,
                                     modifier = Modifier.animateItem(
                                         fadeInSpec = fadeSpec,
@@ -1227,6 +1259,7 @@ fun StudioMediaGridScreen(
                                     role = if (media.isMainStudio) mainStudioChipLabel else null,
                                     year = media.year,
                                     onClick = { navigateToMediaDetails(media.mediaId) },
+                                    fillCell = true,
                                     transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.STUDIO_GRID,
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
@@ -1495,6 +1528,7 @@ fun StaffProductionMediaGridScreen(
                                     role = media.staffRole,
                                     year = media.startYear,
                                     onClick = { navigateToMediaDetails(media.mediaId) },
+                                    fillCell = true,
                                     transitionPrefix = com.anisync.android.presentation.util.TransitionKeys.STAFF_PRODUCTION_GRID,
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
