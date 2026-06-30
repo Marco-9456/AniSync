@@ -1081,13 +1081,24 @@ class DetailsRepositoryImpl @Inject constructor(
                 ?: throw Exception("Media not found")
 
             val characters = connection.edges?.filterNotNull()?.map { edge ->
+                val voiceActors = edge.voiceActors?.filterNotNull()?.mapNotNull { va ->
+                    VoiceActor(
+                        id = va.id ?: 0,
+                        nameFull = va.name?.full ?: "Unknown",
+                        nameNative = va.name?.native,
+                        nameUserPreferred = va.name?.userPreferred ?: va.name?.full ?: "Unknown",
+                        imageUrl = va.image?.large ?: va.image?.medium,
+                        language = va.languageV2
+                    )
+                }.orEmpty()
                 CharacterInfo(
                     id = edge.node?.id ?: 0,
                     nameFull = edge.node?.name?.full ?: "Unknown",
                     nameNative = edge.node?.name?.native,
                     nameUserPreferred = edge.node?.name?.userPreferred ?: "Unknown",
                     imageUrl = edge.node?.image?.large,
-                    role = edge.role?.name ?: "UNKNOWN"
+                    role = edge.role?.name ?: "UNKNOWN",
+                    voiceActors = voiceActors
                 )
             }?.distinctBy { "${it.id}_${it.role}" } ?: emptyList()
 

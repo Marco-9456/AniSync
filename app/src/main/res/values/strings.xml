@@ -147,6 +147,8 @@
     <!-- Details Screen -->
     <string name="section_cast">Cast</string>
     <string name="section_staff">Staff</string>
+    <string name="details_filter_role">Role</string>
+    <string name="details_filter_language">Voice actor language</string>
     <string name="section_related">Related</string>
     <string name="section_recommendations">Recommendations</string>
     <string name="section_reviews">Reviews</string>
@@ -573,6 +575,7 @@
     <!-- Media details section tabs -->
     <string name="details_tab_overview">Overview</string>
     <string name="details_tab_characters">Characters</string>
+    <string name="details_tab_staff">Staff</string>
     <string name="details_tab_social">Social</string>
     <string name="profile_activity_all">All</string>
     <string name="profile_activity_status">Status</string>

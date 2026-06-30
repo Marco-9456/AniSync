@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PlayArrow
@@ -83,6 +84,8 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -146,6 +149,7 @@ import com.anisync.android.presentation.details.components.DetailsSkeletonConten
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
 import com.anisync.android.presentation.details.components.FollowingListSheet
+import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.details.components.FollowingRow
 import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.UserNotesCard
@@ -205,6 +209,8 @@ fun MediaDetailsScreen(
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val cast by viewModel.cast.collectAsStateWithLifecycle()
+    val staff by viewModel.staff.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
@@ -579,9 +585,16 @@ fun MediaDetailsScreen(
                                 listState = listState,
                                 following = following,
                                 hasMoreFollowing = hasMoreFollowing,
+                                cast = cast,
+                                staff = staff,
+                                onEnsureCastLoaded = viewModel::ensureCastLoaded,
+                                onLoadMoreCast = viewModel::loadMoreCast,
+                                onEnsureStaffLoaded = viewModel::ensureStaffLoaded,
+                                onLoadMoreStaff = viewModel::loadMoreStaff,
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
                                 onStaffClick = navigateToStaffDetails,
+                                onVoiceActorClick = navigateToStaffDetails,
                                 onStudioClick = onStudioClick,
                                 onCastSeeAllClick = {
                                     shouldKeepChromeOverlayForReturn = true
@@ -832,12 +845,14 @@ private fun DiscussionStat(icon: ImageVector, value: Int) {
 enum class DetailsTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.details_tab_overview),
     CHARACTERS(R.string.details_tab_characters),
+    STAFF(R.string.details_tab_staff),
     SOCIAL(R.string.details_tab_social)
 }
 
 private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
     DetailsTab.OVERVIEW -> Icons.Outlined.Info
     DetailsTab.CHARACTERS -> Icons.Default.Group
+    DetailsTab.STAFF -> Icons.Default.Badge
     DetailsTab.SOCIAL -> Icons.Default.Forum
 }
 
@@ -867,9 +882,16 @@ fun DetailsPageContent(
     listState: LazyListState,
     following: List<MediaFollowingEntry>,
     hasMoreFollowing: Boolean,
+    cast: PagedPeople<com.anisync.android.domain.CharacterInfo>,
+    staff: PagedPeople<com.anisync.android.domain.StaffInfo>,
+    onEnsureCastLoaded: () -> Unit,
+    onLoadMoreCast: () -> Unit,
+    onEnsureStaffLoaded: () -> Unit,
+    onLoadMoreStaff: () -> Unit,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
+    onVoiceActorClick: (Int) -> Unit,
     onStudioClick: (Int) -> Unit,
     onCastSeeAllClick: () -> Unit,
     onStaffSeeAllClick: () -> Unit,
@@ -939,9 +961,8 @@ fun DetailsPageContent(
     val availableTabs = remember(displayCharacters, displayStaff) {
         buildList {
             add(DetailsTab.OVERVIEW)
-            if (displayCharacters.isNotEmpty() || displayStaff.isNotEmpty()) {
-                add(DetailsTab.CHARACTERS)
-            }
+            if (displayCharacters.isNotEmpty()) add(DetailsTab.CHARACTERS)
+            if (displayStaff.isNotEmpty()) add(DetailsTab.STAFF)
             add(DetailsTab.SOCIAL)
         }
     }
@@ -949,6 +970,62 @@ fun DetailsPageContent(
     // If the active tab disappears (data changed underneath), fall back to Overview.
     LaunchedEffect(availableTabs) {
         if (selectedTab !in availableTabs) selectedTab = DetailsTab.OVERVIEW
+    }
+
+    // ---- Characters / Staff tab: view mode, filters, sort, language ----
+    var peopleViewMode by rememberSaveable { mutableStateOf(PeopleViewMode.GRID) }
+    var characterSort by rememberSaveable { mutableStateOf(PeopleSort.RELEVANCE) }
+    var characterRole by rememberSaveable { mutableStateOf(CharacterRoleFilter.ALL) }
+    var characterLanguage by rememberSaveable { mutableStateOf<String?>(null) }
+    var staffSort by rememberSaveable { mutableStateOf(PeopleSort.RELEVANCE) }
+    var showCharSortSheet by remember { mutableStateOf(false) }
+    var showCharRoleSheet by remember { mutableStateOf(false) }
+    var showCharLanguageSheet by remember { mutableStateOf(false) }
+    var showStaffSortSheet by remember { mutableStateOf(false) }
+
+    val peopleColumns = com.anisync.android.presentation.util.profileGridColumns(
+        baseMinSize = 110.dp, compactColumns = 3, railWidth = 0.dp
+    )
+
+    // Cast seeds from the cached preview (no VAs) for an instant first paint, then the paged fetch
+    // (with VAs) takes over. Languages + the displayed/sorted list derive from whichever is current.
+    val castSource = if (cast.items.isNotEmpty()) cast.items else details.characters
+    val voiceLanguages = remember(cast.items) { availableVoiceActorLanguages(cast.items) }
+    val effectiveLanguage = characterLanguage ?: voiceLanguages.firstOrNull()
+    val displayedCast = remember(castSource, characterRole, characterSort) {
+        castSource.applyCharacterFilters(characterRole, characterSort)
+    }
+    val staffSource = if (staff.items.isNotEmpty()) staff.items else details.staff
+    val displayedStaff = remember(staffSource, staffSort) {
+        staffSource.applyStaffFilters(staffSort)
+    }
+
+    // Lazily fetch the full list the first time its tab is opened.
+    LaunchedEffect(selectedTab) {
+        when (selectedTab) {
+            DetailsTab.CHARACTERS -> onEnsureCastLoaded()
+            DetailsTab.STAFF -> onEnsureStaffLoaded()
+            else -> {}
+        }
+    }
+
+    // Page the active people tab as the shared list scrolls near its end. rememberUpdatedState keeps
+    // the paging flags fresh without restarting the snapshotFlow on every appended page.
+    val currentCast by rememberUpdatedState(cast)
+    val currentStaff by rememberUpdatedState(staff)
+    LaunchedEffect(selectedTab, listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex == null) return@collect
+                val total = listState.layoutInfo.totalItemsCount
+                when (selectedTab) {
+                    DetailsTab.CHARACTERS ->
+                        if (currentCast.initialized && currentCast.hasNextPage && lastIndex >= total - 6) onLoadMoreCast()
+                    DetailsTab.STAFF ->
+                        if (currentStaff.initialized && currentStaff.hasNextPage && lastIndex >= total - 6) onLoadMoreStaff()
+                    else -> {}
+                }
+            }
     }
 
     // Sticky tabs. The strip is a real in-list item that rides with the scroll, so it can never
@@ -1172,65 +1249,50 @@ fun DetailsPageContent(
                 }
 
                 DetailsTab.CHARACTERS -> {
-                    // Cast
-                    if (displayCharacters.isNotEmpty()) {
-                        item(key = "cast") {
-                            Column {
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                                SectionHeader(
-                                    title = stringResource(R.string.section_cast),
-                                    level = HeaderLevel.Section,
-                                    onActionClick = if (details.characters.size > 10) onCastSeeAllClick else null
-                                )
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                                    modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                                ) {
-                                    items(items = displayCharacters, key = { "character_${it.id}" }) { character ->
-                                        CharacterItem(
-                                            character = character,
-                                            onClick = { onCharacterClick(character.id) },
-                                            modifier = Modifier.animateItem(), // Expressive motion
-                                            sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    castTabContent(
+                        characters = displayedCast,
+                        columns = peopleColumns,
+                        viewMode = peopleViewMode,
+                        language = effectiveLanguage,
+                        isLoadingMore = cast.isLoading && cast.items.isNotEmpty(),
+                        onCharacterClick = onCharacterClick,
+                        onVoiceActorClick = onVoiceActorClick,
+                        filterBar = {
+                            CastFilterBar(
+                                viewMode = peopleViewMode,
+                                sort = characterSort,
+                                role = characterRole,
+                                language = effectiveLanguage,
+                                languageActive = characterLanguage != null,
+                                onToggleView = { peopleViewMode = peopleViewMode.toggled() },
+                                onSortClick = { showCharSortSheet = true },
+                                onRoleClick = { showCharRoleSheet = true },
+                                onLanguageClick = { showCharLanguageSheet = true }
+                            )
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
 
-                    // Staff
-                    if (displayStaff.isNotEmpty()) {
-                        item(key = "staff") {
-                            Column {
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_extra_large)))
-                                SectionHeader(
-                                    title = stringResource(R.string.section_staff),
-                                    level = HeaderLevel.Section,
-                                    onActionClick = if (details.staff.size > 10) onStaffSeeAllClick else null
-                                )
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                                    modifier = Modifier.height(dimensionResource(R.dimen.character_item_height))
-                                ) {
-                                    items(items = displayStaff, key = { "staff_${it.id}" }) { staff ->
-                                        StaffItem(
-                                            staff = staff,
-                                            onClick = { onStaffClick(staff.id) },
-                                            modifier = Modifier.animateItem(),
-                                            sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                DetailsTab.STAFF -> {
+                    staffTabContent(
+                        staff = displayedStaff,
+                        columns = peopleColumns,
+                        viewMode = peopleViewMode,
+                        isLoadingMore = staff.isLoading && staff.items.isNotEmpty(),
+                        onStaffClick = onStaffClick,
+                        filterBar = {
+                            StaffFilterBar(
+                                viewMode = peopleViewMode,
+                                sort = staffSort,
+                                onToggleView = { peopleViewMode = peopleViewMode.toggled() },
+                                onSortClick = { showStaffSortSheet = true }
+                            )
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
                 }
 
                 DetailsTab.SOCIAL -> {
@@ -1437,6 +1499,47 @@ fun DetailsPageContent(
             },
             onUserClick = onUserClick,
             onDismiss = { selectedReview = null }
+        )
+    }
+
+    if (showCharSortSheet) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.sort),
+            items = PeopleSort.entries,
+            selected = characterSort,
+            itemLabel = { it.label },
+            onSelect = { characterSort = it; showCharSortSheet = false },
+            onDismiss = { showCharSortSheet = false }
+        )
+    }
+    if (showCharRoleSheet) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.details_filter_role),
+            items = CharacterRoleFilter.entries,
+            selected = characterRole,
+            itemLabel = { it.label },
+            onSelect = { characterRole = it; showCharRoleSheet = false },
+            onDismiss = { showCharRoleSheet = false }
+        )
+    }
+    if (showCharLanguageSheet && voiceLanguages.isNotEmpty()) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.details_filter_language),
+            items = voiceLanguages,
+            selected = effectiveLanguage,
+            itemLabel = { it },
+            onSelect = { characterLanguage = it; showCharLanguageSheet = false },
+            onDismiss = { showCharLanguageSheet = false }
+        )
+    }
+    if (showStaffSortSheet) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.sort),
+            items = PeopleSort.entries,
+            selected = staffSort,
+            itemLabel = { it.label },
+            onSelect = { staffSort = it; showStaffSortSheet = false },
+            onDismiss = { showStaffSortSheet = false }
         )
     }
 

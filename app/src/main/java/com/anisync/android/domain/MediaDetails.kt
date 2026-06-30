@@ -131,7 +131,13 @@ data class CharacterInfo(
     val nameNative: String?,
     val nameUserPreferred: String,
     val imageUrl: String?,
-    val role: String
+    val role: String,
+    /**
+     * Voice actors for this character across all languages (empty for the cached
+     * preview list, populated by the paged [GetMediaCharacters] fetch). The Characters
+     * tab groups these by [VoiceActor.language] to drive the language filter (#83 follow-up).
+     */
+    val voiceActors: List<VoiceActor> = emptyList()
 )
 
 @Serializable

@@ -7,6 +7,19 @@ query GetMediaCharacters($id: Int, $page: Int, $perPage: Int) {
             }
             edges {
                 role
+                voiceActors(sort: [RELEVANCE, ID]) {
+                    id
+                    name {
+                        userPreferred
+                        full
+                        native
+                    }
+                    image {
+                        large
+                        medium
+                    }
+                    languageV2
+                }
                 node {
                     id
                     name {
