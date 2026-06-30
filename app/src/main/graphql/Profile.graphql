@@ -535,6 +535,7 @@ query GetUserFollowState($userId: Int!) {
   User(id: $userId) {
     id
     isFollowing
+    isFollower
   }
 }
 

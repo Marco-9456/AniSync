@@ -50,6 +50,7 @@ fun ProfileTopSection(
     onEditProfileClick: () -> Unit,
     onShowBiography: () -> Unit,
     isFollowing: Boolean = false,
+    isFollowerOfViewer: Boolean = false,
     isFollowLoading: Boolean = false,
     onFollowClick: () -> Unit = {},
     onMessageClick: () -> Unit = {},
@@ -88,6 +89,8 @@ fun ProfileTopSection(
                 ProfileIdentityInfo(
                     profile = profile,
                     isOwnProfile = isOwnProfile,
+                    viewerFollows = isFollowing,
+                    followsViewer = isFollowerOfViewer,
                     modifier = Modifier.fillMaxWidth()
                 )
 

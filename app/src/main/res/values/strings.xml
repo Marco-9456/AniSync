@@ -586,6 +586,8 @@
     <string name="profile_biography_title">Biography</string>
     <string name="profile_follow">Follow</string>
     <string name="profile_following">Following</string>
+    <string name="profile_follows_you">Follows you</string>
+    <string name="profile_mutual">Mutual</string>
     <string name="profile_message">Message</string>
     <string name="profile_more_options">More options</string>
     <string name="profile_no_recent_updates">No recent updates.</string>

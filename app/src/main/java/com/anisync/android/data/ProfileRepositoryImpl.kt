@@ -15,6 +15,7 @@ import com.anisync.android.data.util.safeApiCall
 import android.os.SystemClock
 import android.os.Trace
 import com.anisync.android.domain.CachePolicy
+import com.anisync.android.domain.FollowState
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRefreshTimings
@@ -611,7 +612,7 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFollowState(userId: Int, policy: CachePolicy): Result<Boolean> =
+    override suspend fun getFollowState(userId: Int, policy: CachePolicy): Result<FollowState> =
         dedupe("follow:$userId:$policy") {
             safeApiCall {
                 val response = apolloClient.query(GetUserFollowStateQuery(userId = userId))
@@ -623,7 +624,11 @@ class ProfileRepositoryImpl @Inject constructor(
                     )
                 }
 
-                response.data?.User?.isFollowing ?: false
+                val user = response.data?.User
+                FollowState(
+                    isFollowing = user?.isFollowing ?: false,
+                    isFollower = user?.isFollower ?: false
+                )
             }
         }
 

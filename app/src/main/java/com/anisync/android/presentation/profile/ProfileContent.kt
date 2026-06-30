@@ -165,6 +165,7 @@ fun ProfileContent(
                     onAction(ProfileAction.SetBiographySheetVisible(true))
                 },
                 isFollowing = uiState.isFollowingUser,
+                isFollowerOfViewer = uiState.isFollowerOfViewer,
                 isFollowLoading = uiState.isFollowLoading,
                 onFollowClick = { onAction(ProfileAction.ToggleFollow) },
                 onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },

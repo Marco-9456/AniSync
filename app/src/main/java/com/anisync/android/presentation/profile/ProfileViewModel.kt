@@ -144,6 +144,7 @@ class ProfileViewModel @Inject constructor(
         val messageSentEvent: Long? = null,
         val isRefreshing: Boolean = false,
         val isFollowingUser: Boolean = false,
+        val isFollowerOfViewer: Boolean = false,
         val isFollowLoading: Boolean = false,
         val editingActivity: com.anisync.android.domain.UserActivity? = null,
         val isSavingActivityEdit: Boolean = false
@@ -419,6 +420,7 @@ class ProfileViewModel @Inject constructor(
         withFavorites.copy(
             isRefreshing = local.isRefreshing,
             isFollowingUser = local.isFollowingUser,
+            isFollowerOfViewer = local.isFollowerOfViewer,
             isFollowLoading = local.isFollowLoading,
             selectedTab = local.selectedTab,
             selectedActivityFilter = local.selectedActivityFilter,
@@ -889,7 +891,8 @@ class ProfileViewModel @Inject constructor(
                 is Result.Success -> {
                     localState.update {
                         it.copy(
-                            isFollowingUser = result.data,
+                            isFollowingUser = result.data.isFollowing,
+                            isFollowerOfViewer = result.data.isFollower,
                             isFollowLoading = false
                         )
                     }

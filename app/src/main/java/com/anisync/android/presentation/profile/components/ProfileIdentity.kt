@@ -168,7 +168,11 @@ fun ProfileBannerSurface(
 fun ProfileIdentityInfo(
     profile: UserProfile,
     isOwnProfile: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Whether the authenticated viewer follows this user (drives the Mutual vs Follows you label). */
+    viewerFollows: Boolean = false,
+    /** Whether this user follows the authenticated viewer back. */
+    followsViewer: Boolean = false
 ) {
     val joinedDate = remember(profile.createdAt) {
         profile.createdAt?.let {
@@ -188,9 +192,9 @@ fun ProfileIdentityInfo(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val level = remember(profile.animeCount, profile.mangaCount) {
                 (profile.animeCount + profile.mangaCount) / 10
@@ -219,6 +223,12 @@ fun ProfileIdentityInfo(
                         tier = profile.donatorTier
                     )
                 }
+            }
+
+            // Mutual-follow indicator (#81): only on others' profiles, and only when they
+            // follow the viewer. "Mutual" when the viewer follows back, else "Follows you".
+            if (!isOwnProfile && followsViewer) {
+                FollowRelationshipChip(isMutual = viewerFollows)
             }
         }
 
@@ -459,6 +469,29 @@ private fun RegularDonatorBadge(badgeText: String, tier: Int, modifier: Modifier
             text = badgeText,
             style = MaterialTheme.typography.labelLarge.emphasis(),
             color = Color.White,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+    }
+}
+
+/**
+ * Mutual-follow chip shown in the identity badge row on another user's profile. Reads "Mutual" when
+ * the viewer and the user follow each other, or "Follows you" when only the user follows the viewer.
+ * Styled like the sibling level/donator chips so it sits inline with them.
+ */
+@Composable
+private fun FollowRelationshipChip(isMutual: Boolean, modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = CircleShape,
+        modifier = modifier
+    ) {
+        Text(
+            text = stringResource(
+                if (isMutual) R.string.profile_mutual else R.string.profile_follows_you
+            ),
+            style = MaterialTheme.typography.labelLarge.emphasis(),
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }

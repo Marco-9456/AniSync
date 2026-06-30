@@ -279,6 +279,7 @@ private fun ProfileTwoPane(
                 profile = profile,
                 isOwnProfile = isOwnProfile,
                 isFollowing = uiState.isFollowingUser,
+                isFollowerOfViewer = uiState.isFollowerOfViewer,
                 isFollowLoading = uiState.isFollowLoading,
                 onFollowClick = { onAction(ProfileAction.ToggleFollow) },
                 onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
@@ -325,6 +326,7 @@ private fun ProfileIdentityPane(
     profile: UserProfile,
     isOwnProfile: Boolean,
     isFollowing: Boolean,
+    isFollowerOfViewer: Boolean,
     isFollowLoading: Boolean,
     onFollowClick: () -> Unit,
     onMessageClick: () -> Unit,
@@ -342,6 +344,8 @@ private fun ProfileIdentityPane(
         ProfileIdentityInfo(
             profile = profile,
             isOwnProfile = isOwnProfile,
+            viewerFollows = isFollowing,
+            followsViewer = isFollowerOfViewer,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = IdentityPanePadding)

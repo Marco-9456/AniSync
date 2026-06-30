@@ -27,6 +27,8 @@ data class ProfileUiState(
     val profile: UserProfile? = null,
     val errorMessage: String? = null,
     val isFollowingUser: Boolean = false,
+    /** Whether the viewed user follows the authenticated viewer back (drives the Follows you / Mutual chip). */
+    val isFollowerOfViewer: Boolean = false,
     val isFollowLoading: Boolean = false,
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,

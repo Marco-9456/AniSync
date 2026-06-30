@@ -30,6 +30,22 @@ data class ProfileRefreshTimings(
  */
 enum class CachePolicy { CacheFirst, NetworkOnly, NetworkFirst }
 
+/**
+ * The mutual follow relationship between the authenticated viewer and a target user.
+ *
+ * - [isFollowing]: the viewer follows the target (AniList `User.isFollowing`).
+ * - [isFollower]: the target follows the viewer (AniList `User.isFollower`).
+ *
+ * Both true = a mutual follow. [isFollower] is unaffected by the viewer's own
+ * follow toggle — it only changes when the target follows/unfollows the viewer.
+ */
+data class FollowState(
+    val isFollowing: Boolean,
+    val isFollower: Boolean
+) {
+    val isMutual: Boolean get() = isFollowing && isFollower
+}
+
 interface ProfileRepository {
     /**
      * Observe user profile from local cache (reactive).
@@ -69,12 +85,13 @@ interface ProfileRepository {
     ): Result<UserSocialPage>
 
     /**
-     * Check whether the authenticated user follows [userId].
+     * Fetch the follow relationship between the authenticated user and [userId]:
+     * whether the viewer follows the target and whether the target follows back.
      */
     suspend fun getFollowState(
         userId: Int,
         policy: CachePolicy = CachePolicy.NetworkFirst
-    ): Result<Boolean>
+    ): Result<FollowState>
 
     /**
      * Toggle follow state for [userId] and return the new state.
