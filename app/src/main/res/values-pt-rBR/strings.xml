@@ -1078,4 +1078,7 @@
     <string name="notes_journal_empty_title">Sem notas ainda</string>
     <string name="notes_journal_empty_subtitle">Notas que você adicionar aos itens da sua biblioteca aparecerão aqui.</string>
     <string name="notes_journal_no_results">Nenhuma nota corresponde à sua pesquisa.</string>
+    <string name="cd_pause">Pausar</string>
+    <string name="cd_fullscreen">Entrar em Tela Cheia</string>
+    <string name="cd_exit_fullscreen">Sair da Tela Cheia</string>
 </resources>
