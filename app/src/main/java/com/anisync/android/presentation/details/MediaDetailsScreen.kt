@@ -1713,8 +1713,12 @@ private fun ContentRow(
         ImageRequest.Builder(context)
             .data(coverData)
             .crossfade(true)
-            .placeholderMemoryCacheKey(cacheKey.toString()) // Ensure key is string if needed
-            .memoryCacheKey(cacheKey.toString())
+            // Reuse the source card's bitmap as the transition placeholder (keyed by media id) so
+            // the container morph stays seamless — but DON'T key the result by id. The result keeps
+            // Coil's default URL-based key, so when AniList changes the cover the new URL misses the
+            // cache and loads fresh. Pinning memoryCacheKey to the id made a changed cover URL
+            // un-bustable: the old poster stuck in memory even after a refresh updated the URL.
+            .placeholderMemoryCacheKey(cacheKey.toString())
             .build()
     }
     val copyToClipboard = rememberCopyToClipboard()

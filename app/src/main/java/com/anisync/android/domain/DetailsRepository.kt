@@ -15,6 +15,15 @@ interface DetailsRepository {
     suspend fun refreshMediaDetails(id: Int): Result<Unit>
 
     /**
+     * Refresh from network only when the cached copy is missing or older than its
+     * status-based TTL (stale-while-revalidate). Cheap no-op when the cache is still
+     * fresh. Called on screen entry so a revisited page self-updates (e.g. a newly
+     * published airing schedule or changed cover) without a manual pull-to-refresh,
+     * while finished media rarely re-hits the API.
+     */
+    suspend fun refreshMediaDetailsIfStale(id: Int): Result<Unit>
+
+    /**
      * Update media list entry (status, progress).
      */
     suspend fun updateMediaListEntry(

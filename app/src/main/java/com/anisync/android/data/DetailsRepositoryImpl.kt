@@ -46,6 +46,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+private const val HOUR_MS = 60L * 60L * 1000L
+private const val DAY_MS = 24L * HOUR_MS
+
 private val MONTH_ABBR = arrayOf(
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -304,6 +307,36 @@ class DetailsRepositoryImpl @Inject constructor(
 
             mediaDetailsDao.insert(details.toEntity())
         }
+    }
+
+    override suspend fun refreshMediaDetailsIfStale(id: Int): Result<Unit> {
+        val cached = mediaDetailsDao.getById(id)
+            ?: return refreshMediaDetails(id) // nothing cached yet → must fetch
+
+        val now = System.currentTimeMillis()
+
+        // The cached airing countdown has already elapsed (an episode aired since we
+        // cached this): the data is provably stale, so refetch regardless of TTL.
+        // nextAiringEpisodeTime is a Unix timestamp in seconds.
+        val countdownElapsed =
+            cached.nextAiringEpisodeTime?.let { it * 1000L < now } == true
+
+        val age = now - cached.lastUpdated
+        val stale = countdownElapsed || age >= staleAfterMillis(cached.status)
+
+        return if (stale) refreshMediaDetails(id) else Result.Success(Unit)
+    }
+
+    /**
+     * How long a cached media-details row stays fresh, keyed by AniList media status.
+     * Airing / upcoming media changes often (new episodes, countdown, schedule
+     * publication) so it expires quickly; finished media rarely changes so it lingers.
+     */
+    private fun staleAfterMillis(status: String): Long = when (status) {
+        "RELEASING" -> 3 * HOUR_MS          // weekly episodes + live countdown
+        "NOT_YET_RELEASED" -> 6 * HOUR_MS   // air schedule can be published any time
+        "FINISHED", "CANCELLED" -> 7 * DAY_MS
+        else -> DAY_MS                       // HIATUS / unknown
     }
 
     override suspend fun updateMediaListEntry(

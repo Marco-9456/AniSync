@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -124,20 +123,23 @@ class MediaDetailsViewModel @Inject constructor(
         )
 
     init {
-        // Offline-first: only hit the network when nothing is cached for this entry. A configuration
-        // change (rotation) or re-entry keeps the cached copy — the ViewModel and the Room-backed
-        // uiState flow both survive — so no redundant refetch. Pull-to-refresh still forces [refresh].
-        loadIfNotCached()
+        // Offline-first + stale-while-revalidate: the Room-backed uiState flow renders the cached
+        // copy instantly (and survives rotation / re-entry, so no flash), while a silent background
+        // fetch refreshes it when the cached row is missing or older than its status-based TTL.
+        // This is why a revisited page picks up a newly-published airing schedule, score, or cover
+        // on its own — no manual pull-to-refresh required. PTR still forces [refresh].
+        refreshIfStale()
         loadFollowingPreview()
         loadDiscussionsPreview()
     }
 
-    /** Fetches from the network only when there is no cached [MediaDetails] row for this id yet. */
-    private fun loadIfNotCached() {
+    /**
+     * Background revalidation on entry. Does not drive the PTR spinner and never blocks the cache
+     * render — the repository decides (by cache age + media status) whether a network call happens.
+     */
+    private fun refreshIfStale() {
         viewModelScope.launch {
-            if (getMediaDetailsUseCase(mediaId).first() == null) {
-                detailsRepository.refreshMediaDetails(mediaId)
-            }
+            detailsRepository.refreshMediaDetailsIfStale(mediaId)
         }
     }
 
