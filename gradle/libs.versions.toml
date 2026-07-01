@@ -36,6 +36,7 @@ runtime = "1.11.0"
 appcompat = "1.7.1"
 reorderable = "3.1.0"
 okhttp = "4.12.0"
+biometric = "1.2.0-alpha05"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -96,6 +97,7 @@ media3-datasource-okhttp = { group = "androidx.media3", name = "media3-datasourc
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric-ktx", version.ref = "biometric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

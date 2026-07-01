@@ -274,6 +274,7 @@ dependencies {
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.reorderable)
     implementation(libs.okhttp)
+    implementation(libs.androidx.biometric)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.RoundedCorner
@@ -94,6 +95,7 @@ fun LookAndFeelScreen(
     val themeMode = uiState.themeMode
     val preferredStreamingService = uiState.preferredStreamingService
     val hapticEnabled = uiState.hapticEnabled
+    val appLockEnabled = uiState.appLockEnabled
     val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
     val navBarStyle = uiState.navBarStyle
@@ -241,6 +243,18 @@ fun LookAndFeelScreen(
             )
             // "Show adult content" now lives under Settings ▸ AniList Account, where it follows the
             // AniList account option by default and can be overridden per device.
+        }
+
+        SettingsGroup {
+            // Privacy: gate the app behind the device's own screen lock (biometric or PIN/pattern/
+            // password). The toggle is refused in the ViewModel when no screen lock is set up.
+            SwitchSettingsItem(
+                icon = Icons.Default.Lock,
+                title = stringResource(R.string.settings_app_lock),
+                subtitle = stringResource(R.string.settings_app_lock_desc),
+                checked = appLockEnabled,
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetAppLockEnabled(it)) }
+            )
         }
     }
 }

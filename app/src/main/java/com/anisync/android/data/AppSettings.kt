@@ -172,6 +172,11 @@ class AppSettings @Inject constructor(
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
 
+    // App lock: require the device screen lock (biometric or PIN/pattern/password) to open the app.
+    // Device-local privacy toggle; default off.
+    private val _appLockEnabled = MutableStateFlow(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
+    val appLockEnabled: StateFlow<Boolean> = _appLockEnabled.asStateFlow()
+
     // Navigation bar style (anchored rounded top vs floating pill)
     private val _navBarStyle = MutableStateFlow(readNavBarStyle())
     val navBarStyle: StateFlow<NavBarStyle> = _navBarStyle.asStateFlow()
@@ -602,6 +607,12 @@ class AppSettings @Inject constructor(
     fun setHapticEnabled(enabled: Boolean) {
         _hapticEnabled.value = enabled
         prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
+    }
+
+    /** Enable or disable the app lock (device screen-lock gate). */
+    fun setAppLockEnabled(enabled: Boolean) {
+        _appLockEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, enabled).apply()
     }
 
     fun setNavBarStyle(style: NavBarStyle) {
@@ -1044,6 +1055,7 @@ companion object {
         private const val KEY_AMOLED_ENABLED = "amoled_enabled"
         private const val KEY_AVATAR_SHAPE = "avatar_shape"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
+        private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
         private const val KEY_NAV_BAR_STYLE = "nav_bar_style"
         private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
         private const val KEY_NAV_BAR_CORNER_RADIUS = "nav_bar_corner_radius"
