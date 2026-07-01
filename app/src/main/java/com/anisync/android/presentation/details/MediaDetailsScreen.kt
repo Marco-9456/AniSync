@@ -84,8 +84,6 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -991,25 +989,6 @@ fun DetailsPageContent(
         }
     }
 
-    // Page the active people tab as the shared list scrolls near its end. rememberUpdatedState keeps
-    // the paging flags fresh without restarting the snapshotFlow on every appended page.
-    val currentCast by rememberUpdatedState(cast)
-    val currentStaff by rememberUpdatedState(staff)
-    LaunchedEffect(selectedTab, listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastIndex ->
-                if (lastIndex == null) return@collect
-                val total = listState.layoutInfo.totalItemsCount
-                when (selectedTab) {
-                    DetailsTab.CHARACTERS ->
-                        if (currentCast.initialized && currentCast.hasNextPage && lastIndex >= total - 6) onLoadMoreCast()
-                    DetailsTab.STAFF ->
-                        if (currentStaff.initialized && currentStaff.hasNextPage && lastIndex >= total - 6) onLoadMoreStaff()
-                    else -> {}
-                }
-            }
-    }
-
     // Sticky tabs. The strip is a real in-list item that rides with the scroll, so it can never
     // desync from the content — the old overlay tracked listState item offsets and drifted while the
     // two-pane splitter was being dragged (a continuous resize), pinning the strip mid-content. A
@@ -1236,7 +1215,10 @@ fun DetailsPageContent(
                         columns = peopleColumns,
                         viewMode = peopleViewMode,
                         language = effectiveLanguage,
-                        isLoadingMore = cast.isLoading && cast.items.isNotEmpty(),
+                        hasNextPage = cast.hasNextPage,
+                        loadedCount = cast.items.size,
+                        isPaginating = cast.isLoading,
+                        onLoadMore = onLoadMoreCast,
                         onCharacterClick = onCharacterClick,
                         onVoiceActorClick = onVoiceActorClick,
                         filterBar = {
@@ -1262,7 +1244,10 @@ fun DetailsPageContent(
                         staff = displayedStaff,
                         columns = peopleColumns,
                         viewMode = peopleViewMode,
-                        isLoadingMore = staff.isLoading && staff.items.isNotEmpty(),
+                        hasNextPage = staff.hasNextPage,
+                        loadedCount = staff.items.size,
+                        isPaginating = staff.isLoading,
+                        onLoadMore = onLoadMoreStaff,
                         onStaffClick = onStaffClick,
                         filterBar = {
                             StaffFilterBar(

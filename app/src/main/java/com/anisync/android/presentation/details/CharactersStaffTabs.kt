@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -142,7 +143,10 @@ fun LazyListScope.castTabContent(
     columns: Int,
     viewMode: PeopleViewMode,
     language: String?,
-    isLoadingMore: Boolean,
+    hasNextPage: Boolean,
+    loadedCount: Int,
+    isPaginating: Boolean,
+    onLoadMore: () -> Unit,
     onCharacterClick: (Int) -> Unit,
     onVoiceActorClick: (Int) -> Unit,
     filterBar: @Composable () -> Unit,
@@ -150,11 +154,6 @@ fun LazyListScope.castTabContent(
     animatedVisibilityScope: AnimatedVisibilityScope?
 ) {
     item(key = "cast_filter_bar") { filterBar() }
-
-    if (characters.isEmpty()) {
-        item(key = "cast_empty") { PeopleEmptyState(stringResource(R.string.empty_no_characters)) }
-        return
-    }
 
     when (viewMode) {
         PeopleViewMode.GRID -> {
@@ -197,9 +196,13 @@ fun LazyListScope.castTabContent(
         }
     }
 
-    if (isLoadingMore) {
-        item(key = "cast_loading") { PeopleLoadingFooter() }
+    // Empty state only once the stream is exhausted; while pages remain the footer keeps paging,
+    // because a role-filtered early page can be empty while matching characters sit deeper (#89).
+    if (characters.isEmpty() && !hasNextPage) {
+        item(key = "cast_empty") { PeopleEmptyState(stringResource(R.string.empty_no_characters)) }
     }
+
+    peopleLoadMoreFooter(hasNextPage, loadedCount, isPaginating, onLoadMore, keyPrefix = "cast")
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -207,18 +210,16 @@ fun LazyListScope.staffTabContent(
     staff: List<StaffInfo>,
     columns: Int,
     viewMode: PeopleViewMode,
-    isLoadingMore: Boolean,
+    hasNextPage: Boolean,
+    loadedCount: Int,
+    isPaginating: Boolean,
+    onLoadMore: () -> Unit,
     onStaffClick: (Int) -> Unit,
     filterBar: @Composable () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?
 ) {
     item(key = "staff_filter_bar") { filterBar() }
-
-    if (staff.isEmpty()) {
-        item(key = "staff_empty") { PeopleEmptyState(stringResource(R.string.empty_no_staff)) }
-        return
-    }
 
     when (viewMode) {
         PeopleViewMode.GRID -> {
@@ -257,9 +258,11 @@ fun LazyListScope.staffTabContent(
         }
     }
 
-    if (isLoadingMore) {
-        item(key = "staff_loading") { PeopleLoadingFooter() }
+    if (staff.isEmpty() && !hasNextPage) {
+        item(key = "staff_empty") { PeopleEmptyState(stringResource(R.string.empty_no_staff)) }
     }
+
+    peopleLoadMoreFooter(hasNextPage, loadedCount, isPaginating, onLoadMore, keyPrefix = "staff")
 }
 
 /** [androidx.compose.foundation.lazy.itemsIndexed] with a stable string key per row. */
@@ -298,15 +301,35 @@ private fun PeopleEmptyState(text: String) {
     }
 }
 
-@Composable
-private fun PeopleLoadingFooter() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        AppCircularProgressIndicator()
+/**
+ * Unified infinite-scroll trigger + footer spinner for the people tabs (mirrors the profile
+ * activity pager, #89). Emitted only while [hasNextPage]; being the last item, LazyColumn composes
+ * it only when the user nears the end of the (filtered) list, so a single place requests the next
+ * page — no per-row trigger stampede. The effect keys on [loadedCount] (the RAW, unfiltered page
+ * count) so it walks forward a page at a time when a role-filtered page adds no matching rows, yet
+ * never retries after a failed fetch (count unchanged). The spinner shows only while a page is in
+ * flight.
+ */
+private fun LazyListScope.peopleLoadMoreFooter(
+    hasNextPage: Boolean,
+    loadedCount: Int,
+    isPaginating: Boolean,
+    onLoadMore: () -> Unit,
+    keyPrefix: String
+) {
+    if (!hasNextPage) return
+    item(key = "${keyPrefix}_loadmore") {
+        LaunchedEffect(loadedCount) {
+            if (!isPaginating) onLoadMore()
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isPaginating) AppCircularProgressIndicator()
+        }
     }
 }
 

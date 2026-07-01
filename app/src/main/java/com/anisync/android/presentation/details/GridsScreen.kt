@@ -175,7 +175,11 @@ fun CharacterMediaGridScreen(
         Modifier
     }
 
-    LaunchedEffect(listState) {
+    // Key on the raw loaded count so paging walks forward when the "On my list" filter yields a page
+    // with no matching items: the visible grid doesn't grow, so a layout-only trigger would stall with
+    // hasNextPage still true (#89). A failed fetch leaves the count unchanged, so it won't retry.
+    val loadedMediaCount = (uiState as? CharacterDetailsUiState.Success)?.details?.media?.size ?: 0
+    LaunchedEffect(listState, loadedMediaCount) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastIndex ->
                 if (lastIndex != null && uiState is CharacterDetailsUiState.Success) {
@@ -451,7 +455,9 @@ fun StaffMediaGridScreen(
         Modifier
     }
 
-    LaunchedEffect(listState) {
+    // Key on the raw loaded count so paging walks forward under the "On my list" filter (#89).
+    val loadedMediaCount = (uiState as? StaffDetailsUiState.Success)?.details?.voicedCharacters?.size ?: 0
+    LaunchedEffect(listState, loadedMediaCount) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastIndex ->
                 if (lastIndex != null && uiState is StaffDetailsUiState.Success) {
@@ -918,7 +924,9 @@ fun StudioMediaGridScreen(
         Modifier
     }
 
-    LaunchedEffect(listState) {
+    // Key on the raw loaded count so paging walks forward under the "On my list" / "Main studio" filters (#89).
+    val loadedMediaCount = (uiState as? StudioDetailsUiState.Success)?.details?.media?.size ?: 0
+    LaunchedEffect(listState, loadedMediaCount) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastIndex ->
                 if (lastIndex != null && uiState is StudioDetailsUiState.Success) {
@@ -1194,7 +1202,9 @@ fun StaffProductionMediaGridScreen(
         Modifier
     }
 
-    LaunchedEffect(listState) {
+    // Key on the raw loaded count so paging walks forward under the "On my list" filter (#89).
+    val loadedProductionCount = (uiState as? StaffDetailsUiState.Success)?.details?.productionMedia?.size ?: 0
+    LaunchedEffect(listState, loadedProductionCount) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastIndex ->
                 if (lastIndex != null && uiState is StaffDetailsUiState.Success) {
