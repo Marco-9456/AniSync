@@ -168,4 +168,23 @@
     <string name="no_translation_app_found">Aucune application de traduction trouvée</string>
     <string name="fab_close_menu">Fermer le menu</string>
     <string name="fab_open_menu">Ouvrir le menu</string>
+    <string name="feed_filter_all">Tout</string>
+    <string name="details_filter_role">Rôle</string>
+    <string name="details_filter_language">Langue du doubleur</string>
+    <string name="fab_open_menu_library">Ouvrir le menu pour gérer le statut de la bibliothèque</string>
+    <string name="action_remove">Supprimer</string>
+    <string name="a11y_remove_from_library">Supprimer de la bibliothèque</string>
+    <string name="a11y_status_updated">État changé en %1$s</string>
+    <string name="a11y_entry_removed">Entrée supprimée de la bibliothèque</string>
+    <string name="content_description_cover">Couverture</string>
+    <string name="section_information">Information</string>
+    <string name="stat_score">Score</string>
+    <string name="stat_format">Format</string>
+    <string name="badge_up_to_date">À jour</string>
+    <string name="empty_no_characters">Aucun personnage trouvé</string>
+    <string name="empty_no_staff">Aucun membre de l\'équipe trouvé</string>
+    <string name="empty_no_recommendations">Aucune recommandation pour l\'instant</string>
+    <string name="empty_no_related">Aucun média associé n\'a été trouvé</string>
+    <string name="action_favorite">Favoris</string>
+    <string name="action_share">Partager</string>
 </resources>
