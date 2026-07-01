@@ -215,7 +215,7 @@ private fun PaginatingSpinner() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        AppCircularProgressIndicator(modifier = Modifier.height(24.dp))
+        AppCircularProgressIndicator()
     }
 }
 
