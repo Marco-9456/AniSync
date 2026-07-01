@@ -233,7 +233,13 @@ private fun ClampedActivityBody(
                 }
             }
     ) {
-        content()
+        // Bodies emit stacked siblings (a leading Spacer + the media/rich-text block), so they must
+        // arrange vertically. Placing them straight in the Box would overlap the Spacer onto the
+        // block and swallow the header↔body gap — the list-activity teaser then sat tighter here
+        // than the same card in the Activity feed. A Column restores the intended spacing.
+        Column(modifier = Modifier.fillMaxWidth()) {
+            content()
+        }
     }
 }
 
@@ -296,7 +302,11 @@ private fun CollapsibleActivityBody(
                     }
                 }
         ) {
-            content()
+            // See ClampedActivityBody: bodies are stacked siblings, so a Column keeps the leading
+            // Spacer from overlapping the block and preserves the header↔body gap.
+            Column(modifier = Modifier.fillMaxWidth()) {
+                content()
+            }
             // Collapsed teaser: a transparent layer over the visible preview swallows taps on
             // peeking images / links and routes them to the card (open the activity). Drawn after
             // the content so it sits on top; clipped to the collapsed bounds, so hidden content
