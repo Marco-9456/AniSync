@@ -411,7 +411,7 @@
     <string name="no_score">Sem nota</string>
     <string name="dates">Datas</string>
     <string name="start_date">Data de início</string>
-    <string name="completed_date">Data de concluído</string>
+    <string name="completed_date">Data de conclusão</string>
     <string name="no_date">Não definido</string>
     <string name="times_rewatched">Vezes reassistido</string>
     <string name="times_reread">Vezes relido</string>
@@ -1085,4 +1085,9 @@
     <string name="cd_pause">Pausar</string>
     <string name="cd_fullscreen">Entrar em Tela Cheia</string>
     <string name="cd_exit_fullscreen">Sair da Tela Cheia</string>
+    <string name="details_filter_role">Função</string>
+    <string name="details_filter_language">Idioma do dublador</string>
+    <string name="details_tab_staff">Equipe</string>
+    <string name="profile_follows_you">Segue você</string>
+    <string name="profile_mutual">Mútuo</string>
 </resources>
