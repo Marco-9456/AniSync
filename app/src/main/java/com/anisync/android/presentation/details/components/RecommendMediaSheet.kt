@@ -183,7 +183,8 @@ private fun RecommendResultRow(entry: LibraryEntry, onClick: () -> Unit) {
                     entry.format?.name?.replace('_', ' '),
                     entry.startedAt?.let {
                         java.text.SimpleDateFormat("yyyy", java.util.Locale.US)
-                            .format(java.util.Date(it * 1000))
+                            .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+                            .format(java.util.Date(it))
                     }
                 )
                 if (metaParts.isNotEmpty()) {

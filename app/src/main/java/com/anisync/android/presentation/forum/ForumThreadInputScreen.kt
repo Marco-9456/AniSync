@@ -504,7 +504,11 @@ private fun MediaResultRow(entry: LibraryEntry, isSelected: Boolean, onClick: ()
                 )
                 val metaParts = listOfNotNull(
                     entry.format?.name?.replace('_', ' '),
-                    entry.startedAt?.let { java.text.SimpleDateFormat("yyyy", java.util.Locale.US).format(java.util.Date(it * 1000)) }
+                    entry.startedAt?.let {
+                        java.text.SimpleDateFormat("yyyy", java.util.Locale.US)
+                            .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+                            .format(java.util.Date(it))
+                    }
                 )
                 if (metaParts.isNotEmpty()) {
                     Text(
