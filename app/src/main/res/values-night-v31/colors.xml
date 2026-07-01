@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Dark counterpart for Android 12+: dynamicDarkColorScheme() background is the wallpaper-derived
+      dark neutral (framework system_neutral1, ~tone 10), so the dark splash matches the dynamic dark
+      surface instead of the greenish static backgroundDark.
+    -->
+    <color name="splash_background">@android:color/system_neutral1_900</color>
+</resources>

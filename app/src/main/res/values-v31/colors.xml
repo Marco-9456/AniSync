@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Android 12+ splash background. On S+ the app's default palette ("dynamic") builds its scheme with
+      dynamicLightColorScheme(), whose background is the wallpaper-derived neutral (framework
+      system_neutral1, ~tone 99) — NOT the greenish static backgroundLight the base values/ splash uses.
+      Point the cold-launch window at that same neutral token so the splash blends into the first
+      Compose frame instead of flashing green before it (follow-up to issue #84).
+    -->
+    <color name="splash_background">@android:color/system_neutral1_10</color>
+</resources>
