@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AniSync" parent="Theme.AppCompat.Light.NoActionBar" />
+    <!--
+      Base app shell theme. DayNight so the window background resolves per night qualifier, and the
+      background is the app surface (not the AppCompat default white) so the cold-start window and any
+      brief pre-Compose frame match the theme instead of flashing bright in dark mode (issue #84).
+    -->
+    <style name="Theme.AniSync" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+
+    <!--
+      Cold-start splash theme (androidx core-splashscreen). The launcher activity boots into this; it
+      draws the app surface + centered brand icon, then installSplashScreen() hands off to Theme.AniSync.
+      windowSplashScreenBackground shares splash_background, so the splash is dark on a dark device.
+    -->
+    <style name="Theme.AniSync.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.AniSync</item>
+    </style>
 </resources>

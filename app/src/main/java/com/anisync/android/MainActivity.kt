@@ -1,12 +1,19 @@
 package com.anisync.android
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -125,6 +132,28 @@ class MainActivity : AppCompatActivity() {
     fun consumePendingDeepLink() { _pendingDeepLink.value = null }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install the androidx splash screen before super.onCreate so the branded launch window
+        // (theme-aware background + icon) shows through cold start, then hands off to Theme.AniSync.
+        val splashScreen = installSplashScreen()
+        splashScreen.setOnExitAnimationListener { splashProvider ->
+            // Graceful handoff: the splash fades and drifts up slightly into the app content, instead
+            // of a hard cut. Framework animators only — no extra deps, runs on every supported API.
+            val splashView = splashProvider.view
+            val fade = ObjectAnimator.ofFloat(splashView, View.ALPHA, splashView.alpha, 0f)
+            val rise = ObjectAnimator.ofFloat(
+                splashView, View.TRANSLATION_Y, 0f, -splashView.height * 0.04f
+            )
+            AnimatorSet().apply {
+                playTogether(fade, rise)
+                duration = 260L
+                interpolator = DecelerateInterpolator()
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) = splashProvider.remove()
+                })
+                start()
+            }
+        }
+
         val onCreateTime = measureTimeMillis {
             super.onCreate(savedInstanceState)
 

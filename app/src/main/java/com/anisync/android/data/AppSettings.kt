@@ -3,6 +3,7 @@ package com.anisync.android.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.DrawableRes
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -1019,6 +1020,25 @@ class AppSettings @Inject constructor(
     }
 
 companion object {
+        /**
+         * Reads the persisted [ThemeMode] straight from SharedPreferences (no Hilt/coroutines) and maps
+         * it to the matching AppCompat night-mode constant. Applied at process start in
+         * [com.anisync.android.AniSyncApplication] so the app's light/dark choice reaches the *resource
+         * configuration* before the launch window is drawn — this is what makes the cold-start splash
+         * and window background follow the in-app theme, not just the system setting (issue #84).
+         */
+        fun persistedNightMode(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val mode = ThemeMode.entries.getOrElse(
+                prefs.getInt(KEY_THEME_MODE, ThemeMode.SYSTEM.ordinal)
+            ) { ThemeMode.SYSTEM }
+            return when (mode) {
+                ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            }
+        }
+
         private const val PREFS_NAME = "anisync_settings"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_AMOLED_ENABLED = "amoled_enabled"

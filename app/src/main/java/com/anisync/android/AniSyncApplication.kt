@@ -3,7 +3,9 @@ package com.anisync.android
 import android.app.Application
 import android.os.Process
 import android.util.Log
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
+import com.anisync.android.data.AppSettings
 import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -52,6 +54,12 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
         super.onCreate()
 
         if (currentProcessName().endsWith(":crash")) return
+
+        // Apply the saved light/dark choice to the resource configuration up front (before any window
+        // is drawn) so the cold-start splash + window background follow the in-app theme, not only the
+        // system setting. Read directly from prefs here — Hilt-injected AppSettings isn't needed this
+        // early, and this keeps it off the critical path of building the graph. See issue #84.
+        AppCompatDelegate.setDefaultNightMode(AppSettings.persistedNightMode(this))
 
         installCrashHandler()
 

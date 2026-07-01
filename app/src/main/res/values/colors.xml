@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Cold-start splash / window background. Matches the app's light surface (Color.kt backgroundLight)
+      so the launch window blends into the first frame Compose draws. The values-night/ variant swaps
+      in the dark surface so a dark-themed device never flashes a bright panel on launch (issue #84).
+    -->
+    <color name="splash_background">#F9FAEF</color>
+</resources>
