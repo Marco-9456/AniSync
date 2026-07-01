@@ -4,6 +4,7 @@ import com.anisync.android.GetUserStatisticsQuery
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.AnimeStatistics
+import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.CountryStat
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
@@ -22,6 +23,8 @@ import com.anisync.android.domain.UserStatistics
 import com.anisync.android.domain.VoiceActorStat
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
 class StatisticsRepositoryImpl @Inject constructor(
@@ -29,11 +32,14 @@ class StatisticsRepositoryImpl @Inject constructor(
 ) : StatisticsRepository {
 
     @Suppress("DEPRECATION") // User.stats is deprecated but is the only source of activityHistory
-    override suspend fun getUserStatistics(userId: Int): Result<UserStatistics> {
+    override suspend fun getUserStatistics(
+        userId: Int,
+        policy: CachePolicy
+    ): Result<UserStatistics> {
         return safeApiCall {
             val response = apolloClient.query(
                 GetUserStatisticsQuery(userId = Optional.present(userId))
-            ).execute()
+            ).fetchPolicy(policy.toFetchPolicy()).execute()
 
             val user = response.data?.User
                 ?: throw Exception("User not found")
@@ -70,6 +76,12 @@ class StatisticsRepositoryImpl @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun CachePolicy.toFetchPolicy(): FetchPolicy = when (this) {
+        CachePolicy.CacheFirst -> FetchPolicy.CacheFirst
+        CachePolicy.NetworkOnly -> FetchPolicy.NetworkOnly
+        CachePolicy.NetworkFirst -> FetchPolicy.NetworkFirst
     }
 
     private fun GetUserStatisticsQuery.Anime.toDomain(): AnimeStatistics {

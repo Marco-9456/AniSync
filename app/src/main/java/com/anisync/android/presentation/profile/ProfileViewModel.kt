@@ -815,8 +815,9 @@ class ProfileViewModel @Inject constructor(
                             ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
                             ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
                             ProfileTab.STATS -> fetchStats(forceRefresh = true)
-                            // Cache-first on cold open (the heatmap rides the stats payload);
-                            // an explicit pull forces the network like the other tabs.
+                            // The heatmap rides the stats payload. An explicit pull forces the
+                            // network (like the other tabs); a soft refresh stays network-first
+                            // with a cache fallback so the heatmap still revalidates (#88).
                             ProfileTab.OVERVIEW -> fetchStats(forceRefresh = forceNetwork)
                             ProfileTab.FAVORITES -> fetchFullFavoriteAnime(forceRefresh = true)
                             ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
@@ -1136,7 +1137,12 @@ class ProfileViewModel @Inject constructor(
             val userId = uiState.value.profile?.id
                 ?: uiState.map { it.profile?.id }.filterNotNull().first()
 
-            when (val result = statisticsRepository.getUserStatistics(userId)) {
+            // Force the network on an explicit refresh; otherwise network-first with a
+            // cache fallback (matches the other profile tabs). A cache-first default here
+            // froze the activity-history heatmap at first fetch — the normalized cache
+            // never revalidates on its own, so new activity never showed (#88).
+            val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
+            when (val result = statisticsRepository.getUserStatistics(userId, policy)) {
                 is Result.Success -> {
                     // Process data on default dispatcher
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
