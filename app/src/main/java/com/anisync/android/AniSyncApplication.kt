@@ -37,6 +37,9 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     @Inject
     lateinit var userOptionsSyncManager: com.anisync.android.data.UserOptionsSyncManager
 
+    @Inject
+    lateinit var appLockManager: com.anisync.android.data.security.AppLockManager
+
     private val applicationScope = CoroutineScope(
         SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
             Log.e("AniSyncApp", "Unhandled coroutine exception", throwable)
@@ -62,6 +65,10 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
         AppCompatDelegate.setDefaultNightMode(AppSettings.persistedNightMode(this))
 
         installCrashHandler()
+
+        // App lock: observe app-level background/foreground so the lock re-arms when AniSync is sent
+        // to the background. Registered here (main thread, once) rather than per-activity.
+        appLockManager.bindTo(androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle)
 
         val mainThreadTime = measureTimeMillis {
             com.anisync.android.worker.NotificationChannels.createChannels(this)

@@ -19,6 +19,7 @@ import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
+import com.anisync.android.presentation.security.AppLockAuthenticator.isAppLockSupported
 import com.anisync.android.ui.theme.FontAxisOverrides
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
@@ -207,8 +208,9 @@ class SettingsViewModel @Inject constructor(
         coreUiState,
         fontPlaygroundFlow,
         appSettings.amoledEnabled,
-    ) { core, fontPlayground, amoled ->
-        core.copy(fontPlayground = fontPlayground, amoledEnabled = amoled)
+        appSettings.appLockEnabled,
+    ) { core, fontPlayground, amoled, appLock ->
+        core.copy(fontPlayground = fontPlayground, amoledEnabled = amoled, appLockEnabled = appLock)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -222,6 +224,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
+            is SettingsAction.SetAppLockEnabled -> setAppLockEnabled(action.enabled)
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
             is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
@@ -377,6 +380,18 @@ class SettingsViewModel @Inject constructor(
             LocaleListCompat.forLanguageTags(locale.tag)
         }
         AppCompatDelegate.setApplicationLocales(localeList)
+    }
+
+    /**
+     * Turns the app lock on/off. Refuses to enable it when the device has no usable screen lock —
+     * without one there'd be no way to authenticate, which would lock the user out of their own app.
+     */
+    private fun setAppLockEnabled(enabled: Boolean) {
+        if (enabled && !context.isAppLockSupported()) {
+            Toast.makeText(context, R.string.app_lock_unavailable, Toast.LENGTH_LONG).show()
+            return
+        }
+        appSettings.setAppLockEnabled(enabled)
     }
 
     private fun toggleNotifications(enabled: Boolean) {

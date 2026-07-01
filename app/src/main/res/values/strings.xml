@@ -340,6 +340,15 @@
     <string name="navigate_back">Go back</string>
     <string name="settings_look_and_feel">Look and Feel</string>
     <string name="settings_look_and_feel_desc">Theme, language, streaming service</string>
+
+    <!-- App lock (biometric / device credential) -->
+    <string name="settings_app_lock">App lock</string>
+    <string name="settings_app_lock_desc">Require your fingerprint, face, or screen lock to open AniSync</string>
+    <string name="app_lock_title">Unlock AniSync</string>
+    <string name="app_lock_subtitle">Verify it\'s you to continue</string>
+    <string name="app_lock_message">AniSync is locked</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_unavailable">Set up a screen lock (PIN, pattern, password, or biometrics) in your device settings first</string>
     <string name="settings_anilist_account">AniList Settings</string>
     <string name="settings_anilist_account_desc">Accounts, adult content, languages, score format</string>
     <string name="settings_notifications">Notifications</string>

@@ -117,6 +117,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var userOptionsRepository: com.anisync.android.domain.UserOptionsRepository
 
+    @Inject
+    lateinit var appLockManager: com.anisync.android.data.security.AppLockManager
+
     private val _newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 4)
     val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
@@ -206,6 +209,17 @@ class MainActivity : AppCompatActivity() {
                         "PerfMetrics",
                         "Update check completed in ${updateCheckTime}ms via IO Thread"
                     )
+                }
+            }
+
+            // App lock: on Android 13+ keep AniSync's content out of the recents/app-switcher preview
+            // while the lock is on, without FLAG_SECURE — so in-app screenshots still work. Older
+            // versions can't do both, so they keep screenshots and don't hide the recents preview.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                lifecycleScope.launch {
+                    appLockManager.enabled.collect { lockEnabled ->
+                        setRecentsScreenshotEnabled(!lockEnabled)
+                    }
                 }
             }
 
@@ -391,6 +405,10 @@ class MainActivity : AppCompatActivity() {
                                         }
                                     )
                             )
+
+                            // App-lock privacy gate: drawn above the content AND the status-bar strip
+                            // so nothing shows while locked. No-op when the feature is off/unlocked.
+                            com.anisync.android.presentation.security.AppLockGate(appLockManager)
                           }
                           }
                         }
