@@ -101,18 +101,7 @@ fun LazyListScope.profileActivityTab(
             items = filteredActivities,
             key = { _, activity -> "activity_${activity.id}" },
             contentType = { _, _ -> "activity_item" }
-        ) { index, activity ->
-            // Infinite scroll: as the user nears the end of the loaded activities, pull
-            // the next older page. Keyed on index (like the reviews tab) so it fires once
-            // per newly-revealed tail item — and, since the key only advances when the
-            // filtered list grows, it can't run away on a sparse filter.
-            if (index >= filteredActivities.size - 4 &&
-                activitiesHasNextPage &&
-                !isActivitiesPaginating
-            ) {
-                LaunchedEffect(index) { onLoadMore() }
-            }
-
+        ) { _, activity ->
             val canDelete = viewerId != null && (
                 activity.userId == viewerId ||
                     (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
@@ -143,22 +132,36 @@ fun LazyListScope.profileActivityTab(
             )
         }
 
-        // Footer loader shown only while a page is actually in flight. It must NOT be keyed
-        // off hasNextPage: under a filter (Status/Messages/Lists) a fetched page may add no
-        // matching items, so filteredActivities doesn't grow, the index-keyed auto-loader
-        // never re-fires, and pagination stalls with hasNextPage still true — which left the
-        // spinner visible forever (#89). Bare default size, exactly like the full-screen wavy
-        // loaders (ActivityDetailScreen, ProfileReviewsSection): a height/size constraint
-        // squishes the wave into a malformed, never-completing arc.
-        if (isActivitiesPaginating) {
+        // Infinite-scroll trigger and footer loader, unified into one item. It exists only
+        // while older pages remain and, being the last item, is composed only when the user
+        // scrolls near the end of the filtered list. Driving the fetch from this single item
+        // (instead of a per-row LaunchedEffect) avoids the stampede of duplicate requests the
+        // old per-row trigger fired — every visible tail row requested the same next page.
+        //
+        // The effect is keyed on the raw loaded count (profile.activities.size), which grows
+        // by a whole page on every successful fetch. That walks forward through pages when a
+        // filter's latest page added no matching rows (so filteredActivities didn't grow),
+        // yet it does NOT re-fire after a failed fetch (count unchanged) — a network error
+        // can't spin a retry storm; the user re-triggers by scrolling.
+        //
+        // The spinner is gated on isActivitiesPaginating so it shows only while a page is
+        // actually in flight and never lingers once loading settles (#89). Bare default size,
+        // like the app's other wavy loaders — a height/size constraint squishes the wave into
+        // a malformed, never-completing arc.
+        if (activitiesHasNextPage) {
             item(key = "activity_paginating", contentType = "paginating") {
+                LaunchedEffect(profile.activities.size) {
+                    if (!isActivitiesPaginating) onLoadMore()
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    AppCircularProgressIndicator()
+                    if (isActivitiesPaginating) {
+                        AppCircularProgressIndicator()
+                    }
                 }
             }
         }
