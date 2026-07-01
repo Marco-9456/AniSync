@@ -1,3 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="nav_library">قفسه</string>
+    <string name="nav_discover">اکتشاف</string>
+    <string name="nav_feed">نظرات</string>
+    <string name="nav_forum">فرم ها</string>
+    <string name="nav_profile">پروفایل</string>
+    <string name="feed_filter_all">همه</string>
+    <string name="feed_filter_status">وضعیت</string>
+    <string name="feed_filter_list">لیست</string>
+    <string name="feed_scope_global">جهانی</string>
 </resources>
