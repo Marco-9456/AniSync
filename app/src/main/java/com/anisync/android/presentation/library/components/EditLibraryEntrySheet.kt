@@ -114,6 +114,7 @@ import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.util.getTitle
 import java.text.DateFormat
 import java.util.Date
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /**
@@ -906,7 +907,13 @@ private fun DateSection(
 ) {
     val startedAt = startedAtProvider()
     val completedAt = completedAtProvider()
-    val dateFormatter = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    // Fuzzy-date millis are UTC-anchored (see DataMappers / issue #85), so the
+    // formatter must read them in UTC or it renders the wrong day off the offset.
+    val dateFormatter = remember {
+        DateFormat.getDateInstance(DateFormat.MEDIUM).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle(text = stringResource(R.string.dates))

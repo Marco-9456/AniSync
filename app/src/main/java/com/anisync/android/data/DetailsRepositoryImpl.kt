@@ -15,6 +15,7 @@ import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
 import com.anisync.android.data.mapper.toApiStatus
 import com.anisync.android.data.mapper.toDomainStatus
+import com.anisync.android.data.mapper.todayUtcMillis
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
@@ -391,7 +392,7 @@ class DetailsRepositoryImpl @Inject constructor(
                             score = 0.0,
                             rewatches = 0,
                             notes = null,
-                            startedAt = if (status == LibraryStatus.CURRENT) System.currentTimeMillis() else null,
+                            startedAt = if (status == LibraryStatus.CURRENT) todayUtcMillis() else null,
                             completedAt = null,
                             updatedAt = System.currentTimeMillis(),
                             createdAt = System.currentTimeMillis(),

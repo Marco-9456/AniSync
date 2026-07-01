@@ -9,6 +9,7 @@ import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toApiStatus
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.mapper.toFuzzyDateInput
+import com.anisync.android.data.mapper.todayUtcMillis
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
@@ -220,7 +221,7 @@ class LibraryRepositoryImpl @Inject constructor(
         // (Refetching entry or duplicating logic - refetching is safer)
         val entry = libraryDao.getEntry(currentOwnerId(), mediaId) ?: return Result.Error("Entry not found")
         val isCompleted = entry.status == LibraryStatus.COMPLETED
-        val now = System.currentTimeMillis()
+        val now = todayUtcMillis()
 
         // 3. Try sync to network
         return safeApiCall {
@@ -249,7 +250,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
         // Check if this progress update completes the media
         val isCompleted = total != null && total > 0 && progress >= total
-        val now = System.currentTimeMillis()
+        val now = todayUtcMillis()
 
         if (isCompleted) {
             // Auto-set completedAt when finishing
@@ -270,7 +271,7 @@ class LibraryRepositoryImpl @Inject constructor(
         val owner = currentOwnerId()
         // Get original entry to detect status changes
         val originalEntry = libraryDao.getEntry(owner, entry.mediaId)
-        val now = System.currentTimeMillis()
+        val now = todayUtcMillis()
         
         // Auto-fill dates based on status changes
         var updatedEntry = entry
