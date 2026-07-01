@@ -374,19 +374,21 @@ query GetUserActivities($userId: Int) {
 }
 
 """
-One page of a user's combined activity feed (list + text + received messages),
-newest-first. Drives "load older activities" on the profile Activity tab past the
-initial batch GetFullUserProfile/GetUserActivities carries. Page 1 overlaps that
-batch; the caller dedupes by id. AniList exposes no id cursor for activities, so
-this pages by number with pageInfo.hasNextPage as the stop signal.
+One page of a user's activity feed (newest-first), filtered to $type_in so a narrower
+profile filter (status / messages / lists) paginates its own stream and pageInfo.hasNextPage
+reports when THAT stream — not the whole feed — is exhausted. Drives "load older activities"
+on the profile Activity tab past the initial batch GetFullUserProfile/GetUserActivities
+carries. Page 1 overlaps that batch; the caller dedupes by id. AniList exposes no id cursor
+for activities, so this pages by number with pageInfo.hasNextPage as the stop signal.
+MEDIA_LIST is a query-only alias matching both ANIME_LIST and MANGA_LIST activities.
 """
-query GetUserActivitiesPage($userId: Int, $page: Int!, $perPage: Int = 50) {
+query GetUserActivitiesPage($userId: Int, $page: Int!, $perPage: Int = 50, $type_in: [ActivityType] = [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
   Page(page: $page, perPage: $perPage) {
     pageInfo {
       hasNextPage
       currentPage
     }
-    activities(userId: $userId, sort: [ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
+    activities(userId: $userId, sort: [ID_DESC], type_in: $type_in) {
       ...ActivityFields
     }
   }

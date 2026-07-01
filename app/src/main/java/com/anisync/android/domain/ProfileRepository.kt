@@ -108,13 +108,20 @@ interface ProfileRepository {
     ): Result<UserReviewsPage>
 
     /**
-     * Fetch one page of the user's combined activity feed (newest-first). Used to
-     * load older activities past the initial batch the profile fetch carries — the
-     * caller dedupes page 1's overlap by id.
+     * Fetch one page of the user's activity feed (newest-first), filtered to [types]
+     * server-side so a narrower profile filter (status / messages / lists) paginates its
+     * own stream and stops when that stream — not the whole feed — is exhausted. Used to
+     * load older activities past the initial batch the profile fetch carries — the caller
+     * dedupes page 1's overlap by id.
      */
     suspend fun getUserActivitiesPage(
         userId: Int,
         page: Int,
+        types: List<ActivityType> = listOf(
+            ActivityType.TEXT,
+            ActivityType.MESSAGE,
+            ActivityType.MEDIA_LIST
+        ),
         policy: CachePolicy = CachePolicy.NetworkOnly
     ): Result<UserActivitiesPage>
 

@@ -694,14 +694,17 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun getUserActivitiesPage(
         userId: Int,
         page: Int,
+        types: List<com.anisync.android.domain.ActivityType>,
         policy: CachePolicy
-    ): Result<com.anisync.android.domain.UserActivitiesPage> =
-        dedupe("activitiesPage:$userId:$page:$policy") {
+    ): Result<com.anisync.android.domain.UserActivitiesPage> {
+        val apiTypes = types.mapNotNull { it.toApiActivityType() }
+        return dedupe("activitiesPage:$userId:$page:${apiTypes.joinToString(",")}:$policy") {
             safeApiCall {
                 val response = apolloClient.query(
                     com.anisync.android.GetUserActivitiesPageQuery(
                         userId = Optional.present(userId),
-                        page = page
+                        page = page,
+                        type_in = Optional.present(apiTypes)
                     )
                 )
                     .fetchPolicy(policy.toFetchPolicy())
@@ -726,6 +729,16 @@ class ProfileRepositoryImpl @Inject constructor(
                     currentPage = pageData?.pageInfo?.currentPage ?: page
                 )
             }
+        }
+    }
+
+    /** Maps a domain activity type to the AniList query enum; UNKNOWN has no query form. */
+    private fun com.anisync.android.domain.ActivityType.toApiActivityType(): com.anisync.android.type.ActivityType? =
+        when (this) {
+            com.anisync.android.domain.ActivityType.TEXT -> com.anisync.android.type.ActivityType.TEXT
+            com.anisync.android.domain.ActivityType.MESSAGE -> com.anisync.android.type.ActivityType.MESSAGE
+            com.anisync.android.domain.ActivityType.MEDIA_LIST -> com.anisync.android.type.ActivityType.MEDIA_LIST
+            com.anisync.android.domain.ActivityType.UNKNOWN -> null
         }
 
     override suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>> =

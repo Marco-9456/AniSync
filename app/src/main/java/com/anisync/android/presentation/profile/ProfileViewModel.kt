@@ -231,7 +231,10 @@ class ProfileViewModel @Inject constructor(
         val appended: List<com.anisync.android.domain.UserActivity> = emptyList(),
         val page: Int = 1,
         val hasNextPage: Boolean = true,
-        val isPaginating: Boolean = false
+        val isPaginating: Boolean = false,
+        // Which profile filter this stream is paging. Pagination is server-side per type, so a
+        // filter change re-seeds a fresh stream (see [seedActivityPagination]).
+        val filter: ProfileActivityFilter = ProfileActivityFilter.ALL
     )
 
     private val activityPaginationState = MutableStateFlow(ActivityPaginationState())
@@ -554,8 +557,15 @@ class ProfileViewModel @Inject constructor(
             }
 
             is ProfileAction.SelectActivityFilter -> {
-                localState.update {
-                    it.copy(selectedActivityFilter = action.filter)
+                if (localState.value.selectedActivityFilter != action.filter) {
+                    localState.update {
+                        it.copy(selectedActivityFilter = action.filter)
+                    }
+                    // Server-side per-type pagination: a new filter is a new stream, so drop
+                    // the previous filter's appended pages and re-seed. Otherwise its
+                    // hasNextPage/page counter would carry over and the footer loader would
+                    // page the wrong (or an exhausted) stream.
+                    seedActivityPagination(action.filter)
                 }
             }
 
@@ -777,7 +787,8 @@ class ProfileViewModel @Inject constructor(
         localState.update { it.copy(isRefreshing = true) }
         // A refresh replaces the activity seed with a fresh page 1, so drop any
         // lazily-loaded older pages — they'd misalign or duplicate atop the new seed.
-        activityPaginationState.value = ActivityPaginationState()
+        // Keep the active filter so pagination keeps paging that type's stream.
+        seedActivityPagination(localState.value.selectedActivityFilter)
 
         viewModelScope.launch {
             Trace.beginSection("AniSync.Profile.Refresh.Total")
@@ -1011,7 +1022,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             activityPaginationState.update { it.copy(isPaginating = true) }
             val nextPage = current.page + 1
-            when (val result = profileRepository.getUserActivitiesPage(userId, nextPage)) {
+            val types = activityTypesFor(current.filter)
+            when (val result = profileRepository.getUserActivitiesPage(userId, nextPage, types)) {
                 is Result.Success -> activityPaginationState.update {
                     it.copy(
                         isPaginating = false,
@@ -1023,6 +1035,32 @@ class ProfileViewModel @Inject constructor(
                 is Result.Error -> activityPaginationState.update { it.copy(isPaginating = false) }
             }
         }
+    }
+
+    /**
+     * Reset activity pagination to a fresh stream for [filter]. ALL treats the profile's
+     * initial batch as page 1 and pages onward from page 2; a narrower filter seeds page 0 so
+     * its first load-more re-fetches page 1 of that type's stream (the initial batch drew that
+     * type from a different, shorter query, so its page-1 overlap is deduped rather than skipped).
+     */
+    private fun seedActivityPagination(filter: ProfileActivityFilter) {
+        activityPaginationState.value = ActivityPaginationState(
+            filter = filter,
+            page = if (filter == ProfileActivityFilter.ALL) 1 else 0
+        )
+    }
+
+    private fun activityTypesFor(
+        filter: ProfileActivityFilter
+    ): List<com.anisync.android.domain.ActivityType> = when (filter) {
+        ProfileActivityFilter.ALL -> listOf(
+            com.anisync.android.domain.ActivityType.TEXT,
+            com.anisync.android.domain.ActivityType.MESSAGE,
+            com.anisync.android.domain.ActivityType.MEDIA_LIST
+        )
+        ProfileActivityFilter.STATUS -> listOf(com.anisync.android.domain.ActivityType.TEXT)
+        ProfileActivityFilter.MESSAGES -> listOf(com.anisync.android.domain.ActivityType.MESSAGE)
+        ProfileActivityFilter.LISTS -> listOf(com.anisync.android.domain.ActivityType.MEDIA_LIST)
     }
 
     /**
