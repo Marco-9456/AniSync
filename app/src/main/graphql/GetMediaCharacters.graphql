@@ -1,6 +1,6 @@
-query GetMediaCharacters($id: Int, $page: Int, $perPage: Int) {
+query GetMediaCharacters($id: Int, $page: Int, $perPage: Int, $sort: [CharacterSort]) {
     Media(id: $id) {
-        characters(sort: [ROLE, RELEVANCE], page: $page, perPage: $perPage) {
+        characters(sort: $sort, page: $page, perPage: $perPage) {
             pageInfo {
                 currentPage
                 hasNextPage

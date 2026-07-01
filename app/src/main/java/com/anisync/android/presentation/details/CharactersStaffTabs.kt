@@ -47,6 +47,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.StaffInfo
 import com.anisync.android.domain.VoiceActor
+import com.anisync.android.type.CharacterSort
+import com.anisync.android.type.StaffSort
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.StaffItem
@@ -61,11 +63,34 @@ enum class PeopleViewMode { GRID, LIST }
 fun PeopleViewMode.toggled(): PeopleViewMode =
     if (this == PeopleViewMode.GRID) PeopleViewMode.LIST else PeopleViewMode.GRID
 
-/** Sort order shared by the Characters and Staff tabs. */
-enum class PeopleSort(val label: String) {
-    RELEVANCE("Relevance"),
-    NAME_AZ("Name A–Z"),
-    NAME_ZA("Name Z–A")
+/**
+ * Sort options for the Staff tab. Each maps to AniList [StaffSort] and is applied SERVER-SIDE
+ * (the list refetches from page 1 on change). Unlike the cast, [RELEVANCE] maps to the
+ * moderator-curated order `[RELEVANCE, ID]` — creator/director/design/music first, matching the
+ * website — because the staff connection's unsorted default is unhelpful.
+ */
+enum class StaffSortOption(val label: String, val apiSort: List<StaffSort>?) {
+    RELEVANCE("Relevance", listOf(StaffSort.RELEVANCE, StaffSort.ID)),
+    MOST_FAVOURITES("Most favourites", listOf(StaffSort.FAVOURITES_DESC)),
+    LEAST_FAVOURITES("Least favourites", listOf(StaffSort.FAVOURITES)),
+    NEWEST("Newest", listOf(StaffSort.ID_DESC)),
+    OLDEST("Oldest", listOf(StaffSort.ID))
+}
+
+/**
+ * Sort options for the Characters tab. Each maps to AniList [CharacterSort] and is applied
+ * SERVER-SIDE: [apiSort] is passed to the characters query and the list refetches from page 1
+ * on change, so favourite/id ranking reflects the whole cast, not just the loaded pages.
+ * [RELEVANCE] sends no sort, yielding AniList's default (moderator/relevance) order — the order
+ * the website shows.
+ */
+enum class CharacterSortOption(val label: String, val apiSort: List<CharacterSort>?) {
+    RELEVANCE("Relevance", null),
+    ROLE("Role", listOf(CharacterSort.ROLE, CharacterSort.FAVOURITES_DESC)),
+    FAVOURITES("Most favourites", listOf(CharacterSort.FAVOURITES_DESC)),
+    LEAST_FAVOURITES("Least favourites", listOf(CharacterSort.FAVOURITES)),
+    NEWEST("Newest", listOf(CharacterSort.ID_DESC)),
+    OLDEST("Oldest", listOf(CharacterSort.ID))
 }
 
 /** Role filter for the Characters tab (maps to AniList CharacterRole). */
@@ -80,24 +105,12 @@ private val PORTRAIT_ASPECT = 5f / 7f
 
 // ---- Pure filtering / sorting helpers ----
 
-/** Apply the role filter then the sort. Relevance keeps the server order (already [ROLE, RELEVANCE]). */
-fun List<CharacterInfo>.applyCharacterFilters(
-    role: CharacterRoleFilter,
-    sort: PeopleSort
-): List<CharacterInfo> {
-    val filtered = if (role.apiName == null) this else filter { it.role.equals(role.apiName, ignoreCase = true) }
-    return when (sort) {
-        PeopleSort.RELEVANCE -> filtered
-        PeopleSort.NAME_AZ -> filtered.sortedBy { it.nameUserPreferred.lowercase() }
-        PeopleSort.NAME_ZA -> filtered.sortedByDescending { it.nameUserPreferred.lowercase() }
-    }
-}
-
-fun List<StaffInfo>.applyStaffFilters(sort: PeopleSort): List<StaffInfo> = when (sort) {
-    PeopleSort.RELEVANCE -> this
-    PeopleSort.NAME_AZ -> sortedBy { it.nameUserPreferred.lowercase() }
-    PeopleSort.NAME_ZA -> sortedByDescending { it.nameUserPreferred.lowercase() }
-}
+/**
+ * Apply the role filter only. Sorting is server-side (see [CharacterSortOption]); the role
+ * filter stays client-side because the AniList `characters` connection has no role argument.
+ */
+fun List<CharacterInfo>.applyCharacterRole(role: CharacterRoleFilter): List<CharacterInfo> =
+    if (role.apiName == null) this else filter { it.role.equals(role.apiName, ignoreCase = true) }
 
 /**
  * Distinct voice-actor languages across the loaded cast, Japanese first then alphabetical —
@@ -302,7 +315,7 @@ private fun PeopleLoadingFooter() {
 @Composable
 fun CastFilterBar(
     viewMode: PeopleViewMode,
-    sort: PeopleSort,
+    sort: CharacterSortOption,
     role: CharacterRoleFilter,
     language: String?,
     languageActive: Boolean,
@@ -313,7 +326,7 @@ fun CastFilterBar(
     modifier: Modifier = Modifier
 ) {
     PeopleFilterBarRow(viewMode = viewMode, onToggleView = onToggleView, modifier = modifier) {
-        SheetChip(label = "Sort · ${sort.label}", active = sort != PeopleSort.RELEVANCE, onClick = onSortClick)
+        SheetChip(label = "Sort · ${sort.label}", active = sort != CharacterSortOption.RELEVANCE, onClick = onSortClick)
         SheetChip(
             label = if (role == CharacterRoleFilter.ALL) "Role" else "Role · ${role.label}",
             active = role != CharacterRoleFilter.ALL,
@@ -334,13 +347,13 @@ fun CastFilterBar(
 @Composable
 fun StaffFilterBar(
     viewMode: PeopleViewMode,
-    sort: PeopleSort,
+    sort: StaffSortOption,
     onToggleView: () -> Unit,
     onSortClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     PeopleFilterBarRow(viewMode = viewMode, onToggleView = onToggleView, modifier = modifier) {
-        SheetChip(label = "Sort · ${sort.label}", active = sort != PeopleSort.RELEVANCE, onClick = onSortClick)
+        SheetChip(label = "Sort · ${sort.label}", active = sort != StaffSortOption.RELEVANCE, onClick = onSortClick)
     }
 }
 

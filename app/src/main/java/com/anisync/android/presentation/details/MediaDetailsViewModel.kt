@@ -84,11 +84,20 @@ class MediaDetailsViewModel @Inject constructor(
     val cast: StateFlow<PagedPeople<com.anisync.android.domain.CharacterInfo>> = _cast.asStateFlow()
     private var castPage = 0
     private var castLoading = false
+    /** AniList CharacterSort applied server-side to the cast list; null = API default order. */
+    private var castApiSort: List<com.anisync.android.type.CharacterSort>? = null
+    /** Bumped on each sort change so a page load started under the previous sort is discarded. */
+    private var castGeneration = 0
 
     private val _staff = MutableStateFlow(PagedPeople<com.anisync.android.domain.StaffInfo>())
     val staff: StateFlow<PagedPeople<com.anisync.android.domain.StaffInfo>> = _staff.asStateFlow()
     private var staffPage = 0
     private var staffLoading = false
+    /** AniList StaffSort applied server-side; staff RELEVANCE is well-curated (creator/director
+     *  first), so unlike the cast this defaults to it rather than the API's unsorted order. */
+    private var staffApiSort: List<com.anisync.android.type.StaffSort>? =
+        listOf(com.anisync.android.type.StaffSort.RELEVANCE, com.anisync.android.type.StaffSort.ID)
+    private var staffGeneration = 0
 
     val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
     
@@ -414,15 +423,34 @@ class MediaDetailsViewModel @Inject constructor(
         if (castPage == 0 && !castLoading) loadMoreCast()
     }
 
+    /**
+     * Change the cast sort order. Resets pagination and refetches page 1 under the new [sort]
+     * (server-side ordering, see GetMediaCharacters). No-op when the sort is unchanged.
+     */
+    fun setCastSort(sort: List<com.anisync.android.type.CharacterSort>?) {
+        if (sort == castApiSort && _cast.value.initialized) return
+        castApiSort = sort
+        castGeneration++
+        castPage = 0
+        castLoading = false
+        _cast.value = PagedPeople(isLoading = true)
+        loadMoreCast()
+    }
+
     /** Append the next page of the full cast list; no-op while one is in flight or exhausted. */
     fun loadMoreCast() {
         if (castLoading) return
         if (castPage > 0 && !_cast.value.hasNextPage) return
         castLoading = true
         _cast.update { it.copy(isLoading = true) }
+        val generation = castGeneration
+        val sort = castApiSort
         viewModelScope.launch {
             val next = castPage + 1
-            when (val result = detailsRepository.getMediaCharacters(mediaId, next, PEOPLE_PAGE_SIZE)) {
+            val result = detailsRepository.getMediaCharacters(mediaId, next, PEOPLE_PAGE_SIZE, sort)
+            // A sort change since this load began owns the state now — drop this stale page.
+            if (generation != castGeneration) return@launch
+            when (result) {
                 is Result.Success -> {
                     val (items, hasNext) = result.data
                     castPage = next
@@ -449,15 +477,34 @@ class MediaDetailsViewModel @Inject constructor(
         if (staffPage == 0 && !staffLoading) loadMoreStaff()
     }
 
+    /**
+     * Change the staff sort order. Resets pagination and refetches page 1 under the new [sort]
+     * (server-side ordering, see GetMediaStaff). No-op when the sort is unchanged.
+     */
+    fun setStaffSort(sort: List<com.anisync.android.type.StaffSort>?) {
+        if (sort == staffApiSort && _staff.value.initialized) return
+        staffApiSort = sort
+        staffGeneration++
+        staffPage = 0
+        staffLoading = false
+        _staff.value = PagedPeople(isLoading = true)
+        loadMoreStaff()
+    }
+
     /** Append the next page of the full staff list; no-op while one is in flight or exhausted. */
     fun loadMoreStaff() {
         if (staffLoading) return
         if (staffPage > 0 && !_staff.value.hasNextPage) return
         staffLoading = true
         _staff.update { it.copy(isLoading = true) }
+        val generation = staffGeneration
+        val sort = staffApiSort
         viewModelScope.launch {
             val next = staffPage + 1
-            when (val result = detailsRepository.getMediaStaff(mediaId, next, PEOPLE_PAGE_SIZE)) {
+            val result = detailsRepository.getMediaStaff(mediaId, next, PEOPLE_PAGE_SIZE, sort)
+            // A sort change since this load began owns the state now — drop this stale page.
+            if (generation != staffGeneration) return@launch
+            when (result) {
                 is Result.Success -> {
                     val (items, hasNext) = result.data
                     staffPage = next

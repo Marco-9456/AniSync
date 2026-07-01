@@ -587,8 +587,10 @@ fun MediaDetailsScreen(
                                 staff = staff,
                                 onEnsureCastLoaded = viewModel::ensureCastLoaded,
                                 onLoadMoreCast = viewModel::loadMoreCast,
+                                onCastSortChange = viewModel::setCastSort,
                                 onEnsureStaffLoaded = viewModel::ensureStaffLoaded,
                                 onLoadMoreStaff = viewModel::loadMoreStaff,
+                                onStaffSortChange = viewModel::setStaffSort,
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
                                 onStaffClick = navigateToStaffDetails,
@@ -868,8 +870,10 @@ fun DetailsPageContent(
     staff: PagedPeople<com.anisync.android.domain.StaffInfo>,
     onEnsureCastLoaded: () -> Unit,
     onLoadMoreCast: () -> Unit,
+    onCastSortChange: (List<com.anisync.android.type.CharacterSort>?) -> Unit,
     onEnsureStaffLoaded: () -> Unit,
     onLoadMoreStaff: () -> Unit,
+    onStaffSortChange: (List<com.anisync.android.type.StaffSort>?) -> Unit,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
@@ -954,10 +958,10 @@ fun DetailsPageContent(
 
     // ---- Characters / Staff tab: view mode, filters, sort, language ----
     var peopleViewMode by rememberSaveable { mutableStateOf(PeopleViewMode.GRID) }
-    var characterSort by rememberSaveable { mutableStateOf(PeopleSort.RELEVANCE) }
+    var characterSort by rememberSaveable { mutableStateOf(CharacterSortOption.RELEVANCE) }
     var characterRole by rememberSaveable { mutableStateOf(CharacterRoleFilter.ALL) }
     var characterLanguage by rememberSaveable { mutableStateOf<String?>(null) }
-    var staffSort by rememberSaveable { mutableStateOf(PeopleSort.RELEVANCE) }
+    var staffSort by rememberSaveable { mutableStateOf(StaffSortOption.RELEVANCE) }
     var showCharSortSheet by remember { mutableStateOf(false) }
     var showCharRoleSheet by remember { mutableStateOf(false) }
     var showCharLanguageSheet by remember { mutableStateOf(false) }
@@ -972,13 +976,11 @@ fun DetailsPageContent(
     val castSource = if (cast.items.isNotEmpty()) cast.items else details.characters
     val voiceLanguages = remember(cast.items) { availableVoiceActorLanguages(cast.items) }
     val effectiveLanguage = characterLanguage ?: voiceLanguages.firstOrNull()
-    val displayedCast = remember(castSource, characterRole, characterSort) {
-        castSource.applyCharacterFilters(characterRole, characterSort)
+    val displayedCast = remember(castSource, characterRole) {
+        castSource.applyCharacterRole(characterRole)
     }
-    val staffSource = if (staff.items.isNotEmpty()) staff.items else details.staff
-    val displayedStaff = remember(staffSource, staffSort) {
-        staffSource.applyStaffFilters(staffSort)
-    }
+    // Staff sort is server-side (see StaffSortOption), so the loaded list is already ordered.
+    val displayedStaff = if (staff.items.isNotEmpty()) staff.items else details.staff
 
     // Lazily fetch the full list the first time its tab is opened.
     LaunchedEffect(selectedTab) {
@@ -1485,10 +1487,10 @@ fun DetailsPageContent(
     if (showCharSortSheet) {
         SettingsPickerSheet(
             title = stringResource(R.string.sort),
-            items = PeopleSort.entries,
+            items = CharacterSortOption.entries,
             selected = characterSort,
             itemLabel = { it.label },
-            onSelect = { characterSort = it; showCharSortSheet = false },
+            onSelect = { characterSort = it; onCastSortChange(it.apiSort); showCharSortSheet = false },
             onDismiss = { showCharSortSheet = false }
         )
     }
@@ -1515,10 +1517,10 @@ fun DetailsPageContent(
     if (showStaffSortSheet) {
         SettingsPickerSheet(
             title = stringResource(R.string.sort),
-            items = PeopleSort.entries,
+            items = StaffSortOption.entries,
             selected = staffSort,
             itemLabel = { it.label },
-            onSelect = { staffSort = it; showStaffSortSheet = false },
+            onSelect = { staffSort = it; onStaffSortChange(it.apiSort); showStaffSortSheet = false },
             onDismiss = { showStaffSortSheet = false }
         )
     }

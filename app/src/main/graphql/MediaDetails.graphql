@@ -77,7 +77,7 @@ query GetMediaDetails($id: Int) {
             private
             hiddenFromStatusLists
         }
-        characters(sort: [ROLE, RELEVANCE], perPage: 25) {
+        characters(perPage: 25) {
             edges {
                 role
                 node {

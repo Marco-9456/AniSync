@@ -1065,14 +1065,16 @@ class DetailsRepositoryImpl @Inject constructor(
     override suspend fun getMediaCharacters(
         mediaId: Int,
         page: Int,
-        perPage: Int
+        perPage: Int,
+        sort: List<com.anisync.android.type.CharacterSort>?
     ): Result<Pair<List<CharacterInfo>, Boolean>> {
         return safeApiCall {
             val response = apolloClient.query(
                 GetMediaCharactersQuery(
                     id = Optional.present(mediaId),
                     page = Optional.present(page),
-                    perPage = Optional.present(perPage)
+                    perPage = Optional.present(perPage),
+                    sort = Optional.presentIfNotNull(sort)
                 )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
@@ -1110,14 +1112,16 @@ class DetailsRepositoryImpl @Inject constructor(
     override suspend fun getMediaStaff(
         mediaId: Int,
         page: Int,
-        perPage: Int
+        perPage: Int,
+        sort: List<com.anisync.android.type.StaffSort>?
     ): Result<Pair<List<com.anisync.android.domain.StaffInfo>, Boolean>> {
         return safeApiCall {
             val response = apolloClient.query(
                 GetMediaStaffQuery(
                     id = Optional.present(mediaId),
                     page = Optional.present(page),
-                    perPage = Optional.present(perPage)
+                    perPage = Optional.present(perPage),
+                    sort = Optional.presentIfNotNull(sort)
                 )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)

@@ -1,6 +1,6 @@
-query GetMediaStaff($id: Int, $page: Int, $perPage: Int) {
+query GetMediaStaff($id: Int, $page: Int, $perPage: Int, $sort: [StaffSort]) {
     Media(id: $id) {
-        staff(sort: [RELEVANCE, ID], page: $page, perPage: $perPage) {
+        staff(sort: $sort, page: $page, perPage: $perPage) {
             pageInfo {
                 currentPage
                 hasNextPage
