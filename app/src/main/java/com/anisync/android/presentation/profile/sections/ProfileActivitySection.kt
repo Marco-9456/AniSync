@@ -143,13 +143,14 @@ fun LazyListScope.profileActivityTab(
             )
         }
 
-        // Persistent footer loader while more pages remain. Keyed off hasNextPage (not the
-        // per-fetch paginating flag) so the item isn't added/removed between back-to-back page
-        // loads — that churn disposed and re-created the indicator, restarting its animation and
-        // making it look like it never completed. Bare default size, exactly like the full-screen
-        // wavy loaders (ActivityDetailScreen, ProfileReviewsSection): a height/size constraint
+        // Footer loader shown only while a page is actually in flight. It must NOT be keyed
+        // off hasNextPage: under a filter (Status/Messages/Lists) a fetched page may add no
+        // matching items, so filteredActivities doesn't grow, the index-keyed auto-loader
+        // never re-fires, and pagination stalls with hasNextPage still true — which left the
+        // spinner visible forever (#89). Bare default size, exactly like the full-screen wavy
+        // loaders (ActivityDetailScreen, ProfileReviewsSection): a height/size constraint
         // squishes the wave into a malformed, never-completing arc.
-        if (activitiesHasNextPage) {
+        if (isActivitiesPaginating) {
             item(key = "activity_paginating", contentType = "paginating") {
                 Box(
                     modifier = Modifier
