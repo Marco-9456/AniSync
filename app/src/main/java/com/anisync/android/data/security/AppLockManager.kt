@@ -20,8 +20,8 @@ import javax.inject.Singleton
  *  - **Background → foreground**: [onStop] re-arms the lock when the whole app is backgrounded, so
  *    returning to it requires authentication again.
  *  - The system credential/biometric prompt is a separate activity that drives the app through
- *    ON_STOP/ON_START itself; [isAuthenticating] suppresses the re-arm during that round trip so the
- *    prompt isn't fighting a lock underneath it.
+ *    ON_STOP/ON_START itself; the [onUnlockStarted]/[onUnlockDismissed] window suppresses the re-arm
+ *    during that round trip so the prompt isn't fighting a lock underneath it.
  */
 @Singleton
 class AppLockManager @Inject constructor(
@@ -35,7 +35,7 @@ class AppLockManager @Inject constructor(
     val enabled: StateFlow<Boolean> = appSettings.appLockEnabled
 
     @Volatile
-    var isAuthenticating: Boolean = false
+    private var authInProgress = false
 
     /** Registers the app-level background/foreground observer. Call once from the Application. */
     fun bindTo(processLifecycle: Lifecycle) {
@@ -43,11 +43,22 @@ class AppLockManager @Inject constructor(
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        if (enabled.value && !isAuthenticating) _locked.value = true
+        if (enabled.value && !authInProgress) _locked.value = true
     }
 
-    /** Marks the app unlocked for this foreground session (called after a successful auth). */
+    /** The unlock prompt is being shown — pause the background re-arm until it resolves. */
+    fun onUnlockStarted() {
+        authInProgress = true
+    }
+
+    /** Authentication succeeded: clear the lock for this foreground session. */
     fun unlock() {
+        authInProgress = false
         _locked.value = false
+    }
+
+    /** The prompt was dismissed or errored without unlocking; the gate stays up. */
+    fun onUnlockDismissed() {
+        authInProgress = false
     }
 }

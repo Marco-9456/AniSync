@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.security
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,10 @@ fun AppLockGate(
     val context = LocalContext.current
     val activity = remember(context) { context.findFragmentActivity() }
 
+    // Swallow Back while locked so it can't drive the hidden UI underneath; send the app to the
+    // background instead, the way a real lock screen behaves.
+    BackHandler { activity?.moveTaskToBack(true) }
+
     fun prompt() {
         // Fail open: if we can't resolve the host activity, or the device lock was removed while we
         // were away, never trap the user behind a lock they can't clear.
@@ -61,18 +66,14 @@ fun AppLockGate(
             appLockManager.unlock()
             return
         }
-        // No re-entrancy guard here: the system dialog owns focus while it's up, so this only ever
-        // fires when nothing is showing (auto-launch on appear, or a tap on the Unlock button). The
-        // flag purely tells AppLockManager not to re-arm the lock during the prompt's own ON_STOP.
-        appLockManager.isAuthenticating = true
+        // No re-entrancy guard: the system dialog owns focus while it's up, so this only ever fires
+        // when nothing is showing (auto-launch on appear, or a tap on the Unlock button).
+        appLockManager.onUnlockStarted()
         host.authenticateForAppLock(
             title = context.getString(R.string.app_lock_title),
             subtitle = context.getString(R.string.app_lock_subtitle),
-            onSuccess = {
-                appLockManager.isAuthenticating = false
-                appLockManager.unlock()
-            },
-            onError = { appLockManager.isAuthenticating = false },
+            onSuccess = { appLockManager.unlock() },
+            onError = { appLockManager.onUnlockDismissed() },
         )
     }
 

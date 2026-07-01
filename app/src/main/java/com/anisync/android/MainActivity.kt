@@ -217,8 +217,8 @@ class MainActivity : AppCompatActivity() {
             // versions can't do both, so they keep screenshots and don't hide the recents preview.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 lifecycleScope.launch {
-                    appLockManager.enabled.collect { locked ->
-                        setRecentsScreenshotEnabled(!locked)
+                    appLockManager.enabled.collect { lockEnabled ->
+                        setRecentsScreenshotEnabled(!lockEnabled)
                     }
                 }
             }
