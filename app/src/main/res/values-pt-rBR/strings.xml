@@ -1090,4 +1090,11 @@
     <string name="details_tab_staff">Equipe</string>
     <string name="profile_follows_you">Segue você</string>
     <string name="profile_mutual">Mútuo</string>
+    <string name="settings_app_lock">Bloqueio do aplicativo</string>
+    <string name="settings_app_lock_desc">Requer sua impressão digital, rosto ou senha para abrir o AniSync</string>
+    <string name="app_lock_title">Desbloquear AniSync</string>
+    <string name="app_lock_subtitle">Confirme que é você para continuar</string>
+    <string name="app_lock_message">AniSync está bloqueado</string>
+    <string name="app_lock_unlock">Desbloquear</string>
+    <string name="app_lock_unavailable">Configure um bloqueio de tela (PIN, padrão, senha ou biometria) nas configurações do seu dispositivo primeiro</string>
 </resources>
