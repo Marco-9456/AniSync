@@ -33,6 +33,28 @@ fun LibraryStatus.toLabel(type: MediaType?): String {
     }
 }
 
+/** Sentinel tab id for the synthetic, always-first "All" library tab (union of every status list). */
+const val LIBRARY_ALL_TAB_ID = "all"
+
+/** Tab id for the Favorites list, matching the format stored in the AppSettings tab order. */
+const val LIBRARY_FAVORITES_TAB_ID = "status:FAVORITES"
+
+/**
+ * Resolves a library tab identifier — [LIBRARY_ALL_TAB_ID], [LIBRARY_FAVORITES_TAB_ID],
+ * "status:<NAME>", or a raw custom-list name — to its display label. Single source of truth shared
+ * by the tab row, the manage-lists sheet, and the search category chips.
+ */
+@Composable
+fun libraryTabLabel(tabId: String, type: MediaType?): String = when {
+    tabId == LIBRARY_ALL_TAB_ID -> stringResource(R.string.all)
+    tabId == LIBRARY_FAVORITES_TAB_ID -> "Favorites"
+    tabId.startsWith("status:") -> {
+        val statusName = tabId.removePrefix("status:")
+        LibraryStatus.entries.find { it.name == statusName }?.toLabel(type) ?: statusName
+    }
+    else -> tabId
+}
+
 /** Status accent color, shared by the Following cards and the profile list rows. */
 fun LibraryStatus.toColor(): Color = when (this) {
     LibraryStatus.CURRENT -> Color(0xFF4CAF50)

@@ -47,6 +47,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
@@ -116,6 +117,7 @@ import com.anisync.android.presentation.components.alert.rememberRateLimitedRefr
 import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
 import com.anisync.android.presentation.library.components.EmptyLibraryTabState
 import com.anisync.android.presentation.library.components.LibraryListCard
+import com.anisync.android.presentation.library.components.LibrarySearchCategoryBar
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
 import com.anisync.android.presentation.library.components.LibraryViewOptionsSheet
 import com.anisync.android.presentation.library.components.ListManagementSheet
@@ -123,6 +125,8 @@ import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
 import com.anisync.android.presentation.library.components.SortBottomSheet
 import com.anisync.android.presentation.library.components.SortIcon
+import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
+import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
@@ -132,20 +136,24 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 sealed class LibraryTab {
+    /** Browse-all tab showing every status list merged (#91). Lives in the tab order like the rest. */
+    object All : LibraryTab()
     data class Standard(val status: LibraryStatus) : LibraryTab()
     object Favorites : LibraryTab()
     data class Custom(val name: String) : LibraryTab()
 
     /** Canonical identifier matching the format used in tabOrder / AppSettings. */
     fun toId(): String = when (this) {
+        is All -> LIBRARY_ALL_TAB_ID
         is Standard -> "status:${status.name}"
-        is Favorites -> "status:FAVORITES"
+        is Favorites -> LIBRARY_FAVORITES_TAB_ID
         is Custom -> name
     }
 
     @Composable
     fun getLabel(mediaType: MediaType): String {
         return when (this) {
+            is All -> stringResource(R.string.all)
             is Standard -> status.toLabel(mediaType)
             is Favorites -> "Favorites"
             is Custom -> name
@@ -184,10 +192,13 @@ fun LibraryScreen(
     var showViewOptionsSheet by rememberSaveable { mutableStateOf(false) }
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
+        // "All" now lives in the tab order like every other tab, so it reorders/hides through the
+        // manage-tabs sheet. buildTabOrder guarantees it is present (pinned first when absent).
         uiState.tabOrder.mapNotNull { id ->
             if (id in uiState.hiddenListNames) return@mapNotNull null
 
             when {
+                id == LIBRARY_ALL_TAB_ID -> LibraryTab.All
                 id == "status:FAVORITES" -> LibraryTab.Favorites
                 id.startsWith("status:") -> {
                     val statusName = id.removePrefix("status:")
@@ -268,6 +279,15 @@ fun LibraryScreen(
         snapshotFlow { textFieldState.text.toString() }
             .debounce(300.milliseconds)
             .collect { viewModel.onAction(LibraryAction.OnSearchQueryChange(it)) }
+    }
+
+    // When search opens, seed the category chips to the tab it was opened from (Discover-style
+    // "search this list"). The VM resets to All when the query is cleared or the media type changes.
+    LaunchedEffect(searchBarState.currentValue) {
+        if (searchBarState.currentValue == SearchBarValue.Expanded) {
+            val currentTabId = tabs.getOrNull(pagerState.currentPage)?.toId() ?: LIBRARY_ALL_TAB_ID
+            viewModel.onAction(LibraryAction.OnSearchOpened(currentTabId))
+        }
     }
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
@@ -460,6 +480,7 @@ fun LibraryScreen(
                             ) {
                                 tabs.forEachIndexed { index, tab ->
                                     val statusIcon = when (tab) {
+                                        is LibraryTab.All -> Icons.Default.AllInclusive
                                         is LibraryTab.Standard -> {
                                             when (tab.status) {
                                                 LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
@@ -485,7 +506,8 @@ fun LibraryScreen(
                                             }
                                         },
                                         icon = statusIcon,
-                                        label = tab.getLabel(mediaType)
+                                        label = tab.getLabel(mediaType),
+                                        count = uiState.tabCounts[tab.toId()]
                                     )
                                 }
                             }
@@ -554,6 +576,7 @@ fun LibraryScreen(
                         val tab = tabs[pageIndex]
 
                         val entries = when (tab) {
+                            is LibraryTab.All -> uiState.entries
                             is LibraryTab.Standard -> uiState.groupedEntries[tab.status]
                                 ?: emptyList()
 
@@ -736,34 +759,85 @@ fun LibraryScreen(
                 }
 
                 else -> {
-                    if (uiState.entries.isEmpty() && !isSearchQueryEmpty) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.search_no_results),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(
-                                items = uiState.entries,
-                                key = { "search_${it.id}" },
-                                contentType = { "SearchResult" }
-                            ) { entry ->
-                                LibrarySearchResultCard(
-                                    entry = entry,
-                                    mediaType = mediaType,
-                                    onClick = { onSearchResultClick(entry.mediaId) },
-                                    titleLanguage = titleLanguage
+                    val searchMatches = uiState.searchMatches
+                    when {
+                        searchMatches.isEmpty() && !isSearchQueryEmpty -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.search_no_results),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
+                            }
+                        }
+
+                        // Blank query: keep the overlay empty until the user types (Discover parity).
+                        searchMatches.isEmpty() -> Box(modifier = Modifier.fillMaxSize())
+
+                        else -> {
+                            val byCategory = uiState.searchMatchesByCategory
+                            // Chips: "All" first, then every non-empty, non-hidden list in tab order.
+                            val categories = remember(
+                                searchMatches,
+                                byCategory,
+                                uiState.tabOrder,
+                                uiState.hiddenListNames
+                            ) {
+                                buildList {
+                                    add(LIBRARY_ALL_TAB_ID to searchMatches.size)
+                                    uiState.tabOrder.forEach { id ->
+                                        if (id != LIBRARY_ALL_TAB_ID && id !in uiState.hiddenListNames) {
+                                            byCategory[id]?.let { add(id to it.size) }
+                                        }
+                                    }
+                                }
+                            }
+                            val categoryIds = remember(categories) {
+                                categories.mapTo(HashSet()) { it.first }
+                            }
+                            // Fall back to All if the seeded category has no matches for this query.
+                            val effectiveCategory =
+                                if (uiState.activeSearchCategory in categoryIds) {
+                                    uiState.activeSearchCategory
+                                } else {
+                                    LIBRARY_ALL_TAB_ID
+                                }
+                            val activeList = if (effectiveCategory == LIBRARY_ALL_TAB_ID) {
+                                searchMatches
+                            } else {
+                                byCategory[effectiveCategory] ?: searchMatches
+                            }
+
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                LibrarySearchCategoryBar(
+                                    activeCategory = effectiveCategory,
+                                    categories = categories,
+                                    mediaType = mediaType,
+                                    onCategoryChange = {
+                                        viewModel.onAction(LibraryAction.OnSearchCategoryChange(it))
+                                    }
+                                )
+                                LazyColumn(
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    items(
+                                        items = activeList,
+                                        key = { "search_${it.mediaId}" },
+                                        contentType = { "SearchResult" }
+                                    ) { entry ->
+                                        LibrarySearchResultCard(
+                                            entry = entry,
+                                            mediaType = mediaType,
+                                            onClick = { onSearchResultClick(entry.mediaId) },
+                                            titleLanguage = titleLanguage
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

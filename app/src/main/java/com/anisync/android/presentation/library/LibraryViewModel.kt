@@ -10,6 +10,8 @@ import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
+import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
+import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -71,12 +73,17 @@ class LibraryViewModel @Inject constructor(
     private var hasLoadedInitially = false
     private var hasRestoredTab = false
 
-    private data class LibraryCustomData(
+    private data class LibraryComputed(
+        val allEntries: List<LibraryEntry>,
+        val grouped: Map<LibraryStatus, List<LibraryEntry>>,
         val customNames: List<String>,
-        val customEntriesMap: Map<String, List<LibraryEntry>>,
-        val sortedFavorites: List<LibraryEntry>,
+        val customEntries: Map<String, List<LibraryEntry>>,
+        val favorites: List<LibraryEntry>,
         val hiddenListNames: Set<String>,
-        val tabOrder: List<String>
+        val tabOrder: List<String>,
+        val tabCounts: Map<String, Int>,
+        val searchMatches: List<LibraryEntry>,
+        val searchMatchesByCategory: Map<String, List<LibraryEntry>>
     )
 
     init {
@@ -107,7 +114,8 @@ class LibraryViewModel @Inject constructor(
                         mediaType = action.type,
                         isLoading = true,
                         errorMessage = null,
-                        initialTabId = null
+                        initialTabId = null,
+                        activeSearchCategory = LIBRARY_ALL_TAB_ID
                     )
                 }
                 refresh()
@@ -124,7 +132,23 @@ class LibraryViewModel @Inject constructor(
             }
 
             is LibraryAction.OnSearchQueryChange -> {
-                _uiState.update { it.copy(searchQuery = action.query) }
+                _uiState.update {
+                    it.copy(
+                        searchQuery = action.query,
+                        // A blank query resets the category chips back to "All".
+                        activeSearchCategory = if (action.query.isBlank()) LIBRARY_ALL_TAB_ID else it.activeSearchCategory
+                    )
+                }
+            }
+
+            is LibraryAction.OnSearchCategoryChange -> {
+                _uiState.update { it.copy(activeSearchCategory = action.categoryId) }
+            }
+
+            is LibraryAction.OnSearchOpened -> {
+                // Seed the category to the tab search was opened from (the "search this list" case);
+                // the UI falls back to "All" if that list has no matches for the current query.
+                _uiState.update { it.copy(activeSearchCategory = action.currentTabId) }
             }
 
             is LibraryAction.IncrementProgress -> updateProgress(action.mediaId, 1)
@@ -187,20 +211,8 @@ class LibraryViewModel @Inject constructor(
                     val showPrivate = combinedState[4] as Boolean
                     val (listOrder, hiddenLists) = listPrefs
 
-                    if (entries.isEmpty()) {
-                        return@combine Triple(
-                            emptyList<LibraryEntry>(),
-                            emptyMap<LibraryStatus, List<LibraryEntry>>(),
-                            LibraryCustomData(
-                                emptyList(),
-                                emptyMap(),
-                                favorites,
-                                hiddenLists,
-                                buildTabOrder(listOrder, emptySet())
-                            )
-                        )
-                    }
-
+                    // No early return for an empty library: the sort/group/count logic below all
+                    // collapses to empties cleanly, and favorites/custom lists can still be non-empty.
                     class SortableEntry(val entry: LibraryEntry, val sortTitle: String)
 
                     // Guard against any duplicate-media rows still cached locally (e.g. a stale id=0
@@ -271,26 +283,13 @@ class LibraryViewModel @Inject constructor(
                     }
                     customNames.addAll(listOrder)
 
-                    val filteredEntries: List<LibraryEntry> = if (query.isBlank()) {
-                        ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
-                            for (s in visibilityFiltered) out.add(s.entry)
-                        }
-                    } else {
-                        val lowerQuery = query.lowercase()
-                        ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
-                            // Match title or the entry's note text, so search also finds a title by
-                            // something the user wrote about it (#75).
-                            for (s in visibilityFiltered) {
-                                if (s.sortTitle.contains(lowerQuery) ||
-                                    s.entry.notes?.lowercase()?.contains(lowerQuery) == true
-                                ) {
-                                    out.add(s.entry)
-                                }
-                            }
-                        }
+                    // The tabs (and their count badges) always show the full lists — the search box
+                    // no longer shrinks them. Searching is computed separately below and surfaced
+                    // only in the search overlay (#91).
+                    val allEntries = ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
+                        for (s in visibilityFiltered) out.add(s.entry)
                     }
-
-                    val grouped = filteredEntries.groupBy { it.status }
+                    val grouped = allEntries.groupBy { it.status }
 
                     val customNamesSet = customNames.toSet()
                     val tabOrder = buildTabOrder(listOrder, customNamesSet)
@@ -300,16 +299,52 @@ class LibraryViewModel @Inject constructor(
 
                     val sortedFavorites = favorites.sortedBy { it.getTitle(titleLang).lowercase() }
 
-                    Triple(
-                        filteredEntries,
-                        grouped,
-                        LibraryCustomData(
-                            sortedCustomNames,
-                            customEntriesMap,
-                            sortedFavorites,
-                            hiddenLists,
-                            tabOrder
-                        )
+                    // Raw per-tab counts (independent of the query) for the tab badges.
+                    val tabCounts = buildMap {
+                        put(LIBRARY_ALL_TAB_ID, allEntries.size)
+                        grouped.forEach { (status, list) -> put("status:${status.name}", list.size) }
+                        put(LIBRARY_FAVORITES_TAB_ID, sortedFavorites.size)
+                        customEntriesMap.forEach { (name, list) -> put(name, list.size) }
+                    }
+
+                    // Search matches every title variant + notes, grouped by list so the overlay can
+                    // offer Discover-style category chips.
+                    val trimmedQuery = query.trim()
+                    val searchMatches: List<LibraryEntry>
+                    val searchMatchesByCategory: Map<String, List<LibraryEntry>>
+                    if (trimmedQuery.isBlank()) {
+                        searchMatches = emptyList()
+                        searchMatchesByCategory = emptyMap()
+                    } else {
+                        val lowerQuery = trimmedQuery.lowercase()
+                        val matches = allEntries.filter { it.matchesQuery(lowerQuery) }
+                        val byCategory = LinkedHashMap<String, List<LibraryEntry>>()
+                        matches.groupBy { it.status }.forEach { (status, list) ->
+                            byCategory["status:${status.name}"] = list
+                        }
+                        sortedFavorites.filter { it.matchesQuery(lowerQuery) }
+                            .takeIf { it.isNotEmpty() }
+                            ?.let { byCategory[LIBRARY_FAVORITES_TAB_ID] = it }
+                        customEntriesMap.forEach { (name, list) ->
+                            list.filter { it.matchesQuery(lowerQuery) }
+                                .takeIf { it.isNotEmpty() }
+                                ?.let { byCategory[name] = it }
+                        }
+                        searchMatches = matches
+                        searchMatchesByCategory = byCategory
+                    }
+
+                    LibraryComputed(
+                        allEntries = allEntries,
+                        grouped = grouped,
+                        customNames = sortedCustomNames,
+                        customEntries = customEntriesMap,
+                        favorites = sortedFavorites,
+                        hiddenListNames = hiddenLists,
+                        tabOrder = tabOrder,
+                        tabCounts = tabCounts,
+                        searchMatches = searchMatches,
+                        searchMatchesByCategory = searchMatchesByCategory
                     )
                 }
                 .flowOn(Dispatchers.Default)
@@ -321,8 +356,8 @@ class LibraryViewModel @Inject constructor(
                         )
                     }
                 }
-                .collect { (filtered, grouped, customData) ->
-                    // On first emission, resolve saved tab with fallback
+                .collect { computed ->
+                    // On first emission, resolve saved tab with fallback ("all" is always visible).
                     val resolvedInitialTab = if (!hasRestoredTab) {
                         hasRestoredTab = true
                         val savedTabId = if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
@@ -330,21 +365,29 @@ class LibraryViewModel @Inject constructor(
                         } else {
                             appSettings.lastSelectedMangaTab.value
                         }
-                        val visibleTabs = customData.tabOrder.filter { it !in customData.hiddenListNames }
-                        if (savedTabId != null && savedTabId in visibleTabs) savedTabId else null
+                        val visibleTabs = computed.tabOrder.filter { it !in computed.hiddenListNames }
+                        when {
+                            savedTabId != null && savedTabId in visibleTabs -> savedTabId
+                            // With nothing saved, default to Watching rather than the first tab ("All").
+                            "status:CURRENT" in visibleTabs -> "status:CURRENT"
+                            else -> null
+                        }
                     } else {
                         null
                     }
 
                     _uiState.update {
                         it.copy(
-                            entries = filtered,
-                            groupedEntries = grouped,
-                            customListNames = customData.customNames,
-                            customListEntries = customData.customEntriesMap,
-                            favoriteEntries = customData.sortedFavorites,
-                            hiddenListNames = customData.hiddenListNames,
-                            tabOrder = customData.tabOrder,
+                            entries = computed.allEntries,
+                            groupedEntries = computed.grouped,
+                            customListNames = computed.customNames,
+                            customListEntries = computed.customEntries,
+                            favoriteEntries = computed.favorites,
+                            hiddenListNames = computed.hiddenListNames,
+                            tabOrder = computed.tabOrder,
+                            tabCounts = computed.tabCounts,
+                            searchMatches = computed.searchMatches,
+                            searchMatchesByCategory = computed.searchMatchesByCategory,
                             initialTabId = resolvedInitialTab ?: it.initialTabId,
                             isLoading = false,
                             errorMessage = null
@@ -472,33 +515,39 @@ class LibraryViewModel @Inject constructor(
      * it's treated as a legacy custom-only order and the default tabs are prepended.
      */
     private fun buildTabOrder(storedOrder: List<String>, customNames: Set<String>): List<String> {
+        fun isKnown(id: String) =
+            id == LIBRARY_ALL_TAB_ID || id.startsWith("status:") || id in customNames
+
         val hasStatusEntries = storedOrder.any { it.startsWith("status:") }
 
-        if (!hasStatusEntries) {
+        val base: List<String> = if (!hasStatusEntries) {
             // Legacy or empty format: stored order contains only custom list names (or nothing)
             val storedSet = storedOrder.toSet()
-            return DEFAULT_TAB_IDS +
+            DEFAULT_TAB_IDS +
                     storedOrder.filter { it in customNames } +
                     customNames.filter { it !in storedSet }
+        } else {
+            // Unified format: stored order contains everything the user has arranged
+            val storedSet = storedOrder.toSet()
+            val result = storedOrder.filter { isKnown(it) }.toMutableList()
+
+            // Append any missing default tabs (safety net)
+            for (tab in DEFAULT_TAB_IDS) {
+                if (tab !in storedSet) result.add(tab)
+            }
+
+            // Append any new custom lists not in stored order
+            for (name in customNames) {
+                if (name !in storedSet) result.add(name)
+            }
+
+            result
         }
 
-        // Unified format: stored order contains everything
-        val storedSet = storedOrder.toSet()
-        val result = storedOrder.filter { id ->
-            id.startsWith("status:") || id in customNames
-        }.toMutableList()
-
-        // Append any missing default tabs (safety net)
-        for (tab in DEFAULT_TAB_IDS) {
-            if (tab !in storedSet) result.add(tab)
-        }
-
-        // Append any new custom lists not in stored order
-        for (name in customNames) {
-            if (name !in storedSet) result.add(name)
-        }
-
-        return result
+        // The "All" tab always exists and is reorderable/hideable like any other. If the stored order
+        // predates it (existing users) or is a legacy order, pin it first; once the user has moved or
+        // hidden it, that choice lives in the stored order and is respected here.
+        return if (LIBRARY_ALL_TAB_ID in base) base else listOf(LIBRARY_ALL_TAB_ID) + base
     }
 
     private fun createCustomList(listName: String, type: com.anisync.android.type.MediaType) {
@@ -546,3 +595,15 @@ class LibraryViewModel @Inject constructor(
         toastManager.showResultError(result)
     }
 }
+
+/**
+ * Case-insensitive match of [lowerQuery] against every title variant and the entry's notes, so
+ * search finds a title regardless of the user's display-language preference (#91) and still matches
+ * on note text (#75).
+ */
+private fun LibraryEntry.matchesQuery(lowerQuery: String): Boolean =
+    titleRomaji?.contains(lowerQuery, ignoreCase = true) == true ||
+        titleEnglish?.contains(lowerQuery, ignoreCase = true) == true ||
+        titleNative?.contains(lowerQuery, ignoreCase = true) == true ||
+        titleUserPreferred.contains(lowerQuery, ignoreCase = true) ||
+        notes?.contains(lowerQuery, ignoreCase = true) == true

@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,6 +59,7 @@ import kotlin.math.abs
  * @param onClick Callback when tab is clicked
  * @param icon The icon to display
  * @param label The text label to display
+ * @param count Optional entry count shown as a small trailing badge pill
  */
 @Composable
 fun SegmentedTabItem(
@@ -67,7 +69,8 @@ fun SegmentedTabItem(
     selected: Boolean = false,
     onClick: () -> Unit,
     icon: ImageVector,
-    label: String
+    label: String,
+    count: Int? = null
 ) {
     val hapticFeedback = rememberHapticFeedback()
     val isSelected = selected
@@ -162,7 +165,11 @@ fun SegmentedTabItem(
             .clearAndSetSemantics {
                 role = Role.Tab
                 this.selected = isSelected
-                contentDescription = if (isSelected) "$label, selected" else label
+                contentDescription = buildString {
+                    append(label)
+                    if (count != null) append(", $count")
+                    if (isSelected) append(", selected")
+                }
             },
         selected = isSelected,
         onClick = {
@@ -192,6 +199,21 @@ fun SegmentedTabItem(
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
+            if (count != null) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = contentColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = count.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = contentColor,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                    )
+                }
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Favorite
@@ -58,8 +59,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
+import com.anisync.android.presentation.util.libraryTabLabel
 import com.anisync.android.presentation.util.toIcon
-import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -250,7 +252,8 @@ fun ListManagementSheet(
                 // Reorderable Tab Items
                 items(localOrder, key = { it }) { tabId ->
                     ReorderableItem(reorderableLazyListState, key = tabId) { isDragging ->
-                        val isCustom = !tabId.startsWith("status:")
+                        // "All" isn't a custom list, so it must not offer the delete affordance.
+                        val isCustom = !tabId.startsWith("status:") && tabId != LIBRARY_ALL_TAB_ID
                         val isHidden = hiddenLists.contains(tabId)
 
                         val elevation by animateDpAsState(
@@ -357,18 +360,8 @@ private fun TabLabel(
     isHidden: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val label = when {
-        tabId == "status:FAVORITES" -> "Favorites"
-        tabId.startsWith("status:") -> {
-            val statusName = tabId.removePrefix("status:")
-            val status = LibraryStatus.entries.find { it.name == statusName }
-            status?.toLabel(mediaType) ?: statusName
-        }
-        else -> tabId // Custom list name
-    }
-
     Text(
-        text = label,
+        text = libraryTabLabel(tabId, mediaType),
         style = MaterialTheme.typography.bodyLarge,
         color = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
                 else MaterialTheme.colorScheme.onSurface,
@@ -379,21 +372,13 @@ private fun TabLabel(
 /**
  * Returns the appropriate icon for a tab identifier.
  */
-private fun getTabIcon(tabId: String, mediaType: MediaType): ImageVector {
-    return when {
-        tabId == "status:FAVORITES" -> Icons.Default.Add // Will be overridden below
-        tabId.startsWith("status:") -> {
-            val statusName = tabId.removePrefix("status:")
-            val status = LibraryStatus.entries.find { it.name == statusName }
-            status?.toIcon(mediaType) ?: Icons.Default.Add
-        }
-        else -> Icons.Default.Add // Custom list — will use list icon
-    }.let { icon ->
-        // Use proper icons for favorites and custom lists
-        when {
-            tabId == "status:FAVORITES" -> androidx.compose.material.icons.Icons.Default.Favorite
-            !tabId.startsWith("status:") -> androidx.compose.material.icons.Icons.AutoMirrored.Filled.List
-            else -> icon
-        }
+private fun getTabIcon(tabId: String, mediaType: MediaType): ImageVector = when {
+    tabId == LIBRARY_ALL_TAB_ID -> Icons.Default.AllInclusive
+    tabId == "status:FAVORITES" -> Icons.Default.Favorite
+    tabId.startsWith("status:") -> {
+        val statusName = tabId.removePrefix("status:")
+        LibraryStatus.entries.find { it.name == statusName }?.toIcon(mediaType)
+            ?: Icons.AutoMirrored.Filled.List
     }
+    else -> Icons.AutoMirrored.Filled.List // Custom list
 }
