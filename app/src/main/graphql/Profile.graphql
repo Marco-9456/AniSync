@@ -77,6 +77,7 @@ query GetUserProfile($name: String, $includeViewer: Boolean = false) {
           image {
             large
           }
+          primaryOccupations
         }
       }
       studios(page: 1, perPage: 25) {
@@ -184,6 +185,7 @@ query GetFullUserProfile(
           image {
             large
           }
+          primaryOccupations
         }
       }
       studios(page: 1, perPage: 25) {
@@ -227,6 +229,48 @@ query GetUserFavorites($userId: Int, $page: Int) {
         }
         nodes {
           ...MediaCardFields
+        }
+      }
+    }
+  }
+}
+
+# Enrichment queries for the Favorites tab. AniList does NOT populate viewer-scoped
+# `mediaListEntry` (nor media-edge `voiceActors`) when a Media/Character is reached via
+# `User.favourites` — those come back null there — so we look the favourites up again by id in
+# a top-level `Page` context, where they resolve. Chunk ids by 50 (the `id_in` page size).
+
+query GetFavoriteMediaStatus($ids: [Int]) {
+  Viewer {
+    mediaListOptions {
+      scoreFormat
+    }
+  }
+  Page(perPage: 50) {
+    media(id_in: $ids) {
+      id
+      mediaListEntry {
+        status
+        score
+        progress
+        progressVolumes
+        repeat
+      }
+    }
+  }
+}
+
+query GetFavoriteCharacterRoles($ids: [Int]) {
+  Page(perPage: 50) {
+    characters(id_in: $ids) {
+      id
+      # A favourite character's role comes from its most-favourited appearance. (We do NOT fetch
+      # the media edge's voiceActors here: AniList reliably returns them null on the
+      # Character.media path — unlike the Media.characters path the cast tab uses — so the favourites
+      # cast row shows role only.)
+      media(sort: FAVOURITES_DESC, perPage: 1) {
+        edges {
+          characterRole
         }
       }
     }

@@ -506,7 +506,7 @@ private fun CastGridCard(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CastListCard(
+internal fun CastListCard(
     character: CharacterInfo,
     voiceActor: VoiceActor?,
     onClick: () -> Unit,
@@ -594,7 +594,7 @@ private fun CastListCard(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun StaffListCard(
+internal fun StaffListCard(
     staff: StaffInfo,
     onClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,

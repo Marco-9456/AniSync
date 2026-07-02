@@ -214,8 +214,18 @@ class ProfileViewModel @Inject constructor(
      */
     private data class FavoritesState(
         val fullAnime: List<LibraryEntry>? = null,
-        val isLoading: Boolean = false,
-        val hasFetched: Boolean = false
+        // Manga/characters aren't paginated; these hold the same overview lists enriched with the
+        // viewer's list status (manga) and role + VA (characters), which the profile fetch can't
+        // carry because AniList nulls those under the favourites connection.
+        val enrichedManga: List<LibraryEntry>? = null,
+        val enrichedCharacters: List<com.anisync.android.domain.CharacterInfo>? = null,
+        val isAnimeLoading: Boolean = false,
+        // Enrichment is per sub-tab: each fires only when its filter is first viewed, so the three
+        // lookups never burst together (a burst trips AniList's rate limiter, which then nulls the
+        // expensive fields like a character's voice actors).
+        val animeFetched: Boolean = false,
+        val mangaFetched: Boolean = false,
+        val charactersFetched: Boolean = false
     )
 
     private val favoritesState = MutableStateFlow(FavoritesState())
@@ -412,12 +422,18 @@ class ProfileViewModel @Inject constructor(
             mergedRemote.copy(profile = profile.copy(activities = patched))
         }
 
-        // Swap in the lazily-loaded full favourite-anime list once available;
-        // until then the page-1 preview carried by the profile fetch stands.
-        val withFavorites = favoritesOverlay.fullAnime?.let { full ->
-            remoteWithOverrides.profile?.let { p ->
-                remoteWithOverrides.copy(profile = p.copy(favoriteAnime = full))
-            }
+        // Swap in the lazily-loaded/enriched favourite lists once available; until then the page-1
+        // preview carried by the profile fetch stands. Anime gains its full paged list; manga and
+        // characters keep the same entries but gain the viewer's status / role + VA.
+        val withFavorites = remoteWithOverrides.profile?.let { p ->
+            remoteWithOverrides.copy(
+                profile = p.copy(
+                    favoriteAnime = favoritesOverlay.fullAnime ?: p.favoriteAnime,
+                    favoriteMangaOverview = favoritesOverlay.enrichedManga ?: p.favoriteMangaOverview,
+                    favoriteCharactersOverview = favoritesOverlay.enrichedCharacters
+                        ?: p.favoriteCharactersOverview
+                )
+            )
         } ?: remoteWithOverrides
 
         withFavorites.copy(
@@ -535,8 +551,8 @@ class ProfileViewModel @Inject constructor(
                     // Overview shows the activity heatmap, which rides on the stats payload, so
                     // it warms the same cache the Stats tab reuses.
                     fetchStats()
-                } else if (action.tab == ProfileTab.FAVORITES && !favoritesState.value.hasFetched) {
-                    fetchFullFavoriteAnime()
+                } else if (action.tab == ProfileTab.FAVORITES) {
+                    fetchFavoritesFor(localState.value.selectedFavoritesFilter)
                 } else if (action.tab == ProfileTab.ANIME &&
                     shouldRefreshAnimeList() &&
                     !mediaListState.value.isUserAnimeListLoading
@@ -573,6 +589,8 @@ class ProfileViewModel @Inject constructor(
                 localState.update {
                     it.copy(selectedFavoritesFilter = action.filter)
                 }
+                // Enrich the newly-selected sub-tab on demand (each in isolation, see fetchFavoritesFor).
+                fetchFavoritesFor(action.filter)
             }
 
             is ProfileAction.SelectAnimeStatus -> {
@@ -830,7 +848,10 @@ class ProfileViewModel @Inject constructor(
                             // network (like the other tabs); a soft refresh stays network-first
                             // with a cache fallback so the heatmap still revalidates (#88).
                             ProfileTab.OVERVIEW -> fetchStats(forceRefresh = forceNetwork)
-                            ProfileTab.FAVORITES -> fetchFullFavoriteAnime(forceRefresh = true)
+                            ProfileTab.FAVORITES -> fetchFavoritesFor(
+                                localState.value.selectedFavoritesFilter,
+                                forceRefresh = true
+                            )
                             ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
                             ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
                             else -> Unit
@@ -1138,26 +1159,66 @@ class ProfileViewModel @Inject constructor(
     }
 
     /**
-     * Loads the full favourite-anime list (all pages) on demand. Triggered when the
-     * Favorites tab is first opened, or re-run on pull-to-refresh while that tab is
-     * active. The overview/profile fetch only carries page 1, so this is the only
-     * place the favourites fan-out runs — never on the common load/refresh path.
+     * Loads/enriches the favourites data for [filter] on demand, one sub-tab at a time. Deliberately
+     * NOT batched together: the anime path alone fans out across every favourite page, and firing
+     * the manga/character lookups alongside it bursts enough requests to trip AniList's rate limiter
+     * — which then degrades the account and nulls expensive fields (a character's voice actors).
+     * Fetching only the viewed sub-tab keeps each request set small and every response complete.
+     * Staff (occupation) and studios need no enrichment — the profile fetch already carries them.
      */
+    private fun fetchFavoritesFor(filter: ProfileFavoritesFilter, forceRefresh: Boolean = false) {
+        when (filter) {
+            ProfileFavoritesFilter.ANIME -> fetchFullFavoriteAnime(forceRefresh)
+            ProfileFavoritesFilter.MANGA -> enrichFavoriteMangaTab(forceRefresh)
+            ProfileFavoritesFilter.CHARACTERS -> enrichFavoriteCharactersTab(forceRefresh)
+            ProfileFavoritesFilter.STAFF, ProfileFavoritesFilter.STUDIOS -> Unit
+        }
+    }
+
+    /** Full favourite-anime list (all pages), enriched with the viewer's list status. */
     private fun fetchFullFavoriteAnime(forceRefresh: Boolean = false) {
-        if (favoritesState.value.isLoading) return
-        if (!forceRefresh && favoritesState.value.hasFetched) return
+        if (favoritesState.value.isAnimeLoading) return
+        if (!forceRefresh && favoritesState.value.animeFetched) return
 
         viewModelScope.launch {
             val userId = uiState.value.profile?.id?.takeIf { it > 0 } ?: return@launch
-            favoritesState.update { it.copy(isLoading = true) }
+            favoritesState.update { it.copy(isAnimeLoading = true) }
             val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
-            when (val result = profileRepository.getFavoriteAnime(userId, policy)) {
-                is Result.Success -> favoritesState.update {
-                    it.copy(fullAnime = result.data, isLoading = false, hasFetched = true)
-                }
-                is Result.Error -> favoritesState.update {
-                    it.copy(isLoading = false, hasFetched = true)
-                }
+            val result = profileRepository.getFavoriteAnime(userId, policy)
+            favoritesState.update {
+                it.copy(
+                    fullAnime = (result as? Result.Success)?.data ?: it.fullAnime,
+                    isAnimeLoading = false,
+                    animeFetched = true
+                )
+            }
+        }
+    }
+
+    /** Enrich the page-1 favourite manga with the viewer's progress/score/status. */
+    private fun enrichFavoriteMangaTab(forceRefresh: Boolean = false) {
+        if (!forceRefresh && favoritesState.value.mangaFetched) return
+        val manga = uiState.value.profile?.favoriteMangaOverview ?: return
+        favoritesState.update { it.copy(mangaFetched = true) }
+        if (manga.isEmpty()) return
+        viewModelScope.launch {
+            val result = profileRepository.enrichFavoriteMedia(manga)
+            (result as? Result.Success)?.data?.let { enriched ->
+                favoritesState.update { it.copy(enrichedManga = enriched) }
+            }
+        }
+    }
+
+    /** Enrich the page-1 favourite characters with a representative role + Japanese voice actor. */
+    private fun enrichFavoriteCharactersTab(forceRefresh: Boolean = false) {
+        if (!forceRefresh && favoritesState.value.charactersFetched) return
+        val characters = uiState.value.profile?.favoriteCharactersOverview ?: return
+        favoritesState.update { it.copy(charactersFetched = true) }
+        if (characters.isEmpty()) return
+        viewModelScope.launch {
+            val result = profileRepository.enrichFavoriteCharacters(characters)
+            (result as? Result.Success)?.data?.let { enriched ->
+                favoritesState.update { it.copy(enrichedCharacters = enriched) }
             }
         }
     }

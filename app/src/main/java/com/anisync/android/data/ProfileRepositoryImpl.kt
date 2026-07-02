@@ -1,5 +1,7 @@
 package com.anisync.android.data
 
+import com.anisync.android.GetFavoriteCharacterRolesQuery
+import com.anisync.android.GetFavoriteMediaStatusQuery
 import com.anisync.android.GetFullUserProfileQuery
 import com.anisync.android.GetUserActivitiesQuery
 import com.anisync.android.GetUserFavoritesQuery
@@ -163,6 +165,10 @@ class ProfileRepositoryImpl @Inject constructor(
             // Page-1 favourites preview only — the eager all-pages fan-out is gone.
             // The Favorites tab pulls the remaining pages on demand via
             // getFavoriteAnime(), so a profile load/refresh costs a single request.
+            // Page-1 anime favourites carry only objective media fields (title/cover/format/type);
+            // the viewer's progress/score/status is filled in later by getFavoriteAnime, which
+            // re-looks the ids up in a top-level Page (see enrichMediaEntries) because AniList
+            // returns a null mediaListEntry under the favourites connection.
             val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { node ->
                 val m = node.mediaCardFields
                 LibraryEntry(
@@ -183,6 +189,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     totalChapters = m.chapters,
                     totalVolumes = m.volumes,
                     type = m.type,
+                    format = m.format,
                     status = LibraryStatus.UNKNOWN
                 )
             }.orEmpty()
@@ -248,7 +255,7 @@ class ProfileRepositoryImpl @Inject constructor(
 
             // Favorites already fetched in parallel with activities above.
 
-                    val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
+                    val overviewMangaBase = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
                         val m = media.mediaCardFields
                         com.anisync.android.domain.LibraryEntry(
                             id = 0,
@@ -264,12 +271,16 @@ class ProfileRepositoryImpl @Inject constructor(
                             totalChapters = m.chapters,
                             totalVolumes = m.volumes,
                             type = m.type,
-                            format = null,
+                            format = m.format,
                             status = com.anisync.android.domain.LibraryStatus.UNKNOWN
                         )
                     } ?: emptyList()
+                    // Objective media fields only here; the viewer's progress/score/status is filled
+                    // in lazily when the Favorites tab opens (enrichFavoriteMedia), off the profile
+                    // first-paint path, because it needs a second top-level id lookup.
+                    val overviewManga = overviewMangaBase
 
-            val overviewCharacters = user.favourites?.characters?.nodes?.filterNotNull()?.map { char ->
+            val overviewCharactersBase = user.favourites?.characters?.nodes?.filterNotNull()?.map { char ->
                 com.anisync.android.domain.CharacterInfo(
                     id = char.id ?: 0,
                     nameFull = char.name?.userPreferred ?: "Unknown",
@@ -279,6 +290,10 @@ class ProfileRepositoryImpl @Inject constructor(
                     role = ""
                 )
             } ?: emptyList()
+            // Name-only here; a representative role + Japanese VA (a per-media property AniList omits
+            // under the favourites connection) is filled in lazily on Favorites-tab open via
+            // enrichFavoriteCharacters, keeping the profile first paint cheap.
+            val overviewCharacters = overviewCharactersBase
 
             val overviewStaff = user.favourites?.staff?.nodes?.filterNotNull()?.map { staff ->
                 com.anisync.android.domain.StaffDetails(
@@ -295,7 +310,7 @@ class ProfileRepositoryImpl @Inject constructor(
                     dateOfDeath = null,
                     favourites = null,
                     language = null,
-                    primaryOccupations = emptyList(),
+                    primaryOccupations = staff.primaryOccupations?.filterNotNull() ?: emptyList(),
                     yearsActive = emptyList(),
                     homeTown = null,
                     voicedCharacters = emptyList()
@@ -449,7 +464,7 @@ class ProfileRepositoryImpl @Inject constructor(
         val total = ArrayList<LibraryEntry>(firstPage.entries.size + rest.sumOf { it.size })
         total.addAll(firstPage.entries)
         rest.forEach(total::addAll)
-        return FavoritesResult(total, lastPage, firstPageMs, restMs)
+        return FavoritesResult(enrichMediaEntries(total, policy), lastPage, firstPageMs, restMs)
     }
 
     private data class FavoritesResult(
@@ -496,11 +511,92 @@ class ProfileRepositoryImpl @Inject constructor(
                 totalChapters = m.chapters,
                 totalVolumes = m.volumes,
                 type = m.type,
+                format = m.format,
                 status = LibraryStatus.UNKNOWN
             )
         }
 
         return FavoritesPage(entries = entries, lastPage = pageInfo?.lastPage)
+    }
+
+    /**
+     * Fill in the viewer's list status (progress / score / status / rewatches) and score format for
+     * favourite [entries]. AniList returns a null `mediaListEntry` when a Media is reached through
+     * the `User.favourites` connection, so the ids are re-looked-up in a top-level `Page(media:)`
+     * where the viewer-scoped entry resolves. Ids are chunked to the 50-per-page `id_in` limit; any
+     * failure returns the originals unchanged (the card just shows no progress).
+     */
+    private suspend fun enrichMediaEntries(
+        entries: List<LibraryEntry>,
+        policy: FetchPolicy
+    ): List<LibraryEntry> {
+        if (entries.isEmpty()) return entries
+        return try {
+            val ids = entries.map { it.mediaId }.distinct().filter { it > 0 }
+            var scoreFormat: com.anisync.android.domain.ScoreFormat? = null
+            val entryById = buildMap {
+                ids.chunked(50).forEach { chunk ->
+                    val response = apolloClient.query(
+                        GetFavoriteMediaStatusQuery(ids = Optional.present(chunk))
+                    ).fetchPolicy(policy).execute()
+                    response.data?.Viewer?.mediaListOptions?.scoreFormat?.let {
+                        scoreFormat = mapScoreFormat(it.name)
+                    }
+                    response.data?.Page?.media?.filterNotNull()?.forEach { m ->
+                        val id = m.id ?: return@forEach
+                        m.mediaListEntry?.let { put(id, it) }
+                    }
+                }
+            }
+            entries.map { entry ->
+                val e = entryById[entry.mediaId] ?: return@map entry
+                entry.copy(
+                    progress = e.progress ?: 0,
+                    status = e.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN,
+                    score = e.score,
+                    rewatches = e.repeat ?: 0,
+                    scoreFormat = scoreFormat
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileRepository", "Error enriching favourite media list status", e)
+            entries
+        }
+    }
+
+    /**
+     * Fill in a representative role for favourite [characters] from each character's most-favourited
+     * media appearance. AniList returns `characterRole` null through the favourites connection, so
+     * the ids are looked up via a top-level `Page(characters:)`. (Voice actors are intentionally not
+     * fetched — AniList reliably returns them null on the Character.media path.) Any failure falls
+     * back to the name-only originals.
+     */
+    private suspend fun enrichCharacters(
+        characters: List<com.anisync.android.domain.CharacterInfo>,
+        policy: FetchPolicy
+    ): List<com.anisync.android.domain.CharacterInfo> {
+        if (characters.isEmpty()) return characters
+        return try {
+            val ids = characters.map { it.id }.distinct().filter { it > 0 }
+            val charById = buildMap {
+                ids.chunked(50).forEach { chunk ->
+                    val response = apolloClient.query(
+                        GetFavoriteCharacterRolesQuery(ids = Optional.present(chunk))
+                    ).fetchPolicy(policy).execute()
+                    response.data?.Page?.characters?.filterNotNull()?.forEach { c ->
+                        val id = c.id ?: return@forEach
+                        put(id, c)
+                    }
+                }
+            }
+            characters.map { character ->
+                val role = charById[character.id]?.media?.edges?.firstOrNull()?.characterRole?.name
+                if (role != null) character.copy(role = role) else character
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileRepository", "Error enriching favourite character roles", e)
+            characters
+        }
     }
 
     override suspend fun getFavoriteAnime(userId: Int, policy: CachePolicy): Result<List<LibraryEntry>> =
@@ -511,6 +607,14 @@ class ProfileRepositoryImpl @Inject constructor(
                 fetchFavoritesTimed(userId, policy.toFetchPolicy(), seedPageOne = null).entries
             }
         }
+
+    override suspend fun enrichFavoriteMedia(entries: List<LibraryEntry>): Result<List<LibraryEntry>> =
+        safeApiCall { enrichMediaEntries(entries, FetchPolicy.NetworkFirst) }
+
+    override suspend fun enrichFavoriteCharacters(
+        characters: List<com.anisync.android.domain.CharacterInfo>
+    ): Result<List<com.anisync.android.domain.CharacterInfo>> =
+        safeApiCall { enrichCharacters(characters, FetchPolicy.NetworkFirst) }
 
     override suspend fun getSocialData(
         userId: Int,

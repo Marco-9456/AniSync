@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.profile.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -27,29 +28,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
+import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.StaffDetails
+import com.anisync.android.domain.StaffInfo
 import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.SegmentedTabItem
-import com.anisync.android.presentation.details.components.CharacterItem
+import com.anisync.android.presentation.details.CastListCard
+import com.anisync.android.presentation.details.StaffListCard
 import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
+import com.anisync.android.presentation.profile.components.ProfileMediaListCard
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.type.MediaType
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileFavoritesTab(
@@ -62,8 +61,7 @@ fun LazyListScope.profileFavoritesTab(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
-    posterColumns: Int = 3,
-    portraitColumns: Int = 3,
+    listColumns: Int = 1,
     studioColumns: Int = 2,
     modifier: Modifier = Modifier
 ) {
@@ -96,31 +94,36 @@ fun LazyListScope.profileFavoritesTab(
 
     when (selectedFilter) {
         ProfileFavoritesFilter.ANIME -> {
-            profileMediaTab(
+            profileFavoritesMediaList(
                 items = profile.favoriteAnime,
+                mediaType = MediaType.ANIME,
                 emptyMessageRes = R.string.profile_placeholder_anime,
                 onMediaClick = onMediaClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "fav_anime",
-                posterColumns = posterColumns
+                listColumns = listColumns,
+                modifier = modifier
             )
         }
 
         ProfileFavoritesFilter.MANGA -> {
-            profileMediaTab(
+            profileFavoritesMediaList(
                 items = profile.favoriteMangaOverview,
+                mediaType = MediaType.MANGA,
                 emptyMessageRes = R.string.profile_placeholder_manga,
                 onMediaClick = onMediaClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = "fav_manga",
-                posterColumns = posterColumns
+                listColumns = listColumns,
+                modifier = modifier
             )
         }
 
         ProfileFavoritesFilter.CHARACTERS -> {
-            if (profile.favoriteCharactersOverview.isEmpty()) {
+            val characters = profile.favoriteCharactersOverview
+            if (characters.isEmpty()) {
                 item(key = "fav_empty_characters", contentType = "empty") {
                     Spacer(modifier = Modifier.height(16.dp))
                     PlaceholderTabContent(
@@ -129,42 +132,34 @@ fun LazyListScope.profileFavoritesTab(
                     )
                 }
             } else {
-                val rowItems = profile.favoriteCharactersOverview.chunked(portraitColumns)
                 item(key = "fav_top_spacer_characters") { Spacer(modifier = Modifier.height(16.dp)) }
 
-                itemsIndexed(
-                    items = rowItems,
-                    key = { index, _ -> "fav_row_characters_$index" },
-                    contentType = { _, _ -> "fav_row" }
-                ) { _, row ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        row.forEach { character ->
-                            Box(modifier = Modifier.weight(1f)) {
-                                CharacterItem(
-                                    character = character,
-                                    onClick = { onCharacterClick(character.id) },
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                        repeat(portraitColumns - row.size) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
+                items(
+                    count = characters.size,
+                    key = { i -> "fav_char_${characters[i].id}" },
+                    contentType = { "fav_person_row" }
+                ) { i ->
+                    val character = characters[i]
+                    // Thumb + name + role (role from the character's top media appearance, see the
+                    // repository mapper). No voice actor: AniList returns it null on the favourites
+                    // character path, so the row shows the character only.
+                    CastListCard(
+                        character = character,
+                        voiceActor = null,
+                        onClick = { onCharacterClick(character.id) },
+                        onVoiceActorClick = {},
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
+                item(key = "fav_bottom_spacer_characters") { Spacer(modifier = Modifier.height(12.dp)) }
             }
         }
 
         ProfileFavoritesFilter.STAFF -> {
-            if (profile.favoriteStaffOverview.isEmpty()) {
+            val staff = profile.favoriteStaffOverview
+            if (staff.isEmpty()) {
                 item(key = "fav_empty_staff", contentType = "empty") {
                     Spacer(modifier = Modifier.height(16.dp))
                     PlaceholderTabContent(
@@ -173,35 +168,23 @@ fun LazyListScope.profileFavoritesTab(
                     )
                 }
             } else {
-                val rowItems = profile.favoriteStaffOverview.chunked(portraitColumns)
                 item(key = "fav_top_spacer_staff") { Spacer(modifier = Modifier.height(16.dp)) }
 
-                itemsIndexed(
-                    items = rowItems,
-                    key = { index, _ -> "fav_row_staff_$index" },
-                    contentType = { _, _ -> "fav_row" }
-                ) { _, row ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        row.forEach { staff ->
-                            Box(modifier = Modifier.weight(1f)) {
-                                CastStaffItem(
-                                    staff = staff,
-                                    onClick = { onStaffClick(staff.id) },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                        repeat(portraitColumns - row.size) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
+                items(
+                    count = staff.size,
+                    key = { i -> "fav_staff_${staff[i].id}" },
+                    contentType = { "fav_person_row" }
+                ) { i ->
+                    val member = staff[i]
+                    StaffListCard(
+                        staff = member.toStaffInfo(),
+                        onClick = { onStaffClick(member.id) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
+                item(key = "fav_bottom_spacer_staff") { Spacer(modifier = Modifier.height(12.dp)) }
             }
         }
 
@@ -259,56 +242,78 @@ private fun favoritesFilterIcon(filter: ProfileFavoritesFilter): ImageVector {
     }
 }
 
-@Composable
-private fun CastStaffItem(
-    staff: StaffDetails,
-    onClick: () -> Unit,
+/**
+ * Read-only list rows for the favourites Anime/Manga sub-tabs — the same [ProfileMediaListCard]
+ * the Anime/Manga profile tabs use, minus the status filter. Chunked into [listColumns] so wide
+ * windows fill the width (1-up on phones, up to 2-up on tablets).
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+private fun LazyListScope.profileFavoritesMediaList(
+    items: List<LibraryEntry>,
+    mediaType: MediaType,
+    @StringRes emptyMessageRes: Int,
+    onMediaClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    transitionPrefix: String,
+    listColumns: Int,
     modifier: Modifier = Modifier
 ) {
-    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
-
-    Column(
-        horizontalAlignment = Alignment.Start,
-        modifier = modifier
-            .clip(imageShape)
-            .bouncyClickable(
-                onClick = onClick,
-                role = Role.Button,
-                onClickLabel = staff.nameUserPreferred
-            )
-            .padding(bottom = dimensionResource(R.dimen.spacing_small))
-    ) {
-        AsyncImage(
-            model = staff.imageUrl,
-            contentDescription = staff.nameUserPreferred,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
-                .clip(imageShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
-        Text(
-            text = staff.nameUserPreferred,
-            style = MaterialTheme.typography.labelMedium.emphasis(),
-            textAlign = TextAlign.Start,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.primary
-        )
-        if (staff.primaryOccupations.isNotEmpty()) {
-            Text(
-                text = staff.primaryOccupations.first(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Start,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+    if (items.isEmpty()) {
+        item(key = "fav_media_empty_$transitionPrefix", contentType = "empty") {
+            Spacer(modifier = Modifier.height(16.dp))
+            PlaceholderTabContent(
+                message = stringResource(emptyMessageRes),
+                modifier = modifier
             )
         }
+        return
+    }
+
+    val rowItems = items.chunked(listColumns)
+    item(key = "fav_media_top_spacer_$transitionPrefix") { Spacer(modifier = Modifier.height(16.dp)) }
+
+    itemsIndexed(
+        items = rowItems,
+        key = { index, _ -> "fav_media_row_${transitionPrefix}_$index" },
+        contentType = { _, _ -> "fav_media_row" }
+    ) { _, row ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            row.forEach { entry ->
+                Box(modifier = Modifier.weight(1f)) {
+                    ProfileMediaListCard(
+                        entry = entry,
+                        mediaType = mediaType,
+                        onClick = { onMediaClick(entry.mediaId) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        transitionPrefix = transitionPrefix
+                    )
+                }
+            }
+            repeat(listColumns - row.size) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
     }
 }
+
+/** Adapt a favourited [StaffDetails] to the [StaffInfo] the shared [StaffListCard] renders. */
+private fun StaffDetails.toStaffInfo(): StaffInfo = StaffInfo(
+    id = id,
+    nameFull = name,
+    nameNative = nativeName,
+    nameUserPreferred = nameUserPreferred,
+    imageUrl = imageUrl,
+    role = "",
+    primaryOccupations = primaryOccupations
+)
 
 @Composable
 private fun StudioItem(

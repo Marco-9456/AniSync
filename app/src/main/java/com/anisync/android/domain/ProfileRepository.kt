@@ -136,6 +136,23 @@ interface ProfileRepository {
     ): Result<List<LibraryEntry>>
 
     /**
+     * Fill in the viewer's list status (progress / score / status) for favourite media. AniList
+     * returns a null `mediaListEntry` under the `User.favourites` connection, so the ids are re-
+     * looked-up in a top-level context. Loaded lazily on Favorites-tab open. Returns the originals
+     * unchanged on failure.
+     */
+    suspend fun enrichFavoriteMedia(entries: List<LibraryEntry>): Result<List<LibraryEntry>>
+
+    /**
+     * Fill in a representative role + Japanese voice actor for favourite characters (both omitted
+     * by AniList under the favourites connection). Loaded lazily on Favorites-tab open. Returns the
+     * originals unchanged on failure.
+     */
+    suspend fun enrichFavoriteCharacters(
+        characters: List<CharacterInfo>
+    ): Result<List<CharacterInfo>>
+
+    /**
      * Fetch user's anime list.
      */
     suspend fun getUserAnimeList(username: String): Result<List<LibraryEntry>>

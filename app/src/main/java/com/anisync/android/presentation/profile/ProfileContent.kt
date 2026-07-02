@@ -409,8 +409,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onCharacterClick = onCharacterClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,
-                posterColumns = posterColumns,
-                portraitColumns = portraitColumns,
+                // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
+                listColumns = statsColumns.coerceAtMost(2),
                 studioColumns = studioColumns
             )
         }
