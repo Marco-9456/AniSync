@@ -213,6 +213,12 @@ fun MediaDetailsScreen(
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    // Hoisted to the screen (alongside listState) so the selected tab survives a character/staff
+    // round-trip. When the details content flashes through Loading on re-entry (the cached flow
+    // resets after the screen is off-stage a few seconds), the Success subtree is torn down and
+    // rebuilt; state kept inside it would reset to OVERVIEW, dropping the viewer back to the first
+    // tab. Living here — the same level scroll already does — keeps it stable across that rebuild.
+    var selectedTab by rememberSaveable { mutableStateOf(DetailsTab.OVERVIEW) }
 
     var shouldKeepChromeOverlayForReturn by rememberSaveable { mutableStateOf(false) }
     var hasObservedDetailsReEnter by rememberSaveable { mutableStateOf(false) }
@@ -579,6 +585,8 @@ fun MediaDetailsScreen(
                                 details = state.details,
                                 sourceScreen = sourceScreen,
                                 listState = listState,
+                                selectedTab = selectedTab,
+                                onTabSelected = { selectedTab = it },
                                 following = following,
                                 hasMoreFollowing = hasMoreFollowing,
                                 cast = cast,
@@ -862,6 +870,8 @@ fun DetailsPageContent(
     details: MediaDetails,
     sourceScreen: String,
     listState: LazyListState,
+    selectedTab: DetailsTab,
+    onTabSelected: (DetailsTab) -> Unit,
     following: List<MediaFollowingEntry>,
     hasMoreFollowing: Boolean,
     cast: PagedPeople<com.anisync.android.domain.CharacterInfo>,
@@ -936,8 +946,6 @@ fun DetailsPageContent(
         details.staff.distinctBy { it.id }.take(10)
     }
 
-    var selectedTab by rememberSaveable { mutableStateOf(DetailsTab.OVERVIEW) }
-
     // Only surface tabs that have something to show. Overview is always present; Social always
     // offers the "start discussion" affordance, so neither ever collapses.
     val availableTabs = remember(displayCharacters, displayStaff) {
@@ -949,13 +957,16 @@ fun DetailsPageContent(
         }
     }
 
-    // If the active tab disappears (data changed underneath), fall back to Overview.
-    LaunchedEffect(availableTabs) {
-        if (selectedTab !in availableTabs) selectedTab = DetailsTab.OVERVIEW
-    }
+    // The tab actually rendered this frame. [selectedTab] is the viewer's persisted choice (hoisted
+    // to the screen so it survives a character/staff round-trip). If the data backing that choice is
+    // momentarily unavailable we render Overview for this frame ONLY — without mutating selectedTab —
+    // so the tab snaps back the instant its data returns. Resetting selectedTab itself here (the old
+    // behaviour) clobbered the restored tab on re-entry.
+    val effectiveTab = if (selectedTab in availableTabs) selectedTab else DetailsTab.OVERVIEW
 
     // ---- Characters / Staff tab: view mode, filters, sort, language ----
-    var peopleViewMode by rememberSaveable { mutableStateOf(PeopleViewMode.GRID) }
+    // Default to the denser LIST layout (name + role + VA on one row) rather than the poster GRID.
+    var peopleViewMode by rememberSaveable { mutableStateOf(PeopleViewMode.LIST) }
     var characterSort by rememberSaveable { mutableStateOf(CharacterSortOption.RELEVANCE) }
     var characterRole by rememberSaveable { mutableStateOf(CharacterRoleFilter.ALL) }
     var characterLanguage by rememberSaveable { mutableStateOf<String?>(null) }
@@ -981,8 +992,8 @@ fun DetailsPageContent(
     val displayedStaff = if (staff.items.isNotEmpty()) staff.items else details.staff
 
     // Lazily fetch the full list the first time its tab is opened.
-    LaunchedEffect(selectedTab) {
-        when (selectedTab) {
+    LaunchedEffect(effectiveTab) {
+        when (effectiveTab) {
             DetailsTab.CHARACTERS -> onEnsureCastLoaded()
             DetailsTab.STAFF -> onEnsureStaffLoaded()
             else -> {}
@@ -1052,13 +1063,13 @@ fun DetailsPageContent(
                 ) {
                     DetailsTabsButtonGroup(
                         tabs = availableTabs,
-                        selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it }
+                        selectedTab = effectiveTab,
+                        onTabSelected = onTabSelected
                     )
                 }
             }
 
-            when (selectedTab) {
+            when (effectiveTab) {
                 DetailsTab.OVERVIEW -> {
                     // Your notes — surfaced read-first so the viewer can re-read their own note
                     // without opening the edit sheet (#75). Only shown when a note exists.
@@ -1413,8 +1424,8 @@ fun DetailsPageContent(
             ) {
                 DetailsTabsButtonGroup(
                     tabs = availableTabs,
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
+                    selectedTab = effectiveTab,
+                    onTabSelected = onTabSelected
                 )
             }
         }
