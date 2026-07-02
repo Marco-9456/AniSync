@@ -477,6 +477,7 @@
     <string name="notifications_unread_indicator_a11y">Nuevas notificaciones</string>
     <plurals name="notifications_unread_count_a11y">
         <item quantity="one">%1$d notificación no leída</item>
+        <item quantity="many">%1$d notificaciones no leídas</item>
         <item quantity="other">%1$d notificaciones no leídas</item>
     </plurals>
     <string name="profile_edit">Editar perfil</string>
@@ -818,7 +819,7 @@
     <string name="featured_media">Multimedia destacada</string>
     <string name="filter_on_my_list">En mi lista</string>
     <string name="voiced_characters">Personajes interpretados</string>
-    <string name="production_roles">Roles de producción</string>
+    <string name="production_roles">Papeles de producción</string>
     <string name="label_custom">Personalizado</string>
     <string name="label_categories">Categorías</string>
     <string name="label_genres">Géneros</string>
@@ -1043,4 +1044,7 @@
     <string name="rail_collapse">Colapsar navegación</string>
     <string name="rail_expanded">Navegación expandida</string>
     <string name="rail_collapsed">Navegación colapsada</string>
+    <string name="details_filter_role">Papel</string>
+    <string name="details_filter_language">Idioma del actor de voz</string>
+    <string name="details_label_synonyms">Sinónimos</string>
 </resources>
