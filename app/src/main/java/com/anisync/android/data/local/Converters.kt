@@ -119,6 +119,17 @@ class Converters {
     fun toTagList(list: List<Tag>): String = json.encodeToString(list)
 
     @TypeConverter
+    fun fromMediaRankingList(value: String): List<com.anisync.android.domain.MediaRanking> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toMediaRankingList(list: List<com.anisync.android.domain.MediaRanking>): String =
+        json.encodeToString(list)
+
+    @TypeConverter
     fun fromTrailer(value: String?): Trailer? = value?.let {
         try {
             json.decodeFromString<Trailer>(it)

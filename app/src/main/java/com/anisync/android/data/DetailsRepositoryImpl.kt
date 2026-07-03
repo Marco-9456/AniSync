@@ -255,6 +255,21 @@ class DetailsRepositoryImpl @Inject constructor(
                 ?.map { it.trim() }
                 ?.filter { it.isNotEmpty() }
                 .orEmpty()
+            val rankings = media.rankings?.filterNotNull()?.mapNotNull { ranking ->
+                val type = when (ranking.type) {
+                    com.anisync.android.type.MediaRankType.RATED -> MediaRankingType.RATED
+                    com.anisync.android.type.MediaRankType.POPULAR -> MediaRankingType.POPULAR
+                    else -> return@mapNotNull null
+                }
+                MediaRanking(
+                    rank = ranking.rank,
+                    type = type,
+                    year = ranking.year,
+                    season = ranking.season?.rawValue,
+                    allTime = ranking.allTime ?: false,
+                    context = ranking.context
+                )
+            }.orEmpty()
 
             val details = MediaDetails(
                 id = media.id ?: 0,
@@ -287,6 +302,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 genres = media.genres?.filterNotNull() ?: emptyList(),
                 synonyms = synonyms,
                 hashtags = hashtags,
+                rankings = rankings,
                 source = media.source?.name,
                 studio = mainStudios.firstOrNull(),
                 studios = mainStudios,

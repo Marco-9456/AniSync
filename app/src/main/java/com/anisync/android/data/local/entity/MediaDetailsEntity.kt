@@ -57,6 +57,8 @@ data class MediaDetailsEntity(
     val synonyms: List<String> = emptyList(),
     @ColumnInfo(defaultValue = "[]")
     val hashtags: List<String> = emptyList(),
+    @ColumnInfo(defaultValue = "[]")
+    val rankings: List<com.anisync.android.domain.MediaRanking> = emptyList(),
     val source: String?,
     val studio: String?,
     @ColumnInfo(defaultValue = "NULL")

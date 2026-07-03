@@ -26,9 +26,12 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Factory
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,24 +59,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaRanking
+import com.anisync.android.domain.MediaRankingType
 import com.anisync.android.domain.StudioRef
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.formatCountdownAdaptive
+import com.anisync.android.presentation.util.mediaRankingLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
 /**
  * Displays media information in a scrollable horizontal list with pill-style cards.
- * Order: Status, Episodes, Duration, Season, Aired, Source, Studio
+ * Order: Status, Rankings, Episodes, Duration, Season, Aired, Source, Studio, Hashtag
  */
 @Composable
 fun HorizontalInfoCards(
     details: MediaDetails,
     modifier: Modifier = Modifier,
-    onStudioClick: (Int) -> Unit = {}
+    onStudioClick: (Int) -> Unit = {},
+    onRankingClick: (MediaRanking) -> Unit = {}
 ) {
     var activeSheet by remember { mutableStateOf<InfoSheetKind?>(null) }
 
@@ -81,8 +89,9 @@ fun HorizontalInfoCards(
     val infoItems = buildInfoItems(details, onStudioClick)
     val expandableItems = buildExpandableInfoItems(details) { activeSheet = it }
     val allItems = infoItems + expandableItems
+    val headlineRankings = details.rankings.take(2)
 
-    if (allItems.isEmpty()) return
+    if (allItems.isEmpty() && headlineRankings.isEmpty()) return
 
     Column(modifier = modifier) {
         SectionHeader(
@@ -92,7 +101,22 @@ fun HorizontalInfoCards(
 
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
-        // Pills wrap across up to three stacked rows.
+        // Headline community rankings (AniList orders the all-time pair first) ride
+        // their own leading row; tapping opens Discover search scoped to the ranking.
+        if (headlineRankings.isNotEmpty()) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(headlineRankings, key = { it.context + it.season + it.year }) { ranking ->
+                    RankingInfoPill(ranking = ranking, onClick = { onRankingClick(ranking) })
+                }
+            }
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+        }
+
+        // Remaining pills wrap across up to three stacked rows.
         val perRow = (allItems.size + 2) / 3
         allItems.chunked(perRow).forEachIndexed { index, rowItems ->
             if (index > 0) {
@@ -146,12 +170,38 @@ private data class InfoItem(
     val onClick: (() -> Unit)? = null
 )
 
+/**
+ * A community ranking as an info pill: rank number as the bold value under the
+ * ranking's scope label. Shared by the Information section and the Stats tab.
+ */
+@Composable
+fun RankingInfoPill(
+    ranking: MediaRanking,
+    onClick: () -> Unit
+) {
+    InfoPill(
+        icon = when (ranking.type) {
+            MediaRankingType.RATED -> Icons.Rounded.Star
+            MediaRankingType.POPULAR -> Icons.Filled.Favorite
+        },
+        iconResId = null,
+        label = mediaRankingLabel(ranking),
+        value = "#${ranking.rank}",
+        iconTint = when (ranking.type) {
+            MediaRankingType.RATED -> Color(0xFFFFC107)
+            MediaRankingType.POPULAR -> MaterialTheme.colorScheme.error
+        },
+        onClick = onClick
+    )
+}
+
 @Composable
 private fun buildInfoItems(
     details: MediaDetails,
     onStudioClick: (Int) -> Unit
 ): List<InfoItem> {
     val items = mutableListOf<InfoItem>()
+    val uriHandler = LocalUriHandler.current
 
     // 1. Status
     val statusValue = if (details.status.equals("NOT_YET_RELEASED", ignoreCase = true)) {
@@ -295,6 +345,23 @@ private fun buildInfoItems(
                 value = studio.name,
                 iconTint = Color(0xFFFF9800), // Orange
                 onClick = { onStudioClick(studio.id) }
+            )
+        )
+    }
+
+    // 7. Official hashtag(s). Tapping opens an X (Twitter) search — OR-joined so
+    // multi-hashtag media ("#frieren #葬送のフリーレン") match either variant.
+    if (details.hashtags.isNotEmpty()) {
+        items.add(
+            InfoItem(
+                icon = Icons.Default.Tag,
+                label = stringResource(R.string.stat_hashtag),
+                value = details.hashtags.joinToString(" "),
+                iconTint = MaterialTheme.colorScheme.secondary,
+                onClick = {
+                    val query = android.net.Uri.encode(details.hashtags.joinToString(" OR "))
+                    uriHandler.openUri("https://x.com/search?q=$query")
+                }
             )
         )
     }

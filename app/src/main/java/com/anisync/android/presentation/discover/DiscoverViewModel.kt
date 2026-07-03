@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,7 +32,8 @@ import javax.inject.Inject
 class DiscoverViewModel @Inject constructor(
     private val discoverRepository: DiscoverRepository,
     private val searchRepository: SearchRepository,
-    private val appSettings: com.anisync.android.data.AppSettings
+    private val appSettings: com.anisync.android.data.AppSettings,
+    private val searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher
 ) : ViewModel() {
 
     val titleLanguage = appSettings.titleLanguage
@@ -55,6 +57,35 @@ class DiscoverViewModel @Inject constructor(
         observeSearchQuery()
         observeAdultContent()
         observeViewMode()
+        observeSearchLaunchRequests()
+    }
+
+    /**
+     * External "open search with these filters" requests (ranking cards, genre/tag
+     * chips on media details). Applies the preset filters over a blank query, fires
+     * the search, and bumps [DiscoverUiState.Success.searchOverlayRequest] so the
+     * screen expands the search overlay. Waits for the first Success state so a
+     * request made before Discover ever composed isn't dropped.
+     */
+    private fun observeSearchLaunchRequests() {
+        viewModelScope.launch {
+            searchLauncher.pending.collect { filters ->
+                if (filters == null) return@collect
+                _uiState.first { it is DiscoverUiState.Success }
+                searchLauncher.consume()
+                val currentState = _uiState.value as? DiscoverUiState.Success ?: return@collect
+                _uiState.update {
+                    currentState.copy(
+                        searchQuery = "",
+                        searchFilters = filters,
+                        activeCategory = ResultCategory.ALL,
+                        searchOverlayRequest = currentState.searchOverlayRequest + 1
+                    )
+                }
+                loadTaxonomyIfNeeded()
+                searchTrigger.value = SearchTriggerState("", filters.hashCode())
+            }
+        }
     }
 
     /**

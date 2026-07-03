@@ -20,10 +20,19 @@ import javax.inject.Inject
 class MainScreenViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
     private val appSettings: AppSettings,
-    val toastManager: ToastManager
+    val toastManager: ToastManager,
+    searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher
 ) : ViewModel() {
 
     val unreadNotificationCount: StateFlow<Int> = notificationBadgeStore.unreadCount
+
+    /**
+     * "Open Discover search with preset filters" navigation triggers. MainScreen
+     * switches to the Discover tab on each emission; DiscoverViewModel separately
+     * applies and consumes the filters themselves.
+     */
+    val discoverSearchNavigations: kotlinx.coroutines.flow.SharedFlow<Unit> =
+        searchLauncher.navigationRequests
 
     val navBarStyle: StateFlow<NavBarStyle> = appSettings.navBarStyle
     val navBarShowLabels: StateFlow<Boolean> = appSettings.navBarShowLabels

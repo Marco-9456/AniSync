@@ -128,4 +128,17 @@ fun String?.formatAsTitle(): String? {
         }
 }
 
+/**
+ * Display label for a community ranking: "highest rated all time" → "Highest Rated
+ * All Time"; seasonal/yearly ranks get their scope appended ("Highest Rated Fall 2023").
+ * Shared by the media Stats tab pills and the overview Information cards.
+ */
+fun mediaRankingLabel(ranking: com.anisync.android.domain.MediaRanking): String = buildString {
+    append(ranking.context.formatAsTitle() ?: ranking.context)
+    if (!ranking.allTime) {
+        ranking.season?.let { append(' ').append(it.formatAsTitle()) }
+        ranking.year?.let { append(' ').append(it) }
+    }
+}
+
 

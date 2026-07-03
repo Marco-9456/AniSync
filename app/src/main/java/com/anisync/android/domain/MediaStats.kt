@@ -18,7 +18,11 @@ data class MediaStats(
             statusDistribution.isEmpty()
 }
 
-/** One "#N Highest Rated / Most Popular …" entry from `Media.rankings`. */
+/**
+ * One "#N Highest Rated / Most Popular …" entry from `Media.rankings`.
+ * Serializable because it is also cached inside [MediaDetails]'s Room row.
+ */
+@kotlinx.serialization.Serializable
 data class MediaRanking(
     val rank: Int,
     val type: MediaRankingType,
@@ -30,6 +34,7 @@ data class MediaRanking(
     val context: String
 )
 
+@kotlinx.serialization.Serializable
 enum class MediaRankingType { RATED, POPULAR }
 
 /** One day of sitewide activity for the media (`Media.trends`). */

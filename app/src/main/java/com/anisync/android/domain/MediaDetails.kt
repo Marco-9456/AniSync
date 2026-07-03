@@ -76,6 +76,8 @@ data class MediaDetails(
     val genres: List<String>,
     val synonyms: List<String> = emptyList(),
     val hashtags: List<String> = emptyList(),
+    /** Community rankings ("#1 Highest Rated All Time", …) from `Media.rankings`. */
+    val rankings: List<MediaRanking> = emptyList(),
     val source: String?,
     val studio: StudioRef?,
     /** Main animation studios (isMain = true on the AniList studio edge). */

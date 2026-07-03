@@ -602,6 +602,7 @@
     <string name="media_stats_episode_eyebrow">Episode %1$d</string>
     <string name="media_stats_day_activity">Day Activity</string>
     <string name="media_stats_score_bucket_eyebrow">Score %1$d</string>
+    <string name="stat_hashtag">Hashtag</string>
     <string name="media_stats_percent_of_ratings">%1$d%% of ratings</string>
     <string name="media_stats_empty">No community statistics for this title yet.</string>
     <string name="media_stats_error">Couldn\'t load statistics.</string>

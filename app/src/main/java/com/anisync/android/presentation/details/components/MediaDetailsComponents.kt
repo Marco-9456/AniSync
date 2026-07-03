@@ -99,7 +99,9 @@ import kotlinx.coroutines.launch
 fun ContentMetadataSection(
     genres: List<String>,
     tags: List<Tag>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onGenreClick: (String) -> Unit = {},
+    onTagClick: (Tag) -> Unit = {}
 ) {
     if (genres.isEmpty() && tags.isEmpty()) return
 
@@ -130,7 +132,7 @@ fun ContentMetadataSection(
                 items = genres,
                 keySelector = { it }
             ) { genre ->
-                GenreChip(genre = genre)
+                GenreChip(genre = genre, onClick = { onGenreClick(genre) })
             }
         }
 
@@ -144,7 +146,7 @@ fun ContentMetadataSection(
                 items = regularTags,
                 keySelector = { it.name }
             ) { tag ->
-                TagChip(tag = tag, isSpoiler = false)
+                TagChip(tag = tag, isSpoiler = false, onTagClick = onTagClick)
             }
         }
 
@@ -159,7 +161,7 @@ fun ContentMetadataSection(
                 items = spoilerTags,
                 keySelector = { it.name }
             ) { tag ->
-                TagChip(tag = tag, isSpoiler = true)
+                TagChip(tag = tag, isSpoiler = true, onTagClick = onTagClick)
             }
         }
     }
@@ -199,6 +201,7 @@ private fun <T> MetadataGroup(
 @Composable
 private fun GenreChip(
     genre: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -209,7 +212,7 @@ private fun GenreChip(
     ) {
         Box(
             modifier = Modifier
-                .clickable { /* TODO: Filter by genre */ }
+                .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -227,6 +230,7 @@ private fun GenreChip(
 private fun TagChip(
     tag: Tag,
     isSpoiler: Boolean,
+    onTagClick: (Tag) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // State to toggle spoiler visibility
@@ -260,10 +264,11 @@ private fun TagChip(
             Row(
                 modifier = Modifier
                     .clip(shape)
-                    .clickable(
-                        enabled = isSpoiler,
-                        onClick = { isVisible = !isVisible }
-                    )
+                    // Hidden spoilers reveal on first tap; revealed tags (spoiler or
+                    // not) open the tag search on the next one.
+                    .clickable {
+                        if (isSpoiler && !isVisible) isVisible = true else onTagClick(tag)
+                    }
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -286,6 +291,20 @@ private fun TagChip(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
+                            if (isSpoiler) {
+                                // Chip body now opens the tag search, so re-hiding
+                                // moved onto a dedicated trailing eye target.
+                                Icon(
+                                    imageVector = Icons.Default.VisibilityOff,
+                                    contentDescription = stringResource(R.string.label_spoiler),
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .clickable { isVisible = false }
+                                        .padding(4.dp)
+                                        .size(14.dp),
+                                    tint = tagColors.textColor
+                                )
+                            }
                         }
                     } else {
                         Row(

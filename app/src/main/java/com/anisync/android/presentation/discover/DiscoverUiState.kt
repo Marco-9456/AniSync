@@ -38,7 +38,13 @@ sealed interface DiscoverUiState {
         val searchFilters: SearchFilters = SearchFilters(),
         val searchError: String? = null,
         val viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
-        val activeCategory: ResultCategory = ResultCategory.ALL
+        val activeCategory: ResultCategory = ResultCategory.ALL,
+        /**
+         * Monotonic counter bumped when an external screen asks Discover to open its
+         * search overlay with preset filters (see DiscoverSearchLauncher). The screen
+         * reacts to changes by clearing the query field and expanding the search bar.
+         */
+        val searchOverlayRequest: Long = 0L
     ) : DiscoverUiState
 
     data class Error(val message: String) : DiscoverUiState

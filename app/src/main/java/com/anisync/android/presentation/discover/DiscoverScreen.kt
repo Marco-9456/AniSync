@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -102,6 +103,7 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val TAG = "DiscoverScreen"
@@ -243,6 +245,25 @@ fun DiscoverScreen(
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .collect { viewModel.onAction(DiscoverAction.OnSearchQueryChange(it)) }
+    }
+
+    // External preset-filter search request (ranking cards, genre/tag chips on media
+    // details): the viewmodel has already applied the filters; clear the query field
+    // and open the overlay so the filtered results are what the user lands on.
+    // The expand animation can be cancelled while the tab-switch transition is still
+    // settling (the effect often fires on the destination's very first frame), so
+    // keep nudging until the bar actually reports Expanded.
+    val searchOverlayRequest = (uiState as? DiscoverUiState.Success)?.searchOverlayRequest ?: 0L
+    LaunchedEffect(searchOverlayRequest) {
+        if (searchOverlayRequest > 0L) {
+            textFieldState.clearText()
+            var attempts = 0
+            while (searchBarState.currentValue != SearchBarValue.Expanded && attempts < 10) {
+                runCatching { searchBarState.animateToExpanded() }
+                attempts++
+                if (searchBarState.currentValue != SearchBarValue.Expanded) delay(100)
+            }
+        }
     }
 
     val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, searchBarState, coroutineScope, keyboardController) {

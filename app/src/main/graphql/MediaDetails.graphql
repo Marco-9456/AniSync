@@ -17,6 +17,15 @@ query GetMediaDetails($id: Int) {
         description(asHtml: true)
         synonyms
         hashtag
+        rankings {
+            id
+            rank
+            type
+            year
+            season
+            allTime
+            context
+        }
         averageScore
         meanScore
         popularity

@@ -45,6 +45,7 @@ class MediaDetailsViewModel @Inject constructor(
     private val appSettings: AppSettings,
     private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
     private val forumRepository: ForumRepository,
+    private val discoverSearchLauncher: com.anisync.android.domain.DiscoverSearchLauncher,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -482,6 +483,15 @@ class MediaDetailsViewModel @Inject constructor(
             }
             castLoading = false
         }
+    }
+
+    /**
+     * Ask the Discover tab to open its search overlay with [filters] preset —
+     * ranking cards and genre/tag chips route through this. MainScreen handles
+     * the tab switch; DiscoverViewModel applies and consumes the request.
+     */
+    fun openDiscoverSearch(filters: com.anisync.android.domain.SearchFilters) {
+        discoverSearchLauncher.launch(filters)
     }
 
     /** Fetch the community stats the first time the Stats tab is opened. */

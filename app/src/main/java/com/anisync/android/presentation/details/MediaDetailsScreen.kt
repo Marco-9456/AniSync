@@ -612,6 +612,30 @@ fun MediaDetailsScreen(
                                 mediaStats = mediaStats,
                                 onEnsureStatsLoaded = viewModel::ensureStatsLoaded,
                                 onRetryStats = viewModel::retryStats,
+                                onRankingClick = { ranking ->
+                                    viewModel.openDiscoverSearch(
+                                        rankingSearchFilters(
+                                            ranking,
+                                            isManga = state.details.type == com.anisync.android.type.MediaType.MANGA
+                                        )
+                                    )
+                                },
+                                onGenreClick = { genre ->
+                                    viewModel.openDiscoverSearch(
+                                        genreSearchFilters(
+                                            genre,
+                                            isManga = state.details.type == com.anisync.android.type.MediaType.MANGA
+                                        )
+                                    )
+                                },
+                                onTagClick = { tag ->
+                                    viewModel.openDiscoverSearch(
+                                        tagSearchFilters(
+                                            tag.name,
+                                            isManga = state.details.type == com.anisync.android.type.MediaType.MANGA
+                                        )
+                                    )
+                                },
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
                                 onStaffClick = navigateToStaffDetails,
@@ -904,6 +928,9 @@ fun DetailsPageContent(
     mediaStats: MediaStatsState,
     onEnsureStatsLoaded: () -> Unit,
     onRetryStats: () -> Unit,
+    onRankingClick: (com.anisync.android.domain.MediaRanking) -> Unit,
+    onGenreClick: (String) -> Unit,
+    onTagClick: (com.anisync.android.domain.Tag) -> Unit,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
@@ -1122,7 +1149,11 @@ fun DetailsPageContent(
                     item(key = "info_cards") {
                         Column {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                            HorizontalInfoCards(details = details, onStudioClick = onStudioClick)
+                            HorizontalInfoCards(
+                                details = details,
+                                onStudioClick = onStudioClick,
+                                onRankingClick = onRankingClick
+                            )
                         }
                     }
 
@@ -1139,7 +1170,12 @@ fun DetailsPageContent(
                         if (details.tags.isNotEmpty() || details.genres.isNotEmpty()) {
                             Column {
                                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                                ContentMetadataSection(genres = details.genres, tags = details.tags)
+                                ContentMetadataSection(
+                                    genres = details.genres,
+                                    tags = details.tags,
+                                    onGenreClick = onGenreClick,
+                                    onTagClick = onTagClick
+                                )
                             }
                         }
                     }
@@ -1310,7 +1346,8 @@ fun DetailsPageContent(
                         state = mediaStats,
                         meanScore = details.meanScore,
                         isManga = details.type == com.anisync.android.type.MediaType.MANGA,
-                        onRetry = onRetryStats
+                        onRetry = onRetryStats,
+                        onRankingClick = onRankingClick
                     )
                 }
 
@@ -2109,3 +2146,54 @@ fun SmartActionButtonsRow(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Discover-search presets (ranking cards, genre/tag chips)
+// ---------------------------------------------------------------------------
+
+/**
+ * Filters matching what AniList's site opens when a ranking card is clicked:
+ * the ranking's sort (score/popularity), scoped to the media type, plus the
+ * season/year for seasonal and yearly ranks.
+ */
+private fun rankingSearchFilters(
+    ranking: com.anisync.android.domain.MediaRanking,
+    isManga: Boolean
+): com.anisync.android.domain.SearchFilters = com.anisync.android.domain.SearchFilters(
+    sort = when (ranking.type) {
+        com.anisync.android.domain.MediaRankingType.RATED ->
+            com.anisync.android.domain.SortOption.SCORE_DESC
+        com.anisync.android.domain.MediaRankingType.POPULAR ->
+            com.anisync.android.domain.SortOption.POPULARITY_DESC
+    },
+    searchType = if (isManga) com.anisync.android.domain.SearchType.MANGA
+    else com.anisync.android.domain.SearchType.ANIME,
+    yearRange = if (!ranking.allTime && ranking.year != null) {
+        com.anisync.android.domain.IntRangeFilter(min = ranking.year, max = ranking.year)
+    } else {
+        com.anisync.android.domain.IntRangeFilter()
+    },
+    season = if (!ranking.allTime) {
+        ranking.season?.let { name ->
+            com.anisync.android.type.MediaSeason.knownEntries.firstOrNull { it.name == name }
+        }
+    } else null
+)
+
+private fun genreSearchFilters(
+    genre: String,
+    isManga: Boolean
+): com.anisync.android.domain.SearchFilters = com.anisync.android.domain.SearchFilters(
+    searchType = if (isManga) com.anisync.android.domain.SearchType.MANGA
+    else com.anisync.android.domain.SearchType.ANIME,
+    genresIncluded = setOf(genre)
+)
+
+private fun tagSearchFilters(
+    tag: String,
+    isManga: Boolean
+): com.anisync.android.domain.SearchFilters = com.anisync.android.domain.SearchFilters(
+    searchType = if (isManga) com.anisync.android.domain.SearchType.MANGA
+    else com.anisync.android.domain.SearchType.ANIME,
+    tagsIncluded = setOf(tag)
+)

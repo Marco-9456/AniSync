@@ -31,15 +31,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,7 +80,6 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.MediaStatsState
 import com.anisync.android.presentation.statistics.StatPreviewSurface
-import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.formatCompactNumber
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import java.text.NumberFormat
@@ -106,7 +100,8 @@ fun LazyListScope.mediaStatsTabContent(
     state: MediaStatsState,
     meanScore: Int?,
     isManga: Boolean,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onRankingClick: (MediaRanking) -> Unit = {}
 ) {
     val stats = state.stats
 
@@ -136,7 +131,7 @@ fun LazyListScope.mediaStatsTabContent(
     if (stats.rankings.isNotEmpty()) {
         item(key = "stats_rankings") {
             StatsSectionSpacer()
-            RankingsSection(rankings = stats.rankings)
+            RankingsSection(rankings = stats.rankings, onRankingClick = onRankingClick)
         }
     }
 
@@ -211,13 +206,15 @@ private fun StatsMessageBox(isError: Boolean, onRetry: (() -> Unit)?) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RankingsSection(rankings: List<MediaRanking>) {
+private fun RankingsSection(rankings: List<MediaRanking>, onRankingClick: (MediaRanking) -> Unit) {
     Column {
         SectionHeader(
             title = stringResource(R.string.media_stats_rankings),
             level = HeaderLevel.Section,
             padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
         )
+        // Same pill design as the overview Information section (RankingInfoPill);
+        // tapping opens Discover search with this ranking's scope preset.
         FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
@@ -225,64 +222,10 @@ private fun RankingsSection(rankings: List<MediaRanking>) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            rankings.forEach { ranking -> RankingPill(ranking) }
-        }
-    }
-}
-
-@Composable
-private fun RankingPill(ranking: MediaRanking) {
-    val expressive = LocalExpressiveTypography.current
-    // All-time ranks are the headline pair — lift them onto the primary container.
-    val container = if (ranking.allTime) MaterialTheme.colorScheme.primaryContainer
-    else MaterialTheme.colorScheme.surfaceContainerLow
-    val onContainer = if (ranking.allTime) MaterialTheme.colorScheme.onPrimaryContainer
-    else MaterialTheme.colorScheme.onSurface
-
-    Surface(color = container, shape = RoundedCornerShape(16.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            when (ranking.type) {
-                MediaRankingType.RATED -> Icon(
-                    imageVector = Icons.Rounded.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFFC107),
-                    modifier = Modifier.size(16.dp)
-                )
-
-                MediaRankingType.POPULAR -> Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(16.dp)
-                )
+            rankings.forEach { ranking ->
+                RankingInfoPill(ranking = ranking, onClick = { onRankingClick(ranking) })
             }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "#${ranking.rank}",
-                style = expressive.numericMono,
-                color = onContainer
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = rankingLabel(ranking),
-                style = MaterialTheme.typography.labelLarge,
-                color = onContainer.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
-    }
-}
-
-/** "highest rated all time" → "Highest Rated All Time"; seasonal/yearly ranks get their scope appended. */
-private fun rankingLabel(ranking: MediaRanking): String = buildString {
-    append(ranking.context.formatAsTitle() ?: ranking.context)
-    if (!ranking.allTime) {
-        ranking.season?.let { append(' ').append(it.formatAsTitle()) }
-        ranking.year?.let { append(' ').append(it) }
     }
 }
 
@@ -1139,7 +1082,7 @@ private val previewMediaStats = MediaStats(
 @Composable
 private fun RankingsPreview() {
     StatPreviewSurface(isDark = false) {
-        RankingsSection(rankings = previewMediaStats.rankings)
+        RankingsSection(rankings = previewMediaStats.rankings, onRankingClick = {})
     }
 }
 

@@ -201,6 +201,19 @@ fun MainScreen(
             }
         }
     }
+    // "Open Discover search with preset filters" (ranking cards, genre/tag chips on
+    // media details): switch to the Discover tab; DiscoverViewModel picks the request
+    // up from the same launcher, applies the filters and expands the search overlay.
+    LaunchedEffect(navController) {
+        viewModel.discoverSearchNavigations.collect {
+            navController.navigateToMainTab(Discover, "discover", viewModel::onMainTabSelected)
+            // The restored Discover tab stack may itself have a details screen on
+            // top (search → details → chip tap). Pop back to the Discover root,
+            // otherwise the "switch" lands on the same details screen and the
+            // search overlay never shows.
+            navController.popBackStack(route = Discover, inclusive = false)
+        }
+    }
     val unreadNotificationCount by viewModel.unreadNotificationCount.collectAsStateWithLifecycle()
     val navBarStyle by viewModel.navBarStyle.collectAsStateWithLifecycle()
     val navBarShowLabels by viewModel.navBarShowLabels.collectAsStateWithLifecycle()

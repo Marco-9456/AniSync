@@ -118,6 +118,7 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
     genres = genres,
     synonyms = synonyms,
     hashtags = hashtags,
+    rankings = rankings,
     source = source,
     studio = studio?.let { name ->
         studioId?.let { id -> com.anisync.android.domain.StudioRef(id, name) }
@@ -178,6 +179,7 @@ fun MediaDetails.toEntity(): MediaDetailsEntity = MediaDetailsEntity(
     genres = genres,
     synonyms = synonyms,
     hashtags = hashtags,
+    rankings = rankings,
     source = source,
     studio = studio?.name,
     studioId = studio?.id,
