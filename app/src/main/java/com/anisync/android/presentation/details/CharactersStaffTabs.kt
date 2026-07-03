@@ -474,6 +474,22 @@ private fun CastGridCard(
                 modifier = imageBase.bouncyClickable(onClick = onClick)
             )
             if (voiceActor?.imageUrl != null) {
+                // The VA badge shares the same key as the Staff tab rows so it morphs
+                // into the staff details hero, matching the character image treatment.
+                val vaShared =
+                    if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                        with(sharedTransitionScope) {
+                            Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState(
+                                    key = TransitionKeys.staffImage(voiceActor.id)
+                                ),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                clipInOverlayDuringTransition = OverlayClip(CircleShape)
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
                 AsyncImage(
                     model = voiceActor.imageUrl,
                     contentDescription = voiceActor.nameUserPreferred,
@@ -482,6 +498,7 @@ private fun CastGridCard(
                         .align(Alignment.BottomEnd)
                         .padding(6.dp)
                         .size(34.dp)
+                        .then(vaShared)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
                         .bouncyClickable(onClick = { onVoiceActorClick(voiceActor.id) })
@@ -580,16 +597,19 @@ internal fun CastListCard(
                     }
                 }
                 Spacer(Modifier.width(10.dp))
-                AsyncImage(
-                    model = voiceActor.imageUrl,
+                // Same shared treatment as the character thumb: the VA image morphs into
+                // the staff details hero, keyed like the Staff tab rows.
+                PersonThumb(
+                    imageUrl = voiceActor.imageUrl,
+                    shape = thumbShape,
+                    transitionKey = TransitionKeys.staffImage(voiceActor.id),
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
                     contentDescription = voiceActor.nameUserPreferred,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(56.dp)
-                        .aspectRatio(PORTRAIT_ASPECT)
-                        .clip(thumbShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .bouncyClickable(onClick = { onVoiceActorClick(voiceActor.id) }, clipShape = thumbShape)
+                    modifier = Modifier.bouncyClickable(
+                        onClick = { onVoiceActorClick(voiceActor.id) },
+                        clipShape = thumbShape
+                    )
                 )
             }
         }
@@ -659,7 +679,9 @@ private fun PersonThumb(
     shape: RoundedCornerShape,
     transitionKey: Any,
     sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    contentDescription: String? = null,
+    modifier: Modifier = Modifier
 ) {
     val base = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
@@ -683,8 +705,8 @@ private fun PersonThumb(
     }
     AsyncImage(
         model = imageUrl,
-        contentDescription = null,
+        contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
-        modifier = base
+        modifier = base.then(modifier)
     )
 }
