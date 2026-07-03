@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -51,6 +52,9 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
  * @param icon Optional leading icon for an option; `null` renders text only.
  * @param fillEqually See layout note above.
  * @param labelStyle Text style for labels (defaults to `labelLarge`).
+ * @param scrollState Horizontal scroll state of the scrollable layout. Hoist it when the same
+ *   logical strip is rendered twice (e.g. an in-list copy plus a pinned copy) so both stay at the
+ *   same offset; ignored when [fillEqually] is true.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -62,7 +66,8 @@ fun <T> SegmentedTabGroup(
     modifier: Modifier = Modifier,
     icon: (T) -> ImageVector? = { null },
     fillEqually: Boolean = false,
-    labelStyle: TextStyle = MaterialTheme.typography.labelLarge
+    labelStyle: TextStyle = MaterialTheme.typography.labelLarge,
+    scrollState: ScrollState = rememberScrollState()
 ) {
     val haptic = rememberHapticFeedback()
 
@@ -70,7 +75,7 @@ fun <T> SegmentedTabGroup(
         modifier.fillMaxWidth()
     } else {
         modifier
-            .horizontalScroll(rememberScrollState())
+            .horizontalScroll(scrollState)
             .padding(horizontal = 16.dp)
     }
 

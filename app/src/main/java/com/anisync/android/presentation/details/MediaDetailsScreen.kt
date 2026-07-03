@@ -14,6 +14,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -81,7 +82,6 @@ import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -104,7 +104,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.layout.boundsInWindow
@@ -250,12 +249,18 @@ fun MediaDetailsScreen(
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-
-    // How far the content has scrolled under the app bar (0 = top, 1 = app bar fully opaque).
-    // Drives both the status-bar scrim fade and the top-app-bar title cross-fade.
-    val overlappedFraction by remember {
-        derivedStateOf { scrollBehavior.state.overlappedFraction.coerceIn(0f, 1f) }
+    // How far the content has scrolled under the (pinned) app bar (0 = at rest, 1 = fully
+    // under), ramping over the bar height. Drives the status-bar scrim fade, the app bar
+    // container color and the title cross-fade. Measured from the list's own geometry —
+    // the previous pinnedScrollBehavior bookkeeping also reacted to pull-to-refresh drag
+    // deltas, so any pull surfaced the opaque app bar over the PTR indicator while the
+    // list was still at rest at the top. Real positions can't lie about overlap.
+    val overlapRampPx = with(LocalDensity.current) { 64.dp.toPx() }
+    val overlappedFraction by remember(listState, overlapRampPx) {
+        derivedStateOf {
+            if (listState.firstVisibleItemIndex > 0) 1f
+            else (listState.firstVisibleItemScrollOffset / overlapRampPx).coerceIn(0f, 1f)
+        }
     }
     val isScrolled by remember { derivedStateOf { overlappedFraction > 0.01f } }
 
@@ -336,7 +341,6 @@ fun MediaDetailsScreen(
     with(sharedTransitionScope) {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 containerColor = MaterialTheme.colorScheme.background,
                 contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
                 topBar = {
@@ -402,12 +406,17 @@ fun MediaDetailsScreen(
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
-                                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                // Animated by real scroll overlap (see overlappedFraction); no
+                                // scrollBehavior, whose nested-scroll bookkeeping surfaced the
+                                // bar during pull-to-refresh.
+                                containerColor = animateColorAsState(
+                                    if (isScrolled) MaterialTheme.colorScheme.surfaceContainer
+                                    else Color.Transparent,
+                                    label = "DetailsAppBarContainer"
+                                ).value,
                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                 actionIconContentColor = MaterialTheme.colorScheme.onSurface
                             ),
-                            scrollBehavior = scrollBehavior,
                             // Root already insets below the status bar; don't add it again here.
                             windowInsets = WindowInsets(0, 0, 0, 0)
                         )
@@ -860,6 +869,7 @@ private fun DetailsTabsButtonGroup(
     tabs: List<DetailsTab>,
     selectedTab: DetailsTab,
     onTabSelected: (DetailsTab) -> Unit,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier
 ) {
     SegmentedTabGroup(
@@ -868,7 +878,8 @@ private fun DetailsTabsButtonGroup(
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
         modifier = modifier.padding(vertical = 8.dp),
-        icon = ::detailsTabIcon
+        icon = ::detailsTabIcon,
+        scrollState = scrollState
     )
 }
 
@@ -1028,6 +1039,12 @@ fun DetailsPageContent(
     val tabsDocked by remember {
         derivedStateOf { inlineTabsTopWindow <= contentTopWindow + dockPx }
     }
+    // ONE horizontal scroll state for both copies of the strip. Each copy holding its own
+    // (remembered inside SegmentedTabGroup) reset the visible tabs whenever a copy (re)composed:
+    // the pinned copy always came up at offset 0, and the in-list copy lost its offset once
+    // LazyColumn recycled the item. Shared + saveable, the strip is picked up and laid down at
+    // exactly the offset the viewer left it, across docking, recycling and rotation.
+    val tabsScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
     Box(
         modifier = Modifier
@@ -1078,7 +1095,8 @@ fun DetailsPageContent(
                     DetailsTabsButtonGroup(
                         tabs = availableTabs,
                         selectedTab = effectiveTab,
-                        onTabSelected = onTabSelected
+                        onTabSelected = onTabSelected,
+                        scrollState = tabsScrollState
                     )
                 }
             }
@@ -1448,7 +1466,8 @@ fun DetailsPageContent(
                 DetailsTabsButtonGroup(
                     tabs = availableTabs,
                     selectedTab = effectiveTab,
-                    onTabSelected = onTabSelected
+                    onTabSelected = onTabSelected,
+                    scrollState = tabsScrollState
                 )
             }
         }
