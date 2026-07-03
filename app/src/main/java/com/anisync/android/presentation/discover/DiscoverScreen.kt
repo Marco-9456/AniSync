@@ -1005,8 +1005,9 @@ private fun SearchResultsContent(
                     viewMode = viewMode,
                     onCategoryChange = onCategoryChange,
                     onViewModeChange = onViewModeChange,
-                    // Results lay themselves out as adaptive panels now, so the old list/grid toggle is gone.
-                    showViewToggle = false
+                    // The All overview is always the fixed panel board; the toggle
+                    // applies to single-category results only.
+                    showViewToggle = activeCategory != ResultCategory.ALL
                 )
                 if (isWideSearch) {
                     TwoPaneListDetailScaffold(
@@ -1029,7 +1030,8 @@ private fun SearchResultsContent(
                                 onUserClick = onUserClick,
                                 selectedTarget = selectedTarget,
                                 hasMoreResults = searchPaging.hasNextFor(activeCategory),
-                                onLoadMore = onLoadMore
+                                onLoadMore = onLoadMore,
+                                viewMode = viewMode
                             )
                         },
                         detailPane = { target, onClose ->
@@ -1055,7 +1057,8 @@ private fun SearchResultsContent(
                         onStudioClick = onStudioClick,
                         onUserClick = onUserClick,
                         hasMoreResults = searchPaging.hasNextFor(activeCategory),
-                        onLoadMore = onLoadMore
+                        onLoadMore = onLoadMore,
+                        viewMode = viewMode
                     )
                 }
             }

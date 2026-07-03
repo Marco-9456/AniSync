@@ -3,6 +3,7 @@ package com.anisync.android.presentation.discover.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,9 +45,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.DiscoverViewMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.discover.ResultCategory
 import com.anisync.android.presentation.discover.SearchTarget
@@ -85,12 +89,21 @@ fun SearchResultsPanels(
     // Pagination for the single-category view; the overview always shows page-1 previews.
     hasMoreResults: Boolean = false,
     onLoadMore: () -> Unit = {},
+    // List/grid presentation of the single-category view; the overview is always the panel board.
+    viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
 ) {
     if (activeCategory == ResultCategory.ALL) {
         SearchOverviewPanels(
             searchAnime, searchManga, groupedResults, titleLanguage,
             onShowAll, onMediaClick, onCharacterClick, onStaffClick, onStudioClick, onUserClick, modifier,
             selectedTarget,
+        )
+    } else if (viewMode == DiscoverViewMode.GRID) {
+        SearchCategoryGrid(
+            activeCategory, searchAnime, searchManga, groupedResults, titleLanguage,
+            onMediaClick, onCharacterClick, onStaffClick, onStudioClick, onUserClick, modifier,
+            selectedTarget,
+            hasMoreResults, onLoadMore,
         )
     } else {
         SearchCategoryResults(
@@ -324,21 +337,250 @@ fun SearchCategoryResults(
                 ResultCategory.ALL -> Unit
             }
 
-            // Endless scroll: the footer only composes once scrolled into view, at
-            // which point it requests the next page; keying on the raw loaded count
-            // re-arms it after every append until the bucket reports no more pages.
-            if (hasMoreResults) {
-                item(key = "load_more", span = { GridItemSpan(maxLineSpan) }) {
-                    LaunchedEffect(loadedCount) { onLoadMore() }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        AppCircularProgressIndicator()
-                    }
+            loadMoreFooter(hasMoreResults, loadedCount, onLoadMore)
+        }
+    }
+}
+
+/**
+ * The single-category **grid** presentation (the header's list/grid toggle): media as
+ * poster cards, characters/staff/users as portrait cards, studios as name cards. Same
+ * data, taps and endless scroll as the list view — only the cells change.
+ */
+@Composable
+fun SearchCategoryGrid(
+    activeCategory: ResultCategory,
+    searchAnime: List<LibraryEntry>,
+    searchManga: List<LibraryEntry>,
+    groupedResults: GroupedSearchResults,
+    titleLanguage: TitleLanguage,
+    onMediaClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    selectedTarget: SearchTarget? = null,
+    hasMoreResults: Boolean = false,
+    onLoadMore: () -> Unit = {},
+) {
+    val loadedCount = when (activeCategory) {
+        ResultCategory.ANIME -> searchAnime.size
+        ResultCategory.MANGA -> searchManga.size
+        ResultCategory.CHARACTERS -> groupedResults.characters.size
+        ResultCategory.STAFF -> groupedResults.staff.size
+        ResultCategory.USERS -> groupedResults.users.size
+        ResultCategory.STUDIOS -> groupedResults.studios.size
+        ResultCategory.ALL -> 0
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(
+            minSize = if (activeCategory == ResultCategory.STUDIOS) 160.dp else 104.dp
+        ),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        when (activeCategory) {
+            ResultCategory.ANIME -> items(searchAnime, key = { "a_${it.mediaId}" }) { entry ->
+                SearchGridCard(
+                    title = entry.getTitle(titleLanguage),
+                    subtitle = entry.format?.label(),
+                    imageUrl = entry.cover.url() ?: entry.coverUrl,
+                    fallbackIcon = Icons.Outlined.Movie,
+                    imageAspect = 0.7f,
+                    selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId,
+                    onClick = { onMediaClick(entry.mediaId) },
+                )
+            }
+            ResultCategory.MANGA -> items(searchManga, key = { "m_${it.mediaId}" }) { entry ->
+                SearchGridCard(
+                    title = entry.getTitle(titleLanguage),
+                    subtitle = entry.format?.label(),
+                    imageUrl = entry.cover.url() ?: entry.coverUrl,
+                    fallbackIcon = Icons.Outlined.Movie,
+                    imageAspect = 0.7f,
+                    selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId,
+                    onClick = { onMediaClick(entry.mediaId) },
+                )
+            }
+            ResultCategory.CHARACTERS -> items(groupedResults.characters, key = { "c_${it.id}" }) { c ->
+                SearchGridCard(
+                    title = c.displayName,
+                    subtitle = c.nativeName,
+                    imageUrl = c.imageUrl,
+                    fallbackIcon = Icons.Outlined.Person,
+                    imageAspect = 0.75f,
+                    selected = selectedTarget is SearchTarget.Character && selectedTarget.id == c.id,
+                    onClick = { onCharacterClick(c.id) },
+                )
+            }
+            ResultCategory.STAFF -> items(groupedResults.staff, key = { "s_${it.id}" }) { s ->
+                SearchGridCard(
+                    title = s.displayName,
+                    subtitle = s.primaryOccupations.firstOrNull() ?: s.nativeName,
+                    imageUrl = s.imageUrl,
+                    fallbackIcon = Icons.Outlined.Person,
+                    imageAspect = 0.75f,
+                    selected = selectedTarget is SearchTarget.Staff && selectedTarget.id == s.id,
+                    onClick = { onStaffClick(s.id) },
+                )
+            }
+            ResultCategory.USERS -> items(groupedResults.users, key = { "u_${it.id}" }) { u ->
+                SearchGridCard(
+                    title = u.displayName,
+                    subtitle = null,
+                    imageUrl = u.imageUrl,
+                    fallbackIcon = Icons.Outlined.Person,
+                    imageAspect = 1f,
+                    selected = false,
+                    onClick = { onUserClick(u.displayName) },
+                )
+            }
+            ResultCategory.STUDIOS -> items(groupedResults.studios, key = { "st_${it.id}" }) { st ->
+                StudioGridCard(
+                    name = st.displayName,
+                    subtitle = st.favourites?.let { stringResource(R.string.search_favourites_count, it) },
+                    selected = selectedTarget is SearchTarget.Studio && selectedTarget.id == st.id,
+                    onClick = { onStudioClick(st.id) },
+                )
+            }
+            ResultCategory.ALL -> Unit
+        }
+
+        loadMoreFooter(hasMoreResults, loadedCount, onLoadMore)
+    }
+}
+
+/**
+ * Endless scroll: the footer only composes once scrolled into view, at which point
+ * it requests the next page; keying on the raw loaded count re-arms it after every
+ * append until the bucket reports no more pages.
+ */
+private fun androidx.compose.foundation.lazy.grid.LazyGridScope.loadMoreFooter(
+    hasMoreResults: Boolean,
+    loadedCount: Int,
+    onLoadMore: () -> Unit,
+) {
+    if (!hasMoreResults) return
+    item(key = "load_more", span = { GridItemSpan(maxLineSpan) }) {
+        LaunchedEffect(loadedCount) { onLoadMore() }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppCircularProgressIndicator()
+        }
+    }
+}
+
+/** One grid cell: image (poster/portrait/avatar aspect) with the name and a muted subtitle below. */
+@Composable
+private fun SearchGridCard(
+    title: String,
+    subtitle: String?,
+    imageUrl: String?,
+    fallbackIcon: ImageVector,
+    imageAspect: Float,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer
+        else MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(imageAspect)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(
+                        imageVector = fallbackIcon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(28.dp),
+                    )
                 }
+            }
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 2,
+                    minLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Studios have no artwork; their grid cell is a simple name card. */
+@Composable
+private fun StudioGridCard(
+    name: String,
+    subtitle: String?,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer
+        else MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.Apartment,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
