@@ -403,7 +403,7 @@
     <string name="debug_force_update_check">Forzar comprobación de actualización</string>
     <string name="debug_fetch_latest_release">Obtener la última versión</string>
     <string name="not_available">N/D</string>
-    <string name="media_type_media">MULTIMEDIA</string>
+    <string name="media_type_media">MEDIO</string>
     <string name="section_newly_added">Añadidos recientemente</string>
     <string name="section_recent_reviews">Reseñas recientes</string>
     <string name="recent_reviews_title">Reseñas recientes</string>
