@@ -95,6 +95,7 @@ import com.anisync.android.presentation.components.alert.rememberRateLimitedRefr
 import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.discover.components.RecentReviewsRow
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
@@ -121,7 +122,10 @@ private val TbaIconColor = Color(0xFF9E9E9E)
 )
 @Composable
 fun DiscoverScreen(
-    onMediaClick: (Int) -> Unit,
+    // sourceSection = TransitionKeys.DISCOVER_* prefix of the section the tap came from; must
+    // reach MediaDetails.sourceScreen so the return morph targets the exact card tapped (the
+    // same media can sit in several Discover sections at once).
+    onMediaClick: (mediaId: Int, sourceSection: String) -> Unit,
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
@@ -170,11 +174,11 @@ fun DiscoverScreen(
     var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
     var hasObservedDiscoverReEnter by rememberSaveable { mutableStateOf(false) }
 
-    val navigateToMediaDetails: (Int) -> Unit = remember(onMediaClick) {
-        { mediaId ->
+    val navigateToMediaDetails: (Int, String) -> Unit = remember(onMediaClick) {
+        { mediaId, sourceSection ->
             shouldKeepTopBarOverlayForReturn = true
             hasObservedDiscoverReEnter = false
-            onMediaClick(mediaId)
+            onMediaClick(mediaId, sourceSection)
         }
     }
 
@@ -274,7 +278,7 @@ fun DiscoverScreen(
             // tap/back events keep firing onto a stale list, repeatedly re-pushing
             // the detail destination (observed on Android 16 with predictive back).
             coroutineScope.launch { searchBarState.animateToCollapsed() }
-            navigateToMediaDetails(id)
+            navigateToMediaDetails(id, TransitionKeys.DISCOVER)
         }
     }
 
@@ -601,7 +605,7 @@ private fun DiscoverContent(
     recentReviewsTitle: String,
     tbaTitle: String,
     onRefresh: () -> Unit,
-    onMediaClick: (Int) -> Unit,
+    onMediaClick: (mediaId: Int, sourceSection: String) -> Unit,
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     onReviewClick: (Int) -> Unit,
     onRecentReviewsSeeAllClick: (MediaType) -> Unit,
@@ -663,7 +667,7 @@ private fun DiscoverContent(
                         val trendingItems = remember(trending) { trending.take(10) }
                         DiscoverHeroCarousel(
                             items = trendingItems,
-                            onItemClick = onMediaClick,
+                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_TRENDING) },
                             titleLanguage = titleLanguage,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
@@ -691,8 +695,9 @@ private fun DiscoverContent(
                     item(key = "popular_list", contentType = "media_list") {
                         HorizontalMediaList(
                             items = popular,
-                            onItemClick = onMediaClick,
+                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_POPULAR) },
                             titleLanguage = titleLanguage,
+                            transitionPrefix = TransitionKeys.DISCOVER_POPULAR,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -721,8 +726,9 @@ private fun DiscoverContent(
                             val upcomingItems = remember(upcoming) { upcoming.take(10) }
                             HorizontalMediaList(
                                 items = upcomingItems,
-                                onItemClick = onMediaClick,
+                                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_UPCOMING) },
                                 titleLanguage = titleLanguage,
+                                transitionPrefix = TransitionKeys.DISCOVER_UPCOMING,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
@@ -751,8 +757,9 @@ private fun DiscoverContent(
                         val newlyAddedItems = remember(newlyAdded) { newlyAdded.take(10) }
                         HorizontalMediaList(
                             items = newlyAddedItems,
-                            onItemClick = onMediaClick,
+                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_NEWLY_ADDED) },
                             titleLanguage = titleLanguage,
+                            transitionPrefix = TransitionKeys.DISCOVER_NEWLY_ADDED,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )
@@ -797,8 +804,9 @@ private fun DiscoverContent(
                         val tbaItems = remember(tba) { tba.take(10) }
                         HorizontalMediaList(
                             items = tbaItems,
-                            onItemClick = onMediaClick,
+                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_TBA) },
                             titleLanguage = titleLanguage,
+                            transitionPrefix = TransitionKeys.DISCOVER_TBA,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope
                         )

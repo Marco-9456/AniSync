@@ -26,6 +26,26 @@ object TransitionKeys {
     
     /** Discover tab/screen prefix */
     const val DISCOVER = "discover"
+
+    // Per-section Discover prefixes. The same media routinely appears in several Discover
+    // sections at once (trending + popular, upcoming + popular, a search-grid result over the
+    // feed), and all sections sit in one LazyColumn — a single shared prefix would register
+    // duplicate cover keys and let a return morph land on the wrong section's card. Each
+    // section owns a prefix, carried to details via MediaDetails.sourceScreen.
+    /** Discover Trending Now hero pager prefix */
+    const val DISCOVER_TRENDING = "discover_trending"
+
+    /** Discover All Time Popular row prefix */
+    const val DISCOVER_POPULAR = "discover_popular"
+
+    /** Discover Upcoming row prefix */
+    const val DISCOVER_UPCOMING = "discover_upcoming"
+
+    /** Discover Newly Added row prefix */
+    const val DISCOVER_NEWLY_ADDED = "discover_newly_added"
+
+    /** Discover TBA row prefix */
+    const val DISCOVER_TBA = "discover_tba"
     
     /** Profile tab/screen prefix */
     const val PROFILE = "profile"

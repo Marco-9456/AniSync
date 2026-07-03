@@ -25,11 +25,13 @@ import com.anisync.android.presentation.util.LocalAdaptiveInfo
 @Composable
 fun DiscoverListDetail(
     navController: NavHostController,
-    onMediaClickFullScreen: (Int) -> Unit,
+    // sourceSection = the TransitionKeys.DISCOVER_* prefix of the tapped section; becomes
+    // MediaDetails.sourceScreen so the return morph targets the exact card tapped.
+    onMediaClickFullScreen: (mediaId: Int, sourceSection: String) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    val feed: @Composable (onMediaClick: (Int) -> Unit) -> Unit = { onMediaClick ->
+    val feed: @Composable (onMediaClick: (Int, String) -> Unit) -> Unit = { onMediaClick ->
         DiscoverScreen(
             navController = navController,
             onMediaClick = onMediaClick,
@@ -55,7 +57,8 @@ fun DiscoverListDetail(
     }
 
     // Discover section items don't show a selected state, so the pane's selected id is ignored here.
+    // The pane detail uses its own PANE_SOURCE prefix (no cross-pane morph), so the section is dropped.
     MediaListDetailScaffold(navController = navController) { _, onMediaClick ->
-        feed(onMediaClick)
+        feed { mediaId, _ -> onMediaClick(mediaId) }
     }
 }

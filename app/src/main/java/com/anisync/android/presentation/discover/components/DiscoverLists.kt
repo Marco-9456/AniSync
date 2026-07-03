@@ -79,6 +79,9 @@ fun HorizontalMediaList(
     items: List<LibraryEntry>,
     onItemClick: (Int) -> Unit,
     titleLanguage: TitleLanguage,
+    // Section-scoped shared-element prefix (TransitionKeys.DISCOVER_*): the same media can sit
+    // in several Discover rows at once, and duplicate keys would misdirect the return morph.
+    transitionPrefix: String,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -102,7 +105,7 @@ fun HorizontalMediaList(
                 titleLanguage = titleLanguage,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "discover",
+                transitionPrefix = transitionPrefix,
                 modifier = Modifier.animateItem(
                     fadeInSpec = fadeSpec,
                     fadeOutSpec = fadeSpec,

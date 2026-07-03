@@ -319,13 +319,11 @@ fun AniSyncNavHost(
                 popEnterTransition = { sharedAxisXEnter(forward = false) },
                 popExitTransition = { sharedAxisXExit(forward = false) }
             ) {
-                // Optimization: Memoize callbacks
-                val onDiscoverMediaClick = remember(onMediaClick) {
-                    { mediaId: Int -> onMediaClick(mediaId, "discover") }
-                }
                 DiscoverListDetail(
                     navController = navController,
-                    onMediaClickFullScreen = onDiscoverMediaClick,
+                    // The section prefix rides through as MediaDetails.sourceScreen so the
+                    // return morph targets the exact card tapped (per-section shared keys).
+                    onMediaClickFullScreen = onMediaClick,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

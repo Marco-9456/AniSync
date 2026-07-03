@@ -139,7 +139,7 @@ fun DiscoverHeroCarousel(
                 val coverData = item.cover.url() ?: item.coverUrl
                 val cacheKey = remember(item.mediaId, coverQuality, coverData) {
                     TransitionKeys.imageCacheKey(
-                        TransitionKeys.DISCOVER,
+                        TransitionKeys.DISCOVER_TRENDING,
                         item.mediaId
                     ) + "-" + coverQuality.name + TransitionKeys.coverVersion(coverData)
                 }
@@ -192,8 +192,10 @@ private fun HeroCarouselItem(
     val itemShape = MaterialTheme.shapes.extraLarge
     val spatialSpec = AppMotion.rememberSpatialSpec()
 
+    // Section-scoped prefix: the same media often sits in the rows below too, and duplicate
+    // keys would let a return morph land on the wrong card (matches MediaDetails.sourceScreen).
     val coverKey =
-        remember(item.mediaId) { TransitionKeys.cover(TransitionKeys.DISCOVER, item.mediaId) }
+        remember(item.mediaId) { TransitionKeys.cover(TransitionKeys.DISCOVER_TRENDING, item.mediaId) }
     val title = remember(item, titleLanguage) { item.getTitle(titleLanguage) }
     val statusLabel = remember(item.mediaStatus) {
         item.mediaStatus?.replace('_', ' ')?.lowercase()?.replaceFirstChar { it.uppercase() }
