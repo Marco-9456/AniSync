@@ -635,7 +635,7 @@ fun AniSyncNavHost(
             }
 
             // =================================================================
-            // REVIEW DETAIL SCREEN - Shared Axis Z (Depth)
+            // REVIEW DETAIL SCREEN - Fade (banner morph carries the motion)
             // =================================================================
             composable<ReviewDetail>(
                 deepLinks = listOf(
@@ -643,19 +643,24 @@ fun AniSyncNavHost(
                     navDeepLink { uriPattern = "https://anilist.co/review/{reviewId}" },
                     navDeepLink { uriPattern = "https://anilist.co/review/{reviewId}/{slug}" }
                 ),
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
+                // Fade only: the review card's banner morphs into the detail hero banner
+                // (shared bounds); a slide would double-move it, like the media cover did.
+                enterTransition = { fadeIn(animationSpec = effectsSpec) },
+                exitTransition = { fadeOut(animationSpec = effectsSpec) },
+                popEnterTransition = { fadeIn(animationSpec = effectsSpec) },
+                popExitTransition = { fadeOut(animationSpec = effectsSpec) }
             ) { backStackEntry ->
                 val route: ReviewDetail = backStackEntry.toRoute()
                 ReviewDetailScreen(
                     reviewId = route.reviewId,
+                    sourceScreen = route.sourceScreen,
                     onBackClick = { navController.popBackStack() },
                     onUserClick = navigateToUserProfile,
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "review"))
-                    }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 
@@ -671,9 +676,11 @@ fun AniSyncNavHost(
                 RecentReviewsScreen(
                     onBackClick = { navController.popBackStack() },
                     onReviewClick = { reviewId ->
-                        navController.navigate(ReviewDetail(reviewId))
+                        navController.navigate(ReviewDetail(reviewId, sourceScreen = "recent_reviews"))
                     },
-                    onUserClick = navigateToUserProfile
+                    onUserClick = navigateToUserProfile,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 
@@ -687,10 +694,12 @@ fun AniSyncNavHost(
                     // AniList character URLs with slug
                     navDeepLink { uriPattern = "https://anilist.co/character/{characterId}/{slug}" }
                 ),
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
+                // Fade only: the character image morphs from the cast row / VA card (shared
+                // bounds); a slide would double-move it, like the media cover did.
+                enterTransition = { fadeIn(animationSpec = effectsSpec) },
+                exitTransition = { fadeOut(animationSpec = effectsSpec) },
+                popEnterTransition = { fadeIn(animationSpec = effectsSpec) },
+                popExitTransition = { fadeOut(animationSpec = effectsSpec) }
             ) { backStackEntry ->
                 val character: CharacterDetails = backStackEntry.toRoute()
                 CharacterDetailsScreen(
@@ -718,10 +727,12 @@ fun AniSyncNavHost(
                     navDeepLink { uriPattern = "https://anilist.co/staff/{staffId}" },
                     navDeepLink { uriPattern = "https://anilist.co/staff/{staffId}/{slug}" }
                 ),
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
+                // Fade only: the staff image morphs from the staff row (shared bounds);
+                // a slide would double-move it, like the media cover did.
+                enterTransition = { fadeIn(animationSpec = effectsSpec) },
+                exitTransition = { fadeOut(animationSpec = effectsSpec) },
+                popEnterTransition = { fadeIn(animationSpec = effectsSpec) },
+                popExitTransition = { fadeOut(animationSpec = effectsSpec) }
             ) { backStackEntry ->
                 val staff: StaffDetails = backStackEntry.toRoute()
                 StaffDetailsScreen(
